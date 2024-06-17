@@ -634,7 +634,9 @@ class TestEventBus:
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
-    def test_put_permission(self, bus_name, create_event_bus, aws_client, account_id, snapshot):
+    def test_put_permission(
+        self, bus_name, create_event_bus, aws_client, account_id, secondary_account_id, snapshot
+    ):
         if bus_name == "custom":
             bus_name = f"test-bus-{short_uid()}"
             create_event_bus(Name=bus_name)
@@ -649,15 +651,37 @@ class TestEventBus:
         snapshot.add_transformer(
             [
                 snapshot.transform.regex(bus_name, "<bus-name>"),
+                snapshot.transform.regex(account_id, "<account-id>"),
+                snapshot.transform.regex(secondary_account_id, "<secondary-account-id>"),
                 snapshot.transform.key_value("Sid", reference_replacement=False),
             ]
         )
 
-        statement_id = f"statement-{short_uid()}"
+        statement_id_primary = f"statement-{short_uid()}"
+        response = aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=account_id,
+            StatementId=statement_id_primary,
+        )
+        snapshot.match("put-permission", response)
 
+        statement_id_secondary = f"statement-{short_uid()}"
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=secondary_account_id,
+            StatementId=statement_id_secondary,
+        )
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-put-permission-multiple-principals", response)
+
+        # allow all principals to put events
+        statement_id = f"statement-{short_uid()}"
         # only events:PutEvents is allowed for actions
         # only a single access policy is allowed per event bus
-        response = aws_client.events.put_permission(
+        aws_client.events.put_permission(
             EventBusName=bus_name,
             Action="events:PutEvents",
             Principal="*",  # required if condition is present
@@ -666,18 +690,17 @@ class TestEventBus:
         )
 
         # put permission just replaces the existing permission
-        response = aws_client.events.put_permission(
+        aws_client.events.put_permission(
             EventBusName=bus_name,
             Action="events:PutEvents",
-            Principal="*",  # required if condition is present
+            Principal="*",
             StatementId=statement_id,
         )
-
-        snapshot.match("put-permission", response)
 
         response = aws_client.events.describe_event_bus(Name=bus_name)
         snapshot.match("describe-event-bus-put-permission", response)
 
+        # allow with policy document
         policy = {
             "Version": "2012-10-17",
             "Statement": [

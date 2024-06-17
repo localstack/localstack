@@ -1210,7 +1210,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
-    "recorded-date": "14-06-2024, 12:51:52",
+    "recorded-date": "17-06-2024, 09:32:22",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -1218,8 +1218,41 @@
           "HTTPStatusCode": 200
         }
       },
+      "describe-event-bus-put-permission-multiple-principals": {
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "describe-event-bus-put-permission": {
-        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
         "Name": "<bus-name>",
@@ -1231,7 +1264,25 @@
               "Effect": "Allow",
               "Principal": "*",
               "Action": "events:PutEvents",
-              "Resource": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>"
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             }
           ]
         },
@@ -1247,7 +1298,7 @@
         }
       },
       "describe-event-bus-put-permission-policy": {
-        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
         "Name": "<bus-name>",
@@ -1273,7 +1324,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
-    "recorded-date": "14-06-2024, 12:51:53",
+    "recorded-date": "17-06-2024, 09:32:25",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -1281,8 +1332,41 @@
           "HTTPStatusCode": 200
         }
       },
+      "describe-event-bus-put-permission-multiple-principals": {
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "describe-event-bus-put-permission": {
-        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
         "Name": "<bus-name>",
@@ -1294,7 +1378,25 @@
               "Effect": "Allow",
               "Principal": "*",
               "Action": "events:PutEvents",
-              "Resource": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>"
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             }
           ]
         },
@@ -1310,7 +1412,7 @@
         }
       },
       "describe-event-bus-put-permission-policy": {
-        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
         "Name": "<bus-name>",
