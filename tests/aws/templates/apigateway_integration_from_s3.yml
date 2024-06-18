@@ -31,6 +31,10 @@ Resources:
       RestApiId:
         Ref: ApiGatewayRestApi
       StageName: local
+      StageDescription:
+        TracingEnabled: true
+        LoggingLevel: ERROR
+        DataTraceEnabled: true
 
   ApiGWStage:
     Type: AWS::ApiGateway::Stage

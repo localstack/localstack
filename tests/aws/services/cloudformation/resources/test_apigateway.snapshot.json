@@ -107,7 +107,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
-    "recorded-date": "15-04-2024, 22:59:18",
+    "recorded-date": "17-06-2024, 21:54:27",
     "recorded-content": {
       "rest-api": {
         "apiKeySource": "HEADER",
