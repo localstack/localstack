@@ -50,3 +50,9 @@ You can also run all `.bats` files in a directory:
 ```bash
 bats tests/bin
 ```
+
+To run with some debug information, you can use this:
+
+```bash
+bats --trace --verbose-run --print-output-on-failure -r tests/bin/
+```
