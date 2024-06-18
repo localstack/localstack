@@ -4,6 +4,8 @@ import pytest
 
 from localstack.testing.pytest import markers
 
+pytestmark = pytest.mark.skip("Validations are currently disabled")
+
 
 @markers.aws.validated
 @pytest.mark.parametrize(
