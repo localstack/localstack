@@ -230,7 +230,7 @@ setup_file() {
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:stable" ]]
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:latest" ]]
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:dev" ]]
-  [[ "$output" =~ "docker manifest push $IMAGE_NAME:1" ]]
-  [[ "$output" =~ "docker manifest push $IMAGE_NAME:1.2" ]]
-  [[ "$output" =~ "docker manifest push $IMAGE_NAME:1.2.3" ]]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:0" ]]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:0.0" ]]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:0.0.1" ]]
 }

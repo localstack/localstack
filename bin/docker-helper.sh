@@ -246,6 +246,7 @@ function cmd-push-manifests() {
       # push all the created tags
       docker manifest push $IMAGE_NAME:$IMAGE_TAG
       docker manifest push $IMAGE_NAME:stable
+      docker manifest push $IMAGE_NAME:latest
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION
