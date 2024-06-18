@@ -7593,8 +7593,9 @@ class TestS3PresignedUrl:
         )
         assert "=AES256" not in url
 
+        # TODO migrate to aws sdk v3
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v2.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v3.mjs"
         )
         temp_folder = create_tmp_folder_lambda(handler_file)
 
@@ -7604,7 +7605,7 @@ class TestS3PresignedUrl:
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
             runtime=Runtime.nodejs20_x,
-            handler="lambda_s3_integration_sdk_v2.handler",
+            handler="lambda_s3_integration_sdk_v3.handler",
             role=lambda_su_role,
             envvars={
                 "ACCESS_KEY": s3_constants.DEFAULT_PRE_SIGNED_ACCESS_KEY_ID,
