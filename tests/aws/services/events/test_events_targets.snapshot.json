@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_lambda_list_entry": {
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda_list_entry": {
     "recorded-date": "08-04-2024, 17:32:58",
     "recorded-content": {
       "events": [
@@ -47,7 +47,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_lambda_list_entries_partial_match": {
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda_list_entries_partial_match": {
     "recorded-date": "03-04-2024, 20:00:13",
     "recorded-content": {
       "events": [
