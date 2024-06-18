@@ -455,7 +455,7 @@ class TestCloudFormationConditions:
         deploy_cfn_template(
             stack_name=stack_name,
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/cfn_condition_update1.yml"
+                os.path.dirname(__file__), "../../../templates/cfn_condition_update_1.yml"
             ),
             parameters={"OriginalBucketName": original_bucket_name},
         )
@@ -468,7 +468,7 @@ class TestCloudFormationConditions:
             stack_name=stack_name,
             is_update=True,
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/cfn_condition_update2.yml"
+                os.path.dirname(__file__), "../../../templates/cfn_condition_update_2.yml"
             ),
             parameters={"OriginalBucketName": original_bucket_name, "FirstBucket": bucket_1, "SecondBucket": bucket_2},
         )
