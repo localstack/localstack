@@ -270,95 +270,60 @@ def test_server_certificate(deploy_cfn_template, snapshot, aws_client):
         snapshot.transform.key_value("ServerCertificateId", "server-certificate-id")
     )
 
-    @markers.aws.unknown
-    def test_cfn_handle_iam_role_resource_no_role_name(self, deploy_cfn_template, aws_client):
-        role_path_prefix = f"/role-prefix-{short_uid()}/"
-        stack = deploy_cfn_template(template=TEST_TEMPLATE_14 % role_path_prefix)
 
-        rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
-        assert len(rs["Roles"]) == 1
+@markers.aws.validated
+def test_cfn_handle_iam_role_resource_no_role_name(deploy_cfn_template, aws_client):
+    stack = deploy_cfn_template(template_path=os.path.join(
+        os.path.dirname(__file__), "../../../../templates/iam_role_defaults.yml"
+    ))
+    role_path_prefix = "/test-role-prefix/"
 
-        stack.destroy()
+    rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
+    assert len(rs["Roles"]) == 1
 
-        rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
-        assert not rs["Roles"]
+    stack.destroy()
 
-    @markers.aws.validated
-    def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
-        TEST_TEMPLATE_14 = """
-        AWSTemplateFormatVersion: 2010-09-09
-        Resources:
-          IamRoleLambdaExecution:
-            Type: 'AWS::IAM::Role'
-            Properties:
-              AssumeRolePolicyDocument: {}
-              Path: %s
-        """
-        lambda_role_name = f"lambda-role-{short_uid()}"
-        lambda_function_name = f"lambda-function-{short_uid()}"
+    rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
+    assert not rs["Roles"]
 
-        # Create stack and wait for 'CREATE_COMPLETE' status of the stack
-        stack = deploy_cfn_template(
-            template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/template7.json"
-            ),
-            parameters={
-                "LambdaRoleName": lambda_role_name,
-                "LambdaFunctionName": lambda_function_name,
-            },
-        )
 
-        # Checking required values for Lambda function and IAM Role
-        list_functions = list_all_resources(
-            lambda kwargs: aws_client.lambda_.list_functions(**kwargs),
-            last_token_attr_name="nextToken",
-            list_attr_name="Functions",
-        )
-        all_roles = aws_client.iam.list_roles(MaxItems=1000)["Roles"]
-        filtered_roles = [r["RoleName"] for r in all_roles if lambda_role_name == r["RoleName"]]
-        assert len(filtered_roles) == 1
+@markers.aws.validated
+def test_updating_stack_with_iam_role(deploy_cfn_template, aws_client):
+    lambda_role_name = f"lambda-role-{short_uid()}"
+    lambda_function_name = f"lambda-function-{short_uid()}"
 
-        new_function = [
-            function
-            for function in list_functions
-            if function.get("FunctionName") == lambda_function_name
-        ]
-        assert len(new_function) == 1
-        assert lambda_role_name in new_function[0].get("Role")
+    # Create stack and wait for 'CREATE_COMPLETE' status of the stack
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../../templates/template7.json"
+        ),
+        parameters={
+            "LambdaRoleName": lambda_role_name,
+            "LambdaFunctionName": lambda_function_name,
+        },
+    )
 
-        # Generate new names for lambda and IAM Role
-        lambda_role_name_new = f"lambda-role-new-{short_uid()}"
-        lambda_function_name_new = f"lambda-function-new-{short_uid()}"
+    function_description = aws_client.lambda_.get_function(FunctionName=lambda_function_name)
+    assert stack.outputs["TestStackRoleName"] in function_description.get("Configuration").get("Role")
+    assert stack.outputs["TestStackRoleName"] == lambda_role_name
 
-        # Update stack and wait for 'UPDATE_COMPLETE' status of the stack
-        deploy_cfn_template(
-            is_update=True,
-            template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/template7.json"
-            ),
-            stack_name=stack.stack_name,
-            parameters={
-                "LambdaRoleName": lambda_role_name_new,
-                "LambdaFunctionName": lambda_function_name_new,
-            },
-        )
+    # Generate new names for lambda and IAM Role
+    lambda_role_name_new = f"lambda-role-new-{short_uid()}"
+    lambda_function_name_new = f"lambda-function-new-{short_uid()}"
 
-        # Checking new required values for Lambda function and IAM Role
+    # Update stack and wait for 'UPDATE_COMPLETE' status of the stack
+    stack = deploy_cfn_template(
+        is_update=True,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../../templates/template7.json"
+        ),
+        stack_name=stack.stack_name,
+        parameters={
+            "LambdaRoleName": lambda_role_name_new,
+            "LambdaFunctionName": lambda_function_name_new,
+        },
+    )
 
-        list_functions = list_all_resources(
-            lambda kwargs: aws_client.lambda_.list_functions(**kwargs),
-            last_token_attr_name="nextToken",
-            list_attr_name="Functions",
-        )
-
-        all_roles = aws_client.iam.list_roles(MaxItems=1000)["Roles"]
-        filtered_roles = [r["RoleName"] for r in all_roles if lambda_role_name_new == r["RoleName"]]
-        assert len(filtered_roles) == 1
-
-        new_function = [
-            function
-            for function in list_functions
-            if function.get("FunctionName") == lambda_function_name_new
-        ]
-        assert len(new_function) == 1
-        assert lambda_role_name_new in new_function[0].get("Role")
+    function_description = aws_client.lambda_.get_function(FunctionName=lambda_function_name_new)
+    assert stack.outputs["TestStackRoleName"] in function_description.get("Configuration").get("Role")
+    assert stack.outputs["TestStackRoleName"] == lambda_role_name_new
