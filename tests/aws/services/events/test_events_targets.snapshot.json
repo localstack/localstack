@@ -101,7 +101,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_sqs": {
+  "tests/aws/services/events/test_events_targets.py::TestTargetSqs::test_put_events_with_target_sqs": {
     "recorded-date": "26-04-2024, 08:43:27",
     "recorded-content": {
       "message": [
@@ -130,7 +130,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_sqs_event_detail_match": {
+  "tests/aws/services/events/test_events_targets.py::TestTargetSqs::test_put_events_with_target_sqs_event_detail_match": {
     "recorded-date": "07-05-2024, 10:40:38",
     "recorded-content": {
       "messages": [
