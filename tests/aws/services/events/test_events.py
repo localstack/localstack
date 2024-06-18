@@ -163,6 +163,10 @@ class TestEvents:
 
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_put_events_exceed_limit_ten_entries(
         self, bus_name, events_create_event_bus, aws_client, snapshot
     ):
@@ -612,6 +616,10 @@ class TestEventBus:
         snapshot.match("delete-default-event-bus-error", e)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_list_event_buses_with_prefix(self, create_event_bus, aws_client, snapshot):
         events = aws_client.events
         bus_name = f"unique-prefix-1234567890-{short_uid()}"
