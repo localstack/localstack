@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - 'bin/docker-helper.sh'
+      - '.github/workflows/tests-bin.yml'
+      - 'tests/bin/*.bats'
     branches:
       - master
       - release/*
   push:
     paths:
       - 'bin/docker-helper.sh'
+      - '.github/workflows/tests-bin.yml'
+      - 'tests/bin/*.bats'
     branches:
       - master
       - release/*
