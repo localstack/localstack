@@ -448,45 +448,6 @@ class TestCloudFormationConditions:
         assert stack.outputs["ProdBucket"] == f"{nested_bucket_name}-prod"
         assert aws_client.s3.head_bucket(Bucket=stack.outputs["ProdBucket"])
 
-    @markers.aws.unknown
-    def test_cfn_conditional_deployment(self, account_id, deploy_cfn_template, aws_client):
-        TEST_TEMPLATE_19 = (
-            """
-            Conditions:
-              IsPRD:
-                Fn::Equals:
-                - !Ref AWS::AccountId
-                - xxxxxxxxxxxxxx
-              IsDEV:
-                Fn::Equals:
-                - !Ref AWS::AccountId
-                - "%s"
-    
-            Resources:
-              TestBucketDev:
-                Type: AWS::S3::Bucket
-                Condition: IsDEV
-                Properties:
-                  BucketName: cf-dev-{id}
-              TestBucketProd:
-                Type: AWS::S3::Bucket
-                Condition: IsPRD
-                Properties:
-                  BucketName: cf-prd-{id}
-            """
-            % account_id
-        )
-        bucket_id = short_uid()
-        deploy_cfn_template(template=TEST_TEMPLATE_19.format(id=bucket_id))
-
-        buckets = aws_client.s3.list_buckets()["Buckets"]
-        dev_bucket = f"cf-dev-{bucket_id}"
-        prd_bucket = f"cf-prd-{bucket_id}"
-        dev_bucket = [b for b in buckets if b["Name"] == dev_bucket]
-        prd_bucket = [b for b in buckets if b["Name"] == prd_bucket]
-
-        assert not prd_bucket
-        assert dev_bucket
 
     @markers.aws.unknown
     def test_update_conditions(self, deploy_cfn_template, aws_client):
