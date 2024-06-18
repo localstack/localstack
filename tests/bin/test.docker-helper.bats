@@ -216,3 +216,21 @@ setup_file() {
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:1.2.3" ]]
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:stable" ]]
 }
+
+@test "push-manifests always pushes latest tag w versions" {
+  export IMAGE_NAME="localstack/test"
+  export MAIN_BRANCH="$(git branch --show-current)"
+  export DOCKER_USERNAME=test
+  export DOCKER_PASSWORD=test
+  export VERSION_FILE="$BATS_TEST_DIRNAME/files/VERSION"
+  export DEFAULT_TAG="dev"
+  export FORCE_VERSION_TAG_PUSH=1
+  run bin/docker-helper.sh push-manifests
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:stable" ]]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:latest" ]]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:dev" ]]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:1" ]]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:1.2" ]]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:1.2.3" ]]
+}
