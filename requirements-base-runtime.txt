@@ -6,7 +6,7 @@
 #
 attrs==23.2.0
     # via localstack-twisted
-awscrt==0.20.11
+awscrt==0.20.12
     # via localstack-core (pyproject.toml)
 blinker==1.8.2
     # via flask
@@ -148,7 +148,7 @@ typing-extensions==4.12.2
     # via
     #   localstack-twisted
     #   readerwriterlock
-urllib3==2.2.1
+urllib3==2.2.2
     # via
     #   botocore
     #   docker
