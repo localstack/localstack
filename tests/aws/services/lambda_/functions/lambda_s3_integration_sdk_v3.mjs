@@ -25,7 +25,6 @@ export const handler = async (event, context) => {
     const url = await getSignedUrl(
         s3,
         new PutObjectCommand({
-            Body: 'test',
             Bucket: BUCKET_NAME,
             Key: 'key-for-signed-headers-in-qs',
             ServerSideEncryption: 'AES256', // Adds 'X-Amz-Server-Side-Encryption'
