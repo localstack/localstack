@@ -4,6 +4,7 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -88,7 +89,7 @@ def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
 
 
 @markers.aws.validated
-def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_client):
+def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_client, snapshot):
     queue_name = f"q-{short_uid()}"
     parameter_ver = f"v{short_uid()}"
     stack_name = f"stack-{short_uid()}"
@@ -97,9 +98,9 @@ def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_cli
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/legacy_transitive_ref.yaml"
         ),
-        max_wait=500,
+        max_wait=300 if is_aws_cloud() else 10,
         parameters={"QueueName": queue_name, "Qualifier": parameter_ver},
     )
     tags = aws_client.sqs.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
-    test_tag = tags["Tags"]["test"]
-    assert f"cdk-bootstrap/{parameter_ver}/version" in test_tag
+    snapshot.add_transformer(snapshot.transform.regex(r"/cdk-bootstrap/(\w+)/", "/cdk-bootstrap/.../"))
+    snapshot.match("tags", tags)
