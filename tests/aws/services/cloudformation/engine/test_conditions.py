@@ -448,51 +448,33 @@ class TestCloudFormationConditions:
         assert stack.outputs["ProdBucket"] == f"{nested_bucket_name}-prod"
         assert aws_client.s3.head_bucket(Bucket=stack.outputs["ProdBucket"])
 
-
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_update_conditions(self, deploy_cfn_template, aws_client):
-        TEST_TEMPLATE_3 = """
-        AWSTemplateFormatVersion: "2010-09-09"
-        Resources:
-          S3Setup:
-            Type: AWS::S3::Bucket
-            Properties:
-              BucketName: test-%s
-        """ % short_uid()
-
-        stack = deploy_cfn_template(template=TEST_TEMPLATE_3)
-        template = yaml.safe_load(TEST_TEMPLATE_3)
-
-        # TODO: avoid changing template here
-        # update stack with additional resources and conditions
-        bucket1 = f"b-{short_uid()}"
-        bucket2 = f"b-{short_uid()}"
-        template["Resources"].update(
-            {
-                "ToBeCreated": {
-                    "Type": "AWS::S3::Bucket",
-                    "Condition": "TrueCondition",
-                    "Properties": {"BucketName": bucket1},
-                },
-                "NotToBeCreated": {
-                    "Type": "AWS::S3::Bucket",
-                    "Condition": "FalseCondition",
-                    "Properties": {"BucketName": bucket2},
-                },
-            }
+        original_bucket_name = f"test-bucket-{short_uid()}"
+        stack_name = f"test-update-conditions-{short_uid()}"
+        deploy_cfn_template(
+            stack_name=stack_name,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/cfn_condition_update1.yml"
+            ),
+            parameters={"OriginalBucketName": original_bucket_name},
         )
-        template["Conditions"] = {
-            "TrueCondition": {"Fn::Equals": ["same", "same"]},
-            "FalseCondition": {"Fn::Equals": ["this", "other"]},
-        }
-        aws_client.cloudformation.update_stack(
-            StackName=stack.stack_name, TemplateBody=json.dumps(template)
-        )
-        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
-            StackName=stack.stack_name
+        assert aws_client.s3.head_bucket(Bucket=original_bucket_name)
+
+        bucket_1 = f"test-bucket-1-{short_uid()}"
+        bucket_2 = f"test-bucket-2-{short_uid()}"
+
+        deploy_cfn_template(
+            stack_name=stack_name,
+            is_update=True,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/cfn_condition_update2.yml"
+            ),
+            parameters={"OriginalBucketName": original_bucket_name, "FirstBucket": bucket_1, "SecondBucket": bucket_2},
         )
 
-        # bucket1 should have been created, bucket2 not
-        aws_client.s3.head_bucket(Bucket=bucket1)
-        with pytest.raises(Exception):
-            aws_client.s3.head_bucket(Bucket=bucket2)
+        assert aws_client.s3.head_bucket(Bucket=original_bucket_name)
+        assert aws_client.s3.head_bucket(Bucket=bucket_1)
+        with pytest.raises(aws_client.s3.exceptions.ClientError):
+            aws_client.s3.head_bucket(Bucket=bucket_2)
+
