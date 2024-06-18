@@ -16,6 +16,9 @@ parameters:
   randomize-aws-credentials:
     type: boolean
     default: false
+  only-acceptance-test:
+    type: boolean
+    default: false
 
 executors:
   ubuntu-machine-amd64:
@@ -23,6 +26,18 @@ executors:
       image: << pipeline.parameters.ubuntu-amd64-machine-image >>
 
 commands:
+  prepare-acceptance-test:
+    steps:
+      - run:
+          name: Check if only Acceptance Tests should run
+          command: |
+            if [[ $CIRCLE_BRANCH == "master" ]] ; then
+              echo "export ONLY_ACCEPTANCE_TEST=1" >> $BASH_ENV
+            else
+              echo "export ONLY_ACCEPTANCE_TEST=<< pipeline.parameters.only-acceptance-test >>" >> $BASH_ENV
+            fi
+            source $BASH_ENV
+
   prepare-testselection:
     steps:
       - unless:
@@ -169,35 +184,6 @@ jobs:
           paths:
             - repo/target/coverage/
 
-  acceptance-tests:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Acceptance tests (EXPERIMENTAL)
-          environment:
-            TEST_PATH: "tests/aws/"
-            COVERAGE_ARGS: "-p"
-            LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.acceptance.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance_test.xml -o junit_suite_name='acceptance_test'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/reports/
-            - repo/target/metric_reports/
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
 
   itest-sfn-legacy-provider:
     executor: ubuntu-machine-amd64
@@ -323,7 +309,7 @@ jobs:
         type: string
       machine_image:
         description: "CircleCI machine type to run at"
-        default: "ubuntu-2004:202107-02"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
         type: string
       resource_class:
         description: "CircleCI machine type to run at"
@@ -351,6 +337,58 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/
+
+  acceptance-test:
+    parameters:
+      platform:
+        description: "Platform to run on"
+        default: "amd64"
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "<< parameters.platform >>"
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          working_directory: target
+          command: ../bin/docker-helper.sh load
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Acceptance tests
+          environment:
+            TEST_PATH: "tests/aws/"
+            COVERAGE_ARGS: "-p"
+            COVERAGE_FILE: "target/coverage/.coverage.acceptance.<< parameters.platform >>"
+            PYTEST_ARGS: "${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance-test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml -o junit_suite_name='acceptance_test'"
+            LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
+            DEBUG: 1
+          command: |
+            make docker-run-tests
+      - store_test_results:
+          path: target/reports/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/reports/
+            - repo/target/metric_reports/
+            - repo/target/coverage/
 
   docker-test:
     parameters:
@@ -718,9 +756,6 @@ workflows:
       - test-selection:
           requires:
             - install
-      - acceptance-tests:
-          requires:
-            - preflight
       - itest-sfn-legacy-provider:
           requires:
             - preflight
@@ -756,6 +791,20 @@ workflows:
           resource_class: arm.medium
           requires:
             - preflight
+      - acceptance-test:
+          name: acceptance-test-arm64
+          platform: arm64
+          resource_class: arm.medium
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+          requires:
+            - docker-build-arm64
+      - acceptance-test:
+          name: acceptance-test-amd64
+          platform: amd64
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          resource_class: medium
+          requires:
+            - docker-build-amd64
       - docker-test:
           name: docker-test-arm64
           platform: arm64
@@ -785,7 +834,8 @@ workflows:
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
             - itest-events-v2-provider
-            - acceptance-tests
+            - acceptance-test-amd64
+            - acceptance-test-arm64
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented
@@ -799,7 +849,8 @@ workflows:
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
             - itest-events-v2-provider
-            - acceptance-tests
+            - acceptance-test-amd64
+            - acceptance-test-arm64
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests
