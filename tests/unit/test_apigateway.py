@@ -9,7 +9,7 @@ import boto3
 import pytest
 import xmltodict
 
-from localstack.aws.api.apigateway import Model
+from localstack.aws.api.apigateway import GatewayResponseType, Model
 from localstack.constants import (
     APPLICATION_JSON,
     APPLICATION_XML,
@@ -35,6 +35,10 @@ from localstack.services.apigateway.invocations import (
     RequestValidator,
 )
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
+from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
+    AccessDeniedError,
+    BaseGatewayResponse,
+)
 from localstack.services.apigateway.templates import (
     RequestTemplates,
     ResponseTemplates,
@@ -1292,3 +1296,18 @@ class TestModelResolver:
             resolved_model["$defs"]["House"]["properties"]["houses"]["items"]["$ref"]
             == "#/$defs/House"
         )
+
+
+class TestGatewayResponse:
+    def test_base_response(self):
+        with pytest.raises(BaseGatewayResponse) as e:
+            raise BaseGatewayResponse()
+        assert e.value.status_code == 500
+
+    def test_subclassed_response(self):
+        with pytest.raises(BaseGatewayResponse) as e:
+            raise AccessDeniedError("Access Denied")
+        assert e.value.status_code == 403
+        assert e.value.message == "Access Denied"
+        assert e.value.type == GatewayResponseType.ACCESS_DENIED
+        assert e.value.parent_type == GatewayResponseType.DEFAULT_4XX
