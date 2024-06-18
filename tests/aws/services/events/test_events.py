@@ -161,6 +161,30 @@ class TestEvents:
             message_body = json.loads(message["Body"])
             assert message_body["time"] == "2022-01-01T00:00:00Z"
 
+    @markers.aws.validated
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_put_events_exceed_limit_ten_entries(
+        self, bus_name, events_create_event_bus, aws_client, snapshot
+    ):
+        if bus_name == "custom":
+            bus_name = f"test-bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+        entries = []
+        for i in range(11):
+            entries.append(
+                {
+                    "Source": TEST_EVENT_PATTERN["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                    "Detail": json.dumps(EVENT_DETAIL),
+                    "EventBusName": bus_name,
+                }
+            )
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_events(Entries=entries)
+
+        snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
+        snapshot.match("put-events-exceed-limit-error", e.value.response)
+
     @markers.aws.unknown
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
