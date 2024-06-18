@@ -37,7 +37,7 @@ from localstack.services.apigateway.invocations import (
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     AccessDeniedError,
-    BaseGatewayResponse,
+    BaseGatewayException,
 )
 from localstack.services.apigateway.templates import (
     RequestTemplates,
@@ -1300,13 +1300,13 @@ class TestModelResolver:
 
 class TestGatewayResponse:
     def test_base_response(self):
-        with pytest.raises(BaseGatewayResponse) as e:
-            raise BaseGatewayResponse()
+        with pytest.raises(BaseGatewayException) as e:
+            raise BaseGatewayException()
         assert e.value.status_code == 500
         assert e.value.message == "Unimplemented Response"
 
     def test_subclassed_response(self):
-        with pytest.raises(BaseGatewayResponse) as e:
+        with pytest.raises(BaseGatewayException) as e:
             raise AccessDeniedError("Access Denied")
         assert e.value.status_code == 403
         assert e.value.message == "Access Denied"
