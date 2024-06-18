@@ -147,13 +147,17 @@ class TargetSender(ABC):
             self._validate_input_transformer(input_transformer)
 
     def _initialize_client(self) -> BaseClient:
-        """Initializes internal botocore client.
+        """Initializes internal boto client.
         If a role from a target is provided, the client will be initialized with the assumed role.
-        If no role is provided the client will be initialized with the account ID and region.
+        If no role is provided or the role is not in the target account,
+        the client will be initialized with the account ID and region.
         In both cases event bridge is requested as service principal"""
         service_principal = ServicePrincipal.events
-        if role_arn := self.target.get("RoleArn"):
-            # assumed role sessions expires after 6 hours in AWS, currently no expiration in LocalStack
+        role_arn = self.target.get("RoleArn")
+        if role_arn and self.account_id == extract_account_id_from_arn(
+            role_arn
+        ):  # required for cross account
+            # assumed role sessions expire after 6 hours in AWS, currently no expiration in LocalStack
             client_factory = connect_to.with_assumed_role(
                 role_arn=role_arn,
                 service_principal=service_principal,
@@ -238,7 +242,7 @@ class ContainerTargetSender(TargetSender):
 
 class EventsTargetSender(TargetSender):
     def send_event(self, event):
-        eventbus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
+        event_bus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
         source = (
             event.get("source")
             if event.get("source") is not None
@@ -255,18 +259,37 @@ class EventsTargetSender(TargetSender):
             if event.get("resources") is not None
             else ([self.rule_arn] if self.rule_arn else [])
         )
+        entries = [
+            {
+                "EventBusName": event_bus_name,
+                "Source": source,
+                "DetailType": detail_type,
+                "Detail": json.dumps(detail),
+                "Resources": resources,
+            }
+        ]
+        if encoded_original_id := self._get_trace_header_encoded_region_account(event):
+            entries[0]["TraceHeader"] = encoded_original_id
+        self.client.put_events(Entries=entries)
 
-        self.client.put_events(
-            Entries=[
+    def _get_trace_header_encoded_region_account(self, event: FormattedEvent) -> str | None:
+        """Encode the original region and account_id for cross-region and cross-account
+        event bus communication in the trace header. For event bus to event bus communication
+        in a different account the event id is preserved. This is not the case if the region differs."""
+        original_id = event.get("id")
+        original_account = event.get("account")
+        original_region = event.get("region")
+        if original_region != self.region and original_account != self.account_id:
+            return json.dumps(
                 {
-                    "EventBusName": eventbus_name,
-                    "Source": source,
-                    "DetailType": detail_type,
-                    "Detail": json.dumps(detail),
-                    "Resources": resources,
+                    "original_region": original_region,
+                    "original_account": original_account,
                 }
-            ]
-        )
+            )
+        if original_region != self.region:
+            return json.dumps({"original_region": original_region})
+        if original_account != self.account_id:
+            return json.dumps({"original_id": original_id, "original_account": original_account})
 
 
 class FirehoseTargetSender(TargetSender):

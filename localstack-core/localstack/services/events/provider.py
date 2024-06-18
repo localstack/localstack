@@ -8,8 +8,10 @@ from typing import Callable, Optional
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
 from localstack.aws.api.events import (
+    Action,
     Arn,
     Boolean,
+    Condition,
     CreateEventBusResponse,
     DeadLetterConfig,
     DescribeEventBusResponse,
@@ -31,6 +33,8 @@ from localstack.aws.api.events import (
     ListTagsForResourceResponse,
     ListTargetsByRuleResponse,
     NextToken,
+    NonPartnerEventBusName,
+    Principal,
     PutEventsRequestEntry,
     PutEventsRequestEntryList,
     PutEventsResponse,
@@ -50,6 +54,8 @@ from localstack.aws.api.events import (
     RuleResponseList,
     RuleState,
     ScheduleExpression,
+    StatementId,
+    String,
     TagKeyList,
     TagList,
     TagResourceResponse,
@@ -147,9 +153,20 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
 
 def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+    trace_header = event.get("TraceHeader")
+    message = {}
+    if trace_header:
+        try:
+            message = json.loads(trace_header)
+        except json.JSONDecodeError:
+            pass
+    message_id = message.get("original_id", str(long_uid()))
+    region = message.get("original_region", region)
+    account_id = message.get("original_account", account_id)
+
     formatted_event = {
         "version": "0",
-        "id": str(long_uid()),
+        "id": message_id,
         "detail-type": event.get("DetailType"),
         "source": event.get("Source"),
         "account": account_id,
@@ -277,6 +294,20 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if next_token is not None:
             response["NextToken"] = next_token
         return response
+
+    @handler("PutPermission")
+    def put_permission(
+        self,
+        context: RequestContext,
+        event_bus_name: NonPartnerEventBusName = None,
+        action: Action = None,
+        principal: Principal = None,
+        statement_id: StatementId = None,
+        condition: Condition = None,
+        policy: String = None,
+        **kwargs,
+    ) -> None:
+        pass  # TODO align with policy streaming
 
     #######
     # Rules
