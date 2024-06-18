@@ -77,6 +77,10 @@ def resources_top_level_keys(template: dict):
 
 
 DEFAULT_TEMPLATE_VALIDATIONS: list[TemplateValidationStep] = [
-    outputs_have_values,
-    resources_top_level_keys,
+    # FIXME: disabled for now due to the template validation not fitting well with the template that we use here.
+    #  We don't have access to a "raw" processed template here and it's questionable if we should have it at all,
+    #  since later transformations can again introduce issues.
+    #   => Reevaluate this when reworking how we mutate the template dict in the provider
+    # outputs_have_values,
+    # resources_top_level_keys,
 ]
