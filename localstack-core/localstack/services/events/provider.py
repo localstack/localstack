@@ -577,6 +577,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         endpoint_id: EndpointId = None,
         **kwargs,
     ) -> PutEventsResponse:
+        if len(entries) > 10:
+            formatted_entries = [self._event_to_error_type_event(entry) for entry in entries]
+            formatted_entries = f"[{', '.join(formatted_entries)}]"
+            raise ValidationException(
+                f"1 validation error detected: Value '{formatted_entries}' at 'entries' failed to satisfy constraint: Member must have length less than or equal to 10"
+            )
         entries, failed_entry_count = self._process_entries(context, entries)
 
         response = PutEventsResponse(
@@ -780,6 +786,26 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             event_bus_api_type["Policy"] = recursive_remove_none_values_from_dict(event_bus.policy)
 
         return event_bus_api_type
+
+    def _event_to_error_type_event(self, entry: PutEventsRequestEntry) -> str:
+        detail = (
+            json.dumps(json.loads(entry["Detail"]), separators=(", ", ": "))
+            if entry.get("Detail")
+            else "null"
+        )
+        return (
+            f"PutEventsRequestEntry("
+            f"time={entry.get('Time', 'null')}, "
+            f"source={entry.get('Source', 'null')}, "
+            f"resources={entry.get('Resources', 'null')}, "
+            f"detailType={entry.get('DetailType', 'null')}, "
+            f"detail={detail}, "
+            f"eventBusName={entry.get('EventBusName', 'null')}, "
+            f"traceHeader={entry.get('TraceHeader', 'null')}, "
+            f"kmsKeyIdentifier={entry.get('kmsKeyIdentifier', 'null')}, "
+            f"internalMetadata={entry.get('internalMetadata', 'null')}"
+            f")"
+        )
 
     def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
         """
