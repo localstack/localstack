@@ -1303,6 +1303,7 @@ class TestGatewayResponse:
         with pytest.raises(BaseGatewayResponse) as e:
             raise BaseGatewayResponse()
         assert e.value.status_code == 500
+        assert e.value.message == "Unimplemented Response"
 
     def test_subclassed_response(self):
         with pytest.raises(BaseGatewayResponse) as e:
@@ -1310,4 +1311,4 @@ class TestGatewayResponse:
         assert e.value.status_code == 403
         assert e.value.message == "Access Denied"
         assert e.value.type == GatewayResponseType.ACCESS_DENIED
-        assert e.value.parent_type == GatewayResponseType.DEFAULT_4XX
+        assert e.value.default_type == GatewayResponseType.DEFAULT_4XX

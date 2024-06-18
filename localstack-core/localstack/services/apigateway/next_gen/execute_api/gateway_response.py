@@ -4,13 +4,13 @@ from localstack.aws.api.apigateway import GatewayResponseType
 class BaseGatewayResponse(Exception):
     """
     Base class for all Gateway exceptions
-    Do not use this class directly. Instead, subclass from a Default4xxError od Default5xxError.
+    Do not use this class directly. Instead, subclass from Default4xxError or Default5xxError.
     """
 
     message: str = "Unimplemented Response"
     status_code: int = 500
     type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
-    parent_type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
+    default_type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
 
     def __init__(self, message: str = None, status_code: int = None):
         if message is not None:
@@ -21,13 +21,13 @@ class BaseGatewayResponse(Exception):
 
 class Default4xxError(BaseGatewayResponse):
     status_code = 400
-    parent_type = GatewayResponseType.DEFAULT_4XX
+    default_type = GatewayResponseType.DEFAULT_4XX
     type: str = GatewayResponseType.DEFAULT_4XX
 
 
 class Default5xxError(BaseGatewayResponse):
     type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
-    parent_type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
+    default_type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
 
 
 class AccessDeniedError(Default4xxError):
