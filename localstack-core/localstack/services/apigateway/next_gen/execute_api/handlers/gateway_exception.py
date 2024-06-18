@@ -32,7 +32,6 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         error = self.create_exception_response(exception, context)
         if error:
             response.update_from(error)
-        print(response)
 
     def create_exception_response(
         self, exception: BaseGatewayException, context: RestApiInvocationContext
