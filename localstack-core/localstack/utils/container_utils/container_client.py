@@ -13,6 +13,8 @@ from enum import Enum, unique
 from pathlib import Path
 from typing import Dict, List, Literal, NamedTuple, Optional, Protocol, Tuple, Union, get_args
 
+import dotenv
+
 from localstack import config
 from localstack.utils.collections import HashableList, ensure_list
 from localstack.utils.files import TMP_FILES, rm_rf, save_file
@@ -1098,6 +1100,46 @@ class Util:
                     LOG.debug("File to copy empty, ignoring...")
 
     @staticmethod
+    def _read_docker_cli_env_file(env_file: str) -> Dict[str, str]:
+        """
+        Read an environment file in docker CLI format, specified here:
+        https://docs.docker.com/reference/cli/docker/container/run/#env
+        :param env_file: Path to the environment file
+        :return: Read environment variables
+        """
+        env_vars = {}
+        try:
+            with open(env_file, mode="rt") as f:
+                env_file_lines = f.readlines()
+        except FileNotFoundError as e:
+            LOG.error(
+                "Specified env file '%s' not found. Please make sure the file is properly mounted into the LocalStack container. Error: %s",
+                env_file,
+                e,
+            )
+            raise
+        except OSError as e:
+            LOG.error(
+                "Could not read env file '%s'. Please make sure the LocalStack container has the permissions to read it. Error: %s",
+                env_file,
+                e,
+            )
+            raise
+        for idx, line in enumerate(env_file_lines):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                # skip comments or empty lines
+                continue
+            lhs, separator, rhs = line.partition("=")
+            if rhs or separator:
+                env_vars[lhs] = rhs
+            else:
+                # No "=" in the line, only the name => lookup in local env
+                if env_value := os.environ.get(lhs):
+                    env_vars[lhs] = env_value
+        return env_vars
+
+    @staticmethod
     def parse_additional_flags(
         additional_flags: str,
         env_vars: Optional[Dict[str, str]] = None,
@@ -1148,6 +1190,12 @@ class Util:
             action="append",
         )
         parser.add_argument(
+            "--compose-env-file",
+            help="Set environment variables via a file, with a docker-compose supported feature set.",
+            dest="compose_env_files",
+            action="append",
+        )
+        parser.add_argument(
             "--label", "-l", help="Add container meta data", dest="labels", action="append"
         )
         parser.add_argument("--network", help="Connect a container to a network")
@@ -1193,35 +1241,12 @@ class Util:
         if args.env_files:
             env_vars = env_vars if env_vars is not None else {}
             for env_file in args.env_files:
-                try:
-                    with open(env_file, mode="rt") as f:
-                        env_file_lines = f.readlines()
-                except FileNotFoundError as e:
-                    LOG.error(
-                        "Specified env file '%s' not found. Please make sure the file is properly mounted into the LocalStack container. Error: %s",
-                        env_file,
-                        e,
-                    )
-                    raise
-                except OSError as e:
-                    LOG.error(
-                        "Could not read env file '%s'. Please make sure the LocalStack container has the permissions to read it. Error: %s",
-                        env_file,
-                        e,
-                    )
-                    raise
-                for idx, line in enumerate(env_file_lines):
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        # skip comments or empty lines
-                        continue
-                    lhs, separator, rhs = line.partition("=")
-                    if rhs or separator:
-                        env_vars[lhs] = rhs
-                    else:
-                        # No "=" in the line, only the name => lookup in local env
-                        if env_value := os.environ.get(lhs):
-                            env_vars[lhs] = env_value
+                env_vars.update(Util._read_docker_cli_env_file(env_file))
+
+        if args.compose_env_files:
+            env_vars = env_vars if env_vars is not None else {}
+            for env_file in args.compose_env_files:
+                env_vars.update(dotenv.dotenv_values(env_file))
 
         if args.envs:
             env_vars = env_vars if env_vars is not None else {}
