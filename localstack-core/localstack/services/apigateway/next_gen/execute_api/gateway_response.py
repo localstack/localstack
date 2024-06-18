@@ -1,7 +1,7 @@
 from localstack.aws.api.apigateway import GatewayResponseType
 
 
-class BaseGatewayResponse(Exception):
+class BaseGatewayException(Exception):
     """
     Base class for all Gateway exceptions
     Do not use this class directly. Instead, subclass from Default4xxError or Default5xxError.
@@ -19,13 +19,13 @@ class BaseGatewayResponse(Exception):
             self.status_code = status_code
 
 
-class Default4xxError(BaseGatewayResponse):
+class Default4xxError(BaseGatewayException):
     status_code = 400
     default_type = GatewayResponseType.DEFAULT_4XX
     type: str = GatewayResponseType.DEFAULT_4XX
 
 
-class Default5xxError(BaseGatewayResponse):
+class Default5xxError(BaseGatewayException):
     type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
     default_type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
 
