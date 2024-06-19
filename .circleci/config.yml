@@ -16,9 +16,12 @@ parameters:
   randomize-aws-credentials:
     type: boolean
     default: false
-  only-acceptance-test:
+  only-acceptance-tests:
     type: boolean
     default: false
+  default-branch:
+    type: string
+    default: switch-to-acceptance-tests-only
 
 executors:
   ubuntu-machine-amd64:
@@ -26,15 +29,17 @@ executors:
       image: << pipeline.parameters.ubuntu-amd64-machine-image >>
 
 commands:
-  prepare-acceptance-test:
+  prepare-acceptance-tests:
     steps:
       - run:
           name: Check if only Acceptance Tests should run
           command: |
-            if [[ $CIRCLE_BRANCH == "master" ]] ; then
-              echo "export ONLY_ACCEPTANCE_TEST=1" >> $BASH_ENV
+            if [[ $CIRCLE_BRANCH == << pipeline.parameters.default-branch >> ]] ; then
+              echo "export ONLY_ACCEPTANCE_TESTS=1" >> $BASH_ENV
+              echo "export DEFAULT_TAG='dev'" >> $BASH_ENV
             else
-              echo "export ONLY_ACCEPTANCE_TEST=<< pipeline.parameters.only-acceptance-test >>" >> $BASH_ENV
+              echo "export ONLY_ACCEPTANCE_TESTS=<< pipeline.parameters.only-acceptance-tests >>" >> $BASH_ENV
+              echo "export DEFAULT_TAG='latest'" >> $BASH_ENV
             fi
             source $BASH_ENV
 
@@ -338,7 +343,7 @@ jobs:
           paths:
             - repo/target/
 
-  acceptance-test:
+  acceptance-tests:
     parameters:
       platform:
         description: "Platform to run on"
@@ -390,7 +395,7 @@ jobs:
             - repo/target/metric_reports/
             - repo/target/coverage/
 
-  docker-test:
+  integration-tests:
     parameters:
       platform:
         description: "Platform to build for"
@@ -791,30 +796,30 @@ workflows:
           resource_class: arm.medium
           requires:
             - preflight
-      - acceptance-test:
-          name: acceptance-test-arm64
+      - acceptance-tests:
+          name: acceptance-tests-arm64
           platform: arm64
           resource_class: arm.medium
           machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
           requires:
             - docker-build-arm64
-      - acceptance-test:
-          name: acceptance-test-amd64
+      - acceptance-tests:
+          name: acceptance-tests-amd64
           platform: amd64
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           resource_class: medium
           requires:
             - docker-build-amd64
-      - docker-test:
-          name: docker-test-arm64
+      - integration-tests:
+          name: integration-tests-arm64
           platform: arm64
           resource_class: arm.medium
           machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
           requires:
             - docker-build-arm64
             - test-selection
-      - docker-test:
-          name: docker-test-amd64
+      - integration-tests:
+          name: integration-tests-amd64
           platform: amd64
           resource_class: medium
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
@@ -834,10 +839,10 @@ workflows:
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
             - itest-events-v2-provider
-            - acceptance-test-amd64
-            - acceptance-test-arm64
-            - docker-test-amd64
-            - docker-test-arm64
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - integration-tests-amd64
+            - integration-tests-arm64
             - collect-not-implemented
             - unit-tests
       - push:
@@ -849,8 +854,8 @@ workflows:
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
             - itest-events-v2-provider
-            - acceptance-test-amd64
-            - acceptance-test-arm64
-            - docker-test-amd64
-            - docker-test-arm64
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - integration-tests-amd64
+            - integration-tests-arm64
             - unit-tests
