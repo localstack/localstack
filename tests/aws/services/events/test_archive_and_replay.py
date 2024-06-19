@@ -7,6 +7,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.events.helper_functions import (
+    is_old_provider,
     sqs_collect_messages,
     wait_for_replay_in_state,
 )
@@ -208,6 +209,7 @@ class TestArchive:
         snapshot.match("list-archives-state-enabled", response_list_archives)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     # TODO test with input path and input transformer
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     @pytest.mark.parametrize("archive_pattern_match", [True, False])
@@ -292,6 +294,7 @@ class TestArchive:
 
     # Tests Errors
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     def test_create_archive_error_duplicate(
         self,
@@ -332,6 +335,7 @@ class TestArchive:
         snapshot.match("create-archive-duplicate-error", error)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_create_archive_error_unknown_event_bus(self, aws_client, snapshot):
         not_existing_event_bus_name = f"doesnotexist-{short_uid()}"
         non_existing_event_bus_arn = (
@@ -352,6 +356,7 @@ class TestArchive:
         snapshot.match("create-archive-unknown-event-bus-error", error)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_describe_archive_error_unknown_archive(self, aws_client, snapshot):
         not_existing_archive_name = f"doesnotexist-{short_uid()}"
         with pytest.raises(Exception) as error:
@@ -363,6 +368,7 @@ class TestArchive:
         snapshot.match("describe-archive-unknown-archive-error", error)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_list_archive_error_unknown_source_arn(
         self, region_name, account_id, aws_client, snapshot
     ):
@@ -391,6 +397,7 @@ class TestArchive:
         snapshot.match("update-archive-unknown-archive-error", error)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_delete_archive_error_unknown_archive(self, aws_client, snapshot):
         not_existing_archive_name = f"doesnotexist-{short_uid()}"
         with pytest.raises(Exception) as error:
@@ -404,6 +411,7 @@ class TestArchive:
 
 class TestReplay:
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     @pytest.mark.skip_snapshot_verify(paths=["$..State"])
     def test_start_list_describe_canceled_replay(
@@ -546,6 +554,7 @@ class TestReplay:
         snapshot.match("describe-replay-canceled", response_describe_replay_canceled)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_list_replays_with_prefix(
         self, events_create_archive, events_create_event_bus, aws_client, snapshot
     ):
@@ -600,6 +609,7 @@ class TestReplay:
         snapshot.match("list-replays-with-prefix", response_list_replays_prefix)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_list_replays_with_event_source_arn(
         self, events_create_event_bus, events_create_archive, aws_client, snapshot
     ):
@@ -637,6 +647,7 @@ class TestReplay:
         snapshot.match("list-replays-with-event-source-arn", response_list_replays)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_list_replay_with_limit(
         self, events_create_event_bus, events_create_archive, aws_client, snapshot
     ):
@@ -691,6 +702,7 @@ class TestReplay:
 
     # Tests Errors
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_start_replay_error_unknown_event_bus(
         self,
         events_create_archive,
@@ -860,6 +872,7 @@ class TestReplay:
         snapshot.match("start-replay-duplicate-error", error)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @pytest.mark.parametrize("negative_time_delta_seconds", [0, 10])
     def test_start_replay_error_invalid_end_time(
         self, negative_time_delta_seconds, events_create_archive, aws_client, snapshot
