@@ -147,3 +147,14 @@ def wait_for_replay_in_state(
         assert state == expected_state
 
     return retry(_wait_for_state, retries, sleep)
+
+
+def events_connection_wait_for_deleted(aws_client, connection_name: str) -> None:
+    def _wait_for_deleted():
+        try:
+            aws_client.events.describe_connection(Name=connection_name)
+        except aws_client.events.exceptions.ResourceNotFoundException:
+            return
+        raise AssertionError(f"Connection {connection_name} was not deleted")
+
+    retry(_wait_for_deleted, retries=3, sleep=1)

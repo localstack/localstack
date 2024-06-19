@@ -2703,13 +2703,89 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[True-BASIC]": {
-    "recorded-date": "19-06-2024, 13:50:29",
+    "recorded-date": "19-06-2024, 14:09:43",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
         "ConnectionState": "AUTHORIZED",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections": {
+        "Connections": [
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "test_user_1984"
+          },
+          "InvocationHttpParameters": {
+            "BodyParameters": [
+              {
+                "IsValueSecret": true,
+                "Key": "string"
+              }
+            ],
+            "HeaderParameters": [
+              {
+                "IsValueSecret": true,
+                "Key": "string"
+              }
+            ],
+            "QueryStringParameters": [
+              {
+                "IsValueSecret": false,
+                "Key": "string",
+                "Value": "string"
+              }
+            ]
+          }
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "Description": "test description",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:aws:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-arn-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "DELETING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections-after-delete": {
+        "Connections": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2718,13 +2794,123 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[True-OAUTH_CLIENT_CREDENTIALS]": {
-    "recorded-date": "19-06-2024, 13:50:29",
+    "recorded-date": "19-06-2024, 14:09:47",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
         "ConnectionState": "AUTHORIZING",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections": {
+        "Connections": [
+          {
+            "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZING",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection": {
+        "AuthParameters": {
+          "InvocationHttpParameters": {
+            "BodyParameters": [
+              {
+                "IsValueSecret": true,
+                "Key": "string"
+              }
+            ],
+            "HeaderParameters": [
+              {
+                "IsValueSecret": true,
+                "Key": "string"
+              }
+            ],
+            "QueryStringParameters": [
+              {
+                "IsValueSecret": false,
+                "Key": "string",
+                "Value": "string"
+              }
+            ]
+          },
+          "OAuthParameters": {
+            "AuthorizationEndpoint": "https://oauth.pstmn.io/v1/callback",
+            "ClientParameters": {
+              "ClientID": "string"
+            },
+            "HttpMethod": "PUT",
+            "OAuthHttpParameters": {
+              "BodyParameters": [
+                {
+                  "IsValueSecret": true,
+                  "Key": "grant_type"
+                },
+                {
+                  "IsValueSecret": true,
+                  "Key": "user"
+                },
+                {
+                  "IsValueSecret": true,
+                  "Key": "password"
+                }
+              ],
+              "HeaderParameters": [
+                {
+                  "IsValueSecret": false,
+                  "Key": "Content_Type",
+                  "Value": "'application/x-www-form-urlencoded'"
+                }
+              ],
+              "QueryStringParameters": [
+                {
+                  "IsValueSecret": false,
+                  "Key": "some_test_key",
+                  "Value": "some_test_value"
+                }
+              ]
+            }
+          }
+        },
+        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "Description": "test description",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:aws:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-arn-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "DELETING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections-after-delete": {
+        "Connections": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2733,13 +2919,89 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[True-API_KEY]": {
-    "recorded-date": "19-06-2024, 13:50:29",
+    "recorded-date": "19-06-2024, 14:09:50",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
         "ConnectionState": "AUTHORIZED",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections": {
+        "Connections": [
+          {
+            "AuthorizationType": "API_KEY",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection": {
+        "AuthParameters": {
+          "ApiKeyAuthParameters": {
+            "ApiKeyName": "test_key_1984"
+          },
+          "InvocationHttpParameters": {
+            "BodyParameters": [
+              {
+                "IsValueSecret": true,
+                "Key": "string"
+              }
+            ],
+            "HeaderParameters": [
+              {
+                "IsValueSecret": true,
+                "Key": "string"
+              }
+            ],
+            "QueryStringParameters": [
+              {
+                "IsValueSecret": false,
+                "Key": "string",
+                "Value": "string"
+              }
+            ]
+          }
+        },
+        "AuthorizationType": "API_KEY",
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "Description": "test description",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:aws:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-arn-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "DELETING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections-after-delete": {
+        "Connections": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2748,7 +3010,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[False-BASIC]": {
-    "recorded-date": "19-06-2024, 13:50:30",
+    "recorded-date": "19-06-2024, 14:09:53",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
@@ -2759,11 +3021,66 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "list-connections": {
+        "Connections": [
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "test_user_1984"
+          }
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "Description": "test description",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:aws:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-arn-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "DELETING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections-after-delete": {
+        "Connections": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[False-OAUTH_CLIENT_CREDENTIALS]": {
-    "recorded-date": "19-06-2024, 13:50:30",
+    "recorded-date": "19-06-2024, 14:09:55",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
@@ -2774,17 +3091,161 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "list-connections": {
+        "Connections": [
+          {
+            "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZING",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection": {
+        "AuthParameters": {
+          "OAuthParameters": {
+            "AuthorizationEndpoint": "https://oauth.pstmn.io/v1/callback",
+            "ClientParameters": {
+              "ClientID": "string"
+            },
+            "HttpMethod": "PUT",
+            "OAuthHttpParameters": {
+              "BodyParameters": [
+                {
+                  "IsValueSecret": true,
+                  "Key": "grant_type"
+                },
+                {
+                  "IsValueSecret": true,
+                  "Key": "user"
+                },
+                {
+                  "IsValueSecret": true,
+                  "Key": "password"
+                }
+              ],
+              "HeaderParameters": [
+                {
+                  "IsValueSecret": false,
+                  "Key": "Content_Type",
+                  "Value": "'application/x-www-form-urlencoded'"
+                }
+              ],
+              "QueryStringParameters": [
+                {
+                  "IsValueSecret": false,
+                  "Key": "some_test_key",
+                  "Value": "some_test_value"
+                }
+              ]
+            }
+          }
+        },
+        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "Description": "test description",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:aws:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-arn-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "DELETING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections-after-delete": {
+        "Connections": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[False-API_KEY]": {
-    "recorded-date": "19-06-2024, 13:50:31",
+    "recorded-date": "19-06-2024, 14:09:58",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
         "ConnectionState": "AUTHORIZED",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections": {
+        "Connections": [
+          {
+            "AuthorizationType": "API_KEY",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection": {
+        "AuthParameters": {
+          "ApiKeyAuthParameters": {
+            "ApiKeyName": "test_key_1984"
+          }
+        },
+        "AuthorizationType": "API_KEY",
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "Description": "test description",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:aws:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-arn-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "DELETING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections-after-delete": {
+        "Connections": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
