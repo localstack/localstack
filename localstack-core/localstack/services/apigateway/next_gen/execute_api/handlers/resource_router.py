@@ -1,7 +1,7 @@
 import logging
 from functools import cache
 
-from werkzeug.exceptions import MethodNotAllowed
+from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import Map, MapAdapter
 
 from localstack.aws.api.apigateway import ListOfResource, Resource
@@ -55,9 +55,9 @@ class RestAPIResourceRouter:
             path = context.invocation_request["path"].rstrip("/")
 
             rule, args = matcher.match(path, method=request.method, return_rule=True)
-        except MethodNotAllowed as e:
+        except (MethodNotAllowed, NotFound) as e:
             # MethodNotAllowed (405) exception is raised if a path is matching, but the method does not.
-            # Our router handles this as a 404.
+            # Our router might handle this as a 404, validate with AWS.
             # TODO: raise proper Gateway exception
             raise Exception("Not found") from e
 
