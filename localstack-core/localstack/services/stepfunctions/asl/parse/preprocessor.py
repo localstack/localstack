@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Optional
 
 from antlr4 import ParserRuleContext
@@ -236,6 +237,8 @@ from localstack.services.stepfunctions.asl.component.state.state_wait.wait_funct
 )
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
+
+LOG = logging.getLogger(__name__)
 
 
 class Preprocessor(ASLParserVisitor):
@@ -915,3 +918,12 @@ class Preprocessor(ASLParserVisitor):
 
     def visitState_machine(self, ctx: ASLParser.State_machineContext) -> Program:
         return self.visit(ctx.program_decl())
+
+    def visitUnknown_binding_decl(self, ctx: ASLParser.Unknown_binding_declContext) -> None:
+        binding_name = self._inner_string_of(parse_tree=ctx.STRING())
+        json_decl = ctx.json_value_decl()
+        json_str: str = json_decl.getText()
+        LOG.warning(
+            f"Unsupported declaration '{binding_name}' with value '{json_str}' "
+            f"will not be evaluated during program execution."
+        )

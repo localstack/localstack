@@ -31,5 +31,8 @@
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result_null_input_output_paths": {
     "last_validated_date": "2024-02-07T13:52:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_unknown_bindings": {
+    "last_validated_date": "2024-06-19T15:51:06+00:00"
   }
 }
