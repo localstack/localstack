@@ -73,6 +73,14 @@ EVENT_BUS_ROLE = {
     }
 }
 
+API_CONNECTION_TEST_PASSWORD = "test_pw_1984%&"
+API_CONNECTION_TEST_USERNAME = "test_user_1984"
+
+API_CONNECTION_TEST_KEY_NAME = "test_key_1984"
+API_CONNECTION_TEST_KEY_VALUE = "test_value_1984"
+
+OAUTH_PLAYGROUND_URL = "https://oauth.pstmn.io/v1/callback"
+
 
 class TestEvents:
     @markers.aws.validated
@@ -2353,18 +2361,94 @@ class TestEventTarget:
 
 class TestConnection:
     @markers.aws.validated
+    @pytest.mark.parametrize("auth_type", ["BASIC", "OAUTH_CLIENT_CREDENTIALS", "API_KEY"])
+    @pytest.mark.parametrize("invocation_parameters", [True, False])
     def test_create_list_describe_update_delete_connection(
-        self, events_create_connection, snapshot
+        self, auth_type, invocation_parameters, events_create_connection, snapshot
     ):
+        # Specify auth parameters
+        if auth_type == "BASIC":
+            auth_parameters = {
+                "BasicAuthParameters": {
+                    "Username": API_CONNECTION_TEST_USERNAME,
+                    "Password": API_CONNECTION_TEST_PASSWORD,
+                }
+            }
+        if auth_type == "OAUTH_CLIENT_CREDENTIALS":
+            auth_parameters = {
+                "OAuthParameters": {
+                    "ClientParameters": {"ClientID": "string", "ClientSecret": "string"},
+                    "AuthorizationEndpoint": OAUTH_PLAYGROUND_URL,
+                    "HttpMethod": "PUT",  # TODO test "GET" | "POST"
+                    "OAuthHttpParameters": {
+                        "HeaderParameters": [
+                            {
+                                "Key": "Content_Type",
+                                "Value": "'application/x-www-form-urlencoded'",
+                                "IsValueSecret": False,
+                            },
+                        ],
+                        "QueryStringParameters": [
+                            {
+                                "Key": "some_test_key",
+                                "Value": "some_test_value",
+                                "IsValueSecret": False,
+                            },
+                        ],
+                        "BodyParameters": [
+                            {"Key": "grant_type", "Value": "string", "IsValueSecret": True},
+                            {
+                                "Key": "user",
+                                "Value": API_CONNECTION_TEST_USERNAME,
+                                "IsValueSecret": True,
+                            },
+                            {
+                                "Key": "password",
+                                "Value": API_CONNECTION_TEST_PASSWORD,
+                                "IsValueSecret": True,
+                            },
+                        ],
+                    },
+                }
+            }
+        if auth_type == "API_KEY":
+            auth_parameters = {
+                "ApiKeyAuthParameters": {
+                    "ApiKeyName": API_CONNECTION_TEST_KEY_NAME,
+                    "ApiKeyValue": API_CONNECTION_TEST_KEY_VALUE,
+                }
+            }
+
+        # Specify invocation parameters
+        if invocation_parameters:
+            invocation_http_parameters = {
+                "HeaderParameters": [
+                    {"Key": "string", "Value": "string", "IsValueSecret": True},
+                ],
+                "QueryStringParameters": [
+                    {"Key": "string", "Value": "string", "IsValueSecret": False},
+                ],
+                "BodyParameters": [
+                    {"Key": "string", "Value": "string", "IsValueSecret": True},
+                ],
+            }
+            auth_parameters["InvocationHttpParameters"] = invocation_http_parameters
+
         connection_name = f"test-connection-{short_uid()}"
         response = events_create_connection(
             Name=connection_name,
             Description="test description",
-            AuthorizationType="API_KEY",
-            AuthParameters={"ApiKeyAuthParameters": {"ApiKeyName": "test", "ApiKeyValue": "test"}},
+            AuthorizationType=auth_type,
+            AuthParameters=auth_parameters,
         )
+        connection_arn_id = response["ConnectionArn"].split("/")[-1]
 
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(connection_name, "<connection-name>"),
+                snapshot.transform.regex(connection_arn_id, "<connection-arn-id>"),
+            ]
+        )
         snapshot.match("create-connection", response)
 
     @markers.aws.validated

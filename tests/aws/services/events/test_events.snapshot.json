@@ -2701,5 +2701,95 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[True-BASIC]": {
+    "recorded-date": "19-06-2024, 13:50:29",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[True-OAUTH_CLIENT_CREDENTIALS]": {
+    "recorded-date": "19-06-2024, 13:50:29",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[True-API_KEY]": {
+    "recorded-date": "19-06-2024, 13:50:29",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[False-BASIC]": {
+    "recorded-date": "19-06-2024, 13:50:30",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[False-OAUTH_CLIENT_CREDENTIALS]": {
+    "recorded-date": "19-06-2024, 13:50:30",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestConnection::test_create_list_describe_update_delete_connection[False-API_KEY]": {
+    "recorded-date": "19-06-2024, 13:50:31",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name>/<connection-arn-id>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
