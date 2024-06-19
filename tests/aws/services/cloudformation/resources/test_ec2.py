@@ -192,45 +192,37 @@ def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
     assert attachment_description[0]["State"] == "deleted"
 
 
-@markers.aws.unknown
-def test_cfn_with_route_table(self, deploy_cfn_template, aws_client):
-    resp = aws_client.ec2.describe_vpcs()
-    # TODO: fix assertion, to make tests parallelizable!
-    vpcs_before = [vpc["VpcId"] for vpc in resp["Vpcs"]]
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..RouteTables..PropagatingVgws",
+        "$..RouteTables..Tags"
+    ]
+)
+def test_vpc_with_route_table(deploy_cfn_template, aws_client, snapshot):
 
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../../templates/template33.yaml")
     )
-    resp = aws_client.ec2.describe_vpcs()
-    vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
-    assert len(vpcs) == 1
 
-    resp = aws_client.ec2.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpcs[0]]}])
-    # Each VPC always have 1 default RouteTable
-    assert len(resp["RouteTables"]) == 2
+    route_id = stack.outputs["RouteTableId"]
+    response = aws_client.ec2.describe_route_tables(RouteTableIds=[route_id])
 
-    # The 2nd RouteTable was created by cfn template
-    route_table_id = resp["RouteTables"][1]["RouteTableId"]
-    routes = resp["RouteTables"][1]["Routes"]
+    # Convert tags to dictionary for easier comparison
+    response["RouteTables"][0]["Tags"] = {tag["Key"]: tag["Value"] for tag in response["RouteTables"][0]["Tags"]}
 
-    # Each RouteTable has 1 default route
-    assert len(routes) == 2
+    snapshot.match("route_table", response)
 
-    assert routes[0]["DestinationCidrBlock"] == "100.0.0.0/20"
-
-    # The 2nd Route was created by cfn template
-    assert routes[1]["DestinationCidrBlock"] == "0.0.0.0/0"
-
-    exports = aws_client.cloudformation.list_exports()["Exports"]
-    export_values = {ex["Name"]: ex["Value"] for ex in exports}
-    assert "publicRoute-identify" in export_values
-    assert export_values["publicRoute-identify"] == f"{route_table_id}~0.0.0.0/0"
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack_id>"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack_name>"))
+    snapshot.add_transformer(snapshot.transform.key_value("RouteTableId"))
+    snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
 
     stack.destroy()
 
-    resp = aws_client.ec2.describe_vpcs()
-    vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
-    assert not vpcs
+    with pytest.raises(aws_client.ec2.exceptions.ClientError):
+        aws_client.ec2.describe_route_tables(RouteTableIds=[route_id])
+
 
 
 @pytest.mark.skip(reason="update doesn't change value for instancetype")

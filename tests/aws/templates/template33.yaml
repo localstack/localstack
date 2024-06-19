@@ -20,16 +20,8 @@ Resources:
       - Key: env
         Value: production
 
-  PublicRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId:
-        Ref: RouteTable
 
 Outputs:
-  PublicRoute:
+  RouteTableId:
     Value:
-      Ref: PublicRoute
-    Export:
-      Name: 'publicRoute-identify'
+      Ref: RouteTable
