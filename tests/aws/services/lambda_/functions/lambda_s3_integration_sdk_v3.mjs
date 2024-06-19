@@ -19,7 +19,7 @@ export const handler = async (event, context) => {
             credentials: CREDENTIALS,
         });
     } else {
-        s3 = new S3Client({ signatureVersion: 'v4' })
+        s3 = new S3Client({ signatureVersion: 'v4' });
     }
 
     const url = await getSignedUrl(
