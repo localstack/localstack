@@ -552,7 +552,7 @@ class TestEvents:
 class TestEventBus:
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize("regions", [["us-east-1"], ["us-east-1", "us-west-1", "eu-central-1"]])
@@ -639,7 +639,7 @@ class TestEventBus:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_list_event_buses_with_limit(self, create_event_bus, aws_client, snapshot):
@@ -1272,7 +1272,7 @@ class TestEventRule:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_describe_nonexistent_rule(self, aws_client, snapshot):
@@ -1524,7 +1524,7 @@ class TestEventTarget:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_add_exceed_fife_targets_per_rule(
@@ -1549,7 +1549,7 @@ class TestEventTarget:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_list_target_by_rule_limit(
