@@ -3,7 +3,7 @@ import logging
 
 from rolo import Response
 
-from localstack.aws.api.apigateway import GatewayResponse
+from localstack.aws.api.apigateway import GatewayResponse, GatewayResponseType
 from localstack.services.apigateway.next_gen.execute_api.api import (
     RestApiGatewayExceptionHandler,
     RestApiGatewayHandlerChain,
@@ -49,12 +49,9 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
     ):
         gateway_response = self._get_gateway_response(exception, context)
 
-        # TODO apply responseTemplates to the content. We should also handle the default simply by managing the default
-        #  template body `{"message":$context.error.messageString}`
-        content = json.dumps({"message": exception.message})
+        content = self._build_response_content(exception)
 
-        # TODO apply responseParameters to the headers and get content-type from the gateway_response
-        headers = {"content-type": "application/json"}
+        headers = self._build_response_headers()
 
         status_code = gateway_response.get("statusCode", exception.status_code)
 
@@ -64,9 +61,27 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         self, exception: BaseGatewayException, context: RestApiInvocationContext
     ) -> GatewayResponse:
         """Returns the user configured GatewayResponse dict. If no responses were found we the default response."""
-        responses = context.deployment.localstack_rest_api.gateway_responses
-        if response := responses.get(exception.type):
-            return response
-        if response := responses.get(exception.default_type):
-            return response
-        return build_default_response(exception.type)
+        try:
+            responses = context.deployment.localstack_rest_api.gateway_responses
+            if response := responses.get(exception.type):
+                return response
+            if response := responses.get(exception.default_type):
+                return response
+            return build_default_response(exception.type)
+        except Exception as e:
+            LOG.warning(
+                "Failed to load responses for response %s: %s",
+                exception.type,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            return build_default_response(GatewayResponseType.DEFAULT_5XX)
+
+    def _build_response_content(self, exception: BaseGatewayException) -> str:
+        # TODO apply responseTemplates to the content. We should also handle the default simply by managing the default
+        #  template body `{"message":$context.error.messageString}`
+        return json.dumps({"message": exception.message})
+
+    def _build_response_headers(self) -> dict:
+        # TODO apply responseParameters to the headers and get content-type from the gateway_response
+        return {"content-type": "application/json"}
