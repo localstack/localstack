@@ -86,6 +86,7 @@ class EventBusService:
                 for statement in policy["Statement"]
                 if statement.get("Sid") != statement_id
             ]
+            self.event_bus.last_modified_time = datetime.now(timezone.utc)
 
     def _pars_statement(self, statement_id, action, principal, resource_arn, condition):
         if condition and principal != "*":
