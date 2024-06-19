@@ -226,7 +226,7 @@ class TestRoutingHandler:
     ):
         request = Request(
             "DELETE",
-            path=self.get_path_from_addressing("/this/is/a/proxy/request", addressing),
+            path=self.get_path_from_addressing("/this/is/a/proxy/req2%Fuest", addressing),
         )
 
         context = RestApiInvocationContext(request)
@@ -242,7 +242,9 @@ class TestRoutingHandler:
         # TODO: maybe assert more regarding the data inside Resource Methods, but we don't use it yet
         assert context.resource_method == context.resource["resourceMethods"]["DELETE"]
 
-        assert context.invocation_request["path_parameters"] == {"proxy": "this/is/a/proxy/request"}
+        assert context.invocation_request["path_parameters"] == {
+            "proxy": "this/is/a/proxy/req2%Fuest"
+        }
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_no_match(self, deployment_with_routes, parse_handler_chain, addressing):
@@ -261,13 +263,13 @@ class TestRoutingHandler:
             handler(parse_handler_chain, context, Response())
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
-    def test_route_request_with_double_slash_and_trailing(
+    def test_route_request_with_double_slash_and_trailing_and_encoded(
         self, deployment_with_routes, parse_handler_chain, addressing
     ):
         request = Request(
             "PUT",
-            path=self.get_path_from_addressing("/test/random/", addressing),
-            raw_path=self.get_path_from_addressing("//test/random/", addressing),
+            path=self.get_path_from_addressing("/test/foo%2Fbar/", addressing),
+            raw_path=self.get_path_from_addressing("//test/foo%2Fbar/", addressing),
         )
 
         context = RestApiInvocationContext(request)
@@ -278,4 +280,4 @@ class TestRoutingHandler:
         handler(parse_handler_chain, context, Response())
 
         assert context.resource["path"] == "/test/{param}"
-        assert context.invocation_request["path_parameters"] == {"param": "random"}
+        assert context.invocation_request["path_parameters"] == {"param": "foo%2Fbar"}
