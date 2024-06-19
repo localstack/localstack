@@ -12,10 +12,10 @@ from localstack.services.apigateway.models import RestApiDeployment
 class InvocationRequest(TypedDict, total=False):
     http_method: Optional[HTTPMethod]
     """HTTP Method of the incoming request"""
-    raw_uri_path: Optional[str]
-    """RAW URI path of the incoming request, needed to keep double forward slashes"""
     raw_path: Optional[str]
-    """Raw path of the request with no URL decoding"""
+    """Raw path of the incoming request with no modification, needed to keep double forward slashes"""
+    path: Optional[str]
+    """Path of the request with no URL decoding"""
     path_parameters: Optional[dict[str, str]]
     """Path parameters of the request"""
     query_string_parameters: Optional[dict[str, str]]

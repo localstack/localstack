@@ -55,7 +55,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
     @staticmethod
     def _enrich_with_raw_path(request: Request, invocation_request: InvocationRequest):
         # Base path is not URL-decoded, so we need to get the `RAW_URI` from the request
-        raw_uri = request.environ.get("RAW_URI")
+        raw_uri = request.environ.get("RAW_URI") or request.path
 
         # if the request comes from the LocalStack only `_user_request_` route, we need to remove this prefix from the
         # path, in order to properly route the request
@@ -66,11 +66,14 @@ class InvocationRequestParser(RestApiGatewayHandler):
             # if the RAW_URI starts with double slashes, `urlparse` will fail to decode it as path only
             # it also means that we already only have the path, so we just need to remove the query string
             raw_uri = raw_uri.split("?")[0]
+            raw_path = "/" + raw_uri.lstrip("/")
 
-        raw_path = urlparse(raw_uri or request.path).path
+        else:
+            # we need to make sure we have a path here, sometimes RAW_URI can be a full URI (when proxied)
+            raw_path = raw_uri = urlparse(raw_uri).path
 
-        invocation_request["raw_path"] = raw_path
-        invocation_request["raw_uri_path"] = raw_uri
+        invocation_request["path"] = raw_path
+        invocation_request["raw_path"] = raw_uri
 
     @staticmethod
     def _get_single_and_multi_values_from_multidict(
@@ -84,7 +87,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
             # for the single value parameters, AWS only keeps the last value of the list
             single_values[key] = value
 
-        return single_values, multi_values
+        return single_values, dict(multi_values)
 
     @staticmethod
     def _get_single_and_multi_values_from_headers(
@@ -112,11 +115,13 @@ class InvocationRequestRouter(RestApiGatewayHandler):
     ):
         # TODO: replace all the logic in this class by a `url_map` similar to the ServiceRequestRouter
         # we could create and cache the url_map when creating the deployment
+        # this would allow to more easily extract the path parameters as well
+        # it currently works this way, so we can keep it for now, as it's pretty contained in this handler
         self.route_and_enrich(context)
 
     def route_and_enrich(self, context: RestApiInvocationContext):
         rest_apis_resource_map = self.get_rest_api_paths(context)
-        path_with_no_trailing_slash = self.context.invocation_request["raw_path"].rstrip("/")
+        path_with_no_trailing_slash = context.invocation_request["path"].rstrip("/")
         request_method = context.request.method
 
         matched_path, resource = self.get_resource_for_path(
@@ -166,29 +171,24 @@ class InvocationRequestRouter(RestApiGatewayHandler):
             LOG.debug(f"No match found for path: '{path}' and method: '{method}'")
             return None, None
 
-        if len(matches) == 1:
-            LOG.debug(f"Match found for path: '{path}' and method: '{method}'")
-            return matches[0]
-
-        # so we have more than one match
         # /{proxy+} and /api/{proxy+} for inputs like /api/foo/bar
         # /foo/{param1}/baz and /foo/{param1}/{param2} for inputs like /for/bar/baz
-        proxy_matches = []
         param_matches = []
-        for match in matches:
-            match_methods = list(match[1].get("resourceMethods", {}).keys())
+        proxy_matches = []
+        for resource_path, resource in matches:
+            match_methods = set(resource.get("resourceMethods", {}).keys())
             # only look for path matches if the request method is in the resource
             if method.upper() in match_methods or "ANY" in match_methods:
                 # check if we have an exact match (exact matches take precedence) if the method is the same
-                if match[0] == path:
-                    return match
+                if resource_path == path:
+                    return resource_path, resource
 
-                elif self.path_matches_pattern(path, match[0]):
+                elif self.path_matches_pattern(path, resource_path):
                     # parameters can fit in
-                    param_matches.append(match)
+                    param_matches.append((resource_path, resource))
                     continue
 
-                proxy_matches.append(match)
+                proxy_matches.append((resource_path, resource))
 
         if param_matches:
             # count the amount of parameters, return the one with the least which is the most precise
