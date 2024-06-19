@@ -600,7 +600,7 @@ class TestEventBus:
         bus_name = f"unique-prefix-1234567890-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
-        bus_name_not_match = "no-prefix-match"
+        bus_name_not_match = f"no-prefix-match-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name_not_match, "<bus-name>"))
 
         events_create_event_bus(Name=bus_name)
@@ -2480,8 +2480,48 @@ class TestConnection:
         snapshot.match("list-connections-after-delete", response)
 
     @markers.aws.validated
-    def test_list_connections_with_prefix(self, aws_client):
-        pass
+    def test_list_connections_with_prefix(self, events_create_connection, aws_client, snapshot):
+        events = aws_client.events
+        connection_name = f"unique-prefix-1234567890-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name-a>"))
+
+        connection_name_not_match = f"no-prefix-match-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(connection_name_not_match, "<connection-name-b>")
+        )
+
+        response = events_create_connection(
+            Name=connection_name,
+            Description="test description",
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {
+                    "Username": API_CONNECTION_TEST_USERNAME,
+                    "Password": API_CONNECTION_TEST_PASSWORD,
+                }
+            },
+        )
+        connection_arn = response["ConnectionArn"]
+        connection_arn_id = connection_arn.split("/")[-1]
+        snapshot.add_transformer(snapshot.transform.regex(connection_arn_id, "<connection-arn-id>"))
+
+        events_create_connection(
+            Name=connection_name_not_match,
+            Description="test description",
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {
+                    "Username": API_CONNECTION_TEST_USERNAME,
+                    "Password": API_CONNECTION_TEST_PASSWORD,
+                }
+            },
+        )
+
+        response = events.list_connections(NamePrefix=connection_name)
+        snapshot.match("list-connections-prefix-complete-name", response)
+
+        response = events.list_connections(NamePrefix=connection_name.split("-")[0])
+        snapshot.match("list-connections-prefix", response)
 
     @markers.aws.validated
     def test_list_connections_with_limit(self, aws_client):

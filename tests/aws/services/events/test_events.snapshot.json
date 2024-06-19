@@ -3252,5 +3252,44 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestConnection::test_list_connections_with_prefix": {
+    "recorded-date": "19-06-2024, 14:22:55",
+    "recorded-content": {
+      "list-connections-prefix-complete-name": {
+        "Connections": [
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name-a>/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name-a>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections-prefix": {
+        "Connections": [
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name-a>/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name-a>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
