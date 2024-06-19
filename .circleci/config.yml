@@ -65,6 +65,8 @@ commands:
             fi
             if << pipeline.parameters.randomize-aws-credentials >> ; then
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci_ma_mr" >> $BASH_ENV
+            elif $ONLY_ACCEPTANCE_TESTS ; then
+              echo "export TINYBIRD_DATASOURCE=community_tests_circleci_acceptance" >> $BASH_ENV
             else
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
             fi
@@ -328,6 +330,7 @@ jobs:
       IMAGE_NAME: "localstack/localstack"
       PLATFORM: "<< parameters.platform >>"
     steps:
+      - prepare-acceptance-tests
       - attach_workspace:
           at: /tmp/workspace
       - run:
@@ -366,6 +369,7 @@ jobs:
       IMAGE_NAME: "localstack/localstack"
       PLATFORM: "<< parameters.platform >>"
     steps:
+      - prepare-acceptance-tests
       - attach_workspace:
           at: /tmp/workspace
       - run:
@@ -419,10 +423,11 @@ jobs:
       IMAGE_NAME: "localstack/localstack"
       PLATFORM: "<< parameters.platform >>"
     steps:
+      - prepare-acceptance-tests
       - run:
           name: "Check for acceptance test or default branch"
           command: |
-            if [ "<< pipeline.parameters.only-acceptance-tests >>" == "true" ] || [ "<< pipeline.parameters.default-branch >>" == "$CIRCLE_BRANCH" ]; then
+            if [ $ONLY_ACCEPTANCE_TESTS ]; then
               echo "Skipping integration tests because only-acceptance-test is set or running on default branch."
               circleci-agent step halt
             fi
@@ -520,6 +525,14 @@ jobs:
       IMAGE_NAME: "localstack/localstack"
       PLATFORM: "amd64"
     steps:
+      - prepare-acceptance-tests
+      - run:
+          name: "Check for acceptance test or default branch"
+          command: |
+            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+              echo "Skipping coverage reporting because only-acceptance-test is set or running on default branch."
+              circleci-agent step halt
+            fi
       - attach_workspace:
           at: /tmp/workspace
       - run:
@@ -566,6 +579,7 @@ jobs:
           name: fetch isolated acceptance coverage
           # might need to combine coverage files in future
           command: |
+            mkdir .coverage.acceptance
             cp target/coverage/.coverage.acceptance.* .coverage.acceptance
       - store_artifacts:
           path: .coverage.acceptance
@@ -661,6 +675,7 @@ jobs:
     environment:
       IMAGE_NAME: "localstack/localstack"
     steps:
+      - prepare-acceptance-tests
       - attach_workspace:
           at: /tmp/workspace
       - run:
@@ -714,6 +729,7 @@ jobs:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
+      - prepare-acceptance-tests
       - run:
           name: Wait for the workflow to complete
           command: |
@@ -740,6 +756,8 @@ jobs:
 
             if << pipeline.parameters.randomize-aws-credentials >> ; then
               TINYBIRD_WORKFLOW=tests_circleci_ma_mr
+            elif $ONLY_ACCEPTANCE_TESTS ; then
+              TINYBIRD_WORKFLOW=tests_circleci_acceptance
             else
               TINYBIRD_WORKFLOW=tests_circleci
             fi
