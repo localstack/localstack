@@ -1867,14 +1867,14 @@ class TestLambdaCleanup:
 class TestLambdaMultiAccounts:
     @pytest.fixture
     def primary_client(self, aws_client):
-        yield aws_client.lambda_
+        return aws_client.lambda_
 
     @pytest.fixture
     def secondary_client(self, secondary_aws_client):
-        yield secondary_aws_client.lambda_
+        return secondary_aws_client.lambda_
 
     @pytest.fixture
-    def created_lambda(self, create_lambda_function, primary_client, secondary_account_id):
+    def created_lambda_arn(self, create_lambda_function, primary_client, secondary_account_id):
         # Operations related to functions.
         # See: https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html#permissions-resource-xaccountinvoke
         #
@@ -1911,10 +1911,10 @@ class TestLambdaMultiAccounts:
             Principal=secondary_account_id,
             Action="lambda:*",
         )
-        yield func_arn
+        return func_arn
 
     @pytest.fixture
-    def created_layer(
+    def created_layer_arn(
         self, primary_client, create_lambda_function, dummylayer, secondary_account_id
     ):
         # As of 2024-02, AWS restricts the input for adding resource-based policy to layer versions via AddLayerVersionPermission.
@@ -1949,81 +1949,70 @@ class TestLambdaMultiAccounts:
             VersionNumber=1,
         )
 
-        yield layer_arn
+        return layer_arn
 
     @markers.aws.validated
-    def test_get_lambda_layer(self, secondary_client, created_layer):
-        layer_arn = created_layer
-        secondary_client.get_layer_version(LayerName=layer_arn, VersionNumber=1)
-        secondary_client.get_layer_version_by_arn(Arn=layer_arn + ":1")
+    def test_get_lambda_layer(self, secondary_client, created_layer_arn):
+        secondary_client.get_layer_version(LayerName=created_layer_arn, VersionNumber=1)
+        secondary_client.get_layer_version_by_arn(Arn=created_layer_arn + ":1")
 
     @markers.aws.validated
-    def test_get_function(self, secondary_client, created_lambda):
-        func_arn = created_lambda
-        secondary_client.get_function(FunctionName=func_arn)
+    def test_get_function(self, secondary_client, created_lambda_arn):
+        secondary_client.get_function(FunctionName=created_lambda_arn)
 
     @markers.aws.validated
-    def test_get_function_configuration(self, secondary_client, created_lambda):
-        func_arn = created_lambda
-        secondary_client.get_function_configuration(FunctionName=func_arn)
+    def test_get_function_configuration(self, secondary_client, created_lambda_arn):
+        secondary_client.get_function_configuration(FunctionName=created_lambda_arn)
 
     @markers.aws.validated
-    def test_list_versions_by_function(self, secondary_client, created_lambda):
-        func_arn = created_lambda
-        secondary_client.get_function_configuration(FunctionName=func_arn)
+    def test_list_versions_by_function(self, secondary_client, created_lambda_arn):
+        secondary_client.get_function_configuration(FunctionName=created_lambda_arn)
 
     @markers.aws.validated
-    def test_function_concurrency(self, secondary_client, created_lambda):
-        func_arn = created_lambda
+    def test_function_concurrency(self, secondary_client, created_lambda_arn):
         secondary_client.put_function_concurrency(
-            FunctionName=func_arn, ReservedConcurrentExecutions=1
+            FunctionName=created_lambda_arn, ReservedConcurrentExecutions=1
         )
-        secondary_client.delete_function_concurrency(FunctionName=func_arn)
+        secondary_client.delete_function_concurrency(FunctionName=created_lambda_arn)
 
     @markers.aws.validated
-    def test_function_alias(self, secondary_client, created_lambda):
-        func_arn = created_lambda
+    def test_function_alias(self, secondary_client, created_lambda_arn):
         alias_name = f"alias-{short_uid()}"
         secondary_client.create_alias(
-            FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
+            FunctionName=created_lambda_arn, FunctionVersion="$LATEST", Name=alias_name
         )
 
-        secondary_client.get_alias(FunctionName=func_arn, Name=alias_name)
+        secondary_client.get_alias(FunctionName=created_lambda_arn, Name=alias_name)
 
         alias_description = f"alias-description-{short_uid()}"
         secondary_client.update_alias(
-            FunctionName=func_arn, Name=alias_name, Description=alias_description
+            FunctionName=created_lambda_arn, Name=alias_name, Description=alias_description
         )
 
-        resp = secondary_client.list_aliases(FunctionName=func_arn)
+        resp = secondary_client.list_aliases(FunctionName=created_lambda_arn)
         assert len(resp["Aliases"]) == 1
         assert resp["Aliases"][0]["Description"] == alias_description
 
-        secondary_client.delete_alias(FunctionName=func_arn, Name=alias_name)
+        secondary_client.delete_alias(FunctionName=created_lambda_arn, Name=alias_name)
 
     @markers.aws.validated
-    def test_function_tags(self, secondary_client, created_lambda):
-        func_arn = created_lambda
-
+    def test_function_tags(self, secondary_client, created_lambda_arn):
         tags = {"foo": "bar"}
-        secondary_client.tag_resource(Resource=func_arn, Tags=tags)
-        assert secondary_client.list_tags(Resource=func_arn)["Tags"] == tags
-        secondary_client.untag_resource(Resource=func_arn, TagKeys=["lorem"])
+        secondary_client.tag_resource(Resource=created_lambda_arn, Tags=tags)
+        assert secondary_client.list_tags(Resource=created_lambda_arn)["Tags"] == tags
+        secondary_client.untag_resource(Resource=created_lambda_arn, TagKeys=["lorem"])
 
     @markers.aws.validated
-    def test_function_invocation(self, secondary_client, created_lambda):
-        func_arn = created_lambda
-        secondary_client.invoke(FunctionName=func_arn)
+    def test_function_invocation(self, secondary_client, created_lambda_arn):
+        secondary_client.invoke(FunctionName=created_lambda_arn)
 
     @markers.aws.validated
-    def test_publish_version(self, secondary_client, created_lambda):
-        func_arn = created_lambda
-        secondary_client.publish_version(FunctionName=func_arn)
+    def test_publish_version(self, secondary_client, created_lambda_arn):
+        secondary_client.publish_version(FunctionName=created_lambda_arn)
 
     @markers.aws.validated
-    def test_delete_function(self, secondary_client, created_lambda):
-        func_arn = created_lambda
-        secondary_client.delete_function(FunctionName=func_arn)
+    def test_delete_function(self, secondary_client, created_lambda_arn):
+        secondary_client.delete_function(FunctionName=created_lambda_arn)
 
 
 class TestLambdaConcurrency:
