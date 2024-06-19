@@ -1,34 +1,26 @@
 {
-  "Comment": "MAP_STATE_TOLERATED_FAILURE_COUNT_PATH_JSON",
+  "Comment": "MAP_STATE_TOLERATED_FAILURE_COUNT_PATH",
   "StartAt": "MapState",
   "States": {
     "MapState": {
       "Type": "Map",
-      "ItemReader": {
-        "ReaderConfig": {
-          "InputType": "JSON",
-        },
-        "Resource": "arn:aws:states:::s3:getObject",
-        "Parameters": {
-          "Bucket.$": "$.Bucket",
-          "Key.$": "$.Key"
-        }
-      },
+      "ItemsPath": "$.Items",
+      "MaxConcurrency": 1,
       "ItemProcessor": {
         "ProcessorConfig": {
           "Mode": "DISTRIBUTED",
           "ExecutionType": "STANDARD"
         },
-        "StartAt": "PassItem",
+        "StartAt": "HandleItem",
         "States": {
-          "PassItem": {
+          "HandleItem": {
             "Type": "Pass",
             "End": true
           }
-        },
+        }
       },
       "ToleratedFailureCountPath": "$.ToleratedFailureCount",
-      "End": true
+      "End": true,
     }
   }
 }

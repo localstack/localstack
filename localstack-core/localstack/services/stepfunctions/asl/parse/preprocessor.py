@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Optional
 
 from antlr4 import ParserRuleContext
@@ -236,6 +237,8 @@ from localstack.services.stepfunctions.asl.component.state.state_wait.wait_funct
 )
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
+
+LOG = logging.getLogger(__name__)
 
 
 class Preprocessor(ASLParserVisitor):
@@ -704,24 +707,38 @@ class Preprocessor(ASLParserVisitor):
     def visitTolerated_failure_count_decl(
         self, ctx: ASLParser.Tolerated_failure_count_declContext
     ) -> ToleratedFailureCount:
-        return ToleratedFailureCount(count=int(ctx.INT().getText()))
+        LOG.warning(
+            "ToleratedFailureCount declarations currently have no effect on the program evaluation."
+        )
+        count = int(ctx.INT().getText())
+        return ToleratedFailureCount(tolerated_failure_count=count)
 
     def visitTolerated_failure_count_path_decl(
         self, ctx: ASLParser.Tolerated_failure_count_path_declContext
     ) -> ToleratedFailureCountPath:
+        LOG.warning(
+            "ToleratedFailureCountPath declarations currently have no effect on the program evaluation."
+        )
         path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
-        return ToleratedFailureCountPath(path=path)
+        return ToleratedFailureCountPath(tolerated_failure_count_path=path)
 
     def visitTolerated_failure_percentage_decl(
         self, ctx: ASLParser.Tolerated_failure_percentage_declContext
     ) -> ToleratedFailurePercentage:
-        return ToleratedFailurePercentage(percentage=float(ctx.NUMBER().getText()))
+        LOG.warning(
+            "ToleratedFailurePercentage declarations currently have no effect on the program evaluation."
+        )
+        percentage = float(ctx.NUMBER().getText())
+        return ToleratedFailurePercentage(tolerated_failure_percentage=percentage)
 
     def visitTolerated_failure_percentage_path_decl(
         self, ctx: ASLParser.Tolerated_failure_percentage_path_declContext
     ) -> ToleratedFailurePercentagePath:
+        LOG.warning(
+            "ToleratedFailurePercentagePath declarations currently have no effect on the program evaluation."
+        )
         path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
-        return ToleratedFailurePercentagePath(path=path)
+        return ToleratedFailurePercentagePath(tolerate_failure_percentage_path=path)
 
     def visitRetry_decl(self, ctx: ASLParser.Retry_declContext) -> RetryDecl:
         retriers: list[RetrierDecl] = list()
