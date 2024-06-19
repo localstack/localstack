@@ -419,6 +419,13 @@ jobs:
       IMAGE_NAME: "localstack/localstack"
       PLATFORM: "<< parameters.platform >>"
     steps:
+      - run:
+          name: "Check for acceptance test or default branch"
+          command: |
+            if [ "<< pipeline.parameters.only-acceptance-tests >>" == "true" ] || [ "<< pipeline.parameters.default-branch >>" == "$CIRCLE_BRANCH" ]; then
+              echo "Skipping integration tests because only-acceptance-test is set or running on default branch."
+              circleci-agent step halt
+            fi
       - attach_workspace:
           at: /tmp/workspace
       - run:
