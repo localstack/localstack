@@ -5,6 +5,7 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.strings import short_uid
 
 THIS_FOLDER = os.path.dirname(__file__)
 
@@ -224,10 +225,9 @@ def test_vpc_with_route_table(deploy_cfn_template, aws_client, snapshot):
         aws_client.ec2.describe_route_tables(RouteTableIds=[route_id])
 
 
-
 @pytest.mark.skip(reason="update doesn't change value for instancetype")
-@markers.aws.unknown
-def test_cfn_update_ec2_instance_type(self, deploy_cfn_template, aws_client):
+@markers.aws.validated
+def test_cfn_update_ec2_instance_type(deploy_cfn_template, aws_client, cleanups):
     if aws_client.cloudformation.meta.region_name not in [
         "ap-northeast-1",
         "eu-central-1",
@@ -237,34 +237,36 @@ def test_cfn_update_ec2_instance_type(self, deploy_cfn_template, aws_client):
         "us-east-1",
     ]:
         pytest.skip()
-    aws_client.ec2.create_key_pair(KeyName="testkey")  # TODO: cleanup
+
+    key_name = f"testkey-{short_uid()}"
+    aws_client.ec2.create_key_pair(KeyName=key_name)
+    cleanups.append(lambda: aws_client.ec2.delete_key_pair(KeyName=key_name))
+
+    # get alpine image id
+    if is_aws_cloud():
+        images = aws_client.ec2.describe_images(Filters=[
+            { 'Name': 'name', 'Values': ['alpine-3.19.0-x86_64-bios-*']  },
+            { 'Name': 'state', 'Values': ['available']  },
+        ])["Images"]
+        image_id = images[0]["ImageId"]
+    else:
+        image_id = "ami-0a63f96a6a8d4d2c5"
 
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "templates/template30.yaml"),
-        parameters={"KeyName": "testkey"},
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/ec2_instance.yml"),
+        parameters={"KeyName": key_name, "InstanceType": "t2.nano", "ImageId": image_id},
     )
 
-    def get_instance_id():
-        resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
-            "StackResourceSummaries"
-        ]
-        instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
-        assert len(instances) == 1
-        return instances[0]["PhysicalResourceId"]
-
-    instance_id = get_instance_id()
-    resp = aws_client.ec2.describe_instances(InstanceIds=[instance_id])
-    assert len(resp["Reservations"][0]["Instances"]) == 1
-    assert resp["Reservations"][0]["Instances"][0]["InstanceType"] == "t2.nano"
+    instance_id = stack.outputs["InstanceId"]
+    instance = aws_client.ec2.describe_instances(InstanceIds=[instance_id])["Reservations"][0]["Instances"][0]
+    assert instance["InstanceType"] == "t2.nano"
 
     deploy_cfn_template(
         stack_name=stack.stack_name,
-        template_path=os.path.join(os.path.dirname(__file__), "templates/template30.yaml"),
-        parameters={"InstanceType": "t2.medium"},
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/ec2_instance.yml"),
+        parameters={"KeyName": key_name, "InstanceType": "t2.medium", "ImageId": image_id},
+        is_update=True,
     )
 
-    instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
-    resp = aws_client.ec2.describe_instances(InstanceIds=[instance_id])
-    reservations = resp["Reservations"]
-    assert len(reservations) == 1
-    assert reservations[0]["Instances"][0]["InstanceType"] == "t2.medium"
+    instance = aws_client.ec2.describe_instances(InstanceIds=[instance_id])["Reservations"][0]["Instances"][0]
+    assert instance["InstanceType"] == "t2.medium"

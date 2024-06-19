@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_cfn_update_ec2_instance_type": {
+    "last_validated_date": "2024-06-19T19:56:42+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_dhcp_options": {
     "last_validated_date": "2023-10-19T12:51:28+00:00"
   },
