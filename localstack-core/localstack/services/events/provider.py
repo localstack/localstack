@@ -89,6 +89,7 @@ from localstack.services.events.models import (
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
+from localstack.services.events.utils import recursive_remove_none_values_from_dict
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import truncate
@@ -307,7 +308,29 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         policy: String = None,
         **kwargs,
     ) -> None:
-        pass  # TODO align with policy streaming
+        store = self.get_store(context)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        event_bus_service = self._event_bus_services_store[event_bus.arn]
+        event_bus_service.put_permission(action, principal, statement_id, condition, policy)
+
+    @handler("RemovePermission")
+    def remove_permission(
+        self,
+        context: RequestContext,
+        statement_id: StatementId = None,
+        remove_all_permissions: Boolean = None,
+        event_bus_name: NonPartnerEventBusName = None,
+        **kwargs,
+    ) -> None:
+        store = self.get_store(context)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        event_bus_service = self._event_bus_services_store[event_bus.arn]
+        if remove_all_permissions:
+            event_bus_service.event_bus.policy = None
+            return
+        if not statement_id:
+            raise ValidationException("Parameter StatementId is required.")
+        event_bus_service.revoke_put_events_permission(statement_id)
 
     #######
     # Rules
@@ -749,8 +772,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "Name": event_bus.name,
             "Arn": event_bus.arn,
         }
+        if event_bus.creation_time:
+            event_bus_api_type["CreationTime"] = event_bus.creation_time
+        if event_bus.last_modified_time:
+            event_bus_api_type["LastModifiedTime"] = event_bus.last_modified_time
         if event_bus.policy:
-            event_bus_api_type["Policy"] = event_bus.policy
+            event_bus_api_type["Policy"] = recursive_remove_none_values_from_dict(event_bus.policy)
 
         return event_bus_api_type
 

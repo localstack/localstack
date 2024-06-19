@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, TypeAlias, TypedDict
+from typing import Literal, Optional, TypeAlias, TypedDict
+
+from bson import Timestamp
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
@@ -29,6 +31,26 @@ from localstack.services.stores import (
 from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
+
+
+class Condition(TypedDict):
+    Type: Literal["StringEquals"]
+    Key: Literal["aws:PrincipalOrgID"]
+    Value: str
+
+
+class Statement(TypedDict):
+    Sid: str
+    Effect: str
+    Principal: str | dict[str, str]
+    Action: str
+    Resource: str
+    Condition: Condition
+
+
+class ResourcePolicy(TypedDict):
+    Version: str
+    Statement: list[Statement]
 
 
 @dataclass
@@ -72,9 +94,11 @@ class EventBus:
     account_id: str
     event_source_name: Optional[str] = None
     tags: TagList = field(default_factory=list)
-    policy: Optional[str] = None
+    policy: Optional[ResourcePolicy] = None
     rules: RuleDict = field(default_factory=dict)
     arn: Arn = field(init=False)
+    creation_time: Optional[Timestamp] = None
+    last_modified_time: Optional[Timestamp] = None
 
     def __post_init__(self):
         self.arn = f"arn:aws:events:{self.region}:{self.account_id}:event-bus/{self.name}"

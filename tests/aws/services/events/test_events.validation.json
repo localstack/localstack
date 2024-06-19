@@ -26,6 +26,39 @@
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
     "last_validated_date": "2024-04-29T13:16:20+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
+    "last_validated_date": "2024-06-17T10:32:30+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
+    "last_validated_date": "2024-06-17T10:32:33+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission_non_existing_event_bus": {
+    "last_validated_date": "2024-06-17T10:50:49+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
+    "last_validated_date": "2024-06-17T10:34:04+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
+    "last_validated_date": "2024-06-17T10:34:06+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-custom]": {
+    "last_validated_date": "2024-06-17T11:01:21+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-default]": {
+    "last_validated_date": "2024-06-17T11:01:23+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-custom]": {
+    "last_validated_date": "2024-06-17T11:01:19+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-default]": {
+    "last_validated_date": "2024-06-17T11:01:20+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[custom]": {
+    "last_validated_date": "2024-06-17T10:47:29+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[default]": {
+    "last_validated_date": "2024-06-17T10:47:30+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_nested": {
     "last_validated_date": "2024-04-29T13:17:16+00:00"
   },

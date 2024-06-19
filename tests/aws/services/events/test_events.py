@@ -10,6 +10,7 @@ import uuid
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
@@ -627,6 +628,246 @@ class TestEventBus:
             Limit=int(count / 2) + 2, NextToken=response["NextToken"], NamePrefix=bus_name_prefix
         )
         snapshot.match("list-event-buses-limit-next-token", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_put_permission(
+        self,
+        bus_name,
+        events_create_event_bus,
+        aws_client,
+        account_id,
+        secondary_account_id,
+        snapshot,
+    ):
+        if bus_name == "custom":
+            bus_name = f"test-bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+        if bus_name == "default":
+            try:
+                aws_client.events.remove_permission(
+                    EventBusName=bus_name, RemoveAllPermissions=True
+                )  # error if no permission is present
+            except Exception:
+                pass
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(bus_name, "<bus-name>"),
+                snapshot.transform.regex(account_id, "<account-id>"),
+                snapshot.transform.regex(secondary_account_id, "<secondary-account-id>"),
+                SortingTransformer("Statement", lambda o: o["Sid"]),
+                snapshot.transform.key_value("Sid"),
+            ]
+        )
+
+        statement_id_primary = f"statement-1-{short_uid()}"
+        response = aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=account_id,
+            StatementId=statement_id_primary,
+        )
+        snapshot.match("put-permission", response)
+
+        statement_id_primary = f"statement-2-{short_uid()}"
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=account_id,
+            StatementId=statement_id_primary,
+        )
+
+        statement_id_secondary = f"statement-3-{short_uid()}"
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=secondary_account_id,
+            StatementId=statement_id_secondary,
+        )
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-put-permission-multiple-principals", response)
+
+        # allow all principals to put events
+        statement_id = f"statement-4-{short_uid()}"
+        # only events:PutEvents is allowed for actions
+        # only a single access policy is allowed per event bus
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal="*",  # required if condition is present
+            StatementId=statement_id,
+            # Condition={"Type": "StringEquals", "Key": "aws:PrincipalOrgID", "Value": "org id"},
+        )
+
+        # put permission just replaces the existing permission
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal="*",
+            StatementId=statement_id,
+        )
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-put-permission", response)
+
+        # allow with policy document
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": f"statement-5-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "events:ListRules",
+                    "Resource": "*",
+                }
+            ],
+        }
+        response = aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Policy=json.dumps(policy),
+        )
+        snapshot.match("put-permission-policy", response)
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-put-permission-policy", response)
+
+        try:
+            aws_client.events.remove_permission(EventBusName=bus_name, RemoveAllPermissions=True)
+        except Exception:
+            pass
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_put_permission_non_existing_event_bus(self, aws_client, snapshot):
+        non_exist_bus_name = f"non-existing-bus-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(non_exist_bus_name, "<bus-name>"))
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_permission(
+                EventBusName=non_exist_bus_name,
+                Action="events:PutEvents",
+                Principal="*",
+                StatementId="statement-id",
+            )
+        snapshot.match("remove-permission-non-existing-sid-error", e)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_remove_permission(
+        self,
+        bus_name,
+        events_create_event_bus,
+        aws_client,
+        account_id,
+        secondary_account_id,
+        snapshot,
+    ):
+        if bus_name == "custom":
+            bus_name = f"test-bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+        if bus_name == "default":
+            try:
+                aws_client.events.remove_permission(
+                    EventBusName=bus_name, RemoveAllPermissions=True
+                )  # error if no permission is present
+            except Exception:
+                pass
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(bus_name, "<bus-name>"),
+                snapshot.transform.regex(account_id, "<account-id>"),
+                snapshot.transform.regex(secondary_account_id, "<secondary-account-id>"),
+                SortingTransformer("Statement", lambda o: o["Sid"]),
+                snapshot.transform.key_value("Sid"),
+            ]
+        )
+
+        statement_id_primary = f"statement-1-{short_uid()}"
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=account_id,
+            StatementId=statement_id_primary,
+        )
+
+        statement_id_secondary = f"statement-2-{short_uid()}"
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=secondary_account_id,
+            StatementId=statement_id_secondary,
+        )
+
+        response_remove_permission = aws_client.events.remove_permission(
+            EventBusName=bus_name, StatementId=statement_id_primary, RemoveAllPermissions=False
+        )
+        snapshot.match("remove-permission", response_remove_permission)
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-remove-permission", response)
+
+        response_remove_all = aws_client.events.remove_permission(
+            EventBusName=bus_name, RemoveAllPermissions=True
+        )
+        snapshot.match("remove-permission-all", response_remove_all)
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-remove-permission-all", response)
+
+        try:
+            aws_client.events.remove_permission(EventBusName=bus_name, RemoveAllPermissions=True)
+        except Exception:
+            pass
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    @pytest.mark.parametrize("policy_exists", [True, False])
+    def test_remove_permission_non_existing_sid(
+        self, aws_client, bus_name, policy_exists, events_create_event_bus, account_id, snapshot
+    ):
+        if bus_name == "custom":
+            bus_name = f"test-bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+        if bus_name == "default":
+            try:
+                aws_client.events.remove_permission(
+                    EventBusName=bus_name, RemoveAllPermissions=True
+                )  # error if no permission is present
+            except Exception:
+                pass
+
+        if policy_exists:
+            aws_client.events.put_permission(
+                EventBusName=bus_name,
+                Action="events:PutEvents",
+                Principal=account_id,
+                StatementId=f"statement-{short_uid()}",
+            )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.remove_permission(
+                EventBusName=bus_name, StatementId="non-existing-sid"
+            )
+        snapshot.match("remove-permission-non-existing-sid-error", e)
 
     @markers.aws.needs_fixing  # TODO use fixture setup_sqs_queue_as_event_target to simplify
     @pytest.mark.skipif(is_aws_cloud(), reason="not validated")
