@@ -2564,5 +2564,36 @@ class TestConnection:
         snapshot.match("list-connections-limit-next-token", response)
 
     @markers.aws.validated
-    def test_list_connection_with_state(self, aws_client):
-        pass
+    def test_list_connection_with_state(self, events_create_connection, aws_client, snapshot):
+        connection_name = f"test-connection-{short_uid()}"
+        response = events_create_connection(
+            Name=connection_name,
+            Description="test description",
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {
+                    "Username": API_CONNECTION_TEST_USERNAME,
+                    "Password": API_CONNECTION_TEST_PASSWORD,
+                }
+            },
+        )
+        connection_arn = response["ConnectionArn"]
+        connection_arn_id = connection_arn.split("/")[-1]
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(connection_arn_id, "<connection-arn-id>"),
+                snapshot.transform.regex(connection_name, "<connection-name>"),
+            ]
+        )
+
+        def _wait_for_active():
+            response = aws_client.events.describe_connection(Name=connection_name)
+            return response["ConnectionState"] == "AUTHORIZED"
+
+        retry(_wait_for_active, retries=5, sleep=1)
+
+        response = aws_client.events.list_connections(ConnectionState="AUTHORIZED")
+        snapshot.match("list-connections-state", response)
+
+        response = aws_client.events.list_connections(ConnectionState="CREATING")
+        snapshot.match("list-connections-state-empty", response)
