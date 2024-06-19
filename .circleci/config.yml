@@ -572,6 +572,7 @@ jobs:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
+      - prepare-acceptance-tests
       - attach_workspace:
           at: /tmp/workspace
       # store (uncombined) coverage from acceptance tests
@@ -611,7 +612,7 @@ jobs:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
             # check if a fork-only env var is set (https://circleci.com/docs/variables/)
-            if [ -z "$CIRCLE_PR_REPONAME" ]; then
+            if [ -z "$CIRCLE_PR_REPONAME" ] || [ $ACCEPTANCE_TEST_ONLY -eq 0 ] ; then
               source .venv/bin/activate
               mkdir parity_metrics && mv target/metric_reports/metric-report-raw-data-*amd64*.csv parity_metrics
               METRIC_REPORT_DIR_PATH=parity_metrics \
@@ -619,7 +620,7 @@ jobs:
               SOURCE_TYPE=community \
               python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
             else
-              echo "Skipping parity reporting to tinybird (no credentials, running on fork)..."
+              echo "Skipping parity reporting to tinybird (no credentials, running on fork, acceptance test only)..."
             fi
 
       - run:
