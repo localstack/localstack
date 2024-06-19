@@ -472,7 +472,7 @@ def events_create_connection(aws_client):
 
     for connection in connections:
         try:
-            aws_client.events.delete_connection(ConnectionArn=connection)
+            aws_client.events.delete_connection(Name=connection)
         except Exception as e:
             LOG.warning(f"Failed to delete connection {connection}: {e}")
 

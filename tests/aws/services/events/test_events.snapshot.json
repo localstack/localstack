@@ -3291,5 +3291,81 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestConnection::test_list_connections_with_limit": {
+    "recorded-date": "19-06-2024, 14:31:49",
+    "recorded-content": {
+      "list-connections-limit": {
+        "Connections": [
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name-prefix>-0/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name-prefix>-0"
+          },
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name-prefix>-1/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name-prefix>-1"
+          },
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name-prefix>-2/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name-prefix>-2"
+          }
+        ],
+        "NextToken": "<next_token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-connections-limit-next-token": {
+        "Connections": [
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name-prefix>-3/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name-prefix>-3"
+          },
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name-prefix>-4/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name-prefix>-4"
+          },
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:aws:events:<region>:111111111111:connection/<connection-name-prefix>-5/<connection-arn-id>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name-prefix>-5"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

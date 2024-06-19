@@ -2524,8 +2524,44 @@ class TestConnection:
         snapshot.match("list-connections-prefix", response)
 
     @markers.aws.validated
-    def test_list_connections_with_limit(self, aws_client):
-        pass
+    def test_list_connections_with_limit(self, events_create_connection, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
+        connection_name_prefix = f"test-connection-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(connection_name_prefix, "<connection-name-prefix>")
+        )
+        count = 6
+
+        for i in range(count):
+            connection_name = f"{connection_name_prefix}-{i}"
+            response = events_create_connection(
+                Name=connection_name,
+                Description="test description",
+                AuthorizationType="BASIC",
+                AuthParameters={
+                    "BasicAuthParameters": {
+                        "Username": API_CONNECTION_TEST_USERNAME,
+                        "Password": API_CONNECTION_TEST_PASSWORD,
+                    }
+                },
+            )
+            connection_arn = response["ConnectionArn"]
+            connection_arn_id = connection_arn.split("/")[-1]
+            snapshot.add_transformer(
+                snapshot.transform.regex(connection_arn_id, "<connection-arn-id>")
+            )
+
+        response = aws_client.events.list_connections(
+            Limit=int(count / 2), NamePrefix=connection_name_prefix
+        )
+        snapshot.match("list-connections-limit", response)
+
+        response = aws_client.events.list_connections(
+            Limit=int(count / 2) + 2,
+            NextToken=response["NextToken"],
+            NamePrefix=connection_name_prefix,
+        )
+        snapshot.match("list-connections-limit-next-token", response)
 
     @markers.aws.validated
     def test_list_connection_with_state(self, aws_client):
