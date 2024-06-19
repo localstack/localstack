@@ -1,4 +1,5 @@
 import json
+import logging
 
 from rolo import Response
 
@@ -10,8 +11,11 @@ from localstack.services.apigateway.next_gen.execute_api.api import (
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     BaseGatewayException,
+    Default5xxError,
     build_default_response,
 )
+
+LOG = logging.getLogger(__name__)
 
 
 class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
@@ -26,9 +30,15 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         context: RestApiInvocationContext,
         response: Response,
     ):
-        # We only handle Gateway Exceptions here. We let other Exceptions bubble up.
         if not isinstance(exception, BaseGatewayException):
-            return
+            (
+                LOG.warning(
+                    "Non Gateway Exception raised: %s",
+                    exception,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                ),
+            )
+            exception = Default5xxError(message=f"LocalStack Error: {exception}", status_code="500")
 
         error = self.create_exception_response(exception, context)
         if error:
