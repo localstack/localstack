@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Literal, Optional, TypeAlias, TypedDict
 
@@ -97,11 +98,13 @@ class EventBus:
     policy: Optional[ResourcePolicy] = None
     rules: RuleDict = field(default_factory=dict)
     arn: Arn = field(init=False)
-    creation_time: Optional[Timestamp] = None
-    last_modified_time: Optional[Timestamp] = None
+    creation_time: Timestamp = field(init=False)
+    last_modified_time: Timestamp = field(init=False)
 
     def __post_init__(self):
         self.arn = f"arn:aws:events:{self.region}:{self.account_id}:event-bus/{self.name}"
+        self.creation_time = datetime.now(timezone.utc)
+        self.last_modified_time = datetime.now(timezone.utc)
         if self.rules is None:
             self.rules = {}
         if self.tags is None:
