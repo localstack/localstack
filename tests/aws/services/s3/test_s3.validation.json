@@ -321,13 +321,13 @@
     "last_validated_date": "2024-02-27T11:11:22+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[COPY]": {
-    "last_validated_date": "2023-08-03T02:15:09+00:00"
+    "last_validated_date": "2024-06-19T17:17:01+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[None]": {
-    "last_validated_date": "2023-08-03T02:15:14+00:00"
+    "last_validated_date": "2024-06-19T17:17:06+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[REPLACE]": {
-    "last_validated_date": "2023-08-03T02:15:11+00:00"
+    "last_validated_date": "2024-06-19T17:17:03+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_delete_object_with_version_id": {
     "last_validated_date": "2023-08-03T02:23:32+00:00"

@@ -1489,6 +1489,20 @@ class TestS3:
         get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key_copy)
         snapshot.match("get-copy-object-tag", get_object_tags)
 
+        object_key_copy_tag_empty = f"{object_key}-copy-tag-empty"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key_copy_tag_empty,
+            **kwargs,
+        )
+        snapshot.match("copy-object-tag-empty", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key_copy_tag_empty
+        )
+        snapshot.match("get-copy-object-tag-empty", get_object_tags)
+
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,

@@ -1299,11 +1299,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             dest_s3_bucket.objects.set(dest_key, s3_object)
 
         dest_key_id = get_unique_key_id(dest_bucket, dest_key, dest_version_id)
+
         if (request.get("TaggingDirective")) == "REPLACE":
-            store.TAGS.tags[dest_key_id] = tagging
+            store.TAGS.tags[dest_key_id] = tagging or {}
         else:
             src_key_id = get_unique_key_id(src_bucket, src_key, src_version_id)
-            store.TAGS.tags[dest_key_id] = copy.copy(store.TAGS.tags.get(src_key_id, {}))
+            src_tags = store.TAGS.tags.get(src_key_id, {})
+            store.TAGS.tags[dest_key_id] = copy.copy(src_tags)
 
         copy_object_result = CopyObjectResult(
             ETag=s3_object.quoted_etag,
