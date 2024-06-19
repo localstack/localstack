@@ -8,6 +8,8 @@ from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatew
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.handlers.parse import (
     InvocationRequestParser,
+)
+from localstack.services.apigateway.next_gen.execute_api.handlers.resource_router import (
     InvocationRequestRouter,
 )
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME

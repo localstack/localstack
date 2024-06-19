@@ -6,7 +6,8 @@ from .integration_response import IntegrationResponseHandler
 from .legacy import LegacyHandler
 from .method_request import MethodRequestHandler
 from .method_response import MethodResponseHandler
-from .parse import InvocationRequestParser, InvocationRequestRouter
+from .parse import InvocationRequestParser
+from .resource_router import InvocationRequestRouter
 
 legacy_handler = LegacyHandler()
 parse_request = InvocationRequestParser()
