@@ -42,6 +42,7 @@ commands:
               echo "export DEFAULT_TAG='latest'" >> $BASH_ENV
             fi
             source $BASH_ENV
+            echo $ONLY_ACCEPTANCE_TESTS
 
   prepare-testselection:
     steps:
@@ -611,8 +612,10 @@ jobs:
       - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
-            # check if a fork-only env var is set (https://circleci.com/docs/variables/)
-            if [ -z "$CIRCLE_PR_REPONAME" ] || [ $ACCEPTANCE_TEST_ONLY -eq 0 ] ; then
+            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+              echo "Skipping parity reporting to tinybird because only acceptance tests ran"
+            elif [ -z "$CIRCLE_PR_REPONAME" ]  ; then
+              # check if a fork-only env var is set (https://circleci.com/docs/variables/)
               source .venv/bin/activate
               mkdir parity_metrics && mv target/metric_reports/metric-report-raw-data-*amd64*.csv parity_metrics
               METRIC_REPORT_DIR_PATH=parity_metrics \
@@ -620,7 +623,7 @@ jobs:
               SOURCE_TYPE=community \
               python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
             else
-              echo "Skipping parity reporting to tinybird (no credentials, running on fork, acceptance test only)..."
+              echo "Skipping parity reporting to tinybird (no credentials, running on fork)..."
             fi
 
       - run:
@@ -634,12 +637,16 @@ jobs:
           #    2: the changes worsened the overall coverage
           #    3: the changes introduced uncovered statements but the overall coverage is still better than before
           command: |
-            source .venv/bin/activate
-            pip install pycobertura
-            coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack-core/localstack/services/*/**" --omit="*/**/__init__.py"
-            coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack-core/localstack/services/*/**"  --omit="*/**/__init__.py"
-            pycobertura show --format html -s localstack-core/localstack acceptance.coverage.report.xml -o coverage-acceptance.html
-            bash -c "pycobertura diff --format html -s1 localstack-core/localstack/ -s2 localstack-core/localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 1 ]] ; then exit 1 ; else exit 0 ; fi"
+            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+              echo "Skipping coverage diff because only acceptance tests ran"
+            else
+              source .venv/bin/activate
+              pip install pycobertura
+              coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack-core/localstack/services/*/**" --omit="*/**/__init__.py"
+              coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack-core/localstack/services/*/**"  --omit="*/**/__init__.py"
+              pycobertura show --format html -s localstack-core/localstack acceptance.coverage.report.xml -o coverage-acceptance.html
+              bash -c "pycobertura diff --format html -s1 localstack-core/localstack/ -s2 localstack-core/localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 1 ]] ; then exit 1 ; else exit 0 ; fi"
+            fi
       - run:
           name: Create Metric Coverage Diff (API Coverage)
           environment:
@@ -647,9 +654,13 @@ jobs:
             COVERAGE_DIR_ACCEPTANCE: "acceptance_parity_metrics"
             OUTPUT_DIR: "api-coverage"
           command: |
-            source .venv/bin/activate
-            mkdir api-coverage
-            python -m scripts.metrics_coverage.diff_metrics_coverage
+            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+              echo "Skipping metric coverage diff because only acceptance tests ran"
+            else
+              source .venv/bin/activate
+              mkdir api-coverage
+              python -m scripts.metrics_coverage.diff_metrics_coverage
+            fi
       - store_artifacts:
           path: api-coverage/
       - store_artifacts:
