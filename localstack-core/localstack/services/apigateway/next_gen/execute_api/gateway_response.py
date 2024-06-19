@@ -1,4 +1,23 @@
-from localstack.aws.api.apigateway import GatewayResponseType
+from functools import cache
+
+from localstack.aws.api.apigateway import (
+    GatewayResponse,
+    GatewayResponseCode,
+    GatewayResponseType,
+)
+
+DEFAULT_GATEWAY_RESPONSE = {
+    "responseParameters": {},
+    "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+}
+
+
+@cache
+def build_default_response(type: GatewayResponseType) -> dict:
+    response = GatewayResponse(**DEFAULT_GATEWAY_RESPONSE, responseType=type, defaultResponse=True)
+    if status_code := GatewayResponseCode[type]:
+        response["statusCode"] = status_code
+    return response
 
 
 class BaseGatewayException(Exception):
@@ -8,19 +27,18 @@ class BaseGatewayException(Exception):
     """
 
     message: str = "Unimplemented Response"
-    status_code: int = 500
+    status_code: str = ""
     type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
     default_type: GatewayResponseType = GatewayResponseType.DEFAULT_5XX
 
-    def __init__(self, message: str = None, status_code: int = None):
+    def __init__(self, message: str = None, status_code: str = None):
         if message is not None:
             self.message = message
-        if status_code is not None:
+        if status_code:
             self.status_code = status_code
 
 
 class Default4xxError(BaseGatewayException):
-    status_code = 400
     default_type = GatewayResponseType.DEFAULT_4XX
     type: str = GatewayResponseType.DEFAULT_4XX
 

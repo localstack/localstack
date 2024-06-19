@@ -14,6 +14,7 @@ from moto.core.utils import camelcase_to_underscores
 
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
+    GATEWAY_RESPONSES,
     Account,
     ApigatewayApi,
     ApiKey,
@@ -111,6 +112,9 @@ from localstack.services.apigateway.helpers import (
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
+from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
+    build_default_response,
+)
 from localstack.services.apigateway.next_gen.execute_api.router import (
     ApiGatewayRouter as ApiGatewayRouterNextGen,
 )
@@ -2348,10 +2352,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        if response_type not in DEFAULT_GATEWAY_RESPONSES:
+        if response_type not in GATEWAY_RESPONSES:
             raise CommonServiceException(
                 code="ValidationException",
-                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(GATEWAY_RESPONSES)}]",
             )
 
         gateway_response = GatewayResponse(
@@ -2377,14 +2381,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        if response_type not in DEFAULT_GATEWAY_RESPONSES:
+        if response_type not in GATEWAY_RESPONSES:
             raise CommonServiceException(
                 code="ValidationException",
-                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(GATEWAY_RESPONSES)}]",
             )
 
         gateway_response = rest_api_container.gateway_responses.get(
-            response_type, DEFAULT_GATEWAY_RESPONSES[response_type]
+            response_type,
+            build_default_response(GatewayResponseType[response_type]),
         )
         # TODO: add validation with the parameters? seems like it validated client side? how to try?
         return gateway_response
@@ -2405,7 +2410,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         user_gateway_resp = rest_api_container.gateway_responses
         gateway_responses = [
-            user_gateway_resp.get(key) or value for key, value in DEFAULT_GATEWAY_RESPONSES.items()
+            user_gateway_resp.get(response_type) or build_default_response(response_type)
+            for response_type in GATEWAY_RESPONSES
         ]
         return GatewayResponses(items=gateway_responses)
 
@@ -2422,10 +2428,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        if response_type not in DEFAULT_GATEWAY_RESPONSES:
+        if response_type not in GATEWAY_RESPONSES:
             raise CommonServiceException(
                 code="ValidationException",
-                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(GATEWAY_RESPONSES)}]",
             )
 
         if not rest_api_container.gateway_responses.pop(response_type, None):
@@ -2453,16 +2459,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        if response_type not in DEFAULT_GATEWAY_RESPONSES:
+        if response_type not in GATEWAY_RESPONSES:
             raise CommonServiceException(
                 code="ValidationException",
-                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(GATEWAY_RESPONSES)}]",
             )
 
         if response_type not in rest_api_container.gateway_responses:
-            # deep copy to avoid in place mutation of the default response when update using JSON patch
-            rest_api_container.gateway_responses[response_type] = copy.deepcopy(
-                DEFAULT_GATEWAY_RESPONSES[response_type]
+            rest_api_container.gateway_responses[response_type] = build_default_response(
+                response_type
             )
             rest_api_container.gateway_responses[response_type]["defaultResponse"] = False
 
@@ -2778,154 +2783,6 @@ UPDATE_METHOD_PATCH_PATHS = {
         "/requestModels/",
         "/requestValidatorId",
     ],
-}
-
-DEFAULT_GATEWAY_RESPONSES: dict[GatewayResponseType, GatewayResponse] = {
-    GatewayResponseType.REQUEST_TOO_LARGE: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "REQUEST_TOO_LARGE",
-        "statusCode": "413",
-    },
-    GatewayResponseType.RESOURCE_NOT_FOUND: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "RESOURCE_NOT_FOUND",
-        "statusCode": "404",
-    },
-    GatewayResponseType.AUTHORIZER_CONFIGURATION_ERROR: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "AUTHORIZER_CONFIGURATION_ERROR",
-        "statusCode": "500",
-    },
-    GatewayResponseType.MISSING_AUTHENTICATION_TOKEN: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "MISSING_AUTHENTICATION_TOKEN",
-        "statusCode": "403",
-    },
-    GatewayResponseType.BAD_REQUEST_BODY: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "BAD_REQUEST_BODY",
-        "statusCode": "400",
-    },
-    GatewayResponseType.INVALID_SIGNATURE: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "INVALID_SIGNATURE",
-        "statusCode": "403",
-    },
-    GatewayResponseType.INVALID_API_KEY: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "INVALID_API_KEY",
-        "statusCode": "403",
-    },
-    GatewayResponseType.BAD_REQUEST_PARAMETERS: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "BAD_REQUEST_PARAMETERS",
-        "statusCode": "400",
-    },
-    GatewayResponseType.AUTHORIZER_FAILURE: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "AUTHORIZER_FAILURE",
-        "statusCode": "500",
-    },
-    GatewayResponseType.UNAUTHORIZED: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "UNAUTHORIZED",
-        "statusCode": "401",
-    },
-    GatewayResponseType.INTEGRATION_TIMEOUT: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "INTEGRATION_TIMEOUT",
-        "statusCode": "504",
-    },
-    GatewayResponseType.ACCESS_DENIED: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "ACCESS_DENIED",
-        "statusCode": "403",
-    },
-    GatewayResponseType.DEFAULT_4XX: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "DEFAULT_4XX",
-    },
-    GatewayResponseType.DEFAULT_5XX: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "DEFAULT_5XX",
-    },
-    GatewayResponseType.WAF_FILTERED: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "WAF_FILTERED",
-        "statusCode": "403",
-    },
-    GatewayResponseType.QUOTA_EXCEEDED: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "QUOTA_EXCEEDED",
-        "statusCode": "429",
-    },
-    GatewayResponseType.THROTTLED: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "THROTTLED",
-        "statusCode": "429",
-    },
-    GatewayResponseType.API_CONFIGURATION_ERROR: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "API_CONFIGURATION_ERROR",
-        "statusCode": "500",
-    },
-    GatewayResponseType.UNSUPPORTED_MEDIA_TYPE: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "UNSUPPORTED_MEDIA_TYPE",
-        "statusCode": "415",
-    },
-    GatewayResponseType.INTEGRATION_FAILURE: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "INTEGRATION_FAILURE",
-        "statusCode": "504",
-    },
-    GatewayResponseType.EXPIRED_TOKEN: {
-        "defaultResponse": True,
-        "responseParameters": {},
-        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-        "responseType": "EXPIRED_TOKEN",
-        "statusCode": "403",
-    },
 }
 
 VALID_PATCH_OPERATIONS = ["add", "remove", "move", "test", "replace", "copy"]
