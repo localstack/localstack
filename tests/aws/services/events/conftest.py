@@ -448,6 +448,35 @@ def create_api_destination(aws_client, destination_name):
     return _create_api_destination
 
 
+@pytest.fixture
+def connection_snapshot(snapshot, connection_name):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.regex(connection_name, "<connection-name>"),
+            TransformerUtility.resource_name(),
+        ]
+    )
+    return snapshot
+
+
+@pytest.fixture
+def events_create_connection(aws_client):
+    connections = []
+
+    def _create_connection(**kwargs):
+        response = aws_client.events.create_connection(**kwargs)
+        connections.append(kwargs["Name"])
+        return response
+
+    yield _create_connection
+
+    for connection in connections:
+        try:
+            aws_client.events.delete_connection(ConnectionArn=connection)
+        except Exception as e:
+            LOG.warning(f"Failed to delete connection {connection}: {e}")
+
+
 #############################
 # Common Transformer Fixtures
 #############################
@@ -464,13 +493,3 @@ def api_destination_snapshot(snapshot, destination_name):
     )
     return snapshot
 
-
-@pytest.fixture
-def connection_snapshot(snapshot, connection_name):
-    snapshot.add_transformers_list(
-        [
-            snapshot.transform.regex(connection_name, "<connection-name>"),
-            TransformerUtility.resource_name(),
-        ]
-    )
-    return snapshot

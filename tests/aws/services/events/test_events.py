@@ -2349,3 +2349,28 @@ class TestEventTarget:
 
         response = aws_client.events.list_targets_by_rule(Rule=rule_two_name)
         snapshot.match("list-targets-rule-two", response)
+
+
+class TestConnection:
+    @markers.aws.validated
+    def test_create_list_describe_update_delete_connection(
+        self, events_create_connection, snapshot
+    ):
+        connection_name = f"test-connection-{short_uid()}"
+        response = events_create_connection(
+            Name=connection_name,
+            Description="test description",
+            AuthorizationType="API_KEY",
+            AuthParameters={"ApiKeyAuthParameters": {"ApiKeyName": "test", "ApiKeyValue": "test"}},
+        )
+
+        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
+        snapshot.match("create-connection", response)
+
+    @markers.aws.validated
+    def test_list_connections_with_prefix(self, aws_client):
+        pass
+
+    @markers.aws.validated
+    def test_list_connections_with_limit(self, aws_client):
+        pass
