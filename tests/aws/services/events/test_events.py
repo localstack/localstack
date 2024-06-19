@@ -161,6 +161,34 @@ class TestEvents:
             message_body = json.loads(message["Body"])
             assert message_body["time"] == "2022-01-01T00:00:00Z"
 
+    @markers.aws.validated
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_put_events_exceed_limit_ten_entries(
+        self, bus_name, events_create_event_bus, aws_client, snapshot
+    ):
+        if bus_name == "custom":
+            bus_name = f"test-bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+        entries = []
+        for i in range(11):
+            entries.append(
+                {
+                    "Source": TEST_EVENT_PATTERN["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                    "Detail": json.dumps(EVENT_DETAIL),
+                    "EventBusName": bus_name,
+                }
+            )
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_events(Entries=entries)
+
+        snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
+        snapshot.match("put-events-exceed-limit-error", e.value.response)
+
     @markers.aws.unknown
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
@@ -524,7 +552,7 @@ class TestEvents:
 class TestEventBus:
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize("regions", [["us-east-1"], ["us-east-1", "us-west-1", "eu-central-1"]])
@@ -588,6 +616,10 @@ class TestEventBus:
         snapshot.match("delete-default-event-bus-error", e)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_list_event_buses_with_prefix(self, create_event_bus, aws_client, snapshot):
         events = aws_client.events
         bus_name = f"unique-prefix-1234567890-{short_uid()}"
@@ -607,7 +639,7 @@ class TestEventBus:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_list_event_buses_with_limit(self, create_event_bus, aws_client, snapshot):
@@ -1240,7 +1272,7 @@ class TestEventRule:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_describe_nonexistent_rule(self, aws_client, snapshot):
@@ -1492,7 +1524,7 @@ class TestEventTarget:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_add_exceed_fife_targets_per_rule(
@@ -1517,7 +1549,7 @@ class TestEventTarget:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider() and not is_aws_cloud(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_list_target_by_rule_limit(
