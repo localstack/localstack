@@ -103,7 +103,14 @@ class MapRunRecord:
     tolerated_failure_count: int
     tolerated_failure_percentage: float
 
-    def __init__(self, state_machine_arn: Arn, execution_arn: Arn, max_concurrency: int):
+    def __init__(
+        self,
+        state_machine_arn: Arn,
+        execution_arn: Arn,
+        max_concurrency: int,
+        tolerated_failure_count: int,
+        tolerated_failure_percentage: float,
+    ):
         self.update_event = threading.Event()
         (
             map_state_machine_arn,
@@ -118,8 +125,8 @@ class MapRunRecord:
         self.start_date = datetime.datetime.now(tz=datetime.timezone.utc)
         self.status = MapRunStatus.RUNNING
         self.stop_date = None
-        self.tolerated_failure_count = 0
-        self.tolerated_failure_percentage = 0.0
+        self.tolerated_failure_count = tolerated_failure_count
+        self.tolerated_failure_percentage = tolerated_failure_percentage
 
     @staticmethod
     def _generate_map_run_arns(state_machine_arn: Arn) -> tuple[LongArn, LongArn]:

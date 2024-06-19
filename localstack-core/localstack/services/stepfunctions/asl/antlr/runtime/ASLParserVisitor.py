@@ -419,6 +419,26 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#tolerated_failure_count_decl.
+    def visitTolerated_failure_count_decl(self, ctx:ASLParser.Tolerated_failure_count_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_count_path_decl.
+    def visitTolerated_failure_count_path_decl(self, ctx:ASLParser.Tolerated_failure_count_path_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_decl.
+    def visitTolerated_failure_percentage_decl(self, ctx:ASLParser.Tolerated_failure_percentage_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_path_decl.
+    def visitTolerated_failure_percentage_path_decl(self, ctx:ASLParser.Tolerated_failure_percentage_path_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#retry_decl.
     def visitRetry_decl(self, ctx:ASLParser.Retry_declContext):
         return self.visitChildren(ctx)

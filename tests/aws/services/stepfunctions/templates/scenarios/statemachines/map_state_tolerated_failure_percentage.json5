@@ -1,0 +1,34 @@
+{
+  "Comment": "MAP_STATE_TOLERATED_FAILURE_PERCENTAGE_JSON",
+  "StartAt": "MapState",
+  "States": {
+    "MapState": {
+      "Type": "Map",
+      "ItemReader": {
+        "ReaderConfig": {
+          "InputType": "JSON",
+        },
+        "Resource": "arn:aws:states:::s3:getObject",
+        "Parameters": {
+          "Bucket.$": "$.Bucket",
+          "Key.$": "$.Key"
+        }
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "PassItem",
+        "States": {
+          "PassItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+      },
+      "ToleratedFailurePercentage": 0.5,
+      "End": true
+    }
+  }
+}

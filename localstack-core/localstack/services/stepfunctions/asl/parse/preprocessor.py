@@ -183,6 +183,12 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.state_map import (
     StateMap,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.tolerated_failure import (
+    ToleratedFailureCount,
+    ToleratedFailureCountPath,
+    ToleratedFailurePercentage,
+    ToleratedFailurePercentagePath,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_parallel.branches_decl import (
     BranchesDecl,
 )
@@ -694,6 +700,28 @@ class Preprocessor(ASLParserVisitor):
 
     def visitMax_items_decl(self, ctx: ASLParser.Max_items_declContext) -> MaxItems:
         return MaxItems(max_items=int(ctx.INT().getText()))
+
+    def visitTolerated_failure_count_decl(
+        self, ctx: ASLParser.Tolerated_failure_count_declContext
+    ) -> ToleratedFailureCount:
+        return ToleratedFailureCount(count=int(ctx.INT().getText()))
+
+    def visitTolerated_failure_count_path_decl(
+        self, ctx: ASLParser.Tolerated_failure_count_path_declContext
+    ) -> ToleratedFailureCountPath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return ToleratedFailureCountPath(path=path)
+
+    def visitTolerated_failure_percentage_decl(
+        self, ctx: ASLParser.Tolerated_failure_percentage_declContext
+    ) -> ToleratedFailurePercentage:
+        return ToleratedFailurePercentage(percentage=float(ctx.NUMBER().getText()))
+
+    def visitTolerated_failure_percentage_path_decl(
+        self, ctx: ASLParser.Tolerated_failure_percentage_path_declContext
+    ) -> ToleratedFailurePercentagePath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return ToleratedFailurePercentagePath(path=path)
 
     def visitRetry_decl(self, ctx: ASLParser.Retry_declContext) -> RetryDecl:
         retriers: list[RetrierDecl] = list()
