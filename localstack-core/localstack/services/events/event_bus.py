@@ -51,7 +51,6 @@ class EventBusService:
     ):
         if policy and any([action, principal, statement_id, condition]):
             raise ValueError("Combination of policy with other arguments is not allowed")
-        self.event_bus.creation_time = datetime.now(timezone.utc)
         self.event_bus.last_modified_time = datetime.now(timezone.utc)
         if policy:  # policy document replaces all existing permissions
             policy = json.loads(policy)
