@@ -125,6 +125,7 @@ class TraceLoggingFormatter(logging.Formatter):
         """
         if isinstance(input, bytes) and len(input) > self.bytes_length_display_threshold:
             return f"Bytes({format_bytes(len(input))})"
+        return input
 
     def format(self, record: logging.LogRecord) -> str:
         record.input = self._replace_large_payloads(record.input)
