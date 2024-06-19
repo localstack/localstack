@@ -416,3 +416,21 @@ def add_resource_policy_logs_events_access(aws_client):
 
     for policy_name in policies:
         aws_client.logs.delete_resource_policy(policyName=policy_name)
+
+
+@pytest.fixture
+def events_create_connection(aws_client):
+    connections = []
+
+    def _create_connection(**kwargs):
+        response = aws_client.events.create_connection(**kwargs)
+        connections.append(kwargs["Name"])
+        return response
+
+    yield _create_connection
+
+    for connection in connections:
+        try:
+            aws_client.events.delete_connection(Name=connection)
+        except Exception as e:
+            LOG.warning(f"Failed to delete connection {connection}: {e}")

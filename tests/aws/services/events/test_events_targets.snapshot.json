@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/events/test_events_integrations.py::test_put_events_with_target_lambda_list_entry": {
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda_list_entry": {
     "recorded-date": "08-04-2024, 17:32:58",
     "recorded-content": {
       "events": [
@@ -47,7 +47,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_integrations.py::test_put_events_with_target_lambda_list_entries_partial_match": {
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda_list_entries_partial_match": {
     "recorded-date": "03-04-2024, 20:00:13",
     "recorded-content": {
       "events": [
@@ -101,8 +101,23 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_integrations.py::test_put_events_with_target_sqs": {
-    "recorded-date": "26-04-2024, 08:43:27",
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetSqs::test_put_events_with_target_sqs_event_detail_match": {
+    "recorded-date": "07-05-2024, 10:40:38",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "EventType": "1"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetSqs::test_put_events_with_target_sqs": {
+    "recorded-date": "18-06-2024, 14:34:29",
     "recorded-content": {
       "message": [
         {
@@ -125,21 +140,6 @@
                 "sf_id": "baz"
               }
             }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events_integrations.py::test_put_events_with_target_sqs_event_detail_match": {
-    "recorded-date": "07-05-2024, 10:40:38",
-    "recorded-content": {
-      "messages": [
-        {
-          "MessageId": "<uuid:1>",
-          "ReceiptHandle": "receipt-handle",
-          "MD5OfBody": "m-d5-of-body",
-          "Body": {
-            "EventType": "1"
           }
         }
       ]

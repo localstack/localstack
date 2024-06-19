@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetSqs::test_put_events_with_target_sqs": {
+    "last_validated_date": "2024-06-18T14:34:29+00:00"
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetSqs::test_put_events_with_target_sqs_event_detail_match": {
+    "last_validated_date": "2024-05-07T10:40:38+00:00"
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda_list_entries_partial_match": {
+    "last_validated_date": "2024-04-08T17:36:24+00:00"
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda_list_entry": {
+    "last_validated_date": "2024-04-08T17:33:44+00:00"
+  }
+}

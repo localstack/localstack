@@ -86,6 +86,9 @@
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_schedule_rate": {
     "last_validated_date": "2024-05-14T11:23:22+00:00"
   },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_should_ignore_schedules_for_put_event": {
+    "last_validated_date": "2024-06-18T14:50:01+00:00"
+  },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_put_rule_with_schedule_custom_event_bus": {
     "last_validated_date": "2024-05-14T11:38:21+00:00"
   },

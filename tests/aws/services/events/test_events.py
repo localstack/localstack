@@ -25,6 +25,7 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from tests.aws.services.events.conftest import assert_valid_event
 from tests.aws.services.events.helper_functions import (
+    events_connection_wait_for_deleted,
     is_old_provider,
     is_v2_provider,
     sqs_collect_messages,
@@ -83,6 +84,14 @@ EVENT_BUS_ROLE = {
         "Action": "sts:AssumeRole",
     }
 }
+
+API_CONNECTION_TEST_PASSWORD = "test_pw_1984%&"
+API_CONNECTION_TEST_USERNAME = "test_user_1984"
+
+API_CONNECTION_TEST_KEY_NAME = "test_key_1984"
+API_CONNECTION_TEST_KEY_VALUE = "test_value_1984"
+
+OAUTH_PLAYGROUND_URL = "https://oauth.pstmn.io/v1/callback"
 
 
 class TestEvents:
@@ -625,7 +634,7 @@ class TestEventBus:
         bus_name = f"unique-prefix-1234567890-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
-        bus_name_not_match = "no-prefix-match"
+        bus_name_not_match = f"no-prefix-match-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name_not_match, "<bus-name>"))
 
         create_event_bus(Name=bus_name)
@@ -1620,3 +1629,242 @@ class TestEventTarget:
                 {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
             ],
         )
+
+
+class TestConnection:
+    @markers.aws.validated
+    @pytest.mark.parametrize("auth_type", ["BASIC", "OAUTH_CLIENT_CREDENTIALS", "API_KEY"])
+    @pytest.mark.parametrize("invocation_parameters", [True, False])
+    def test_create_list_describe_update_delete_connection(
+        self,
+        auth_type,
+        invocation_parameters,
+        events_create_connection,
+        aws_client,
+        snapshot,
+    ):
+        # Specify auth parameters
+        if auth_type == "BASIC":
+            auth_parameters = {
+                "BasicAuthParameters": {
+                    "Username": API_CONNECTION_TEST_USERNAME,
+                    "Password": API_CONNECTION_TEST_PASSWORD,
+                }
+            }
+        if auth_type == "OAUTH_CLIENT_CREDENTIALS":
+            auth_parameters = {
+                "OAuthParameters": {
+                    "ClientParameters": {"ClientID": "string", "ClientSecret": "string"},
+                    "AuthorizationEndpoint": OAUTH_PLAYGROUND_URL,
+                    "HttpMethod": "PUT",  # TODO test "GET" | "POST"
+                    "OAuthHttpParameters": {
+                        "HeaderParameters": [
+                            {
+                                "Key": "Content_Type",
+                                "Value": "'application/x-www-form-urlencoded'",
+                                "IsValueSecret": False,
+                            },
+                        ],
+                        "QueryStringParameters": [
+                            {
+                                "Key": "some_test_key",
+                                "Value": "some_test_value",
+                                "IsValueSecret": False,
+                            },
+                        ],
+                        "BodyParameters": [
+                            {"Key": "grant_type", "Value": "string", "IsValueSecret": True},
+                            {
+                                "Key": "user",
+                                "Value": API_CONNECTION_TEST_USERNAME,
+                                "IsValueSecret": True,
+                            },
+                            {
+                                "Key": "password",
+                                "Value": API_CONNECTION_TEST_PASSWORD,
+                                "IsValueSecret": True,
+                            },
+                        ],
+                    },
+                }
+            }
+        if auth_type == "API_KEY":
+            auth_parameters = {
+                "ApiKeyAuthParameters": {
+                    "ApiKeyName": API_CONNECTION_TEST_KEY_NAME,
+                    "ApiKeyValue": API_CONNECTION_TEST_KEY_VALUE,
+                }
+            }
+
+        # Specify invocation parameters
+        if invocation_parameters:
+            invocation_http_parameters = {
+                "HeaderParameters": [
+                    {"Key": "string", "Value": "string", "IsValueSecret": True},
+                ],
+                "QueryStringParameters": [
+                    {"Key": "string", "Value": "string", "IsValueSecret": False},
+                ],
+                "BodyParameters": [
+                    {"Key": "string", "Value": "string", "IsValueSecret": True},
+                ],
+            }
+            auth_parameters["InvocationHttpParameters"] = invocation_http_parameters
+
+        # Test create connection
+        connection_name = f"test-connection-{short_uid()}"
+        response = events_create_connection(
+            Name=connection_name,
+            Description="test description",
+            AuthorizationType=auth_type,
+            AuthParameters=auth_parameters,
+        )
+        connection_arn = response["ConnectionArn"]
+        connection_arn_id = connection_arn.split("/")[-1]
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(connection_name, "<connection-name>"),
+                snapshot.transform.regex(connection_arn_id, "<connection-arn-id>"),
+            ]
+        )
+        snapshot.match("create-connection", response)
+
+        response = aws_client.events.list_connections(NamePrefix=connection_name)
+        snapshot.match("list-connections", response)
+
+        response = aws_client.events.describe_connection(
+            Name=connection_name,
+        )
+        secret_arn = response["SecretArn"]
+        secret_arn_id = secret_arn.split("/")[-1]
+
+        snapshot.add_transformer(snapshot.transform.regex(secret_arn_id, "<secret-arn-id>"))
+        snapshot.match("describe-connection", response)
+
+        response = aws_client.events.delete_connection(Name=connection_name)
+        snapshot.match("delete-connection", response)
+
+        events_connection_wait_for_deleted(aws_client, connection_name)
+
+        response = aws_client.events.list_connections(NamePrefix=connection_name)
+        snapshot.match("list-connections-after-delete", response)
+
+    @markers.aws.validated
+    def test_list_connections_with_prefix(self, events_create_connection, aws_client, snapshot):
+        events = aws_client.events
+        connection_name = f"unique-prefix-1234567890-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name-a>"))
+
+        connection_name_not_match = f"no-prefix-match-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(connection_name_not_match, "<connection-name-b>")
+        )
+
+        response = events_create_connection(
+            Name=connection_name,
+            Description="test description",
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {
+                    "Username": API_CONNECTION_TEST_USERNAME,
+                    "Password": API_CONNECTION_TEST_PASSWORD,
+                }
+            },
+        )
+        connection_arn = response["ConnectionArn"]
+        connection_arn_id = connection_arn.split("/")[-1]
+        snapshot.add_transformer(snapshot.transform.regex(connection_arn_id, "<connection-arn-id>"))
+
+        events_create_connection(
+            Name=connection_name_not_match,
+            Description="test description",
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {
+                    "Username": API_CONNECTION_TEST_USERNAME,
+                    "Password": API_CONNECTION_TEST_PASSWORD,
+                }
+            },
+        )
+
+        response = events.list_connections(NamePrefix=connection_name)
+        snapshot.match("list-connections-prefix-complete-name", response)
+
+        response = events.list_connections(NamePrefix=connection_name.split("-")[0])
+        snapshot.match("list-connections-prefix", response)
+
+    @markers.aws.validated
+    def test_list_connections_with_limit(self, events_create_connection, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
+        connection_name_prefix = f"test-connection-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(connection_name_prefix, "<connection-name-prefix>")
+        )
+        count = 6
+
+        for i in range(count):
+            connection_name = f"{connection_name_prefix}-{i}"
+            response = events_create_connection(
+                Name=connection_name,
+                Description="test description",
+                AuthorizationType="BASIC",
+                AuthParameters={
+                    "BasicAuthParameters": {
+                        "Username": API_CONNECTION_TEST_USERNAME,
+                        "Password": API_CONNECTION_TEST_PASSWORD,
+                    }
+                },
+            )
+            connection_arn = response["ConnectionArn"]
+            connection_arn_id = connection_arn.split("/")[-1]
+            snapshot.add_transformer(
+                snapshot.transform.regex(connection_arn_id, "<connection-arn-id>")
+            )
+
+        response = aws_client.events.list_connections(
+            Limit=int(count / 2), NamePrefix=connection_name_prefix
+        )
+        snapshot.match("list-connections-limit", response)
+
+        response = aws_client.events.list_connections(
+            Limit=int(count / 2) + 2,
+            NextToken=response["NextToken"],
+            NamePrefix=connection_name_prefix,
+        )
+        snapshot.match("list-connections-limit-next-token", response)
+
+    @markers.aws.validated
+    def test_list_connection_with_state(self, events_create_connection, aws_client, snapshot):
+        connection_name = f"test-connection-{short_uid()}"
+        response = events_create_connection(
+            Name=connection_name,
+            Description="test description",
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {
+                    "Username": API_CONNECTION_TEST_USERNAME,
+                    "Password": API_CONNECTION_TEST_PASSWORD,
+                }
+            },
+        )
+        connection_arn = response["ConnectionArn"]
+        connection_arn_id = connection_arn.split("/")[-1]
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(connection_arn_id, "<connection-arn-id>"),
+                snapshot.transform.regex(connection_name, "<connection-name>"),
+            ]
+        )
+
+        def _wait_for_active():
+            response = aws_client.events.describe_connection(Name=connection_name)
+            return response["ConnectionState"] == "AUTHORIZED"
+
+        retry(_wait_for_active, retries=5, sleep=1)
+
+        response = aws_client.events.list_connections(ConnectionState="AUTHORIZED")
+        snapshot.match("list-connections-state", response)
+
+        response = aws_client.events.list_connections(ConnectionState="CREATING")
+        snapshot.match("list-connections-state-empty", response)
