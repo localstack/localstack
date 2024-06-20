@@ -168,8 +168,6 @@ class TestArchive:
         )
         snapshot.match("list-archives-with-source-arn", response_list_archives_source_arn)
 
-    # TODO add test list with prefix and resource arn
-
     @markers.aws.validated
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     def test_list_archive_state_enabled(
