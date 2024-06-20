@@ -373,8 +373,7 @@ def put_event_to_archive(aws_client, events_create_event_bus, events_create_arch
 
         if entries:
             num_events = len(entries)
-
-        if not entries:
+        else:
             entries = []
             for i in range(num_events):
                 entries.append(
