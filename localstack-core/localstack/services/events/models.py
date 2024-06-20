@@ -58,19 +58,21 @@ class InvalidEventPatternException(Exception):
         self.message = message or f"Event pattern is not valid. Reason: {reason}"
 
 
-class FormattedEvent(TypedDict):
-    version: str
-    id: str
-    detail_type: Optional[str]  # key "detail-type" is automatically interpreted as detail_type
-    source: Optional[EventSourceName]
-    account: str
-    time: EventTime
-    region: str
-    resources: Optional[EventResourceList]
-    detail: dict[str, str | dict]
-    replay_name: Optional[
-        ReplayName
-    ]  # key "replay-name" is automatically interpreted as replay_name
+FormattedEvent = TypedDict(  # functional syntax required due to name-name keys
+    "FormattedEvent",
+    {
+        "version": str,
+        "id": str,
+        "detail-type": Optional[str],
+        "source": Optional[EventSourceName],
+        "account": str,
+        "time": EventTime,
+        "region": str,
+        "resources": Optional[EventResourceList],
+        "detail": dict[str, str | dict],
+        "replay-name": Optional[ReplayName],
+    },
+)
 
 
 FormattedEventDict = dict[str, FormattedEvent]
