@@ -58,7 +58,7 @@ class TestArchive:
 
         snapshot.match("create-archive", response_create_archive)
 
-        response_list_archives = aws_client.events.list_archives()
+        response_list_archives = aws_client.events.list_archives(NamePrefix=archive_name)
         snapshot.match("list-archives", response_list_archives)
 
         response_describe_archive = aws_client.events.describe_archive(ArchiveName=archive_name)
