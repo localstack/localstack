@@ -23,6 +23,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_resource,
     create_rest_resource_method,
 )
+from tests.aws.services.apigateway.conftest import is_next_gen_api
 
 LOG = logging.getLogger(__name__)
 
@@ -2012,6 +2013,91 @@ class TestApiGatewayGatewayResponse:
         )
 
         snapshot.match("get-deleted-gw-response", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_next_gen_api(), reason="Behaviour only present in next gen api"
+    )
+    def test_gateway_response_put(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(
+            SortingTransformer(key="items", sorting_fn=itemgetter("responseType"))
+        )
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test GatewayResponse",
+        )
+        api_id = response["id"]
+
+        # Put all values
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            statusCode="404",
+            responseParameters={
+                "gatewayresponse.header.x-request-path": "method.request.path.petId",
+                "gatewayresponse.header.Access-Control-Allow-Origin": "'a.b.c'",
+                "gatewayresponse.header.x-request-query": "method.request.querystring.q",
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+            },
+            responseTemplates={
+                "application/json": '{\n     "message": $context.error.messageString,\n     "type":  "$context.error.responseType",\n     "stage":  "$context.stage",\n     "resourcePath":  "$context.resourcePath",\n     "stageVariables.a":  "$stageVariables.a",\n     "statusCode": "\'404\'"\n}'
+            },
+        )
+        snapshot.match("put-gateway-response-all-value", response)
+
+        # Put only status code
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            statusCode="404",
+        )
+        snapshot.match("put-gateway-response-status-only", response)
+
+        # Put only response parameters
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            responseParameters={
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+        )
+        snapshot.match("put-gateway-response-response-parameters-only", response)
+
+        # Put only response templates
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            responseTemplates={
+                "application/json": '{\n     "message": $context.error.messageString,\n     "type":  "$context.error.responseType",\n     "stage":  "$context.stage",\n     "resourcePath":  "$context.resourcePath",\n     "stageVariables.a":  "$stageVariables.a",\n     "statusCode": "\'404\'"\n}'
+            },
+        )
+        snapshot.match("put-gateway-response-response-templates-only", response)
+
+        # Put default response
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="DEFAULT_5XX",
+            statusCode="599",
+            responseParameters={
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+            responseTemplates={
+                "application/json": '{\n     "message": $context.error.messageString,\n     "type":  "$context.error.responseType",\n     "stage":  "$context.stage",\n     "resourcePath":  "$context.resourcePath",\n     "stageVariables.a":  "$stageVariables.a",\n     "statusCode": "\'404\'"\n}'
+            },
+        )
+        snapshot.match("put-gateway-response-default-5xx", response)
+
+        # Put 500 after default set
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="AUTHORIZER_FAILURE",
+            responseParameters={"gatewayresponse.header.foo": "'bar'"},
+        )
+        snapshot.match("put-gateway-response-default-ignored", response)
+
+        # Get all, default should affect all 500
+        response = aws_client.apigateway.get_gateway_responses(restApiId=api_id)
+        snapshot.match("get-gateway-responses", response)
 
     @markers.aws.validated
     def test_gateway_response_validation(self, aws_client_factory, apigw_create_rest_api, snapshot):

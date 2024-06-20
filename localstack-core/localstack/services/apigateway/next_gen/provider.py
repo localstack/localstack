@@ -1,13 +1,19 @@
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.apigateway import (
     CacheClusterSize,
     CreateStageRequest,
     Deployment,
     DeploymentCanarySettings,
+    GatewayResponse,
+    GatewayResponses,
+    GatewayResponseType,
     ListOfPatchOperation,
     MapOfStringToString,
+    NotFoundException,
     NullableBoolean,
+    NullableInteger,
     Stage,
+    StatusCode,
     String,
 )
 from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
@@ -22,6 +28,11 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 
 from ..models import apigateway_stores
+from .execute_api.gateway_response import (
+    DEFAULT_GATEWAY_RESPONSES,
+    build_gateway_response,
+    get_gateway_response_or_default,
+)
 from .execute_api.helpers import freeze_rest_api
 from .execute_api.router import ApiGatewayEndpoint, ApiGatewayRouter
 
@@ -122,3 +133,81 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
         call_moto(context)
         store = get_apigateway_store(context=context)
         store.internal_deployments.pop((rest_api_id.lower(), deployment_id), None)
+
+    def put_gateway_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        response_type: GatewayResponseType,
+        status_code: StatusCode = None,
+        response_parameters: MapOfStringToString = None,
+        response_templates: MapOfStringToString = None,
+        **kwargs,
+    ) -> GatewayResponse:
+        store = get_apigateway_store(context=context)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        if response_type not in DEFAULT_GATEWAY_RESPONSES:
+            raise CommonServiceException(
+                code="ValidationException",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
+            )
+
+        gateway_response = build_gateway_response(
+            status_code=status_code,
+            response_parameters=response_parameters,
+            response_templates=response_templates,
+            response_type=response_type,
+            default_response=False,
+        )
+        rest_api_container.gateway_responses[response_type] = gateway_response
+        return gateway_response
+
+    def get_gateway_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        response_type: GatewayResponseType,
+        **kwargs,
+    ) -> GatewayResponse:
+        store = get_apigateway_store(context=context)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        if response_type not in DEFAULT_GATEWAY_RESPONSES:
+            raise CommonServiceException(
+                code="ValidationException",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
+            )
+
+        gateway_response = get_gateway_response_or_default(
+            response_type, rest_api_container.gateway_responses
+        )
+        # TODO: add validation with the parameters? seems like it validated client side? how to try?
+        return gateway_response
+
+    def get_gateway_responses(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs,
+    ) -> GatewayResponses:
+        store = get_apigateway_store(context=context)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        user_gateway_resp = rest_api_container.gateway_responses
+        gateway_responses = [
+            get_gateway_response_or_default(response_type, user_gateway_resp)
+            for response_type in DEFAULT_GATEWAY_RESPONSES
+        ]
+        return GatewayResponses(items=gateway_responses)
