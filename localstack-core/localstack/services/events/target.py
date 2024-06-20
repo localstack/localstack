@@ -303,7 +303,7 @@ class EventsTargetSender(TargetSender):
         if isinstance(event, dict) and (resources := event.get("resources")):
             return resources
         else:
-            return []  # [self.rule_arn] if self.rule_arn else []
+            return []
 
 
 class FirehoseTargetSender(TargetSender):
