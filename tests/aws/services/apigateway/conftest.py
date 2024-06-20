@@ -1,8 +1,7 @@
-import os
-
 import pytest
 from botocore.config import Config
 
+from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
@@ -69,7 +68,7 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
 
 
 def is_next_gen_api():
-    return os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY") == "next_gen" and not is_aws_cloud()
+    return config.APIGW_NEXT_GEN_PROVIDER and not is_aws_cloud()
 
 
 @pytest.fixture

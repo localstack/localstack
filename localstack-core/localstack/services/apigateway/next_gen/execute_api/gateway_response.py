@@ -1,5 +1,10 @@
+from enum import Enum
+
 from localstack.aws.api.apigateway import (
+    GatewayResponse,
     GatewayResponseType,
+    MapOfStringToString,
+    StatusCode,
 )
 
 
@@ -91,18 +96,6 @@ class UnsupportedMediaTypeError(BaseGatewayException):
 
 class WafFilteredError(BaseGatewayException):
     type = GatewayResponseType.WAF_FILTERED
-
-
-# File to merge with next_gen/gateway_response when we switch over to it.
-# This will allow in the meantime to expend on functionality without requiring to import from the provider to /next_gen
-from enum import Enum
-
-from localstack.aws.api.apigateway import (
-    GatewayResponse,
-    GatewayResponseType,
-    MapOfStringToString,
-    StatusCode,
-)
 
 
 class GatewayResponseCode(StatusCode, Enum):
