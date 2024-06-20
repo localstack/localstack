@@ -139,6 +139,9 @@ class ArchiveService:
     def _create_archive_target(
         self,
     ) -> TargetId:
+        """Creates a target for the archive rule. The target is required for accessing parameters
+        from the provider during sending of events to the target but it is not invoked
+        because events are put to the archive directly to not overload the gateway"""
         target_id = f"Events-Archive-{self.name}"
         self.client.put_targets(
             Rule=self.rule_name,
