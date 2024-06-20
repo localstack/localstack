@@ -280,34 +280,16 @@ class TestIntrinsicFunctions:
             max_wait=120,
         )
 
-    @markers.aws.unknown
-    def test_cfn_template_with_short_form_fn_sub(self, deploy_cfn_template, aws_client):
-        environment = f"env-{short_uid()}"
-
+    @markers.aws.validated
+    def test_cfn_template_with_short_form_fn_sub(self, deploy_cfn_template):
         stack = deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/template23.yaml"
+                os.path.dirname(__file__), "../../templates/engine/cfn_short_sub.yml"
             ),
-            parameters={"Environment": environment, "ApiKey": "12345"},
         )
 
-        # 2 roles created successfully
-        rs = aws_client.iam.list_roles()
-        roles = [role for role in rs["Roles"] if stack.stack_name in role["RoleName"]]
-        assert len(roles) == 2
-
-        state_machines_after = aws_client.stepfunctions.list_state_machines()["stateMachines"]
-        state_machines = [
-            sm for sm in state_machines_after if f"{stack.stack_name}-StateMachine-" in sm["name"]
-        ]
-        assert len(state_machines) == 1
-
-        rs = aws_client.stepfunctions.describe_state_machine(
-            stateMachineArn=state_machines[0]["stateMachineArn"]
-        )
-        definition = json.loads(rs["definition"].replace("\n", ""))
-        payload = definition["States"]["time-series-update"]["Parameters"]["Payload"]
-        assert payload == {"key": "12345"}
+        result = stack.outputs["Result"]
+        assert result == "test"
 
 
 class TestImports:

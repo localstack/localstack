@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_cfn_template_with_short_form_fn_sub": {
+    "last_validated_date": "2024-06-20T20:41:15+00:00"
+  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function": {
     "last_validated_date": "2024-04-03T07:12:29+00:00"
   },
