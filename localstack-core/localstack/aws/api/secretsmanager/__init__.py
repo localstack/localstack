@@ -28,6 +28,7 @@ RegionType = str
 RequireEachIncludedTypeType = bool
 RotationEnabledType = bool
 RotationLambdaARNType = str
+RotationTokenType = str
 ScheduleExpressionType = str
 SecretARNType = str
 SecretIdType = str
@@ -436,6 +437,7 @@ class PutSecretValueRequest(ServiceRequest):
     SecretBinary: Optional[SecretBinaryType]
     SecretString: Optional[SecretStringType]
     VersionStages: Optional[SecretVersionStagesType]
+    RotationToken: Optional[RotationTokenType]
 
 
 class PutSecretValueResponse(TypedDict, total=False):
@@ -698,6 +700,7 @@ class SecretsmanagerApi:
         secret_binary: SecretBinaryType = None,
         secret_string: SecretStringType = None,
         version_stages: SecretVersionStagesType = None,
+        rotation_token: RotationTokenType = None,
         **kwargs,
     ) -> PutSecretValueResponse:
         raise NotImplementedError

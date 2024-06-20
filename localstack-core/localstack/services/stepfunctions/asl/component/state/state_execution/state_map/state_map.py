@@ -56,6 +56,12 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     MaxConcurrency,
     MaxConcurrencyDecl,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.tolerated_failure import (
+    ToleratedFailureCount,
+    ToleratedFailureCountPath,
+    ToleratedFailurePercentage,
+    ToleratedFailurePercentagePath,
+)
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
@@ -72,6 +78,8 @@ class StateMap(ExecutionState):
     result_selector: ResultSelector
     retry: Optional[RetryDecl]
     catch: Optional[CatchDecl]
+    tolerated_failure_count: Optional[ToleratedFailureCount]
+    tolerated_failure_percentage: Optional[ToleratedFailurePercentage]
 
     def __init__(self):
         super(StateMap, self).__init__(
@@ -112,6 +120,30 @@ class StateMap(ExecutionState):
         else:
             raise ValueError(f"Unknown value for IteratorDecl '{iteration_decl}'.")
 
+        tolerated_failure_count = state_props.get(ToleratedFailureCount)
+        tolerated_failure_count_path = state_props.get(ToleratedFailureCountPath)
+
+        if tolerated_failure_count and tolerated_failure_count_path:
+            raise ValueError(
+                "Cannot define both ToleratedFailureCount and ToleratedFailureCountPath."
+            )
+        self.tolerated_failure_count = (
+            tolerated_failure_count or tolerated_failure_count_path or ToleratedFailureCount()
+        )
+
+        tolerated_failure_percentage = state_props.get(ToleratedFailurePercentage)
+        tolerated_failure_percentage_path = state_props.get(ToleratedFailurePercentagePath)
+
+        if tolerated_failure_percentage and tolerated_failure_percentage_path:
+            raise ValueError(
+                "Cannot define both ToleratedFailurePercentage and ToleratedFailurePercentagePath."
+            )
+        self.tolerated_failure_percentage = (
+            tolerated_failure_percentage
+            or tolerated_failure_percentage_path
+            or ToleratedFailurePercentage()
+        )
+
     def _eval_execution(self, env: Environment) -> None:
         max_concurrency_num = env.stack.pop()
 
@@ -144,6 +176,10 @@ class StateMap(ExecutionState):
                 item_selector=self.item_selector,
             )
         elif isinstance(self.iteration_component, DistributedIterator):
+            self.tolerated_failure_count.eval(env)
+            tolerated_failure_count = env.stack.pop()
+            self.tolerated_failure_percentage.eval(env)
+            tolerated_failure_percentage = env.stack.pop()
             eval_input = DistributedIteratorEvalInput(
                 state_name=self.name,
                 max_concurrency=max_concurrency_num,
@@ -151,6 +187,8 @@ class StateMap(ExecutionState):
                 parameters=self.parameters,
                 item_selector=self.item_selector,
                 item_reader=self.item_reader,
+                tolerated_failure_count=tolerated_failure_count,
+                tolerated_failure_percentage=tolerated_failure_percentage,
             )
         elif isinstance(self.iteration_component, InlineItemProcessor):
             eval_input = InlineItemProcessorEvalInput(
@@ -161,6 +199,10 @@ class StateMap(ExecutionState):
                 parameters=self.parameters,
             )
         elif isinstance(self.iteration_component, DistributedItemProcessor):
+            self.tolerated_failure_count.eval(env)
+            tolerated_failure_count = env.stack.pop()
+            self.tolerated_failure_percentage.eval(env)
+            tolerated_failure_percentage = env.stack.pop()
             eval_input = DistributedItemProcessorEvalInput(
                 state_name=self.name,
                 max_concurrency=max_concurrency_num,
@@ -168,6 +210,8 @@ class StateMap(ExecutionState):
                 item_reader=self.item_reader,
                 item_selector=self.item_selector,
                 parameters=self.parameters,
+                tolerated_failure_count=tolerated_failure_count,
+                tolerated_failure_percentage=tolerated_failure_percentage,
             )
         else:
             raise RuntimeError(

@@ -96,6 +96,7 @@ def main_v2():
     try:
         runtime.run()
     except LocalstackExit as e:
+        sys.stdout.write(f"Localstack returning with exit code {e.code}. Reason: {e}")
         sys.exit(e.code)
     except Exception as e:
         sys.stdout.write(f"ERROR: the LocalStack runtime exited unexpectedly: {e}\n")

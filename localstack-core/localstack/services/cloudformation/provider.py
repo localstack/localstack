@@ -210,10 +210,6 @@ class CloudformationProvider(CloudformationApi):
 
         template = template_preparer.parse_template(request["TemplateBody"])
 
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
-
         stack_name = template["StackName"] = request.get("StackName")
         if api_utils.validate_stack_name(stack_name) is False:
             raise ValidationError(
@@ -264,6 +260,10 @@ class CloudformationProvider(CloudformationApi):
             stack.set_stack_status("ROLLBACK_COMPLETE")
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
+
+        # perform basic static analysis on the template
+        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
+            validation_fn(template)
 
         stack = Stack(context.account_id, context.region, request, template)
 
@@ -334,10 +334,6 @@ class CloudformationProvider(CloudformationApi):
         api_utils.prepare_template_body(request)
         template = template_preparer.parse_template(request["TemplateBody"])
 
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
-
         if (
             "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
             and "Transform" in template.keys()
@@ -391,6 +387,10 @@ class CloudformationProvider(CloudformationApi):
             )
             stack.set_stack_status("ROLLBACK_COMPLETE")
             return CreateStackOutput(StackId=stack.stack_id)
+
+        # perform basic static analysis on the template
+        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
+            validation_fn(template)
 
         # update the template
         stack.template_original = template
@@ -613,10 +613,6 @@ class CloudformationProvider(CloudformationApi):
             ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
 
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
-
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
         # TODO: validate with AWS what this is actually doing?
@@ -714,6 +710,10 @@ class CloudformationProvider(CloudformationApi):
             conditions={},  # TODO: we don't have any resolved conditions yet at this point but we need the conditions because of the samtranslator...
             resolved_parameters=resolved_parameters,
         )
+
+        # perform basic static analysis on the template
+        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
+            validation_fn(template)
 
         # create change set for the stack and apply changes
         change_set = StackChangeSet(

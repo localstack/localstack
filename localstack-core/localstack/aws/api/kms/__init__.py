@@ -146,6 +146,11 @@ class GrantOperation(str):
     GenerateDataKeyPairWithoutPlaintext = "GenerateDataKeyPairWithoutPlaintext"
     GenerateMac = "GenerateMac"
     VerifyMac = "VerifyMac"
+    DeriveSharedSecret = "DeriveSharedSecret"
+
+
+class KeyAgreementAlgorithmSpec(str):
+    ECDH = "ECDH"
 
 
 class KeyEncryptionMechanism(str):
@@ -188,6 +193,7 @@ class KeyUsageType(str):
     SIGN_VERIFY = "SIGN_VERIFY"
     ENCRYPT_DECRYPT = "ENCRYPT_DECRYPT"
     GENERATE_VERIFY_MAC = "GENERATE_VERIFY_MAC"
+    KEY_AGREEMENT = "KEY_AGREEMENT"
 
 
 class MacAlgorithmSpec(str):
@@ -664,6 +670,7 @@ class MultiRegionConfiguration(TypedDict, total=False):
     ReplicaKeys: Optional[MultiRegionKeyList]
 
 
+KeyAgreementAlgorithmSpecList = List[KeyAgreementAlgorithmSpec]
 SigningAlgorithmSpecList = List[SigningAlgorithmSpec]
 EncryptionAlgorithmSpecList = List[EncryptionAlgorithmSpec]
 
@@ -688,6 +695,7 @@ class KeyMetadata(TypedDict, total=False):
     KeySpec: Optional[KeySpec]
     EncryptionAlgorithms: Optional[EncryptionAlgorithmSpecList]
     SigningAlgorithms: Optional[SigningAlgorithmSpecList]
+    KeyAgreementAlgorithms: Optional[KeyAgreementAlgorithmSpecList]
     MultiRegion: Optional[NullableBooleanType]
     MultiRegionConfiguration: Optional[MultiRegionConfiguration]
     PendingDeletionWindowInDays: Optional[PendingWindowInDaysType]
@@ -763,6 +771,26 @@ class DeleteImportedKeyMaterialRequest(ServiceRequest):
     KeyId: KeyIdType
 
 
+PublicKeyType = bytes
+
+
+class DeriveSharedSecretRequest(ServiceRequest):
+    KeyId: KeyIdType
+    KeyAgreementAlgorithm: KeyAgreementAlgorithmSpec
+    PublicKey: PublicKeyType
+    GrantTokens: Optional[GrantTokenList]
+    DryRun: Optional[NullableBooleanType]
+    Recipient: Optional[RecipientInfo]
+
+
+class DeriveSharedSecretResponse(TypedDict, total=False):
+    KeyId: Optional[KeyIdType]
+    SharedSecret: Optional[PlaintextType]
+    CiphertextForRecipient: Optional[CiphertextType]
+    KeyAgreementAlgorithm: Optional[KeyAgreementAlgorithmSpec]
+    KeyOrigin: Optional[OriginType]
+
+
 class DescribeCustomKeyStoresRequest(ServiceRequest):
     CustomKeyStoreId: Optional[CustomKeyStoreIdType]
     CustomKeyStoreName: Optional[CustomKeyStoreNameType]
@@ -832,9 +860,6 @@ class GenerateDataKeyPairRequest(ServiceRequest):
     GrantTokens: Optional[GrantTokenList]
     Recipient: Optional[RecipientInfo]
     DryRun: Optional[NullableBooleanType]
-
-
-PublicKeyType = bytes
 
 
 class GenerateDataKeyPairResponse(TypedDict, total=False):
@@ -965,6 +990,7 @@ class GetPublicKeyResponse(TypedDict, total=False):
     KeyUsage: Optional[KeyUsageType]
     EncryptionAlgorithms: Optional[EncryptionAlgorithmSpecList]
     SigningAlgorithms: Optional[SigningAlgorithmSpecList]
+    KeyAgreementAlgorithms: Optional[KeyAgreementAlgorithmSpecList]
 
 
 class GrantListEntry(TypedDict, total=False):
@@ -1362,6 +1388,20 @@ class KmsApi:
     def delete_imported_key_material(
         self, context: RequestContext, key_id: KeyIdType, **kwargs
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DeriveSharedSecret")
+    def derive_shared_secret(
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        key_agreement_algorithm: KeyAgreementAlgorithmSpec,
+        public_key: PublicKeyType,
+        grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
+        recipient: RecipientInfo = None,
+        **kwargs,
+    ) -> DeriveSharedSecretResponse:
         raise NotImplementedError
 
     @handler("DescribeCustomKeyStores")

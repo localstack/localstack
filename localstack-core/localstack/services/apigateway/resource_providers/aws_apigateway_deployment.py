@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional, TypedDict
 
@@ -120,7 +121,7 @@ class ApiGatewayDeploymentProvider(ResourceProvider[ApiGatewayDeploymentProperti
             params["stageName"] = model["StageName"]
 
         if model.get("StageDescription"):
-            params["stageDescription"] = model["StageDescription"]
+            params["stageDescription"] = json.dumps(model["StageDescription"])
 
         if model.get("Description"):
             params["description"] = model["Description"]

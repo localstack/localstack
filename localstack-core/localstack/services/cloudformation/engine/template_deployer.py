@@ -195,7 +195,9 @@ def resolve_refs_recursively(
     if isinstance(result, str):
         # we're trying to filter constructed API urls here (e.g. via Join in the template)
         api_match = REGEX_OUTPUT_APIGATEWAY.match(result)
-        if api_match:
+        if api_match and result in config.CFN_STRING_REPLACEMENT_DENY_LIST:
+            return result
+        elif api_match:
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]

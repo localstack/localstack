@@ -4301,5 +4301,70 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_form_payload": {
+    "recorded-date": "13-06-2024, 21:01:16",
+    "recorded-content": {
+      "url_response": {
+        "args": {},
+        "data": "DQotLTRlZmQxNTllYWUwYzRmNGUxMjVhNWE1MDllMDczZDg1DQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9ImZvcm1maWVsZCINCg0Kbm90IGEgZmlsZSwganVzdCBhIGZpZWxkDQotLTRlZmQxNTllYWUwYzRmNGUxMjVhNWE1MDllMDczZDg1DQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9ImZvbyI7IGZpbGVuYW1lPSJmb28iDQpDb250ZW50LVR5cGU6IHRleHQvcGxhaW47DQoNCmJhcg0KDQotLTRlZmQxNTllYWUwYzRmNGUxMjVhNWE1MDllMDczZDg1LS0NCg==",
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate",
+          "content-length": "286",
+          "content-type": "multipart/form-data; boundary=4efd159eae0c4f4e125a5a509e073d85",
+          "host": "<domain:1>",
+          "user-agent": "python/test-request"
+        },
+        "method": "POST",
+        "origin": "<origin:1>",
+        "path": "/test/value"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_cross_account_access": {
+    "recorded-date": "14-06-2024, 12:09:32",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_lambda_layer": {
+    "recorded-date": "14-06-2024, 15:16:46",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_function": {
+    "recorded-date": "14-06-2024, 15:16:50",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_function_configuration": {
+    "recorded-date": "14-06-2024, 15:16:53",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_list_versions_by_function": {
+    "recorded-date": "14-06-2024, 15:16:56",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_concurrency": {
+    "recorded-date": "14-06-2024, 15:16:59",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_alias": {
+    "recorded-date": "14-06-2024, 15:17:03",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_tags": {
+    "recorded-date": "14-06-2024, 15:17:07",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_invocation": {
+    "recorded-date": "14-06-2024, 15:17:10",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_publish_version": {
+    "recorded-date": "14-06-2024, 15:17:14",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_delete_function": {
+    "recorded-date": "14-06-2024, 15:17:17",
+    "recorded-content": {}
   }
 }

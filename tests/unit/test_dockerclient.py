@@ -270,6 +270,41 @@ class TestArgumentParsing:
             "TEST3": "VAL3_OVERRIDE",
         }
 
+    def test_compose_env_files(self, tmp_path):
+        env_file_1 = tmp_path / "env1"
+        env_file_2 = tmp_path / "env2"
+        env_vars_1 = textwrap.dedent("""
+            # Some comment
+            TEST1=VAL1
+            TEST2=VAL2
+            TEST3=${TEST2}
+            TEST4="VAL4"
+            """)
+        env_vars_2 = textwrap.dedent("""
+            # Some comment
+            TEST3=VAL3_OVERRIDE
+            """)
+        env_file_1.write_text(env_vars_1)
+        env_file_2.write_text(env_vars_2)
+
+        argument_string = f"--compose-env-file {env_file_1}"
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.env_vars == {
+            "TEST1": "VAL1",
+            "TEST2": "VAL2",
+            "TEST3": "VAL2",
+            "TEST4": "VAL4",
+        }
+
+        argument_string = f"-e TEST2=VAL2_OVERRIDE --compose-env-file {env_file_1} --compose-env-file {env_file_2}"
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.env_vars == {
+            "TEST1": "VAL1",
+            "TEST2": "VAL2_OVERRIDE",
+            "TEST3": "VAL3_OVERRIDE",
+            "TEST4": "VAL4",
+        }
+
 
 def list_in(a, b):
     return len(a) <= len(b) and any((b[x : x + len(a)] == a for x in range(len(b) - len(a) + 1)))
