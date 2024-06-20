@@ -5,13 +5,12 @@ from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import Map, MapAdapter
 
 from localstack.aws.api.apigateway import ListOfResource, Resource
-from localstack.aws.protocol.op_router import (
+from localstack.aws.protocol.routing import (
     GreedyPathConverter,
-    # TODO: all under are private, not sure exactly how we should proceed for them to be re-usable
-    _path_param_regex,
-    _post_process_arg_name,
-    _StrictMethodRule,
-    _transform_path_params_to_rule_vars,
+    StrictMethodRule,
+    path_param_regex,
+    post_process_arg_name,
+    transform_path_params_to_rule_vars,
 )
 from localstack.http import Response
 from localstack.services.apigateway.models import RestApiDeployment
@@ -64,7 +63,7 @@ class RestAPIResourceRouter:
         # post process the arg keys and values
         # - the path param keys need to be "un-sanitized", i.e. sanitized rule variable names need to be reverted
         # - the path param values might still be url-encoded
-        args = {_post_process_arg_name(k): v for k, v in args.items()}
+        args = {post_process_arg_name(k): v for k, v in args.items()}
 
         # extract the operation model from the rule
         resource_id: str = rule.endpoint
@@ -108,9 +107,9 @@ def get_rule_map_for_resources(resources: ListOfResource) -> Map:
         for method, resource_method in resource.get("resourceMethods", {}).items():
             path = resource["path"]
             # translate the requestUri to a Werkzeug rule string
-            rule_string = _path_param_regex.sub(_transform_path_params_to_rule_vars, path)
+            rule_string = path_param_regex.sub(transform_path_params_to_rule_vars, path)
             rules.append(
-                _StrictMethodRule(string=rule_string, method=method, endpoint=resource["id"])
+                StrictMethodRule(string=rule_string, method=method, endpoint=resource["id"])
             )  # type: ignore
 
     return Map(
@@ -122,6 +121,3 @@ def get_rule_map_for_resources(resources: ListOfResource) -> Map:
         # get service-specific converters
         converters={"path": GreedyPathConverter},
     )
-
-
-# TODO: there are private imports from `localstack/aws/protocol/op_router.py`, we could also copy paste them for now
