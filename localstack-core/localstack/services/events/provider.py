@@ -633,7 +633,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
 
         response = ListArchivesResponse(
-            Archives=list(self._archive_dit_to_archive_response_list(limited_archives))
+            Archives=list(self._archive_dict_to_archive_response_list(limited_archives))
         )
         if next_token is not None:
             response["NextToken"] = next_token
@@ -753,7 +753,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
 
         response = ListReplaysResponse(
-            Replays=list(self._replay_dit_to_replay_response_list(limited_replays))
+            Replays=list(self._replay_dict_to_replay_response_list(limited_replays))
         )
         if next_token is not None:
             response["NextToken"] = next_token
@@ -1175,7 +1175,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in rule.items() if value is not None}
 
-    def _archive_dit_to_archive_response_list(self, archives: ArchiveDict) -> ArchiveResponseList:
+    def _archive_dict_to_archive_response_list(self, archives: ArchiveDict) -> ArchiveResponseList:
         """Return a converted dict of Archive model objects as a list of archives in API type Archive format."""
         archive_list = [self._archive_to_api_type_archive(archive) for archive in archives.values()]
         return archive_list
@@ -1209,7 +1209,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in archive_dict.items() if value is not None}
 
-    def _replay_dit_to_replay_response_list(self, replays: ReplayDict) -> ReplayList:
+    def _replay_dict_to_replay_response_list(self, replays: ReplayDict) -> ReplayList:
         """Return a converted dict of Replay model objects as a list of replays in API type Replay format."""
         replay_list = [self._replay_to_api_type_replay(replay) for replay in replays.values()]
         return replay_list
