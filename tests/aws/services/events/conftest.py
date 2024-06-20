@@ -378,8 +378,8 @@ def put_event_to_archive(aws_client, events_create_event_bus, events_create_arch
             for i in range(num_events):
                 entries.append(
                     {
-                        "Source": "test",
-                        "DetailType": "test",
+                        "Source": "testSource",
+                        "DetailType": "testDetailType",
                         "Detail": f"event number {i}",
                         "EventBusName": event_bus_name,
                     }
