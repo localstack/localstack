@@ -28,16 +28,14 @@ RULE_ARN_ARCHIVE_PATTERN = re.compile(r"^arn:aws:events:[a-z0-9-]+:\d{12}:archiv
 ARCHIVE_NAME_ARN_PATTERN = re.compile(r"^arn:aws:events:[a-z0-9-]+:\d{12}:archive/(?P<name>.+)$")
 
 
-def get_resource_type(arn: Arn) -> ResourceType:
-    parsed_arn = parse_arn(arn)
-    resource_type = parsed_arn["resource"].split("/", 1)[0]
-    if resource_type == "event-bus":
-        return ResourceType.EVENT_BUS
-    if resource_type == "rule":
-        return ResourceType.RULE
-    raise ValidationException(
-        f"Parameter {arn} is not valid. Reason: Provided Arn is not in correct format."
-    )
+class EventJSONEncoder(json.JSONEncoder):
+    """This json encoder is used to serialize datetime object
+    of a eventbridge event to time strings."""
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return event_time_to_time_string(obj)
+        return super().default(obj)
 
 
 def extract_event_bus_name(
@@ -71,6 +69,18 @@ def is_archive_arn(arn: Arn) -> bool:
     return bool(RULE_ARN_ARCHIVE_PATTERN.match(arn))
 
 
+def get_resource_type(arn: Arn) -> ResourceType:
+    parsed_arn = parse_arn(arn)
+    resource_type = parsed_arn["resource"].split("/", 1)[0]
+    if resource_type == "event-bus":
+        return ResourceType.EVENT_BUS
+    if resource_type == "rule":
+        return ResourceType.RULE
+    raise ValidationException(
+        f"Parameter {arn} is not valid. Reason: Provided Arn is not in correct format."
+    )
+
+
 def get_event_time(event: PutEventsRequestEntry) -> EventTime:
     event_time = datetime.now(timezone.utc)
     if event_timestamp := event.get("Time"):
@@ -91,14 +101,37 @@ def event_time_to_time_string(event_time: EventTime) -> str:
     return formatted_time_string
 
 
-class EventJSONEncoder(json.JSONEncoder):
-    """This json encoder is used to serialize datetime object
-    of a eventbridge event to time strings."""
+def convert_to_timezone_aware_datetime(
+    timestamp: Timestamp,
+) -> Timestamp:
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    return timestamp
 
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return event_time_to_time_string(obj)
-        return super().default(obj)
+
+def recursive_remove_none_values_from_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Recursively removes keys with non values from a dictionary.
+    """
+    if not isinstance(d, dict):
+        return d
+
+    clean_dict = {}
+    for key, value in d.items():
+        if value is None:
+            continue
+        if isinstance(value, list):
+            nested_list = [recursive_remove_none_values_from_dict(item) for item in value]
+            nested_list = [item for item in nested_list if item]
+            if nested_list:
+                clean_dict[key] = nested_list
+        elif isinstance(value, dict):
+            nested_dict = recursive_remove_none_values_from_dict(value)
+            if nested_dict:
+                clean_dict[key] = nested_dict
+        else:
+            clean_dict[key] = value
+    return clean_dict
 
 
 def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
@@ -146,36 +179,3 @@ def re_format_event(event: FormattedEvent, event_bus_name: EventBusName) -> PutE
     if event.get("replay-name"):
         re_formatted_event["ReplayName"] = event["replay_name"]
     return re_formatted_event
-
-
-def convert_to_timezone_aware_datetime(
-    timestamp: Timestamp,
-) -> Timestamp:
-    if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=timezone.utc)
-    return timestamp
-
-
-def recursive_remove_none_values_from_dict(d: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Recursively removes keys with non values from a dictionary.
-    """
-    if not isinstance(d, dict):
-        return d
-
-    clean_dict = {}
-    for key, value in d.items():
-        if value is None:
-            continue
-        if isinstance(value, list):
-            nested_list = [recursive_remove_none_values_from_dict(item) for item in value]
-            nested_list = [item for item in nested_list if item]
-            if nested_list:
-                clean_dict[key] = nested_list
-        elif isinstance(value, dict):
-            nested_dict = recursive_remove_none_values_from_dict(value)
-            if nested_dict:
-                clean_dict[key] = nested_dict
-        else:
-            clean_dict[key] = value
-    return clean_dict
