@@ -905,6 +905,10 @@ class TestEventBus:
 
     @markers.aws.validated
     # TODO move to test targets
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_put_events_bus_to_bus(
         self,
