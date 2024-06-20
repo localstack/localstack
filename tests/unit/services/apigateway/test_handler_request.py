@@ -8,6 +8,8 @@ from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatew
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.handlers.parse import (
     InvocationRequestParser,
+)
+from localstack.services.apigateway.next_gen.execute_api.handlers.resource_router import (
     InvocationRequestRouter,
 )
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
@@ -129,22 +131,45 @@ class TestRoutingHandler:
     def deployment_with_routes(self, dummy_deployment):
         """
         This can be represented by the following routes:
-        - /
-        - GET /test
-        - PUT /test/{param}
-        - DELETE /{proxy+}
+        - (No method) - /
+        - GET         - /foo
+        - PUT         - /foo/{param}
+        - (No method) - /proxy
+        - DELETE      - /proxy/{proxy+}
+        - (No method) - /proxy/bar
+        - DELETE      - /proxy/bar/{param}
+
+        Note: we have the base `/proxy` route to not have greedy matching on the base route, and the other child routes
+        are to assert the `{proxy+} has less priority than hardcoded routes
         """
+        # path: /
         root_resource = dummy_deployment.moto_rest_api.default
+        # path: /foo
         hard_coded_resource = dummy_deployment.moto_rest_api.add_child(
-            path="test", parent_id=root_resource.id
+            path="foo", parent_id=root_resource.id
         )
+        # path: /foo/{param}
         param_resource = dummy_deployment.moto_rest_api.add_child(
             path="{param}",
             parent_id=hard_coded_resource.id,
         )
+        # path: /proxy
+        hard_coded_resource_2 = dummy_deployment.moto_rest_api.add_child(
+            path="proxy", parent_id=root_resource.id
+        )
+        # path: /proxy/bar
+        hard_coded_resource_3 = dummy_deployment.moto_rest_api.add_child(
+            path="bar", parent_id=hard_coded_resource_2.id
+        )
+        # path: /proxy/bar/{param}
+        param_resource_2 = dummy_deployment.moto_rest_api.add_child(
+            path="{param}",
+            parent_id=hard_coded_resource_3.id,
+        )
+        # path: /proxy/{proxy+}
         proxy_resource = dummy_deployment.moto_rest_api.add_child(
             path="{proxy+}",
-            parent_id=root_resource.id,
+            parent_id=hard_coded_resource_2.id,
         )
         hard_coded_resource.add_method(
             method_type="GET",
@@ -157,6 +182,11 @@ class TestRoutingHandler:
             api_key_required=False,
         )
         proxy_resource.add_method(
+            method_type="DELETE",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        param_resource_2.add_method(
             method_type="DELETE",
             authorization_type="NONE",
             api_key_required=False,
@@ -175,19 +205,18 @@ class TestRoutingHandler:
     def test_route_request_no_param(self, deployment_with_routes, parse_handler_chain, addressing):
         request = Request(
             "GET",
-            path=self.get_path_from_addressing("/test", addressing),
+            path=self.get_path_from_addressing("/foo", addressing),
         )
 
         context = RestApiInvocationContext(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
-        # manually invoking the handler here as exceptions would be swallowed by the chain
         handler = InvocationRequestRouter()
         handler(parse_handler_chain, context, Response())
 
-        assert context.resource["pathPart"] == "test"
-        assert context.resource["path"] == "/test"
+        assert context.resource["pathPart"] == "foo"
+        assert context.resource["path"] == "/foo"
         assert context.resource["resourceMethods"]["GET"]
         # TODO: maybe assert more regarding the data inside Resource Methods, but we don't use it yet
 
@@ -200,19 +229,18 @@ class TestRoutingHandler:
     ):
         request = Request(
             "PUT",
-            path=self.get_path_from_addressing("/test/random-value", addressing),
+            path=self.get_path_from_addressing("/foo/random-value", addressing),
         )
 
         context = RestApiInvocationContext(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
-        # manually invoking the handler here as exceptions would be swallowed by the chain
         handler = InvocationRequestRouter()
         handler(parse_handler_chain, context, Response())
 
         assert context.resource["pathPart"] == "{param}"
-        assert context.resource["path"] == "/test/{param}"
+        assert context.resource["path"] == "/foo/{param}"
         # TODO: maybe assert more regarding the data inside Resource Methods, but we don't use it yet
         assert context.resource_method == context.resource["resourceMethods"]["PUT"]
 
@@ -222,28 +250,65 @@ class TestRoutingHandler:
     def test_route_request_with_greedy_parameter(
         self, deployment_with_routes, parse_handler_chain, addressing
     ):
+        # assert that a path which does not contain `/proxy/bar` will be routed to {proxy+}
         request = Request(
             "DELETE",
-            path=self.get_path_from_addressing("/this/is/a/proxy/request", addressing),
+            path=self.get_path_from_addressing("/proxy/this/is/a/proxy/req2%Fuest", addressing),
         )
+        router_handler = InvocationRequestRouter()
 
         context = RestApiInvocationContext(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
-        # manually invoking the handler here as exceptions would be swallowed by the chain
-        handler = InvocationRequestRouter()
-        handler(parse_handler_chain, context, Response())
+        router_handler(parse_handler_chain, context, Response())
 
         assert context.resource["pathPart"] == "{proxy+}"
-        assert context.resource["path"] == "/{proxy+}"
+        assert context.resource["path"] == "/proxy/{proxy+}"
         # TODO: maybe assert more regarding the data inside Resource Methods, but we don't use it yet
         assert context.resource_method == context.resource["resourceMethods"]["DELETE"]
 
-        assert context.invocation_request["path_parameters"] == {"proxy": "this/is/a/proxy/request"}
+        assert context.invocation_request["path_parameters"] == {
+            "proxy": "this/is/a/proxy/req2%Fuest"
+        }
+
+        # assert that a path which does contain `/proxy/bar` will be routed to `/proxy/bar/{param}` if it has only
+        # one resource after `bar`
+        request = Request(
+            "DELETE",
+            path=self.get_path_from_addressing("/proxy/bar/foobar", addressing),
+        )
+        context = RestApiInvocationContext(request)
+        context.deployment = deployment_with_routes
+
+        parse_handler_chain.handle(context, Response())
+        router_handler(parse_handler_chain, context, Response())
+
+        assert context.resource["path"] == "/proxy/bar/{param}"
+        assert context.invocation_request["path_parameters"] == {"param": "foobar"}
+
+        # assert that a path which does contain `/proxy/bar` will be routed to {proxy+} if it does not conform to
+        # `/proxy/bar/{param}`
+        # TODO: validate this with AWS
+        request = Request(
+            "DELETE",
+            path=self.get_path_from_addressing("/proxy/test2/is/a/proxy/req2%Fuest", addressing),
+        )
+        context = RestApiInvocationContext(request)
+        context.deployment = deployment_with_routes
+
+        parse_handler_chain.handle(context, Response())
+        router_handler(parse_handler_chain, context, Response())
+
+        assert context.resource["path"] == "/proxy/{proxy+}"
+        assert context.invocation_request["path_parameters"] == {
+            "proxy": "test2/is/a/proxy/req2%Fuest"
+        }
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
-    def test_route_request_no_match(self, deployment_with_routes, parse_handler_chain, addressing):
+    def test_route_request_no_match_on_path(
+        self, deployment_with_routes, parse_handler_chain, addressing
+    ):
         request = Request(
             "GET",
             path=self.get_path_from_addressing("/wrong-test", addressing),
@@ -259,13 +324,31 @@ class TestRoutingHandler:
             handler(parse_handler_chain, context, Response())
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
-    def test_route_request_with_double_slash_and_trailing(
+    def test_route_request_no_match_on_method(
+        self, deployment_with_routes, parse_handler_chain, addressing
+    ):
+        request = Request(
+            "POST",
+            path=self.get_path_from_addressing("/test", addressing),
+        )
+
+        context = RestApiInvocationContext(request)
+        context.deployment = deployment_with_routes
+
+        parse_handler_chain.handle(context, Response())
+        # manually invoking the handler here as exceptions would be swallowed by the chain
+        handler = InvocationRequestRouter()
+        with pytest.raises(Exception, match="Not found"):
+            handler(parse_handler_chain, context, Response())
+
+    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    def test_route_request_with_double_slash_and_trailing_and_encoded(
         self, deployment_with_routes, parse_handler_chain, addressing
     ):
         request = Request(
             "PUT",
-            path=self.get_path_from_addressing("/test/random/", addressing),
-            raw_path=self.get_path_from_addressing("//test/random/", addressing),
+            path=self.get_path_from_addressing("/foo/foo%2Fbar/", addressing),
+            raw_path=self.get_path_from_addressing("//foo/foo%2Fbar/", addressing),
         )
 
         context = RestApiInvocationContext(request)
@@ -275,5 +358,5 @@ class TestRoutingHandler:
         handler = InvocationRequestRouter()
         handler(parse_handler_chain, context, Response())
 
-        assert context.resource["path"] == "/test/{param}"
-        assert context.invocation_request["path_parameters"] == {"param": "random"}
+        assert context.resource["path"] == "/foo/{param}"
+        assert context.invocation_request["path_parameters"] == {"param": "foo%2Fbar"}
