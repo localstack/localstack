@@ -7583,7 +7583,6 @@ class TestS3PresignedUrl:
         head_object = aws_client.s3.head_object(Bucket=function_name, Key=object_key)
         snapshot.match("head-object", head_object)
 
-    @pytest.mark.skip(reason="Current test needs to be rewritten to work with AWS SDK v3")
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
     @markers.aws.validated
     def test_presigned_url_v4_signed_headers_in_qs(
@@ -7608,7 +7607,6 @@ class TestS3PresignedUrl:
         )
         assert "=AES256" not in url
 
-        # TODO migrate to aws sdk v3
         handler_file = os.path.join(
             os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v2.js"
         )
@@ -7616,6 +7614,7 @@ class TestS3PresignedUrl:
 
         function_name = f"func-integration-{short_uid()}"
         # we need the AWS SDK v2, and Node 16 still has it by default
+        # TODO since Node 16 is getting depricated we should consider ugrading to Node 20
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
