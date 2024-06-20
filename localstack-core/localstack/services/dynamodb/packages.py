@@ -9,10 +9,9 @@ from localstack.utils.archives import (
     update_jar_manifest,
     upgrade_jar_file,
 )
-from localstack.utils.files import file_exists_not_empty, save_file
+from localstack.utils.files import save_file
 from localstack.utils.functions import run_safe
 from localstack.utils.http import download
-from localstack.utils.platform import get_arch, is_mac_os
 from localstack.utils.run import run
 
 # patches for DynamoDB Local
@@ -21,7 +20,6 @@ DDB_PATCH_URL_PREFIX = (
 )
 DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
 
-LIBSQLITE_AARCH64_URL = f"{MAVEN_REPO_URL}/io/github/ganadist/sqlite4java/libsqlite4java-osx-aarch64/1.0.392/libsqlite4java-osx-aarch64-1.0.392.dylib"
 DYNAMODB_JAR_URL = "https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip"
 JAVASSIST_JAR_URL = f"{MAVEN_REPO_URL}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
 
@@ -54,13 +52,6 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
         install_dir = self._get_install_dir(target)
         download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, install_dir)
 
-        # download additional libs for Mac M1 (for local dev mode)
-        ddb_local_lib_dir = os.path.join(install_dir, "DynamoDBLocal_lib")
-        if is_mac_os() and get_arch() == "arm64":
-            target_path = os.path.join(ddb_local_lib_dir, "libsqlite4java-osx-aarch64.dylib")
-            if not file_exists_not_empty(target_path):
-                download(LIBSQLITE_AARCH64_URL, target_path)
-
         # fix logging configuration for DynamoDBLocal
         log4j2_config = """<Configuration status="WARN">
           <Appenders>
@@ -84,6 +75,7 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
         if not os.path.exists(javassit_jar_path):
             download(JAVASSIST_JAR_URL, javassit_jar_path)
 
+        ddb_local_lib_dir = os.path.join(install_dir, "DynamoDBLocal_lib")
         upgrade_jar_file(ddb_local_lib_dir, "slf4j-ext-*.jar", "org/slf4j/slf4j-ext:1.8.0-beta4")
 
         # ensure that javassist.jar is in the manifest classpath
