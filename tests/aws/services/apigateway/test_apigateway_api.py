@@ -2015,7 +2015,9 @@ class TestApiGatewayGatewayResponse:
         snapshot.match("get-deleted-gw-response", response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=not is_next_gen_api(), reason="Behaviour only present in next gen api")
+    @pytest.mark.skipif(
+        condition=not is_next_gen_api(), reason="Behaviour only present in next gen api"
+    )
     def test_gateway_response_put(self, aws_client, apigw_create_rest_api, snapshot):
         snapshot.add_transformer(
             SortingTransformer(key="items", sorting_fn=itemgetter("responseType"))
