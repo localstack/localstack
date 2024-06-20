@@ -1,23 +1,7 @@
-from functools import cache
-
 from localstack.aws.api.apigateway import (
-    GatewayResponse,
-    GatewayResponseCode,
     GatewayResponseType,
 )
-
-DEFAULT_GATEWAY_RESPONSE = {
-    "responseParameters": {},
-    "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
-}
-
-
-@cache
-def build_default_response(type: GatewayResponseType) -> dict:
-    response = GatewayResponse(**DEFAULT_GATEWAY_RESPONSE, responseType=type, defaultResponse=True)
-    if status_code := GatewayResponseCode[type]:
-        response["statusCode"] = status_code
-    return response
+from localstack.services.apigateway.constants import GatewayResponseCode
 
 
 class BaseGatewayException(Exception):

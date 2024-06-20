@@ -14,7 +14,6 @@ from moto.core.utils import camelcase_to_underscores
 
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
-    GATEWAY_RESPONSES,
     Account,
     ApigatewayApi,
     ApiKey,
@@ -93,6 +92,7 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
+from localstack.services.apigateway.constants import DEFAULT_GATEWAY_RESPONSES
 from localstack.services.apigateway.exporter import OpenApiExporter
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
@@ -112,9 +112,6 @@ from localstack.services.apigateway.helpers import (
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
-from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
-    build_default_response,
-)
 from localstack.services.apigateway.next_gen.execute_api.router import (
     ApiGatewayRouter as ApiGatewayRouterNextGen,
 )
@@ -2352,10 +2349,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        if response_type not in GATEWAY_RESPONSES:
+        if response_type not in DEFAULT_GATEWAY_RESPONSES:
             raise CommonServiceException(
                 code="ValidationException",
-                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(GATEWAY_RESPONSES)}]",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
             )
 
         gateway_response = GatewayResponse(
@@ -2381,15 +2378,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        if response_type not in GATEWAY_RESPONSES:
+        if response_type not in DEFAULT_GATEWAY_RESPONSES:
             raise CommonServiceException(
                 code="ValidationException",
-                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(GATEWAY_RESPONSES)}]",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
             )
 
         gateway_response = rest_api_container.gateway_responses.get(
-            response_type,
-            build_default_response(GatewayResponseType[response_type]),
+            response_type, DEFAULT_GATEWAY_RESPONSES[response_type]
         )
         # TODO: add validation with the parameters? seems like it validated client side? how to try?
         return gateway_response
@@ -2410,8 +2406,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         user_gateway_resp = rest_api_container.gateway_responses
         gateway_responses = [
-            user_gateway_resp.get(response_type) or build_default_response(response_type)
-            for response_type in GATEWAY_RESPONSES
+            user_gateway_resp.get(key) or value for key, value in DEFAULT_GATEWAY_RESPONSES.items()
         ]
         return GatewayResponses(items=gateway_responses)
 
@@ -2428,10 +2423,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        if response_type not in GATEWAY_RESPONSES:
+        if response_type not in DEFAULT_GATEWAY_RESPONSES:
             raise CommonServiceException(
                 code="ValidationException",
-                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(GATEWAY_RESPONSES)}]",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
             )
 
         if not rest_api_container.gateway_responses.pop(response_type, None):
@@ -2459,15 +2454,16 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        if response_type not in GATEWAY_RESPONSES:
+        if response_type not in DEFAULT_GATEWAY_RESPONSES:
             raise CommonServiceException(
                 code="ValidationException",
-                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(GATEWAY_RESPONSES)}]",
+                message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
             )
 
         if response_type not in rest_api_container.gateway_responses:
-            rest_api_container.gateway_responses[response_type] = build_default_response(
-                response_type
+            # deep copy to avoid in place mutation of the default response when update using JSON patch
+            rest_api_container.gateway_responses[response_type] = copy.deepcopy(
+                DEFAULT_GATEWAY_RESPONSES[response_type]
             )
             rest_api_container.gateway_responses[response_type]["defaultResponse"] = False
 
