@@ -291,7 +291,7 @@ class EventsTargetSender(TargetSender):
         if isinstance(event, dict) and (source := event.get("source")):
             return source
         else:
-            return self.service if self.service else ""
+            return self.service or ""
 
     def _get_detail_type(self, event: FormattedEvent | TransformedEvent) -> str:
         if isinstance(event, dict) and (detail_type := event.get("detail-type")):
