@@ -119,6 +119,9 @@
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_crud": {
     "last_validated_date": "2024-04-15T20:46:20+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_put": {
+    "last_validated_date": "2024-06-20T22:01:44+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_validation": {
     "last_validated_date": "2024-04-15T20:46:24+00:00"
   },

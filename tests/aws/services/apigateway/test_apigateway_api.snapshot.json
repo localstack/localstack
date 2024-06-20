@@ -3205,5 +3205,307 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_put": {
+    "recorded-date": "20-06-2024, 22:01:45",
+    "recorded-content": {
+      "put-gateway-response-all-value": {
+        "defaultResponse": false,
+        "responseParameters": {
+          "gatewayresponse.header.Access-Control-Allow-Origin": "'a.b.c'",
+          "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+          "gatewayresponse.header.x-request-path": "method.request.path.petId",
+          "gatewayresponse.header.x-request-query": "method.request.querystring.q"
+        },
+        "responseTemplates": {
+          "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+        },
+        "responseType": "MISSING_AUTHENTICATION_TOKEN",
+        "statusCode": "404",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-gateway-response-status-only": {
+        "defaultResponse": false,
+        "responseParameters": {},
+        "responseTemplates": {
+          "application/json": "{\"message\":$context.error.messageString}"
+        },
+        "responseType": "MISSING_AUTHENTICATION_TOKEN",
+        "statusCode": "404",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-gateway-response-response-parameters-only": {
+        "defaultResponse": false,
+        "responseParameters": {
+          "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+        },
+        "responseTemplates": {
+          "application/json": "{\"message\":$context.error.messageString}"
+        },
+        "responseType": "MISSING_AUTHENTICATION_TOKEN",
+        "statusCode": "403",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-gateway-response-response-templates-only": {
+        "defaultResponse": false,
+        "responseParameters": {},
+        "responseTemplates": {
+          "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+        },
+        "responseType": "MISSING_AUTHENTICATION_TOKEN",
+        "statusCode": "403",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-gateway-response-default-5xx": {
+        "defaultResponse": false,
+        "responseParameters": {
+          "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+        },
+        "responseTemplates": {
+          "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+        },
+        "responseType": "DEFAULT_5XX",
+        "statusCode": "599",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-gateway-response-default-ignored": {
+        "defaultResponse": false,
+        "responseParameters": {
+          "gatewayresponse.header.foo": "'bar'"
+        },
+        "responseTemplates": {
+          "application/json": "{\"message\":$context.error.messageString}"
+        },
+        "responseType": "AUTHORIZER_FAILURE",
+        "statusCode": "500",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-gateway-responses": {
+        "items": [
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "ACCESS_DENIED",
+            "statusCode": "403"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {
+              "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+            "responseTemplates": {
+              "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+            },
+            "responseType": "API_CONFIGURATION_ERROR",
+            "statusCode": "599"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {
+              "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+            "responseTemplates": {
+              "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+            },
+            "responseType": "AUTHORIZER_CONFIGURATION_ERROR",
+            "statusCode": "599"
+          },
+          {
+            "defaultResponse": false,
+            "responseParameters": {
+              "gatewayresponse.header.foo": "'bar'"
+            },
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "AUTHORIZER_FAILURE",
+            "statusCode": "500"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "BAD_REQUEST_BODY",
+            "statusCode": "400"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "BAD_REQUEST_PARAMETERS",
+            "statusCode": "400"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "DEFAULT_4XX"
+          },
+          {
+            "defaultResponse": false,
+            "responseParameters": {
+              "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+            "responseTemplates": {
+              "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+            },
+            "responseType": "DEFAULT_5XX",
+            "statusCode": "599"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "EXPIRED_TOKEN",
+            "statusCode": "403"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {
+              "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+            "responseTemplates": {
+              "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+            },
+            "responseType": "INTEGRATION_FAILURE",
+            "statusCode": "599"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {
+              "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+            "responseTemplates": {
+              "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+            },
+            "responseType": "INTEGRATION_TIMEOUT",
+            "statusCode": "599"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "INVALID_API_KEY",
+            "statusCode": "403"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "INVALID_SIGNATURE",
+            "statusCode": "403"
+          },
+          {
+            "defaultResponse": false,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\n     \"message\": $context.error.messageString,\n     \"type\":  \"$context.error.responseType\",\n     \"stage\":  \"$context.stage\",\n     \"resourcePath\":  \"$context.resourcePath\",\n     \"stageVariables.a\":  \"$stageVariables.a\",\n     \"statusCode\": \"'404'\"\n}"
+            },
+            "responseType": "MISSING_AUTHENTICATION_TOKEN",
+            "statusCode": "403"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "QUOTA_EXCEEDED",
+            "statusCode": "429"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "REQUEST_TOO_LARGE",
+            "statusCode": "413"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "RESOURCE_NOT_FOUND",
+            "statusCode": "404"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "THROTTLED",
+            "statusCode": "429"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "UNAUTHORIZED",
+            "statusCode": "401"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "UNSUPPORTED_MEDIA_TYPE",
+            "statusCode": "415"
+          },
+          {
+            "defaultResponse": true,
+            "responseParameters": {},
+            "responseTemplates": {
+              "application/json": "{\"message\":$context.error.messageString}"
+            },
+            "responseType": "WAF_FILTERED",
+            "statusCode": "403"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -92,7 +92,6 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
-from localstack.services.apigateway.constants import DEFAULT_GATEWAY_RESPONSES
 from localstack.services.apigateway.exporter import OpenApiExporter
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
@@ -2779,6 +2778,154 @@ UPDATE_METHOD_PATCH_PATHS = {
         "/requestModels/",
         "/requestValidatorId",
     ],
+}
+
+DEFAULT_GATEWAY_RESPONSES: dict[GatewayResponseType, GatewayResponse] = {
+    GatewayResponseType.REQUEST_TOO_LARGE: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "REQUEST_TOO_LARGE",
+        "statusCode": "413",
+    },
+    GatewayResponseType.RESOURCE_NOT_FOUND: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "RESOURCE_NOT_FOUND",
+        "statusCode": "404",
+    },
+    GatewayResponseType.AUTHORIZER_CONFIGURATION_ERROR: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "AUTHORIZER_CONFIGURATION_ERROR",
+        "statusCode": "500",
+    },
+    GatewayResponseType.MISSING_AUTHENTICATION_TOKEN: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "MISSING_AUTHENTICATION_TOKEN",
+        "statusCode": "403",
+    },
+    GatewayResponseType.BAD_REQUEST_BODY: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "BAD_REQUEST_BODY",
+        "statusCode": "400",
+    },
+    GatewayResponseType.INVALID_SIGNATURE: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "INVALID_SIGNATURE",
+        "statusCode": "403",
+    },
+    GatewayResponseType.INVALID_API_KEY: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "INVALID_API_KEY",
+        "statusCode": "403",
+    },
+    GatewayResponseType.BAD_REQUEST_PARAMETERS: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "BAD_REQUEST_PARAMETERS",
+        "statusCode": "400",
+    },
+    GatewayResponseType.AUTHORIZER_FAILURE: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "AUTHORIZER_FAILURE",
+        "statusCode": "500",
+    },
+    GatewayResponseType.UNAUTHORIZED: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "UNAUTHORIZED",
+        "statusCode": "401",
+    },
+    GatewayResponseType.INTEGRATION_TIMEOUT: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "INTEGRATION_TIMEOUT",
+        "statusCode": "504",
+    },
+    GatewayResponseType.ACCESS_DENIED: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "ACCESS_DENIED",
+        "statusCode": "403",
+    },
+    GatewayResponseType.DEFAULT_4XX: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "DEFAULT_4XX",
+    },
+    GatewayResponseType.DEFAULT_5XX: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "DEFAULT_5XX",
+    },
+    GatewayResponseType.WAF_FILTERED: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "WAF_FILTERED",
+        "statusCode": "403",
+    },
+    GatewayResponseType.QUOTA_EXCEEDED: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "QUOTA_EXCEEDED",
+        "statusCode": "429",
+    },
+    GatewayResponseType.THROTTLED: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "THROTTLED",
+        "statusCode": "429",
+    },
+    GatewayResponseType.API_CONFIGURATION_ERROR: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "API_CONFIGURATION_ERROR",
+        "statusCode": "500",
+    },
+    GatewayResponseType.UNSUPPORTED_MEDIA_TYPE: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "UNSUPPORTED_MEDIA_TYPE",
+        "statusCode": "415",
+    },
+    GatewayResponseType.INTEGRATION_FAILURE: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "INTEGRATION_FAILURE",
+        "statusCode": "504",
+    },
+    GatewayResponseType.EXPIRED_TOKEN: {
+        "defaultResponse": True,
+        "responseParameters": {},
+        "responseTemplates": {"application/json": '{"message":$context.error.messageString}'},
+        "responseType": "EXPIRED_TOKEN",
+        "statusCode": "403",
+    },
 }
 
 VALID_PATCH_OPERATIONS = ["add", "remove", "move", "test", "replace", "copy"]

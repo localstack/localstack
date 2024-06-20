@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from botocore.config import Config
 
@@ -64,6 +66,10 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
         "Action": "sts:AssumeRole",
     }
 }
+
+
+def is_next_gen_api():
+    return os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY") == "next_gen" and not is_aws_cloud()
 
 
 @pytest.fixture
