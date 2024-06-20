@@ -5,7 +5,6 @@ import itertools
 import json
 import logging
 import os
-import re
 import threading
 import time
 from typing import IO, Optional, Tuple
@@ -194,6 +193,7 @@ from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
+    DEPRECATED_RUNTIMES_UPGRADES,
     RUNTIMES_AGGREGATED,
     SNAP_START_SUPPORTED_RUNTIMES,
     VALID_RUNTIMES,
@@ -994,22 +994,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def _check_for_recomended_migration_target(self, deprecated_runtime):
         # AWS offers recommended runtime for migration for "newly" deprecated runtimes
         # in order to preserve parity with error messages we need the code bellow
-
-        match deprecated_runtime:
-            case Runtime.go1_x:
-                latest_runtime = RUNTIMES_AGGREGATED["provided"][0]
-            case Runtime.nodejs12_x:
-                latest_runtime = Runtime.nodejs18_x
-            case Runtime.dotnetcore3_1:
-                latest_runtime = RUNTIMES_AGGREGATED["dotnet"][0]
-            case _:
-                match = re.match(r"^[a-zA-Z]+", deprecated_runtime)
-                runtime_type = match.group(0)
-
-                if runtime_type in RUNTIMES_AGGREGATED:
-                    latest_runtime = RUNTIMES_AGGREGATED[runtime_type][0]
-                else:
-                    latest_runtime = None
+        latest_runtime = DEPRECATED_RUNTIMES_UPGRADES.get(deprecated_runtime)
 
         if latest_runtime is not None:
             raise InvalidParameterValueException(

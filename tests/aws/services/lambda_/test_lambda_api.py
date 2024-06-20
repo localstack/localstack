@@ -102,15 +102,17 @@ class TestRuntimeValidation:
         )
 
     @markers.aws.validated
+    @markers.lambda_runtime_update
     @pytest.mark.parametrize("runtime", DEPRECATED_RUNTIMES)
     def test_create_deprecated_function_runtime_with_validation_enabled(
-        self, runtime, create_lambda_function, lambda_su_role, aws_client, monkeypatch, snapshot
+        self, runtime, lambda_su_role, aws_client, monkeypatch, snapshot
     ):
         monkeypatch.setattr(config, "LAMBDA_RUNTIME_VALIDATION", 1)
         function_name = f"fn-{short_uid()}"
 
         with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
-            create_lambda_function(
+            testutil.create_lambda_function(
+                client=aws_client.lambda_,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
                 func_name=function_name,
                 runtime=runtime,
