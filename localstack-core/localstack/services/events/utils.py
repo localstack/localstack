@@ -96,8 +96,7 @@ def get_event_time(event: PutEventsRequestEntry) -> EventTime:
 
 
 def event_time_to_time_string(event_time: EventTime) -> str:
-    formatted_time_string = event_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    return formatted_time_string
+    return event_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def convert_to_timezone_aware_datetime(
