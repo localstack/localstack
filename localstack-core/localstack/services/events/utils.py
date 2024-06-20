@@ -47,7 +47,6 @@ def extract_event_bus_name(
     if "arn:aws:events" not in resource_arn_or_name:
         return resource_arn_or_name
     resource_type = get_resource_type(resource_arn_or_name)
-    # TODO how to deal with / in event bus name or rule name
     if resource_type == ResourceType.EVENT_BUS:
         return resource_arn_or_name.split("/")[-1]
     if resource_type == ResourceType.RULE:
