@@ -1,0 +1,11 @@
+Resources:
+  logGroup68A52FBE:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 731
+
+Outputs:
+  LogGroupNameOutput:
+    Value:
+      Ref: logGroup68A52FBE
+
