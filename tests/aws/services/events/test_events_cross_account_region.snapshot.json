@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/events/test_events_cross_account_region.py::TestEventCrossRegion::test_event_bus_to_event_bus_cross_region": {
-    "recorded-date": "10-06-2024, 10:06:02",
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[default-region]": {
+    "recorded-date": "14-06-2024, 11:29:49",
     "recorded-content": {
       "messages_primary_queue_from_primary_event_bus": [
         {
@@ -12,9 +12,9 @@
             "id": "<uuid:2>",
             "detail-type": "core.update-account-command",
             "source": "source-primary",
-            "account": "111111111111",
+            "account": "<account>",
             "time": "date",
-            "region": "<region-name>",
+            "region": "<region>",
             "resources": [],
             "detail": {
               "command": "update-account",
@@ -36,9 +36,9 @@
             "id": "<uuid:4>",
             "detail-type": "core.update-account-command",
             "source": "source-primary",
-            "account": "111111111111",
+            "account": "<account>",
             "time": "date",
-            "region": "<region-name-secondary>",
+            "region": "<region>",
             "resources": [],
             "detail": {
               "command": "update-account",
@@ -60,9 +60,394 @@
             "id": "<uuid:6>",
             "detail-type": "core.update-account-command",
             "source": "source-secondary",
-            "account": "111111111111",
+            "account": "<account>",
             "time": "date",
-            "region": "<region-name-secondary>",
+            "region": "<region-secondary>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[default-account]": {
+    "recorded-date": "14-06-2024, 11:30:09",
+    "recorded-content": {
+      "messages_primary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_secondary_event_bus": [
+        {
+          "MessageId": "<uuid:4>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:5>",
+            "detail-type": "core.update-account-command",
+            "source": "source-secondary",
+            "account": "<account-secondary>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[default-region_account]": {
+    "recorded-date": "14-06-2024, 11:31:05",
+    "recorded-content": {
+      "messages_primary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_secondary_event_bus": [
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "source-secondary",
+            "account": "<account-secondary>",
+            "time": "date",
+            "region": "<region-secondary>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[custom-region]": {
+    "recorded-date": "14-06-2024, 11:13:16",
+    "recorded-content": {
+      "messages_primary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_secondary_event_bus": [
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "source-secondary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region-secondary>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[custom-account]": {
+    "recorded-date": "14-06-2024, 11:13:34",
+    "recorded-content": {
+      "messages_primary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_secondary_event_bus": [
+        {
+          "MessageId": "<uuid:4>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:5>",
+            "detail-type": "core.update-account-command",
+            "source": "source-secondary",
+            "account": "<account-secondary>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[custom-region_account]": {
+    "recorded-date": "14-06-2024, 11:20:57",
+    "recorded-content": {
+      "messages_primary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_secondary_event_bus": [
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "source-secondary",
+            "account": "<account-secondary>",
+            "time": "date",
+            "region": "<region-secondary>",
             "resources": [],
             "detail": {
               "command": "update-account",

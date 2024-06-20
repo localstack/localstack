@@ -8,8 +8,10 @@ from typing import Callable, Optional
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
 from localstack.aws.api.events import (
+    Action,
     Arn,
     Boolean,
+    Condition,
     CreateEventBusResponse,
     DeadLetterConfig,
     DescribeEventBusResponse,
@@ -31,6 +33,8 @@ from localstack.aws.api.events import (
     ListTagsForResourceResponse,
     ListTargetsByRuleResponse,
     NextToken,
+    NonPartnerEventBusName,
+    Principal,
     PutEventsRequestEntry,
     PutEventsRequestEntryList,
     PutEventsResponse,
@@ -50,6 +54,8 @@ from localstack.aws.api.events import (
     RuleResponseList,
     RuleState,
     ScheduleExpression,
+    StatementId,
+    String,
     TagKeyList,
     TagList,
     TagResourceResponse,
@@ -83,6 +89,7 @@ from localstack.services.events.models import (
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
+from localstack.services.events.utils import recursive_remove_none_values_from_dict
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import truncate
@@ -147,9 +154,20 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
 
 def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+    trace_header = event.get("TraceHeader")
+    message = {}
+    if trace_header:
+        try:
+            message = json.loads(trace_header)
+        except json.JSONDecodeError:
+            pass
+    message_id = message.get("original_id", str(long_uid()))
+    region = message.get("original_region", region)
+    account_id = message.get("original_account", account_id)
+
     formatted_event = {
         "version": "0",
-        "id": str(long_uid()),
+        "id": message_id,
         "detail-type": event.get("DetailType"),
         "source": event.get("Source"),
         "account": account_id,
@@ -277,6 +295,42 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if next_token is not None:
             response["NextToken"] = next_token
         return response
+
+    @handler("PutPermission")
+    def put_permission(
+        self,
+        context: RequestContext,
+        event_bus_name: NonPartnerEventBusName = None,
+        action: Action = None,
+        principal: Principal = None,
+        statement_id: StatementId = None,
+        condition: Condition = None,
+        policy: String = None,
+        **kwargs,
+    ) -> None:
+        store = self.get_store(context)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        event_bus_service = self._event_bus_services_store[event_bus.arn]
+        event_bus_service.put_permission(action, principal, statement_id, condition, policy)
+
+    @handler("RemovePermission")
+    def remove_permission(
+        self,
+        context: RequestContext,
+        statement_id: StatementId = None,
+        remove_all_permissions: Boolean = None,
+        event_bus_name: NonPartnerEventBusName = None,
+        **kwargs,
+    ) -> None:
+        store = self.get_store(context)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        event_bus_service = self._event_bus_services_store[event_bus.arn]
+        if remove_all_permissions:
+            event_bus_service.event_bus.policy = None
+            return
+        if not statement_id:
+            raise ValidationException("Parameter StatementId is required.")
+        event_bus_service.revoke_put_events_permission(statement_id)
 
     #######
     # Rules
@@ -523,6 +577,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         endpoint_id: EndpointId = None,
         **kwargs,
     ) -> PutEventsResponse:
+        if len(entries) > 10:
+            formatted_entries = [self._event_to_error_type_event(entry) for entry in entries]
+            formatted_entries = f"[{', '.join(formatted_entries)}]"
+            raise ValidationException(
+                f"1 validation error detected: Value '{formatted_entries}' at 'entries' failed to satisfy constraint: Member must have length less than or equal to 10"
+            )
         entries, failed_entry_count = self._process_entries(context, entries)
 
         response = PutEventsResponse(
@@ -718,10 +778,34 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "Name": event_bus.name,
             "Arn": event_bus.arn,
         }
+        if event_bus.creation_time:
+            event_bus_api_type["CreationTime"] = event_bus.creation_time
+        if event_bus.last_modified_time:
+            event_bus_api_type["LastModifiedTime"] = event_bus.last_modified_time
         if event_bus.policy:
-            event_bus_api_type["Policy"] = event_bus.policy
+            event_bus_api_type["Policy"] = recursive_remove_none_values_from_dict(event_bus.policy)
 
         return event_bus_api_type
+
+    def _event_to_error_type_event(self, entry: PutEventsRequestEntry) -> str:
+        detail = (
+            json.dumps(json.loads(entry["Detail"]), separators=(", ", ": "))
+            if entry.get("Detail")
+            else "null"
+        )
+        return (
+            f"PutEventsRequestEntry("
+            f"time={entry.get('Time', 'null')}, "
+            f"source={entry.get('Source', 'null')}, "
+            f"resources={entry.get('Resources', 'null')}, "
+            f"detailType={entry.get('DetailType', 'null')}, "
+            f"detail={detail}, "
+            f"eventBusName={entry.get('EventBusName', 'null')}, "
+            f"traceHeader={entry.get('TraceHeader', 'null')}, "
+            f"kmsKeyIdentifier={entry.get('kmsKeyIdentifier', 'null')}, "
+            f"internalMetadata={entry.get('internalMetadata', 'null')}"
+            f")"
+        )
 
     def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
         """

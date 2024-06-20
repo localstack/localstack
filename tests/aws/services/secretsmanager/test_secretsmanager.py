@@ -213,6 +213,29 @@ class TestSecretsManager:
         sm_snapshot.match("list_secret_version_ids_not_found_ex", not_found.value.response)
 
     @markers.aws.validated
+    def test_secret_version_not_found(self, secret_name: str, sm_snapshot, cleanups, aws_client):
+        aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+        )
+
+        version_id = str(uuid.uuid4())
+        sm_snapshot.add_transformer(sm_snapshot.transform.regex(version_id, "<version-id>"))
+
+        with pytest.raises(ClientError) as not_found:
+            aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+        sm_snapshot.match("get_secret_value_no_version_ex", not_found.value)
+
+        with pytest.raises(ClientError) as not_found:
+            aws_client.secretsmanager.get_secret_value(SecretId=secret_name, VersionId=version_id)
+        sm_snapshot.match("get_secret_value_version_not_found_ex", not_found.value)
+
+        with pytest.raises(ClientError) as not_found:
+            aws_client.secretsmanager.get_secret_value(
+                SecretId=secret_name, VersionStage="AWSPENDING"
+            )
+        sm_snapshot.match("get_secret_value_stage_not_found_ex", not_found.value)
+
+    @markers.aws.validated
     def test_call_lists_secrets_multiple_times(self, secret_name, aws_client, cleanups):
         aws_client.secretsmanager.create_secret(
             Name=secret_name,

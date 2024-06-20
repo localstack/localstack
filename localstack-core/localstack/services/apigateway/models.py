@@ -58,9 +58,17 @@ class RestApiContainer:
 
 
 class RestApiDeployment:
-    def __init__(self, localstack_rest_api: RestApiContainer, moto_rest_api: MotoRestAPI):
+    def __init__(
+        self,
+        account_id: str,
+        region: str,
+        localstack_rest_api: RestApiContainer,
+        moto_rest_api: MotoRestAPI,
+    ):
         self.localstack_rest_api = localstack_rest_api
         self.moto_rest_api = moto_rest_api
+        self.account_id = account_id
+        self.region = region
 
 
 class ApiGatewayStore(BaseStore):

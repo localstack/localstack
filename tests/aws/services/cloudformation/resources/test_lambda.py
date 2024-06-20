@@ -6,6 +6,7 @@ from io import BytesIO
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
+from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
@@ -298,6 +299,82 @@ def test_lambda_cfn_run(deploy_cfn_template, aws_client):
         == State.Active
     )
     aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
+
+
+@markers.aws.only_localstack(reason="This is functionality specific to Localstack")
+def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
+    deploy_cfn_template, aws_client, monkeypatch
+):
+    """
+    deploys the same lambda with an empty CFN string deny list, testing that it behaves as expected
+    (i.e. the URLs in the deny list are modified)
+    """
+    monkeypatch.setattr(config, "CFN_STRING_REPLACEMENT_DENY_LIST", [])
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/cfn_lambda_with_external_api_paths_in_env_vars.yaml",
+        ),
+        max_wait=120,
+    )
+    function = aws_client.lambda_.get_function(FunctionName=deployment.outputs["FunctionName"])
+    function_env_variables = function["Configuration"]["Environment"]["Variables"]
+    # URLs that match regex to capture AWS URLs gets Localstack port appended - non-matching URLs remain unchanged.
+    assert function_env_variables["API_URL_1"] == "https://api.example.com"
+    assert (
+        function_env_variables["API_URL_2"]
+        == "https://storage.execute-api.amazonaws.com:4566/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_3"]
+        == "https://reporting.execute-api.amazonaws.com:4566/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_4"]
+        == "https://blockchain.execute-api.amazonaws.com:4566/test-resource"
+    )
+
+
+@markers.aws.only_localstack(reason="This is functionality specific to Localstack")
+def test_lambda_cfn_run_with_non_empty_string_replacement_deny_list(
+    deploy_cfn_template, aws_client, monkeypatch
+):
+    """
+    deploys the same lambda with a non-empty CFN string deny list configurations, testing that it behaves as expected
+    (i.e. the URLs in the deny list are not modified)
+    """
+    monkeypatch.setattr(
+        config,
+        "CFN_STRING_REPLACEMENT_DENY_LIST",
+        [
+            "https://storage.execute-api.us-east-2.amazonaws.com/test-resource",
+            "https://reporting.execute-api.us-east-1.amazonaws.com/test-resource",
+        ],
+    )
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/cfn_lambda_with_external_api_paths_in_env_vars.yaml",
+        ),
+        max_wait=120,
+    )
+    function = aws_client.lambda_.get_function(FunctionName=deployment.outputs["FunctionName"])
+    function_env_variables = function["Configuration"]["Environment"]["Variables"]
+    # URLs that match regex to capture AWS URLs but are explicitly in the deny list, don't get modified -
+    # non-matching URLs remain unchanged.
+    assert function_env_variables["API_URL_1"] == "https://api.example.com"
+    assert (
+        function_env_variables["API_URL_2"]
+        == "https://storage.execute-api.us-east-2.amazonaws.com/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_3"]
+        == "https://reporting.execute-api.us-east-1.amazonaws.com/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_4"]
+        == "https://blockchain.execute-api.amazonaws.com:4566/test-resource"
+    )
 
 
 @pytest.mark.skip(reason="broken/notimplemented")

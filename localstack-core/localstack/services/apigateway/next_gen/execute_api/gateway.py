@@ -21,6 +21,7 @@ class RestApiGateway(Gateway):
         self.request_handlers.extend(
             [
                 handlers.parse_request,
+                handlers.route_request,
                 handlers.preprocess_request,
                 handlers.method_request_handler,
                 handlers.integration_request_handler,

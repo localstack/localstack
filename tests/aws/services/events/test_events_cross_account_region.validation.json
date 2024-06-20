@@ -1,5 +1,20 @@
 {
-  "tests/aws/services/events/test_events_cross_account_region.py::TestEventCrossRegion::test_event_bus_to_event_bus_cross_region": {
-    "last_validated_date": "2024-06-10T10:06:02+00:00"
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[custom-account]": {
+    "last_validated_date": "2024-06-14T11:13:34+00:00"
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[custom-region]": {
+    "last_validated_date": "2024-06-14T11:13:16+00:00"
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[custom-region_account]": {
+    "last_validated_date": "2024-06-14T11:20:57+00:00"
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[default-account]": {
+    "last_validated_date": "2024-06-14T11:30:09+00:00"
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[default-region]": {
+    "last_validated_date": "2024-06-14T11:29:49+00:00"
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[default-region_account]": {
+    "last_validated_date": "2024-06-14T11:31:05+00:00"
   }
 }

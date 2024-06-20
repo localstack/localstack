@@ -4,13 +4,11 @@ import logging
 import time
 from typing import Any, Callable
 
+from rolo import Response
+from rolo.gateway import ExceptionHandler, Handler, HandlerChain, RequestContext
 from werkzeug.datastructures import Headers
 
-from localstack.http import Response
 from localstack.utils.patch import Patch, Patches
-
-from .api import RequestContext
-from .chain import ExceptionHandler, Handler, HandlerChain
 
 LOG = logging.getLogger(__name__)
 
@@ -181,19 +179,18 @@ class TracingHandlerBase:
             if chain.terminated and not prev_terminated:
                 actions.append(Action("terminate chain"))
 
-            # request contex
-            if context.region and not prev_context.get("region"):
-                actions.append(SetAttributeAction("region", context.region))
-            if context.account_id and not prev_context.get("account_id"):
-                actions.append(SetAttributeAction("account_id", context.account_id))
-            if context.service and not prev_context.get("service"):
-                actions.append(SetAttributeAction("service", context.service.service_name))
-            if context.operation and not prev_context.get("operation"):
-                actions.append(SetAttributeAction("operation", context.operation.name))
-            if context.service_request and not prev_context.get("service_request"):
-                actions.append(SetAttributeAction("service_request"))
-            if context.service_response and not prev_context.get("service_response"):
-                actions.append(SetAttributeAction("service_response"))
+            # detect when attributes are set in the request contex
+            context_args = dict(context.__dict__)
+            context_args.pop("request", None)  # request is handled separately
+
+            for k, v in context_args.items():
+                if not v:
+                    continue
+                if prev_context.get(k):
+                    # TODO: we could introduce "ModifyAttributeAction(k,v)" with an additional check
+                    #  ``if v != prev_context.get(k)``
+                    continue
+                actions.append(SetAttributeAction(k, v))
 
             # request
             if id(context.request) != prev_request_identity:
@@ -222,7 +219,7 @@ class TracingHandlerBase:
             )
 
 
-class TracingHandler(Handler, TracingHandlerBase):
+class TracingHandler(TracingHandlerBase):
     delegate: Handler
 
     def __init__(self, delegate: Handler):
@@ -235,7 +232,7 @@ class TracingHandler(Handler, TracingHandlerBase):
         return self.do_trace_call(_call, chain, context, response)
 
 
-class TracingExceptionHandler(ExceptionHandler, TracingHandlerBase):
+class TracingExceptionHandler(TracingHandlerBase):
     delegate: ExceptionHandler
 
     def __init__(self, delegate: ExceptionHandler):
