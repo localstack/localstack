@@ -103,6 +103,8 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
         moto_rest_api = get_moto_rest_api(context, rest_api_id)
         rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
         frozen_deployment = freeze_rest_api(
+            account_id=context.account_id,
+            region=context.region,
             moto_rest_api=moto_rest_api,
             localstack_rest_api=rest_api_container,
         )
