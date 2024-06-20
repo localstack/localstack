@@ -9,7 +9,6 @@ from typing import Optional
 
 from localstack import config
 from localstack.aws.connect import connect_to
-from localstack.config import CFN_STRING_REPLACEMENT_DENY_LIST
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -196,7 +195,7 @@ def resolve_refs_recursively(
     if isinstance(result, str):
         # we're trying to filter constructed API urls here (e.g. via Join in the template)
         api_match = REGEX_OUTPUT_APIGATEWAY.match(result)
-        if api_match and result in CFN_STRING_REPLACEMENT_DENY_LIST:
+        if api_match and result in config.CFN_STRING_REPLACEMENT_DENY_LIST:
             return result
         elif api_match:
             prefix = api_match[1]
