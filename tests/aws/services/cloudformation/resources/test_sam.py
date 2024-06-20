@@ -63,34 +63,27 @@ def test_sam_sqs_event(deploy_cfn_template, aws_client):
 
     assert body == message_body
 
-    @pytest.mark.parametrize(
-        "create_bucket_first,bucket_region", [(True, "eu-west-1"), (False, "us-east-1")]
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..Tags", "$..tags", "$..Configuration.CodeSha256"]
+)
+def test_cfn_handle_serverless_api_resource(
+    deploy_cfn_template, aws_client, snapshot
+):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sam_api.yml"
+        ),
     )
-    @markers.aws.unknown
-    def test_cfn_handle_serverless_api_resource(
-        self, deploy_cfn_template, aws_client, account_id, region_name
-    ):
-        stack = deploy_cfn_template(template=TEST_TEMPLATE_22)
 
-        res = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
-            "StackResourceSummaries"
-        ]
-        rest_api_ids = [
-            r["PhysicalResourceId"] for r in res if r["ResourceType"] == "AWS::ApiGateway::RestApi"
-        ]
-        lambda_func_names = [
-            r["PhysicalResourceId"] for r in res if r["ResourceType"] == "AWS::Lambda::Function"
-        ]
+    response = aws_client.apigateway.get_rest_api(restApiId=stack.outputs["ApiId"])
+    snapshot.match("get_rest_api", response)
 
-        assert len(rest_api_ids) == 1
-        assert len(lambda_func_names) == 1
+    response = aws_client.lambda_.get_function(FunctionName=stack.outputs["LambdaFunction"])
+    snapshot.match("get_function", response)
 
-        rs = aws_client.apigateway.get_resources(restApiId=rest_api_ids[0])
-        assert len(rs["items"]) == 1
-        resource = rs["items"][0]
-
-        uri = resource["resourceMethods"]["GET"]["methodIntegration"]["uri"]
-        lambda_arn = arns.lambda_function_arn(
-            lambda_func_names[0], account_id=account_id, region_name=region_name
-        )
-        assert lambda_arn in uri
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
