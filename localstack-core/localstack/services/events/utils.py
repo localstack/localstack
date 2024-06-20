@@ -157,6 +157,8 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
         "resources": event.get("Resources", []),
         "detail": json.loads(event.get("Detail", "{}")),
     }
+    if replay_name := event.get("ReplayName"):
+        formatted_event["replay-name"] = replay_name  # required for replay from archive
 
     return formatted_event
 
