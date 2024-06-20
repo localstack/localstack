@@ -1050,6 +1050,13 @@ CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 # Allow fallback to previous template deployer implementation
 CFN_LEGACY_TEMPLATE_DEPLOYER = is_env_true("CFN_LEGACY_TEMPLATE_DEPLOYER")
 
+# The CFN_STRING_REPLACEMENT_DENY_LIST env variable is a comma separated list of strings that are not allowed to be
+# replaced in CloudFormation templates (e.g. AWS URLs that are usually edited by Localstack to point to itself if found
+# in a CFN template). They are extracted to a list of strings if the env variable is set.
+CFN_STRING_REPLACEMENT_DENY_LIST = [
+    x for x in os.environ.get("CFN_STRING_REPLACEMENT_DENY_LIST", "").split(",") if x
+]
+
 # Set the timeout to deploy each individual CloudFormation resource
 CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 300)
 
@@ -1114,6 +1121,7 @@ CONFIG_ENV_VARS = [
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
     "CFN_LEGACY_TEMPLATE_DEPLOYER",
+    "CFN_STRING_REPLACEMENT_DENY_LIST",
     "CFN_VERBOSE_ERRORS",
     "CI",
     "CUSTOM_SSL_CERT_PATH",
