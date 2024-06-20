@@ -103,9 +103,20 @@ class EventJSONEncoder(json.JSONEncoder):
 
 def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+    trace_header = event.get("TraceHeader")
+    message = {}
+    if trace_header:
+        try:
+            message = json.loads(trace_header)
+        except json.JSONDecodeError:
+            pass
+    message_id = message.get("original_id", str(long_uid()))
+    region = message.get("original_region", region)
+    account_id = message.get("original_account", account_id)
+
     formatted_event = {
         "version": "0",
-        "id": str(long_uid()),
+        "id": message_id,
         "detail-type": event.get("DetailType"),
         "source": event.get("Source"),
         "account": account_id,
@@ -114,8 +125,6 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
         "resources": event.get("Resources", []),
         "detail": json.loads(event.get("Detail", "{}")),
     }
-    if replay_name := event.get("ReplayName"):
-        formatted_event["replay-name"] = replay_name  # required for replay from archive
 
     return formatted_event
 

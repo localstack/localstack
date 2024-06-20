@@ -248,30 +248,13 @@ class ContainerTargetSender(TargetSender):
 
 class EventsTargetSender(TargetSender):
     def send_event(self, event):
+        # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
         event_bus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
         source = self._get_source(event)
         detail_type = self._get_detail_type(event)
-        # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
         detail = event.get("detail", event)
         resources = self._get_resources(event)
-
-        self.client.put_events(
-            Entries=[
-                {
-                    "EventBusName": event_bus_name,
-                    "Source": source,
-                    "DetailType": detail_type,
-                    "Detail": json.dumps(detail),
-                    "Resources": resources,
-                }
-            ]
-        )
-        resources = (
-            event.get("resources")
-            if event.get("resources") is not None
-            else ([self.rule_arn] if self.rule_arn else [])
-        )
         entries = [
             {
                 "EventBusName": event_bus_name,
