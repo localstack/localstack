@@ -16,6 +16,7 @@ from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
+    extract_resource_from_arn,
     extract_service_from_arn,
     firehose_name,
     sqs_queue_url_for_arn,
@@ -250,7 +251,7 @@ class EventsTargetSender(TargetSender):
     def send_event(self, event):
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
-        event_bus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
+        event_bus_name = extract_resource_from_arn(self.target["Arn"]).split("/")[-1]
         source = self._get_source(event)
         detail_type = self._get_detail_type(event)
         detail = event.get("detail", event)
