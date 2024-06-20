@@ -561,7 +561,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region = context.region
         account_id = context.account_id
         store = self.get_store(context)
-        # TODO check if in same region / account
         if archive_name in store.archives.keys():
             raise ResourceAlreadyExistsException(f"Archive {archive_name} already exists.")
         self._check_event_bus_exists(event_source_arn, store)
@@ -706,7 +705,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def cancel_replay(
         self, context: RequestContext, replay_name: ReplayName, **kwargs
     ) -> CancelReplayResponse:
-        # TODO implement async start replay use custom endpoint
         store = self.get_store(context)
         replay = self.get_replay(replay_name, store)
         replay_service = self._replay_service_store[replay.arn]
