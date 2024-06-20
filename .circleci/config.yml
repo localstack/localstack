@@ -16,12 +16,12 @@ parameters:
   randomize-aws-credentials:
     type: boolean
     default: false
-  only-acceptance-tests:
+  force-only-acceptance-tests:
     type: boolean
     default: false
-  default-branch:
-    type: string
-    default: switch-to-acceptance-tests-only
+  is-scheduled:
+    type: boolean
+    default: false
 
 executors:
   ubuntu-machine-amd64:
@@ -34,15 +34,21 @@ commands:
       - run:
           name: Check if only Acceptance Tests should run
           command: |
-            if [[ $CIRCLE_BRANCH == << pipeline.parameters.default-branch >> ]] ; then
-              echo "export ONLY_ACCEPTANCE_TESTS=1" >> $BASH_ENV
+            if [[ << pipeline.parameters.force-only-acceptance-tests >> == "true" ]] ; then
+              echo "export ONLY_ACCEPTANCE_TESTS=true" >> $BASH_ENV
               echo "export DEFAULT_TAG='dev'" >> $BASH_ENV
+              echo "Forcing acceptance tests, the default tag is 'dev'"
+            elif [[ -z "$CI_PULL_REQUEST" ]] && [[ << pipeline.parameters.is-scheduled >> == "false" ]] ; then
+              echo "export ONLY_ACCEPTANCE_TESTS=true" >> $BASH_ENV
+              echo "export DEFAULT_TAG='dev'" >> $BASH_ENV
+              echo "Unscheduled push to non-PR-branch means only acceptance test run, the default tag is 'dev'"
             else
-              echo "export ONLY_ACCEPTANCE_TESTS=<< pipeline.parameters.only-acceptance-tests >>" >> $BASH_ENV
+              echo "export ONLY_ACCEPTANCE_TESTS=false" >> $BASH_ENV
               echo "export DEFAULT_TAG='latest'" >> $BASH_ENV
+              echo "All tests will run, the default tag is 'latest'"
             fi
             source $BASH_ENV
-            echo $ONLY_ACCEPTANCE_TESTS
+
 
   prepare-testselection:
     steps:
@@ -66,7 +72,7 @@ commands:
             fi
             if << pipeline.parameters.randomize-aws-credentials >> ; then
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci_ma_mr" >> $BASH_ENV
-            elif $ONLY_ACCEPTANCE_TESTS ; then
+            elif [[ $ONLY_ACCEPTANCE_TESTS == "true" ]] ; then
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci_acceptance" >> $BASH_ENV
             else
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
@@ -428,7 +434,7 @@ jobs:
       - run:
           name: "Check for acceptance test or default branch"
           command: |
-            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
               echo "Skipping integration tests because only-acceptance-test is set or running on default branch."
               circleci-agent step halt
             fi
@@ -530,7 +536,7 @@ jobs:
       - run:
           name: "Check for acceptance test or default branch"
           command: |
-            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
               echo "Skipping coverage reporting because only-acceptance-test is set or running on default branch."
               circleci-agent step halt
             fi
@@ -612,7 +618,7 @@ jobs:
       - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
-            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
               echo "Skipping parity reporting to tinybird because only acceptance tests ran"
             elif [ -z "$CIRCLE_PR_REPONAME" ]  ; then
               # check if a fork-only env var is set (https://circleci.com/docs/variables/)
@@ -637,7 +643,7 @@ jobs:
           #    2: the changes worsened the overall coverage
           #    3: the changes introduced uncovered statements but the overall coverage is still better than before
           command: |
-            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
               echo "Skipping coverage diff because only acceptance tests ran"
             else
               source .venv/bin/activate
@@ -654,7 +660,7 @@ jobs:
             COVERAGE_DIR_ACCEPTANCE: "acceptance_parity_metrics"
             OUTPUT_DIR: "api-coverage"
           command: |
-            if [ $ONLY_ACCEPTANCE_TESTS ]; then
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
               echo "Skipping metric coverage diff because only acceptance tests ran"
             else
               source .venv/bin/activate
@@ -768,7 +774,7 @@ jobs:
 
             if << pipeline.parameters.randomize-aws-credentials >> ; then
               TINYBIRD_WORKFLOW=tests_circleci_ma_mr
-            elif $ONLY_ACCEPTANCE_TESTS ; then
+            elif [[ $ONLY_ACCEPTANCE_TESTS == "true" ]] ; then
               TINYBIRD_WORKFLOW=tests_circleci_acceptance
             else
               TINYBIRD_WORKFLOW=tests_circleci
