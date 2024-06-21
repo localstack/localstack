@@ -2,19 +2,27 @@ import base64
 import json
 import logging
 import re
-from datetime import datetime, timezone
 from typing import Callable, Optional
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
 from localstack.aws.api.events import (
     Action,
+    ArchiveDescription,
+    ArchiveName,
+    ArchiveResponseList,
+    ArchiveState,
     Arn,
     Boolean,
+    CancelReplayResponse,
     Condition,
+    CreateArchiveResponse,
     CreateEventBusResponse,
     DeadLetterConfig,
+    DeleteArchiveResponse,
+    DescribeArchiveResponse,
     DescribeEventBusResponse,
+    DescribeReplayResponse,
     DescribeRuleResponse,
     EndpointId,
     EventBusDescription,
@@ -24,10 +32,13 @@ from localstack.aws.api.events import (
     EventPattern,
     EventsApi,
     EventSourceName,
+    InternalException,
     InvalidEventPatternException,
     KmsKeyIdentifier,
     LimitMax100,
+    ListArchivesResponse,
     ListEventBusesResponse,
+    ListReplaysResponse,
     ListRuleNamesByTargetResponse,
     ListRulesResponse,
     ListTagsForResourceResponse,
@@ -45,15 +56,21 @@ from localstack.aws.api.events import (
     PutRuleResponse,
     PutTargetsResponse,
     RemoveTargetsResponse,
+    ReplayDescription,
+    ReplayDestination,
+    ReplayList,
+    ReplayName,
+    ReplayState,
     ResourceAlreadyExistsException,
     ResourceNotFoundException,
+    RetentionDays,
     RoleArn,
-    RuleArn,
     RuleDescription,
     RuleName,
     RuleResponseList,
     RuleState,
     ScheduleExpression,
+    StartReplayResponse,
     StatementId,
     String,
     TagKeyList,
@@ -65,17 +82,26 @@ from localstack.aws.api.events import (
     TargetIdList,
     TargetList,
     TestEventPatternResponse,
+    Timestamp,
     UntagResourceResponse,
+    UpdateArchiveResponse,
 )
+from localstack.aws.api.events import Archive as ApiTypeArchive
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
+from localstack.aws.api.events import Replay as ApiTypeReplay
 from localstack.aws.api.events import Rule as ApiTypeRule
+from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
 from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models import (
+    Archive,
+    ArchiveDict,
     EventBus,
     EventBusDict,
     EventsStore,
     FormattedEvent,
+    Replay,
+    ReplayDict,
     ResourceType,
     Rule,
     RuleDict,
@@ -86,21 +112,26 @@ from localstack.services.events.models import (
 from localstack.services.events.models import (
     InvalidEventPatternException as InternalInvalidEventPatternException,
 )
+from localstack.services.events.replay import ReplayService, ReplayServiceDict
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
-from localstack.services.events.utils import recursive_remove_none_values_from_dict
+from localstack.services.events.utils import (
+    EventJSONEncoder,
+    extract_event_bus_name,
+    format_event,
+    get_resource_type,
+    is_archive_arn,
+    recursive_remove_none_values_from_dict,
+)
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import truncate
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
 
-RULE_ARN_CUSTOM_EVENT_BUS_PATTERN = re.compile(
-    r"^arn:aws:events:[a-z0-9-]+:\d{12}:rule/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
-)
+ARCHIVE_TARGET_ID_NAME_PATTERN = re.compile(r"^Events-Archive-(?P<name>[a-zA-Z0-9_-]+)$")
 
 
 def decode_next_token(token: NextToken) -> int:
@@ -116,22 +147,6 @@ def encode_next_token(token: int) -> NextToken:
 def get_filtered_dict(name_prefix: str, input_dict: dict) -> dict:
     """Filter dictionary by prefix."""
     return {name: value for name, value in input_dict.items() if name.startswith(name_prefix)}
-
-
-def get_event_time(event: PutEventsRequestEntry) -> str:
-    event_time = datetime.now(timezone.utc)
-    if event_timestamp := event.get("Time"):
-        try:
-            # use time from event if provided
-            event_time = event_timestamp.replace(tzinfo=timezone.utc)
-        except ValueError:
-            # use current time if event time is invalid
-            LOG.debug(
-                "Could not parse the `Time` parameter, falling back to current time for the following Event: '%s'",
-                event,
-            )
-    formatted_time_string = event_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    return formatted_time_string
 
 
 def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
@@ -152,46 +167,6 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
         }
 
 
-def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
-    # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
-    trace_header = event.get("TraceHeader")
-    message = {}
-    if trace_header:
-        try:
-            message = json.loads(trace_header)
-        except json.JSONDecodeError:
-            pass
-    message_id = message.get("original_id", str(long_uid()))
-    region = message.get("original_region", region)
-    account_id = message.get("original_account", account_id)
-
-    formatted_event = {
-        "version": "0",
-        "id": message_id,
-        "detail-type": event.get("DetailType"),
-        "source": event.get("Source"),
-        "account": account_id,
-        "time": get_event_time(event),
-        "region": region,
-        "resources": event.get("Resources", []),
-        "detail": json.loads(event.get("Detail", "{}")),
-    }
-
-    return formatted_event
-
-
-def get_resource_type(arn: Arn) -> ResourceType:
-    parsed_arn = parse_arn(arn)
-    resource_type = parsed_arn["resource"].split("/", 1)[0]
-    if resource_type == "event-bus":
-        return ResourceType.EVENT_BUS
-    if resource_type == "rule":
-        return ResourceType.RULE
-    raise ValidationException(
-        f"Parameter {arn} is not valid. Reason: Provided Arn is not in correct format."
-    )
-
-
 def check_unique_tags(tags: TagsList) -> None:
     unique_tag_keys = {tag["Key"] for tag in tags}
     if len(unique_tag_keys) < len(tags):
@@ -205,6 +180,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._event_bus_services_store: EventBusServiceDict = {}
         self._rule_services_store: RuleServiceDict = {}
         self._target_sender_store: TargetSenderDict = {}
+        self._archive_service_store: ArchiveServiceDict = {}
+        self._replay_service_store: ReplayServiceDict = {}
 
     def on_before_start(self):
         JobScheduler.start()
@@ -265,11 +242,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_event_bus(
         self, context: RequestContext, name: EventBusNameOrArn = None, **kwargs
     ) -> DescribeEventBusResponse:
-        name = self._extract_event_bus_name(name)
+        name = extract_event_bus_name(name)
         store = self.get_store(context)
         event_bus = self.get_event_bus(name, store)
 
-        response = self._event_bus_dict_to_api_type_event_bus(event_bus)
+        response = self._event_bus_to_api_type_event_bus(event_bus)
         return response
 
     @handler("ListEventBuses")
@@ -290,7 +267,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
 
         response = ListEventBusesResponse(
-            EventBuses=self._event_bust_dict_to_api_type_list(limited_event_buses)
+            EventBuses=self._event_bust_dict_to_event_bus_response_list(limited_event_buses)
         )
         if next_token is not None:
             response["NextToken"] = next_token
@@ -344,7 +321,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
         rule.state = RuleState.ENABLED
@@ -359,7 +336,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         try:
             rule = self.get_rule(name, event_bus)
@@ -380,11 +357,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> DescribeRuleResponse:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
 
-        response = self._rule_dict_to_api_type_rule(rule)
+        response = self._rule_to_api_type_rule(rule)
         return response
 
     @handler("DisableRule")
@@ -396,7 +373,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
         rule.state = RuleState.DISABLED
@@ -412,12 +389,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ListRulesResponse:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rules = get_filtered_dict(name_prefix, event_bus.rules) if name_prefix else event_bus.rules
         limited_rules, next_token = self._get_limited_dict_and_next_token(rules, next_token, limit)
 
-        response = ListRulesResponse(Rules=list(self._rule_dict_to_api_type_list(limited_rules)))
+        response = ListRulesResponse(
+            Rules=list(self._rule_dict_to_rule_response_list(limited_rules))
+        )
         if next_token is not None:
             response["NextToken"] = next_token
         return response
@@ -450,7 +429,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> PutRuleResponse:
         region = context.region
         account_id = context.account_id
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         store = self.get_store(context)
         event_bus = self.get_event_bus(event_bus_name, store)
         existing_rule = event_bus.rules.get(name)
@@ -505,7 +484,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ListTargetsByRuleResponse:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule, event_bus)
         targets = rule.targets
@@ -565,6 +544,127 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         return response
 
+    #########
+    # Archive
+    #########
+    @handler("CreateArchive")
+    def create_archive(
+        self,
+        context: RequestContext,
+        archive_name: ArchiveName,
+        event_source_arn: Arn,
+        description: ArchiveDescription = None,
+        event_pattern: EventPattern = None,
+        retention_days: RetentionDays = None,
+        **kwargs,
+    ) -> CreateArchiveResponse:
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(context)
+        if archive_name in store.archives.keys():
+            raise ResourceAlreadyExistsException(f"Archive {archive_name} already exists.")
+        self._check_event_bus_exists(event_source_arn, store)
+        archive_service = self.create_archive_service(
+            archive_name,
+            region,
+            account_id,
+            event_source_arn,
+            description,
+            event_pattern,
+            retention_days,
+        )
+        store.archives[archive_service.archive.name] = archive_service.archive
+
+        response = CreateArchiveResponse(
+            ArchiveArn=archive_service.arn,
+            State=archive_service.state,
+            CreationTime=archive_service.creation_time,
+        )
+        return response
+
+    @handler("DeleteArchive")
+    def delete_archive(
+        self, context: RequestContext, archive_name: ArchiveName, **kwargs
+    ) -> DeleteArchiveResponse:
+        store = self.get_store(context)
+        if archive := self.get_archive(archive_name, store):
+            try:
+                archive_service = self._archive_service_store.pop(archive.arn)
+                archive_service.delete()
+                del store.archives[archive_name]
+            except ResourceNotFoundException as error:
+                return error
+
+    @handler("DescribeArchive")
+    def describe_archive(
+        self, context: RequestContext, archive_name: ArchiveName, **kwargs
+    ) -> DescribeArchiveResponse:
+        store = self.get_store(context)
+        archive = self.get_archive(archive_name, store)
+
+        response = self._archive_to_describe_archive_response(archive)
+        return response
+
+    @handler("ListArchives")
+    def list_archives(
+        self,
+        context: RequestContext,
+        name_prefix: ArchiveName = None,
+        event_source_arn: Arn = None,
+        state: ArchiveState = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
+        **kwargs,
+    ) -> ListArchivesResponse:
+        store = self.get_store(context)
+        if event_source_arn:
+            self._check_event_bus_exists(event_source_arn, store)
+            archives = {
+                key: archive
+                for key, archive in store.archives.items()
+                if archive.event_source_arn == event_source_arn
+            }
+        elif name_prefix:
+            archives = get_filtered_dict(name_prefix, store.archives)
+        else:
+            archives = store.archives
+        limited_archives, next_token = self._get_limited_dict_and_next_token(
+            archives, next_token, limit
+        )
+
+        response = ListArchivesResponse(
+            Archives=list(self._archive_dict_to_archive_response_list(limited_archives))
+        )
+        if next_token is not None:
+            response["NextToken"] = next_token
+        return response
+
+    @handler("UpdateArchive")
+    def update_archive(
+        self,
+        context: RequestContext,
+        archive_name: ArchiveName,
+        description: ArchiveDescription = None,
+        event_pattern: EventPattern = None,
+        retention_days: RetentionDays = None,
+        **kwargs,
+    ) -> UpdateArchiveResponse:
+        store = self.get_store(context)
+        try:
+            archive = self.get_archive(archive_name, store)
+        except ResourceNotFoundException:
+            raise InternalException("Service encountered unexpected problem. Please try again.")
+        archive_service = self._archive_service_store[archive.arn]
+        archive_service.update(description, event_pattern, retention_days)
+
+        response = UpdateArchiveResponse(
+            ArchiveArn=archive_service.arn,
+            State=archive.state,
+            # StateReason=archive.state_reason,
+            CreationTime=archive.creation_time,
+        )
+        return response
+
     ########
     # Events
     ########
@@ -596,6 +696,123 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, entries: PutPartnerEventsRequestEntryList, **kwargs
     ) -> PutPartnerEventsResponse:
         raise NotImplementedError
+
+    ########
+    # Replay
+    ########
+
+    @handler("CancelReplay")
+    def cancel_replay(
+        self, context: RequestContext, replay_name: ReplayName, **kwargs
+    ) -> CancelReplayResponse:
+        store = self.get_store(context)
+        replay = self.get_replay(replay_name, store)
+        replay_service = self._replay_service_store[replay.arn]
+        replay_service.stop()
+        response = CancelReplayResponse(
+            ReplayArn=replay_service.arn,
+            State=replay_service.state,
+            # StateReason=replay_service.state_reason,
+        )
+        return response
+
+    @handler("DescribeReplay")
+    def describe_replay(
+        self, context: RequestContext, replay_name: ReplayName, **kwargs
+    ) -> DescribeReplayResponse:
+        store = self.get_store(context)
+        replay = self.get_replay(replay_name, store)
+
+        response = self._replay_to_describe_replay_response(replay)
+        return response
+
+    @handler("ListReplays")
+    def list_replays(
+        self,
+        context: RequestContext,
+        name_prefix: ReplayName = None,
+        state: ReplayState = None,
+        event_source_arn: Arn = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
+        **kwargs,
+    ) -> ListReplaysResponse:
+        store = self.get_store(context)
+        if event_source_arn:
+            replays = {
+                key: replay
+                for key, replay in store.replays.items()
+                if replay.event_source_arn == event_source_arn
+            }
+        elif name_prefix:
+            replays = get_filtered_dict(name_prefix, store.replays)
+        else:
+            replays = store.replays
+        limited_replays, next_token = self._get_limited_dict_and_next_token(
+            replays, next_token, limit
+        )
+
+        response = ListReplaysResponse(
+            Replays=list(self._replay_dict_to_replay_response_list(limited_replays))
+        )
+        if next_token is not None:
+            response["NextToken"] = next_token
+        return response
+
+    @handler("StartReplay")
+    def start_replay(
+        self,
+        context: RequestContext,
+        replay_name: ReplayName,
+        event_source_arn: Arn,  # Archive Arn
+        event_start_time: Timestamp,
+        event_end_time: Timestamp,
+        destination: ReplayDestination,
+        description: ReplayDescription = None,
+        **kwargs,
+    ) -> StartReplayResponse:
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(context)
+        if replay_name in store.replays.keys():
+            raise ResourceAlreadyExistsException(f"Replay {replay_name} already exists.")
+        self._validate_replay_time(event_start_time, event_end_time)
+        if event_source_arn not in self._archive_service_store:
+            archive_name = event_source_arn.split("/")[-1]
+            raise ValidationException(
+                f"Parameter EventSourceArn is not valid. Reason: Archive {archive_name} does not exist."
+            )
+        self._validate_replay_destination(destination, event_source_arn)
+        replay_service = self.create_replay_service(
+            replay_name,
+            region,
+            account_id,
+            event_source_arn,
+            destination,
+            event_start_time,
+            event_end_time,
+            description,
+        )
+        store.replays[replay_service.replay.name] = replay_service.replay
+        archive_service = self._archive_service_store[event_source_arn]
+        events_to_replay = archive_service.get_events(
+            replay_service.event_start_time, replay_service.event_end_time
+        )
+        replay_service.start(events_to_replay)
+        if events_to_replay:
+            re_formatted_event_to_replay = replay_service.re_format_events_from_archive(
+                events_to_replay, replay_name
+            )
+            self._process_entries(context, re_formatted_event_to_replay)
+        replay_service.finish()
+
+        response = StartReplayResponse(
+            ReplayArn=replay_service.arn,
+            State=replay_service.state,
+            StateReason=replay_service.state_reason,
+            ReplayStartTime=replay_service.replay_start_time,
+        )
+        return response
 
     ######
     # Tags
@@ -666,11 +883,21 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             return target
         raise ResourceNotFoundException(f"Target {target_id} does not exist on Rule {rule.name}.")
 
+    def get_archive(self, name: ArchiveName, store: EventsStore) -> Archive:
+        if archive := store.archives.get(name):
+            return archive
+        raise ResourceNotFoundException(f"Archive {name} does not exist.")
+
+    def get_replay(self, name: ReplayName, store: EventsStore) -> Replay:
+        if replay := store.replays.get(name):
+            return replay
+        raise ResourceNotFoundException(f"Replay {name} does not exist.")
+
     def get_rule_service(
         self, context: RequestContext, rule_name: RuleName, event_bus_name: EventBusName
     ) -> RuleService:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule_name, event_bus)
         return self._rule_services_store[rule.arn]
@@ -730,6 +957,71 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._target_sender_store[target_sender.arn] = target_sender
         return target_sender
 
+    def create_archive_service(
+        self,
+        archive_name: ArchiveName,
+        region: str,
+        account_id: str,
+        event_source_arn: Arn,
+        description: ArchiveDescription,
+        event_pattern: EventPattern,
+        retention_days: RetentionDays,
+    ) -> ArchiveService:
+        archive_service = ArchiveService(
+            archive_name,
+            region,
+            account_id,
+            event_source_arn,
+            description,
+            event_pattern,
+            retention_days,
+        )
+        self._archive_service_store[archive_service.arn] = archive_service
+        return archive_service
+
+    def create_replay_service(
+        self,
+        name: ReplayName,
+        region: str,
+        account_id: str,
+        event_source_arn: Arn,
+        destination: ReplayDestination,
+        event_start_time: Timestamp,
+        event_end_time: Timestamp,
+        description: ReplayDescription,
+    ) -> ReplayService:
+        replay_service = ReplayService(
+            name,
+            region,
+            account_id,
+            event_source_arn,
+            destination,
+            event_start_time,
+            event_end_time,
+            description,
+        )
+        self._replay_service_store[replay_service.arn] = replay_service
+        return replay_service
+
+    def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
+        """
+        Delete all rule services associated to the input from the store.
+        Accepts a single Rule object or a dict of Rule objects as input.
+        """
+        if isinstance(rules, Rule):
+            rules = {rules.name: rules}
+        for rule in rules.values():
+            del self._rule_services_store[rule.arn]
+
+    def _delete_target_sender(self, ids: TargetIdList, rule) -> None:
+        for target_id in ids:
+            if target := rule.targets.get(target_id):
+                target_arn = target["Arn"]
+                try:
+                    del self._target_sender_store[target_arn]
+                except KeyError:
+                    LOG.error(f"Error deleting target service {target_arn}.")
+
     def _get_limited_dict_and_next_token(
         self, input_dict: dict, next_token: NextToken | None, limit: LimitMax100 | None
     ) -> tuple[dict, NextToken]:
@@ -748,32 +1040,88 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         return limited_dict, next_token
 
-    def _extract_event_bus_name(
-        self, resource_arn_or_name: EventBusNameOrArn | RuleArn | None
-    ) -> EventBusName:
-        """Return the event bus name. Input can be either an event bus name or ARN."""
-        if not resource_arn_or_name:
-            return "default"
-        if "arn:aws:events" not in resource_arn_or_name:
-            return resource_arn_or_name
-        resource_type = get_resource_type(resource_arn_or_name)
-        # TODO how to deal with / in event bus name or rule name
+    def _check_resource_exists(
+        self, resource_arn: Arn, resource_type: ResourceType, store: EventsStore
+    ) -> None:
         if resource_type == ResourceType.EVENT_BUS:
-            return resource_arn_or_name.split("/")[-1]
+            event_bus_name = extract_event_bus_name(resource_arn)
+            self.get_event_bus(event_bus_name, store)
         if resource_type == ResourceType.RULE:
-            if bool(RULE_ARN_CUSTOM_EVENT_BUS_PATTERN.match(resource_arn_or_name)):
-                return resource_arn_or_name.split("rule/", 1)[1].split("/", 1)[0]
-            return "default"
+            event_bus_name = extract_event_bus_name(resource_arn)
+            event_bus = self.get_event_bus(event_bus_name, store)
+            rule_name = resource_arn.split("/")[-1]
+            self.get_rule(rule_name, event_bus)
 
-    def _event_bust_dict_to_api_type_list(self, event_buses: EventBusDict) -> EventBusList:
+    def _get_scheduled_rule_job_function(self, account_id, region, rule: Rule) -> Callable:
+        def func(*args, **kwargs):
+            """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
+            for target in rule.targets.values():
+                if custom_input := target.get("Input"):
+                    event = json.loads(custom_input)
+                else:
+                    event = {
+                        "version": "0",
+                        "id": long_uid(),
+                        "detail-type": "Scheduled Event",
+                        "source": "aws.events",
+                        "account": account_id,
+                        "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
+                        "region": region,
+                        "resources": [rule.arn],
+                        "detail": {},
+                    }
+
+                target_sender = self._target_sender_store[target["Arn"]]
+                try:
+                    target_sender.process_event(event)
+                except Exception as e:
+                    LOG.info(
+                        "Unable to send event notification %s to target %s: %s",
+                        truncate(event),
+                        target,
+                        e,
+                    )
+
+        return func
+
+    def _check_event_bus_exists(
+        self, event_bus_name_or_arn: EventBusNameOrArn, store: EventsStore
+    ) -> None:
+        event_bus_name = extract_event_bus_name(event_bus_name_or_arn)
+        self.get_event_bus(event_bus_name, store)
+
+    def _validate_replay_time(self, event_start_time: Timestamp, event_end_time: Timestamp) -> None:
+        if event_end_time <= event_start_time:
+            raise ValidationException(
+                "Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime."
+            )
+
+    def _validate_replay_destination(
+        self, destination: ReplayDestination, event_source_arn: Arn
+    ) -> None:
+        archive_service = self._archive_service_store[event_source_arn]
+        if destination_arn := destination.get("Arn"):
+            if destination_arn != archive_service.archive.event_source_arn:
+                if destination_arn in self._event_bus_services_store.keys():
+                    raise ValidationException(
+                        "Parameter Destination.Arn is not valid. Reason: Cross event bus replay is not permitted."
+                    )
+                else:
+                    event_bus_name = extract_event_bus_name(destination_arn)
+                    raise ResourceNotFoundException(f"Event bus {event_bus_name} does not exist.")
+
+    # Internal type to API type remappings
+
+    def _event_bust_dict_to_event_bus_response_list(
+        self, event_buses: EventBusDict
+    ) -> EventBusList:
         """Return a converted dict of EventBus model objects as a list of event buses in API type EventBus format."""
         event_bus_list = [
-            self._event_bus_dict_to_api_type_event_bus(event_bus)
-            for event_bus in event_buses.values()
+            self._event_bus_to_api_type_event_bus(event_bus) for event_bus in event_buses.values()
         ]
         return event_bus_list
 
-    def _event_bus_dict_to_api_type_event_bus(self, event_bus: EventBus) -> ApiTypeEventBus:
+    def _event_bus_to_api_type_event_bus(self, event_bus: EventBus) -> ApiTypeEventBus:
         event_bus_api_type = {
             "Name": event_bus.name,
             "Arn": event_bus.arn,
@@ -807,22 +1155,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             f")"
         )
 
-    def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
-        """
-        Delete all rule services associated to the input from the store.
-        Accepts a single Rule object or a dict of Rule objects as input.
-        """
-        if isinstance(rules, Rule):
-            rules = {rules.name: rules}
-        for rule in rules.values():
-            del self._rule_services_store[rule.arn]
-
-    def _rule_dict_to_api_type_list(self, rules: RuleDict) -> RuleResponseList:
+    def _rule_dict_to_rule_response_list(self, rules: RuleDict) -> RuleResponseList:
         """Return a converted dict of Rule model objects as a list of rules in API type Rule format."""
-        rule_list = [self._rule_dict_to_api_type_rule(rule) for rule in rules.values()]
+        rule_list = [self._rule_to_api_type_rule(rule) for rule in rules.values()]
         return rule_list
 
-    def _rule_dict_to_api_type_rule(self, rule: Rule) -> ApiTypeRule:
+    def _rule_to_api_type_rule(self, rule: Rule) -> ApiTypeRule:
         rule = {
             "Name": rule.name,
             "Arn": rule.arn,
@@ -837,30 +1175,94 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in rule.items() if value is not None}
 
-    def _delete_target_sender(self, ids: TargetIdList, rule) -> None:
-        for target_id in ids:
-            if target := rule.targets.get(target_id):
-                target_arn = target["Arn"]
-                try:
-                    del self._target_sender_store[target_arn]
-                except KeyError:
-                    LOG.error(f"Error deleting target service {target_arn}.")
+    def _archive_dict_to_archive_response_list(self, archives: ArchiveDict) -> ArchiveResponseList:
+        """Return a converted dict of Archive model objects as a list of archives in API type Archive format."""
+        archive_list = [self._archive_to_api_type_archive(archive) for archive in archives.values()]
+        return archive_list
 
-    def _check_resource_exists(
-        self, resource_arn: Arn, resource_type: ResourceType, store: EventsStore
+    def _archive_to_api_type_archive(self, archive: Archive) -> ApiTypeArchive:
+        archive = {
+            "ArchiveName": archive.name,
+            "EventSourceArn": archive.event_source_arn,
+            "State": archive.state,
+            # TODO add "StateReason": archive.state_reason,
+            "RetentionDays": archive.retention_days,
+            "SizeBytes": archive.size_bytes,
+            "EventCount": archive.event_count,
+            "CreationTime": archive.creation_time,
+        }
+        return {key: value for key, value in archive.items() if value is not None}
+
+    def _archive_to_describe_archive_response(self, archive: Archive) -> DescribeArchiveResponse:
+        archive_dict = {
+            "ArchiveArn": archive.arn,
+            "ArchiveName": archive.name,
+            "EventSourceArn": archive.event_source_arn,
+            "State": archive.state,
+            # TODO add "StateReason": archive.state_reason,
+            "RetentionDays": archive.retention_days,
+            "SizeBytes": archive.size_bytes,
+            "EventCount": archive.event_count,
+            "CreationTime": archive.creation_time,
+            "EventPattern": archive.event_pattern,
+            "Description": archive.description,
+        }
+        return {key: value for key, value in archive_dict.items() if value is not None}
+
+    def _replay_dict_to_replay_response_list(self, replays: ReplayDict) -> ReplayList:
+        """Return a converted dict of Replay model objects as a list of replays in API type Replay format."""
+        replay_list = [self._replay_to_api_type_replay(replay) for replay in replays.values()]
+        return replay_list
+
+    def _replay_to_api_type_replay(self, replay: Replay) -> ApiTypeReplay:
+        replay = {
+            "ReplayName": replay.name,
+            "EventSourceArn": replay.event_source_arn,
+            "State": replay.state,
+            # # "StateReason": replay.state_reason,
+            "EventStartTime": replay.event_start_time,
+            "EventEndTime": replay.event_end_time,
+            "EventLastReplayedTime": replay.event_last_replayed_time,
+            "ReplayStartTime": replay.replay_start_time,
+            "ReplayEndTime": replay.replay_end_time,
+        }
+        return {key: value for key, value in replay.items() if value is not None}
+
+    def _replay_to_describe_replay_response(self, replay: Replay) -> DescribeReplayResponse:
+        replay_dict = {
+            "ReplayName": replay.name,
+            "ReplayArn": replay.arn,
+            "Description": replay.description,
+            "State": replay.state,
+            # # "StateReason": replay.state_reason,
+            "EventSourceArn": replay.event_source_arn,
+            "Destination": replay.destination,
+            "EventStartTime": replay.event_start_time,
+            "EventEndTime": replay.event_end_time,
+            "EventLastReplayedTime": replay.event_last_replayed_time,
+            "ReplayStartTime": replay.replay_start_time,
+            "ReplayEndTime": replay.replay_end_time,
+        }
+        return {key: value for key, value in replay_dict.items() if value is not None}
+
+    def _put_to_archive(
+        self, context: RequestContext, archive_target_id: str, event: FormattedEvent
     ) -> None:
-        if resource_type == ResourceType.EVENT_BUS:
-            event_bus_name = self._extract_event_bus_name(resource_arn)
-            self.get_event_bus(event_bus_name, store)
-        if resource_type == ResourceType.RULE:
-            event_bus_name = self._extract_event_bus_name(resource_arn)
-            event_bus = self.get_event_bus(event_bus_name, store)
-            rule_name = resource_arn.split("/")[-1]
-            self.get_rule(rule_name, event_bus)
+        archive_name = ARCHIVE_TARGET_ID_NAME_PATTERN.match(archive_target_id).group("name")
+
+        store = self.get_store(context)
+        archive = self.get_archive(archive_name, store)
+        archive_service = self._archive_service_store[archive.arn]
+        archive_service.put_events([event])
 
     def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
     ) -> tuple[PutEventsResultEntryList, int]:
+        """Main method to process events put to an event bus.
+        Events are validated to contain the proper fields and formatted.
+        Events are matched against all the rules of the respective event bus.
+        For matching rules the event is either sent to the respective target,
+        via the target sender put to the defined archived."""
         processed_entries = []
         failed_entry_count = 0
         for event in entries:
@@ -869,62 +1271,36 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 processed_entries.append(event_failed_validation)
                 failed_entry_count += 1
                 continue
-            event = format_event(event, context.region, context.account_id)
+            event_formatted = format_event(event, context.region, context.account_id)
             store = self.get_store(context)
             try:
                 event_bus = self.get_event_bus(event_bus_name, store)
             except ResourceNotFoundException:
                 # ignore events for non-existing event buses but add processed event
-                processed_entries.append({"EventId": event["id"]})
+                processed_entries.append({"EventId": event_formatted["id"]})
                 continue
             matching_rules = [rule for rule in event_bus.rules.values()]
             for rule in matching_rules:
                 event_pattern = rule.event_pattern
-                event_str = json.dumps(event)
+                event_str = json.dumps(event_formatted, cls=EventJSONEncoder)
                 if matches_rule(event_str, event_pattern):
                     for target in rule.targets.values():
-                        target_sender = self._target_sender_store[target["Arn"]]
-                        try:
-                            target_sender.process_event(event)
-                            processed_entries.append({"EventId": event["id"]})
-                        except Exception as error:
-                            processed_entries.append(
-                                {
-                                    "ErrorCode": "InternalException",
-                                    "ErrorMessage": str(error),
-                                }
+                        target_arn = target["Arn"]
+                        if is_archive_arn(target_arn):
+                            self._put_to_archive(
+                                context, archive_target_id=target["Id"], event=event_formatted
                             )
-                            failed_entry_count += 1
+                        else:
+                            target_sender = self._target_sender_store[target_arn]
+                            try:
+                                target_sender.process_event(event_formatted)
+                                processed_entries.append({"EventId": event_formatted["id"]})
+                            except Exception as error:
+                                processed_entries.append(
+                                    {
+                                        "ErrorCode": "InternalException",
+                                        "ErrorMessage": str(error),
+                                    }
+                                )
+                                failed_entry_count += 1
         return processed_entries, failed_entry_count
-
-    def _get_scheduled_rule_job_function(self, account_id, region, rule: Rule) -> Callable:
-        def func(*args, **kwargs):
-            """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
-            for target in rule.targets.values():
-                if custom_input := target.get("Input"):
-                    event = json.loads(custom_input)
-                else:
-                    event = {
-                        "version": "0",
-                        "id": long_uid(),
-                        "detail-type": "Scheduled Event",
-                        "source": "aws.events",
-                        "account": account_id,
-                        "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
-                        "region": region,
-                        "resources": [rule.arn],
-                        "detail": {},
-                    }
-
-                target_sender = self._target_sender_store[target["Arn"]]
-                try:
-                    target_sender.process_event(event)
-                except Exception as e:
-                    LOG.info(
-                        "Unable to send event notification %s to target %s: %s",
-                        truncate(event),
-                        target,
-                        e,
-                    )
-
-        return func

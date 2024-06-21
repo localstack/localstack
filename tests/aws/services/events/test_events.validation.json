@@ -20,6 +20,15 @@
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_prefix": {
     "last_validated_date": "2024-06-19T10:49:27+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[domain]": {
+    "last_validated_date": "2024-06-20T08:48:13+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[path]": {
+    "last_validated_date": "2024-06-20T08:48:28+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[standard]": {
+    "last_validated_date": "2024-06-20T08:47:59+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
     "last_validated_date": "2024-06-19T10:45:41+00:00"
   },

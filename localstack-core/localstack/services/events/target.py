@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import re
@@ -10,10 +11,12 @@ from botocore.client import BaseClient
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
+from localstack.services.events.utils import EventJSONEncoder, event_time_to_time_string
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
+    extract_resource_from_arn,
     extract_service_from_arn,
     firehose_name,
     sqs_queue_url_for_arn,
@@ -72,7 +75,11 @@ def replace_template_placeholders(
     def replace_placeholder(match):
         key = match.group(1)
         value = replacements.get(key, match.group(0))  # handle non defined placeholders
-        return json.dumps(value) if is_json else value
+        if is_json:
+            return json.dumps(value, cls=EventJSONEncoder)
+        if isinstance(value, datetime.datetime):
+            return event_time_to_time_string(value)
+        return value
 
     formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
 
@@ -242,23 +249,13 @@ class ContainerTargetSender(TargetSender):
 
 class EventsTargetSender(TargetSender):
     def send_event(self, event):
-        event_bus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
-        source = (
-            event.get("source")
-            if event.get("source") is not None
-            else self.service
-            if self.service
-            else ""
-        )
-        detail_type = event.get("detail-type") if event.get("detail-type") is not None else ""
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
+        event_bus_name = extract_resource_from_arn(self.target["Arn"]).split("/")[-1]
+        source = self._get_source(event)
+        detail_type = self._get_detail_type(event)
         detail = event.get("detail", event)
-        resources = (
-            event.get("resources")
-            if event.get("resources") is not None
-            else ([self.rule_arn] if self.rule_arn else [])
-        )
+        resources = self._get_resources(event)
         entries = [
             {
                 "EventBusName": event_bus_name,
@@ -291,12 +288,31 @@ class EventsTargetSender(TargetSender):
         if original_account != self.account_id:
             return json.dumps({"original_id": original_id, "original_account": original_account})
 
+    def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
+        if isinstance(event, dict) and (source := event.get("source")):
+            return source
+        else:
+            return self.service or ""
+
+    def _get_detail_type(self, event: FormattedEvent | TransformedEvent) -> str:
+        if isinstance(event, dict) and (detail_type := event.get("detail-type")):
+            return detail_type
+        else:
+            return ""
+
+    def _get_resources(self, event: FormattedEvent | TransformedEvent) -> list[str]:
+        if isinstance(event, dict) and (resources := event.get("resources")):
+            return resources
+        else:
+            return []
+
 
 class FirehoseTargetSender(TargetSender):
     def send_event(self, event):
         delivery_stream_name = firehose_name(self.target["Arn"])
         self.client.put_record(
-            DeliveryStreamName=delivery_stream_name, Record={"Data": to_bytes(json.dumps(event))}
+            DeliveryStreamName=delivery_stream_name,
+            Record={"Data": to_bytes(json.dumps(event, cls=EventJSONEncoder))},
         )
 
 
@@ -307,7 +323,7 @@ class KinesisTargetSender(TargetSender):
         partition_key = event.get(partition_key_path, event["id"])
         self.client.put_record(
             StreamName=stream_name,
-            Data=to_bytes(json.dumps(event)),
+            Data=to_bytes(json.dumps(event, cls=EventJSONEncoder)),
             PartitionKey=partition_key,
         )
 
@@ -324,7 +340,7 @@ class LambdaTargetSender(TargetSender):
         asynchronous = True  # TODO clarify default behavior of AWS
         self.client.invoke(
             FunctionName=self.target["Arn"],
-            Payload=to_bytes(json.dumps(event)),
+            Payload=to_bytes(json.dumps(event, cls=EventJSONEncoder)),
             InvocationType="Event" if asynchronous else "RequestResponse",
         )
 
@@ -337,7 +353,12 @@ class LogsTargetSender(TargetSender):
         self.client.put_log_events(
             logGroupName=log_group_name,
             logStreamName=log_stream_name,
-            logEvents=[{"timestamp": now_utc(millis=True), "message": json.dumps(event)}],
+            logEvents=[
+                {
+                    "timestamp": now_utc(millis=True),
+                    "message": json.dumps(event, cls=EventJSONEncoder),
+                }
+            ],
         )
 
 
@@ -358,7 +379,9 @@ class SagemakerTargetSender(TargetSender):
 
 class SnsTargetSender(TargetSender):
     def send_event(self, event):
-        self.client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
+        self.client.publish(
+            TopicArn=self.target["Arn"], Message=json.dumps(event, cls=EventJSONEncoder)
+        )
 
 
 class SqsTargetSender(TargetSender):
@@ -367,7 +390,13 @@ class SqsTargetSender(TargetSender):
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         self.client.send_message(
-            QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(
+                event,
+                separators=(",", ":"),
+                cls=EventJSONEncoder,
+            ),
+            **kwargs,
         )
 
 
@@ -375,7 +404,9 @@ class StatesTargetSender(TargetSender):
     """Step Functions Target Sender"""
 
     def send_event(self, event):
-        self.client.start_execution(stateMachineArn=self.target["Arn"], input=json.dumps(event))
+        self.client.start_execution(
+            stateMachineArn=self.target["Arn"], input=json.dumps(event, cls=EventJSONEncoder)
+        )
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)

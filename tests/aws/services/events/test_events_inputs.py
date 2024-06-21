@@ -195,8 +195,12 @@ class TestInputPath:
             ]
         )
 
-        messages_queue_1 = sqs_collect_messages(aws_client, queue_url_1, min_events=1, retries=3)
-        messages_queue_2 = sqs_collect_messages(aws_client, queue_url_2, min_events=1, retries=3)
+        messages_queue_1 = sqs_collect_messages(
+            aws_client, queue_url_1, expected_events_count=1, retries=3
+        )
+        messages_queue_2 = sqs_collect_messages(
+            aws_client, queue_url_2, expected_events_count=1, retries=3
+        )
 
         snapshot.add_transformers_list(
             [
@@ -210,6 +214,10 @@ class TestInputPath:
 
 class TestInputTransformer:
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     @pytest.mark.parametrize(
         "input_template",
         [
@@ -408,7 +416,7 @@ class TestInputTransformer:
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
 
-        rule_name = f"test-rule-/slash-{short_uid()}"
+        rule_name = f"test-rule-{short_uid()}"
         events_put_rule(
             Name=rule_name,
             EventBusName=bus_name,
@@ -440,7 +448,7 @@ class TestInputTransformer:
             ]
         )
 
-        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1, retries=3)
 
         snapshot.add_transformer(
             [

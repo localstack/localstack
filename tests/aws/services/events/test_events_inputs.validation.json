@@ -15,25 +15,25 @@
     "last_validated_date": "2024-05-13T12:27:11+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
-    "last_validated_date": "2024-05-13T12:27:30+00:00"
+    "last_validated_date": "2024-06-11T08:33:10+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[{\"originalEvent\": <aws.events.event>, \"originalEventJson\": <aws.events.event.json>}]": {
-    "last_validated_date": "2024-05-13T12:27:33+00:00"
+    "last_validated_date": "2024-06-11T08:33:13+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_json": {
-    "last_validated_date": "2024-05-13T12:27:25+00:00"
+    "last_validated_date": "2024-06-11T08:33:04+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string": {
     "last_validated_date": "2024-05-13T12:27:20+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>\"]": {
-    "last_validated_date": "2024-05-14T17:01:49+00:00"
+    "last_validated_date": "2024-06-11T08:32:56+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"{[/Check with special starting characters for event of <detail-type> type\"]": {
-    "last_validated_date": "2024-05-14T17:01:54+00:00"
+    "last_validated_date": "2024-06-11T08:33:00+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
-    "last_validated_date": "2024-05-13T12:27:28+00:00"
+    "last_validated_date": "2024-06-11T08:33:07+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transfomer": {
     "last_validated_date": "2024-05-13T13:01:15+00:00"

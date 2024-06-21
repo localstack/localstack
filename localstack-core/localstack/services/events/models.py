@@ -3,17 +3,25 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Literal, Optional, TypeAlias, TypedDict
 
-from bson import Timestamp
-
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
+    ArchiveDescription,
+    ArchiveName,
+    ArchiveState,
     Arn,
     CreatedBy,
     EventBusName,
     EventPattern,
     EventResourceList,
     EventSourceName,
+    EventTime,
     ManagedBy,
+    ReplayDescription,
+    ReplayDestination,
+    ReplayName,
+    ReplayState,
+    ReplayStateReason,
+    RetentionDays,
     RoleArn,
     RuleDescription,
     RuleName,
@@ -22,6 +30,7 @@ from localstack.aws.api.events import (
     TagList,
     Target,
     TargetId,
+    Timestamp,
 )
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -29,9 +38,52 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.aws.arns import events_archive_arn, events_replay_arn
 from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
+
+
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class InvalidEventPatternException(Exception):
+    reason: str
+
+    def __init__(self, reason=None, message=None) -> None:
+        self.reason = reason
+        self.message = message or f"Event pattern is not valid. Reason: {reason}"
+
+
+FormattedEvent = TypedDict(  # functional syntax required due to name-name keys
+    "FormattedEvent",
+    {
+        "version": str,
+        "id": str,
+        "detail-type": Optional[str],
+        "source": Optional[EventSourceName],
+        "account": str,
+        "time": EventTime,
+        "region": str,
+        "resources": Optional[EventResourceList],
+        "detail": dict[str, str | dict],
+        "replay-name": Optional[ReplayName],
+    },
+)
+
+
+FormattedEventDict = dict[str, FormattedEvent]
+FormattedEventList = list[FormattedEvent]
+
+TransformedEvent: TypeAlias = FormattedEvent | dict | str
+
+
+class ResourceType(Enum):
+    EVENT_BUS = "event_bus"
+    RULE = "rule"
 
 
 class Condition(TypedDict):
@@ -89,6 +141,56 @@ RuleDict = dict[RuleName, Rule]
 
 
 @dataclass
+class Replay:
+    name: str
+    region: str
+    account_id: str
+    event_source_arn: Arn
+    destination: ReplayDestination  # Event Bus Arn or Rule Arns
+    event_start_time: Timestamp
+    event_end_time: Timestamp
+    description: Optional[ReplayDescription] = None
+    state: Optional[ReplayState] = None
+    state_reason: Optional[ReplayStateReason] = None
+    event_last_replayed_time: Optional[Timestamp] = None
+    replay_start_time: Optional[Timestamp] = None
+    replay_end_time: Optional[Timestamp] = None
+
+    @property
+    def arn(self) -> Arn:
+        return events_replay_arn(self.name, self.account_id, self.region)
+
+
+ReplayDict = dict[ReplayName, Replay]
+
+
+@dataclass
+class Archive:
+    name: ArchiveName
+    region: str
+    account_id: str
+    event_source_arn: Arn
+    description: ArchiveDescription = None
+    event_pattern: EventPattern = None
+    retention_days: RetentionDays = None
+    state: ArchiveState = ArchiveState.DISABLED
+    creation_time: Timestamp = None
+    size_bytes: int = 0  # TODO how to deal with updating this value?
+    events: FormattedEventDict = field(default_factory=dict)
+
+    @property
+    def arn(self) -> Arn:
+        return events_archive_arn(self.name, self.account_id, self.region)
+
+    @property
+    def event_count(self) -> int:
+        return len(self.events)
+
+
+ArchiveDict = dict[ArchiveName, Archive]
+
+
+@dataclass
 class EventBus:
     name: EventBusName
     region: str
@@ -118,42 +220,14 @@ class EventsStore(BaseStore):
     # Map of eventbus names to eventbus objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     event_buses: EventBusDict = LocalAttribute(default=dict)
 
+    # Map of archive names to archive objects. The name MUST be unique per account and region (works with AccountRegionBundle)
+    archives: ArchiveDict = LocalAttribute(default=dict)
+
+    # Map of replay names to replay objects. The name MUST be unique per account and region (works with AccountRegionBundle)
+    replays: ReplayDict = LocalAttribute(default=dict)
+
     # Maps resource ARN to tags
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
 
 events_store = AccountRegionBundle("events", EventsStore)
-
-
-class ValidationException(ServiceException):
-    code: str = "ValidationException"
-    sender_fault: bool = True
-    status_code: int = 400
-
-
-class InvalidEventPatternException(Exception):
-    reason: str
-
-    def __init__(self, reason=None, message=None) -> None:
-        self.reason = reason
-        self.message = message or f"Event pattern is not valid. Reason: {reason}"
-
-
-class FormattedEvent(TypedDict):
-    version: str
-    id: str
-    detail_type: Optional[str]  # key "detail-type" is automatically interpreted as detail_type
-    source: Optional[EventSourceName]
-    account: str
-    time: str
-    region: str
-    resources: Optional[EventResourceList]
-    detail: dict[str, str | dict]
-
-
-TransformedEvent: TypeAlias = FormattedEvent | dict | str
-
-
-class ResourceType(Enum):
-    EVENT_BUS = "event_bus"
-    RULE = "rule"
