@@ -209,6 +209,10 @@ class TestKinesis:
         snapshot.match("Records", results)
 
     @markers.aws.needs_fixing
+    # TODO validate test against AWS.
+    # - if is_aws_cloud():
+    #   - Use proper URL to AWS instead of LocalStack
+    #   - Properly sign / auth manually crafted CBOR request with real credentials
     def test_subscribe_to_shard_cbor_at_timestamp(
         self,
         kinesis_create_stream,
@@ -231,7 +235,6 @@ class TestKinesis:
             response["StreamDescription"]["StreamARN"], consumer_name
         )
         consumer_arn = response["Consumer"]["ConsumerARN"]
-
         url = config.internal_service_url()
         headers = mock_aws_request_headers(
             "kinesis",
@@ -334,8 +337,10 @@ class TestKinesis:
         snapshot.match("Records", results)
 
     @markers.aws.needs_fixing
-    # this might be a localstack-only test - there doesn't seem to be an endpoint for kinesis on AWS
-    # the test seems to address https://github.com/localstack/localstack/issues/2997 with java AWS SDK usage
+    # TODO validate test against AWS.
+    # - if is_aws_cloud():
+    #   - Use proper URL to AWS instead of LocalStack
+    #   - Properly sign / auth manually crafted CBOR request with real credentials
     def test_get_records(
         self,
         kinesis_create_stream,
@@ -386,8 +391,10 @@ class TestKinesis:
         )
 
     @markers.aws.needs_fixing
-    # this might be a localstack-only test - there doesn't seem to be an endpoint for kinesis on AWS
-    # the test seems to address https://github.com/localstack/localstack/issues/2997 with java AWS SDK usage
+    # TODO validate test against AWS.
+    # - if is_aws_cloud():
+    #   - Use proper URL to AWS instead of LocalStack
+    #   - Properly sign / auth manually crafted CBOR request with real credentials
     def test_get_records_empty_stream(
         self,
         kinesis_create_stream,
