@@ -86,6 +86,10 @@ Resources:
               application/json: "{\"message\":\"Unknown Error\"}"
             SelectionPattern: '5\d{2}'
             StatusCode: '500'
+          - ResponseTemplates:
+              application/json: "{\"message\":\"Not Found\"}"
+            SelectionPattern: 404
+            StatusCode: '404'
         PassthroughBehavior: WHEN_NO_TEMPLATES
         RequestTemplates:
           application/json: !Ref CreateAccountRequestModel

@@ -51,7 +51,8 @@ Resources:
 """
 
 
-@markers.aws.unknown
+# this is an `only_localstack` test because it makes use of _custom_id_ tag
+@markers.aws.only_localstack
 def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     api_name = f"rest-api-{short_uid()}"
     custom_id = short_uid()
@@ -214,10 +215,6 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client, snapshot
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$.get-resources.items..resourceMethods.ANY",  # TODO: empty in AWS
-        "$..requestParameters",  # FIXME: it seems AWS does not return empty dicts anymore, will need to fix
-        "$..responseTemplates",  # FIXME: it seems AWS does not return empty dicts anymore, will need to fix
-        "$.get-method-any..responseModels",
-        "$.get-method-any..responseParameters",
     ]
 )
 def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client):
@@ -267,17 +264,6 @@ def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client)
     assert result.status_code == 400
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..methodIntegration.integrationResponses",
-        "$..methodIntegration.requestParameters",  # missing {}
-        "$..methodIntegration.requestTemplates",  # missing {}
-        "$..methodResponses",  # missing {}
-        "$..requestModels",  # missing {}
-        "$..requestParameters",  # missing {}
-        "$..rootResourceId",  # shouldn't exist
-    ]
-)
 @markers.aws.validated
 def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))

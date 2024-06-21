@@ -165,7 +165,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
-    "recorded-date": "19-12-2023, 19:04:52",
+    "recorded-date": "21-06-2024, 00:09:05",
     "recorded-content": {
       "get-resources": {
         "items": [
@@ -297,7 +297,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_with_apigateway_resources": {
-    "recorded-date": "05-07-2023, 20:54:14",
+    "recorded-date": "20-06-2024, 23:54:26",
     "recorded-content": {
       "get-method-post": {
         "apiKeyRequired": false,
@@ -308,7 +308,6 @@
           "cacheNamespace": "<cache-namespace:1>",
           "integrationResponses": {
             "202": {
-              "responseParameters": {},
               "responseTemplates": {
                 "application/json": {
                   "operation": "celeste_account_create",
@@ -321,8 +320,16 @@
               "selectionPattern": "2\\d{2}",
               "statusCode": "202"
             },
+            "404": {
+              "responseTemplates": {
+                "application/json": {
+                  "message": "Not Found"
+                }
+              },
+              "selectionPattern": "404",
+              "statusCode": "404"
+            },
             "500": {
-              "responseParameters": {},
               "responseTemplates": {
                 "application/json": {
                   "message": "Unknown <name:2>"
@@ -333,7 +340,6 @@
             }
           },
           "passthroughBehavior": "WHEN_NO_TEMPLATES",
-          "requestParameters": {},
           "requestTemplates": {
             "application/json": "<name:3>"
           },
@@ -345,19 +351,16 @@
             "responseModels": {
               "application/json": "<name:4>"
             },
-            "responseParameters": {},
             "statusCode": "202"
           },
           "500": {
             "responseModels": {
               "application/json": "<name:4>"
             },
-            "responseParameters": {},
             "statusCode": "500"
           }
         },
         "operationName": "create_account",
-        "requestModels": {},
         "requestParameters": {
           "method.request.path.account": true
         },

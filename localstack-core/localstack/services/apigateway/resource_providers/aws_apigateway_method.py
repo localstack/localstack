@@ -119,8 +119,6 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
             "operationName",
         ]
         params = util.select_attributes(params, param_names)
-        params["requestModels"] = params.get("requestModels") or {}
-        params["requestParameters"] = params.get("requestParameters") or {}
 
         apigw.put_method(**params)
 
@@ -137,23 +135,18 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
             integration_responses = kwargs.pop("integrationResponses", [])
             method = model.get("HttpMethod")
 
-            kwargs["requestParameters"] = kwargs.get("requestParameters") or {}
-            kwargs["requestTemplates"] = kwargs.get("requestTemplates") or {}
-
             apigw.put_integration(
                 restApiId=api_id,
                 resourceId=res_id,
                 httpMethod=method,
                 **kwargs,
             )
-            default_params = (
-                "responseParameters",
-                "responseTemplates",
-            )
+
             for integration_response in integration_responses:
                 integration_response["statusCode"] = str(integration_response["statusCode"])
-                for param in default_params:
-                    integration_response[param] = integration_response.get(param) or {}
+                if selection_pattern := integration_response.get("selectionPattern"):
+                    integration_response["selectionPattern"] = str(selection_pattern)
+
                 apigw.put_integration_response(
                     restApiId=api_id,
                     resourceId=res_id,
@@ -165,13 +158,18 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
         for response in responses:
             api_id = model["RestApiId"]
             res_id = model["ResourceId"]
+            kwargs = {}
+            if (response_parameters := response.get("ResponseParameters")) is not None:
+                kwargs["responseParameters"] = response_parameters
+            if (response_models := response.get("ResponseModels")) is not None:
+                kwargs["responseModels"] = response_models
+
             apigw.put_method_response(
                 restApiId=api_id,
                 resourceId=res_id,
                 httpMethod=model["HttpMethod"],
                 statusCode=str(response["StatusCode"]),
-                responseParameters=response.get("ResponseParameters") or {},
-                responseModels=response.get("ResponseModels") or {},
+                **kwargs,
             )
 
         return ProgressEvent(
@@ -243,18 +241,19 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
             "restApiId",
             "resourceId",
             "httpMethod",
-            "requestParameters",
         ]
         params = util.select_attributes(params, param_names)
 
         if integration := model.get("Integration"):
             params["type"] = integration["Type"]
-            if integration.get("IntegrationHttpMethod"):
-                params["integrationHttpMethod"] = integration.get("IntegrationHttpMethod")
-            if integration.get("Uri"):
-                params["uri"] = integration.get("Uri")
-            params["requestParameters"] = integration.get("RequestParameters") or {}
-            params["requestTemplates"] = integration.get("RequestTemplates") or {}
+            if http_method := integration.get("IntegrationHttpMethod"):
+                params["integrationHttpMethod"] = http_method
+            if uri := integration.get("Uri"):
+                params["uri"] = uri
+            if (request_parameters := integration.get("RequestParameters")) is not None:
+                params["requestParameters"] = request_parameters
+            if (request_templates := integration.get("requestTemplates")) is not None:
+                params["requestTemplates"] = request_templates
 
             apigw.put_integration(**params)
 
