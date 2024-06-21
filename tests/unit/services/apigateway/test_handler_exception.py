@@ -8,6 +8,7 @@ from localstack.services.apigateway.next_gen.execute_api.gateway_response import
     AccessDeniedError,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import GatewayExceptionHandler
+from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 
 class TestGatewayResponseHandler:
@@ -15,7 +16,12 @@ class TestGatewayResponseHandler:
     def get_context(self):
         def _create_context_with_deployment(gateway_responses=None) -> RestApiInvocationContext:
             context = RestApiInvocationContext(None)
-            context.deployment = RestApiDeployment(RestApiContainer(None), None)
+            context.deployment = RestApiDeployment(
+                account_id=TEST_AWS_ACCOUNT_ID,
+                region=TEST_AWS_REGION_NAME,
+                localstack_rest_api=RestApiContainer(None),
+                moto_rest_api=None,
+            )
             if gateway_responses:
                 context.deployment.localstack_rest_api.gateway_responses = gateway_responses
             return context
