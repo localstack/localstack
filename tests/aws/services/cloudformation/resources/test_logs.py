@@ -27,13 +27,15 @@ def test_logstream(deploy_cfn_template, snapshot, aws_client):
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
-    paths=["$..logGroups..logGroupArn", "$..logGroups..logGroupClass", "$..logGroups..retentionInDays"]
+    paths=[
+        "$..logGroups..logGroupArn",
+        "$..logGroups..logGroupClass",
+        "$..logGroups..retentionInDays",
+    ]
 )
 def test_cfn_handle_log_group_resource(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../../templates/logs_group.yml"
-        )
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/logs_group.yml")
     )
 
     log_group_prefix = stack.outputs["LogGroupNameOutput"]

@@ -503,28 +503,22 @@ class TestPreviousValues:
 
 
 class TestImportValues:
-    @markers.aws.unknown
-    def test_cfn_with_exports(self, deploy_cfn_template, aws_client):
-        # fetch initial list of exports
-        exports_before = aws_client.cloudformation.list_exports()["Exports"]
-
+    @markers.aws.validated
+    def test_cfn_with_exports(self, deploy_cfn_template, aws_client, snapshot):
         stack = deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/template32.yaml"
+                os.path.dirname(__file__), "../../templates/engine/cfn_exports.yml"
             )
         )
-        stack_name = stack.stack_name
 
         exports = aws_client.cloudformation.list_exports()["Exports"]
-        # TODO: fix assertion, to make tests parallelizable!
-        assert len(exports) == len(exports_before) + 6
-        export_names = [e["Name"] for e in exports]
-        assert f"{stack_name}-FullAccessCentralControlPolicy" in export_names
-        assert f"{stack_name}-ReadAccessCentralControlPolicy" in export_names
-        assert f"{stack_name}-cc-groups-stream" in export_names
-        assert f"{stack_name}-cc-scenes-stream" in export_names
-        assert f"{stack_name}-cc-customscenes-stream" in export_names
-        assert f"{stack_name}-cc-schedules-stream" in export_names
+        filtered = [exp for exp in exports if exp["ExportingStackId"] == stack.stack_id]
+        filtered.sort(key=lambda x: x["Name"])
+
+        snapshot.match("exports", filtered)
+
+        snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
+        snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
 
     @markers.aws.validated
     def test_import_values_across_stacks(self, deploy_cfn_template, aws_client):

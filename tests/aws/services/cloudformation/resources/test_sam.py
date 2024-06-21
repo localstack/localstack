@@ -65,16 +65,10 @@ def test_sam_sqs_event(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..Tags", "$..tags", "$..Configuration.CodeSha256"]
-)
-def test_cfn_handle_serverless_api_resource(
-    deploy_cfn_template, aws_client, snapshot
-):
+@markers.snapshot.skip_snapshot_verify(paths=["$..Tags", "$..tags", "$..Configuration.CodeSha256"])
+def test_cfn_handle_serverless_api_resource(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../../templates/sam_api.yml"
-        ),
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/sam_api.yml"),
     )
 
     response = aws_client.apigateway.get_rest_api(restApiId=stack.outputs["ApiId"])

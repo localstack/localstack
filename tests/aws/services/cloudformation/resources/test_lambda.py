@@ -100,9 +100,12 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
 )
 @markers.aws.validated
 def test_update_lambda_function(s3_create_bucket, deploy_cfn_template, aws_client):
-    stack = deploy_cfn_template(template_path=os.path.join(
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
-        ), parameters={"Environment": "ORIGINAL"})
+        ),
+        parameters={"Environment": "ORIGINAL"},
+    )
 
     function_name = stack.outputs["LambdaName"]
     response = aws_client.lambda_.get_function(FunctionName=function_name)
@@ -1187,4 +1190,3 @@ def test_lambda_cfn_dead_letter_config_async_invocation(
 
     retry(check_dlq_message, response=response, retries=5, sleep=2.5)
     snapshot.match("failed-async-lambda", response)
-

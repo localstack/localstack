@@ -102,5 +102,7 @@ def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_cli
         parameters={"QueueName": queue_name, "Qualifier": parameter_ver},
     )
     tags = aws_client.sqs.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
-    snapshot.add_transformer(snapshot.transform.regex(r"/cdk-bootstrap/(\w+)/", "/cdk-bootstrap/.../"))
+    snapshot.add_transformer(
+        snapshot.transform.regex(r"/cdk-bootstrap/(\w+)/", "/cdk-bootstrap/.../")
+    )
     snapshot.match("tags", tags)

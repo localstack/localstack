@@ -195,13 +195,9 @@ def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..RouteTables..PropagatingVgws",
-        "$..RouteTables..Tags"
-    ]
+    paths=["$..RouteTables..PropagatingVgws", "$..RouteTables..Tags"]
 )
 def test_vpc_with_route_table(deploy_cfn_template, aws_client, snapshot):
-
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../../templates/template33.yaml")
     )
@@ -210,7 +206,9 @@ def test_vpc_with_route_table(deploy_cfn_template, aws_client, snapshot):
     response = aws_client.ec2.describe_route_tables(RouteTableIds=[route_id])
 
     # Convert tags to dictionary for easier comparison
-    response["RouteTables"][0]["Tags"] = {tag["Key"]: tag["Value"] for tag in response["RouteTables"][0]["Tags"]}
+    response["RouteTables"][0]["Tags"] = {
+        tag["Key"]: tag["Value"] for tag in response["RouteTables"][0]["Tags"]
+    }
 
     snapshot.match("route_table", response)
 
@@ -244,29 +242,39 @@ def test_cfn_update_ec2_instance_type(deploy_cfn_template, aws_client, cleanups)
 
     # get alpine image id
     if is_aws_cloud():
-        images = aws_client.ec2.describe_images(Filters=[
-            { 'Name': 'name', 'Values': ['alpine-3.19.0-x86_64-bios-*']  },
-            { 'Name': 'state', 'Values': ['available']  },
-        ])["Images"]
+        images = aws_client.ec2.describe_images(
+            Filters=[
+                {"Name": "name", "Values": ["alpine-3.19.0-x86_64-bios-*"]},
+                {"Name": "state", "Values": ["available"]},
+            ]
+        )["Images"]
         image_id = images[0]["ImageId"]
     else:
         image_id = "ami-0a63f96a6a8d4d2c5"
 
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/ec2_instance.yml"),
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/ec2_instance.yml"
+        ),
         parameters={"KeyName": key_name, "InstanceType": "t2.nano", "ImageId": image_id},
     )
 
     instance_id = stack.outputs["InstanceId"]
-    instance = aws_client.ec2.describe_instances(InstanceIds=[instance_id])["Reservations"][0]["Instances"][0]
+    instance = aws_client.ec2.describe_instances(InstanceIds=[instance_id])["Reservations"][0][
+        "Instances"
+    ][0]
     assert instance["InstanceType"] == "t2.nano"
 
     deploy_cfn_template(
         stack_name=stack.stack_name,
-        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/ec2_instance.yml"),
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/ec2_instance.yml"
+        ),
         parameters={"KeyName": key_name, "InstanceType": "t2.medium", "ImageId": image_id},
         is_update=True,
     )
 
-    instance = aws_client.ec2.describe_instances(InstanceIds=[instance_id])["Reservations"][0]["Instances"][0]
+    instance = aws_client.ec2.describe_instances(InstanceIds=[instance_id])["Reservations"][0][
+        "Instances"
+    ][0]
     assert instance["InstanceType"] == "t2.medium"

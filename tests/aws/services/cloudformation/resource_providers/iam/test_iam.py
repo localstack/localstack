@@ -273,9 +273,11 @@ def test_server_certificate(deploy_cfn_template, snapshot, aws_client):
 
 @markers.aws.validated
 def test_cfn_handle_iam_role_resource_no_role_name(deploy_cfn_template, aws_client):
-    stack = deploy_cfn_template(template_path=os.path.join(
-        os.path.dirname(__file__), "../../../../templates/iam_role_defaults.yml"
-    ))
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../../templates/iam_role_defaults.yml"
+        )
+    )
     role_path_prefix = "/test-role-prefix/"
 
     rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
@@ -304,7 +306,9 @@ def test_updating_stack_with_iam_role(deploy_cfn_template, aws_client):
     )
 
     function_description = aws_client.lambda_.get_function(FunctionName=lambda_function_name)
-    assert stack.outputs["TestStackRoleName"] in function_description.get("Configuration").get("Role")
+    assert stack.outputs["TestStackRoleName"] in function_description.get("Configuration").get(
+        "Role"
+    )
     assert stack.outputs["TestStackRoleName"] == lambda_role_name
 
     # Generate new names for lambda and IAM Role
@@ -325,5 +329,7 @@ def test_updating_stack_with_iam_role(deploy_cfn_template, aws_client):
     )
 
     function_description = aws_client.lambda_.get_function(FunctionName=lambda_function_name_new)
-    assert stack.outputs["TestStackRoleName"] in function_description.get("Configuration").get("Role")
+    assert stack.outputs["TestStackRoleName"] in function_description.get("Configuration").get(
+        "Role"
+    )
     assert stack.outputs["TestStackRoleName"] == lambda_role_name_new

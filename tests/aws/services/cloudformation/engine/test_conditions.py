@@ -470,11 +470,14 @@ class TestCloudFormationConditions:
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../../templates/cfn_condition_update_2.yml"
             ),
-            parameters={"OriginalBucketName": original_bucket_name, "FirstBucket": bucket_1, "SecondBucket": bucket_2},
+            parameters={
+                "OriginalBucketName": original_bucket_name,
+                "FirstBucket": bucket_1,
+                "SecondBucket": bucket_2,
+            },
         )
 
         assert aws_client.s3.head_bucket(Bucket=original_bucket_name)
         assert aws_client.s3.head_bucket(Bucket=bucket_1)
         with pytest.raises(aws_client.s3.exceptions.ClientError):
             aws_client.s3.head_bucket(Bucket=bucket_2)
-
