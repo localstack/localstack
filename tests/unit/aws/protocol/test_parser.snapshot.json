@@ -1,0 +1,15 @@
+{
+  "tests/unit/aws/protocol/test_parser.py::test_json_cbor_blob_parsing_w_timestamp": {
+    "recorded-date": "21-06-2024, 13:58:29",
+    "recorded-content": {
+      "parsed_request": {
+        "ConsumerARN": "<test-consumer-arn>",
+        "ShardId": "<test-shard-id>",
+        "StartingPosition": {
+          "Timestamp": "2024-06-21 08:54:08.123000",
+          "Type": "AT_TIMESTAMP"
+        }
+      }
+    }
+  }
+}

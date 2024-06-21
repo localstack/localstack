@@ -1,4 +1,6 @@
+import logging
 import time
+from datetime import datetime
 from unittest.mock import patch
 
 import cbor2
@@ -8,6 +10,7 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
+from localstack.aws.api.kinesis import ShardIteratorType, SubscribeToShardInput
 from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
@@ -15,6 +18,8 @@ from localstack.utils.aws import resources
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
+
+LOGGER = logging.getLogger(__name__)
 
 
 def get_shard_iterator(stream_name, kinesis_client):
@@ -153,6 +158,122 @@ class TestKinesis:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
+    def test_subscribe_to_shard_with_at_timestamp(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        kinesis_register_consumer,
+        wait_for_kinesis_consumer_ready,
+        snapshot,
+        aws_client,
+    ):
+        # create stream and consumer
+        stream_name = kinesis_create_stream(ShardCount=1)
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+        wait_for_stream_ready(stream_name)
+
+        consumer_name = "c1"
+        response = kinesis_register_consumer(stream_arn, consumer_name)
+        consumer_arn = response["Consumer"]["ConsumerARN"]
+        wait_for_kinesis_consumer_ready(consumer_arn=consumer_arn)
+
+        # subscribe to shard with iterator type as AT_TIMESTAMP
+        response = aws_client.kinesis.describe_stream(StreamName=stream_name)
+        shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
+        result = aws_client.kinesis.subscribe_to_shard(
+            ConsumerARN=consumer_arn,
+            ShardId=shard_id,
+            StartingPosition={"Type": "AT_TIMESTAMP", "Timestamp": datetime(2015, 1, 1)},
+        )
+        stream = result["EventStream"]
+
+        # put records
+        num_records = 5
+        msg = "Hello world"
+        for i in range(num_records):
+            aws_client.kinesis.put_records(
+                StreamName=stream_name, Records=[{"Data": f"{msg}_{i}", "PartitionKey": "1"}]
+            )
+
+        # read out results
+        results = []
+        for entry in stream:
+            records = entry["SubscribeToShardEvent"]["Records"]
+            results.extend(records)
+            if len(results) >= num_records:
+                break
+
+        results.sort(key=lambda k: k.get("Data"))
+        snapshot.match("Records", results)
+
+    @markers.aws.needs_fixing
+    # TODO validate test against AWS.
+    # - if is_aws_cloud():
+    #   - Use proper URL to AWS instead of LocalStack
+    #   - Properly sign / auth manually crafted CBOR request with real credentials
+    def test_subscribe_to_shard_cbor_at_timestamp(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        aws_client,
+        kinesis_register_consumer,
+        region_name,
+    ):
+        # create stream
+        stream_name = kinesis_create_stream(ShardCount=1)
+        wait_for_stream_ready(stream_name)
+
+        # subscribe to shard with CBOR encoding
+        response = aws_client.kinesis.describe_stream(StreamName=stream_name)
+        shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
+
+        # create consumer
+        consumer_name = "c1"
+        response = kinesis_register_consumer(
+            response["StreamDescription"]["StreamARN"], consumer_name
+        )
+        consumer_arn = response["Consumer"]["ConsumerARN"]
+        url = config.internal_service_url()
+        headers = mock_aws_request_headers(
+            "kinesis",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
+        )
+        headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
+        headers["X-Amz-Target"] = "Kinesis_20131202.SubscribeToShard"
+        data = cbor2.dumps(
+            SubscribeToShardInput(
+                ConsumerARN=consumer_arn,
+                ShardId=shard_id,
+                StartingPosition={
+                    "Type": ShardIteratorType.AT_TIMESTAMP,
+                    # manually set a UTC epoch with milliseconds
+                    "Timestamp": "1718960048000",
+                },
+            )
+        )
+        found_record = False
+        with requests.post(url, data, headers=headers, stream=True) as result:
+            assert 200 == result.status_code
+
+            # put records
+            aws_client.kinesis.put_records(
+                StreamName=stream_name, Records=[{"Data": "--RECORD--", "PartitionKey": "1"}]
+            )
+
+            # botocore does not support parsing CBOR responses
+            # just check for the presence of the record marker
+            for chunk in result.iter_lines(delimiter=b"\00"):
+                if b"--RECORD--" in chunk:
+                    found_record = True
+                    break
+
+        assert found_record
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard_with_sequence_number_as_iterator(
         self,
         kinesis_create_stream,
@@ -216,10 +337,18 @@ class TestKinesis:
         snapshot.match("Records", results)
 
     @markers.aws.needs_fixing
-    # this might be a localstack-only test - there doesn't seem to be an endpoint for kinesis on AWS
-    # the test seems to address https://github.com/localstack/localstack/issues/2997 with java AWS SDK usage
+    # TODO validate test against AWS.
+    # - if is_aws_cloud():
+    #   - Use proper URL to AWS instead of LocalStack
+    #   - Properly sign / auth manually crafted CBOR request with real credentials
     def test_get_records(
-        self, kinesis_create_stream, wait_for_stream_ready, aws_client, region_name
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        aws_client,
+        region_name,
+        kinesis_register_consumer,
+        snapshot,
     ):
         # create stream
         stream_name = kinesis_create_stream(ShardCount=1)
@@ -262,8 +391,10 @@ class TestKinesis:
         )
 
     @markers.aws.needs_fixing
-    # this might be a localstack-only test - there doesn't seem to be an endpoint for kinesis on AWS
-    # the test seems to address https://github.com/localstack/localstack/issues/2997 with java AWS SDK usage
+    # TODO validate test against AWS.
+    # - if is_aws_cloud():
+    #   - Use proper URL to AWS instead of LocalStack
+    #   - Properly sign / auth manually crafted CBOR request with real credentials
     def test_get_records_empty_stream(
         self,
         kinesis_create_stream,
