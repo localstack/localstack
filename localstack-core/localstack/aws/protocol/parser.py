@@ -339,6 +339,10 @@ class RequestParser(abc.ABC):
         return datetime.datetime.utcfromtimestamp(int(timestamp_string))
 
     @staticmethod
+    def _timestamp_unixtimestampmillis(timestamp_string: str) -> datetime.datetime:
+        return datetime.datetime.utcfromtimestamp(float(timestamp_string) / 1000)
+
+    @staticmethod
     def _timestamp_rfc822(datetime_string: str) -> datetime.datetime:
         return parsedate_to_datetime(datetime_string)
 
@@ -810,7 +814,10 @@ class BaseJSONRequestParser(RequestParser, ABC):
     This base-class handles parsing the payload / body as JSON.
     """
 
+    # default timestamp format for JSON requests
     TIMESTAMP_FORMAT = "unixtimestamp"
+    # timestamp format for requests with CBOR content type
+    CBOR_TIMESTAMP_FORMAT = "unixtimestampmillis"
 
     def _parse_structure(
         self,
@@ -874,6 +881,15 @@ class BaseJSONRequestParser(RequestParser, ABC):
         self, request: Request, shape: Shape, node: bool, uri_params: Mapping[str, Any] = None
     ) -> bool:
         return super()._noop_parser(request, shape, node, uri_params)
+
+    def _parse_timestamp(
+        self, request: Request, shape: Shape, node: str, uri_params: Mapping[str, Any] = None
+    ) -> datetime.datetime:
+        if not shape.serialization.get("timestampFormat") and request.mimetype.startswith(
+            "application/x-amz-cbor"
+        ):
+            return self._convert_str_to_timestamp(node, self.CBOR_TIMESTAMP_FORMAT)
+        return super()._parse_timestamp(request, shape, node, uri_params)
 
     def _parse_blob(
         self, request: Request, shape: Shape, node: bool, uri_params: Mapping[str, Any] = None
