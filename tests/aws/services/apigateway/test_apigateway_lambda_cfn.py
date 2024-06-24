@@ -17,7 +17,7 @@ def handler(event, context):
 """
 
 
-@markers.acceptance_test_beta
+@markers.acceptance_test
 class TestApigatewayLambdaIntegration:
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client, infrastructure_setup):
