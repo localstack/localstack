@@ -107,6 +107,7 @@
 /localstack-core/localstack/services/apigateway/ @bentsku @cloutierMat
 /tests/aws/services/apigateway/ @bentsku @cloutierMat
 /tests/unit/test_apigateway.py @bentsku @cloutierMat
+/tests/unit/services/apigateway/ @bentsku @cloutierMat
 
 # cloudformation
 /localstack-core/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
