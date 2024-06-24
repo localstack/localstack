@@ -107,6 +107,47 @@ commands:
 
 
 jobs:
+  ################
+  ## Build Jobs ##
+  ################
+  docker-build:
+    parameters:
+      platform:
+        description: "Platform to build for"
+        default: "amd64"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    environment:
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "<< parameters.platform >>"
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Build community docker image
+          command: ./bin/docker-helper.sh build
+      - run:
+          name: Save docker image
+          working_directory: target
+          command: ../bin/docker-helper.sh save
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/
+
   install:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -130,6 +171,10 @@ jobs:
           paths:
             - repo
 
+
+  ##########################
+  ## Acceptance Test Jobs ##
+  ##########################
   preflight:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -142,7 +187,6 @@ jobs:
       - run:
           name: Checking AWS compatibility markers
           command: make check-aws-markers
-
 
   # can't completely skip it since we need the dependency from other tasks => conditional in run step
   test-selection:
@@ -198,161 +242,6 @@ jobs:
           paths:
             - repo/target/coverage/
 
-
-  itest-sfn-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test SFN Legacy provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
-            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  itest-s3-v2-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test S3 v2 legacy provider
-          environment:
-            PROVIDER_OVERRIDE_S3: "legacy_v2"
-            TEST_PATH: "tests/aws/services/s3/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  itest-cloudwatch-v2-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test CloudWatch v2 provider
-          environment:
-            PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
-            TEST_PATH: "tests/aws/services/cloudwatch/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  itest-events-v2-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test EventBridge v2 provider
-          environment:
-            PROVIDER_OVERRIDE_EVENTS: "v2"
-            TEST_PATH: "tests/aws/services/events/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.eventsV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v2.xml -o junit_suite_name='events_v2'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  docker-build:
-    parameters:
-      platform:
-        description: "Platform to build for"
-        default: "amd64"
-        type: string
-      machine_image:
-        description: "CircleCI machine type to run at"
-        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
-        type: string
-      resource_class:
-        description: "CircleCI machine type to run at"
-        default: "medium"
-        type: string
-    machine:
-      image: << parameters.machine_image >>
-    resource_class: << parameters.resource_class >>
-    working_directory: /tmp/workspace/repo
-    environment:
-      IMAGE_NAME: "localstack/localstack"
-      PLATFORM: "<< parameters.platform >>"
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Build community docker image
-          command: ./bin/docker-helper.sh build
-      - run:
-          name: Save docker image
-          working_directory: target
-          command: ../bin/docker-helper.sh save
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/
-
   acceptance-tests:
     parameters:
       platform:
@@ -406,6 +295,10 @@ jobs:
             - repo/target/metric_reports/
             - repo/target/coverage/
 
+
+  ###########################
+  ## Integration Test Jobs ##
+  ###########################
   integration-tests:
     parameters:
       platform:
@@ -432,10 +325,10 @@ jobs:
     steps:
       - prepare-acceptance-tests
       - run:
-          name: "Check for acceptance test or default branch"
+          name: "Skip if only acceptance test"
           command: |
             if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
-              echo "Skipping integration tests because only-acceptance-test is set or running on default branch."
+              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
               circleci-agent step halt
             fi
       - attach_workspace:
@@ -499,6 +392,14 @@ jobs:
       IMAGE_NAME: "localstack/localstack"
       PLATFORM: "amd64"
     steps:
+      - prepare-acceptance-tests
+      - run:
+          name: "Skip if only acceptance test"
+          command: |
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
+              echo "Skipping bootstrap tests because only-acceptance-test is set or running unscheduled on default branch."
+              circleci-agent step halt
+            fi
       - attach_workspace:
           at: /tmp/workspace
       - run:
@@ -525,6 +426,162 @@ jobs:
           paths:
             - repo/target/coverage/
 
+
+  ######################
+  ## Custom Test Jobs ##
+  ######################
+  itest-sfn-legacy-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - run:
+          name: "Skip if only acceptance test"
+          command: |
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
+              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
+              circleci-agent step halt
+            fi
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test SFN Legacy provider
+          environment:
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
+            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-s3-v2-legacy-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - run:
+          name: "Skip if only acceptance test"
+          command: |
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
+              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
+              circleci-agent step halt
+            fi
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test S3 v2 legacy provider
+          environment:
+            PROVIDER_OVERRIDE_S3: "legacy_v2"
+            TEST_PATH: "tests/aws/services/s3/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-cloudwatch-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - run:
+          name: "Skip if only acceptance test"
+          command: |
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
+              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
+              circleci-agent step halt
+            fi
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test CloudWatch v2 provider
+          environment:
+            PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
+            TEST_PATH: "tests/aws/services/cloudwatch/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-events-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - run:
+          name: "Skip if only acceptance test"
+          command: |
+            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
+              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
+              circleci-agent step halt
+            fi
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test EventBridge v2 provider
+          environment:
+            PROVIDER_OVERRIDE_EVENTS: "v2"
+            TEST_PATH: "tests/aws/services/events/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.eventsV2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v2.xml -o junit_suite_name='events_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+
+  #########################
+  ## Parity Metrics Jobs ##
+  #########################
   capture-not-implemented:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -575,6 +632,10 @@ jobs:
             - repo/scripts/implementation_coverage_aggregated.csv
             - repo/scripts/implementation_coverage_full.csv
 
+
+  ############################
+  ## Result Publishing Jobs ##
+  ############################
   report:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -686,7 +747,6 @@ jobs:
       - store_artifacts:
           path: .coverage
 
-
   push:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -743,6 +803,7 @@ jobs:
             source .venv/bin/activate
             bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
             make publish
+
   push-to-tinybird:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -790,6 +851,10 @@ jobs:
             # Fail this step depending on the success to trigger a rerun of this step together with others in case of a "rerun failed"
             [[ $OUTCOME = "success" ]] && exit 0 || exit 1
 
+
+####################
+## Workflow setup ##
+####################
 workflows:
   main:
     jobs:
