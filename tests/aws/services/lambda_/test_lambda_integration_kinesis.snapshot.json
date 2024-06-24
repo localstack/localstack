@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping": {
-    "recorded-date": "27-02-2023, 16:54:02",
+    "recorded-date": "24-06-2024, 21:55:17",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 100,
