@@ -62,5 +62,34 @@ LOCALSTACK_API = {
         "/_localstack/health": {},
         "/_localstack/init": {},
         "/_localstack/plugins": {},
+        "/_localstack/stackinfo": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "server_time_utc": {"type": "string"},
+                                        "session_id": {"type": "string"},
+                                        "api_key": {"type": "string"},
+                                        "system": {"type": "string"},
+                                        "version": {"type": "string"},
+                                        "is_ci": {"type": "boolean"},
+                                        "is_docker": {"type": "boolean"},
+                                        "duration_in_seconds": {"type": "integer"},
+                                        "top_user_agent": {"type": "string"},
+                                        "number_of_services": {"type": "integer"},
+                                        "number_of_api_calls_success": {"type": "integer"},
+                                        "number_of_api_calls_error": {"type": "integer"},
+                                    },
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
     },
 }
