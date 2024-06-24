@@ -2,13 +2,13 @@
 API schema and specifications
 """
 
-from typing import Final
+from localstack.version import __version__
 
 # OpenAPI schema for the internal API
-LOCALSTACK_API: Final = {
+LOCALSTACK_API = {
     "openapi": "3.2.0",
     "info": {
-        "title": "LocalStack API",
+        "title": "LocalStack REST API for Community Edition",
         "summary": (
             "The LocalStack API exposes functionality related to diagnostics, health checks, plugins, "
             "initialisation hooks, service introspection, and more."
@@ -18,7 +18,7 @@ LOCALSTACK_API: Final = {
             "url": "https://www.localstack.cloud/contact",
             "email": "info@localstack.cloud",
         },
-        "version": "20240614",
+        "version": __version__,
     },
     "servers": [{"url": "/"}],
     "paths": {
@@ -26,7 +26,6 @@ LOCALSTACK_API: Final = {
         # Service endpoints. Mind the sorting
         #
         "/_aws/cloudwatch/metrics/raw": {},
-        "/_aws/cognito-idp": {},
         "/_aws/dynamodb/expired": {},
         "/_aws/lambda/runtimes": {},
         "/_aws/ses": {
@@ -58,16 +57,10 @@ LOCALSTACK_API: Final = {
         #
         # Framework endpoints. Mind the sorting
         #
-        "/_localstack/chaos": {},
-        "/_localstack/cloudformation/deploy": {},
         "/_localstack/config": {},
         "/_localstack/diagnose": {},
         "/_localstack/health": {},
         "/_localstack/init": {},
         "/_localstack/plugins": {},
-        "/_localstack/state/reset": {},
-        "/_localstack/state/{service}/load": {},
-        "/_localstack/state/{service}/reset": {},
-        "/_localstack/state/{service}/save": {},
     },
 }
