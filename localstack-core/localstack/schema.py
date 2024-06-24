@@ -6,7 +6,7 @@ from localstack.version import __version__
 
 # OpenAPI schema for the internal API
 LOCALSTACK_API = {
-    "openapi": "3.2.0",
+    "openapi": "3.1.0",
     "info": {
         "title": "LocalStack REST API for Community Edition",
         "summary": (
