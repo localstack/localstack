@@ -49,7 +49,6 @@ commands:
             fi
             source $BASH_ENV
 
-
   prepare-testselection:
     steps:
       - unless:
