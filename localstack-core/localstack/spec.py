@@ -1,11 +1,11 @@
 """
-API schema and specifications
+API specifications and schema.
 """
 
 from localstack.version import __version__
 
-# OpenAPI schema for the internal API
-LOCALSTACK_API = {
+# OpenAPI specification for the internal REST API
+OPENAPI = {
     "openapi": "3.1.0",
     "info": {
         "title": "LocalStack REST API for Community Edition",
@@ -41,7 +41,7 @@ LOCALSTACK_API = {
                                         "messages": {
                                             "description": "List of SES messages",
                                             "type": "array",
-                                            "items": {"type": "object", "properties": ...},
+                                            "items": {"type": "object", "properties": {}},
                                         }
                                     },
                                 }
