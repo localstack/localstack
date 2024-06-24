@@ -12,20 +12,6 @@ from .routes import RouterHandler
 LOG = logging.getLogger(__name__)
 
 
-def push_request_context(_chain: HandlerChain, context: RequestContext, _response: Response):
-    from localstack.utils.aws import request_context
-
-    # TODO remove request_context.THREAD_LOCAL
-    request_context.THREAD_LOCAL.request_context = context.request
-
-
-def pop_request_context(_chain: HandlerChain, _context: RequestContext, _response: Response):
-    from localstack.utils.aws import request_context
-
-    # TODO remove request_context.THREAD_LOCAL
-    request_context.THREAD_LOCAL.request_context = None
-
-
 def set_close_connection_header(_chain: HandlerChain, context: RequestContext, response: Response):
     """This is a hack to work around performance issues with h11 and boto. See
     https://github.com/localstack/localstack/issues/6557"""

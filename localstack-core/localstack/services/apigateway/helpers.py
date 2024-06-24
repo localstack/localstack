@@ -50,7 +50,6 @@ from localstack.utils.aws import queries
 from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
-from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.json import try_json
 from localstack.utils.numbers import is_number
 from localstack.utils.strings import canonicalize_bool_to_str, long_uid, short_uid, to_bytes, to_str
@@ -1554,12 +1553,6 @@ def set_api_id_stage_invocation_path(
         raise Exception(
             f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
         )
-    if api_id:
-        # set current region in request thread local, to ensure aws_stack.get_region() works properly
-        # TODO: replace with RequestContextManager
-        if getattr(THREAD_LOCAL, "request_context", None) is not None:
-            _, api_region = get_api_account_id_and_region(api_id)
-            THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = api_region
 
     # set details in invocation context
     invocation_context.api_id = api_id
