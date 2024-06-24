@@ -151,6 +151,36 @@ class TestIAMExtensions:
             )
         snapshot.match("invalid-json", e.value.response)
 
+    @markers.aws.validated
+    def test_role_with_path_lifecycle(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        role_name = f"role-{short_uid()}"
+        path = f"/path{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.regex(path, "<path>"))
+        assume_policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"Service": "lambda.amazonaws.com"},
+                    "Effect": "Allow",
+                }
+            ],
+        }
+
+        create_role_response = aws_client.iam.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(assume_policy_document),
+            Path=path,
+        )
+        snapshot.match("create-role-response", create_role_response)
+
+        get_role_response = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-response", get_role_response)
+
+        delete_role_response = aws_client.iam.delete_role(RoleName=role_name)
+        snapshot.match("delete-role-response", delete_role_response)
+
 
 class TestIAMIntegrations:
     @markers.aws.validated
