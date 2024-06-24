@@ -96,6 +96,7 @@ def test_create_stack_from_s3_template_url(
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Parameters..DefaultValue"])
 def test_validate_template(aws_client, snapshot):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../../templates/valid_template.json")
