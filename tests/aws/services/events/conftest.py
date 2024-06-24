@@ -7,15 +7,19 @@ import pytest
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.events.helper_functions import put_entries_assert_results_sqs
 
 LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def create_event_bus(aws_client):
+def events_create_event_bus(aws_client, region_name, account_id):
     event_bus_names = []
 
     def _create_event_bus(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"test-event-bus-{short_uid()}"
+
         response = aws_client.events.create_event_bus(**kwargs)
         event_bus_names.append(kwargs["Name"])
         return response
@@ -46,20 +50,33 @@ def create_event_bus(aws_client):
                 except Exception as e:
                     LOG.warning(f"Failed to delete rule {rule}: {e}")
 
+            # Delete archives for event bus
+            event_source_arn = (
+                f"arn:aws:events:{region_name}:{account_id}:event-bus/{event_bus_name}"
+            )
+            response = aws_client.events.list_archives(EventSourceArn=event_source_arn)
+            archives = [archive["ArchiveName"] for archive in response["Archives"]]
+            for archive in archives:
+                try:
+                    aws_client.events.delete_archive(ArchiveName=archive)
+                except Exception as e:
+                    LOG.warning(f"Failed to delete archive {archive}: {e}")
+
             aws_client.events.delete_event_bus(Name=event_bus_name)
         except Exception as e:
             LOG.warning(f"Failed to delete event bus {event_bus_name}: {e}")
 
 
 @pytest.fixture
-def put_rule(aws_client):
+def events_put_rule(aws_client):
     rules = []
 
     def _put_rule(**kwargs):
-        if "EventBusName" not in kwargs:
-            kwargs["EventBusName"] = "default"
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"rule-{short_uid()}"
+
         response = aws_client.events.put_rule(**kwargs)
-        rules.append((kwargs["Name"], kwargs["EventBusName"]))
+        rules.append((kwargs["Name"], kwargs.get("EventBusName", "default")))
         return response
 
     yield _put_rule
@@ -81,6 +98,32 @@ def put_rule(aws_client):
             aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
         except Exception as e:
             LOG.warning(f"Failed to delete rule {rule}: {e}")
+
+
+@pytest.fixture
+def events_create_archive(aws_client, region_name, account_id):
+    archives = []
+
+    def _create_archive(**kwargs):
+        if "ArchiveName" not in kwargs:
+            kwargs["ArchiveName"] = f"test-archive-{short_uid()}"
+
+        if "EventSourceArn" not in kwargs:
+            kwargs["EventSourceArn"] = (
+                f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+            )
+
+        response = aws_client.events.create_archive(**kwargs)
+        archives.append(kwargs["ArchiveName"])
+        return response
+
+    yield _create_archive
+
+    for archive in archives:
+        try:
+            aws_client.events.delete_archive(ArchiveName=archive)
+        except Exception as e:
+            LOG.warning(f"Failed to delete archive {archive}: {e}")
 
 
 @pytest.fixture
@@ -111,53 +154,7 @@ def events_allow_event_rule_to_sqs_queue(aws_client):
 
 
 @pytest.fixture
-def events_put_rule(aws_client):
-    rules = []
-
-    def _factory(**kwargs):
-        if "Name" not in kwargs:
-            kwargs["Name"] = f"rule-{short_uid()}"
-
-        resp = aws_client.events.put_rule(**kwargs)
-        rules.append((kwargs["Name"], kwargs.get("EventBusName", "default")))
-        return resp
-
-    yield _factory
-
-    for rule, event_bus_name in rules:
-        try:
-            targets_response = aws_client.events.list_targets_by_rule(
-                Rule=rule, EventBusName=event_bus_name
-            )
-            if targets := targets_response["Targets"]:
-                targets_ids = [target["Id"] for target in targets]
-                aws_client.events.remove_targets(
-                    Rule=rule, EventBusName=event_bus_name, Ids=targets_ids
-                )
-            aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
-        except Exception as e:
-            LOG.debug("error cleaning up rule %s: %s", rule, e)
-
-
-@pytest.fixture
-def events_create_event_bus(aws_client):
-    event_buses = []
-
-    def _factory(**kwargs):
-        if "Name" not in kwargs:
-            kwargs["Name"] = f"event-bus-{short_uid()}"
-        resp = aws_client.events.create_event_bus(**kwargs)
-        event_buses.append(kwargs["Name"])
-        return resp
-
-    yield _factory
-
-    for event_bus in event_buses:
-        aws_client.events.delete_event_bus(Name=event_bus)
-
-
-@pytest.fixture
-def clean_up(aws_client):
+def clean_up(aws_client):  # TODO remove and use individual fixtures for creating resources instead
     def _clean_up(
         bus_name=None,
         rule_name=None,
@@ -235,42 +232,39 @@ def create_sqs_events_target(aws_client, sqs_get_queue_arn):
 
 
 @pytest.fixture
-def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up):
-    event_bus_names = []
-    rule_names = []
-    target_ids = []
-
+def put_events_with_filter_to_sqs(
+    aws_client, events_create_event_bus, events_put_rule, create_sqs_events_target
+):
     def _put_events_with_filter_to_sqs(
         pattern: dict,
         entries_asserts: list[Tuple[list[dict], bool]],
+        event_bus_name: str = None,
         input_path: str = None,
         input_transformer: dict[dict, str] = None,
     ):
         rule_name = f"test-rule-{short_uid()}"
         target_id = f"test-target-{short_uid()}"
-        bus_name = f"test-bus-{short_uid()}"
+        if not event_bus_name:
+            event_bus_name = f"test-bus-{short_uid()}"
+            events_create_event_bus(Name=event_bus_name)
 
         queue_url, queue_arn = create_sqs_events_target()
 
-        events_client = aws_client.events
-        events_client.create_event_bus(Name=bus_name)
-        event_bus_names.append(bus_name)
-
-        events_client.put_rule(
+        events_put_rule(
             Name=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             EventPattern=json.dumps(pattern),
         )
-        rule_names.append(rule_name)
+
         kwargs = {"InputPath": input_path} if input_path else {}
         if input_transformer:
             kwargs["InputTransformer"] = input_transformer
-        response = events_client.put_targets(
+
+        response = aws_client.events.put_targets(
             Rule=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
         )
-        target_ids.append(target_id)
 
         assert response["FailedEntryCount"] == 0
         assert response["FailedEntries"] == []
@@ -279,9 +273,9 @@ def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up
         for entry_asserts in entries_asserts:
             entries = entry_asserts[0]
             for entry in entries:
-                entry["EventBusName"] = bus_name
-            message = _put_entries_assert_results_sqs(
-                events_client,
+                entry["EventBusName"] = event_bus_name
+            message = put_entries_assert_results_sqs(
+                aws_client.events,
                 aws_client.sqs,
                 queue_url,
                 entries=entries,
@@ -293,73 +287,6 @@ def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up
         return messages
 
     yield _put_events_with_filter_to_sqs
-
-    for event_bus_name, rule_name, target_id in zip(event_bus_names, rule_names, target_ids):
-        clean_up(
-            bus_name=event_bus_name,
-            rule_name=rule_name,
-            target_ids=target_id,
-        )
-
-
-def _put_entries_assert_results_sqs(
-    events_client, sqs_client, queue_url: str, entries: list[dict], should_match: bool
-):
-    """
-    Put events to the event bus, receives the messages resulting from the event in the sqs queue and deletes them out of the queue.
-    If should_match is True, the content of the messages is asserted to be the same as the events put to the event bus.
-
-    :param events_client: boto3.client("events")
-    :param sqs_client: boto3.client("sqs")
-    :param queue_url: URL of the sqs queue
-    :param entries: List of entries to put to the event bus, each entry must
-                    be a dict that contains the keys: "Source", "DetailType", "Detail"
-    :param should_match:
-
-    :return: Messages from the queue if should_match is True, otherwise None
-    """
-    response = events_client.put_events(Entries=entries)
-    assert not response.get("FailedEntryCount")
-
-    def get_message(queue_url):
-        resp = sqs_client.receive_message(
-            QueueUrl=queue_url, WaitTimeSeconds=5, MaxNumberOfMessages=1
-        )
-        messages = resp.get("Messages")
-        if messages:
-            for message in messages:
-                receipt_handle = message["ReceiptHandle"]
-                sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
-        if should_match:
-            assert len(messages) == 1
-        return messages
-
-    messages = retry(get_message, retries=5, queue_url=queue_url)
-
-    if should_match:
-        actual_event = json.loads(messages[0]["Body"])
-        if isinstance(actual_event, dict) and "detail" in actual_event:
-            assert_valid_event(actual_event)
-        return messages
-    else:
-        assert not messages
-        return None
-
-
-def assert_valid_event(event):
-    expected_fields = (
-        "version",
-        "id",
-        "detail-type",
-        "source",
-        "account",
-        "time",
-        "region",
-        "resources",
-        "detail",
-    )
-    for field in expected_fields:
-        assert field in event
 
 
 @pytest.fixture
@@ -416,3 +343,66 @@ def add_resource_policy_logs_events_access(aws_client):
 
     for policy_name in policies:
         aws_client.logs.delete_resource_policy(policyName=policy_name)
+
+
+@pytest.fixture
+def put_event_to_archive(aws_client, events_create_event_bus, events_create_archive):
+    def _put_event_to_archive(
+        archive_name: str = None,
+        event_pattern: dict = None,
+        event_bus_name: str = None,
+        event_source_arn: str = None,
+        entries: list[dict] = None,
+        num_events: int = 1,
+    ):
+        if not event_bus_name:
+            event_bus_name = f"test-bus-{short_uid()}"
+        if not event_source_arn:
+            response = events_create_event_bus(Name=event_bus_name)
+            event_source_arn = response["EventBusArn"]
+        if not archive_name:
+            archive_name = f"test-archive-{short_uid()}"
+
+        response = events_create_archive(
+            ArchiveName=archive_name,
+            EventSourceArn=event_source_arn,
+            EventPattern=json.dumps(event_pattern),
+            RetentionDays=1,
+        )
+        archive_arn = response["ArchiveArn"]
+
+        if entries:
+            num_events = len(entries)
+        else:
+            entries = []
+            for i in range(num_events):
+                entries.append(
+                    {
+                        "Source": "testSource",
+                        "DetailType": "testDetailType",
+                        "Detail": f"event number {i}",
+                        "EventBusName": event_bus_name,
+                    }
+                )
+
+        aws_client.events.put_events(
+            Entries=entries,
+        )
+
+        def wait_for_archive_event_count():
+            response = aws_client.events.describe_archive(ArchiveName=archive_name)
+            event_count = response["EventCount"]
+            assert event_count == num_events
+
+        retry(
+            wait_for_archive_event_count, retries=35, sleep=10
+        )  # events are batched and sent to the archive, this mostly takes at least 5 minutes on AWS
+
+        return {
+            "ArchiveName": archive_name,
+            "ArchiveArn": archive_arn,
+            "EventBusName": event_bus_name,
+            "EventBusArn": event_source_arn,
+        }
+
+    yield _put_event_to_archive

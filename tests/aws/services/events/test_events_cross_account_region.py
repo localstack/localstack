@@ -241,7 +241,7 @@ def test_event_bus_to_event_bus_cross_account_region(
 
     # Collect messages from primary queue
     messages_primary = sqs_collect_messages(
-        aws_client, queue_url_primary, min_events=1, wait_time=1, retries=5
+        aws_client, queue_url_primary, expected_events_count=1, wait_time=1, retries=5
     )
     snapshot.add_transformers_list(
         [
@@ -253,7 +253,11 @@ def test_event_bus_to_event_bus_cross_account_region(
 
     # # Collect messages from secondary queue
     messages_secondary = sqs_collect_messages(
-        secondary_aws_client, queue_url_secondary, min_events=1, wait_time=1, retries=5
+        secondary_aws_client,
+        queue_url_secondary,
+        expected_events_count=1,
+        wait_time=1,
+        retries=5,
     )
     snapshot.match("messages_secondary_queue_from_primary_event_bus", messages_secondary)
 
@@ -271,7 +275,11 @@ def test_event_bus_to_event_bus_cross_account_region(
 
     # Collect messages from secondary queue
     messages_secondary = sqs_collect_messages(
-        secondary_aws_client, queue_url_secondary, min_events=1, wait_time=1, retries=5
+        secondary_aws_client,
+        queue_url_secondary,
+        expected_events_count=1,
+        wait_time=1,
+        retries=5,
     )
     snapshot.match("messages_secondary_queue_from_secondary_event_bus", messages_secondary)
 

@@ -9,4 +9,9 @@ RestApiGatewayHandler = Callable[
     [RoloHandlerChain[RestApiInvocationContext], RestApiInvocationContext, Response], None
 ]
 
+RestApiGatewayExceptionHandler = Callable[
+    [RoloHandlerChain[RestApiInvocationContext], Exception, RestApiInvocationContext, Response],
+    None,
+]
+
 RestApiGatewayHandlerChain: Type[RoloHandlerChain[RestApiInvocationContext]] = RoloHandlerChain

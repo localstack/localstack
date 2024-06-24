@@ -1,0 +1,1050 @@
+{
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_list_describe_update_delete_archive[default]": {
+    "recorded-date": "17-05-2024, 15:15:31",
+    "recorded-content": {
+      "create-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "CreationTime": "datetime",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 0,
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 0,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "CreationTime": "datetime",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-archive": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_list_describe_update_delete_archive[custom]": {
+    "recorded-date": "17-05-2024, 15:15:32",
+    "recorded-content": {
+      "create-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "CreationTime": "datetime",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 0,
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 0,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "CreationTime": "datetime",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-archive": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_unknown_event_bus": {
+    "recorded-date": "17-05-2024, 15:15:32",
+    "recorded-content": {
+      "create-archive-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the CreateArchive operation: Event bus <event-bus-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[default]": {
+    "recorded-date": "17-05-2024, 16:15:51",
+    "recorded-content": {
+      "create-archive-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateArchive operation: Archive <archive-name> already exists.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[custom]": {
+    "recorded-date": "17-05-2024, 16:15:53",
+    "recorded-content": {
+      "create-archive-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateArchive operation: Archive <archive-name> already exists.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_describe_archive_error_unknown_archive": {
+    "recorded-date": "17-05-2024, 16:19:03",
+    "recorded-content": {
+      "describe-archive-unknown-archive-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeArchive operation: Archive <archive-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_name_prefix[default]": {
+    "recorded-date": "17-05-2024, 16:28:03",
+    "recorded-content": {
+      "list-archives-with-name-prefix": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-archives-with-full-name": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-archives-not-existing-archive": {
+        "Archives": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_name_prefix[custom]": {
+    "recorded-date": "17-05-2024, 16:28:04",
+    "recorded-content": {
+      "list-archives-with-name-prefix": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-archives-with-full-name": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-archives-not-existing-archive": {
+        "Archives": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_source_arn[default]": {
+    "recorded-date": "17-05-2024, 16:32:51",
+    "recorded-content": {
+      "list-archives-with-source-arn": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_source_arn[custom]": {
+    "recorded-date": "17-05-2024, 16:32:52",
+    "recorded-content": {
+      "list-archives-with-source-arn": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_error_unknown_source_arn": {
+    "recorded-date": "17-05-2024, 16:34:48",
+    "recorded-content": {
+      "list-archives-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListArchives operation: Event bus <event-bus-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_update_archive_error_unknown_archive": {
+    "recorded-date": "17-05-2024, 16:44:35",
+    "recorded-content": {
+      "update-archive-unknown-archive-error": "<ExceptionInfo InternalException('An error occurred (InternalException) when calling the UpdateArchive operation (reached max retries: 4): Service encountered unexpected problem. Please try again.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_delete_archive_error_unknown_archive": {
+    "recorded-date": "17-05-2024, 16:46:11",
+    "recorded-content": {
+      "delete-archive-unknown-archive-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DeleteArchive operation: Archive <archive-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_state_enabled[default]": {
+    "recorded-date": "17-05-2024, 16:51:14",
+    "recorded-content": {
+      "list-archives-state-enabled": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_state_enabled[custom]": {
+    "recorded-date": "17-05-2024, 16:51:14",
+    "recorded-content": {
+      "list-archives-state-enabled": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[True-default]": {
+    "recorded-date": "21-05-2024, 13:15:50",
+    "recorded-content": {
+      "list-archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 10,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 1590,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 10,
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 1590,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[True-custom]": {
+    "recorded-date": "21-05-2024, 13:18:32",
+    "recorded-content": {
+      "list-archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 10,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 1590,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 10,
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 1590,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[False-default]": {
+    "recorded-date": "21-05-2024, 13:24:58",
+    "recorded-content": {
+      "list-archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 10,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 10959,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 10,
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 10959,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[False-custom]": {
+    "recorded-date": "21-05-2024, 13:29:14",
+    "recorded-content": {
+      "list-archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 10,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 1590,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 10,
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 1590,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[default]": {
+    "recorded-date": "27-05-2024, 13:17:56",
+    "recorded-content": {
+      "start-replay": {
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayStartTime": "datetime",
+        "State": "STARTING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "replay-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "list-replays": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventLastReplayedTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "replay-name",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replay": {
+        "Description": "description of the replay",
+        "Destination": {
+          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "FilterArns": [
+            "arn:aws:events:<region>:111111111111:rule/<rule-name>"
+          ]
+        },
+        "EventEndTime": "datetime",
+        "EventLastReplayedTime": "datetime",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "EventStartTime": "datetime",
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayEndTime": "datetime",
+        "ReplayName": "replay-name",
+        "ReplayStartTime": "datetime",
+        "State": "COMPLETED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel-replay": {
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "State": "CANCELLING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replay-canceled": {
+        "Description": "description of the replay",
+        "Destination": {
+          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "FilterArns": [
+            "arn:aws:events:<region>:111111111111:rule/<rule-name>"
+          ]
+        },
+        "EventEndTime": "datetime",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "EventStartTime": "datetime",
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "ReplayName": "replay-name",
+        "ReplayStartTime": "datetime",
+        "State": "CANCELLING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[custom]": {
+    "recorded-date": "27-05-2024, 13:22:58",
+    "recorded-content": {
+      "start-replay": {
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayStartTime": "datetime",
+        "State": "STARTING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "replay-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "list-replays": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventLastReplayedTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "replay-name",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replay": {
+        "Description": "description of the replay",
+        "Destination": {
+          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "FilterArns": [
+            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<rule-name>"
+          ]
+        },
+        "EventEndTime": "datetime",
+        "EventLastReplayedTime": "datetime",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "EventStartTime": "datetime",
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayEndTime": "datetime",
+        "ReplayName": "replay-name",
+        "ReplayStartTime": "datetime",
+        "State": "COMPLETED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel-replay": {
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "State": "CANCELLING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replay-canceled": {
+        "Description": "description of the replay",
+        "Destination": {
+          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "FilterArns": [
+            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<rule-name>"
+          ]
+        },
+        "EventEndTime": "datetime",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "EventStartTime": "datetime",
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "ReplayName": "replay-name",
+        "ReplayStartTime": "datetime",
+        "State": "CANCELLING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus[missing]": {
+    "recorded-date": "22-05-2024, 11:58:22",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus[cross_account]": {
+    "recorded-date": "22-05-2024, 11:49:30",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus[cross_region]": {
+    "recorded-date": "22-05-2024, 11:49:31",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus": {
+    "recorded-date": "22-05-2024, 12:49:01",
+    "recorded-content": {
+      "start-replay-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the StartReplay operation: Event bus <event-bus-name> does not exist.') tblen=3>",
+      "start-replay-wrong-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter Destination.Arn is not valid. Reason: Cross event bus replay is not permitted.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_prefix": {
+    "recorded-date": "22-05-2024, 13:15:37",
+    "recorded-content": {
+      "list-replays-with-full-name": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "<archive-arn>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-replays-with-prefix": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "<archive-arn>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replay_with_limit": {
+    "recorded-date": "22-05-2024, 13:43:13",
+    "recorded-content": {
+      "list-replays-with-limit": {
+        "NextToken": "<next_token:1>",
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-0",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          },
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-1",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          },
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-2",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-replays-with-limit-next-token": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-3",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          },
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-4",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          },
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-5",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_archive": {
+    "recorded-date": "22-05-2024, 15:09:07",
+    "recorded-content": {
+      "start-replay-unknown-archive-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventSourceArn is not valid. Reason: Archive <archive-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_name_same_archive": {
+    "recorded-date": "22-05-2024, 15:15:36",
+    "recorded-content": {
+      "start-replay-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the StartReplay operation: Replay <replay-name> already exists.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[0]": {
+    "recorded-date": "22-05-2024, 15:17:36",
+    "recorded-content": {
+      "start-replay-invalid-end-time-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[10]": {
+    "recorded-date": "22-05-2024, 15:17:38",
+    "recorded-content": {
+      "start-replay-invalid-end-time-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_describe_replay_error_unknown_replay": {
+    "recorded-date": "22-05-2024, 15:20:45",
+    "recorded-content": {
+      "describe-replay-unknown-replay-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeReplay operation: Replay <replay-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::tests_concurrency_error_too_many_active_replays": {
+    "recorded-date": "22-05-2024, 15:34:28",
+    "recorded-content": {
+      "list-replays-with-limit": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the StartReplay operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_event_source_arn": {
+    "recorded-date": "10-06-2024, 14:31:54",
+    "recorded-content": {
+      "list-replays-with-event-source-arn": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "<archive-arn>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name>",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_different_archive": {
+    "recorded-date": "27-05-2024, 10:41:42",
+    "recorded-content": {
+      "start-replay-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the StartReplay operation: Replay <replay-name> already exists.') tblen=3>"
+    }
+  }
+}

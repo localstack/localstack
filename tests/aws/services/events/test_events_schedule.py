@@ -108,7 +108,9 @@ class TestScheduleRate:
         snapshot.match("list-targets", response)
 
         time.sleep(60)
-        messages_first = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        messages_first = sqs_collect_messages(
+            aws_client, queue_url, expected_events_count=1, retries=3
+        )
 
         snapshot.add_transformers_list(
             [
@@ -122,7 +124,9 @@ class TestScheduleRate:
         snapshot.match("messages-first", messages_first)
 
         time.sleep(60)
-        messages_second = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        messages_second = sqs_collect_messages(
+            aws_client, queue_url, expected_events_count=1, retries=3
+        )
         snapshot.match("messages-second", messages_second)
 
         # check if the messages are 60 seconds apart
@@ -164,7 +168,9 @@ class TestScheduleRate:
         snapshot.match("list-targets", response)
 
         time.sleep(60)
-        messages_first = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        messages_first = sqs_collect_messages(
+            aws_client, queue_url, expected_events_count=1, retries=3
+        )
 
         snapshot.add_transformers_list(
             [
@@ -325,7 +331,7 @@ class TestScheduleCron:
         )
 
         time.sleep(120)  # required to wait for time delta 1 minute starting from next full minute
-        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=5)
+        messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1, retries=5)
 
         snapshot.add_transformers_list(
             [
@@ -343,7 +349,7 @@ class TestScheduleCron:
 
         # TODO fix JobScheduler to execute on exact time
         # round datetime to nearest minute
-        if time_message.second > 0 or time_message.microsecond > 0:
+        if time_message.second > 0:
             time_message += timedelta(minutes=1)
             time_message = time_message.replace(second=0, microsecond=0)
 

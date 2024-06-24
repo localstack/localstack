@@ -12,10 +12,10 @@
     "last_validated_date": "2024-02-21T12:54:34+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
-    "last_validated_date": "2023-07-05T18:11:14+00:00"
+    "last_validated_date": "2024-06-21T00:09:05+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_with_apigateway_resources": {
-    "last_validated_date": "2023-07-05T18:54:14+00:00"
+    "last_validated_date": "2024-06-20T23:54:26+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
     "last_validated_date": "2023-07-06T19:01:08+00:00"

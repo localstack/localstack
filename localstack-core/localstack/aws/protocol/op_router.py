@@ -1,29 +1,21 @@
-import re
 from collections import defaultdict
-from typing import Any, AnyStr, Dict, List, Mapping, Match, NamedTuple, Optional, Tuple
+from typing import Any, Dict, List, Mapping, NamedTuple, Optional, Tuple
 from urllib.parse import parse_qs, unquote
 
 from botocore.model import OperationModel, ServiceModel, StructureShape
 from werkzeug.datastructures import Headers, MultiDict
 from werkzeug.exceptions import MethodNotAllowed, NotFound
-from werkzeug.routing import Map, MapAdapter, PathConverter, Rule
+from werkzeug.routing import Map, MapAdapter
 
+from localstack.aws.protocol.routing import (
+    GreedyPathConverter,
+    StrictMethodRule,
+    path_param_regex,
+    post_process_arg_name,
+    transform_path_params_to_rule_vars,
+)
 from localstack.http import Request
 from localstack.http.request import get_raw_path
-
-
-class GreedyPathConverter(PathConverter):
-    """
-    This converter makes sure that the path ``/mybucket//mykey`` can be matched to the pattern
-    ``<Bucket>/<path:Key>`` and will result in `Key` being `/mykey`.
-    """
-
-    regex = ".*?"
-
-    part_isolating = False
-    """From the werkzeug docs: If a custom converter can match a forward slash, /, it should have the
-    attribute part_isolating set to False. This will ensure that rules using the custom converter are
-    correctly matched."""
 
 
 class _HttpOperation(NamedTuple):
@@ -136,25 +128,7 @@ class _RequiredArgsRule:
         return True
 
 
-class _StrictMethodRule(Rule):
-    """
-    Small extension to Werkzeug's Rule class which reverts unwanted assumptions made by Werkzeug.
-    Reverted assumptions:
-    - Werkzeug automatically matches HEAD requests to the corresponding GET request (i.e. Werkzeug's rule automatically
-      adds the HEAD HTTP method to a rule which should only match GET requests). This is implemented to simplify
-      implementing an app compliant with HTTP (where a HEAD request needs to return the headers of a corresponding GET
-      request), but it is unwanted for our strict rule matching in here.
-    """
-
-    def __init__(self, string: str, method: str, **kwargs) -> None:
-        super().__init__(string=string, methods=[method], **kwargs)
-
-        # Make sure Werkzeug's Rule does not add any other methods
-        # (f.e. the HEAD method even though the rule should only match GET)
-        self.methods = {method.upper()}
-
-
-class _RequestMatchingRule(_StrictMethodRule):
+class _RequestMatchingRule(StrictMethodRule):
     """
     A Werkzeug Rule extension which initially acts as a normal rule (i.e. matches a path and method).
 
@@ -189,54 +163,6 @@ class _RequestMatchingRule(_StrictMethodRule):
         raise NotFound()
 
 
-# Regex to find path parameters in requestUris of AWS service specs (f.e. /{param1}/{param2+})
-_path_param_regex = re.compile(r"({.+?})")
-# Translation table which replaces characters forbidden in Werkzeug rule names with temporary replacements
-# Note: The temporary replacements must not occur in any requestUri of any operation in any service!
-_rule_replacements = {"-": "_0_"}
-# String translation table for #_rule_replacements for str#translate
-_rule_replacement_table = str.maketrans(_rule_replacements)
-
-
-def _transform_path_params_to_rule_vars(match: Match[AnyStr]) -> str:
-    """
-    Transforms a request URI path param to a valid Werkzeug Rule string variable placeholder.
-    This transformation function should be used in combination with _path_param_regex on the request URIs (without any
-    query params).
-
-    :param match: Regex match which contains a single group. The match group is a request URI path param, including the
-                    surrounding curly braces.
-    :return: Werkzeug rule string variable placeholder which is semantically equal to the given request URI path param
-
-    """
-    # get the group match and strip the curly braces
-    request_uri_variable: str = match.group(0)[1:-1]
-
-    # if the request URI param is greedy (f.e. /foo/{Bar+}), add Werkzeug's "path" prefix (/foo/{path:Bar})
-    greedy_prefix = ""
-    if request_uri_variable.endswith("+"):
-        greedy_prefix = "path:"
-        request_uri_variable = request_uri_variable.strip("+")
-
-    # replace forbidden chars (not allowed in Werkzeug rule variable names) with their placeholder
-    escaped_request_uri_variable = request_uri_variable.translate(_rule_replacement_table)
-
-    return f"<{greedy_prefix}{escaped_request_uri_variable}>"
-
-
-def _post_process_arg_name(arg_key: str) -> str:
-    """
-    Reverses previous manipulations to the path parameters names (like replacing forbidden characters with
-    placeholders).
-    :param arg_key: Path param key name extracted using Werkzeug rules
-    :return: Post-processed ("un-sanitized") path param key
-    """
-    result = arg_key
-    for original, substitution in _rule_replacements.items():
-        result = result.replace(substitution, original)
-    return result
-
-
 def _create_service_map(service: ServiceModel) -> Map:
     """
     Creates a Werkzeug Map object with all rules necessary for the specific service.
@@ -256,15 +182,13 @@ def _create_service_map(service: ServiceModel) -> Map:
     # create a matching rule for each (path, method) combination
     for (path, method), ops in path_index.items():
         # translate the requestUri to a Werkzeug rule string
-        rule_string = _path_param_regex.sub(_transform_path_params_to_rule_vars, path)
+        rule_string = path_param_regex.sub(transform_path_params_to_rule_vars, path)
 
         if len(ops) == 1:
             # if there is only a single operation for a (path, method) combination,
             # the default Werkzeug rule can be used directly (this is the case for most rules)
             op = ops[0]
-            rules.append(
-                _StrictMethodRule(string=rule_string, method=method, endpoint=op.operation)
-            )  # type: ignore
+            rules.append(StrictMethodRule(string=rule_string, method=method, endpoint=op.operation))  # type: ignore
         else:
             # if there is an ambiguity with only the (path, method) combination,
             # a custom rule - which can use additional request metadata - needs to be used
@@ -332,7 +256,7 @@ class RestServiceOperationRouter:
         # post process the arg keys and values
         # - the path param keys need to be "un-sanitized", i.e. sanitized rule variable names need to be reverted
         # - the path param values might still be url-encoded
-        args = {_post_process_arg_name(k): unquote(v) for k, v in args.items()}
+        args = {post_process_arg_name(k): unquote(v) for k, v in args.items()}
 
         # extract the operation model from the rule
         operation: OperationModel = rule.endpoint

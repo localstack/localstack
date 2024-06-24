@@ -131,7 +131,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_json": {
-    "recorded-date": "13-05-2024, 12:27:25",
+    "recorded-date": "11-06-2024, 08:33:04",
     "recorded-content": {
       "custom-variables-match-all": [
         {
@@ -160,13 +160,13 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
-    "recorded-date": "13-05-2024, 12:27:28",
+    "recorded-date": "11-06-2024, 08:33:07",
     "recorded-content": {
       "missing-key-exception": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutTargets operation: InputTemplate for target <target-id> contains invalid placeholder notdefinedkey.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
-    "recorded-date": "13-05-2024, 12:27:30",
+    "recorded-date": "11-06-2024, 08:33:10",
     "recorded-content": {
       "messages": [
         {
@@ -179,7 +179,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[{\"originalEvent\": <aws.events.event>, \"originalEventJson\": <aws.events.event.json>}]": {
-    "recorded-date": "13-05-2024, 12:27:33",
+    "recorded-date": "11-06-2024, 08:33:13",
     "recorded-content": {
       "messages": [
         {
@@ -226,7 +226,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>\"]": {
-    "recorded-date": "14-05-2024, 17:01:50",
+    "recorded-date": "11-06-2024, 08:32:56",
     "recorded-content": {
       "custom-variables-match-all": [
         {
@@ -247,7 +247,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"{[/Check with special starting characters for event of <detail-type> type\"]": {
-    "recorded-date": "14-05-2024, 17:01:54",
+    "recorded-date": "11-06-2024, 08:33:00",
     "recorded-content": {
       "custom-variables-match-all": [
         {

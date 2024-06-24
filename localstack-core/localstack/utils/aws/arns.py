@@ -201,9 +201,19 @@ def events_rule_arn(rule_name: str, account_id: str, region_name: str) -> str:
     return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def events_archive_arn(archive_name: str, account_id: str, region_name: str) -> str:
+    pattern = "arn:aws:events:%s:%s:archive/%s"
+    return _resource_arn(archive_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def event_bus_arn(bus_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:events:%s:%s:event-bus/%s"
     return _resource_arn(bus_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def events_replay_arn(replay_name: str, account_id: str, region_name: str) -> str:
+    pattern = "arn:aws:events:%s:%s:replay/%s"
+    return _resource_arn(replay_name, pattern, account_id=account_id, region_name=region_name)
 
 
 #

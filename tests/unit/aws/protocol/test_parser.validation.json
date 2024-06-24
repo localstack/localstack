@@ -1,0 +1,5 @@
+{
+  "tests/unit/aws/protocol/test_parser.py::test_json_cbor_blob_parsing_w_timestamp": {
+    "last_validated_date": "2024-06-21T13:58:29+00:00"
+  }
+}
