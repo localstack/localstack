@@ -70,6 +70,7 @@ Region = str
 RequestId = str
 ReservationToken = str
 RoleArn = str
+RolesKey = str
 S3BucketName = str
 S3Key = str
 SAMLEntityId = str
@@ -79,6 +80,7 @@ ServiceUrl = str
 StorageSubTypeName = str
 StorageTypeName = str
 String = str
+SubjectKey = str
 TagKey = str
 TagValue = str
 TotalNumberOfStages = int
@@ -705,6 +707,13 @@ class AdvancedOptionsStatus(TypedDict, total=False):
 DisableTimestamp = datetime
 
 
+class JWTOptionsOutput(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    SubjectKey: Optional[String]
+    RolesKey: Optional[String]
+    PublicKey: Optional[String]
+
+
 class SAMLIdp(TypedDict, total=False):
     MetadataContent: SAMLMetadata
     EntityId: SAMLEntityId
@@ -722,8 +731,16 @@ class AdvancedSecurityOptions(TypedDict, total=False):
     Enabled: Optional[Boolean]
     InternalUserDatabaseEnabled: Optional[Boolean]
     SAMLOptions: Optional[SAMLOptionsOutput]
+    JWTOptions: Optional[JWTOptionsOutput]
     AnonymousAuthDisableDate: Optional[DisableTimestamp]
     AnonymousAuthEnabled: Optional[Boolean]
+
+
+class JWTOptionsInput(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    SubjectKey: Optional[SubjectKey]
+    RolesKey: Optional[RolesKey]
+    PublicKey: Optional[String]
 
 
 class SAMLOptionsInput(TypedDict, total=False):
@@ -747,6 +764,7 @@ class AdvancedSecurityOptionsInput(TypedDict, total=False):
     InternalUserDatabaseEnabled: Optional[Boolean]
     MasterUserOptions: Optional[MasterUserOptions]
     SAMLOptions: Optional[SAMLOptionsInput]
+    JWTOptions: Optional[JWTOptionsInput]
     AnonymousAuthEnabled: Optional[Boolean]
 
 
