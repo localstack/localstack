@@ -33,7 +33,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.146.0
+aws-cdk-lib==2.147.1
     # via localstack-core
 aws-sam-translator==1.89.0
     # via
@@ -85,7 +85,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.3.0
+cfn-lint==1.3.4
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -100,7 +100,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.3.0
     # via aws-cdk-lib
-coverage==7.5.3
+coverage==7.5.4
     # via
     #   coveralls
     #   localstack-core
@@ -148,7 +148,7 @@ docutils==0.16
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.15.1
+filelock==3.15.4
     # via virtualenv
 flask==3.0.3
     # via localstack-core
@@ -258,7 +258,7 @@ moto-ext==5.0.9.post3
     # via localstack-core
 mpmath==1.3.0
     # via sympy
-multipart==0.2.4
+multipart==0.2.5
     # via moto-ext
 networkx==3.3
     # via
@@ -293,7 +293,7 @@ pluggy==1.5.0
     #   pytest
 plumbum==1.8.3
     # via pandoc
-plux==1.10.0
+plux==1.11.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -308,7 +308,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==5.9.8
+psutil==6.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -354,7 +354,7 @@ pytest-httpserver==1.0.10
     # via localstack-core
 pytest-rerunfailures==14.0
     # via localstack-core
-pytest-split==0.8.2
+pytest-split==0.9.0
     # via localstack-core
 pytest-tinybird==0.2.0
     # via localstack-core
@@ -420,9 +420,9 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.4.9
+ruff==0.4.10
     # via localstack-core (pyproject.toml)
-s3transfer==0.10.1
+s3transfer==0.10.2
     # via
     #   awscli
     #   boto3
@@ -473,7 +473,7 @@ urllib3==2.2.2
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.26.2
+virtualenv==20.26.3
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
