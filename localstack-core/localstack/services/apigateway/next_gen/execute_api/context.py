@@ -51,7 +51,7 @@ class RestApiInvocationContext(RequestContext):
     account_id: Optional[str]
     """The account the REST API is living in."""
     resource: Optional[Resource]
-    """The resource the invocation matched"""
+    """The resource the invocation matched"""  # TODO: verify if needed through the invocation
     resource_method: Optional[Method]
     """The method of the resource the invocation matched"""
 

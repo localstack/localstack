@@ -1,10 +1,11 @@
 import logging
 from functools import cache
+from typing import Iterable
 
 from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import Map, MapAdapter
 
-from localstack.aws.api.apigateway import ListOfResource, Resource
+from localstack.aws.api.apigateway import Resource
 from localstack.aws.protocol.routing import (
     GreedyPathConverter,
     StrictMethodRule,
@@ -17,7 +18,6 @@ from localstack.services.apigateway.models import RestApiDeployment
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import RestApiInvocationContext
-from ..helpers import get_resources_from_deployment
 
 LOG = logging.getLogger(__name__)
 
@@ -31,9 +31,8 @@ class RestAPIResourceRouter:
     _map: Map
 
     def __init__(self, deployment: RestApiDeployment):
-        resources = get_resources_from_deployment(deployment)
-        self._resources_map = {resource["id"]: resource for resource in resources}
-        self._map = get_rule_map_for_resources(resources)
+        self._resources = deployment.rest_api.resources
+        self._map = get_rule_map_for_resources(self._resources.values())
 
     def match(self, context: RestApiInvocationContext) -> tuple[Resource, dict[str, str]]:
         """
@@ -67,7 +66,7 @@ class RestAPIResourceRouter:
 
         # extract the operation model from the rule
         resource_id: str = rule.endpoint
-        resource = self._resources_map[resource_id]
+        resource = self._resources[resource_id]
 
         return resource, args
 
@@ -101,7 +100,7 @@ class InvocationRequestRouter(RestApiGatewayHandler):
         return RestAPIResourceRouter(deployment)
 
 
-def get_rule_map_for_resources(resources: ListOfResource) -> Map:
+def get_rule_map_for_resources(resources: Iterable[Resource]) -> Map:
     rules = []
     for resource in resources:
         for method, resource_method in resource.get("resourceMethods", {}).items():
