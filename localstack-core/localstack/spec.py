@@ -22,7 +22,9 @@ OPENAPI: Final = {
         },
         "version": __version__,
     },
-    "servers": [{"url": "/"}],
+    "externalDocs": {
+        "url": "https://docs.localstack.cloud",
+    },
     "paths": {
         #
         # Service endpoints. Mind the sorting
@@ -160,7 +162,7 @@ OPENAPI: Final = {
                                         "info": {
                                             "$ref": "#/components/schemas/Info",
                                         },
-                                        "services": {"type": "object"},  # TODO add full schema
+                                        "services": {"type": "object"},
                                         "config": {"type": "object"},
                                         "docker-inspect": {"type": "object"},
                                         "docker-dependent-image-hosts": {"type": "object"},
