@@ -288,7 +288,44 @@ OPENAPI: Final = {
                 }
             }
         },
-        "/_localstack/init": {},
+        "/_localstack/init": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "",  # TODO
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "completed": {
+                                            "type": "object",
+                                            "properties": {
+                                                "BOOT": {"type": "boolean"},
+                                                "START": {"type": "boolean"},
+                                                "READY": {"type": "boolean"},
+                                                "SHUTDOWN": {"type": "boolean"},
+                                            },
+                                        },
+                                        "scripts": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "stage": {"type": "string"},
+                                                    "name": {"type": "string"},
+                                                    "state": {"type": "string"},
+                                                },
+                                            },
+                                        },
+                                    },
+                                }
+                            }
+                        },
+                    }
+                }
+            },
+        },
         "/_localstack/init/{stage}": {},
         "/_localstack/plugins": {},
         "/_localstack/stackinfo": {
