@@ -296,29 +296,7 @@ OPENAPI: Final = {
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "completed": {
-                                            "type": "object",
-                                            "properties": {
-                                                "BOOT": {"type": "boolean"},
-                                                "START": {"type": "boolean"},
-                                                "READY": {"type": "boolean"},
-                                                "SHUTDOWN": {"type": "boolean"},
-                                            },
-                                        },
-                                        "scripts": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "stage": {"type": "string"},
-                                                    "name": {"type": "string"},
-                                                    "state": {"type": "string"},
-                                                },
-                                            },
-                                        },
-                                    },
+                                    "$ref": "#/components/schemas/InitScripts",
                                 }
                             }
                         },
@@ -326,7 +304,30 @@ OPENAPI: Final = {
                 }
             },
         },
-        "/_localstack/init/{stage}": {},
+        "/_localstack/init/{stage}": {
+            "get": {
+                "parameters": [
+                    {
+                        "name": "stage",
+                        "in": "path",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",  # TODO
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InitScripts",
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        },
         "/_localstack/plugins": {},
         "/_localstack/stackinfo": {
             "get": {
@@ -386,7 +387,32 @@ OPENAPI: Final = {
                     "server_time_utc": {"type": "string"},
                     "uptime": {"type": "integer"},
                 },
-            }
+            },
+            "InitScripts": {
+                "type": "object",
+                "properties": {
+                    "completed": {
+                        "type": "object",
+                        "properties": {
+                            "BOOT": {"type": "boolean"},
+                            "START": {"type": "boolean"},
+                            "READY": {"type": "boolean"},
+                            "SHUTDOWN": {"type": "boolean"},
+                        },
+                    },
+                    "scripts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "stage": {"type": "string"},
+                                "name": {"type": "string"},
+                                "state": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
         }
     },
 }
