@@ -328,7 +328,20 @@ OPENAPI: Final = {
                 },
             }
         },
-        "/_localstack/plugins": {},
+        "/_localstack/plugins": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "",  # TODO
+                        "content": {
+                            # FIXME: This endpoint returns a JSON object whose keys are dynamic.
+                            # This prevents it from being defined with JSON Schema.
+                            "application/json": {}
+                        },
+                    }
+                }
+            }
+        },
         "/_localstack/stackinfo": {
             "get": {
                 "responses": {
