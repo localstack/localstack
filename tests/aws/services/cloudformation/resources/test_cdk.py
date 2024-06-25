@@ -17,13 +17,14 @@ from localstack.utils.testutil import create_zip_file
 
 class TestCdkInit:
     @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):
         deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
                 f"../../../templates/cdk_bootstrap_v{bootstrap_version}.yaml",
-            )
+            ),
+            parameters={"FileAssetsBucketName": f"cdk-bootstrap-{short_uid()}"},
         )
         init_stack_result = deploy_cfn_template(
             template_path=os.path.join(
