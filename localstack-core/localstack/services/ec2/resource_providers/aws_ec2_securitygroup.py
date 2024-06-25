@@ -101,6 +101,9 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
             params["VpcId"] = vpc_id
 
         params["Description"] = model.get("GroupDescription", "")
+        if model.get("Tags"):
+            tags = [{"ResourceType": "security-group", "Tags": model.get("Tags")}]
+            params["TagSpecifications"] = tags
 
         response = ec2.create_security_group(**params)
         model["GroupId"] = response["GroupId"]
