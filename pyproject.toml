@@ -123,6 +123,7 @@ dev = [
     "coveralls>=3.3.1",
     "Cython",
     "networkx>=2.8.4",
+    "openapi-spec-validator>=0.7.1",
     "pandoc",
     "pre-commit>=3.5.0",
     "pypandoc",
