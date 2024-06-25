@@ -646,8 +646,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         max_results: PageSize = None,
         **kwargs,
     ) -> ListStateMachineVersionsOutput:
-        # TODO: add paging support.
         self._validate_state_machine_arn(state_machine_arn)
+        assert_pagination_parameters_valid(max_results, next_token)
+        max_results = normalise_max_results(max_results)
 
         state_machines = self.get_store(context).state_machines
         state_machine_revision = state_machines.get(state_machine_arn)
@@ -661,11 +662,23 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 state_machine_version_items.append(state_machine_version.itemise())
             else:
                 raise RuntimeError(
-                    f"Expected {version_arn} to be a StateMachine Version, but gott '{type(state_machine_version)}'."
+                    f"Expected {version_arn} to be a StateMachine Version, but got '{type(state_machine_version)}'."
                 )
 
         state_machine_version_items.sort(key=lambda item: item["creationDate"], reverse=True)
-        return ListStateMachineVersionsOutput(stateMachineVersions=state_machine_version_items)
+
+        paginated_state_machine_versions = PaginatedList(state_machine_version_items)
+        page, token_for_next_page = paginated_state_machine_versions.get_page(
+            token_generator=lambda item: get_next_page_token_from_arn(
+                item.get("stateMachineVersionArn")
+            ),
+            page_size=max_results,
+            next_token=next_token,
+        )
+
+        return ListStateMachineVersionsOutput(
+            stateMachineVersions=page, nextToken=token_for_next_page
+        )
 
     def get_execution_history(
         self,

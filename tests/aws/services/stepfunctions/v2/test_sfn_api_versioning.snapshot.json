@@ -808,5 +808,113 @@
         "exception_value": "An error occurred (InvalidArn) when calling the PublishStateMachineVersion operation: Invalid Arn: 'Invalid ARN prefix: invalid_arn'"
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_list_state_machine_versions_pagination": {
+    "recorded-date": "01-07-2024, 12:20:00",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-state-machine-versions-page-1": {
+        "nextToken": "<next-token:1>",
+        "stateMachineVersions": [
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:13"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:12"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:11"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:10"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:9"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:8"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:7"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:6"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:5"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:4"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-state-machine-versions-page-2": {
+        "stateMachineVersions": [
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:3"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-state-machine-versions-invalid-param-too-large": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-state-machine-versions-param-short-nextToken": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter nextToken, value: 0, valid min length: 1"
+      },
+      "list-state-machine-versions-invalid-param-long-nextToken": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '<invalid_token_1025_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 1024"
+        },
+        "message": "1 validation error detected: Value '<invalid_token_1025_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 1024",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
