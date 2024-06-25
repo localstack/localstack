@@ -66,7 +66,7 @@ certifi==2024.6.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.3.0
+cfn-lint==1.3.4
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -195,7 +195,7 @@ moto-ext==5.0.9.post3
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
-multipart==0.2.4
+multipart==0.2.5
     # via moto-ext
 networkx==3.3
     # via cfn-lint
@@ -212,7 +212,7 @@ packaging==24.1
     #   jpype1
 pathable==0.4.3
     # via jsonschema-path
-plux==1.10.0
+plux==1.11.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -224,7 +224,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==5.9.8
+psutil==6.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -307,7 +307,7 @@ rpds-py==0.18.1
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.10.1
+s3transfer==0.10.2
     # via
     #   awscli
     #   boto3
