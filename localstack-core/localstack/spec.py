@@ -25,6 +25,49 @@ OPENAPI: Final = {
     "externalDocs": {
         "url": "https://docs.localstack.cloud",
     },
+    "components": {
+        "schemas": {
+            "Info": {
+                "type": "object",
+                "properties": {
+                    "version": {"type": "string"},
+                    "edition": {"type": "string"},
+                    "is_license_activated": {"type": "boolean"},
+                    "session_id": {"type": "string"},
+                    "machine_id": {"type": "string"},
+                    "system": {"type": "string"},
+                    "is_docker": {"type": "boolean"},
+                    "server_time_utc": {"type": "string"},
+                    "uptime": {"type": "integer"},
+                },
+            },
+            "InitScripts": {
+                "type": "object",
+                "properties": {
+                    "completed": {
+                        "type": "object",
+                        "properties": {
+                            "BOOT": {"type": "boolean"},
+                            "START": {"type": "boolean"},
+                            "READY": {"type": "boolean"},
+                            "SHUTDOWN": {"type": "boolean"},
+                        },
+                    },
+                    "scripts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "stage": {"type": "string"},
+                                "name": {"type": "string"},
+                                "state": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
+        }
+    },
     "paths": {
         #
         # Service endpoints. Mind the sorting
@@ -370,48 +413,5 @@ OPENAPI: Final = {
                 },
             }
         },
-    },
-    "components": {
-        "schemas": {
-            "Info": {
-                "type": "object",
-                "properties": {
-                    "version": {"type": "string"},
-                    "edition": {"type": "string"},
-                    "is_license_activated": {"type": "boolean"},
-                    "session_id": {"type": "string"},
-                    "machine_id": {"type": "string"},
-                    "system": {"type": "string"},
-                    "is_docker": {"type": "boolean"},
-                    "server_time_utc": {"type": "string"},
-                    "uptime": {"type": "integer"},
-                },
-            },
-            "InitScripts": {
-                "type": "object",
-                "properties": {
-                    "completed": {
-                        "type": "object",
-                        "properties": {
-                            "BOOT": {"type": "boolean"},
-                            "START": {"type": "boolean"},
-                            "READY": {"type": "boolean"},
-                            "SHUTDOWN": {"type": "boolean"},
-                        },
-                    },
-                    "scripts": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "stage": {"type": "string"},
-                                "name": {"type": "string"},
-                                "state": {"type": "string"},
-                            },
-                        },
-                    },
-                },
-            },
-        }
     },
 }
