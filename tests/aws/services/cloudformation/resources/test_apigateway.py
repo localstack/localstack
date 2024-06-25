@@ -334,7 +334,7 @@ def test_cfn_deploy_apigateway_from_s3_swagger(
     snapshot.match("resources", resources)
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../../templates/apigateway.json")
