@@ -644,10 +644,9 @@ jobs:
           at: /tmp/workspace
       # store (uncombined) coverage from acceptance tests
       - run:
-          name: fetch isolated acceptance coverage
+          name: Fetch isolated acceptance coverage
           # might need to combine coverage files in future
           command: |
-            mkdir .coverage.acceptance
             cp target/coverage/.coverage.acceptance.* .coverage.acceptance
       - store_artifacts:
           path: .coverage.acceptance
@@ -671,7 +670,7 @@ jobs:
               echo "Skipping coverage reporting for pull request."
             fi
       - run:
-          name: store acceptance parity metrics
+          name: Store acceptance parity metrics
           command: |
             mkdir acceptance_parity_metrics
             mv target/metric_reports/metric-report*acceptance* acceptance_parity_metrics/
