@@ -116,6 +116,7 @@ class KinesisEventSourceListener(StreamEventSourceListener):
                         **record_payload,
                         # boto3 automatically decodes records in get_records(), so we must re-encode
                         "data": to_str(base64.b64encode(record_payload["data"])),
+                        "kinesisSchemaVersion": "1.0",
                     },
                 }
             )
