@@ -1,4 +1,10 @@
 {
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_failure_options_for_stack_update[False-2]": {
+    "last_validated_date": "2024-06-25T17:21:51+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_failure_options_for_stack_update[True-1]": {
+    "last_validated_date": "2024-06-25T17:22:31+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[json]": {
     "last_validated_date": "2022-08-11T08:55:35+00:00"
   },
