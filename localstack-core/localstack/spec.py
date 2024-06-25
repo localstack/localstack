@@ -202,7 +202,7 @@ OPENAPI: Final = {
                                     "properties": {
                                         "edition": {
                                             "type": "string",
-                                            "enum": ["community", "pro", "enterprise"],
+                                            "enum": ["community", "pro", "enterprise", "unknown"],
                                         },
                                         "features": {
                                             "type": "object",
