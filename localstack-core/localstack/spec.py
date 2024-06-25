@@ -60,7 +60,61 @@ OPENAPI: Final = {
         #
         # Framework endpoints. Mind the sorting
         #
-        "/_localstack/config": {},
+        "/_localstack/config": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "",  # TODO
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                }
+                            }
+                        },
+                    }
+                }
+            },
+            "post": {
+                "requestBody": {
+                    "description": "Config option to update with new value",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "variable": {
+                                        "type": "string",
+                                        "pattern": "^[_a-zA-Z0-9]+$",
+                                    },
+                                    "value": {
+                                        "type": ["number", "string"],
+                                    },
+                                },
+                            }
+                        }
+                    },
+                    "required": True,
+                },
+                "responses": {
+                    "200": {
+                        "description": "Config option was updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "variable": {"type": "string"},
+                                        "value": {"type": ["number", "string"]},
+                                    },
+                                }
+                            }
+                        },
+                    },
+                    "400": {"description": "Bad request", "content": {"application/json": {}}},
+                },
+            },
+        },
         "/_localstack/diagnose": {},
         "/_localstack/health": {
             "get": {
@@ -161,26 +215,28 @@ OPENAPI: Final = {
         },
         "/_localstack/info": {
             "get": {
-                "200": {
-                    "description": "Information about the current LocalStack session",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "version": {"type": "string"},
-                                    "edition": {"type": "string"},
-                                    "is_license_activated": {"type": "boolean"},
-                                    "session_id": {"type": "string"},
-                                    "machine_id": {"type": "string"},
-                                    "system": {"type": "string"},
-                                    "is_docker": {"type": "boolean"},
-                                    "server_time_utc": {"type": "string"},
-                                    "uptime": {"type": "integer"},
-                                },
+                "responses": {
+                    "200": {
+                        "description": "Information about the current LocalStack session",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "version": {"type": "string"},
+                                        "edition": {"type": "string"},
+                                        "is_license_activated": {"type": "boolean"},
+                                        "session_id": {"type": "string"},
+                                        "machine_id": {"type": "string"},
+                                        "system": {"type": "string"},
+                                        "is_docker": {"type": "boolean"},
+                                        "server_time_utc": {"type": "string"},
+                                        "uptime": {"type": "integer"},
+                                    },
+                                }
                             }
-                        }
-                    },
+                        },
+                    }
                 }
             }
         },
@@ -219,7 +275,7 @@ OPENAPI: Final = {
         },
         "/_localstack/usage": {
             "get": {
-                "respones": {
+                "responses": {
                     "200": {
                         "description": "",  # TODO
                         "content": {
