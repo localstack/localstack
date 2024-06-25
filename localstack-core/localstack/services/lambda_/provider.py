@@ -10,8 +10,6 @@ import threading
 import time
 from typing import IO, Optional, Tuple
 
-from localstack_ext.services.pipes.pipe_worker_factory import get_default_source_parameters
-
 from localstack import config
 from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
@@ -152,13 +150,14 @@ from localstack.services.lambda_.event_source_listeners.event_source_listener im
     EventSourceListener,
 )
 from localstack.services.lambda_.event_source_listeners.utils import validate_filters
-from localstack.services.lambda_.event_source_mapping.esm_config_factory import EsmConfigFactory
+from localstack.services.lambda_.event_source_mapping.esm_config_factory import (
+    EsmConfigFactory,
+)
 from localstack.services.lambda_.event_source_mapping.esm_worker import (
     EsmWorker,
 )
 from localstack.services.lambda_.event_source_mapping.esm_worker_factory import (
     EsmWorkerFactory,
-    convert_esm_to_pipes_source_parameters,
 )
 from localstack.services.lambda_.invocation import AccessDeniedException
 from localstack.services.lambda_.invocation.execution_environment import (
@@ -214,7 +213,7 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import extract_service_from_arn, get_partition
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.collections import PaginatedList, merge_recursive
+from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
@@ -1859,21 +1858,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         esm_config = EsmConfigFactory(request, function_arn).get_esm_config()
 
-        # TODO: implement esm_config to pipes param conversion once and remove this
-        default_source_parameters = get_default_source_parameters(request.get("EventSourceArn"))
-        source_parameters = convert_esm_to_pipes_source_parameters(request)
-        derived_source_parameters = merge_recursive(
-            default_source_parameters, (source_parameters or {})
-        )
-
-        # Copy to avoid race condition with async update
+        # Copy esm_config to avoid a race condition with potential async update in the store
         state.event_source_mappings[esm_config["UUID"]] = esm_config.copy()
         function_version = LambdaProvider._get_function_version_from_arn(function_arn)
         function_role = function_version.config.role
         enabled = request.get("Enabled", True)
-        esm_worker = EsmWorkerFactory(
-            esm_config, function_role, derived_source_parameters, enabled
-        ).get_esm_worker()
+        # TODO: check for potential async race condition update -> think about locking
+        esm_worker = EsmWorkerFactory(esm_config, function_role, enabled).get_esm_worker()
         self.esm_workers[esm_worker.uuid] = esm_worker
         # TODO: check StateTransitionReason, LastModified, LastProcessingResult (concurrent updates requires locking!)
         esm_worker.create()

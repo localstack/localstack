@@ -10,7 +10,6 @@ from localstack_ext.services.pipes.pollers.sqs_poller import SqsPoller
 from localstack_ext.services.pipes.senders.lambda_sender import LambdaSender
 
 from localstack.aws.api.lambda_ import (
-    CreateEventSourceMappingRequest,
     EventSourceMappingConfiguration,
 )
 from localstack.services.lambda_.event_source_mapping.esm_worker import EsmWorker
@@ -20,18 +19,12 @@ from localstack.utils.aws.client_types import ServicePrincipal
 
 class EsmWorkerFactory:
     event_source_mapping_config: EventSourceMappingConfiguration
-    # TODO: fix other attributes definitions (it's getting messy)
+    function_role_arn: str
+    enabled: bool
 
-    def __init__(
-        self,
-        event_source_mapping_config: EventSourceMappingConfiguration,
-        function_role: str,
-        derived_source_parameters_esm: dict,
-        enabled: bool,
-    ):
+    def __init__(self, event_source_mapping_config, function_role, enabled):
         self.event_source_mapping_config = event_source_mapping_config
         self.function_role_arn = function_role
-        self.derived_source_parameters_esm = derived_source_parameters_esm
         self.enabled = enabled
 
     def get_esm_worker(self) -> EsmWorker:
@@ -46,12 +39,17 @@ class EsmWorkerFactory:
             source_arn=self.event_source_mapping_config["FunctionArn"],
         )
         if source_service == "sqs":
+            source_parameters = PipeSourceParameters(
+                SqsQueueParameters=PipeSourceSqsQueueParameters(
+                    BatchSize=self.event_source_mapping_config["BatchSize"],
+                    MaximumBatchingWindowInSeconds=self.event_source_mapping_config[
+                        "MaximumBatchingWindowInSeconds"
+                    ],
+                ),
+            )
             poller = SqsPoller(
                 source_arn=source_arn,
-                # TODO: fix this hack
-                source_parameters=convert_pipes_to_esm_source_parameters(
-                    self.derived_source_parameters_esm
-                ),
+                source_parameters=source_parameters,
                 source_client=source_client,
             )
         else:
@@ -80,30 +78,3 @@ class EsmWorkerFactory:
             self.event_source_mapping_config, poller=poller, sender=sender, enabled=self.enabled
         )
         return esm_worker
-
-
-def convert_esm_to_pipes_source_parameters(
-    request: CreateEventSourceMappingRequest,
-) -> PipeSourceParameters:
-    # TODO: needs the service, consider delegating this to service-specific classes (different for Pipes + ESM)
-    """Maps optional source parameters from the unstructured Lambda ESM request to structured pipe source parameters."""
-    # https://docs.aws.amazon.com/lambda/latest/api/API_CreateEventSourceMapping.html
-    # TODO: only hardcoded for SQS!
-    return PipeSourceParameters(
-        SqsQueueParameters=PipeSourceSqsQueueParameters(
-            BatchSize=request.get("BatchSize"),
-            MaximumBatchingWindowInSeconds=request.get("MaximumBatchingWindowInSeconds", 0),
-        ),
-    )
-
-
-def convert_pipes_to_esm_source_parameters(
-    source_parameters: PipeSourceParameters,
-) -> EventSourceMappingConfiguration:
-    # TODO: only hardcoded for SQS!
-    return EventSourceMappingConfiguration(
-        BatchSize=source_parameters["SqsQueueParameters"]["BatchSize"],
-        MaximumBatchingWindowInSeconds=source_parameters["SqsQueueParameters"].get(
-            "MaximumBatchingWindowInSeconds", 0
-        ),
-    )
