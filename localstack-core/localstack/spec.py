@@ -115,7 +115,70 @@ OPENAPI: Final = {
                 },
             },
         },
-        "/_localstack/diagnose": {},
+        "/_localstack/diagnose": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "",  # TODO
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "version": {
+                                            "type": "object",
+                                            "properties": {
+                                                "image-version": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {"type": "string"},
+                                                        "sha256": {"type": "string"},
+                                                        "tag": {"type": "string"},
+                                                        "created": {"type": "string"},
+                                                    },
+                                                },
+                                                "localstack-version": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "build-date": {"type": ["string", "null"]},
+                                                        "build-git-hash": {
+                                                            "type": ["string", "null"]
+                                                        },
+                                                        "build-version": {
+                                                            "type": ["string", "null"]
+                                                        },
+                                                    },
+                                                },
+                                                "host": {
+                                                    "type": "object",
+                                                    "properties": {"kernel": {"type": "string"}},
+                                                },
+                                            },
+                                        },
+                                        "info": {
+                                            "$ref": "#/components/schemas/Info",
+                                        },
+                                        "services": {"type": "object"},  # TODO add full schema
+                                        "config": {"type": "object"},
+                                        "docker-inspect": {"type": "object"},
+                                        "docker-dependent-image-hosts": {"type": "object"},
+                                        "file-tree": {"type": "object"},
+                                        "important-endpoints": {"type": "object"},
+                                        "logs": {
+                                            "type": "object",
+                                            "properties": {
+                                                "docker": {"type": "string"},
+                                            },
+                                        },
+                                        "usage": {"type": "object"},
+                                    },
+                                }
+                            }
+                        },
+                    }
+                }
+            }
+        },
         "/_localstack/health": {
             "get": {
                 "parameters": [
@@ -219,22 +282,7 @@ OPENAPI: Final = {
                     "200": {
                         "description": "Information about the current LocalStack session",
                         "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "version": {"type": "string"},
-                                        "edition": {"type": "string"},
-                                        "is_license_activated": {"type": "boolean"},
-                                        "session_id": {"type": "string"},
-                                        "machine_id": {"type": "string"},
-                                        "system": {"type": "string"},
-                                        "is_docker": {"type": "boolean"},
-                                        "server_time_utc": {"type": "string"},
-                                        "uptime": {"type": "integer"},
-                                    },
-                                }
-                            }
+                            "application/json": {"schema": {"$ref": "#/components/schemas/Info"}}
                         },
                     }
                 }
@@ -285,5 +333,23 @@ OPENAPI: Final = {
                 }
             }
         },
+    },
+    "components": {
+        "schemas": {
+            "Info": {
+                "type": "object",
+                "properties": {
+                    "version": {"type": "string"},
+                    "edition": {"type": "string"},
+                    "is_license_activated": {"type": "boolean"},
+                    "session_id": {"type": "string"},
+                    "machine_id": {"type": "string"},
+                    "system": {"type": "string"},
+                    "is_docker": {"type": "boolean"},
+                    "server_time_utc": {"type": "string"},
+                    "uptime": {"type": "integer"},
+                },
+            }
+        }
     },
 }
