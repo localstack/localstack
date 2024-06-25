@@ -7,11 +7,11 @@ from typing import Dict, Iterable, Optional
 from urllib.parse import urlsplit
 
 from botocore import awsrequest
-from botocore.endpoint import Endpoint
 from botocore.model import OperationModel
 from botocore.parsers import ResponseParser, ResponseParserFactory
 from werkzeug.datastructures import Headers
 
+from localstack import config
 from localstack.http import Request, Response
 from localstack.runtime import hooks
 from localstack.utils.patch import patch
@@ -182,6 +182,26 @@ def _patch_botocore_json_parser():
                 raise cbor_exception from json_exception
 
 
+@hooks.on_infra_start(should_load=config.IN_MEMORY_CLIENT)
+def _patch_botocore_endpoint_in_memory():
+    from botocore.endpoint import Endpoint
+
+    @patch(Endpoint.create_request)
+    def _create_and_enrich_request(
+        fn, self: Endpoint, params: dict, operation_model: OperationModel = None
+    ):
+        """
+        Patch that adds the botocore operation model and request parameters to a newly created AWSPreparedRequest,
+        which normally only holds low-level HTTP request information.
+        """
+        request: awsrequest.AWSPreparedRequest = fn(self, params, operation_model)
+
+        request.params = params
+        request.operation_model = operation_model
+
+        return request
+
+
 def parse_response(
     operation: OperationModel, response: Response, include_response_metadata: bool = True
 ) -> ServiceResponse:
@@ -272,21 +292,6 @@ def raise_service_exception(response: Response, parsed_response: Dict) -> None:
     """
     if service_exception := parse_service_exception(response, parsed_response):
         raise service_exception
-
-
-@patch(Endpoint.create_request)
-def _create_and_enrich_request(
-    fn, self: Endpoint, params: dict, operation_model: OperationModel = None
-):
-    """
-    Patch that adds the botocore operation model and request parameters to a newly created AWSPreparedRequest, which normaly only holds low-level HTTP request information. This
-    """
-    request: awsrequest.AWSPreparedRequest = fn(self, params, operation_model)
-
-    request.params = params
-    request.operation_model = operation_model
-
-    return request
 
 
 class GatewayShortCircuit:
