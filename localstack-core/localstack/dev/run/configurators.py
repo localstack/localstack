@@ -132,7 +132,7 @@ class SourceVolumeMountConfigurator:
 
         # ext source code if available
         if self.pro:
-            source = self.host_paths.localstack_ext_project_dir / "localstack_ext"
+            source = self.host_paths.localstack_ext_project_dir / "localstack-pro-core" / "localstack_ext"
             if source.exists():
                 cfg.volumes.add(
                     VolumeBind(
