@@ -372,9 +372,9 @@ class SsmProvider(SsmApi, ABC):
             if validate:
                 if not re.match(r"^arn:aws:.+:.+:.+:.+$", param_name):
                     raise ValidationException("Invalid arn: " + param_name)
-                region_pattern = r":(af|ap|ca|eu|me|sa|us)-(central|north|(north(?:east|west))|south|south(?:east|west)|east|west)-\d+:"
+                region_pattern = r"(af|ap|ca|eu|me|sa|us)-(central|north|(north(?:east|west))|south|south(?:east|west)|east|west)-\d+"
                 match = re.search(region_pattern, param_name)
-                if match is None or match.group(1) != region_name:
+                if match is None or match.group(0) != region_name:
                     raise ValidationException("Incorrect region in: " + param_name)
             return param_name
         return SsmProvider._normalize_name(param_name, validate)
