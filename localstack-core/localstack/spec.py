@@ -62,9 +62,10 @@ OPENAPI: Final = {
         #
         "/_localstack/config": {
             "get": {
+                "description": "Retrieve current LocalStack configuration",
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Current LocalStack configuration",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -73,11 +74,11 @@ OPENAPI: Final = {
                             }
                         },
                     }
-                }
+                },
             },
             "post": {
                 "requestBody": {
-                    "description": "Config option to update with new value",
+                    "description": "Configuration option to update with new value",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -98,7 +99,7 @@ OPENAPI: Final = {
                 },
                 "responses": {
                     "200": {
-                        "description": "Config option was updated",
+                        "description": "Configuration option is updated",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -117,9 +118,10 @@ OPENAPI: Final = {
         },
         "/_localstack/diagnose": {
             "get": {
+                "description": "Retrieve diagnostics report",
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Diagnostics report",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -176,11 +178,12 @@ OPENAPI: Final = {
                             }
                         },
                     }
-                }
+                },
             }
         },
         "/_localstack/health": {
             "get": {
+                "description": "Retrieve available LocalStack features and AWS services",
                 "parameters": [
                     {
                         "name": "reload",
@@ -194,7 +197,7 @@ OPENAPI: Final = {
                 ],
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Available LocalStack features and AWS services",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -223,20 +226,25 @@ OPENAPI: Final = {
             "head": {
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "",
                         "content": {"text/plain": {}},
                     }
                 }
             },
             "post": {
+                "description": "Restart or terminate the LocalStack session",
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Action was successful",
                         "content": {"text/plain": {}},
-                    }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {"text/plain": {}},
+                    },
                 },
                 "requestBody": {
-                    "description": "",  # TODO
+                    "description": "Action to perform",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -251,9 +259,10 @@ OPENAPI: Final = {
                 },
             },
             "put": {
+                "description": "Store arbitrary data to in-memory state",
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Data was saved",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -265,7 +274,7 @@ OPENAPI: Final = {
                     }
                 },
                 "requestBody": {
-                    "description": "",  # TODO
+                    "description": "Data to save",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -278,6 +287,7 @@ OPENAPI: Final = {
         },
         "/_localstack/info": {
             "get": {
+                "description": "Retrieve information about the current LocalStack session",
                 "responses": {
                     "200": {
                         "description": "Information about the current LocalStack session",
@@ -285,14 +295,15 @@ OPENAPI: Final = {
                             "application/json": {"schema": {"$ref": "#/components/schemas/Info"}}
                         },
                     }
-                }
+                },
             }
         },
         "/_localstack/init": {
             "get": {
+                "description": "Retrieve info about init scripts",
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Info about init scripts",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -301,11 +312,12 @@ OPENAPI: Final = {
                             }
                         },
                     }
-                }
+                },
             },
         },
         "/_localstack/init/{stage}": {
             "get": {
+                "description": "Retrieve info about init scripts in a specific stage",
                 "parameters": [
                     {
                         "name": "stage",
@@ -316,7 +328,7 @@ OPENAPI: Final = {
                 ],
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Info about init scripts in a specific stage",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -330,58 +342,30 @@ OPENAPI: Final = {
         },
         "/_localstack/plugins": {
             "get": {
+                "description": "Retrieve info about plugins",
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Info about plugins",
                         "content": {
                             # FIXME: This endpoint returns a JSON object whose keys are dynamic.
                             # This prevents it from being defined with JSON Schema.
                             "application/json": {}
                         },
                     }
-                }
-            }
-        },
-        "/_localstack/stackinfo": {
-            "get": {
-                "responses": {
-                    "200": {
-                        "description": "",  # TODO
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "server_time_utc": {"type": "string"},
-                                        "session_id": {"type": "string"},
-                                        "api_key": {"type": "string"},
-                                        "system": {"type": "string"},
-                                        "version": {"type": "string"},
-                                        "is_ci": {"type": "boolean"},
-                                        "is_docker": {"type": "boolean"},
-                                        "duration_in_seconds": {"type": "integer"},
-                                        "top_user_agent": {"type": "string"},
-                                        "number_of_services": {"type": "integer"},
-                                        "number_of_api_calls_success": {"type": "integer"},
-                                        "number_of_api_calls_error": {"type": "integer"},
-                                    },
-                                }
-                            }
-                        },
-                    }
-                }
+                },
             }
         },
         "/_localstack/usage": {
             "get": {
+                "description": "Retrieve usage info",
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "Usage info",
                         "content": {
                             "application/json": {},
                         },
                     }
-                }
+                },
             }
         },
     },
