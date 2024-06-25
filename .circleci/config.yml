@@ -642,12 +642,15 @@ jobs:
       - prepare-acceptance-tests
       - attach_workspace:
           at: /tmp/workspace
-      # store (uncombined) coverage from acceptance tests
       - run:
-          name: Fetch isolated acceptance coverage
-          # might need to combine coverage files in future
+          name: Collect isolated acceptance coverage
           command: |
-            cp target/coverage/.coverage.acceptance.* .coverage.acceptance
+            source .venv/bin/activate
+            mkdir target/coverage/acceptance
+            cp target/coverage/.coverage.acceptance.* target/coverage/acceptance
+            cd target/coverage/acceptance
+            coverage combine
+            mv .coverage ../../../.coverage.acceptance
       - store_artifacts:
           path: .coverage.acceptance
       - run:
