@@ -1,0 +1,415 @@
+{
+  "tests/aws/scenario/wordpress_blog/test_wordpress_blog.py::TestWordpressBlogScenario::test_deployment": {
+    "recorded-date": "25-06-2024, 20:41:49",
+    "recorded-content": {
+      "list_stack_resources": {
+        "StackResourceSummaries": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "ServiceClusterFDF828A9",
+            "PhysicalResourceId": "WordpressStack-ServiceClusterFDF828A9-Wcev2Rt9gb5d",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ECS::Cluster"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCB9E5F0B4",
+            "PhysicalResourceId": "vpc-0a4e959d6839630be",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::VPC"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCIGWB7E252D3",
+            "PhysicalResourceId": "igw-0241c25bf6ee1ccff",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::InternetGateway"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCVPCGW99B986DC",
+            "PhysicalResourceId": "IGW|vpc-0a4e959d6839630be",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::VPCGatewayAttachment"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCprivateSubnet1DefaultRoute68B79172",
+            "PhysicalResourceId": "rtb-05dc21d63c2342263|0.0.0.0/0",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Route"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCprivateSubnet1RouteTable41566AF9",
+            "PhysicalResourceId": "rtb-05dc21d63c2342263",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::RouteTable"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCprivateSubnet1RouteTableAssociation43FE0C59",
+            "PhysicalResourceId": "rtbassoc-08d02eaa9986a26b6",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SubnetRouteTableAssociation"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCprivateSubnet1SubnetE522290D",
+            "PhysicalResourceId": "subnet-05effe2c29d1f073e",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Subnet"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCprivateSubnet2DefaultRouteD808B206",
+            "PhysicalResourceId": "rtb-06546a87d15ae8cc2|0.0.0.0/0",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Route"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCprivateSubnet2RouteTableAssociation45BBC356",
+            "PhysicalResourceId": "rtbassoc-08f176f9156a66e98",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SubnetRouteTableAssociation"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCprivateSubnet2RouteTableBBE8BB2B",
+            "PhysicalResourceId": "rtb-06546a87d15ae8cc2",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::RouteTable"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCprivateSubnet2Subnet2F4D9530",
+            "PhysicalResourceId": "subnet-0f553bbd075d21ba9",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Subnet"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet1DefaultRoute19059ECD",
+            "PhysicalResourceId": "rtb-0a8bfc25765e21ecf|0.0.0.0/0",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Route"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet1EIP2D50A06D",
+            "PhysicalResourceId": "35.169.250.64",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::EIP"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet1NATGatewayEEDEB5A1",
+            "PhysicalResourceId": "nat-0f61d1b09bd669b3a",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::NatGateway"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet1RouteTableAssociationBFFA43B7",
+            "PhysicalResourceId": "rtbassoc-046a09bb5bc3fce04",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SubnetRouteTableAssociation"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet1RouteTableF591E248",
+            "PhysicalResourceId": "rtb-0a8bfc25765e21ecf",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::RouteTable"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet1Subnet325F50B2",
+            "PhysicalResourceId": "subnet-09bf980cd1395cb48",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Subnet"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet2DefaultRoute9ED4D6BC",
+            "PhysicalResourceId": "rtb-0ee026de8b7b35128|0.0.0.0/0",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Route"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet2RouteTable55DAB1BB",
+            "PhysicalResourceId": "rtb-0ee026de8b7b35128",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::RouteTable"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet2RouteTableAssociation0849466B",
+            "PhysicalResourceId": "rtbassoc-07f488711ac15d5c7",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SubnetRouteTableAssociation"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "VPCpublicSubnet2Subnet2B2DFF71",
+            "PhysicalResourceId": "subnet-0ab23a142aab534b6",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Subnet"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressDatabase1CAF30E2",
+            "PhysicalResourceId": "wordpressstack-wordpressdatabase1caf30e2-dcuk0zgftmfk",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::RDS::DBInstance"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressDatabaseSecurityGroup7934A97A",
+            "PhysicalResourceId": "sg-0f945cc7f076826f0",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SecurityGroup"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressDatabaseSecurityGroupfromWordpressStackWordpressServiceSecurityGroup3863B370IndirectPort4461558D",
+            "PhysicalResourceId": "sgr-0247658e375ed8cf5",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SecurityGroupIngress"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressDatabaseSubnetGroupCD72F892",
+            "PhysicalResourceId": "wordpressstack-wordpressdatabasesubnetgroupcd72f892-jyx2gzl4nf1o",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::RDS::DBSubnetGroup"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressLBD4891D3A",
+            "PhysicalResourceId": "arn:aws:elasticloadbalancing:<region>:111111111111:loadbalancer/app/Wordpr-Wordp-qWAotMHasq7G/0eca4c3119733f41",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ElasticLoadBalancingV2::LoadBalancer"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressLBPublicListener6DB567F6",
+            "PhysicalResourceId": "arn:aws:elasticloadbalancing:<region>:111111111111:listener/app/Wordpr-Wordp-qWAotMHasq7G/0eca4c3119733f41/88de78c10384f6fe",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ElasticLoadBalancingV2::Listener"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressLBPublicListenerECSGroupFFE59B10",
+            "PhysicalResourceId": "arn:aws:elasticloadbalancing:<region>:111111111111:targetgroup/Wordpr-Wordp-1AKCRFWKABJH/ffeb60875f61884a",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ElasticLoadBalancingV2::TargetGroup"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressLBSecurityGroup085EB388",
+            "PhysicalResourceId": "sg-09459c95458934065",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SecurityGroup"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressLBSecurityGrouptoWordpressStackWordpressServiceSecurityGroup3863B3708069023EE6",
+            "PhysicalResourceId": "sgr-09f63c38c2a335d7e",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SecurityGroupEgress"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressService2365FAF8",
+            "PhysicalResourceId": "arn:aws:ecs:<region>:111111111111:service/WordpressStack-ServiceClusterFDF828A9-Wcev2Rt9gb5d/WordpressStack-WordpressService2365FAF8-ni5msvgWBAEz",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ECS::Service"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressServiceSecurityGroup8C301B04",
+            "PhysicalResourceId": "sg-0e192c80dab392790",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SecurityGroup"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressServiceSecurityGroupfromWordpressStackWordpressLBSecurityGroupC91E3FFF808B2AF49A",
+            "PhysicalResourceId": "sgr-05c2a4dcf327ebb58",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SecurityGroupIngress"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressTaskDef2B6C2538",
+            "PhysicalResourceId": "arn:aws:ecs:<region>:111111111111:task-definition/WordpressStackWordpressTaskDef8AC94139:1",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ECS::TaskDefinition"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressTaskDefExecutionRole0DBE4DF4",
+            "PhysicalResourceId": "WordpressStack-WordpressTaskDefExecutionRole0DBE4DF-wKSnV38meKOT",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressTaskDefExecutionRoleDefaultPolicyBF1F0478",
+            "PhysicalResourceId": "Wordp-Wordp-HBBSA2PJ4Vvb",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressTaskDefTaskRole92B21A26",
+            "PhysicalResourceId": "WordpressStack-WordpressTaskDefTaskRole92B21A26-KCJAy85SuUs5",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "WordpressTaskDefwebappLogGroup0E32EF0F",
+            "PhysicalResourceId": "WordpressStack-WordpressTaskDefwebappLogGroup0E32EF0F-Hpzr9DQkOqzm",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Logs::LogGroup"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "<datetime>",
+            "LogicalResourceId": "clustersecgroup8C208508",
+            "PhysicalResourceId": "sg-04a781ee77134c8b7",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SecurityGroup"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

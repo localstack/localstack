@@ -1,0 +1,881 @@
+{
+  "Resources": {
+    "VPCB9E5F0B4": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsHostnames": true,
+        "EnableDnsSupport": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC"
+          }
+        ]
+      }
+    },
+    "VPCpublicSubnet1Subnet325F50B2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.0.0/24",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/publicSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "VPCpublicSubnet1RouteTableF591E248": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/publicSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "VPCpublicSubnet1RouteTableAssociationBFFA43B7": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "VPCpublicSubnet1RouteTableF591E248"
+        },
+        "SubnetId": {
+          "Ref": "VPCpublicSubnet1Subnet325F50B2"
+        }
+      }
+    },
+    "VPCpublicSubnet1DefaultRoute19059ECD": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "VPCIGWB7E252D3"
+        },
+        "RouteTableId": {
+          "Ref": "VPCpublicSubnet1RouteTableF591E248"
+        }
+      },
+      "DependsOn": [
+        "VPCVPCGW99B986DC"
+      ]
+    },
+    "VPCpublicSubnet1EIP2D50A06D": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/publicSubnet1"
+          }
+        ]
+      }
+    },
+    "VPCpublicSubnet1NATGatewayEEDEB5A1": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "VPCpublicSubnet1EIP2D50A06D",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "VPCpublicSubnet1Subnet325F50B2"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/publicSubnet1"
+          }
+        ]
+      },
+      "DependsOn": [
+        "VPCpublicSubnet1DefaultRoute19059ECD",
+        "VPCpublicSubnet1RouteTableAssociationBFFA43B7"
+      ]
+    },
+    "VPCpublicSubnet2Subnet2B2DFF71": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.1.0/24",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/publicSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "VPCpublicSubnet2RouteTable55DAB1BB": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/publicSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "VPCpublicSubnet2RouteTableAssociation0849466B": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "VPCpublicSubnet2RouteTable55DAB1BB"
+        },
+        "SubnetId": {
+          "Ref": "VPCpublicSubnet2Subnet2B2DFF71"
+        }
+      }
+    },
+    "VPCpublicSubnet2DefaultRoute9ED4D6BC": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "VPCIGWB7E252D3"
+        },
+        "RouteTableId": {
+          "Ref": "VPCpublicSubnet2RouteTable55DAB1BB"
+        }
+      },
+      "DependsOn": [
+        "VPCVPCGW99B986DC"
+      ]
+    },
+    "VPCprivateSubnet1SubnetE522290D": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.2.0/24",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "private"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          },
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/privateSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "VPCprivateSubnet1RouteTable41566AF9": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/privateSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "VPCprivateSubnet1RouteTableAssociation43FE0C59": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "VPCprivateSubnet1RouteTable41566AF9"
+        },
+        "SubnetId": {
+          "Ref": "VPCprivateSubnet1SubnetE522290D"
+        }
+      }
+    },
+    "VPCprivateSubnet1DefaultRoute68B79172": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "VPCpublicSubnet1NATGatewayEEDEB5A1"
+        },
+        "RouteTableId": {
+          "Ref": "VPCprivateSubnet1RouteTable41566AF9"
+        }
+      }
+    },
+    "VPCprivateSubnet2Subnet2F4D9530": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.3.0/24",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "private"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          },
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/privateSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "VPCprivateSubnet2RouteTableBBE8BB2B": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC/privateSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "VPCprivateSubnet2RouteTableAssociation45BBC356": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "VPCprivateSubnet2RouteTableBBE8BB2B"
+        },
+        "SubnetId": {
+          "Ref": "VPCprivateSubnet2Subnet2F4D9530"
+        }
+      }
+    },
+    "VPCprivateSubnet2DefaultRouteD808B206": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "VPCpublicSubnet1NATGatewayEEDEB5A1"
+        },
+        "RouteTableId": {
+          "Ref": "VPCprivateSubnet2RouteTableBBE8BB2B"
+        }
+      }
+    },
+    "VPCIGWB7E252D3": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "WordpressStack/VPC"
+          }
+        ]
+      }
+    },
+    "VPCVPCGW99B986DC": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "VPCIGWB7E252D3"
+        },
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "clustersecgroup8C208508": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "WordpressStack/cluster-sec-group",
+        "GroupName": "cluster-sec-group",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "WordpressDatabaseSubnetGroupCD72F892": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": "Subnet group for WordpressDatabase database",
+        "SubnetIds": [
+          {
+            "Ref": "VPCprivateSubnet1SubnetE522290D"
+          },
+          {
+            "Ref": "VPCprivateSubnet2Subnet2F4D9530"
+          }
+        ]
+      }
+    },
+    "WordpressDatabaseSecurityGroup7934A97A": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for WordpressDatabase database",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "WordpressDatabaseSecurityGroupfromWordpressStackWordpressServiceSecurityGroup3863B370IndirectPort4461558D": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "Description": "from WordpressStackWordpressServiceSecurityGroup3863B370:{IndirectPort}",
+        "FromPort": {
+          "Fn::GetAtt": [
+            "WordpressDatabase1CAF30E2",
+            "Endpoint.Port"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "WordpressDatabaseSecurityGroup7934A97A",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WordpressServiceSecurityGroup8C301B04",
+            "GroupId"
+          ]
+        },
+        "ToPort": {
+          "Fn::GetAtt": [
+            "WordpressDatabase1CAF30E2",
+            "Endpoint.Port"
+          ]
+        }
+      }
+    },
+    "WordpressDatabase1CAF30E2": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "AllocatedStorage": "100",
+        "CopyTagsToSnapshot": true,
+        "DBInstanceClass": "db.m5.large",
+        "DBName": "wordpress",
+        "DBSubnetGroupName": {
+          "Ref": "WordpressDatabaseSubnetGroupCD72F892"
+        },
+        "Engine": "mariadb",
+        "MasterUserPassword": "wordpress-password",
+        "MasterUsername": "wordpress",
+        "StorageType": "gp2",
+        "VPCSecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "WordpressDatabaseSecurityGroup7934A97A",
+              "GroupId"
+            ]
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Snapshot",
+      "DeletionPolicy": "Snapshot"
+    },
+    "ServiceClusterFDF828A9": {
+      "Type": "AWS::ECS::Cluster"
+    },
+    "WordpressLBD4891D3A": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "LoadBalancerAttributes": [
+          {
+            "Key": "deletion_protection.enabled",
+            "Value": "false"
+          }
+        ],
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "WordpressLBSecurityGroup085EB388",
+              "GroupId"
+            ]
+          }
+        ],
+        "Subnets": [
+          {
+            "Ref": "VPCpublicSubnet1Subnet325F50B2"
+          },
+          {
+            "Ref": "VPCpublicSubnet2Subnet2B2DFF71"
+          }
+        ],
+        "Type": "application"
+      },
+      "DependsOn": [
+        "VPCpublicSubnet1DefaultRoute19059ECD",
+        "VPCpublicSubnet1RouteTableAssociationBFFA43B7",
+        "VPCpublicSubnet2DefaultRoute9ED4D6BC",
+        "VPCpublicSubnet2RouteTableAssociation0849466B"
+      ]
+    },
+    "WordpressLBSecurityGroup085EB388": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Automatically created Security Group for ELB WordpressStackWordpressLB9A339B45",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow from anyone on port 80",
+            "FromPort": 80,
+            "IpProtocol": "tcp",
+            "ToPort": 80
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "WordpressLBSecurityGrouptoWordpressStackWordpressServiceSecurityGroup3863B3708069023EE6": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "Description": "Load balancer to target",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WordpressServiceSecurityGroup8C301B04",
+            "GroupId"
+          ]
+        },
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "WordpressLBSecurityGroup085EB388",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "ToPort": 80
+      }
+    },
+    "WordpressLBPublicListener6DB567F6": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "DefaultActions": [
+          {
+            "TargetGroupArn": {
+              "Ref": "WordpressLBPublicListenerECSGroupFFE59B10"
+            },
+            "Type": "forward"
+          }
+        ],
+        "LoadBalancerArn": {
+          "Ref": "WordpressLBD4891D3A"
+        },
+        "Port": 80,
+        "Protocol": "HTTP"
+      }
+    },
+    "WordpressLBPublicListenerECSGroupFFE59B10": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "HealthCheckIntervalSeconds": 120,
+        "HealthCheckPath": "/index.php",
+        "Matcher": {
+          "HttpCode": "200,301,302"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetGroupAttributes": [
+          {
+            "Key": "stickiness.enabled",
+            "Value": "false"
+          }
+        ],
+        "TargetType": "ip",
+        "UnhealthyThresholdCount": 10,
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      }
+    },
+    "WordpressTaskDefTaskRole92B21A26": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "WordpressTaskDef2B6C2538": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Environment": [
+              {
+                "Name": "WORDPRESS_DB_HOST",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "WordpressDatabase1CAF30E2",
+                          "Endpoint.Address"
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "WordpressDatabase1CAF30E2",
+                          "Endpoint.Port"
+                        ]
+                      }
+                    ]
+                  ]
+                }
+              },
+              {
+                "Name": "WORDPRESS_DB_USER",
+                "Value": "wordpress"
+              },
+              {
+                "Name": "WORDPRESS_DB_PASSWORD",
+                "Value": "wordpress-password"
+              },
+              {
+                "Name": "WORDPRESS_DB_NAME",
+                "Value": "wordpress"
+              }
+            ],
+            "Essential": true,
+            "HealthCheck": {
+              "Command": [
+                "CMD-SHELL",
+                "curl -s -o /dev/null -w \"%{http_code}\" http://localhost | grep -qE \"200|301|302\""
+              ],
+              "Interval": 30,
+              "Retries": 3,
+              "StartPeriod": 120,
+              "Timeout": 5
+            },
+            "Image": "wordpress",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "WordpressTaskDefwebappLogGroup0E32EF0F"
+                },
+                "awslogs-stream-prefix": "Wordpress",
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                }
+              }
+            },
+            "Name": "webapp",
+            "PortMappings": [
+              {
+                "ContainerPort": 80,
+                "Protocol": "tcp"
+              }
+            ]
+          }
+        ],
+        "Cpu": "512",
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "WordpressTaskDefExecutionRole0DBE4DF4",
+            "Arn"
+          ]
+        },
+        "Family": "WordpressStackWordpressTaskDef8AC94139",
+        "Memory": "2048",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "WordpressTaskDefTaskRole92B21A26",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "WordpressTaskDefwebappLogGroup0E32EF0F": {
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "WordpressTaskDefExecutionRole0DBE4DF4": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "WordpressTaskDefExecutionRoleDefaultPolicyBF1F0478": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WordpressTaskDefwebappLogGroup0E32EF0F",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "WordpressTaskDefExecutionRoleDefaultPolicyBF1F0478",
+        "Roles": [
+          {
+            "Ref": "WordpressTaskDefExecutionRole0DBE4DF4"
+          }
+        ]
+      }
+    },
+    "WordpressService2365FAF8": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "Cluster": {
+          "Ref": "ServiceClusterFDF828A9"
+        },
+        "DeploymentConfiguration": {
+          "Alarms": {
+            "AlarmNames": [],
+            "Enable": false,
+            "Rollback": false
+          },
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 50
+        },
+        "DesiredCount": 1,
+        "EnableECSManagedTags": false,
+        "HealthCheckGracePeriodSeconds": 60,
+        "LaunchType": "FARGATE",
+        "LoadBalancers": [
+          {
+            "ContainerName": "webapp",
+            "ContainerPort": 80,
+            "TargetGroupArn": {
+              "Ref": "WordpressLBPublicListenerECSGroupFFE59B10"
+            }
+          }
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "SecurityGroups": [
+              {
+                "Fn::GetAtt": [
+                  "WordpressServiceSecurityGroup8C301B04",
+                  "GroupId"
+                ]
+              }
+            ],
+            "Subnets": [
+              {
+                "Ref": "VPCprivateSubnet1SubnetE522290D"
+              },
+              {
+                "Ref": "VPCprivateSubnet2Subnet2F4D9530"
+              }
+            ]
+          }
+        },
+        "TaskDefinition": {
+          "Ref": "WordpressTaskDef2B6C2538"
+        }
+      },
+      "DependsOn": [
+        "WordpressLBPublicListenerECSGroupFFE59B10",
+        "WordpressLBPublicListener6DB567F6",
+        "WordpressTaskDefTaskRole92B21A26"
+      ]
+    },
+    "WordpressServiceSecurityGroup8C301B04": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "WordpressStack/Wordpress/Service/SecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPCB9E5F0B4"
+        }
+      },
+      "DependsOn": [
+        "WordpressTaskDefTaskRole92B21A26"
+      ]
+    },
+    "WordpressServiceSecurityGroupfromWordpressStackWordpressLBSecurityGroupC91E3FFF808B2AF49A": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "Description": "Load balancer to target",
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "WordpressServiceSecurityGroup8C301B04",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WordpressLBSecurityGroup085EB388",
+            "GroupId"
+          ]
+        },
+        "ToPort": 80
+      },
+      "DependsOn": [
+        "WordpressTaskDefTaskRole92B21A26"
+      ]
+    }
+  },
+  "Outputs": {
+    "WordpressLoadBalancerDNS4124096C": {
+      "Value": {
+        "Fn::GetAtt": [
+          "WordpressLBD4891D3A",
+          "DNSName"
+        ]
+      }
+    },
+    "WordpressServiceURL9A9A35FF": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "WordpressLBD4891D3A",
+                "DNSName"
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    "WordpressURL": {
+      "Value": {
+        "Fn::GetAtt": [
+          "WordpressLBD4891D3A",
+          "DNSName"
+        ]
+      }
+    }
+  }
+}
