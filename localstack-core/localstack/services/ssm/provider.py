@@ -1,9 +1,9 @@
 import copy
 import json
 import logging
+import re
 import time
 from abc import ABC
-import re
 from typing import Dict, Optional
 
 from moto.ssm.models import SimpleSystemManagerBackend, ssm_backends
@@ -127,7 +127,10 @@ class SsmProvider(SsmApi, ABC):
         if SsmProvider._has_secrets(names):
             return SsmProvider._get_params_and_secrets(context.account_id, context.region, names)
 
-        norm_names = [SsmProvider._normalize_name_or_arn(name, context.region, validate=True) for name in names]
+        norm_names = [
+            SsmProvider._normalize_name_or_arn(name, context.region, validate=True)
+            for name in names
+        ]
         request = {"Names": norm_names, "WithDecryption": bool(with_decryption)}
         res = call_moto_with_request(context, request)
 
@@ -362,7 +365,9 @@ class SsmProvider(SsmApi, ABC):
         return maybe_secret is not None
 
     @staticmethod
-    def _normalize_name_or_arn(param_name: ParameterName, region_name: str, validate=False) -> ParameterName:
+    def _normalize_name_or_arn(
+        param_name: ParameterName, region_name: str, validate=False
+    ) -> ParameterName:
         if param_name.startswith("arn:"):
             if validate:
                 if not re.match(r"^arn:aws:.+:.+:.+:.+$", param_name):
@@ -373,12 +378,12 @@ class SsmProvider(SsmApi, ABC):
                     raise ValidationException("Incorrect region in: " + param_name)
             return param_name
         return SsmProvider._normalize_name(param_name, region_name, validate)
-        
+
     @staticmethod
     def _normalize_name(param_name: ParameterName, validate=False) -> ParameterName:
         if validate:
             if re.match(r"^arn:aws:.+$", param_name):
-                raise 
+                raise
             if "//" in param_name or ("/" in param_name and not param_name.startswith("/")):
                 raise InvalidParameterNameException()
         param_name = param_name.strip("/")
