@@ -377,7 +377,7 @@ class SsmProvider(SsmApi, ABC):
                 if match is None or match.group(1) != region_name:
                     raise ValidationException("Incorrect region in: " + param_name)
             return param_name
-        return SsmProvider._normalize_name(param_name, region_name, validate)
+        return SsmProvider._normalize_name(param_name, validate)
 
     @staticmethod
     def _normalize_name(param_name: ParameterName, validate=False) -> ParameterName:
