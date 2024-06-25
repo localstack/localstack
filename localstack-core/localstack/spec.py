@@ -159,7 +159,31 @@ OPENAPI: Final = {
                 },
             },
         },
-        "/_localstack/info": {},
+        "/_localstack/info": {
+            "get": {
+                "200": {
+                    "description": "Information about the current LocalStack session",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "version": {"type": "string"},
+                                    "edition": {"type": "string"},
+                                    "is_license_activated": {"type": "boolean"},
+                                    "session_id": {"type": "string"},
+                                    "machine_id": {"type": "string"},
+                                    "system": {"type": "string"},
+                                    "is_docker": {"type": "boolean"},
+                                    "server_time_utc": {"type": "string"},
+                                    "uptime": {"type": "integer"},
+                                },
+                            }
+                        }
+                    },
+                }
+            }
+        },
         "/_localstack/init": {},
         "/_localstack/init/{stage}": {},
         "/_localstack/plugins": {},
@@ -193,6 +217,17 @@ OPENAPI: Final = {
                 }
             }
         },
-        "/_localstack/usage": {},
+        "/_localstack/usage": {
+            "get": {
+                "respones": {
+                    "200": {
+                        "description": "",  # TODO
+                        "content": {
+                            "application/json": {},
+                        },
+                    }
+                }
+            }
+        },
     },
 }
