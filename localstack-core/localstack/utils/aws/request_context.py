@@ -72,7 +72,17 @@ def extract_account_id_from_headers(headers) -> str:
 
 
 def extract_region_from_headers(headers) -> str:
-    return extract_region_from_auth_header(headers) or AWS_REGION_US_EAST_1
+    region_name = extract_region_from_auth_header(headers)
+
+    if region_name is None:
+        return AWS_REGION_US_EAST_1
+
+    if region_name == "aws-global":
+        # `aws-global` is a legacy AWS region for some services (S3, STS). Some clients like TF still use this value.
+        # Boto3 treats this region as equivalent to `us-east-1` and we do the same in LocalStack.
+        return AWS_REGION_US_EAST_1
+
+    return region_name
 
 
 def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
