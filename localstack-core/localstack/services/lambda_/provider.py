@@ -152,15 +152,13 @@ from localstack.services.lambda_.event_source_listeners.event_source_listener im
     EventSourceListener,
 )
 from localstack.services.lambda_.event_source_listeners.utils import validate_filters
+from localstack.services.lambda_.event_source_mapping.esm_config_factory import EsmConfigFactory
 from localstack.services.lambda_.event_source_mapping.esm_worker import (
-    EsmState,
-    EsmStateReason,
     EsmWorker,
 )
 from localstack.services.lambda_.event_source_mapping.esm_worker_factory import (
     EsmWorkerFactory,
     convert_esm_to_pipes_source_parameters,
-    convert_pipes_to_esm_source_parameters,
 )
 from localstack.services.lambda_.invocation import AccessDeniedException
 from localstack.services.lambda_.invocation.execution_environment import (
@@ -1856,31 +1854,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_arn, function_name = api_utils.get_function_arn(
             request["FunctionName"], context, state
         )
-        # TODO: validate `arn.region`, `request.region`, and `EventSourceArn.region`
-        # TODO: how to handle potentially different defaults for Pipes and ESM? Do we need a defaults provider abstraction?
-        # TODO: consider detecting the service first and then delegate to service-specific validators/factories
+        # Validations
+        # TODO: validate `context.region` vs. `region(request["FunctionName"])` vs. `region(request["EventSourceArn"])`
+
+        esm_config = EsmConfigFactory(request, function_arn).get_esm_config()
+
+        # TODO: implement esm_config to pipes param conversion once and remove this
         default_source_parameters = get_default_source_parameters(request.get("EventSourceArn"))
-        # TODO: implement esm => pipes param conversion
         source_parameters = convert_esm_to_pipes_source_parameters(request)
         derived_source_parameters = merge_recursive(
             default_source_parameters, (source_parameters or {})
         )
-        # TODO: implement pipes => esm output mapping conversion => tricky, should probably avoid and separate from logical implementation!
-        derived_source_parameters_esm = convert_pipes_to_esm_source_parameters(
-            derived_source_parameters
-        )
-        esm_config = EventSourceMappingConfiguration(
-            **derived_source_parameters_esm,
-            UUID=long_uid(),
-            EventSourceArn=request.get("EventSourceArn"),
-            FunctionArn=function_arn,
-            # TODO: last modified => does state transition affect this?
-            LastModified=datetime.datetime.now(),
-            State=EsmState.CREATING,
-            StateTransitionReason=EsmStateReason.USER_INITIATED,
-            # TODO: complete missing fields (hardcoding for SQS test case now)
-            FunctionResponseTypes=request.get("FunctionResponseTypes", []),
-        )
+
         # Copy to avoid race condition with async update
         state.event_source_mappings[esm_config["UUID"]] = esm_config.copy()
         function_version = LambdaProvider._get_function_version_from_arn(function_arn)
