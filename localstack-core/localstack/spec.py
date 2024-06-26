@@ -7,6 +7,12 @@ from typing import Final
 from localstack.version import __version__
 
 # OpenAPI specification for the internal REST API
+
+#
+# Note:
+# The schema definitions must be closed. Make sure `required` and `additionalProperties` are used.
+#
+
 OPENAPI: Final = {
     "openapi": "3.1.0",
     "info": {
@@ -31,6 +37,18 @@ OPENAPI: Final = {
         "schemas": {
             "SessionInfo": {
                 "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "version",
+                    "edition",
+                    "is_license_activated",
+                    "session_id",
+                    "machine_id",
+                    "system",
+                    "is_docker",
+                    "server_time_utc",
+                    "uptime",
+                ],
                 "properties": {
                     "version": {"type": "string"},
                     "edition": {"type": "string"},
@@ -45,9 +63,13 @@ OPENAPI: Final = {
             },
             "InitScripts": {
                 "type": "object",
+                "additionalProperties": False,
+                "required": ["completed", "scripts"],
                 "properties": {
                     "completed": {
                         "type": "object",
+                        "additionalProperties": False,
+                        "required": ["BOOT", "START", "READY", "SHUTDOWN"],
                         "properties": {
                             "BOOT": {"type": "boolean"},
                             "START": {"type": "boolean"},
@@ -59,6 +81,8 @@ OPENAPI: Final = {
                         "type": "array",
                         "items": {
                             "type": "object",
+                            "additionalProperties": False,
+                            "required": ["stage", "name", "state"],
                             "properties": {
                                 "stage": {"type": "string"},
                                 "name": {"type": "string"},
@@ -70,6 +94,8 @@ OPENAPI: Final = {
             },
             "SnsSubscriptionTokenError": {
                 "type": "object",
+                "additionalProperties": False,
+                "required": ["error", "subscription_arn"],
                 "properties": {
                     "error": {
                         "type": "string",
@@ -145,6 +171,8 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["ExpiredItems"],
                                     "properties": {
                                         "ExpiredItems": {
                                             "description": "Number of expired items that were deleted",
@@ -183,11 +211,26 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["messages"],
                                     "properties": {
                                         "messages": {
                                             "type": "array",
                                             "items": {
                                                 "type": "object",
+                                                "additionalProperties": False,
+                                                "required": [
+                                                    "Id",
+                                                    "Region",
+                                                    "Timestamp",
+                                                    "Destination",
+                                                    "RawData",
+                                                    "Source",
+                                                    "Subject",
+                                                    "Template",
+                                                    "TemplateData",
+                                                    "Body",
+                                                ],
                                                 "properties": {
                                                     "Id": {
                                                         "type": "string",
@@ -218,6 +261,8 @@ OPENAPI: Final = {
                                                     },
                                                     "Body": {
                                                         "type": "object",
+                                                        "additionalProperties": False,
+                                                        "required": ["html_part", "text_part"],
                                                         "properties": {
                                                             "html_part": {
                                                                 "type": "string",
@@ -272,6 +317,8 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["platform_endpoint_messages", "region"],
                                     "properties": {
                                         "platform_endpoint_messages": {
                                             "type": "object",
@@ -327,6 +374,8 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["sms_messages", "region"],
                                     "properties": {
                                         "sms_messages": {"type": "object"},
                                         "region": {"type": "string"},
@@ -379,6 +428,8 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["subscription_token", "subscription_arn"],
                                     "properties": {
                                         "subscription_token": {
                                             "type": "string",
@@ -530,6 +581,8 @@ OPENAPI: Final = {
                         "application/json": {
                             "schema": {
                                 "type": "object",
+                                "additionalProperties": False,
+                                "required": ["variable", "value"],
                                 "properties": {
                                     "variable": {
                                         "type": "string",
@@ -551,6 +604,8 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["variable", "value"],
                                     "properties": {
                                         "variable": {"type": "string"},
                                         "value": {"type": ["number", "string"]},
@@ -573,12 +628,33 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": [
+                                        "version",
+                                        "info",
+                                        "services",
+                                        "config",
+                                        "docker-inspect",
+                                        "docker-dependent-image-hosts",
+                                        "file-tree",
+                                        "important-endpoints",
+                                        "logs",
+                                        "usage",
+                                    ],
                                     "properties": {
                                         "version": {
                                             "type": "object",
+                                            "additionalProperties": False,
+                                            "required": [
+                                                "image-version",
+                                                "localstack-version",
+                                                "host",
+                                            ],
                                             "properties": {
                                                 "image-version": {
                                                     "type": "object",
+                                                    "additionalProperties": False,
+                                                    "required": ["id", "sha256", "tag", "created"],
                                                     "properties": {
                                                         "id": {"type": "string"},
                                                         "sha256": {"type": "string"},
@@ -588,6 +664,12 @@ OPENAPI: Final = {
                                                 },
                                                 "localstack-version": {
                                                     "type": "object",
+                                                    "additionalProperties": False,
+                                                    "required": [
+                                                        "build-date",
+                                                        "build-git-hash",
+                                                        "build-version",
+                                                    ],
                                                     "properties": {
                                                         "build-date": {"type": ["string", "null"]},
                                                         "build-git-hash": {
@@ -600,6 +682,8 @@ OPENAPI: Final = {
                                                 },
                                                 "host": {
                                                     "type": "object",
+                                                    "additionalProperties": False,
+                                                    "required": ["kernel"],
                                                     "properties": {"kernel": {"type": "string"}},
                                                 },
                                             },
@@ -615,6 +699,8 @@ OPENAPI: Final = {
                                         "important-endpoints": {"type": "object"},
                                         "logs": {
                                             "type": "object",
+                                            "additionalProperties": False,
+                                            "required": ["docker"],
                                             "properties": {
                                                 "docker": {"type": "string"},
                                             },
@@ -649,6 +735,8 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["edition", "features", "services", "version"],
                                     "properties": {
                                         "edition": {
                                             "type": "string",
@@ -696,6 +784,8 @@ OPENAPI: Final = {
                         "application/json": {
                             "schema": {
                                 "type": "object",
+                                "additionalProperties": False,
+                                "required": ["action"],
                                 "properties": {
                                     "action": {"type": "string", "enum": ["restart", "kill"]}
                                 },
@@ -714,6 +804,8 @@ OPENAPI: Final = {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["status"],
                                     "properties": {"status": {"type": "string"}},
                                 }
                             }
