@@ -327,6 +327,9 @@ class ModelResolver:
                 def_resolved, was_resolved = self._get_resolved_submodel(model_name=ref_model_name)
 
                 if not def_resolved:
+                    LOG.debug(
+                        f"Failed to resolve submodel {ref_model_name} for model {self._current_resolving_name}"
+                    )
                     return
                 # if the ref was already resolved, we copy the result to not alter the already resolved schema
                 if was_resolved:
@@ -365,12 +368,15 @@ class ModelResolver:
                 return None
             schema = json.loads(model["schema"])
             resolved_model = self.resolve_model(schema)
+            print(f"{resolved_model=}")
             if not resolved_model:
                 return None
             # attach the resolved dependencies of the schema
             if self._deps:
+                print(f"{self._deps=}")
                 resolved_model["$defs"] = self._deps
             self.rest_api_container.resolved_models[self.model_name] = resolved_model
+            print(f"{resolved_model=}")
 
         return resolved_model
 
