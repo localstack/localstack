@@ -45,7 +45,7 @@ SEARCH_KEY = "search.zip"
 SEARCH_UPDATE_KEY = "search_update.zip"
 
 
-@markers.acceptance_test_beta
+@markers.acceptance_test
 class TestBookstoreApplication:
     @pytest.fixture(scope="class")
     def patch_opensearch_strategy(self):
