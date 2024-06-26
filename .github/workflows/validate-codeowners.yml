@@ -18,4 +18,5 @@ jobs:
       - name: Validate codeowners
         uses: mszostok/codeowners-validator@v0.7.4
         with:
-          checks: "files"
+          checks: "files,duppatterns,syntax"
+          experimental_checks: "avoid-shadowing"
