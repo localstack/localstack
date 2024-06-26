@@ -68,7 +68,18 @@ OPENAPI: Final = {
                     },
                 },
             },
-        }
+        },
+        "parameters": {
+            "SesMessageId": {
+                "name": "id",
+                "description": "ID of the message (`id` field of SES message)",
+                "in": "query",
+                "required": False,
+                "schema": {
+                    "type": "string",
+                },
+            },
+        },
     },
     "paths": {
         #
@@ -101,19 +112,74 @@ OPENAPI: Final = {
         "/_aws/lambda/runtimes": {},
         "/_aws/ses": {
             "get": {
-                "description": "Get sent emails",
+                "description": "Retrieve sent messages",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/SesMessageId",
+                    },
+                    {
+                        "name": "email",
+                        "description": "Source of the message (`source` field of SES message)",
+                        "in": "query",
+                        "required": False,
+                        "schema": {
+                            "type": "string",
+                        },
+                    },
+                ],
                 "responses": {
                     "200": {
-                        "description": "List of sent emails",
+                        "description": "List of sent messages",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "messages": {
-                                            "description": "List of sent SES messages",
                                             "type": "array",
-                                            "items": {"type": "object", "properties": {}},
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "Id": {
+                                                        "type": "string",
+                                                    },
+                                                    "Region": {
+                                                        "type": "string",
+                                                    },
+                                                    "Timestamp": {
+                                                        "type": "string",
+                                                    },
+                                                    "Destination": {
+                                                        "type": "string",
+                                                    },
+                                                    "RawData": {
+                                                        "type": "string",
+                                                    },
+                                                    "Source": {
+                                                        "type": "string",
+                                                    },
+                                                    "Subject": {
+                                                        "type": "string",
+                                                    },
+                                                    "Template": {
+                                                        "type": "string",
+                                                    },
+                                                    "TemplateData": {
+                                                        "type": "string",
+                                                    },
+                                                    "Body": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "html_part": {
+                                                                "type": "string",
+                                                            },
+                                                            "text_part": {
+                                                                "type": "string",
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
                                         }
                                     },
                                 }
@@ -122,7 +188,19 @@ OPENAPI: Final = {
                     }
                 },
             },
-            "delete": {},
+            "delete": {
+                "description": "Discard a message",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/SesMessageId",
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Message was successfully discarded",
+                    }
+                },
+            },
         },
         "/_aws/sns/platform-endpoint-messages": {},
         "/_aws/sqs/messages": {},
