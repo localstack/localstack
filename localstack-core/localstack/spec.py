@@ -10,7 +10,8 @@ from localstack.version import __version__
 
 #
 # Note:
-# The schema definitions must be closed. Make sure `required` and `additionalProperties` are used.
+# - The schema definitions must be closed. Make sure `required` and `additionalProperties` are used.
+# - Mind the sorting.
 #
 
 OPENAPI: Final = {
@@ -105,6 +106,64 @@ OPENAPI: Final = {
                     },
                 },
             },
+            "SesSentEmail": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "Id",
+                    "Region",
+                    "Timestamp",
+                    "Destination",
+                    "RawData",
+                    "Source",
+                    "Subject",
+                    "Template",
+                    "TemplateData",
+                    "Body",
+                ],
+                "properties": {
+                    "Id": {
+                        "type": "string",
+                    },
+                    "Region": {
+                        "type": "string",
+                    },
+                    "Timestamp": {
+                        "type": "string",
+                    },
+                    "Destination": {
+                        "type": "string",
+                    },
+                    "RawData": {
+                        "type": "string",
+                    },
+                    "Source": {
+                        "type": "string",
+                    },
+                    "Subject": {
+                        "type": "string",
+                    },
+                    "Template": {
+                        "type": "string",
+                    },
+                    "TemplateData": {
+                        "type": "string",
+                    },
+                    "Body": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["html_part", "text_part"],
+                        "properties": {
+                            "html_part": {
+                                "type": "string",
+                            },
+                            "text_part": {
+                                "type": "string",
+                            },
+                        },
+                    },
+                },
+            },
         },
         "parameters": {
             "SesMessageId": {
@@ -158,7 +217,7 @@ OPENAPI: Final = {
     },
     "paths": {
         #
-        # Service endpoints. Mind the sorting
+        # Service endpoints
         #
         "/_aws/cloudwatch/metrics/raw": {},  # TODO
         "/_aws/dynamodb/expired": {
@@ -217,62 +276,7 @@ OPENAPI: Final = {
                                         "messages": {
                                             "type": "array",
                                             "items": {
-                                                "type": "object",
-                                                "additionalProperties": False,
-                                                "required": [
-                                                    "Id",
-                                                    "Region",
-                                                    "Timestamp",
-                                                    "Destination",
-                                                    "RawData",
-                                                    "Source",
-                                                    "Subject",
-                                                    "Template",
-                                                    "TemplateData",
-                                                    "Body",
-                                                ],
-                                                "properties": {
-                                                    "Id": {
-                                                        "type": "string",
-                                                    },
-                                                    "Region": {
-                                                        "type": "string",
-                                                    },
-                                                    "Timestamp": {
-                                                        "type": "string",
-                                                    },
-                                                    "Destination": {
-                                                        "type": "string",
-                                                    },
-                                                    "RawData": {
-                                                        "type": "string",
-                                                    },
-                                                    "Source": {
-                                                        "type": "string",
-                                                    },
-                                                    "Subject": {
-                                                        "type": "string",
-                                                    },
-                                                    "Template": {
-                                                        "type": "string",
-                                                    },
-                                                    "TemplateData": {
-                                                        "type": "string",
-                                                    },
-                                                    "Body": {
-                                                        "type": "object",
-                                                        "additionalProperties": False,
-                                                        "required": ["html_part", "text_part"],
-                                                        "properties": {
-                                                            "html_part": {
-                                                                "type": "string",
-                                                            },
-                                                            "text_part": {
-                                                                "type": "string",
-                                                            },
-                                                        },
-                                                    },
-                                                },
+                                                "$ref": "#/components/schemas/SesSentEmail",
                                             },
                                         }
                                     },
@@ -556,7 +560,7 @@ OPENAPI: Final = {
             },
         },
         #
-        # Framework endpoints. Mind the sorting
+        # Framework endpoints
         #
         "/_localstack/config": {
             "get": {
