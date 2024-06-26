@@ -29,25 +29,36 @@ commands:
   prepare-acceptance-tests:
     steps:
       - run:
-          name: Check if only Acceptance Tests should run
+          name: Check if only Acceptance Tests are running
           command: |
-            echo "only-acceptance-tests: << pipeline.parameters.only-acceptance-tests >>"
-            echo "trigger_source: << pipeline.trigger_source >>"
-            echo "CI_PULL_REQUEST: $CI_PULL_REQUEST"
-            if [[ << pipeline.parameters.only-acceptance-tests >> == "true"]] ; then
-              echo "export ONLY_ACCEPTANCE_TESTS=true" >> $BASH_ENV
-              echo "export DEFAULT_TAG='dev'" >> $BASH_ENV
-              echo "Only run acceptance tests, the default tag is 'dev'"
-            elif [[ -z "$CI_PULL_REQUEST" ]] && [[ << pipeline.trigger_source >> == "scheduled_pipeline" ]] ; then
-              echo "export ONLY_ACCEPTANCE_TESTS=true" >> $BASH_ENV
-              echo "export DEFAULT_TAG='dev'" >> $BASH_ENV
-              echo "Unscheduled push to non-PR-branch means only acceptance test run, the default tag is 'dev'"
-            else
-              echo "export ONLY_ACCEPTANCE_TESTS=false" >> $BASH_ENV
-              echo "export DEFAULT_TAG='latest'" >> $BASH_ENV
-              echo "All tests will run, the default tag is 'latest'"
-            fi
-            source $BASH_ENV
+             # Extract pipeline parameters into variables
+             only_acceptance_tests="<< pipeline.parameters.only-acceptance-tests >>"
+             trigger_source="<< pipeline.trigger_source >>"
+             git_branch="<< pipeline.git.branch >>"
+             
+             # Log the extracted parameters
+             echo "only-acceptance-tests: $only_acceptance_tests"
+             echo "trigger_source: $trigger_source"
+             echo "git branch: $git_branch"
+             
+             # Function to set environment variables
+             set_env_vars() {
+                 echo "export ONLY_ACCEPTANCE_TESTS=$1" >> $BASH_ENV
+                 echo "export DEFAULT_TAG='$2'" >> $BASH_ENV
+                 echo "$3"
+             }
+             
+             # Conditional logic to set environment variables based on pipeline parameters
+             if [[ "$only_acceptance_tests" == "true" ]]; then
+                 set_env_vars "true" "dev" "Only run acceptance tests, the default tag is 'dev'"
+             elif [[ "$git_branch" == "master" ]] && [[ "$trigger_source" != "scheduled_pipeline" ]]; then
+                 set_env_vars "true" "dev" "Unscheduled push to master means only acceptance test run, the default tag is 'dev'"
+             else
+                 set_env_vars "false" "latest" "All tests will run, the default tag is 'latest'"
+             fi
+             
+             # Source the environment variables
+             source $BASH_ENV
 
   prepare-testselection:
     steps:
@@ -323,13 +334,6 @@ jobs:
       PLATFORM: "<< parameters.platform >>"
     steps:
       - prepare-acceptance-tests
-      - run:
-          name: "Skip if only acceptance test"
-          command: |
-            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
-              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
-              circleci-agent step halt
-            fi
       - attach_workspace:
           at: /tmp/workspace
       - run:
@@ -392,13 +396,6 @@ jobs:
       PLATFORM: "amd64"
     steps:
       - prepare-acceptance-tests
-      - run:
-          name: "Skip if only acceptance test"
-          command: |
-            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
-              echo "Skipping bootstrap tests because only-acceptance-test is set or running unscheduled on default branch."
-              circleci-agent step halt
-            fi
       - attach_workspace:
           at: /tmp/workspace
       - run:
@@ -436,13 +433,6 @@ jobs:
       PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - prepare-acceptance-tests
-      - run:
-          name: "Skip if only acceptance test"
-          command: |
-            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
-              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
-              circleci-agent step halt
-            fi
       - attach_workspace:
           at: /tmp/workspace
       - prepare-testselection
@@ -473,13 +463,6 @@ jobs:
       PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - prepare-acceptance-tests
-      - run:
-          name: "Skip if only acceptance test"
-          command: |
-            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
-              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
-              circleci-agent step halt
-            fi
       - attach_workspace:
           at: /tmp/workspace
       - prepare-testselection
@@ -510,13 +493,6 @@ jobs:
       PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - prepare-acceptance-tests
-      - run:
-          name: "Skip if only acceptance test"
-          command: |
-            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
-              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
-              circleci-agent step halt
-            fi
       - attach_workspace:
           at: /tmp/workspace
       - prepare-testselection
@@ -547,13 +523,6 @@ jobs:
       PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - prepare-acceptance-tests
-      - run:
-          name: "Skip if only acceptance test"
-          command: |
-            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
-              echo "Skipping integration tests because only-acceptance-test is set or running unscheduled on default branch."
-              circleci-agent step halt
-            fi
       - attach_workspace:
           at: /tmp/workspace
       - prepare-testselection
@@ -589,13 +558,6 @@ jobs:
       PLATFORM: "amd64"
     steps:
       - prepare-acceptance-tests
-      - run:
-          name: "Check for acceptance test or default branch"
-          command: |
-            if [[ $ONLY_ACCEPTANCE_TESTS == "true" ]]; then
-              echo "Skipping coverage reporting because only-acceptance-test is set or running on default branch."
-              circleci-agent step halt
-            fi
       - attach_workspace:
           at: /tmp/workspace
       - run:
@@ -857,7 +819,77 @@ jobs:
 ## Workflow setup ##
 ####################
 workflows:
-  main:
+  acceptance-only-run:
+    when:
+      or:
+        - << pipeline.parameters.only-acceptance-tests >>
+        - and:
+          - equal: [ master,  << pipeline.git.branch>> ]
+          - not:
+              equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+    jobs:
+      - push-to-tinybird:
+          filters:
+            branches:
+              only: master
+      - install
+      - preflight:
+          requires:
+            - install
+      - unit-tests:
+          requires:
+            - preflight
+      - docker-build:
+          name: docker-build-amd64
+          platform: amd64
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          resource_class: medium
+          requires:
+            - preflight
+      - docker-build:
+          name: docker-build-arm64
+          platform: arm64
+          # The latest version of ubuntu is not yet supported for ARM:
+          # https://circleci.com/docs/2.0/arm-resources/
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+          resource_class: arm.medium
+          requires:
+            - preflight
+      - acceptance-tests:
+          name: acceptance-tests-arm64
+          platform: arm64
+          resource_class: arm.medium
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+          requires:
+            - docker-build-arm64
+      - acceptance-tests:
+          name: acceptance-tests-amd64
+          platform: amd64
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          resource_class: medium
+          requires:
+            - docker-build-amd64
+      - report:
+          requires:
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - unit-tests
+      - push:
+          filters:
+            branches:
+              only: master
+          requires:
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - unit-tests
+  full-run:
+    unless:
+      or:
+        - << pipeline.parameters.only-acceptance-tests >>
+        - and:
+          - equal: [ master,  << pipeline.git.branch>> ]
+          - not:
+              equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - push-to-tinybird:
           filters:
