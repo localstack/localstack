@@ -23,12 +23,12 @@ from localstack.testing.testselection.github import (
     get_pr_details_from_url,
 )
 from localstack.testing.testselection.matching import MatchingRule
-from localstack.testing.testselection.opt_in import complies_with_opt_in
+from localstack.testing.testselection.opt_out import opted_out
 from localstack.testing.testselection.testselection import get_affected_tests_from_changes
 
 
 def generate_test_selection(
-    opt_in_rules: Iterable[str] | None = None,
+    opt_out: Iterable[str] | None = None,
     matching_rules: list[MatchingRule] | None = None,
     repo_name: str = "localstack",
 ):
@@ -87,11 +87,10 @@ def generate_test_selection(
         repo_root_path, merge_base_commit, head_commit_sha
     )
 
-    # opt-in guard, can be removed after initial testing phase
     print("Checking for confirming to opt-in guards")
-    if not complies_with_opt_in(changed_files, opt_in_rules=opt_in_rules):
+    if opted_out(changed_files, opt_out=opt_out):
         print(
-            f"Change outside of opt-in guards. Extend the list at {repo_name}/testing/testselection/opt_in.py"
+            f"Explicitly opted out changed file. Remove from {repo_name}/testing/testselection/opt_out.py if needed"
         )
         test_files = ["SENTINEL_ALL_TESTS"]
     else:
