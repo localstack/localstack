@@ -1881,5 +1881,360 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_executions_versions_pagination": {
+    "recorded-date": "01-07-2024, 12:54:55",
+    "recorded-content": {
+      "list-executions-page-1": {
+        "executions": [
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_12idx>",
+            "name": "<ExecArnPart_12idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_11idx>",
+            "name": "<ExecArnPart_11idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_10idx>",
+            "name": "<ExecArnPart_10idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_9idx>",
+            "name": "<ExecArnPart_9idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_8idx>",
+            "name": "<ExecArnPart_8idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_7idx>",
+            "name": "<ExecArnPart_7idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_6idx>",
+            "name": "<ExecArnPart_6idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_5idx>",
+            "name": "<ExecArnPart_5idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_4idx>",
+            "name": "<ExecArnPart_4idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_3idx>",
+            "name": "<ExecArnPart_3idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "nextToken": "<next-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-execution-page-2": {
+        "executions": [
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_2idx>",
+            "name": "<ExecArnPart_2idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+            "name": "<ExecArnPart_1idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-executions-invalid-param-too-large": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-executions-invalid-param-short-nextToken": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter nextToken, value: 0, valid min length: 1"
+      },
+      "list-executions-invalid-param-long-nextToken": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '<invalid_token_3097_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 3096"
+        },
+        "message": "1 validation error detected: Value '<invalid_token_3097_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 3096",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "deletion_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_executions_pagination": {
+    "recorded-date": "01-07-2024, 12:33:00",
+    "recorded-content": {
+      "list-executions-page-1": {
+        "executions": [
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_12idx>",
+            "name": "<ExecArnPart_12idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_11idx>",
+            "name": "<ExecArnPart_11idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_10idx>",
+            "name": "<ExecArnPart_10idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_9idx>",
+            "name": "<ExecArnPart_9idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_8idx>",
+            "name": "<ExecArnPart_8idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_7idx>",
+            "name": "<ExecArnPart_7idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_6idx>",
+            "name": "<ExecArnPart_6idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_5idx>",
+            "name": "<ExecArnPart_5idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_4idx>",
+            "name": "<ExecArnPart_4idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_3idx>",
+            "name": "<ExecArnPart_3idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "nextToken": "<next-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-executions-page-2": {
+        "executions": [
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_2idx>",
+            "name": "<ExecArnPart_2idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+            "name": "<ExecArnPart_1idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-executions-invalid-param-too-large": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-executions-invalid-param-short-nextToken": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter nextToken, value: 0, valid min length: 1"
+      },
+      "list-executions-invalid-param-long-nextToken": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '<invalid_token_3097_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 3096"
+        },
+        "message": "1 validation error detected: Value '<invalid_token_3097_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 3096",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "deletion_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

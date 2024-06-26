@@ -572,12 +572,16 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ListExecutionsOutput:
         self._validate_state_machine_arn(state_machine_arn)
+        assert_pagination_parameters_valid(
+            max_results=max_results,
+            next_token=next_token,
+            next_token_length_limit=3096,
+        )
+        max_results = normalise_max_results(max_results)
 
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
             self._raise_state_machine_does_not_exist(state_machine_arn)
-
-        # TODO: add support for paging
 
         allowed_execution_status = [
             ExecutionStatus.SUCCEEDED,
@@ -610,7 +614,17 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 execution, state_machine_arn=state_machine_arn, status_filter=status_filter
             )
         ]
-        return ListExecutionsOutput(executions=executions)
+
+        executions.sort(key=lambda item: item["startDate"], reverse=True)
+
+        paginated_executions = PaginatedList(executions)
+        page, token_for_next_page = paginated_executions.get_page(
+            token_generator=lambda item: get_next_page_token_from_arn(item.get("executionArn")),
+            page_size=max_results,
+            next_token=next_token,
+        )
+
+        return ListExecutionsOutput(executions=page, nextToken=token_for_next_page)
 
     def list_state_machines(
         self,
