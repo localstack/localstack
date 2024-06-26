@@ -81,32 +81,41 @@ OPENAPI: Final = {
             },
             "SnsAccountId": {
                 "name": "accountId",
-                "description": "`accountId` field of the platform endpoint message",
+                "description": "`accountId` field of the resource",
                 "in": "query",
+                "required": False,
                 "schema": {
                     "type": "string",
                     "default": "000000000000",
                 },
-                "required": False,
             },
             "SnsRegion": {
                 "name": "region",
-                "description": "`region` field of the platform endpoint message",
+                "description": "`region` field of the resource",
                 "in": "query",
+                "required": False,
                 "schema": {
                     "type": "string",
                     "default": "us-east-1",
                 },
-                "required": False,
             },
             "SnsEndpointArn": {
                 "name": "endpointArn",
-                "description": "`endpointArn` field of the platform endpoint message",
+                "description": "`endpointArn` field of the resource",
                 "in": "query",
+                "required": False,
                 "schema": {
                     "type": "string",
                 },
+            },
+            "SnsPhoneNumber": {
+                "name": "phoneNumber",
+                "description": "`phoneNumber` field of the resource",
+                "in": "query",
                 "required": False,
+                "schema": {
+                    "type": "string",
+                },
             },
         },
     },
@@ -141,7 +150,7 @@ OPENAPI: Final = {
         "/_aws/lambda/runtimes": {},
         "/_aws/ses": {
             "get": {
-                "description": "Retrieve sent messages",
+                "description": "Retrieve sent SES messages",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/SesMessageId",
@@ -218,7 +227,7 @@ OPENAPI: Final = {
                 },
             },
             "delete": {
-                "description": "Discard a message",
+                "description": "Discard SES messages",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/SesMessageId",
@@ -233,7 +242,7 @@ OPENAPI: Final = {
         },
         "/_aws/sns/platform-endpoint-messages": {
             "get": {
-                "description": "Retrieve platform endpoint messages",
+                "description": "Retrieve SNS platform endpoint messages",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/SnsAccountId",
@@ -267,7 +276,7 @@ OPENAPI: Final = {
                 },
             },
             "delete": {
-                "description": "Discard a platform endpoint message",
+                "description": "Discard SNS platform endpoint messages",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/SnsAccountId",
@@ -286,7 +295,58 @@ OPENAPI: Final = {
                 },
             },
         },
-        "/_aws/sns/sms-messages": {},
+        "/_aws/sns/sms-messages": {
+            "get": {
+                "description": "Retrieve SNS SMS messages",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/SnsAccountId",
+                    },
+                    {
+                        "$ref": "#/components/parameters/SnsRegion",
+                    },
+                    {
+                        "$ref": "#/components/parameters/SnsPhoneNumber",
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",  # TODO
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "sms_messages": {"type": "object"},
+                                        "region": {"type": "string"},
+                                    },
+                                }
+                            }
+                        },
+                    }
+                },
+            },
+            "delete": {
+                "description": "Discard SNS SMS messages",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/SnsAccountId",
+                    },
+                    {
+                        "$ref": "#/components/parameters/SnsRegion",
+                    },
+                    {
+                        "$ref": "#/components/parameters/SnsPhoneNumber",
+                    },
+                ],
+                "responses": {
+                    "204": {
+                        "description": "SMS message was discarded",
+                        "content": {"text/plain": {}},
+                    }
+                },
+            },
+        },
         "/_aws/sns/subscription-tokens": {},
         "/_aws/sqs/messages": {},
         #
@@ -580,11 +640,7 @@ OPENAPI: Final = {
                 "responses": {
                     "200": {
                         "description": "Plugin information",
-                        "content": {
-                            # FIXME: This endpoint returns a JSON object whose keys are dynamic.
-                            # This prevents it from being defined with JSON Schema.
-                            "application/json": {}
-                        },
+                        "content": {"application/json": {}},
                     }
                 },
             }
