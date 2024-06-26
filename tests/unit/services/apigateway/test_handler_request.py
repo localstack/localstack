@@ -1,9 +1,10 @@
 import pytest
 from moto.apigateway.models import APIGatewayBackend, apigateway_backends
+from moto.apigateway.models import RestAPI as MotoRestAPI
 from werkzeug.datastructures import Headers
 
 from localstack.http import Request, Response
-from localstack.services.apigateway.models import MotoRestAPI, RestApiContainer
+from localstack.services.apigateway.models import RestApiContainer
 from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.handlers.parse import (
