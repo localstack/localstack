@@ -35,6 +35,7 @@ commands:
              trigger_source="<< pipeline.trigger_source >>"
              git_branch="<< pipeline.git.branch >>"
              echo "only-acceptance-tests: $only_acceptance_tests"
+             # GitHub event: webhook, Scheduled run: scheduled_pipeline, Manual run: api
              echo "trigger_source: $trigger_source"
              echo "git branch: $git_branch"
 
@@ -47,8 +48,8 @@ commands:
 
              if [[ "$only_acceptance_tests" == "true" ]]; then
                  set_env_vars "true" "dev" "Only acceptance tests run, the default tag is 'dev'"
-             elif [[ "$git_branch" == "master" ]] && [[ "$trigger_source" != "scheduled_pipeline" ]]; then
-                 set_env_vars "true" "dev" "Unscheduled push to master means only acceptance test run, the default tag is 'dev'"
+             elif [[ "$git_branch" == "master" ]] && [[ "$trigger_source" == "webhook" ]]; then
+                 set_env_vars "true" "dev" "Regular push run to master means only acceptance test run, the default tag is 'dev'"
              else
                  set_env_vars "false" "latest" "All tests run, the default tag is 'latest'"
              fi
@@ -816,15 +817,14 @@ jobs:
 workflows:
   acceptance-only-run:
     # this workflow only runs when only-acceptance-tests is explicitly set
-    # or when the pipeline is running on the master branch but is not scheduled
+    # or when the pipeline is running on the master branch but is neither scheduled nor a manual run
     # (basically the opposite of the full-run workflow)
     when:
       or:
         - << pipeline.parameters.only-acceptance-tests >>
         - and:
           - equal: [ master,  << pipeline.git.branch>> ]
-          - not:
-              equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+          - equal: [ webhook, << pipeline.trigger_source >> ]
     jobs:
       - push-to-tinybird:
           filters:
@@ -882,15 +882,14 @@ workflows:
             - unit-tests
   full-run:
     # this workflow only runs when only-acceptance-tests is not explicitly set (the default)
-    # or when the pipeline is running on the master branch because of a schedule
+    # or when the pipeline is running on the master branch because of a Github event (webhook)
     # (basically the opposite of the acceptance-only-run workflow)
     unless:
       or:
         - << pipeline.parameters.only-acceptance-tests >>
         - and:
           - equal: [ master,  << pipeline.git.branch>> ]
-          - not:
-              equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+          - equal: [ webhook, << pipeline.trigger_source >> ]
     jobs:
       - push-to-tinybird:
           filters:
