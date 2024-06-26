@@ -368,15 +368,12 @@ class ModelResolver:
                 return None
             schema = json.loads(model["schema"])
             resolved_model = self.resolve_model(schema)
-            print(f"{resolved_model=}")
             if not resolved_model:
                 return None
             # attach the resolved dependencies of the schema
             if self._deps:
-                print(f"{self._deps=}")
                 resolved_model["$defs"] = self._deps
             self.rest_api_container.resolved_models[self.model_name] = resolved_model
-            print(f"{resolved_model=}")
 
         return resolved_model
 
