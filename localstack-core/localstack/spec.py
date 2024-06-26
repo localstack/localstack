@@ -6,7 +6,7 @@ from typing import Final
 
 from localstack.version import __version__
 
-# OpenAPI specification for the internal REST API
+# OpenAPI specification for the public REST API
 
 #
 # Note:
