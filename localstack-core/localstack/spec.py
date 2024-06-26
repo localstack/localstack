@@ -68,6 +68,17 @@ OPENAPI: Final = {
                     },
                 },
             },
+            "SnsSubscriptionTokenError": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string",
+                    },
+                    "subscription_arn": {
+                        "type": "string",
+                    },
+                },
+            },
         },
         "parameters": {
             "SesMessageId": {
@@ -347,7 +358,62 @@ OPENAPI: Final = {
                 },
             },
         },
-        "/_aws/sns/subscription-tokens": {},
+        "/_aws/sns/subscription-tokens/{subscription_arn}": {
+            "get": {
+                "description": "Retrieve SNS subscription token for confirmation",
+                "parameters": [
+                    {
+                        "name": "subscription_arn",
+                        "description": "`subscriptionArn` resource of subscription token",
+                        "in": "path",
+                        "required": True,
+                        "schema": {
+                            "type": "string",
+                        },
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subscription token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "subscription_token": {
+                                            "type": "string",
+                                        },
+                                        "subscription_arn": {
+                                            "type": "string",
+                                        },
+                                    },
+                                }
+                            }
+                        },
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SnsSubscriptionTokenError",
+                                }
+                            }
+                        },
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SnsSubscriptionTokenError",
+                                }
+                            }
+                        },
+                    },
+                },
+            },
+        },
         "/_aws/sqs/messages": {},
         #
         # Framework endpoints. Mind the sorting
