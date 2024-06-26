@@ -31,33 +31,28 @@ commands:
       - run:
           name: Check if only Acceptance Tests are running
           command: |
-             # Extract pipeline parameters into variables
              only_acceptance_tests="<< pipeline.parameters.only-acceptance-tests >>"
              trigger_source="<< pipeline.trigger_source >>"
              git_branch="<< pipeline.git.branch >>"
-             
-             # Log the extracted parameters
              echo "only-acceptance-tests: $only_acceptance_tests"
              echo "trigger_source: $trigger_source"
              echo "git branch: $git_branch"
-             
+
              # Function to set environment variables
              set_env_vars() {
                  echo "export ONLY_ACCEPTANCE_TESTS=$1" >> $BASH_ENV
                  echo "export DEFAULT_TAG='$2'" >> $BASH_ENV
                  echo "$3"
              }
-             
-             # Conditional logic to set environment variables based on pipeline parameters
+
              if [[ "$only_acceptance_tests" == "true" ]]; then
-                 set_env_vars "true" "dev" "Only run acceptance tests, the default tag is 'dev'"
+                 set_env_vars "true" "dev" "Only acceptance tests run, the default tag is 'dev'"
              elif [[ "$git_branch" == "master" ]] && [[ "$trigger_source" != "scheduled_pipeline" ]]; then
                  set_env_vars "true" "dev" "Unscheduled push to master means only acceptance test run, the default tag is 'dev'"
              else
-                 set_env_vars "false" "latest" "All tests will run, the default tag is 'latest'"
+                 set_env_vars "false" "latest" "All tests run, the default tag is 'latest'"
              fi
-             
-             # Source the environment variables
+
              source $BASH_ENV
 
   prepare-testselection:
@@ -820,6 +815,9 @@ jobs:
 ####################
 workflows:
   acceptance-only-run:
+    # this workflow only runs when only-acceptance-tests is explicitly set
+    # or when the pipeline is running on the master branch but is not scheduled
+    # (basically the opposite of the full-run workflow)
     when:
       or:
         - << pipeline.parameters.only-acceptance-tests >>
@@ -883,6 +881,9 @@ workflows:
             - acceptance-tests-arm64
             - unit-tests
   full-run:
+    # this workflow only runs when only-acceptance-tests is not explicitly set (the default)
+    # or when the pipeline is running on the master branch because of a schedule
+    # (basically the opposite of the acceptance-only-run workflow)
     unless:
       or:
         - << pipeline.parameters.only-acceptance-tests >>
