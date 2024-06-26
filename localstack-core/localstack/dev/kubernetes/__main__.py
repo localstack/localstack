@@ -17,7 +17,9 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, por
         }
     )
 
-    egg_path = os.path.join(root_path, "localstack_core.egg-info/entry_points.txt")
+    egg_path = os.path.join(
+        root_path, "localstack-core", "localstack_core.egg-info/entry_points.txt"
+    )
     volumes.append(
         {
             "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_community",
