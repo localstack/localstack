@@ -15,6 +15,7 @@ import docker
 from docker import DockerClient
 from docker.errors import APIError, ContainerError, DockerException, ImageNotFound, NotFound
 from docker.models.containers import Container
+from docker.types import LogConfig as DockerLogConfig
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
 from localstack.config import LS_LOG
@@ -28,6 +29,7 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
     DockerNotAvailable,
     DockerPlatform,
+    LogConfig,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
@@ -626,6 +628,7 @@ class SdkDockerClient(ContainerClient):
         platform: Optional[DockerPlatform] = None,
         ulimits: Optional[List[Ulimit]] = None,
         init: Optional[bool] = None,
+        log_config: Optional[LogConfig] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -679,6 +682,10 @@ class SdkDockerClient(ContainerClient):
                 kwargs["init"] = True
             if labels:
                 kwargs["labels"] = labels
+            if log_config:
+                kwargs["log_config"] = DockerLogConfig(
+                    type=log_config.type, config=log_config.config
+                )
             if ulimits:
                 kwargs["ulimits"] = [
                     docker.types.Ulimit(
@@ -750,6 +757,7 @@ class SdkDockerClient(ContainerClient):
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
         init: Optional[bool] = None,
+        log_config: Optional[LogConfig] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -780,6 +788,7 @@ class SdkDockerClient(ContainerClient):
                 init=init,
                 labels=labels,
                 ulimits=ulimits,
+                log_config=log_config,
             )
             result = self.start_container(
                 container_name_or_id=container,

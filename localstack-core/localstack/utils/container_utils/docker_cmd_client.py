@@ -18,6 +18,7 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
     DockerNotAvailable,
     DockerPlatform,
+    LogConfig,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
@@ -736,6 +737,7 @@ class CmdDockerClient(ContainerClient):
         platform: Optional[DockerPlatform] = None,
         ulimits: Optional[List[Ulimit]] = None,
         init: Optional[bool] = None,
+        log_config: Optional[LogConfig] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -794,6 +796,10 @@ class CmdDockerClient(ContainerClient):
             )
         if init:
             cmd += ["--init"]
+        if log_config:
+            cmd += ["--log-driver", log_config.type]
+            for key, value in log_config.config.items():
+                cmd += ["--log-opt", f"{key}={value}"]
 
         if additional_flags:
             cmd += shlex.split(additional_flags)
