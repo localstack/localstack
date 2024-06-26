@@ -1451,7 +1451,7 @@ class TestDynamoDB:
         response = aws_client.dynamodbstreams.get_shard_iterator(
             StreamArn=stream_arn,
             ShardId=shard_id,
-            ShardIteratorType="LATEST",
+            ShardIteratorType="TRIM_HORIZON",
         )
         snapshot.match("get-shard-iterator", response)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -1502,19 +1502,21 @@ class TestDynamoDB:
                 ":v2": {"S": "value3"},
             },
         )
-        records = []
 
         def _get_records_amount(record_amount: int):
             nonlocal shard_iterator
-            if len(records) < record_amount:
-                _resp = aws_client.dynamodbstreams.get_records(ShardIterator=shard_iterator)
-                records.extend(_resp["Records"])
-                if next_shard_iterator := _resp.get("NextShardIterator"):
-                    shard_iterator = next_shard_iterator
 
-            assert len(records) >= record_amount
+            all_records = []
+            while shard_iterator is not None:
+                res = aws_client.dynamodbstreams.get_records(ShardIterator=shard_iterator)
+                shard_iterator = res["NextShardIterator"]
+                all_records.extend(res["Records"])
+                if len(all_records) >= record_amount:
+                    break
 
-        retry(lambda: _get_records_amount(2), sleep=1, retries=3)
+            return all_records
+
+        records = retry(lambda: _get_records_amount(2), sleep=1, retries=3)
         snapshot.match("get-records", {"Records": records})
 
         assert len(records) == 2
