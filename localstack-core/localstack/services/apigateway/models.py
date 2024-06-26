@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
 
-from moto.apigateway.models import RestAPI as MotoRestAPI
 from requests.structures import CaseInsensitiveDict
 
 from localstack.aws.api.apigateway import (
@@ -12,6 +11,7 @@ from localstack.aws.api.apigateway import (
     GatewayResponseType,
     Model,
     RequestValidator,
+    Resource,
     RestApi,
 )
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
@@ -57,16 +57,45 @@ class RestApiContainer:
         self.resource_children = {}
 
 
+class MergedRestApi(RestApiContainer):
+    """Merged REST API between Moto data and LocalStack data, used in our Invocation logic"""
+
+    # TODO: when migrating away from Moto, RestApiContainer and MergedRestApi will have the same signature, so we can
+    #   safely remove it and only use RestApiContainer in our invocation logic
+    resources: dict[str, Resource]
+
+    def __init__(self, rest_api: RestApi):
+        super().__init__(rest_api)
+        self.resources = {}
+
+    @classmethod
+    def from_rest_api_container(
+        cls,
+        rest_api_container: RestApiContainer,
+        resources: dict[str, Resource],
+    ) -> "MergedRestApi":
+        merged = cls(rest_api=rest_api_container.rest_api)
+        merged.authorizers = rest_api_container.authorizers
+        merged.validators = rest_api_container.validators
+        merged.documentation_parts = rest_api_container.documentation_parts
+        merged.documentation_versions = rest_api_container.documentation_versions
+        merged.gateway_responses = rest_api_container.gateway_responses
+        merged.models = rest_api_container.models
+        merged.resolved_models = rest_api_container.resolved_models
+        merged.resource_children = rest_api_container.resource_children
+        merged.resources = resources
+
+        return merged
+
+
 class RestApiDeployment:
     def __init__(
         self,
         account_id: str,
         region: str,
-        localstack_rest_api: RestApiContainer,
-        moto_rest_api: MotoRestAPI,
+        rest_api: MergedRestApi,
     ):
-        self.localstack_rest_api = localstack_rest_api
-        self.moto_rest_api = moto_rest_api
+        self.rest_api = rest_api
         self.account_id = account_id
         self.region = region
 

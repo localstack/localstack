@@ -2,7 +2,7 @@ import pytest
 from rolo import Response
 
 from localstack.aws.api.apigateway import GatewayResponse, GatewayResponseType
-from localstack.services.apigateway.models import RestApiContainer, RestApiDeployment
+from localstack.services.apigateway.models import MergedRestApi, RestApiDeployment
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     AccessDeniedError,
@@ -19,11 +19,10 @@ class TestGatewayResponseHandler:
             context.deployment = RestApiDeployment(
                 account_id=TEST_AWS_ACCOUNT_ID,
                 region=TEST_AWS_REGION_NAME,
-                localstack_rest_api=RestApiContainer(None),
-                moto_rest_api=None,
+                rest_api=MergedRestApi(None),
             )
             if gateway_responses:
-                context.deployment.localstack_rest_api.gateway_responses = gateway_responses
+                context.deployment.rest_api.gateway_responses = gateway_responses
             return context
 
         return _create_context_with_deployment
