@@ -334,7 +334,6 @@ class ResponseSerializer(abc.ABC):
         # wrap the generator in operation specific serialization
         def event_stream_serializer() -> Iterable[bytes]:
             yield self._encode_event_payload("initial-response")
-            # yield convert_to_binary_event_payload("", event_type="initial-response")
 
             # create a default response
             serialized_event_response = self._create_default_response(operation_model, mime_type)
