@@ -326,8 +326,7 @@ OPENAPI: Final = {
                 },
             }
         },
-        "/_aws/lambda/init": {},  # TODO
-        "/_aws/lambda/runtimes": {
+        "/_aws/lambda/init": {
             "get": {
                 "description": "Retrieve Lambda runtime init binary",
                 "responses": {
@@ -335,6 +334,45 @@ OPENAPI: Final = {
                         "description": "Lambda runtime init binary",
                         "content": {
                             "application/octet-stream": {},
+                        },
+                    }
+                },
+            },
+        },
+        "/_aws/lambda/runtimes": {
+            "get": {
+                "description": "List available Lambda runtimes",
+                "parameters": [
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "required": False,
+                        "schema": {
+                            "type": "string",
+                            "default": "supported",
+                            "enum": ["all", "deprecated", "supported"],
+                        },
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Available Lambda runtimes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["Runtimes"],
+                                    "properties": {
+                                        "Runtimes": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                            },
+                                        }
+                                    },
+                                },
+                            },
                         },
                     }
                 },
