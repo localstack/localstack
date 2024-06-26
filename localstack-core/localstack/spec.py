@@ -326,6 +326,30 @@ OPENAPI: Final = {
                 },
             }
         },
+        "/_aws/events/rules/{rule_arn}/trigger": {
+            "get": {
+                "description": "Trigger a scheduled EventBridge rule",
+                "parameters": [
+                    {
+                        "name": "rule_arn",
+                        "description": "EventBridge rule ARN",
+                        "in": "path",
+                        "required": True,
+                        "schema": {
+                            "type": "string",
+                        },
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "EventBridge rule was triggered",
+                    },
+                    "404": {
+                        "description": "Not found",
+                    },
+                },
+            }
+        },
         "/_aws/lambda/init": {
             "get": {
                 "description": "Retrieve Lambda runtime init binary",
