@@ -63,6 +63,7 @@ base-runtime = [
     "jsonpatch>=1.24",
     "hypercorn>=0.14.4",
     "localstack-twisted>=23.0",
+    "openapi-core>=0.19.2",
     "pyopenssl>=23.0.0",
     "readerwriterlock>=1.0.7",
     "requests-aws4auth>=1.0",
