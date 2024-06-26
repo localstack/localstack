@@ -137,7 +137,7 @@ OPENAPI: Final = {
         "/_aws/cloudwatch/metrics/raw": {},  # TODO
         "/_aws/dynamodb/expired": {
             "delete": {
-                "description": "Delete expired items from DynamoDB tables with TTL enabled",
+                "description": "Delete expired items from TTL-enabled DynamoDB tables",
                 "responses": {
                     "200": {
                         "description": "Operation was successful",
