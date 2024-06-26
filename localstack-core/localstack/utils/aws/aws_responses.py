@@ -8,7 +8,6 @@ from typing import Any, Dict, Optional, Union
 from urllib.parse import parse_qs
 
 import xmltodict
-from flask import Response as FlaskResponse
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
@@ -27,23 +26,14 @@ class ErrorResponse(Exception):
         self.response = response
 
 
-def flask_error_response_json(
-    msg: str, code: Optional[int] = 500, error_type: Optional[str] = "InternalFailure"
-):
+def requests_error_response_json(message, code=500, error_type="InternalFailure"):
     result = {
         "Type": "User" if code < 500 else "Server",
-        "message": msg,
+        "message": message,
         "__type": error_type,
     }
     headers = {"x-amzn-errortype": error_type}
-    # Note: don't use flask's make_response(..) or jsonify(..) here as they
-    # can lead to "RuntimeError: working outside of application context".
-    return FlaskResponse(json.dumps(result), status=code, headers=headers)
-
-
-def requests_error_response_json(message, code=500, error_type="InternalFailure"):
-    response = flask_error_response_json(message, code=code, error_type=error_type)
-    return flask_to_requests_response(response)
+    return requests_response(json.dumps(result), status_code=code, headers=headers)
 
 
 def requests_error_response_xml(
@@ -117,19 +107,6 @@ def requests_error_response_xml_signature_calculation(
         return response
 
 
-def flask_error_response_xml(
-    message: str,
-    code: Optional[int] = 500,
-    code_string: Optional[str] = "InternalFailure",
-    service: Optional[str] = None,
-    xmlns: Optional[str] = None,
-):
-    response = requests_error_response_xml(
-        message, code=code, code_string=code_string, service=service, xmlns=xmlns
-    )
-    return requests_to_flask_response(response)
-
-
 def requests_error_response(
     req_headers: Dict,
     message: Union[str, bytes],
@@ -158,20 +135,14 @@ def is_invalid_html_response(headers, content) -> bool:
 
 
 def is_response_obj(result, include_lambda_response=False):
-    types = (RequestsResponse, FlaskResponse)
+    types = (RequestsResponse,)
     if include_lambda_response:
         types += (LambdaResponse,)
     return isinstance(result, types)
 
 
 def get_response_payload(response, as_json=False):
-    result = (
-        response.content
-        if isinstance(response, RequestsResponse)
-        else response.data
-        if isinstance(response, FlaskResponse)
-        else None
-    )
+    result = response.content if isinstance(response, RequestsResponse) else None
     result = "" if result is None else result
     if as_json:
         result = result or "{}"
@@ -204,14 +175,6 @@ def request_response_stream(stream, status_code=200, headers=None):
     # Note: update headers (instead of assigning directly), to ensure we're using a case-insensitive dict
     resp.headers.update(headers or {})
     return resp
-
-
-def flask_to_requests_response(r):
-    return requests_response(r.data, status_code=r.status_code, headers=r.headers)
-
-
-def requests_to_flask_response(r):
-    return FlaskResponse(r.content, status=r.status_code, headers=dict(r.headers))
 
 
 def set_response_content(response, content, headers=None):
