@@ -79,6 +79,35 @@ OPENAPI: Final = {
                     "type": "string",
                 },
             },
+            "SnsAccountId": {
+                "name": "accountId",
+                "description": "`accountId` field of the platform endpoint message",
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "default": "000000000000",
+                },
+                "required": False,
+            },
+            "SnsRegion": {
+                "name": "region",
+                "description": "`region` field of the platform endpoint message",
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "default": "us-east-1",
+                },
+                "required": False,
+            },
+            "SnsEndpointArn": {
+                "name": "endpointArn",
+                "description": "`endpointArn` field of the platform endpoint message",
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                },
+                "required": False,
+            },
         },
     },
     "paths": {
@@ -202,7 +231,63 @@ OPENAPI: Final = {
                 },
             },
         },
-        "/_aws/sns/platform-endpoint-messages": {},
+        "/_aws/sns/platform-endpoint-messages": {
+            "get": {
+                "description": "Retrieve platform endpoint messages",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/SnsAccountId",
+                    },
+                    {
+                        "$ref": "#/components/parameters/SnsRegion",
+                    },
+                    {
+                        "$ref": "#/components/parameters/SnsEndpointArn",
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Platform endpoint messages",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "platform_endpoint_messages": {
+                                            "type": "object",
+                                        },
+                                        "region": {
+                                            "type": "string",
+                                        },
+                                    },
+                                }
+                            }
+                        },
+                    }
+                },
+            },
+            "delete": {
+                "description": "Discard a platform endpoint message",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/SnsAccountId",
+                    },
+                    {
+                        "$ref": "#/components/parameters/SnsRegion",
+                    },
+                    {
+                        "$ref": "#/components/parameters/SnsEndpointArn",
+                    },
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Platform endpoint message was discarded",
+                    }
+                },
+            },
+        },
+        "/_aws/sns/sms-messages": {},
+        "/_aws/sns/subscription-tokens": {},
         "/_aws/sqs/messages": {},
         #
         # Framework endpoints. Mind the sorting
