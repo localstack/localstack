@@ -120,12 +120,17 @@ from localstack.services.stepfunctions.backend.state_machine import (
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.services.stepfunctions.backend.test_state.execution import TestStateExecution
+from localstack.services.stepfunctions.stepfunctions_utils import (
+    get_next_page_token_from_arn,
+    validate_and_prepare_pagination_params,
+)
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     stepfunctions_activity_arn,
     stepfunctions_execution_state_machine_arn,
     stepfunctions_state_machine_arn,
 )
+from localstack.utils.collections import PaginatedList
 from localstack.utils.strings import long_uid, short_uid
 
 LOG = logging.getLogger(__name__)
@@ -613,14 +618,23 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         next_token: PageToken = None,
         **kwargs,
     ) -> ListStateMachinesOutput:
-        # TODO: add paging support.
+        max_results, _ = validate_and_prepare_pagination_params(max_results, next_token)
+
         state_machines: StateMachineList = [
             sm.itemise()
             for sm in self.get_store(context).state_machines.values()
             if isinstance(sm, StateMachineRevision)
         ]
-        state_machines.sort(key=lambda item: item["creationDate"])
-        return ListStateMachinesOutput(stateMachines=state_machines)
+        state_machines.sort(key=lambda item: item["name"])
+
+        paginated_state_machines = PaginatedList(state_machines)
+        page, token_for_next_page = paginated_state_machines.get_page(
+            token_generator=lambda item: get_next_page_token_from_arn(item.get("stateMachineArn")),
+            page_size=max_results,
+            next_token=next_token,
+        )
+
+        return ListStateMachinesOutput(stateMachines=page, nextToken=token_for_next_page)
 
     def list_state_machine_versions(
         self,

@@ -18,6 +18,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
     await_state_machine_not_listed,
 )
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry, wait_until
 from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
@@ -314,6 +315,103 @@ class TestSnfApi:
         lst_resp = aws_client.stepfunctions.list_state_machines()
         lst_resp_filter = [sm for sm in lst_resp["stateMachines"] if sm["name"] in sm_names]
         sfn_snapshot.match("lst_resp_del_filter", lst_resp_filter)
+
+    @markers.aws.validated
+    def test_list_sms_pagination(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        sm_names = [f"statemachine_{i}_{short_uid()}" for i in range(13)]
+        state_machine_arns = list()
+
+        for i, sm_name in enumerate(sm_names):
+            creation_resp = create_state_machine(
+                name=sm_name,
+                definition=definition_str,
+                roleArn=snf_role_arn,
+            )
+
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, i))
+
+            state_machine_arn: str = creation_resp["stateMachineArn"]
+            state_machine_arns.append(state_machine_arn)
+
+        def _list_state_machines(expected_results_count: int, **kwargs):
+            """Returns a filtered list of relevant State Machines"""
+            state_machines = aws_client.stepfunctions.list_state_machines(**kwargs)
+            filtered_sms = [sm for sm in state_machines["stateMachines"] if sm["name"] in sm_names]
+
+            assert len(filtered_sms) == expected_results_count
+            return filtered_sms
+
+        # expect all state machines to be present
+        wait_until(lambda: _list_state_machines(expected_results_count=13), max_retries=20)
+
+        paginator = aws_client.stepfunctions.get_paginator("list_state_machines")
+        page_iterator = paginator.paginate(maxResults=5)
+
+        # Paginates across all results and filters out any StateMachines not relevant to the test
+        def _verify_paginate_results() -> list:
+            filtered_state_machines = []
+            for page in page_iterator:
+                assert 0 < len(page["stateMachines"]) <= 5
+
+                filtered_page = [sm for sm in page["stateMachines"] if sm["name"] in sm_names]
+                if filtered_page:
+                    sm_name_set = {sm.get("name") for sm in filtered_state_machines}
+                    # assert that none of the State Machines being added are already present
+                    assert not any(sm.get("name") in sm_name_set for sm in filtered_page)
+
+                    filtered_state_machines.extend(filtered_page)
+
+            assert len(filtered_state_machines) == len(sm_names)
+            return filtered_state_machines
+
+        # Since ListStateMachines is eventually consistent, we should re-attempt pagination
+        listed_state_machines = retry(_verify_paginate_results, retries=20, sleep=1)
+        sfn_snapshot.match("list-state-machines-page-1", listed_state_machines[:10])
+        sfn_snapshot.match("list-state-machines-page-2", listed_state_machines[10:])
+
+        # maxResults value is out of bounds
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_state_machines(maxResults=1001)
+        sfn_snapshot.match("list-state-machines-invalid-param-too-large", err.value.response)
+
+        # nextToken is too short
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_state_machines(nextToken="")
+        sfn_snapshot.match(
+            "list-state-machines-invalid-param-short-nextToken",
+            {"exception_typename": err.typename, "exception_value": err.value},
+        )
+
+        # nextToken is too long
+        invalid_long_token = "x" * 1025
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_state_machines(nextToken=invalid_long_token)
+        sfn_snapshot.add_transformer(
+            RegexTransformer(invalid_long_token, f"<invalid_token_{len(invalid_long_token)}_chars>")
+        )
+        sfn_snapshot.match("list-state-machines-invalid-param-long-nextToken", err.value.response)
+
+        # where maxResults is 0, the default of 100 is used
+        retry(
+            lambda: _list_state_machines(expected_results_count=13, maxResults=0),
+            retries=20,
+            sleep=1,
+        )
+
+        for state_machine_arn in state_machine_arns:
+            aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
+
+        # expect no state machines created in this test to be leftover after deletion
+        wait_until(lambda: not _list_state_machines(expected_results_count=0), max_retries=20)
 
     @markers.aws.needs_fixing
     def test_start_execution(
