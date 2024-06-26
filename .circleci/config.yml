@@ -16,10 +16,7 @@ parameters:
   randomize-aws-credentials:
     type: boolean
     default: false
-  force-only-acceptance-tests:
-    type: boolean
-    default: false
-  is-scheduled:
+  only-acceptance-tests:
     type: boolean
     default: false
 
@@ -34,11 +31,14 @@ commands:
       - run:
           name: Check if only Acceptance Tests should run
           command: |
-            if [[ << pipeline.parameters.force-only-acceptance-tests >> == "true" ]] ; then
+            echo "only-acceptance-tests: << pipeline.parameters.only-acceptance-tests >>"
+            echo "trigger_source: << pipeline.trigger_source >>"
+            echo "CI_PULL_REQUEST: $CI_PULL_REQUEST"
+            if [[ << pipeline.parameters.only-acceptance-tests >> == "true"]] ; then
               echo "export ONLY_ACCEPTANCE_TESTS=true" >> $BASH_ENV
               echo "export DEFAULT_TAG='dev'" >> $BASH_ENV
-              echo "Forcing acceptance tests, the default tag is 'dev'"
-            elif [[ -z "$CI_PULL_REQUEST" ]] && [[ << pipeline.parameters.is-scheduled >> == "false" ]] ; then
+              echo "Only run acceptance tests, the default tag is 'dev'"
+            elif [[ -z "$CI_PULL_REQUEST" ]] && [[ << pipeline.trigger_source >> == "scheduled_pipeline" ]] ; then
               echo "export ONLY_ACCEPTANCE_TESTS=true" >> $BASH_ENV
               echo "export DEFAULT_TAG='dev'" >> $BASH_ENV
               echo "Unscheduled push to non-PR-branch means only acceptance test run, the default tag is 'dev'"
