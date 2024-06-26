@@ -19,12 +19,13 @@ from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 
 @pytest.fixture
-def method_handler_chain() -> RestApiGatewayHandlerChain:
-    """Returns a dummy chain for testing."""
-    method_handler_chain = RestApiGatewayHandlerChain(request_handlers=[MethodRequestHandler()])
-    # Sets raise_on_error to allow capturing the Exceptions raised by the validator
-    method_handler_chain.raise_on_error = True
-    return method_handler_chain
+def method_request_handler():
+    """Returns a dummy request handler invoker for testing."""
+
+    def _handler_invoker(context: RestApiInvocationContext):
+        return MethodRequestHandler()(RestApiGatewayHandlerChain(), context, Response())
+
+    return _handler_invoker
 
 
 @pytest.fixture
@@ -40,10 +41,10 @@ def dummy_context():
 
 
 class TestMethodRequestHandler:
-    def test_no_validator(self, method_handler_chain, dummy_context):
-        method_handler_chain.handle(dummy_context, Response())
+    def test_no_validator(self, method_request_handler, dummy_context):
+        method_request_handler(dummy_context)
 
-    def test_validator_no_validation_required(self, method_handler_chain, dummy_context):
+    def test_validator_no_validation_required(self, method_request_handler, dummy_context):
         validator_id = "validatorId"
         validator = RequestValidator(id=validator_id, validateRequestParameters=False)
         dummy_context.deployment.rest_api.validators = {validator_id: validator}
@@ -54,9 +55,9 @@ class TestMethodRequestHandler:
                 "method.request.header.foo": True,
             },
         )
-        method_handler_chain.handle(dummy_context, Response())
+        method_request_handler(dummy_context)
 
-    def test_validator_no_params_to_validate(self, method_handler_chain, dummy_context):
+    def test_validator_no_params_to_validate(self, method_request_handler, dummy_context):
         validator_id = "validatorId"
         validator = RequestValidator(id=validator_id, validateRequestParameters=False)
         dummy_context.deployment.rest_api.validators = {validator_id: validator}
@@ -67,9 +68,9 @@ class TestMethodRequestHandler:
                 "method.request.header.foo": False,
             },
         )
-        method_handler_chain.handle(dummy_context, Response())
+        method_request_handler(dummy_context)
 
-    def test_validator_request_parameters(self, method_handler_chain, dummy_context):
+    def test_validator_request_parameters(self, method_request_handler, dummy_context):
         validator_id = "validatorId"
         validator = RequestValidator(id=validator_id, validateRequestParameters=True)
         dummy_context.deployment.rest_api.validators = {validator_id: validator}
@@ -87,29 +88,26 @@ class TestMethodRequestHandler:
             headers={}, query_string_parameters={}, path=""
         )
         with pytest.raises(BadRequestParametersError) as e:
-            method_handler_chain.handle(dummy_context, Response())
+            method_request_handler(dummy_context)
         assert e.value.message == "Missing required request parameters: [x-header, proxy, query]"
 
         # invocation with valid header
         dummy_context.invocation_request["headers"]["x-header"] = "foobar"
-        method_handler_chain.error = None
         with pytest.raises(BadRequestParametersError) as e:
-            method_handler_chain.handle(dummy_context, Response())
+            method_request_handler(dummy_context)
         assert e.value.message == "Missing required request parameters: [proxy, query]"
 
         # invocation with valid header and querystring
         dummy_context.invocation_request["query_string_parameters"]["query"] = "result"
-        method_handler_chain.error = None
         with pytest.raises(BadRequestParametersError) as e:
-            method_handler_chain.handle(dummy_context, Response())
+            method_request_handler(dummy_context)
         assert e.value.message == "Missing required request parameters: [proxy]"
 
         # invocation with valid request
         dummy_context.invocation_request["path"] = "/proxy/path"
-        method_handler_chain.error = None
-        method_handler_chain.handle(dummy_context, Response())
+        method_request_handler(dummy_context)
 
-    def test_validator_request_body_empty_model(self, method_handler_chain, dummy_context):
+    def test_validator_request_body_empty_model(self, method_request_handler, dummy_context):
         validator_id = "validatorId"
         model_id = "model_id"
         validator = RequestValidator(id=validator_id, validateRequestBody=True)
@@ -128,13 +126,13 @@ class TestMethodRequestHandler:
 
         # Invocation with no body
         dummy_context.invocation_request = InvocationRequest(body=b"{}")
-        method_handler_chain.handle(dummy_context, Response())
+        method_request_handler(dummy_context)
 
         # Invocation with a body
         dummy_context.invocation_request = InvocationRequest(body=b'{"foo": "bar"}')
-        method_handler_chain.handle(dummy_context, Response())
+        method_request_handler(dummy_context)
 
-    def test_validator_validate_body_with_schema(self, method_handler_chain, dummy_context):
+    def test_validator_validate_body_with_schema(self, method_request_handler, dummy_context):
         validator_id = "validatorId"
         model_id = "model_id"
         validator = RequestValidator(id=validator_id, validateRequestBody=True)
@@ -155,25 +153,22 @@ class TestMethodRequestHandler:
 
         # Invocation with no body
         dummy_context.invocation_request = InvocationRequest(body=b"{}")
-        method_handler_chain.error = None
         with pytest.raises(BadRequestBodyError) as e:
-            method_handler_chain.handle(dummy_context, Response())
+            method_request_handler(dummy_context)
         assert e.value.message == "Invalid request body"
 
         # Invocation with an invalid body
         dummy_context.invocation_request = InvocationRequest(body=b'{"not": "foo"}')
-        method_handler_chain.error = None
         with pytest.raises(BadRequestBodyError) as e:
-            method_handler_chain.handle(dummy_context, Response())
+            method_request_handler(dummy_context)
         assert e.value.message == "Invalid request body"
 
         # Invocation with a valid body
         dummy_context.invocation_request = InvocationRequest(body=b'{"foo": "bar"}')
-        method_handler_chain.error = None
-        method_handler_chain.handle(dummy_context, Response())
+        method_request_handler(dummy_context)
 
     def test_validator_validate_body_with_no_model_for_schema_name(
-        self, method_handler_chain, dummy_context
+        self, method_request_handler, dummy_context
     ):
         # TODO verify this is required as it might not be a possible scenario on aws
         validator_id = "validatorId"
@@ -185,13 +180,12 @@ class TestMethodRequestHandler:
         )
 
         dummy_context.invocation_request = InvocationRequest(body=b"{}")
-        method_handler_chain.error = None
         with pytest.raises(BadRequestBodyError) as e:
-            method_handler_chain.handle(dummy_context, Response())
+            method_request_handler(dummy_context)
         assert e.value.message == "Invalid request body"
 
     def test_validate_body_with_circular_and_recursive_model(
-        self, method_handler_chain, dummy_context
+        self, method_request_handler, dummy_context
     ):
         validator_id = "validatorId"
         model_1 = "Person"
@@ -266,7 +260,7 @@ class TestMethodRequestHandler:
             ).encode()
         )
         with pytest.raises(BadRequestBodyError) as e:
-            method_handler_chain.handle(dummy_context, Response())
+            method_request_handler(dummy_context)
         assert e.value.message == "Invalid request body"
 
         # Valid body
@@ -284,5 +278,4 @@ class TestMethodRequestHandler:
                 }
             ).encode()
         )
-        method_handler_chain.error = None
-        method_handler_chain.handle(dummy_context, Response())
+        method_request_handler(dummy_context)
