@@ -2,7 +2,12 @@ import boto3
 import pytest
 
 from localstack.aws.api import RequestContext, ServiceException
-from localstack.aws.client import GatewayShortCircuit, _ResponseStream, parse_service_exception
+from localstack.aws.client import (
+    GatewayShortCircuit,
+    _ResponseStream,
+    botocore_in_memory_endpoint_patch,
+    parse_service_exception,
+)
 from localstack.aws.connect import get_service_endpoint
 from localstack.http import Response
 
@@ -63,6 +68,15 @@ class TestResponseStream:
 
 
 class TestGatewayShortCircuit:
+    @pytest.fixture(scope="class", autouse=True)
+    def patch_boto_endpoint(self):
+        if botocore_in_memory_endpoint_patch.is_applied:
+            return
+
+        botocore_in_memory_endpoint_patch.apply()
+        yield
+        botocore_in_memory_endpoint_patch.undo()
+
     def test_query_request(self):
         class MockGateway:
             def handle(self, context: RequestContext, response: Response):

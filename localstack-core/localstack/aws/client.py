@@ -7,6 +7,7 @@ from typing import Dict, Iterable, Optional
 from urllib.parse import urlsplit
 
 from botocore import awsrequest
+from botocore.endpoint import Endpoint
 from botocore.model import OperationModel
 from botocore.parsers import ResponseParser, ResponseParserFactory
 from werkzeug.datastructures import Headers
@@ -14,7 +15,7 @@ from werkzeug.datastructures import Headers
 from localstack import config
 from localstack.http import Request, Response
 from localstack.runtime import hooks
-from localstack.utils.patch import patch
+from localstack.utils.patch import Patch, patch
 from localstack.utils.strings import to_str
 
 from .api import CommonServiceException, RequestContext, ServiceException, ServiceResponse
@@ -182,24 +183,29 @@ def _patch_botocore_json_parser():
                 raise cbor_exception from json_exception
 
 
+def _create_and_enrich_aws_request(
+    fn, self: Endpoint, params: dict, operation_model: OperationModel = None
+):
+    """
+    Patch that adds the botocore operation model and request parameters to a newly created AWSPreparedRequest,
+    which normally only holds low-level HTTP request information.
+    """
+    request: awsrequest.AWSPreparedRequest = fn(self, params, operation_model)
+
+    request.params = params
+    request.operation_model = operation_model
+
+    return request
+
+
+botocore_in_memory_endpoint_patch = Patch.function(
+    Endpoint.create_request, _create_and_enrich_aws_request
+)
+
+
 @hooks.on_infra_start(should_load=config.IN_MEMORY_CLIENT)
 def _patch_botocore_endpoint_in_memory():
-    from botocore.endpoint import Endpoint
-
-    @patch(Endpoint.create_request)
-    def _create_and_enrich_request(
-        fn, self: Endpoint, params: dict, operation_model: OperationModel = None
-    ):
-        """
-        Patch that adds the botocore operation model and request parameters to a newly created AWSPreparedRequest,
-        which normally only holds low-level HTTP request information.
-        """
-        request: awsrequest.AWSPreparedRequest = fn(self, params, operation_model)
-
-        request.params = params
-        request.operation_model = operation_model
-
-        return request
+    botocore_in_memory_endpoint_patch.apply()
 
 
 def parse_response(
