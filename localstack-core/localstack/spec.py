@@ -17,7 +17,7 @@ from localstack.version import __version__
 OPENAPI: Final = {
     "openapi": "3.1.0",
     "info": {
-        "title": "LocalStack REST API for Community Edition",
+        "title": "LocalStack REST API for Community",
         "summary": (
             "The LocalStack REST API exposes functionality related to diagnostics, health checks, plugins, "
             "initialisation hooks, service introspection, and more."
@@ -217,7 +217,7 @@ OPENAPI: Final = {
     },
     "paths": {
         #
-        # Service endpoints
+        # Provider endpoints
         #
         "/_aws/cloudwatch/metrics/raw": {},  # TODO
         "/_aws/dynamodb/expired": {
@@ -287,7 +287,7 @@ OPENAPI: Final = {
                 },
             },
             "delete": {
-                "description": "Discard SES messages",
+                "description": "Discard sent SES messages",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/SesMessageId",
@@ -887,10 +887,10 @@ OPENAPI: Final = {
         },
         "/_localstack/plugins": {
             "get": {
-                "description": "Get plugin information",
+                "description": "",
                 "responses": {
                     "200": {
-                        "description": "Plugin information",
+                        "description": "",
                         "content": {"application/json": {}},
                     }
                 },
@@ -898,10 +898,10 @@ OPENAPI: Final = {
         },
         "/_localstack/usage": {
             "get": {
-                "description": "Get usage information",
+                "description": "",
                 "responses": {
                     "200": {
-                        "description": "Usage information",
+                        "description": "",
                         "content": {
                             "application/json": {},
                         },
