@@ -134,7 +134,7 @@ OPENAPI: Final = {
         #
         # Service endpoints. Mind the sorting
         #
-        "/_aws/cloudwatch/metrics/raw": {},
+        "/_aws/cloudwatch/metrics/raw": {},  # TODO
         "/_aws/dynamodb/expired": {
             "delete": {
                 "description": "Delete expired items from DynamoDB tables with TTL enabled",
@@ -158,7 +158,7 @@ OPENAPI: Final = {
                 },
             }
         },
-        "/_aws/lambda/runtimes": {},
+        "/_aws/lambda/runtimes": {},  # TODO
         "/_aws/ses": {
             "get": {
                 "description": "Retrieve sent SES messages",
@@ -322,7 +322,7 @@ OPENAPI: Final = {
                 ],
                 "responses": {
                     "200": {
-                        "description": "",  # TODO
+                        "description": "SNS SMS messages",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -414,7 +414,96 @@ OPENAPI: Final = {
                 },
             },
         },
-        "/_aws/sqs/messages": {},
+        "/_aws/sqs/messages": {
+            "get": {
+                "description": "List SQS queue messages without side effects",
+                "parameters": [
+                    {
+                        "name": "QueueUrl",
+                        "description": "SQS queue URL",
+                        "in": "query",
+                        "required": False,
+                        "schema": {
+                            "type": "string",
+                        },
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SQS queue messages",
+                        "content": {
+                            "text/xml": {},
+                        },
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {
+                            "text/xml": {},
+                        },
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "text/xml": {},
+                        },
+                    },
+                },
+            },
+        },
+        "/_aws/sqs/messages/{region}/{account_id}/{queue_name}": {
+            "get": {
+                "description": "List SQS messages without side effects",
+                "parameters": [
+                    {
+                        "name": "region",
+                        "description": "SQS queue region",
+                        "in": "path",
+                        "required": True,
+                        "schema": {
+                            "type": "string",
+                        },
+                    },
+                    {
+                        "name": "account_id",
+                        "description": "SQS queue account ID",
+                        "in": "path",
+                        "required": True,
+                        "schema": {
+                            "type": "string",
+                        },
+                    },
+                    {
+                        "name": "queue_name",
+                        "description": "SQS queue name",
+                        "in": "path",
+                        "required": True,
+                        "schema": {
+                            "type": "string",
+                        },
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SQS queue messages",
+                        "content": {
+                            "text/xml": {},
+                        },
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {
+                            "text/xml": {},
+                        },
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "text/xml": {},
+                        },
+                    },
+                },
+            },
+        },
         #
         # Framework endpoints. Mind the sorting
         #
