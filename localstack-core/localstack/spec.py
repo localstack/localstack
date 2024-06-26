@@ -17,17 +17,19 @@ OPENAPI: Final = {
         ),
         "termsOfService": "https://www.localstack.cloud/legal/tos",
         "contact": {
+            "name": "LocalStack Support",
             "url": "https://www.localstack.cloud/contact",
             "email": "info@localstack.cloud",
         },
         "version": __version__,
     },
     "externalDocs": {
+        "description": "LocalStack Documentation",
         "url": "https://docs.localstack.cloud",
     },
     "components": {
         "schemas": {
-            "Info": {
+            "SessionInfo": {
                 "type": "object",
                 "properties": {
                     "version": {"type": "string"},
@@ -73,11 +75,33 @@ OPENAPI: Final = {
         # Service endpoints. Mind the sorting
         #
         "/_aws/cloudwatch/metrics/raw": {},
-        "/_aws/dynamodb/expired": {},
+        "/_aws/dynamodb/expired": {
+            "delete": {
+                "description": "Delete expired items from DynamoDB tables with TTL enabled",
+                "responses": {
+                    "200": {
+                        "description": "Operation was successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ExpiredItems": {
+                                            "description": "Number of expired items that were deleted",
+                                            "type": "integer",
+                                        }
+                                    },
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        },
         "/_aws/lambda/runtimes": {},
         "/_aws/ses": {
             "get": {
-                "description": "Retrieve sent emails",
+                "description": "Get sent emails",
                 "responses": {
                     "200": {
                         "description": "List of sent emails",
@@ -107,7 +131,7 @@ OPENAPI: Final = {
         #
         "/_localstack/config": {
             "get": {
-                "description": "Retrieve current LocalStack configuration",
+                "description": "Get current LocalStack configuration",
                 "responses": {
                     "200": {
                         "description": "Current LocalStack configuration",
@@ -163,7 +187,7 @@ OPENAPI: Final = {
         },
         "/_localstack/diagnose": {
             "get": {
-                "description": "Retrieve diagnostics report",
+                "description": "Get diagnostics report",
                 "responses": {
                     "200": {
                         "description": "Diagnostics report",
@@ -203,7 +227,7 @@ OPENAPI: Final = {
                                             },
                                         },
                                         "info": {
-                                            "$ref": "#/components/schemas/Info",
+                                            "$ref": "#/components/schemas/SessionInfo",
                                         },
                                         "services": {"type": "object"},
                                         "config": {"type": "object"},
@@ -228,7 +252,7 @@ OPENAPI: Final = {
         },
         "/_localstack/health": {
             "get": {
-                "description": "Retrieve available LocalStack features and AWS services",
+                "description": "Get available LocalStack features and AWS services",
                 "parameters": [
                     {
                         "name": "reload",
@@ -277,7 +301,7 @@ OPENAPI: Final = {
                 }
             },
             "post": {
-                "description": "Restart or terminate the LocalStack session",
+                "description": "Restart or terminate LocalStack session",
                 "responses": {
                     "200": {
                         "description": "Action was successful",
@@ -332,12 +356,14 @@ OPENAPI: Final = {
         },
         "/_localstack/info": {
             "get": {
-                "description": "Retrieve information about the current LocalStack session",
+                "description": "Get information about the current LocalStack session",
                 "responses": {
                     "200": {
                         "description": "Information about the current LocalStack session",
                         "content": {
-                            "application/json": {"schema": {"$ref": "#/components/schemas/Info"}}
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/SessionInfo"}
+                            }
                         },
                     }
                 },
@@ -345,10 +371,10 @@ OPENAPI: Final = {
         },
         "/_localstack/init": {
             "get": {
-                "description": "Retrieve info about init scripts",
+                "description": "Get information about init scripts",
                 "responses": {
                     "200": {
-                        "description": "Info about init scripts",
+                        "description": "Information about init scripts",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -362,7 +388,7 @@ OPENAPI: Final = {
         },
         "/_localstack/init/{stage}": {
             "get": {
-                "description": "Retrieve info about init scripts in a specific stage",
+                "description": "Get information about init scripts in a specific stage",
                 "parameters": [
                     {
                         "name": "stage",
@@ -373,7 +399,7 @@ OPENAPI: Final = {
                 ],
                 "responses": {
                     "200": {
-                        "description": "Info about init scripts in a specific stage",
+                        "description": "Information about init scripts in a specific stage",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -387,10 +413,10 @@ OPENAPI: Final = {
         },
         "/_localstack/plugins": {
             "get": {
-                "description": "Retrieve info about plugins",
+                "description": "Get plugin information",
                 "responses": {
                     "200": {
-                        "description": "Info about plugins",
+                        "description": "Plugin information",
                         "content": {
                             # FIXME: This endpoint returns a JSON object whose keys are dynamic.
                             # This prevents it from being defined with JSON Schema.
@@ -402,10 +428,10 @@ OPENAPI: Final = {
         },
         "/_localstack/usage": {
             "get": {
-                "description": "Retrieve usage info",
+                "description": "Get usage information",
                 "responses": {
                     "200": {
-                        "description": "Usage info",
+                        "description": "Usage information",
                         "content": {
                             "application/json": {},
                         },
