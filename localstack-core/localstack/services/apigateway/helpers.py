@@ -328,7 +328,9 @@ class ModelResolver:
 
                 if not def_resolved:
                     LOG.debug(
-                        f"Failed to resolve submodel {ref_model_name} for model {self._current_resolving_name}"
+                        "Failed to resolve submodel %s for model %s",
+                        ref_model_name,
+                        self._current_resolving_name,
                     )
                     return
                 # if the ref was already resolved, we copy the result to not alter the already resolved schema

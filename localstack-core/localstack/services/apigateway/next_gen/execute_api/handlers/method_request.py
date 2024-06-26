@@ -38,8 +38,8 @@ class MethodRequestHandler(RestApiGatewayHandler):
         self, method: Method, rest_api: RestApiContainer, request: InvocationRequest
     ) -> None:
         """
-        :raises BadRequestParameters if the request has required parameters which are not present
-        :raises BadRequestBody if the request has required body validation with a model and it does not respect it
+        :raises BadRequestParametersError if the request has required parameters which are not present
+        :raises BadRequestBodyError if the request has required body validation with a model and it does not respect it
         :return: None
         """
 
@@ -50,6 +50,7 @@ class MethodRequestHandler(RestApiGatewayHandler):
         # check if there is a validator for this request
         if not (validator := rest_api.validators.get(request_validator_id)):
             # TODO Should we raise an exception instead?
+            LOG.exception("No validator were found with matching id: '%s'", request_validator_id)
             return
 
         if self.should_validate_request(validator) and (
@@ -87,7 +88,8 @@ class MethodRequestHandler(RestApiGatewayHandler):
         resolved_schema = model_resolver.get_resolved_model()
         if not resolved_schema:
             LOG.exception(
-                f"An exception occurred while trying to validate the request: could not resolve the model {model_name}"
+                "An exception occurred while trying to validate the request: could not resolve the model '%s'",
+                model_name,
             )
             return False
 
@@ -99,10 +101,10 @@ class MethodRequestHandler(RestApiGatewayHandler):
             )
             return True
         except ValidationError as e:
-            LOG.warning("failed to validate request body %s", e)
+            LOG.debug("failed to validate request body %s", e)
             return False
         except json.JSONDecodeError as e:
-            LOG.warning("failed to validate request body, request data is not valid JSON %s", e)
+            LOG.debug("failed to validate request body, request data is not valid JSON %s", e)
             return False
 
     @staticmethod
