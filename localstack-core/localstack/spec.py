@@ -326,7 +326,20 @@ OPENAPI: Final = {
                 },
             }
         },
-        "/_aws/lambda/runtimes": {},  # TODO
+        "/_aws/lambda/init": {},  # TODO
+        "/_aws/lambda/runtimes": {
+            "get": {
+                "description": "Retrieve Lambda runtime init binary",
+                "responses": {
+                    "200": {
+                        "description": "Lambda runtime init binary",
+                        "content": {
+                            "application/octet-stream": {},
+                        },
+                    }
+                },
+            }
+        },
         "/_aws/ses": {
             "get": {
                 "description": "Retrieve sent SES messages",
