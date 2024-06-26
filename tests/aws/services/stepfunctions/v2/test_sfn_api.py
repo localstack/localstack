@@ -16,6 +16,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
     await_on_execution_events,
     await_state_machine_listed,
     await_state_machine_not_listed,
+    await_state_machine_version_listed,
 )
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
@@ -480,6 +481,211 @@ class TestSnfApi:
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value", "$..redriveCount"])
+    def test_list_executions_pagination(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        await_state_machine_listed(
+            stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
+        )
+
+        execution_arns = list()
+        for i in range(13):
+            input_data = json.dumps(dict())
+
+            exec_resp = aws_client.stepfunctions.start_execution(
+                stateMachineArn=state_machine_arn, input=input_data
+            )
+
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
+
+            execution_arn = exec_resp["executionArn"]
+            execution_arns.append(execution_arn)
+
+            await_execution_success(
+                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+            )
+
+        page_1_executions = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn, maxResults=10
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.key_value("nextToken"))
+        sfn_snapshot.match("list-executions-page-1", page_1_executions)
+
+        page_2_executions = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn,
+            maxResults=3,
+            nextToken=page_1_executions["nextToken"],
+        )
+
+        sfn_snapshot.match("list-executions-page-2", page_2_executions)
+
+        assert all(
+            sm not in page_1_executions["executions"] for sm in page_2_executions["executions"]
+        )
+
+        # maxResults value is out of bounds
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_arn, maxResults=1001
+            )
+        sfn_snapshot.match("list-executions-invalid-param-too-large", err.value.response)
+
+        # nextToken is too short
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_arn, nextToken=""
+            )
+        sfn_snapshot.match(
+            "list-executions-invalid-param-short-nextToken",
+            {"exception_typename": err.typename, "exception_value": err.value},
+        )
+
+        # nextToken is too long
+        invalid_long_token = "x" * 3097
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_arn, nextToken=invalid_long_token
+            )
+        sfn_snapshot.add_transformer(
+            RegexTransformer(invalid_long_token, f"<invalid_token_{len(invalid_long_token)}_chars>")
+        )
+        sfn_snapshot.match("list-executions-invalid-param-long-nextToken", err.value.response)
+
+        # where maxResults is 0, the default of 100 should be returned
+        executions_default_all_returned = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn, maxResults=0
+        )
+        assert len(executions_default_all_returned["executions"]) == 13
+        assert "nextToken" not in executions_default_all_returned
+
+        deletion_resp = aws_client.stepfunctions.delete_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("deletion_resp", deletion_resp)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value", "$..redriveCount"])
+    def test_list_executions_versions_pagination(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn, publish=True
+        )
+
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+
+        state_machine_arn = creation_resp["stateMachineArn"]
+        state_machine_version_arn = creation_resp["stateMachineVersionArn"]
+
+        await_state_machine_version_listed(
+            stepfunctions_client=aws_client.stepfunctions,
+            state_machine_arn=state_machine_arn,
+            state_machine_version_arn=state_machine_version_arn,
+        )
+
+        execution_arns = list()
+        for i in range(13):
+            input_data = json.dumps(dict())
+
+            exec_resp = aws_client.stepfunctions.start_execution(
+                stateMachineArn=state_machine_version_arn, input=input_data
+            )
+
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
+
+            execution_arn = exec_resp["executionArn"]
+            execution_arns.append(execution_arn)
+
+            await_execution_success(
+                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+            )
+
+        page_1_executions = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_version_arn, maxResults=10
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.key_value("nextToken"))
+        sfn_snapshot.match("list-executions-page-1", page_1_executions)
+
+        page_2_executions = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_version_arn,
+            maxResults=3,
+            nextToken=page_1_executions["nextToken"],
+        )
+
+        sfn_snapshot.match("list-execution-page-2", page_2_executions)
+
+        assert all(
+            sm not in page_1_executions["executions"] for sm in page_2_executions["executions"]
+        )
+
+        # maxResults value is out of bounds
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_version_arn, maxResults=1001
+            )
+        sfn_snapshot.match("list-executions-invalid-param-too-large", err.value.response)
+
+        # nextToken is too short
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_version_arn, nextToken=""
+            )
+        sfn_snapshot.match(
+            "list-executions-invalid-param-short-nextToken",
+            {"exception_typename": err.typename, "exception_value": err.value},
+        )
+
+        # nextToken is too long
+        invalid_long_token = "x" * 3097
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_version_arn, nextToken=invalid_long_token
+            )
+        sfn_snapshot.add_transformer(
+            RegexTransformer(invalid_long_token, f"<invalid_token_{len(invalid_long_token)}_chars>")
+        )
+        sfn_snapshot.match("list-executions-invalid-param-long-nextToken", err.value.response)
+
+        # where maxResults is 0, the default of 100 should be returned
+        executions_default_all_returned = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_version_arn, maxResults=0
+        )
+        assert len(executions_default_all_returned["executions"]) == 13
+        assert "nextToken" not in executions_default_all_returned
+
+        deletion_resp = aws_client.stepfunctions.delete_state_machine_version(
+            stateMachineVersionArn=state_machine_version_arn
+        )
+        sfn_snapshot.match("deletion_resp", deletion_resp)
 
     @markers.aws.validated
     def test_get_execution_history_reversed(
