@@ -5,7 +5,6 @@ This module has utilities relating to creating/parsing AWS requests.
 import logging
 import re
 from typing import Dict, Optional
-from urllib.parse import urlparse
 
 from rolo import Request as RoloRequest
 
@@ -17,13 +16,6 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     DEFAULT_AWS_ACCOUNT_ID,
 )
-from localstack.utils.aws.aws_responses import (
-    requests_error_response,
-    requests_to_flask_response,
-)
-from localstack.utils.coverage_docs import get_coverage_link_for_service
-from localstack.utils.patch import patch
-from localstack.utils.strings import snake_to_camel_case
 
 LOG = logging.getLogger(__name__)
 
@@ -83,38 +75,6 @@ def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
         return service
     except Exception:
         return
-
-
-def patch_moto_request_handling():
-    from importlib.util import find_spec
-
-    if not find_spec("moto"):
-        # leave here to avoid import issues
-        return
-
-    from flask import request
-    from moto.core import utils as moto_utils
-
-    # make sure we properly handle/propagate "not implemented" errors
-    @patch(moto_utils.convert_to_flask_response.__call__)
-    def convert_to_flask_response_call(fn, *args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except NotImplementedError as e:
-            action = request.headers.get("X-Amz-Target")
-            action = action or f"{request.method} {urlparse(request.url).path}"
-            if action == "POST /":
-                # try to extract action from exception string
-                match = re.match(r"The ([a-zA-Z0-9_-]+) action has not been implemented", str(e))
-                if match:
-                    action = snake_to_camel_case(match.group(1))
-            service = extract_service_name_from_auth_header(request.headers)
-            exception_message: str | None = e.args[0] if e.args else None
-            msg = exception_message or get_coverage_link_for_service(service, action)
-            response = requests_error_response(request.headers, msg, code=501)
-            LOG.info(msg)
-            # TODO: publish analytics event ...
-            return requests_to_flask_response(response)
 
 
 def mock_aws_request_headers(

@@ -51,8 +51,5 @@ def apply_aws_runtime_patches():
     """
     if find_spec("moto"):
         # only load patches when moto is importable
-        from localstack.utils.aws.request_context import patch_moto_request_handling
-
-        patch_moto_request_handling()
         patch_moto_iam_config()
         patch_moto_instance_tracker_meta()
