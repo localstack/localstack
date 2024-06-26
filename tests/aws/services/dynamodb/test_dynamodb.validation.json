@@ -45,7 +45,7 @@
     "last_validated_date": "2023-08-23T14:33:43+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_records_with_update_item": {
-    "last_validated_date": "2024-06-06T13:02:16+00:00"
+    "last_validated_date": "2024-06-26T14:28:26+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_stream_view_type": {
     "last_validated_date": "2024-05-31T14:49:56+00:00"
