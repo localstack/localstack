@@ -219,7 +219,88 @@ OPENAPI: Final = {
         #
         # Provider endpoints
         #
-        "/_aws/cloudwatch/metrics/raw": {},  # TODO
+        "/_aws/cloudwatch/metrics/raw": {
+            "get": {
+                "description": "Retrieve CloudWatch metrics",
+                "responses": {
+                    "200": {
+                        "description": "CloudWatch metrics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["metrics"],
+                                    "properties": {
+                                        "metrics": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": False,
+                                                "required": [
+                                                    "ns",
+                                                    "n",
+                                                    "v",
+                                                    "t",
+                                                    "d",
+                                                    "account",
+                                                    "region",
+                                                ],
+                                                "properties": {
+                                                    "ns": {
+                                                        "type": "string",
+                                                        "description": "Namespace",
+                                                    },
+                                                    "n": {
+                                                        "type": "string",
+                                                        "description": "Metric name",
+                                                    },
+                                                    "v": {
+                                                        "type": "string",
+                                                        "description": "Metric value",
+                                                    },
+                                                    "t": {
+                                                        "type": "number",
+                                                        "description": "Timestamp",
+                                                    },
+                                                    "d": {
+                                                        "type": "array",
+                                                        "description": "Dimensions",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "additionalProperties": False,
+                                                            "required": ["n", "v"],
+                                                            "properties": {
+                                                                "n": {
+                                                                    "type": "string",
+                                                                    "description": "Dimension name",
+                                                                },
+                                                                "v": {
+                                                                    "type": "string",
+                                                                    "description": "Dimension value",
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                    "account": {
+                                                        "type": "string",
+                                                        "description": "Account ID",
+                                                    },
+                                                    "region": {
+                                                        "type": "string",
+                                                        "description": "Region name",
+                                                    },
+                                                },
+                                            },
+                                        }
+                                    },
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        },
         "/_aws/dynamodb/expired": {
             "delete": {
                 "description": "Delete expired items from TTL-enabled DynamoDB tables",
