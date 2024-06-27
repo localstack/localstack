@@ -209,7 +209,6 @@ jobs:
           at: /tmp/workspace
       - prepare-testselection
       - prepare-pytest-tinybird
-      - prepare-account-region-randomization
       - run:
           name: Test SFN Legacy provider
           environment:
