@@ -2083,6 +2083,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )
+        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
+            event_source_mapping["State"] = self.esm_workers[uuid].current_state
         return event_source_mapping
 
     def list_event_source_mappings(
