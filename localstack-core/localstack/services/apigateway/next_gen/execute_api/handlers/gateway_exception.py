@@ -47,7 +47,7 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         self, exception: BaseGatewayException, context: RestApiInvocationContext
     ):
         gateway_response = get_gateway_response_or_default(
-            exception.type, context.deployment.localstack_rest_api.gateway_responses
+            exception.type, context.deployment.rest_api.gateway_responses
         )
 
         content = self._build_response_content(exception)

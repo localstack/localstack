@@ -47,7 +47,6 @@ def _snapshot_transformers(snapshot):
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Records..eventID",
-        "$..Records..kinesis.kinesisSchemaVersion",
         "$..BisectBatchOnFunctionError",
         "$..DestinationConfig",
         "$..FunctionResponseTypes",

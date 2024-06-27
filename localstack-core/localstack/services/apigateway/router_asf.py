@@ -147,7 +147,7 @@ class ApigatewayRouter:
             strict_slashes=True,
         )
 
-    def invoke_rest_api(self, request: Request, **url_params: Dict[str, str]) -> Response:
+    def invoke_rest_api(self, request: Request, **url_params: str) -> Response:
         account_id, region_name = get_api_account_id_and_region(url_params["api_id"])
         if not region_name:
             return Response(status=404)

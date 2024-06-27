@@ -80,7 +80,6 @@
 # Snapshot testing
 /localstack-core/localstack/testing/snapshots/ @dominikschubert @steffyP
 /localstack-core/localstack/testing/pytest/ @dominikschubert
-/tests/unit/utils/testing/ @dominikschubert @steffyP
 
 # Scenario testing
 /localstack-core/localstack/testing/scenario/ @dominikschubert @steffyP
@@ -235,9 +234,9 @@
 /tests/aws/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert
 
 # sts
-/localstack-core/localstack/aws/api/sts/ @pinzon
-/localstack-core/localstack/services/sts/ @pinzon
-/tests/aws/services/sts/ @pinzon
+/localstack-core/localstack/aws/api/sts/ @pinzon @dfangl
+/localstack-core/localstack/services/sts/ @pinzon @dfangl
+/tests/aws/services/sts/ @pinzon @dfangl
 
 # transcribe
 /localstack-core/localstack/aws/api/transcribe/ @sannya-singal @ackdav
