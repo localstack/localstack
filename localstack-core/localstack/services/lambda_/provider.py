@@ -213,6 +213,8 @@ LAMBDA_DEFAULT_MEMORY_SIZE = 128
 LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 
+TAG_KEY_CUSTOM_URL = "_custom_id_"
+
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     lambda_service: LambdaService
@@ -2069,8 +2071,31 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             else api_utils.unqualified_lambda_arn(function_name, account_id, region)
         )
 
-        # create function URL config
-        url_id = api_utils.generate_random_url_id()
+        # The url_id is the subdomain used for the URL we're creating. This
+        # is either created randomly (as in AWS), or can be passed as a tag
+        # to the lambda itself (localstack-only).
+        url_id: str
+        if fn.tags is None:
+            url_id = api_utils.generate_random_url_id()
+
+        else:
+            # Note: currently this only works with $LATEST. However, it would
+            # be nice if we could specify a custom URL for any alias being
+            # passed via the qualifier parameter. Once a strategy for that has
+            # been decided on, it can go here.
+            if normalized_qualifier == "$LATEST" and TAG_KEY_CUSTOM_URL in fn.tags:
+                # Note: I really wanted to add verification here that the
+                # url_id is unique, so we could surface that to the user ASAP.
+                # However, it seems like that information isn't available yet,
+                # since (as far as I can tell) we call
+                # self.router.register_routes() once, in a single shot, for all
+                # of the routes -- and we need to verify that it's unique not
+                # just for this particular lambda function, but for the entire
+                # lambda provider. Therefore... that idea proved non-trivial!
+                url_id = fn.tags[TAG_KEY_CUSTOM_URL]
+
+            else:
+                url_id = api_utils.generate_random_url_id()
 
         host_definition = localstack_host(custom_port=config.GATEWAY_LISTEN[0].port)
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
