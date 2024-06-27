@@ -46,7 +46,6 @@ from localstack.services.apigateway.models import (
     apigateway_stores,
 )
 from localstack.utils import common
-from localstack.utils.aws import queries
 from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
@@ -730,6 +729,31 @@ def get_cors_response(headers):
     return response
 
 
+def get_apigateway_path_for_resource(
+    api_id, resource_id, path_suffix="", resources=None, region_name=None
+):
+    if resources is None:
+        apigateway = connect_to(region_name=region_name).apigateway
+        resources = apigateway.get_resources(restApiId=api_id, limit=100)["items"]
+    target_resource = list(filter(lambda res: res["id"] == resource_id, resources))[0]
+    path_part = target_resource.get("pathPart", "")
+    if path_suffix:
+        if path_part:
+            path_suffix = "%s/%s" % (path_part, path_suffix)
+    else:
+        path_suffix = path_part
+    parent_id = target_resource.get("parentId")
+    if not parent_id:
+        return "/%s" % path_suffix
+    return get_apigateway_path_for_resource(
+        api_id,
+        parent_id,
+        path_suffix=path_suffix,
+        resources=resources,
+        region_name=region_name,
+    )
+
+
 def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
     apigateway = connect_to(aws_access_key_id=account_id, region_name=region_name).apigateway
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
@@ -738,7 +762,7 @@ def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
         path = resource.get("path")
         # TODO: check if this is still required in the general case (can we rely on "path" being
         #  present?)
-        path = path or queries.get_apigateway_path_for_resource(
+        path = path or get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
         resource_map[path] = resource
