@@ -42,8 +42,9 @@ def print_runtime_information(in_docker: bool = False):
             inspect_result = DOCKER_CLIENT.inspect_container(container_name)
             container_id = inspect_result["Id"]
             print("LocalStack Docker container id: %s" % container_id[:12])
-            image_sha = inspect_result["Image"]
-            print("LocalStack Docker image sha: %s" % image_sha)
+            image_details = DOCKER_CLIENT.inspect_image(inspect_result["Image"])
+            digests = image_details.get("RepoDigests") or ["Unavailable"]
+            print("LocalStack Docker image sha: %s" % digests[0])
         except ContainerException:
             print(
                 "LocalStack Docker container info: Failed to inspect the LocalStack docker container. "
