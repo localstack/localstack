@@ -34,6 +34,7 @@ OPENAPI: Final = {
         "description": "LocalStack Documentation",
         "url": "https://docs.localstack.cloud",
     },
+    "servers": [{"url": "http://localhost.localstack.cloud:4566"}],
     "components": {
         "schemas": {
             "SessionInfo": {
