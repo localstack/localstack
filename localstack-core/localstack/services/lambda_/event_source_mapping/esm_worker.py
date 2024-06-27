@@ -2,17 +2,13 @@ import logging
 import threading
 
 from localstack_ext.services.pipes.pollers.poller import Poller
-from localstack_ext.services.pipes.senders.sender import Sender
 
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
-    FunctionVersion,
-    ResourceNotFoundException,
 )
-from localstack.services.lambda_ import api_utils
-from localstack.services.lambda_.api_utils import function_locators_from_arn
-from localstack.services.lambda_.invocation.models import lambda_stores
 from localstack.utils.threads import FuncThread
+
+POLL_INTERVAL_SEC: float = 1
 
 LOG = logging.getLogger(__name__)
 
@@ -42,7 +38,6 @@ class EsmWorker:
     last_processing_result: str
 
     poller: Poller
-    sender: Sender
 
     _state_lock: threading.RLock
     _shutdown_event: threading.Event
@@ -50,16 +45,14 @@ class EsmWorker:
 
     def __init__(
         self,
-        event_source_mapping_config: EventSourceMappingConfiguration,
+        esm_config: EventSourceMappingConfiguration,
         poller: Poller,
-        sender: Sender,
         enabled: bool = True,
     ):
-        self.esm_config = event_source_mapping_config
+        self.esm_config = esm_config
         self.current_state = EsmState.CREATING
 
         self.poller = poller
-        self.sender = sender
         self.enabled = enabled
 
         # TODO: implement lifecycle locking
@@ -73,93 +66,42 @@ class EsmWorker:
 
     def create(self):
         if self.enabled:
-            self.start_event_source_listener()
+            self.start_event_source_mapping()
         else:
             # TODO: test creating a disabled ESM
             pass
 
-    def start_event_source_listener(self):
+    def start_event_source_mapping(self):
         # TODO: implement state lifecycle
         self._poller_thread = FuncThread(
             self.poller_loop,
-            name=f"event-source-listener-poller-{self.uuid}",
+            name=f"event-source-mapping-poller-{self.uuid}",
         )
         self._poller_thread.start()
 
     def poller_loop(self, *args, **kwargs):
-        try:
-            LOG.debug("Updating state ...")
-            # HACK to work around state update race condition
-            # time.sleep(2)
-            with self._state_lock:
-                # TODO: should we only track state in store object? => requires proper different locking!
-                # Update self state (currently unused)
-                self.current_state = EsmState.ENABLED
-                # Update store state
-                function_version = get_function_version_from_arn(self.esm_config["FunctionArn"])
-                state = lambda_stores[function_version.id.account][function_version.id.region]
-                esm_update = {"State": EsmState.ENABLED}
-                state.event_source_mappings[self.esm_config["UUID"]].update(esm_update)
-            LOG.debug("Updated state")
-            # TODO: implement poller loop
-        except Exception as e:
-            LOG.error(
-                "Error while polling messages for event source mapping %s: %s",
-                self.uuid,
-                e,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
-
-
-# TODO: consolidate these hacky duplicates copied from the Lambda provider (guess they are there because of the store access)
-def get_function_version_from_arn(function_arn: str) -> FunctionVersion:
-    function_name, qualifier, account_id, region = function_locators_from_arn(function_arn)
-    fn = lambda_stores[account_id][region].functions.get(function_name)
-    if fn is None:
-        if qualifier is None:
-            raise ResourceNotFoundException(
-                f"Function not found: {api_utils.unqualified_lambda_arn(function_name, account_id, region)}",
-                Type="User",
-            )
-        else:
-            raise ResourceNotFoundException(
-                f"Function not found: {api_utils.qualified_lambda_arn(function_name, qualifier, account_id, region)}",
-                Type="User",
-            )
-    alias_name = None
-    if qualifier and api_utils.qualifier_is_alias(qualifier):
-        if qualifier not in fn.aliases:
-            alias_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account_id, region)
-            raise ResourceNotFoundException(f"Function not found: {alias_arn}", Type="User")
-        alias_name = qualifier
-        qualifier = fn.aliases[alias_name].function_version
-
-    version = get_function_version(
-        function_name=function_name,
-        qualifier=qualifier,
-        account_id=account_id,
-        region=region,
-    )
-    return version
-
-
-def get_function_version(
-    function_name: str, qualifier: str | None, account_id: str, region: str
-) -> FunctionVersion:
-    state = lambda_stores[account_id][region]
-    function = state.functions.get(function_name)
-    qualifier_or_latest = qualifier or "$LATEST"
-    version = function and function.versions.get(qualifier_or_latest)
-    if not function or not version:
-        arn = api_utils.lambda_arn(
-            function_name=function_name,
-            qualifier=qualifier,
-            account=account_id,
-            region=region,
-        )
-        raise ResourceNotFoundException(
-            f"Function not found: {arn}",
-            Type="User",
-        )
-    # TODO what if version is missing?
-    return version
+        with self._state_lock:
+            # TODO: should we only track state in store object? => requires proper different locking!
+            self.current_state = EsmState.ENABLED
+            # Update store state !?
+            # function_version = LambdaProvider._get_function_version_from_arn(self.esm_config["FunctionArn"])
+            # state = lambda_stores[function_version.id.account][function_version.id.region]
+            # esm_update = {"State": EsmState.ENABLED}
+            # state.event_source_mappings[self.esm_config["UUID"]].update(esm_update)
+        while not self._shutdown_event.is_set():
+            try:
+                self.poller.poll_events_v2()
+                # Wait for next short-polling interval
+                # MAYBE: read the poller interval from self.poller if we need the flexibility
+                self._shutdown_event.wait(POLL_INTERVAL_SEC)
+            except Exception as e:
+                LOG.error(
+                    "Error while polling messages for event source %s: %s",
+                    self.esm_config["EventSourceArn"],
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+                # TODO: implement some backoff here and stop poller upon continuous errors
+                # Wait some time between retries to avoid running into the problem right again
+                self._shutdown_event.wait(2)
+        # TODO: Delete ESM if needed (?!) => check how deleting works with state updates
