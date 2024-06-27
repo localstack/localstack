@@ -57,6 +57,22 @@ def test_deploy_prefix_list(deploy_cfn_template, aws_client, snapshot):
 
 
 @markers.aws.validated
+def test_deploy_security_group_with_tags(deploy_cfn_template, aws_client):
+    """Create security group in default VPC with tags."""
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../../templates/ec2_security_group_with_tags.yml"
+        )
+    )
+
+    response = aws_client.ec2.describe_security_groups(GroupIds=[stack.outputs["SecurityGroupId"]])
+    assert response["SecurityGroups"][0]["Tags"] == [
+        {"Key": "key1", "Value": "value1"},
+        {"Key": "key2", "Value": "value2"},
+    ]
+
+
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..DnsEntries",
