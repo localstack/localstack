@@ -1,5 +1,5 @@
 import pytest
-from moto.apigateway.models import APIGatewayBackend, apigateway_backends
+from moto.apigateway.models import APIGatewayBackend, Stage, apigateway_backends
 from moto.apigateway.models import RestAPI as MotoRestAPI
 from werkzeug.datastructures import Headers
 
@@ -35,6 +35,7 @@ def dummy_deployment():
     )
 
     moto_backend.apis[TEST_API_ID] = moto_rest_api
+    moto_rest_api.stages[TEST_API_STAGE] = Stage(name=TEST_API_STAGE)
 
     yield freeze_rest_api(
         account_id=TEST_AWS_ACCOUNT_ID,

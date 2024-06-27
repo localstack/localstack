@@ -1,3 +1,4 @@
+import datetime
 import logging
 from collections import defaultdict
 from typing import Optional
@@ -7,6 +8,9 @@ from rolo.request import Request, restore_payload
 from werkzeug.datastructures import Headers, MultiDict
 
 from localstack.http import Response
+from localstack.services.apigateway.helpers import REQUEST_TIME_DATE_FORMAT
+from localstack.utils.strings import short_uid
+from localstack.utils.time import timestamp
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import InvocationRequest, RestApiInvocationContext
@@ -32,7 +36,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
         context.invocation_request = self.create_invocation_request(context.request)
         # then we can create the ContextVariables, used throughout the invocation as payload and to render authorizer
         # payload, mapping templates and such.
-        context.context_variables = self.create_context_variables(context.invocation_request)
+        context.context_variables = self.create_context_variables(context)
         # then populate the stage variables
         context.stage_variables = self.fetch_stage_variables(context)
 
@@ -108,8 +112,28 @@ class InvocationRequestParser(RestApiGatewayHandler):
 
         return single_values, multi_values
 
-    def create_context_variables(self, invocation_request: InvocationRequest) -> ContextVariables:
-        context_variables = ContextVariables()
+    @staticmethod
+    def create_context_variables(context: RestApiInvocationContext) -> ContextVariables:
+        invocation_request: InvocationRequest = context.invocation_request
+        domain_name = invocation_request["headers"].get("Host", "")
+        domain_prefix = domain_name.split(".")[0]
+        now = datetime.datetime.now()
+
+        context_variables = ContextVariables(
+            accountId=context.account_id,
+            apiId=context.api_id,
+            deploymentId=context.deployment_id,
+            domainName=domain_name,
+            domainPrefix=domain_prefix,
+            extendedRequestId=short_uid(),
+            httpMethod=invocation_request["http_method"],
+            path=invocation_request["path"],
+            protocol="HTTP/1.1",
+            requestId=short_uid(),
+            requestTime=timestamp(time=now, format=REQUEST_TIME_DATE_FORMAT),
+            requestTimeEpoch=int(now.timestamp() * 1000),
+            stage=context.stage,
+        )
         return context_variables
 
     @staticmethod

@@ -65,6 +65,8 @@ class RestApiInvocationContext(RequestContext):
     """The REST API identifier of the invoked API"""
     stage: Optional[str]
     """The REST API stage linked to this invocation"""
+    deployment_id: Optional[str]
+    """The REST API deployment linked to this invocation"""
     region: Optional[str]
     """The region the REST API is living in."""
     account_id: Optional[str]
@@ -87,6 +89,7 @@ class RestApiInvocationContext(RequestContext):
         self.deployment = None
         self.api_id = None
         self.stage = None
+        self.deployment_id = None
         self.account_id = None
         self.region = None
         self.invocation_request = None
