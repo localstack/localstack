@@ -1,5 +1,15 @@
-from .core import RestApiPluginManager
+from .aws import RestApiAwsIntegration, RestApiAwsProxyIntegration
+from .http import RestApiHttpIntegration, RestApiHttpProxyIntegration
+from .mock import RestApiMockIntegration
+
+REST_API_INTEGRATIONS = {
+    RestApiAwsIntegration.name: RestApiAwsIntegration(),
+    RestApiAwsProxyIntegration.name: RestApiAwsProxyIntegration(),
+    RestApiHttpIntegration.name: RestApiHttpIntegration(),
+    RestApiHttpProxyIntegration.name: RestApiHttpProxyIntegration(),
+    RestApiMockIntegration.name: RestApiMockIntegration(),
+}
 
 __all__ = [
-    "RestApiPluginManager",
+    "REST_API_INTEGRATIONS",
 ]

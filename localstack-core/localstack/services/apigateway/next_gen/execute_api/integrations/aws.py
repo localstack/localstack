@@ -1,7 +1,7 @@
-from .core import RestApiIntegrationPlugin
+from .core import RestApiIntegration
 
 
-class RestApiAwsIntegration(RestApiIntegrationPlugin):
+class RestApiAwsIntegration(RestApiIntegration):
     """
     This is a REST API integration responsible to directly interact with AWS services. It uses the `uri` to
     map the incoming request to the concerned AWS service, and can have 2 types.
@@ -24,10 +24,10 @@ class RestApiAwsIntegration(RestApiIntegrationPlugin):
      parameters are expected as parameters
     """
 
-    name = "aws"
+    name = "AWS"
 
 
-class RestApiAwsProxyIntegration(RestApiIntegrationPlugin):
+class RestApiAwsProxyIntegration(RestApiIntegration):
     """
     This is a custom, simplified REST API integration focused only on the Lambda service, with minimal modification from
     API Gateway. It passes the incoming request almost as is, in a custom created event payload, to the configured
@@ -36,4 +36,4 @@ class RestApiAwsProxyIntegration(RestApiIntegrationPlugin):
     https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
 
-    name = "aws_proxy"
+    name = "AWS_PROXY"

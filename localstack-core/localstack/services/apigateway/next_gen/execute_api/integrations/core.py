@@ -1,46 +1,20 @@
 from abc import abstractmethod
 
-from plux import Plugin, PluginManager
-
 from localstack.http import Response
-from localstack.utils.objects import singleton_factory
 
 from ..api import RestApiInvocationContext
 
 
-class RestApiIntegrationPlugin(Plugin):
+class RestApiIntegration:
     """
-    This REST API Integration plugin exposes an API to invoke the specific Integration with a common interface.
+    This REST API Integration exposes an API to invoke the specific Integration with a common interface.
 
     https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-integration-settings.html
     TODO: Add more abstractmethods when starting to work on the Integration handler
     """
 
-    namespace = "localstack.services.apigateway.restapi.integrations"
+    name: str
 
     @abstractmethod
     def invoke(self, context: RestApiInvocationContext) -> Response:
         pass
-
-
-class RestApiPluginManager(PluginManager[RestApiIntegrationPlugin]):
-    def __init__(self):
-        super().__init__(RestApiIntegrationPlugin.namespace)
-
-    @staticmethod
-    @singleton_factory
-    def get() -> "RestApiPluginManager":
-        """Returns a singleton instance of the manager."""
-        return RestApiPluginManager()
-
-    def get_plugin(self, integration_type: str) -> RestApiIntegrationPlugin | None:
-        """
-        Get the API Gateway REST API Integration plugin for the specific Integration Type.
-
-        :param integration_type: Integration type the REST API Integration plugin will be returned for
-        :return: RestApiIntegrationPlugin for the specified Integration Type, None if not existent.
-        """
-        try:
-            return self.load(integration_type)
-        except ValueError:
-            return None

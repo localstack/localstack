@@ -1,7 +1,7 @@
-from .core import RestApiIntegrationPlugin
+from .core import RestApiIntegration
 
 
-class RestApiMockIntegration(RestApiIntegrationPlugin):
+class RestApiMockIntegration(RestApiIntegration):
     """
     This is a simple REST API integration but quite limited, allowing you to quickly test your APIs or return
     hardcoded responses to the client.
@@ -11,4 +11,4 @@ class RestApiMockIntegration(RestApiIntegrationPlugin):
     https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-mock-integration.html
     """
 
-    name = "mock"
+    name = "MOCK"
