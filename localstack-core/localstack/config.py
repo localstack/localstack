@@ -1107,6 +1107,9 @@ DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
 DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
 
+# This flag enables `connect_to` to be in-memory only and not do networking calls
+IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
+
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
 # https://docs.localstack.cloud/references/configuration/
@@ -1164,6 +1167,7 @@ CONFIG_ENV_VARS = [
     "GATEWAY_WORKER_THREAD_COUNT",
     "HOSTNAME",
     "HOSTNAME_FROM_LAMBDA",
+    "IN_MEMORY_CLIENT",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
