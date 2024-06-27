@@ -1,5 +1,7 @@
 """This Lambda Runtimes reference defines everything around Lambda runtimes to facilitate adding new runtimes."""
 
+from typing import Optional
+
 from localstack.aws.api.lambda_ import Runtime
 
 # LocalStack Lambda runtimes support policy
@@ -65,18 +67,35 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.provided: "provided:alami",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
 }
 
-# A list of all deprecated Lambda runtimes, ideally ordered by deprecation date (following the AWS docs).
+
+# A list of all deprecated Lambda runtimes, with upgrade recommendations
+# ideally ordered by deprecation date (following the AWS docs).
 # LocalStack can still provide best-effort support.
-DEPRECATED_RUNTIMES: list[Runtime] = [
-    Runtime.java8,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    Runtime.go1_x,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    Runtime.provided,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    Runtime.ruby2_7,  # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
-    Runtime.nodejs14_x,  # deprecated Dec 4, 2023  => Jan 9, 2024  => Feb 8, 2024
-    Runtime.python3_7,  # deprecated Dec 4, 2023 => Jan 9, 2024 => Feb 8, 2024
-    Runtime.dotnetcore3_1,  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
-    Runtime.nodejs12_x,  # deprecated Mar 31, 2023 => Mar 31, 2023 => Apr 30, 2023
-]
+
+# When updating the recommendation,
+# please regenerate all tests with @markers.lambda_runtime_update
+DEPRECATED_RUNTIMES_UPGRADES: dict[Runtime, Optional[Runtime]] = {
+    # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.java8: Runtime.java21,
+    # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.go1_x: Runtime.provided_al2023,
+    # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.provided: Runtime.provided_al2023,
+    # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
+    Runtime.ruby2_7: Runtime.ruby3_2,
+    # deprecated Dec 4, 2023  => Jan 9, 2024  => Feb 8, 2024
+    Runtime.nodejs14_x: Runtime.nodejs20_x,
+    # deprecated Dec 4, 2023 => Jan 9, 2024 => Feb 8, 2024
+    Runtime.python3_7: Runtime.python3_12,
+    # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
+    Runtime.dotnetcore3_1: Runtime.dotnet6,
+    # deprecated Mar 31, 2023 => Mar 31, 2023 => Apr 30, 2023
+    Runtime.nodejs12_x: Runtime.nodejs18_x,
+}
+
+
+DEPRECATED_RUNTIMES: list[Runtime] = list(DEPRECATED_RUNTIMES_UPGRADES.keys())
+
 # An unordered list of all AWS-supported runtimes.
 SUPPORTED_RUNTIMES: list[Runtime] = list(set(IMAGE_MAPPING.keys()) - set(DEPRECATED_RUNTIMES))
 

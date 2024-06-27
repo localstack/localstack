@@ -3,7 +3,6 @@ import datetime
 import json
 import re
 from binascii import crc32
-from struct import pack
 from typing import Any, Dict, Optional, Union
 from urllib.parse import parse_qs
 
@@ -11,7 +10,6 @@ import xmltodict
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
-from localstack.config import DEFAULT_ENCODING
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.utils.json import json_safe
 from localstack.utils.strings import short_uid, str_startswith_ignore_case, to_bytes, to_str
@@ -212,55 +210,6 @@ def parse_query_string(url_or_qs: str, multi_values=False) -> Dict[str, str]:
 
 def calculate_crc32(content: Union[str, bytes]) -> int:
     return crc32(to_bytes(content)) & 0xFFFFFFFF
-
-
-# TODO Remove this constant with the function below
-AWS_BINARY_DATA_TYPE_STRING = 7
-
-
-def convert_to_binary_event_payload(result, event_type=None, message_type=None):
-    # TODO This encoding has been migrated to the ASF Serializer.
-    #  Remove this function after S3 and Kinesis have been migrated to ASF.
-    # e.g.: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html
-    # e.g.: https://docs.aws.amazon.com/transcribe/latest/dg/event-stream.html
-
-    header_descriptors = {
-        ":event-type": event_type or "Records",
-        ":message-type": message_type or "event",
-    }
-
-    # construct headers
-    headers = b""
-    for key, value in header_descriptors.items():
-        header_name = key.encode(DEFAULT_ENCODING)
-        header_value = to_bytes(value)
-        headers += pack("!B", len(header_name))
-        headers += header_name
-        headers += pack("!B", AWS_BINARY_DATA_TYPE_STRING)
-        headers += pack("!H", len(header_value))
-        headers += header_value
-
-    # construct body
-    if isinstance(result, str):
-        body = bytes(result, DEFAULT_ENCODING)
-    else:
-        body = result
-
-    # calculate lengths
-    headers_length = len(headers)
-    body_length = len(body)
-
-    # construct message
-    result = pack("!I", body_length + headers_length + 16)
-    result += pack("!I", headers_length)
-    prelude_crc = binascii.crc32(result)
-    result += pack("!I", prelude_crc)
-    result += headers
-    result += body
-    payload_crc = binascii.crc32(result)
-    result += pack("!I", payload_crc)
-
-    return result
 
 
 class LambdaResponse:
