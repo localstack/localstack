@@ -9,6 +9,13 @@ from ..api import RestApiInvocationContext
 
 
 class RestApiIntegrationPlugin(Plugin):
+    """
+    This REST API Integration plugin exposes an API to invoke the specific Integration with a common interface.
+
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-integration-settings.html
+    TODO: Add more abstractmethods when starting to work on the Integration handler
+    """
+
     namespace = "localstack.services.apigateway.restapi.integrations"
 
     @abstractmethod
