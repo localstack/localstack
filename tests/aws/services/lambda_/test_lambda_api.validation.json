@@ -355,5 +355,32 @@
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_update_function_configuration_full_arn": {
     "last_validated_date": "2024-06-05T11:49:05+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled": {
+    "last_validated_date": "2024-06-12T14:19:11+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[dotnetcore3.1]": {
+    "last_validated_date": "2024-06-13T08:53:45+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[go1.x]": {
+    "last_validated_date": "2024-06-13T08:52:21+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[java8]": {
+    "last_validated_date": "2024-06-13T08:52:04+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs12.x]": {
+    "last_validated_date": "2024-06-13T08:54:02+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs14.x]": {
+    "last_validated_date": "2024-06-13T08:53:12+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[provided]": {
+    "last_validated_date": "2024-06-13T08:52:38+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[python3.7]": {
+    "last_validated_date": "2024-06-13T08:53:29+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[ruby2.7]": {
+    "last_validated_date": "2024-06-13T08:52:55+00:00"
   }
 }

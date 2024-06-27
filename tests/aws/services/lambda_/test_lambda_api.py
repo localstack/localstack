@@ -26,10 +26,15 @@ from botocore.exceptions import ClientError, ParamValidationError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
-from localstack.aws.api.lambda_ import Architecture, LogFormat, Runtime
+from localstack.aws.api.lambda_ import (
+    Architecture,
+    LogFormat,
+    Runtime,
+)
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
+    DEPRECATED_RUNTIMES,
     SNAP_START_SUPPORTED_RUNTIMES,
 )
 from localstack.testing.aws.lambda_utils import (
@@ -75,6 +80,50 @@ def string_length_bytes(s: str) -> int:
 def environment_length_bytes(e: dict) -> int:
     serialized_environment = json.dumps(e, separators=(":", ","))
     return string_length_bytes(serialized_environment)
+
+
+class TestRuntimeValidation:
+    @markers.aws.only_localstack
+    def test_create_deprecated_function_runtime_with_validation_disabled(
+        self, create_lambda_function, lambda_su_role, aws_client, monkeypatch
+    ):
+        monkeypatch.setattr(config, "LAMBDA_RUNTIME_VALIDATION", 0)
+        function_name = f"fn-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_7,
+            role=lambda_su_role,
+            MemorySize=256,
+            Timeout=5,
+            LoggingConfig={
+                "LogFormat": LogFormat.JSON,
+            },
+        )
+
+    @markers.aws.validated
+    @markers.lambda_runtime_update
+    @pytest.mark.parametrize("runtime", DEPRECATED_RUNTIMES)
+    def test_create_deprecated_function_runtime_with_validation_enabled(
+        self, runtime, lambda_su_role, aws_client, monkeypatch, snapshot
+    ):
+        monkeypatch.setattr(config, "LAMBDA_RUNTIME_VALIDATION", 1)
+        function_name = f"fn-{short_uid()}"
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            testutil.create_lambda_function(
+                client=aws_client.lambda_,
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                func_name=function_name,
+                runtime=runtime,
+                role=lambda_su_role,
+                MemorySize=256,
+                Timeout=5,
+                LoggingConfig={
+                    "LogFormat": LogFormat.JSON,
+                },
+            )
+        snapshot.match("deprecation_error", e.value.response)
 
 
 class TestPartialARNMatching:

@@ -905,6 +905,10 @@ LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONM
 # b) json dict mapping the <runtime> to an image, e.g. {"python3.9": "custom-repo/lambda-py:thon3.9"}
 LAMBDA_RUNTIME_IMAGE_MAPPING = os.environ.get("LAMBDA_RUNTIME_IMAGE_MAPPING", "").strip()
 
+# PUBLIC: 0 (default)
+# Whether to disable usage of deprecated runtimes
+LAMBDA_RUNTIME_VALIDATION = int(os.environ.get("LAMBDA_RUNTIME_VALIDATION") or 0)
+
 # PUBLIC: 1 (default)
 # Whether to remove any Lambda Docker containers.
 LAMBDA_REMOVE_CONTAINERS = (
@@ -1192,6 +1196,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
+    "LAMBDA_RUNTIME_VALIDATION",
     "LAMBDA_TRUNCATE_STDOUT",
     "LAMBDA_RETRY_BASE_DELAY_SECONDS",
     "LAMBDA_SYNCHRONOUS_CREATE",
