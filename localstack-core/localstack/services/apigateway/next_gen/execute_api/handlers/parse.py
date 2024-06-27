@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from typing import Optional
 from urllib.parse import urlparse
 
 from rolo.request import Request, restore_payload
@@ -9,6 +10,8 @@ from localstack.http import Response
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import InvocationRequest, RestApiInvocationContext
+from ..moto_helpers import get_stage_variables
+from ..variables import ContextVariables
 
 LOG = logging.getLogger(__name__)
 
@@ -27,6 +30,11 @@ class InvocationRequestParser(RestApiGatewayHandler):
     def parse_and_enrich(self, context: RestApiInvocationContext):
         # first, create the InvocationRequest with the incoming request
         context.invocation_request = self.create_invocation_request(context.request)
+        # then we can create the ContextVariables, used throughout the invocation as payload and to render authorizer
+        # payload, mapping templates and such.
+        context.context_variables = self.create_context_variables(context.invocation_request)
+        # then populate the stage variables
+        context.stage_variables = self.fetch_stage_variables(context)
 
     def create_invocation_request(self, request: Request) -> InvocationRequest:
         params, multi_value_params = self._get_single_and_multi_values_from_multidict(request.args)
@@ -99,3 +107,21 @@ class InvocationRequestParser(RestApiGatewayHandler):
             multi_values[key] = headers.getlist(key)
 
         return single_values, multi_values
+
+    def create_context_variables(self, invocation_request: InvocationRequest) -> ContextVariables:
+        context_variables = ContextVariables()
+        return context_variables
+
+    @staticmethod
+    def fetch_stage_variables(context: RestApiInvocationContext) -> Optional[dict[str, str]]:
+        stage_variables = get_stage_variables(
+            account_id=context.account_id,
+            region=context.region,
+            api_id=context.api_id,
+            stage_name=context.stage,
+        )
+        if not stage_variables:
+            # we need to set the stage variables to None in the context if we don't have at least one
+            return None
+
+        return stage_variables
