@@ -27,4 +27,4 @@ For pull requests (PRs), please stick to the following guidelines:
   * `semver: minor`: Bigger, non-breaking changes (like features or bigger refactorings).
   * `semver: major`: Breaking changes (no matter how big).
 
-Please note that by contributing any code or documentation to this repository (by raising PRs, or otherwise) you explicitly agree to the [**Contributor License Agreement**](.github/CLA.md).
+Please note that by contributing any code or documentation to this repository (by raising PRs, or otherwise) you explicitly agree to the [**Contributor License Agreement**](../.github/CLA.md).
