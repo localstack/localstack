@@ -416,12 +416,13 @@ jobs:
             if [[ -z "$TEST_FILES" ]] ; then
               echo "Skipping test execution because no tests were selected"
               circleci-agent step halt
+            else
+              PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+              COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
+              TEST_PATH=$TEST_FILES \
+              DEBUG=1 \
+              make docker-run-tests
             fi
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
-            COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
-            TEST_PATH=$TEST_FILES \
-            DEBUG=1 \
-            make docker-run-tests
       - store_test_results:
           path: target/reports/
       - store_artifacts:
