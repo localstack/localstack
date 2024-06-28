@@ -7,6 +7,8 @@ from enum import Enum
 from functools import cached_property
 from typing import Dict, List, Optional
 
+from plux import Plugin, PluginManager
+
 from localstack import constants
 from localstack.runtime import hooks
 from localstack.utils.objects import singleton_factory
@@ -47,10 +49,13 @@ class Script:
     state: State = State.UNKNOWN
 
 
-class ScriptRunner:
+class ScriptRunner(Plugin):
     """
     Interface for running scripts.
     """
+
+    namespace = "localstack.init.runner"
+    suffixes = []
 
     def run(self, path: str) -> None:
         """
@@ -60,11 +65,28 @@ class ScriptRunner:
         """
         raise NotImplementedError
 
+    def should_run(self, script_file: str) -> bool:
+        """
+        Checks whether the given file should be run with this script runner. In case multiple runners
+        evaluate this condition to true on the same file (ideally this doesn't happen), the first one
+        loaded will be used, which is potentially indeterministic.
+
+        :param script_file: the script file to run
+        :return: True if this runner should be used, False otherwise
+        """
+        for suffix in self.suffixes:
+            if script_file.endswith(suffix):
+                return True
+        return False
+
 
 class ShellScriptRunner(ScriptRunner):
     """
     Runner that interprets scripts as shell scripts and calls them directly.
     """
+
+    name = "sh"
+    suffixes = [".sh"]
 
     def run(self, path: str) -> None:
         exit_code = subprocess.call(args=[], executable=path)
@@ -76,6 +98,9 @@ class PythonScriptRunner(ScriptRunner):
     """
     Runner that uses ``exec`` to run a python script.
     """
+
+    name = "py"
+    suffixes = [".py"]
 
     def run(self, path: str) -> None:
         with open(path, "rb") as fd:
@@ -90,25 +115,22 @@ class InitScriptManager:
         Stage.SHUTDOWN: "shutdown.d",
     }
 
-    _script_runners: Dict[str, ScriptRunner] = {
-        ".sh": ShellScriptRunner(),
-        ".py": PythonScriptRunner(),
-    }
-
     script_root: str
     stage_completed: Dict[Stage, bool]
 
     def __init__(self, script_root: str):
         self.script_root = script_root
         self.stage_completed = {stage: False for stage in Stage}
+        self.runner_manager: PluginManager[ScriptRunner] = PluginManager(ScriptRunner.namespace)
 
     @cached_property
     def scripts(self) -> Dict[Stage, List[Script]]:
         return self._find_scripts()
 
     def get_script_runner(self, script_file: str) -> Optional[ScriptRunner]:
-        for suffix, runner in self._script_runners.items():
-            if script_file.endswith(suffix):
+        runners = self.runner_manager.load_all()
+        for runner in runners:
+            if runner.should_run(script_file):
                 return runner
         return None
 
