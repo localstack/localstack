@@ -11,4 +11,4 @@ Resources:
 
 Outputs:
   SecurityGroupId:
-    Value: !Ref SecurityGroup
+    Value: !GetAtt SecurityGroup.GroupId
