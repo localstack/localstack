@@ -25,10 +25,10 @@ RULE_ARN_CUSTOM_EVENT_BUS_PATTERN = re.compile(
 )
 
 RULE_ARN_ARCHIVE_PATTERN = re.compile(
-    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{12}:archive/[a-zA-Z0-9_-]+$"
+    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:archive/[a-zA-Z0-9_-]+$"
 )
 ARCHIVE_NAME_ARN_PATTERN = re.compile(
-    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{12}:archive/(?P<name>.+)$"
+    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:archive/(?P<name>.+)$"
 )
 
 
