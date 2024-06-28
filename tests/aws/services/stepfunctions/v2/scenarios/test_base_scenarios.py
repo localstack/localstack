@@ -1004,25 +1004,23 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
-    def test_map_state_tolerated_failure_count(
+    @pytest.mark.parametrize(
+        "tolerance_template",
+        [ST.MAP_STATE_TOLERATED_FAILURE_COUNT, ST.MAP_STATE_TOLERATED_FAILURE_PERCENTAGE],
+        ids=["count_literal", "percentage_literal"],
+    )
+    def test_map_state_tolerated_failure_values(
         self,
         aws_client,
-        s3_create_bucket,
         create_iam_role_for_sfn,
         create_state_machine,
         sfn_snapshot,
+        tolerance_template,
     ):
-        bucket_name = s3_create_bucket()
-        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
-
-        key = "file.json"
-        json_file = json.dumps([{"key1": "value1", "key2": "value2"}])
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
-
-        template = ST.load_sfn_template(ST.MAP_STATE_TOLERATED_FAILURE_COUNT)
+        template = ST.load_sfn_template(tolerance_template)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        exec_input = json.dumps([0])
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -1033,25 +1031,21 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize("tolerated_failure_count_value", [dict(), "NoNumber", -1, 0, 1])
     def test_map_state_tolerated_failure_count_path(
         self,
         aws_client,
-        s3_create_bucket,
         create_iam_role_for_sfn,
         create_state_machine,
         sfn_snapshot,
+        tolerated_failure_count_value,
     ):
-        bucket_name = s3_create_bucket()
-        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
-
-        key = "file.json"
-        json_file = json.dumps([{"key1": "value1", "key2": "value2"}])
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
-
         template = ST.load_sfn_template(ST.MAP_STATE_TOLERATED_FAILURE_COUNT_PATH)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"Bucket": bucket_name, "Key": key, "ToleratedFailureCount": 10})
+        exec_input = json.dumps(
+            {"Items": [0], "ToleratedFailureCount": tolerated_failure_count_value}
+        )
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -1062,35 +1056,9 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
-    def test_map_state_tolerated_failure_percentage(
-        self,
-        aws_client,
-        s3_create_bucket,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        sfn_snapshot,
-    ):
-        bucket_name = s3_create_bucket()
-        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
-
-        key = "file.json"
-        json_file = json.dumps([{"key1": "value1", "key2": "value2"}])
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
-
-        template = ST.load_sfn_template(ST.MAP_STATE_TOLERATED_FAILURE_PERCENTAGE)
-        definition = json.dumps(template)
-
-        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
-        create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            sfn_snapshot,
-            definition,
-            exec_input,
-        )
-
-    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "tolerated_failure_percentage_value", [dict(), "NoNumber", -1.1, -1, 0, 1, 1.1, 100, 100.1]
+    )
     def test_map_state_tolerated_failure_percentage_path(
         self,
         aws_client,
@@ -1098,19 +1066,13 @@ class TestBaseScenarios:
         create_iam_role_for_sfn,
         create_state_machine,
         sfn_snapshot,
+        tolerated_failure_percentage_value,
     ):
-        bucket_name = s3_create_bucket()
-        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
-
-        key = "file.json"
-        json_file = json.dumps([{"key1": "value1", "key2": "value2"}])
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
-
         template = ST.load_sfn_template(ST.MAP_STATE_TOLERATED_FAILURE_PERCENTAGE_PATH)
         definition = json.dumps(template)
 
         exec_input = json.dumps(
-            {"Bucket": bucket_name, "Key": key, "ToleratedFailurePercentage": 0.5}
+            {"Items": [0], "ToleratedFailurePercentage": tolerated_failure_percentage_value}
         )
         create_and_record_execution(
             aws_client.stepfunctions,

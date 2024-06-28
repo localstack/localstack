@@ -182,17 +182,65 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_retry_multiple_retriers": {
     "last_validated_date": "2023-08-08T11:20:58+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[-1]": {
+    "last_validated_date": "2024-06-19T12:38:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[0]": {
+    "last_validated_date": "2024-06-19T12:38:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[1]": {
+    "last_validated_date": "2024-06-19T12:39:14+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[NoNumber]": {
+    "last_validated_date": "2024-06-19T12:38:26+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[tolerated_failure_count_value0]": {
+    "last_validated_date": "2024-06-19T12:38:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[-1.1]": {
+    "last_validated_date": "2024-06-19T14:37:21+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[-1]": {
+    "last_validated_date": "2024-06-19T14:37:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[0]": {
+    "last_validated_date": "2024-06-19T14:37:51+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[1.1]": {
+    "last_validated_date": "2024-06-19T14:38:23+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[100.1]": {
+    "last_validated_date": "2024-06-19T14:38:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[100]": {
+    "last_validated_date": "2024-06-19T14:38:39+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[1]": {
+    "last_validated_date": "2024-06-19T14:38:08+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[NoNumber]": {
+    "last_validated_date": "2024-06-19T14:37:07+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[tolerated_failure_percentage_value0]": {
+    "last_validated_date": "2024-06-19T14:36:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_values[count_literal]": {
+    "last_validated_date": "2024-06-19T12:31:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_values[percentage_literal]": {
+    "last_validated_date": "2024-06-19T12:31:29+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[0]": {
-    "last_validated_date": "2024-04-22T19:57:47+00:00"
+    "last_validated_date": "2024-06-19T13:49:47+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[1]": {
-    "last_validated_date": "2024-04-22T19:58:01+00:00"
+    "last_validated_date": "2024-06-19T13:50:01+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[NoNumber]": {
-    "last_validated_date": "2024-04-22T19:57:33+00:00"
+    "last_validated_date": "2024-06-19T13:49:33+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[max_concurrency_value0]": {
-    "last_validated_date": "2024-04-22T19:57:20+00:00"
+    "last_validated_date": "2024-06-19T13:49:19+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path_negative": {
     "last_validated_date": "2024-04-22T12:40:52+00:00"
