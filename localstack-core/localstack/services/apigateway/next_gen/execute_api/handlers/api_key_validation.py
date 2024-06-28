@@ -28,14 +28,16 @@ class ApiKeyValidationHandler(RestApiGatewayHandler):
         response: Response,
     ):
         method = context.resource_method
+        request = context.invocation_request
+        rest_api = context.deployment.rest_api.rest_api
 
         # If api key is not required by the method, we can exit the handler
         if not method.get("apiKeyRequired"):
             return
 
-        identity = context.context_variables["identity"]
-        request = context.invocation_request
-        rest_api = context.deployment.rest_api.rest_api
+        # If the Identity context was not created yet, instantiate it and attach it to the context variables
+        if not (identity := context.context_variables.get("identity", IdentityContext())):
+            context.context_variables["identity"] = identity
 
         # Look for the api key value in the request. If it is not found, raise an exception
         if not (api_key_value := self.get_request_api_key(rest_api, request, identity)):
@@ -43,12 +45,12 @@ class ApiKeyValidationHandler(RestApiGatewayHandler):
             raise InvalidAPIKeyError("Forbidden")
 
         # Get the validated key, if no key is found, raise an exception
-        if not (validated_key := self.get_validated_key(api_key_value, context)):
+        if not (validated_key := self.validate_api_key(api_key_value, context)):
             LOG.debug("Provided API Key is not valid")
             raise InvalidAPIKeyError("Forbidden")
 
-        # Update context's identity with the key value and Id
-        if not identity["apikey"]:
+        # Update the context's identity with the key value and id
+        if not identity.get("apiKey"):
             LOG.debug("Updating $context.identity.apiKey='%s'", validated_key["value"])
             identity["apiKey"] = validated_key["value"]
 

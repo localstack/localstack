@@ -74,5 +74,5 @@ def get_usage_plan_keys(
     apigateway_backend: APIGatewayBackend = apigateway_backends[account_id][region_name]
     return [
         UsagePlanKey(**usage_plan_key.to_json())
-        for usage_plan_key in apigateway_backend.usage_plan_keys[usage_plan_id].values()
+        for usage_plan_key in apigateway_backend.usage_plan_keys.get(usage_plan_id, {}).values()
     ]
