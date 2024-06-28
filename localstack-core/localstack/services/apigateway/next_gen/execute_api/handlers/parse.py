@@ -115,7 +115,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
     @staticmethod
     def create_context_variables(context: RestApiInvocationContext) -> ContextVariables:
         invocation_request: InvocationRequest = context.invocation_request
-        domain_name = invocation_request["headers"].get("Host", "")
+        domain_name = invocation_request["raw_headers"].get("Host", "")
         domain_prefix = domain_name.split(".")[0]
         now = datetime.datetime.now()
 
@@ -126,11 +126,13 @@ class InvocationRequestParser(RestApiGatewayHandler):
             deploymentId=context.deployment_id,
             domainName=domain_name,
             domainPrefix=domain_prefix,
-            extendedRequestId=short_uid(),
+            extendedRequestId=short_uid(),  # TODO: use snapshot tests to verify format
             httpMethod=invocation_request["http_method"],
-            path=invocation_request["path"],
+            path=invocation_request[
+                "path"
+            ],  # TODO: check if we need the raw path? with forward slashes
             protocol="HTTP/1.1",
-            requestId=short_uid(),
+            requestId=short_uid(),  # TODO: use snapshot tests to verify format
             requestTime=timestamp(time=now, format=REQUEST_TIME_DATE_FORMAT),
             requestTimeEpoch=int(now.timestamp() * 1000),
             stage=context.stage,

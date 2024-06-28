@@ -55,7 +55,14 @@ def parse_handler_chain() -> RestApiGatewayHandlerChain:
 
 class TestParsingHandler:
     def test_parse_request(self, dummy_deployment, parse_handler_chain):
-        headers = Headers({"test-header": "value1", "test-header-multi": ["value2", "value3"]})
+        host_header = f"{TEST_API_ID}.execute-api.host.com"
+        headers = Headers(
+            {
+                "test-header": "value1",
+                "test-header-multi": ["value2", "value3"],
+                "host": host_header,
+            }
+        )
         body = b"random-body"
         request = Request(
             body=body,
@@ -75,17 +82,20 @@ class TestParsingHandler:
         assert context.invocation_request["http_method"] == "GET"
         assert context.invocation_request["raw_headers"] == Headers(
             {
+                "host": host_header,
                 "test-header": "value1",
                 "test-header-multi": ["value2", "value3"],
                 "content-length": len(body),
             }
         )
         assert context.invocation_request["headers"] == {
+            "host": host_header,
             "test-header": "value1",
             "test-header-multi": "value2",
             "content-length": "11",
         }
         assert context.invocation_request["multi_value_headers"] == {
+            "host": [host_header],
             "test-header": ["value1"],
             "test-header-multi": ["value2", "value3"],
             "content-length": ["11"],
@@ -96,6 +106,9 @@ class TestParsingHandler:
             == context.invocation_request["raw_path"]
             == "/normal-path"
         )
+
+        assert context.context_variables["domainName"] == host_header
+        assert context.context_variables["domainPrefix"] == TEST_API_ID
 
     def test_parse_raw_path(self, dummy_deployment, parse_handler_chain):
         request = Request("GET", "/foo/bar/ed", raw_path="//foo%2Fbar/ed")
@@ -254,6 +267,8 @@ class TestRoutingHandler:
         assert context.resource_method == context.resource["resourceMethods"]["PUT"]
 
         assert context.invocation_request["path_parameters"] == {"param": "random-value"}
+        assert context.context_variables["resourcePath"] == "/foo/{param}"
+        assert context.context_variables["resourceId"] == context.resource["id"]
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_with_greedy_parameter(
