@@ -165,4 +165,4 @@ Once you verified that your test is running against AWS, you can record snapshot
 
 Snapshot tests helps to increase the parity with AWS and to raise the confidence in the service implementations. Therefore, snapshot tests are preferred over normal integrations tests.
 
-Please check our subsequent guide on [Parity Testing](parity-testing.md) for a detailed explanation on how to write AWS validated snapshot tests.
+Please check our subsequent guide on [Parity Testing](../parity-testing/README.md) for a detailed explanation on how to write AWS validated snapshot tests.
