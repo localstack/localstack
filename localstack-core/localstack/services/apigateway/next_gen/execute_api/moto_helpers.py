@@ -1,7 +1,14 @@
 from moto.apigateway.models import APIGatewayBackend, apigateway_backends
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
-from localstack.aws.api.apigateway import Resource
+from localstack.aws.api.apigateway import (
+    ApiKey,
+    ListOfUsagePlan,
+    ListOfUsagePlanKey,
+    Resource,
+    UsagePlan,
+    UsagePlanKey,
+)
 
 
 def get_resources_from_moto_rest_api(moto_rest_api: MotoRestAPI) -> dict[str, Resource]:
@@ -38,3 +45,34 @@ def get_stage_variables(
     moto_rest_api = apigateway_backend.apis[api_id]
     stage = moto_rest_api.stages[stage_name]
     return stage.variables
+
+
+def get_usage_plans(account_id: str, region_name: str) -> ListOfUsagePlan:
+    """
+    Will return a list of usage plans from the moto store.
+    """
+    apigateway_backend: APIGatewayBackend = apigateway_backends[account_id][region_name]
+    return [
+        UsagePlan(**usage_plan.to_json()) for usage_plan in apigateway_backend.usage_plans.values()
+    ]
+
+
+def get_api_key(api_key_id: str, account_id: str, region_name: str) -> ApiKey:
+    """
+    Will return an api key from the moto store.
+    """
+    apigateway_backend: APIGatewayBackend = apigateway_backends[account_id][region_name]
+    return ApiKey(**apigateway_backend.keys[api_key_id].to_json())
+
+
+def get_usage_plan_keys(
+    usage_plan_id: str, account_id: str, region_name: str
+) -> ListOfUsagePlanKey:
+    """
+    Will return a list of usage plan keys from the moto store.
+    """
+    apigateway_backend: APIGatewayBackend = apigateway_backends[account_id][region_name]
+    return [
+        UsagePlanKey(**usage_plan_key.to_json())
+        for usage_plan_key in apigateway_backend.usage_plan_keys[usage_plan_id].values()
+    ]
