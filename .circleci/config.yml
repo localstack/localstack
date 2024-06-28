@@ -776,7 +776,7 @@ jobs:
 
             # Determine if reporting the workflow even is necessary and what the workflow variant is
             if [[ << pipeline.parameters.randomize-aws-credentials >> == "true" ]] && [[ $ONLY_ACCEPTANCE_TESTS == "true" ]] ; then
-              echo "Don't report only-acceptance-test workflows with randomized aws credentials
+              echo "Don't report only-acceptance-test workflows with randomized aws credentials"
               circleci-agent step halt
             elif [[ << pipeline.parameters.randomize-aws-credentials >> == "true" ]] ; then
               TINYBIRD_WORKFLOW=tests_circleci_ma_mr
