@@ -456,7 +456,9 @@ nodeenv==1.9.1
 openapi-schema-validator==0.6.2
     # via openapi-spec-validator
 openapi-spec-validator==0.7.1
-    # via moto-ext
+    # via
+    #   localstack-core
+    #   moto-ext
 opensearch-py==2.6.0
     # via localstack-core
 ordered-set==4.1.0
