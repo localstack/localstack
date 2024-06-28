@@ -72,7 +72,7 @@ def test_something_on_multiple_buckets(s3_create_bucket):
   # both buckets will be deleted after the test returns
 ```
 
-You can find the list of available fixtures in the [fixtures.py](https://github.com/localstack/localstack/blob/master/localstack/testing/pytest/fixtures.py).
+You can find the list of available fixtures in the [fixtures.py](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/testing/pytest/fixtures.py) file.
 
 
 ## Running the test suite
@@ -161,8 +161,8 @@ Once you're confident your test is reliably working against AWS you can add the 
 
 #### Create a snapshot test
 
-Once you verified that your test is running against AWS, you can record snapshots for the test run. A snapshot records the response from AWS and can be later on used to compare the response of LocalStack. 
+Once you verified that your test is running against AWS, you can record snapshots for the test run. A snapshot records the response from AWS and can be later on used to compare the response of LocalStack.
 
-Snapshot tests helps to increase the parity with AWS and to raise the confidence in the service implementations. Therefore, snapshot tests are preferred over normal integrations tests. 
+Snapshot tests helps to increase the parity with AWS and to raise the confidence in the service implementations. Therefore, snapshot tests are preferred over normal integrations tests.
 
 Please check our subsequent guide on [Parity Testing](parity-testing.md) for a detailed explanation on how to write AWS validated snapshot tests.
