@@ -1,17 +1,11 @@
-import json
 import os
 
 import pytest
-import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
-from localstack import config
-from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
-from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_zip_file
 
 
@@ -39,44 +33,89 @@ class TestCdkInit:
         assert stack_res["StackResources"][0]["LogicalResourceId"] == "CDKMetadata"
 
     @markers.aws.unknown
-    def test_cdk_bootstrap_redeploy(
-        self,
-        is_change_set_finished,
-        cleanup_stacks,
-        cleanup_changesets,
-        region_name,
-    ):
+    def test_cdk_bootstrap_redeploy(self, aws_client, cleanup_stacks, cleanup_changesets, cleanups):
         """Test that simulates a sequence of commands executed by CDK when running 'cdk bootstrap' twice"""
 
-        base_folder = os.path.dirname(os.path.realpath(__file__))
-        requests_file = os.path.join(base_folder, "../../../files/cdk-bootstrap-requests.json")
-        operations = json.loads(load_file(requests_file))
-
-        change_set_name = "cdk-deploy-change-set-a4b98b18"
         stack_name = "CDKToolkit-a4b98b18"
-        try:
-            headers = mock_aws_request_headers(
-                "cloudformation",
-                TEST_AWS_ACCESS_KEY_ID,
-                region_name,
-            )
-            base_url = config.internal_service_url()
-            for op in operations:
-                url = f"{base_url}{op['path']}"
-                data = op["data"]
-                requests.request(method=op["method"], url=url, headers=headers, data=data)
-                if "Action=ExecuteChangeSet" in data:
-                    assert wait_until(
-                        is_change_set_finished(change_set_name, stack_name=stack_name),
-                        _max_wait=20,
-                        strategy="linear",
-                    )
-        finally:
-            # clean up
-            cleanup_changesets([change_set_name])
-            cleanup_stacks([stack_name])
+        change_set_name = "cdk-deploy-change-set-a4b98b18"
 
-    # TODO: remove this and replace with CDK test
+        def clean_resources():
+            cleanup_stacks([stack_name])
+            cleanup_changesets([change_set_name])
+
+        cleanups.append(clean_resources)
+
+        template_body = load_file(
+            os.path.join(os.path.dirname(__file__), "../../../templates/cdk_bootstrap.yml")
+        )
+        aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=template_body,
+            ChangeSetType="CREATE",
+            Capabilities=["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"],
+            Description="CDK Changeset for execution 731ed7da-8b2d-49c6-bca3-4698b6875954",
+            Parameters=[
+                {"ParameterKey": "TrustedAccounts", "ParameterValue": ""},
+                {"ParameterKey": "TrustedAccountsForLookup", "ParameterValue": ""},
+                {"ParameterKey": "CloudFormationExecutionPolicies", "ParameterValue": ""},
+                {"ParameterKey": "FileAssetsBucketKmsKeyId", "ParameterValue": "AWS_MANAGED_KEY"},
+                {"ParameterKey": "PublicAccessBlockConfiguration", "ParameterValue": "true"},
+            ],
+        )
+        aws_client.cloudformation.describe_change_set(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+
+        aws_client.cloudformation.execute_change_set(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+        aws_client.cloudformation.describe_stack_events(StackName=stack_name)
+
+        aws_client.cloudformation.get_template(StackName=stack_name, TemplateStage="Original")
+
+        aws_client.cloudformation.delete_change_set(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+        aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=template_body,
+            ChangeSetType="UPDATE",
+            Capabilities=["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"],
+            Description="CDK Changeset for execution 4e363002-1aeb-478d-ada1-882053369df8",
+            Parameters=[
+                {"ParameterKey": "TrustedAccounts", "ParameterValue": ""},
+                {"ParameterKey": "TrustedAccountsForLookup", "ParameterValue": ""},
+                {"ParameterKey": "CloudFormationExecutionPolicies", "ParameterValue": ""},
+                {"ParameterKey": "FileAssetsBucketName", "UsePreviousValue": True},
+                {"ParameterKey": "FileAssetsBucketKmsKeyId", "UsePreviousValue": True},
+                {"ParameterKey": "ContainerAssetsRepositoryName", "UsePreviousValue": True},
+                {"ParameterKey": "Qualifier", "UsePreviousValue": True},
+                {"ParameterKey": "PublicAccessBlockConfiguration", "ParameterValue": "true"},
+            ],
+        )
+        aws_client.cloudformation.describe_change_set(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+
+        aws_client.cloudformation.execute_change_set(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack_name)
+
     @markers.aws.unknown
     def test_cdk_template(self, deploy_cfn_template, s3_create_bucket, aws_client):
         bucket = f"bucket-{short_uid()}"
