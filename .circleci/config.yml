@@ -135,7 +135,6 @@ jobs:
                   else
                     source .venv/bin/activate
                     PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.generate_test_selection /tmp/workspace/repo target/testselection/test-selection.txt --pr-url $CI_PULL_REQUEST
-                    echo "tests/aws/services/iam/" > target/testselection/test-selection.txt
                     cat target/testselection/test-selection.txt
                   fi
 
