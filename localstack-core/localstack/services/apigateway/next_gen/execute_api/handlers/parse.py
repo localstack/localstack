@@ -119,6 +119,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
         domain_prefix = domain_name.split(".")[0]
         now = datetime.datetime.now()
 
+        # TODO: verify which values needs to explicitly have None set
         context_variables = ContextVariables(
             accountId=context.account_id,
             apiId=context.api_id,
