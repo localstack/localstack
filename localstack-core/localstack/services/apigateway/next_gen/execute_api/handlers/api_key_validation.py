@@ -5,9 +5,10 @@ from localstack.aws.api.apigateway import ApiKey, ApiKeySourceType, RestApi
 from localstack.http import Response
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
-from ..context import IdentityContext, InvocationRequest, RestApiInvocationContext
+from ..context import InvocationRequest, RestApiInvocationContext
 from ..gateway_response import InvalidAPIKeyError
 from ..moto_helpers import get_api_key, get_usage_plan_keys, get_usage_plans
+from ..variables import ContextVarsIdentity
 
 LOG = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class ApiKeyValidationHandler(RestApiGatewayHandler):
             return
 
         # If the Identity context was not created yet, instantiate it and attach it to the context variables
-        if not (identity := context.context_variables.get("identity", IdentityContext())):
+        if not (identity := context.context_variables.get("identity", ContextVarsIdentity())):
             context.context_variables["identity"] = identity
 
         # Look for the api key value in the request. If it is not found, raise an exception
@@ -95,7 +96,7 @@ class ApiKeyValidationHandler(RestApiGatewayHandler):
                     return api_key if api_key["enabled"] else None
 
     def get_request_api_key(
-        self, rest_api: RestApi, request: InvocationRequest, identity: IdentityContext
+        self, rest_api: RestApi, request: InvocationRequest, identity: ContextVarsIdentity
     ) -> Optional[str]:
         """https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-key-source.html
         The source of the API key for metering requests according to a usage plan.

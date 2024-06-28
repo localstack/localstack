@@ -7,13 +7,15 @@ from localstack.http import Request, Response
 from localstack.services.apigateway.models import MergedRestApi, RestApiDeployment
 from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import (
-    ContextVariables,
-    IdentityContext,
     InvocationRequest,
     RestApiInvocationContext,
 )
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import InvalidAPIKeyError
 from localstack.services.apigateway.next_gen.execute_api.handlers import ApiKeyValidationHandler
+from localstack.services.apigateway.next_gen.execute_api.variables import (
+    ContextVariables,
+    ContextVarsIdentity,
+)
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 TEST_API_ID = "testapi"
@@ -71,7 +73,7 @@ def create_context():
 
         # Context populated by a Lambda Authorizer
         if api_key is not None:
-            context.context_variables["identity"] = IdentityContext(apiKey=api_key)
+            context.context_variables["identity"] = ContextVarsIdentity(apiKey=api_key)
         return context
 
     return _create_context
