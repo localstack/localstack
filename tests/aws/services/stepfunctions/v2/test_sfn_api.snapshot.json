@@ -1534,7 +1534,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution": {
-    "recorded-date": "08-03-2024, 11:52:48",
+    "recorded-date": "30-06-2024, 14:51:30",
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
