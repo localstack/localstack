@@ -315,6 +315,56 @@ class TestSnfApi:
         lst_resp_filter = [sm for sm in lst_resp["stateMachines"] if sm["name"] in sm_names]
         sfn_snapshot.match("lst_resp_del_filter", lst_resp_filter)
 
+    @markers.aws.validated
+    def test_start_execution_idempotent(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        sm_name: str = f"statemachine_{short_uid()}"
+        execution_name: str = f"execution_name_{short_uid()}"
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_WAIT_10_SEC)
+        definition_str = json.dumps(definition)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        input_data = '{"body" : "data"}'
+        exec_resp = aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn, input=input_data, name=execution_name
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.match("exec_resp", exec_resp)
+        execution_arn = exec_resp["executionArn"]
+
+        exec_resp_idempotent = aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn, input=input_data, name=execution_name
+        )
+        sfn_snapshot.add_transformer(
+            sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp_idempotent, 0)
+        )
+        sfn_snapshot.match("exec_resp_idempotent", exec_resp_idempotent)
+
+        # Should fail because the execution has the same 'name' as another but a different 'input'.
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.start_execution(
+                stateMachineArn=state_machine_arn,
+                input='{"body" : "different-data"}',
+                name=execution_name,
+            )
+        sfn_snapshot.match("start_exec_already_exists", err.value.response)
+
+        await_execution_success(
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        )
+
+        assert exec_resp_idempotent["executionArn"] == execution_arn
+
     @markers.aws.needs_fixing
     def test_start_execution(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
@@ -957,7 +1007,7 @@ class TestSnfApi:
         )
 
         describe_execution = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
-        sfn_snapshot.match("ddescribe_execution", describe_execution)
+        sfn_snapshot.match("describe_execution", describe_execution)
 
     @markers.aws.validated
     def test_describe_execution_no_such_state_machine(
