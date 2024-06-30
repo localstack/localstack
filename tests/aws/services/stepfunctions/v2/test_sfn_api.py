@@ -471,7 +471,8 @@ class TestSnfApi:
 
         assert exec_resp_idempotent["executionArn"] == execution_arn
 
-    @markers.aws.needs_fixing
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount"])
     def test_start_execution(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
