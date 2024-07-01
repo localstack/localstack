@@ -37,8 +37,11 @@ class InvocationRequestParser(RestApiGatewayHandler):
         # then we can create the ContextVariables, used throughout the invocation as payload and to render authorizer
         # payload, mapping templates and such.
         context.context_variables = self.create_context_variables(context)
+        # TODO: maybe adjust the logging
+        LOG.debug("Initializing $context='%s'", context.context_variables)
         # then populate the stage variables
         context.stage_variables = self.fetch_stage_variables(context)
+        LOG.debug("Initializing $stageVariables='%s'", context.stage_variables)
 
     def create_invocation_request(self, request: Request) -> InvocationRequest:
         params, multi_value_params = self._get_single_and_multi_values_from_multidict(request.args)

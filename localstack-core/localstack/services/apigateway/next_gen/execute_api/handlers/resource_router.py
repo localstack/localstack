@@ -102,8 +102,9 @@ class InvocationRequestRouter(RestApiGatewayHandler):
     def update_context_variables_with_resource(
         context_variables: ContextVariables, resource: Resource
     ):
-        # TODO: log updating the context_variables?
+        LOG.debug("Updating $context.resourcePath='%s'", resource["path"])
         context_variables["resourcePath"] = resource["path"]
+        LOG.debug("Updating $context.resourceId='%s'", resource["id"])
         context_variables["resourceId"] = resource["id"]
 
     @staticmethod
