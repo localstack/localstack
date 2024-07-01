@@ -37,6 +37,20 @@ Parameters:
     AllowedValues:
       - "true"
       - "false"
+  InputPermissionsBoundary:
+    Description: Whether or not to use either the CDK supplied or custom permissions boundary
+    Default: ""
+    Type: String
+  UseExamplePermissionsBoundary:
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Type: String
+  BootstrapVariant:
+    Type: String
+    Default: "AWS CDK: Default Resources"
+    Description: Describe the provenance of the resources in this bootstrap stack. Change this when you customize the template. To prevent accidents, the CDK CLI will not overwrite bootstrap stacks with a different variant.
 Conditions:
   HasTrustedAccounts:
     Fn::Not:
@@ -72,6 +86,15 @@ Conditions:
     Fn::Equals:
       - AWS_MANAGED_KEY
       - Ref: FileAssetsBucketKmsKeyId
+  ShouldCreatePermissionsBoundary:
+    Fn::Equals:
+      - "true"
+      - Ref: UseExamplePermissionsBoundary
+  PermissionsBoundarySet:
+    Fn::Not:
+      - Fn::Equals:
+          - ""
+          - Ref: InputPermissionsBoundary
   HasCustomContainerAssetsRepositoryName:
     Fn::Not:
       - Fn::Equals:
@@ -101,6 +124,8 @@ Resources:
               - kms:ScheduleKeyDeletion
               - kms:CancelKeyDeletion
               - kms:GenerateDataKey
+              - kms:TagResource
+              - kms:UntagResource
             Effect: Allow
             Principal:
               AWS:
@@ -173,6 +198,12 @@ Resources:
           - Ref: AWS::NoValue
       VersioningConfiguration:
         Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: CleanupOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 365
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
   StagingBucketPolicy:
@@ -197,8 +228,24 @@ Resources:
   ContainerAssetsRepository:
     Type: AWS::ECR::Repository
     Properties:
-      ImageScanningConfiguration:
-        ScanOnPush: true
+      ImageTagMutability: IMMUTABLE
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Untagged images should not exist, but expire any older than one year",
+                "selection": {
+                  "tagStatus": "untagged",
+                  "countType": "sinceImagePushed",
+                  "countUnit": "days",
+                  "countNumber": 365
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
       RepositoryName:
         Fn::If:
           - HasCustomContainerAssetsRepositoryName
@@ -454,6 +501,7 @@ Resources:
                 Effect: Allow
                 Action:
                   - ssm:GetParameter
+                  - ssm:GetParameters
                 Resource:
                   - Fn::Sub: arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${CdkBootstrapVersion}
             Version: "2012-10-17"
@@ -483,13 +531,61 @@ Resources:
               - - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
       RoleName:
         Fn::Sub: cdk-${Qualifier}-cfn-exec-role-${AWS::AccountId}-${AWS::Region}
+      PermissionsBoundary:
+        Fn::If:
+          - PermissionsBoundarySet
+          - Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${InputPermissionsBoundary}
+          - Ref: AWS::NoValue
+  CdkBoostrapPermissionsBoundaryPolicy:
+    Condition: ShouldCreatePermissionsBoundary
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Sid: ExplicitAllowAll
+            Action:
+              - "*"
+            Effect: Allow
+            Resource: "*"
+          - Sid: DenyAccessIfRequiredPermBoundaryIsNotBeingApplied
+            Action:
+              - iam:CreateUser
+              - iam:CreateRole
+              - iam:PutRolePermissionsBoundary
+              - iam:PutUserPermissionsBoundary
+            Condition:
+              StringNotEquals:
+                iam:PermissionsBoundary:
+                  Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/cdk-${Qualifier}-permissions-boundary-${AWS::AccountId}-${AWS::Region}
+            Effect: Deny
+            Resource: "*"
+          - Sid: DenyPermBoundaryIAMPolicyAlteration
+            Action:
+              - iam:CreatePolicyVersion
+              - iam:DeletePolicy
+              - iam:DeletePolicyVersion
+              - iam:SetDefaultPolicyVersion
+            Effect: Deny
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/cdk-${Qualifier}-permissions-boundary-${AWS::AccountId}-${AWS::Region}
+          - Sid: DenyRemovalOfPermBoundaryFromAnyUserOrRole
+            Action:
+              - iam:DeleteUserPermissionsBoundary
+              - iam:DeleteRolePermissionsBoundary
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+      Description: Bootstrap Permission Boundary
+      ManagedPolicyName:
+        Fn::Sub: cdk-${Qualifier}-permissions-boundary-${AWS::AccountId}-${AWS::Region}
+      Path: /
   CdkBootstrapVersion:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
       Name:
         Fn::Sub: /cdk-bootstrap/${Qualifier}/version
-      Value: "12"
+      Value: "20"
 Outputs:
   BucketName:
     Description: The name of the S3 bucket owned by the CDK toolkit stack
@@ -519,4 +615,3 @@ Outputs:
       Fn::GetAtt:
         - CdkBootstrapVersion
         - Value
-
