@@ -2099,7 +2099,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 url_id = fn.tags[TAG_KEY_CUSTOM_URL]
                 if not TAG_KEY_CUSTOM_URL_VALIDATOR.match(url_id):
                     raise ValidationException(
-                        "1 validation error detected: invalid _custom_id_ value"
+                        f"1 validation error detected: invalid _custom_id_ value (`{url_id}` is not a valid subdomain)."
                     )
 
             else:
