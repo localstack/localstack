@@ -853,7 +853,9 @@ class TestLambdaURL:
         ],
     )
     @markers.aws.validated
-    def test_lambda_url_invocation(self, create_lambda_function, snapshot, returnvalue, custom_id, aws_client):
+    def test_lambda_url_invocation(
+        self, create_lambda_function, snapshot, returnvalue, custom_id, aws_client
+    ):
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "FunctionUrl", "<function-url>", reference_replacement=False
@@ -875,7 +877,7 @@ class TestLambdaURL:
             func_name=function_name,
             handler_file=handler_file,
             runtime=Runtime.python3_12,
-            Tags=tags
+            Tags=tags,
         )
 
         url_config = aws_client.lambda_.create_function_url_config(

@@ -217,7 +217,7 @@ LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 TAG_KEY_CUSTOM_URL = "_custom_id_"
 # Requirements (from RFC3986 & co): not longer than 63, first char must be
 # alpha, then alphanumeric or hyphen, except cannot start or end with hyphen
-TAG_KEY_CUSTOM_URL_VALIDATOR = re.compile(r'^[A-Za-z]([A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$')
+TAG_KEY_CUSTOM_URL_VALIDATOR = re.compile(r"^[A-Za-z]([A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$")
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
