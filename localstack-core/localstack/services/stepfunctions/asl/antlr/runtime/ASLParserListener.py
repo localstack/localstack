@@ -971,5 +971,14 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#unknown_binding_decl.
+    def enterUnknown_binding_decl(self, ctx:ASLParser.Unknown_binding_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#unknown_binding_decl.
+    def exitUnknown_binding_decl(self, ctx:ASLParser.Unknown_binding_declContext):
+        pass
+
+
 
 del ASLParser

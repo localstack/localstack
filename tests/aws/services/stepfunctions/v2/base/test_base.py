@@ -396,3 +396,29 @@ class TestSnfBase:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    def test_unknown_bindings(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+
+        if not is_aws_cloud():
+            template["UnknownBinding"] = "StringValue"
+            template["States"]["State_1"]["UnknownBinding"] = {"KeyValue": [], "End": {}}
+
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

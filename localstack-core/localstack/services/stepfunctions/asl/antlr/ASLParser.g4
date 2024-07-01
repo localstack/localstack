@@ -12,7 +12,14 @@ state_machine: program_decl EOF;
 
 program_decl: LBRACE top_layer_stmt (COMMA top_layer_stmt)* RBRACE;
 
-top_layer_stmt: comment_decl | version_decl | startat_decl | states_decl | timeout_seconds_decl;
+top_layer_stmt:
+    comment_decl
+    | version_decl
+    | startat_decl
+    | states_decl
+    | timeout_seconds_decl
+    | unknown_binding_decl
+;
 
 startat_decl: STARTAT COLON keyword_or_string;
 
@@ -60,13 +67,13 @@ state_stmt:
     | tolerated_failure_count_path_decl
     | tolerated_failure_percentage_decl
     | tolerated_failure_percentage_path_decl
+    | unknown_binding_decl
 ;
 
 states_decl: STATES COLON LBRACE state_decl (COMMA state_decl)* RBRACE;
 
 state_name: keyword_or_string;
 
-// TODO: avoid redefinitions? -> check listener ok?
 state_decl: state_name COLON state_decl_body;
 
 state_decl_body: LBRACE state_stmt (COMMA state_stmt)* RBRACE;
@@ -482,3 +489,6 @@ keyword_or_string:
     | ERRORNAMEStatesResultWriterFailed
     | ERRORNAMEStatesRuntime
 ;
+
+// Consume any unknown binding and it's object.
+unknown_binding_decl: STRING COLON json_value_decl;
