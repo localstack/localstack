@@ -173,5 +173,51 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_simple_route_table_creation_without_vpc": {
+    "recorded-date": "01-07-2024, 20:10:52",
+    "recorded-content": {
+      "tags": {
+        "Name": "Suspicious Route Table"
+      },
+      "route_table": {
+        "Associations": [],
+        "OwnerId": "111111111111",
+        "PropagatingVgws": [],
+        "RouteTableId": "<vpc-id:2>",
+        "Routes": [
+          {
+            "DestinationCidrBlock": "10.0.0.0/16",
+            "GatewayId": "local",
+            "Origin": "CreateRouteTable",
+            "State": "active"
+          }
+        ],
+        "VpcId": "<vpc-id:1>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_simple_route_table_creation": {
+    "recorded-date": "01-07-2024, 20:13:48",
+    "recorded-content": {
+      "tags": {
+        "Name": "Suspicious Route table"
+      },
+      "route_table": {
+        "Associations": [],
+        "OwnerId": "111111111111",
+        "PropagatingVgws": [],
+        "RouteTableId": "<vpc-id:2>",
+        "Routes": [
+          {
+            "DestinationCidrBlock": "10.0.0.0/16",
+            "GatewayId": "local",
+            "Origin": "CreateRouteTable",
+            "State": "active"
+          }
+        ],
+        "VpcId": "<vpc-id:1>"
+      }
+    }
   }
 }
