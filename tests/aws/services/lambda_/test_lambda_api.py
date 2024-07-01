@@ -28,6 +28,7 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, LogFormat, Runtime
 from localstack.services.lambda_.api_utils import ARCHITECTURES
+from localstack.services.lambda_.invocation.lambda_models import ValidationException
 from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
@@ -4001,7 +4002,7 @@ class TestLambdaUrl:
 
     @markers.aws.only_localstack
     def test_create_url_config_custom_id_tag(self, create_lambda_function, aws_client):
-        custom_id_value = "my_custom_subdomain"
+        custom_id_value = "my-custom-subdomain"
 
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
@@ -4018,6 +4019,24 @@ class TestLambdaUrl:
         # Since we're not comparing the entire string, this should be robust to
         # region changes, https vs http, etc
         assert f"://{custom_id_value}.lambda-url." in url_config_created["FunctionUrl"]
+
+    @markers.aws.only_localstack
+    def test_create_url_config_custom_id_tag_invalid_id(self, create_lambda_function, aws_client):
+        custom_id_value = "_not_valid_subdomain"
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
+            runtime=Runtime.nodejs20_x,
+            handler="lambda_handler.handler",
+            Tags={TAG_KEY_CUSTOM_URL: custom_id_value},
+        )
+        with pytest.raises(ValidationException):
+            aws_client.lambda_.create_function_url_config(
+                FunctionName=function_name,
+                AuthType="NONE",
+            )
 
 
 class TestLambdaSizeLimits:

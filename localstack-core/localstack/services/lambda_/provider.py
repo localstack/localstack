@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import os
+import re
 import threading
 import time
 from typing import IO, Optional, Tuple
@@ -214,6 +215,9 @@ LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 
 TAG_KEY_CUSTOM_URL = "_custom_id_"
+# Requirements (from RFC3986 & co): not longer than 63, first char must be
+# alpha, then alphanumeric or hyphen, except cannot start or end with hyphen
+TAG_KEY_CUSTOM_URL_VALIDATOR = re.compile(r'^[A-Za-z]([A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$')
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
@@ -2093,6 +2097,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 # just for this particular lambda function, but for the entire
                 # lambda provider. Therefore... that idea proved non-trivial!
                 url_id = fn.tags[TAG_KEY_CUSTOM_URL]
+                if not TAG_KEY_CUSTOM_URL_VALIDATOR.match(url_id):
+                    raise ValidationException(
+                        "1 validation error detected: invalid _custom_id_ value"
+                    )
 
             else:
                 url_id = api_utils.generate_random_url_id()

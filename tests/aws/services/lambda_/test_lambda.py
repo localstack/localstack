@@ -23,6 +23,7 @@ from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, InvokeMode, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
@@ -829,16 +830,16 @@ class TestLambdaURL:
     # TODO: add more tests
 
     @pytest.mark.parametrize(
-        "returnvalue",
+        "returnvalue,custom_id",
         [
-            '{"hello": "world"}',
-            '{"statusCode": 200, "body": "body123"}',
-            '{"statusCode": 200, "body": "{\\"hello\\": \\"world\\"}"}',
-            '["hello", 3, True]',
-            '"hello"',
-            "3",
-            "3.1",
-            "True",
+            ('{"hello": "world"}', None),
+            ('{"statusCode": 200, "body": "body123"}', None),
+            ('{"statusCode": 200, "body": "{\\"hello\\": \\"world\\"}"}', None),
+            ('["hello", 3, True]', None),
+            ('"hello"', None),
+            ("3", "my-func-subdomain"),
+            ("3.1", None),
+            ("True", None),
         ],
         ids=[
             "dict",
@@ -852,7 +853,7 @@ class TestLambdaURL:
         ],
     )
     @markers.aws.validated
-    def test_lambda_url_invocation(self, create_lambda_function, snapshot, returnvalue, aws_client):
+    def test_lambda_url_invocation(self, create_lambda_function, snapshot, returnvalue, custom_id, aws_client):
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "FunctionUrl", "<function-url>", reference_replacement=False
@@ -865,10 +866,16 @@ class TestLambdaURL:
         handler_code = URL_HANDLER_CODE.replace("<<returnvalue>>", returnvalue)
         files.save_file(handler_file, handler_code)
 
+        if custom_id is None:
+            tags = {}
+        else:
+            tags = {TAG_KEY_CUSTOM_URL: custom_id}
+
         create_lambda_function(
             func_name=function_name,
             handler_file=handler_file,
             runtime=Runtime.python3_12,
+            Tags=tags
         )
 
         url_config = aws_client.lambda_.create_function_url_config(
