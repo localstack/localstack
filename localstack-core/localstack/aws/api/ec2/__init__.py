@@ -2060,6 +2060,21 @@ class InstanceType(str):
     u7in_16tb_224xlarge = "u7in-16tb.224xlarge"
     u7in_24tb_224xlarge = "u7in-24tb.224xlarge"
     u7in_32tb_224xlarge = "u7in-32tb.224xlarge"
+    u7ib_12tb_224xlarge = "u7ib-12tb.224xlarge"
+    c7gn_metal = "c7gn.metal"
+    r8g_medium = "r8g.medium"
+    r8g_large = "r8g.large"
+    r8g_xlarge = "r8g.xlarge"
+    r8g_2xlarge = "r8g.2xlarge"
+    r8g_4xlarge = "r8g.4xlarge"
+    r8g_8xlarge = "r8g.8xlarge"
+    r8g_12xlarge = "r8g.12xlarge"
+    r8g_16xlarge = "r8g.16xlarge"
+    r8g_24xlarge = "r8g.24xlarge"
+    r8g_48xlarge = "r8g.48xlarge"
+    r8g_metal_24xl = "r8g.metal-24xl"
+    r8g_metal_48xl = "r8g.metal-48xl"
+    mac2_m1ultra_metal = "mac2-m1ultra.metal"
 
 
 class InstanceTypeHypervisor(str):
