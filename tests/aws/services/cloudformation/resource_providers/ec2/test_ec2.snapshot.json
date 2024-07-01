@@ -222,5 +222,41 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_security_group_with_tags": {
+    "recorded-date": "28-06-2024, 19:04:12",
+    "recorded-content": {
+      "security-group": {
+        "Description": "Security Group",
+        "GroupId": "<group-id:1>",
+        "GroupName": "<group-name:1>",
+        "IpPermissions": [],
+        "IpPermissionsEgress": [
+          {
+            "IpProtocol": "-1",
+            "IpRanges": [
+              {
+                "CidrIp": "0.0.0.0/0"
+              }
+            ],
+            "Ipv6Ranges": [],
+            "PrefixListIds": [],
+            "UserIdGroupPairs": []
+          }
+        ],
+        "OwnerId": "111111111111",
+        "Tags": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          },
+          {
+            "Key": "key2",
+            "Value": "value2"
+          }
+        ],
+        "VpcId": "<vpc-id:1>"
+      }
+    }
   }
 }

@@ -1,0 +1,14 @@
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group
+      Tags:
+        - Key: key1
+          Value: value1
+        - Key: key2
+          Value: value2
+
+Outputs:
+  SecurityGroupId:
+    Value: !GetAtt SecurityGroup.GroupId

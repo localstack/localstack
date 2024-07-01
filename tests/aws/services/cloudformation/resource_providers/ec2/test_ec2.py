@@ -57,6 +57,29 @@ def test_deploy_prefix_list(deploy_cfn_template, aws_client, snapshot):
 
 
 @markers.aws.validated
+def test_deploy_security_group_with_tags(deploy_cfn_template, aws_client, snapshot):
+    """Create security group in default VPC with tags."""
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../../templates/ec2_security_group_with_tags.yml"
+        )
+    )
+
+    snapshot.add_transformer(snapshot.transform.key_value("GroupId"))
+    snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+    snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
+    snapshot.add_transformer(SortingTransformer("Tags", lambda tag: tag["Key"]))
+    response = aws_client.ec2.describe_security_groups(GroupIds=[stack.outputs["SecurityGroupId"]])
+    security_group = response["SecurityGroups"][0]
+
+    security_group["Tags"] = [
+        tag for tag in security_group["Tags"] if not tag["Key"].startswith("aws:cloudformation")
+    ]
+
+    snapshot.match("security-group", security_group)
+
+
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..DnsEntries",
