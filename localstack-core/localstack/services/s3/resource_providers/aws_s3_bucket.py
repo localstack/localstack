@@ -604,7 +604,7 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
         try:
             s3_client.head_bucket(Bucket=model["BucketName"])
         except ClientError as e:
-            if e.response["Error"]["Message"] != "Not Found":
+            if e.response["ResponseMetadata"]["HTTPStatusCode"] != 404:
                 return
 
             params = {

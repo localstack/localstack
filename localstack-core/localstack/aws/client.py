@@ -4,16 +4,56 @@ import io
 import logging
 from datetime import datetime
 from typing import Dict, Iterable, Optional
+from urllib.parse import urlsplit
 
+from botocore import awsrequest
+from botocore.endpoint import Endpoint
 from botocore.model import OperationModel
 from botocore.parsers import ResponseParser, ResponseParserFactory
-from werkzeug import Response
+from werkzeug.datastructures import Headers
 
-from localstack.aws.api import CommonServiceException, ServiceException, ServiceResponse
+from localstack import config
+from localstack.http import Request, Response
 from localstack.runtime import hooks
-from localstack.utils.patch import patch
+from localstack.utils.patch import Patch, patch
+from localstack.utils.strings import to_str
+
+from .api import CommonServiceException, RequestContext, ServiceException, ServiceResponse
+from .connect import get_service_endpoint
+from .gateway import Gateway
 
 LOG = logging.getLogger(__name__)
+
+
+def create_http_request(aws_request: awsrequest.AWSPreparedRequest) -> Request:
+    """
+    Create an ASF HTTP Request from a botocore AWSPreparedRequest.
+
+    :param aws_request: the botocore prepared request
+    :return: a new Request
+    """
+    split_url = urlsplit(aws_request.url)
+    host = split_url.netloc.split(":")
+    if len(host) == 1:
+        server = (to_str(host[0]), None)
+    elif len(host) == 2:
+        server = (to_str(host[0]), int(host[1]))
+    else:
+        raise ValueError
+
+    # prepare the RequestContext
+    headers = Headers()
+    for k, v in aws_request.headers.items():
+        headers[k] = to_str(v)
+
+    return Request(
+        method=aws_request.method,
+        path=split_url.path,
+        query_string=split_url.query,
+        headers=headers,
+        body=aws_request.body,
+        server=server,
+    )
 
 
 class _ResponseStream(io.RawIOBase):
@@ -29,6 +69,10 @@ class _ResponseStream(io.RawIOBase):
         self.iterator = response.iter_encoded()
         self._buf = None
 
+    def stream(self) -> Iterable[bytes]:
+        # adds compatibility for botocore's client-side AWSResponse.raw attribute.
+        return self.iterator
+
     def readable(self):
         return True
 
@@ -42,6 +86,14 @@ class _ResponseStream(io.RawIOBase):
             return len(output)
         except StopIteration:
             return 0  # indicate EOF
+
+    def read(self, amt=None) -> bytes | None:
+        # see https://github.com/python/cpython/blob/main/Lib/_pyio.py
+        # adds compatibility for botocore's client-side AWSResponse.raw attribute.
+        # it seems the default implementation of RawIOBase.read to not handle well some cases
+        if amt is None:
+            amt = -1
+        return super().read(amt)
 
     def close(self) -> None:
         return self.response.close()
@@ -129,6 +181,31 @@ def _patch_botocore_json_parser():
             except Exception as cbor_exception:
                 LOG.debug("CBOR fallback decoding failed.")
                 raise cbor_exception from json_exception
+
+
+def _create_and_enrich_aws_request(
+    fn, self: Endpoint, params: dict, operation_model: OperationModel = None
+):
+    """
+    Patch that adds the botocore operation model and request parameters to a newly created AWSPreparedRequest,
+    which normally only holds low-level HTTP request information.
+    """
+    request: awsrequest.AWSPreparedRequest = fn(self, params, operation_model)
+
+    request.params = params
+    request.operation_model = operation_model
+
+    return request
+
+
+botocore_in_memory_endpoint_patch = Patch.function(
+    Endpoint.create_request, _create_and_enrich_aws_request
+)
+
+
+@hooks.on_infra_start(should_load=config.IN_MEMORY_CLIENT)
+def _patch_botocore_endpoint_in_memory():
+    botocore_in_memory_endpoint_patch.apply()
 
 
 def parse_response(
@@ -221,3 +298,59 @@ def raise_service_exception(response: Response, parsed_response: Dict) -> None:
     """
     if service_exception := parse_service_exception(response, parsed_response):
         raise service_exception
+
+
+class GatewayShortCircuit:
+    gateway: Gateway
+
+    def __init__(self, gateway: Gateway):
+        self.gateway = gateway
+        self._internal_url = get_service_endpoint()
+
+    def __call__(
+        self, event_name: str, request: awsrequest.AWSPreparedRequest, **kwargs
+    ) -> awsrequest.AWSResponse | None:
+        # TODO: we sometimes overrides the endpoint_url to direct it to DynamoDBLocal directly
+        # if the default endpoint_url is not in the request, just skips the in-memory forwarding
+        if self._internal_url not in request.url:
+            return
+
+        # extract extra data from enriched AWSPreparedRequest
+        params = request.params
+        operation: OperationModel = request.operation_model
+
+        # create request
+        context = RequestContext()
+        context.request = create_http_request(request)
+
+        # TODO: just a hacky thing to unblock the service model being set to `sqs-query` blocking for now
+        # this is using the same services as `localstack.aws.protocol.service_router.resolve_conflicts`, maybe
+        # consolidate. `docdb` and `neptune` uses the RDS API and service.
+        if operation.service_model.service_name not in {
+            "sqs-query",
+            "docdb",
+            "neptune",
+            "timestream-write",
+        }:
+            context.service = operation.service_model
+
+        context.operation = operation
+        context.service_request = params["body"]
+
+        # perform request
+        response = Response()
+        self.gateway.handle(context, response)
+
+        # transform Werkzeug response to client-side botocore response
+        aws_response = awsrequest.AWSResponse(
+            url=context.request.url,
+            status_code=response.status_code,
+            headers=response.headers,
+            raw=_ResponseStream(response),
+        )
+
+        return aws_response
+
+    @staticmethod
+    def modify_client(client, gateway):
+        client.meta.events.register_first("before-send.*.*", GatewayShortCircuit(gateway))

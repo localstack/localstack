@@ -11,47 +11,6 @@ def sqs_receive_message(queue_arn):
     return response
 
 
-def get_apigateway_resource_for_path(api_id, path, parent=None, resources=None):
-    if resources is None:
-        apigateway = connect_to().apigateway
-        resources = apigateway.get_resources(restApiId=api_id, limit=100)
-    if not isinstance(path, list):
-        path = path.split("/")
-    if not path:
-        return parent
-    for resource in resources:
-        if resource["pathPart"] == path[0] and (not parent or parent["id"] == resource["parentId"]):
-            return get_apigateway_resource_for_path(
-                api_id, path[1:], parent=resource, resources=resources
-            )
-    return None
-
-
-def get_apigateway_path_for_resource(
-    api_id, resource_id, path_suffix="", resources=None, region_name=None
-):
-    if resources is None:
-        apigateway = connect_to(region_name=region_name).apigateway
-        resources = apigateway.get_resources(restApiId=api_id, limit=100)["items"]
-    target_resource = list(filter(lambda res: res["id"] == resource_id, resources))[0]
-    path_part = target_resource.get("pathPart", "")
-    if path_suffix:
-        if path_part:
-            path_suffix = "%s/%s" % (path_part, path_suffix)
-    else:
-        path_suffix = path_part
-    parent_id = target_resource.get("parentId")
-    if not parent_id:
-        return "/%s" % path_suffix
-    return get_apigateway_path_for_resource(
-        api_id,
-        parent_id,
-        path_suffix=path_suffix,
-        resources=resources,
-        region_name=region_name,
-    )
-
-
 def kinesis_get_latest_records(
     stream_name: str, shard_id: str, count: int = 10, client=None
 ) -> list[dict]:
