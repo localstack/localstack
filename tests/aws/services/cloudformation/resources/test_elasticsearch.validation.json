@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_elasticsearch.py::test_cfn_handle_elasticsearch_domain": {
+    "last_validated_date": "2024-07-02T17:30:21+00:00"
+  }
+}
