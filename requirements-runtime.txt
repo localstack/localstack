@@ -64,7 +64,7 @@ certifi==2024.6.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.3.5
+cfn-lint==1.4.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -145,7 +145,7 @@ jpype1==1.5.0
     # via localstack-core (pyproject.toml)
 json5==0.9.25
     # via localstack-core (pyproject.toml)
-jsondiff==2.0.0
+jsondiff==2.1.1
     # via moto-ext
 jsonpatch==1.33
     # via
@@ -225,13 +225,13 @@ pyasn1==0.6.0
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.7.4
+pydantic==2.8.0
     # via aws-sam-translator
-pydantic-core==2.18.4
+pydantic-core==2.20.0
     # via pydantic
 pygments==2.18.0
     # via rich
-pymongo==4.7.3
+pymongo==4.8.0
     # via localstack-core (pyproject.toml)
 pyopenssl==24.1.0
     # via
@@ -255,6 +255,7 @@ pyyaml==6.0.1
     # via
     #   awscli
     #   cfn-lint
+    #   jsondiff
     #   jsonschema-path
     #   localstack-core
     #   localstack-core (pyproject.toml)
