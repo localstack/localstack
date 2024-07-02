@@ -257,5 +257,23 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_dynamodb_stream_response_with_cf": {
+    "recorded-date": "02-07-2024, 19:48:27",
+    "recorded-content": {
+      "describe_kinesis_streaming_destination": {
+        "KinesisDataStreamDestinations": [
+          {
+            "DestinationStatus": "ACTIVE",
+            "StreamArn": "arn:aws:kinesis:<region>:111111111111:stream/EventStream"
+          }
+        ],
+        "TableName": "<table-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
