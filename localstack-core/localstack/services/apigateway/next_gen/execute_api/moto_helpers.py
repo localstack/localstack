@@ -1,3 +1,4 @@
+from moto.apigateway.models import APIGatewayBackend, apigateway_backends
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
 from localstack.aws.api.apigateway import Resource
@@ -28,3 +29,12 @@ def get_resources_from_moto_rest_api(moto_rest_api: MotoRestAPI) -> dict[str, Re
         resources[moto_resource.id] = resource
 
     return resources
+
+
+def get_stage_variables(
+    account_id: str, region: str, api_id: str, stage_name: str
+) -> dict[str, str]:
+    apigateway_backend: APIGatewayBackend = apigateway_backends[account_id][region]
+    moto_rest_api = apigateway_backend.apis[api_id]
+    stage = moto_rest_api.stages[stage_name]
+    return stage.variables

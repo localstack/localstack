@@ -64,6 +64,7 @@ class ApiGatewayEndpoint:
         context.deployment = frozen_deployment
         context.api_id = api_id
         context.stage = stage
+        context.deployment_id = deployment_id
 
 
 class ApiGatewayRouter:

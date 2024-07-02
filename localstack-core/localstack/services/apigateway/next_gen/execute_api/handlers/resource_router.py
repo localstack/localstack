@@ -18,6 +18,7 @@ from localstack.services.apigateway.models import RestApiDeployment
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import RestApiInvocationContext
+from ..variables import ContextVariables
 
 LOG = logging.getLogger(__name__)
 
@@ -84,6 +85,7 @@ class InvocationRequestRouter(RestApiGatewayHandler):
         router = self.get_router_for_deployment(context.deployment)
 
         resource, path_parameters = router.match(context)
+        resource: Resource
 
         context.invocation_request["path_parameters"] = path_parameters
         context.resource = resource
@@ -93,6 +95,17 @@ class InvocationRequestRouter(RestApiGatewayHandler):
             or resource["resourceMethods"]["ANY"]
         )
         context.resource_method = method
+
+        self.update_context_variables_with_resource(context.context_variables, resource)
+
+    @staticmethod
+    def update_context_variables_with_resource(
+        context_variables: ContextVariables, resource: Resource
+    ):
+        LOG.debug("Updating $context.resourcePath='%s'", resource["path"])
+        context_variables["resourcePath"] = resource["path"]
+        LOG.debug("Updating $context.resourceId='%s'", resource["id"])
+        context_variables["resourceId"] = resource["id"]
 
     @staticmethod
     @cache
