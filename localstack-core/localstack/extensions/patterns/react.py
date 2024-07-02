@@ -66,6 +66,7 @@ class ReactExtension(WebAppBaseExtension):
 
     def _add_superclass_routes(self, routes: list[t.Any]):
         routes.append(RuleAdapter("/<path:path>", self._serve_static_file))
+        routes.append(RuleAdapter("/", self._serve_static_file))
 
     def _serve_static_file(self, request: http.Request, path=None):
         """Route for serving static files, for ``/_extension/my-extension/<path:path>``."""
