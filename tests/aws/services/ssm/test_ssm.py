@@ -58,6 +58,20 @@ class TestSSM:
         exc.match("sub-paths divided by slash symbol")
 
     @markers.aws.validated
+    def test_get_parameter_by_arn(self, create_parameter, aws_client):
+        param_name = f"param-{short_uid()}"
+        create_parameter(
+            Name=param_name,
+            Description="test",
+            Value="123",
+            Type="String",
+        )
+        arn = aws_client.ssm.get_parameter(Name=param_name).get("Parameter").get("ARN")
+        result = aws_client.ssm.get_parameter(Name=arn)
+        assert param_name == result.get("Parameter").get("Name")
+        assert "123" == result.get("Parameter").get("Value")
+
+    @markers.aws.validated
     def test_get_secret_parameter(self, create_secret, aws_client):
         secret_name = f"test_secret-{short_uid()}"
         create_secret(
