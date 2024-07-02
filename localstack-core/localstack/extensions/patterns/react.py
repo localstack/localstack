@@ -79,7 +79,7 @@ class ReactExtension(WebAppBaseExtension):
         build_dir = os.path.join(self.static_resource_module.__path__[0], "build")
         file_path = os.path.join(build_dir, path.lstrip("/"))
 
-        if not os.path.exists(file_path):
+        if not (os.path.exists(file_path) and os.path.isfile(file_path)):
             file_path = os.path.join(build_dir, "index.html")
 
         mime_type = mimetypes.guess_type(file_path)[0] or APPLICATION_OCTET_STREAM
