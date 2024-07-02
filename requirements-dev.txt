@@ -33,7 +33,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.147.1
+aws-cdk-lib==2.147.3
     # via localstack-core
 aws-sam-translator==1.89.0
     # via
@@ -83,7 +83,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.3.5
+cfn-lint==1.4.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -196,7 +196,7 @@ joserfc==0.12.0
     # via moto-ext
 jpype1==1.5.0
     # via localstack-core
-jsii==1.100.0
+jsii==1.101.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -205,7 +205,7 @@ jsii==1.100.0
     #   constructs
 json5==0.9.25
     # via localstack-core
-jsondiff==2.0.0
+jsondiff==2.1.1
     # via moto-ext
 jsonpatch==1.33
     # via
@@ -317,13 +317,13 @@ pyasn1==0.6.0
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.7.4
+pydantic==2.8.0
     # via aws-sam-translator
-pydantic-core==2.18.4
+pydantic-core==2.20.0
     # via pydantic
 pygments==2.18.0
     # via rich
-pymongo==4.7.3
+pymongo==4.8.0
     # via localstack-core
 pyopenssl==24.1.0
     # via
@@ -363,6 +363,7 @@ pyyaml==6.0.1
     # via
     #   awscli
     #   cfn-lint
+    #   jsondiff
     #   jsonschema-path
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -411,7 +412,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.4.10
+ruff==0.5.0
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.2
     # via
