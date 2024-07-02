@@ -19,7 +19,7 @@ from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
-from localstack.utils.strings import to_bytes
+from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import retry
 
 """
@@ -394,7 +394,7 @@ class BooksApi(Construct):
         # opensearch
         self.opensearch_domain = opensearch.Domain(
             stack,
-            "Domain",
+            f"Domain{short_uid()}",
             version=opensearch.EngineVersion.OPENSEARCH_2_5,
             ebs=opensearch.EbsOptions(volume_size=10, volume_type=ec2.EbsDeviceVolumeType.GP2),
             advanced_options={"rest.action.multi.allow_explicit_index": "false"},
@@ -427,8 +427,9 @@ class BooksApi(Construct):
         self.lambda_role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
         )
-
-        # lambda for pre-filling the dynamodb
+        # TODO before updating to Node 20 we need to update function code
+        #  since aws-sdk which comes with it is newer version than one bundled with Node 16
+        #  lambda for pre-filling the dynamodb
         self.load_books_helper_fn = awslambda.Function(
             stack,
             "LoadBooksLambda",
@@ -479,7 +480,7 @@ class BooksApi(Construct):
             "SearchBookLambda",
             handler="index.handler",
             code=awslambda.S3Code(bucket=bucket, key=search_key),
-            runtime=awslambda.Runtime.PYTHON_3_10,
+            runtime=awslambda.Runtime.PYTHON_3_12,
             environment={
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
             },
@@ -492,7 +493,7 @@ class BooksApi(Construct):
             "UpdateSearchLambda",
             handler="index.handler",
             code=awslambda.S3Code(bucket=bucket, key=search_update_key),
-            runtime=awslambda.Runtime.PYTHON_3_10,
+            runtime=awslambda.Runtime.PYTHON_3_12,
             environment={
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
             },
