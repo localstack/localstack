@@ -139,5 +139,39 @@
         "TransitGatewayId": "<transit-gateway-id:1>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_vpc_with_route_table": {
+    "recorded-date": "19-06-2024, 16:48:31",
+    "recorded-content": {
+      "route_table": {
+        "RouteTables": [
+          {
+            "Associations": [],
+            "OwnerId": "111111111111",
+            "PropagatingVgws": [],
+            "RouteTableId": "<route-table-id:1>",
+            "Routes": [
+              {
+                "DestinationCidrBlock": "100.0.0.0/20",
+                "GatewayId": "local",
+                "Origin": "CreateRouteTable",
+                "State": "active"
+              }
+            ],
+            "Tags": {
+              "aws:cloudformation:logical-id": "RouteTable",
+              "aws:cloudformation:stack-id": "<stack_id>",
+              "aws:cloudformation:stack-name": "<stack_name>",
+              "env": "production"
+            },
+            "VpcId": "<vpc-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

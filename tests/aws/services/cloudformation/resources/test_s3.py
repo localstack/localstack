@@ -121,3 +121,28 @@ def test_object_lock_configuration(deploy_cfn_template, snapshot, aws_client):
     bucket_name_required = result.outputs["LockConfigOnlyRequired"]
     cors_info = aws_client.s3.get_object_lock_configuration(Bucket=bucket_name_required)
     snapshot.match("object-lock-info-only-enabled", cors_info)
+
+
+@markers.aws.validated
+def test_cfn_handle_s3_notification_configuration(
+    aws_client,
+    deploy_cfn_template,
+    snapshot,
+):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/s3_notification_sqs.yml"
+        ),
+    )
+    rs = aws_client.s3.get_bucket_notification_configuration(Bucket=stack.outputs["BucketName"])
+    snapshot.match("get_bucket_notification_configuration", rs)
+
+    stack.destroy()
+
+    with pytest.raises(ClientError) as ctx:
+        aws_client.s3.get_bucket_notification_configuration(Bucket=stack.outputs["BucketName"])
+    snapshot.match("get_bucket_notification_configuration_error", ctx.value.response)
+
+    snapshot.add_transformer(snapshot.transform.key_value("Id"))
+    snapshot.add_transformer(snapshot.transform.key_value("QueueArn"))
+    snapshot.add_transformer(snapshot.transform.key_value("BucketName"))

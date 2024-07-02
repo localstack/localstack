@@ -1,0 +1,9 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  OriginalBucketName:
+    Type: String
+Resources:
+  S3Setup:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref OriginalBucketName

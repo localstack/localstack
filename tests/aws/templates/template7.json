@@ -19,7 +19,7 @@
         "Code": {
           "ZipFile": "file.zip"
         },
-        "Runtime": "nodejs12.x",
+        "Runtime": "nodejs18.x",
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [

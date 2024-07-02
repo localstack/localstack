@@ -140,5 +140,36 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_cfn_handle_s3_notification_configuration": {
+    "recorded-date": "20-06-2024, 16:57:13",
+    "recorded-content": {
+      "get_bucket_notification_configuration": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Id": "<id:1>",
+            "QueueArn": "<queue-arn:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_bucket_notification_configuration_error": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

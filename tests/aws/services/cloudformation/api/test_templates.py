@@ -6,6 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
+from localstack.utils.common import load_file
 from localstack.utils.strings import short_uid, to_bytes
 
 
@@ -92,3 +93,25 @@ def test_create_stack_from_s3_template_url(
             t for res in results for t in res["Topics"] if t["TopicArn"].endswith(topic_name)
         ]
         snapshot.match("matching-topic", matching)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Parameters..DefaultValue"])
+def test_validate_template(aws_client, snapshot):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../../templates/valid_template.json")
+    )
+
+    resp = aws_client.cloudformation.validate_template(TemplateBody=template)
+    snapshot.match("validate-template", resp)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error..Message"])
+def test_validate_invalid_json_template_should_fail(aws_client, snapshot):
+    invalid_json = '{"this is invalid JSON"="bobbins"}'
+
+    with pytest.raises(ClientError) as ctx:
+        aws_client.cloudformation.validate_template(TemplateBody=invalid_json)
+
+    snapshot.match("validate-invalid-json", ctx.value.response)

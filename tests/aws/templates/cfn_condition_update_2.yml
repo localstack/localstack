@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  OriginalBucketName:
+    Type: String
+  FirstBucket:
+    Type: String
+  SecondBucket:
+    Type: String
+Resources:
+  S3Setup:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref OriginalBucketName
+  ToBeCreated:
+    Type: AWS::S3::Bucket
+    Condition: TrueCondition
+    Properties:
+      BucketName: !Ref FirstBucket
+  NotToBeCreated:
+    Type: AWS::S3::Bucket
+    Condition: FalseCondition
+    Properties:
+      BucketName: !Ref SecondBucket
+Conditions:
+  TrueCondition:
+    Fn::Equals:
+      - same
+      - same
+  FalseCondition:
+    Fn::Equals:
+      - this
+      - other

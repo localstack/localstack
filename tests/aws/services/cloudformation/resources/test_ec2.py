@@ -5,6 +5,7 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.strings import short_uid
 
 THIS_FOLDER = os.path.dirname(__file__)
 
@@ -190,3 +191,90 @@ def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
         TransitGatewayAttachmentIds=[stack.outputs["Attachment"]]
     )["TransitGatewayAttachments"]
     assert attachment_description[0]["State"] == "deleted"
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..RouteTables..PropagatingVgws", "$..RouteTables..Tags"]
+)
+def test_vpc_with_route_table(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/template33.yaml")
+    )
+
+    route_id = stack.outputs["RouteTableId"]
+    response = aws_client.ec2.describe_route_tables(RouteTableIds=[route_id])
+
+    # Convert tags to dictionary for easier comparison
+    response["RouteTables"][0]["Tags"] = {
+        tag["Key"]: tag["Value"] for tag in response["RouteTables"][0]["Tags"]
+    }
+
+    snapshot.match("route_table", response)
+
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack_id>"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack_name>"))
+    snapshot.add_transformer(snapshot.transform.key_value("RouteTableId"))
+    snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
+
+    stack.destroy()
+
+    with pytest.raises(aws_client.ec2.exceptions.ClientError):
+        aws_client.ec2.describe_route_tables(RouteTableIds=[route_id])
+
+
+@pytest.mark.skip(reason="update doesn't change value for instancetype")
+@markers.aws.validated
+def test_cfn_update_ec2_instance_type(deploy_cfn_template, aws_client, cleanups):
+    if aws_client.cloudformation.meta.region_name not in [
+        "ap-northeast-1",
+        "eu-central-1",
+        "eu-south-1",
+        "eu-west-1",
+        "eu-west-2",
+        "us-east-1",
+    ]:
+        pytest.skip()
+
+    key_name = f"testkey-{short_uid()}"
+    aws_client.ec2.create_key_pair(KeyName=key_name)
+    cleanups.append(lambda: aws_client.ec2.delete_key_pair(KeyName=key_name))
+
+    # get alpine image id
+    if is_aws_cloud():
+        images = aws_client.ec2.describe_images(
+            Filters=[
+                {"Name": "name", "Values": ["alpine-3.19.0-x86_64-bios-*"]},
+                {"Name": "state", "Values": ["available"]},
+            ]
+        )["Images"]
+        image_id = images[0]["ImageId"]
+    else:
+        image_id = "ami-0a63f96a6a8d4d2c5"
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/ec2_instance.yml"
+        ),
+        parameters={"KeyName": key_name, "InstanceType": "t2.nano", "ImageId": image_id},
+    )
+
+    instance_id = stack.outputs["InstanceId"]
+    instance = aws_client.ec2.describe_instances(InstanceIds=[instance_id])["Reservations"][0][
+        "Instances"
+    ][0]
+    assert instance["InstanceType"] == "t2.nano"
+
+    deploy_cfn_template(
+        stack_name=stack.stack_name,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/ec2_instance.yml"
+        ),
+        parameters={"KeyName": key_name, "InstanceType": "t2.medium", "ImageId": image_id},
+        is_update=True,
+    )
+
+    instance = aws_client.ec2.describe_instances(InstanceIds=[instance_id])["Reservations"][0][
+        "Instances"
+    ][0]
+    assert instance["InstanceType"] == "t2.medium"

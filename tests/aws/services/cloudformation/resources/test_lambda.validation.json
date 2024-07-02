@@ -44,6 +44,9 @@
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_python_lambda_code_deployed_via_s3": {
     "last_validated_date": "2024-04-09T07:38:32+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_update_lambda_function": {
+    "last_validated_date": "2024-06-20T15:49:50+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_update_lambda_permissions": {
     "last_validated_date": "2024-04-09T07:23:41+00:00"
   }

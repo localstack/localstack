@@ -1,0 +1,22 @@
+Parameters:
+  TestValue:
+    Type: String
+    Default: "test"
+    Description: "Test value"
+
+Resources:
+  TestParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        !Sub
+         - |-
+           ${TestValue}
+         - {
+           TestValue: !Ref TestValue
+         }
+
+Outputs:
+    Result:
+        Value: !GetAtt TestParameter.Value

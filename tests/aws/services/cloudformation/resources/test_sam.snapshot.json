@@ -20,5 +20,87 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_sam.py::test_cfn_handle_serverless_api_resource": {
+    "recorded-date": "20-06-2024, 20:16:01",
+    "recorded-content": {
+      "get_rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "Api",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/<name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<name:1>"
+        },
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "+xvKfGS3ENINs/yK7dLJgId2fDM+vv9OP03rJ9mLflU=",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+          "Runtime": "python3.11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "Lambda",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/<name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<name:1>",
+          "lambda:createdBy": "SAM"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

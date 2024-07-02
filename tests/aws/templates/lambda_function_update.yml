@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Environment:
+    Type: String
+    Default: 'ORIGINAL'
+    AllowedValues:
+      - 'ORIGINAL'
+      - 'UPDATED'
+
+Resources:
+  PullMarketsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: AWSLambdaBasicExecutionRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:PutLogEvents
+                Resource: "*"
+  SomeNameFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          exports.handler = async function(event, context) {
+            console.log('event:', event);
+            return event;
+          };
+      Handler: index.handler
+      MemorySize: 1024
+      Role:
+        Fn::GetAtt:
+          - PullMarketsRole
+          - Arn
+      Runtime: nodejs18.x
+      Timeout: 6
+      Environment:
+        Variables:
+          TEST: !Ref Environment
+
+Outputs:
+  LambdaName:
+    Value: !Ref SomeNameFunction

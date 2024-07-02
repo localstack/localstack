@@ -75,5 +75,39 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_validate_template": {
+    "recorded-date": "18-06-2024, 17:23:30",
+    "recorded-content": {
+      "validate-template": {
+        "Parameters": [
+          {
+            "Description": "The EC2 Key Pair to allow SSH access to the instance",
+            "NoEcho": false,
+            "ParameterKey": "KeyExample"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_validate_invalid_json_template_should_fail": {
+    "recorded-date": "18-06-2024, 17:25:49",
+    "recorded-content": {
+      "validate-invalid-json": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: JSON not well-formed. (line 1, column 25)",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
