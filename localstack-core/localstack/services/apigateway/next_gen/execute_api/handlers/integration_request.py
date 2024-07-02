@@ -36,6 +36,8 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
         # TODO: maybe first do the `passthroughBehavior` and determine if there's a mapping template?
 
+        # TODO: this handler might not be tested yet until `TemplateMappings` are implemented, as overall behavior will
+        #  change
         integration_request_parameters = integration["requestParameters"]
         request_data_mapping = self.get_integration_request_data(
             context, integration_request_parameters
@@ -54,12 +56,12 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             http_method=integration["httpMethod"],
             uri=rendered_integration_uri,
             query_string_parameters=request_data_mapping["querystring"],
-            headers=request_data_mapping["headers"],
-            body=b"",  # TODO: from MappingTemplates, see default value?
+            headers=request_data_mapping["header"],
+            body=b"",  # TODO: from MappingTemplates or passthrough
         )
         # TODO: log every override that happens afterwards
 
-        # This is the data downstream integration might use if they are not of `PROXY_` type
+        # This is the data that downstream integrations might use if they are not of `PROXY_` type
         # LOG.debug("Created integration request from xxx")
         context.integration_request = integration_request
 

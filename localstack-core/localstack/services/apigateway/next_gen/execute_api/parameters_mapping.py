@@ -13,16 +13,16 @@ from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
 
 from .context import InvocationRequest
-
-# Integration request parameters, in the form of path variables, query strings or headers, can be mapped from any
-# defined method request parameters and the payload.
+from .gateway_response import Default4xxError
 from .variables import ContextVariables
 
 
 class RequestDataMapping(TypedDict):
-    headers: dict[str, str]
+    # Integration request parameters, in the form of path variables, query strings or headers, can be mapped from any
+    # defined method request parameters and the payload.
+    header: dict[str, str]
     path: dict[str, str]
-    querystring: dict[str, str]
+    querystring: dict[str, str | list[str]]
 
 
 class ParametersMapper:
@@ -32,9 +32,9 @@ class ParametersMapper:
         invocation_request: InvocationRequest,
         context_variables: ContextVariables,
         stage_variables: dict[str, str],
-    ):
+    ) -> RequestDataMapping:
         request_data_mapping = RequestDataMapping(
-            headers={},
+            header={},
             path={},
             querystring={},
         )
@@ -70,7 +70,8 @@ class ParametersMapper:
                 # TODO: verify this
                 value = None
 
-            request_data_mapping[integration_param_location][param_name] = value
+            if value:
+                request_data_mapping[integration_param_location][param_name] = value
 
         return request_data_mapping
 
@@ -79,43 +80,82 @@ class ParametersMapper:
 
     def _retrieve_parameter_from_invocation_request(
         self, expr: str, invocation_request: InvocationRequest
-    ) -> str:
-        if expr == "body":
-            return to_str(invocation_request["body"])
-        elif expr.startswith("body."):
-            # TODO: error handling
-            json_path = expr.removeprefix("body.")
-            decoded_body = json.loads(invocation_request["body"])
-            return self._get_json_path_from_dict(decoded_body, json_path)
+    ) -> str | list[str]:
+        if expr.startswith("body"):
+            body = invocation_request["body"] or b"{}"
+            body = body.strip()
+            # AWS only tries to JSON decode the body if it starts with some leading characters ({, [, ", ')
+            # otherwise, it ignores it
+            try:
+                decoded_body = self._json_load(body)
+            except ValueError:
+                raise Default4xxError(message="Invalid JSON in request body")
+
+            if expr == "body":
+                return to_str(body)
+
+            elif expr.startswith("body."):
+                # TODO: error handling
+                json_path = expr.removeprefix("body.")
+                return self._get_json_path_from_dict(decoded_body, json_path)
 
         param_type, param_name = expr.split(".")
         if param_type == "path":
             return invocation_request["path_parameters"].get(param_name)
+
         elif param_type == "querystring":
-            return invocation_request["query_string_parameters"].get(param_name)
+            multi_qs_params = invocation_request["multi_value_query_string_parameters"].get(
+                param_name
+            )
+            if multi_qs_params:
+                return multi_qs_params[-1]
+
         elif param_type == "multivaluequerystring":
-            # TODO: verify typing here, what is returned and how?
-            return invocation_request["multi_value_query_string_parameters"].get(param_name)
+            multi_qs_params = invocation_request["multi_value_query_string_parameters"].get(
+                param_name
+            )
+            if len(multi_qs_params) == 1:
+                return multi_qs_params[0]
+            return multi_qs_params
+
         elif param_type == "header":
-            # TODO: verify casing here?
-            return invocation_request["raw_headers"].get(param_name)
+            multi_headers = invocation_request["multi_value_headers"].get(param_name)
+            if multi_headers:
+                return multi_headers[-1]
+
         elif param_type == "multivalueheader":
-            # TODO: verify typing here, what is returned and how?
-            return invocation_request["multi_value_headers"].get(param_name)
+            multi_headers = invocation_request["multi_value_headers"].get(param_name, [])
+            return ",".join(multi_headers)
 
     def _retrieve_parameter_from_context_variables(
         self, expr: str, context_variables: ContextVariables
-    ) -> str:
+    ) -> str | None:
         # we're using JSON path here because we could access nested properties like `context.identity.sourceIp`
         return self._get_json_path_from_dict(context_variables, expr)
 
     @staticmethod
     def _retrieve_parameter_from_stage_variables(
         stage_var_name: str, stage_variables: dict[str, str]
-    ) -> str:
+    ) -> str | None:
         return stage_variables.get(stage_var_name)
 
     @staticmethod
-    def _get_json_path_from_dict(body: dict, path: str) -> str:
+    def _get_json_path_from_dict(body: dict, path: str) -> str | None:
         # TODO: verify we don't have special cases
-        return extract_jsonpath(body, f"$.{path}")
+        try:
+            return extract_jsonpath(body, f"$.{path}")
+        except KeyError:
+            return None
+
+    @staticmethod
+    def _json_load(body: bytes) -> dict:
+        """
+        AWS only tries to JSON decode the body if it starts with some leading characters ({, [, ", ')
+        otherwise, it ignores it
+        :param body:
+        :return:
+        """
+        if any(body.startswith(c) for c in (b"{", b"[", b"'", b'"')):
+            return json.loads(body)
+
+        return {}
