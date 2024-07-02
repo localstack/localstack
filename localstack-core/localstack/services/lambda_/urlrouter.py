@@ -66,7 +66,10 @@ class FunctionUrlRouter:
             store = lambda_stores[account_id][region]
             for fn in store.functions.values():
                 for url_config in fn.function_url_configs.values():
-                    if url_config.url_id == api_id:
+                    # AWS tags are case sensitive, but domains are not.
+                    # So we normalize them here to maximize both AWS and RFC
+                    # conformance
+                    if url_config.url_id.lower() == api_id.lower():
                         lambda_url_config = url_config
 
         # TODO: check if errors are different when the URL has existed previously
