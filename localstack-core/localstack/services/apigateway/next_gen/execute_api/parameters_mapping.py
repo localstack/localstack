@@ -95,7 +95,6 @@ class ParametersMapper:
                 return to_str(body)
 
             elif expr.startswith("body."):
-                # TODO: error handling
                 json_path = expr.removeprefix("body.")
                 return self._get_json_path_from_dict(decoded_body, json_path)
 
@@ -148,7 +147,7 @@ class ParametersMapper:
             return None
 
     @staticmethod
-    def _json_load(body: bytes) -> dict:
+    def _json_load(body: bytes) -> dict | list:
         """
         AWS only tries to JSON decode the body if it starts with some leading characters ({, [, ", ')
         otherwise, it ignores it

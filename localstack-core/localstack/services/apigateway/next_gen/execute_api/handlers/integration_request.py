@@ -30,7 +30,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
         if integration_type in (IntegrationType.AWS_PROXY, IntegrationType.HTTP_PROXY):
             # `PROXY` types cannot use integration mapping templates
-            # TODO: check if PROXY can still parameters mapping and substitution in URI for example?
+            # TODO: check if PROXY can still parameters mapping and substitution in URI for example? normally not
             # See
             return
 

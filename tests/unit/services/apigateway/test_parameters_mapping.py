@@ -63,8 +63,6 @@ class TestApigatewayParametersMapping:
             stage_variables={},
         )
 
-        print(f"{default_invocation_request=}")
-
         assert mapping == {
             "header": {"test": "test-qs-value"},
             "path": {"test": "test-header-value"},
@@ -91,7 +89,6 @@ class TestApigatewayParametersMapping:
         }
 
     def test_nested_context_var(self, default_invocation_request, default_context_variables):
-        # TODO: test in AWS casing of context variables??
         mapper = ParametersMapper()
         request_parameters = {
             "integration.request.header.my_api_key": "context.identity.apiKey",
@@ -112,7 +109,6 @@ class TestApigatewayParametersMapping:
         }
 
     def test_stage_variable_mapping(self, default_invocation_request, default_context_variables):
-        # TODO: test in AWS casing of stage Variables??
         mapper = ParametersMapper()
         request_parameters = {
             "integration.request.header.my_stage_var": "stageVariables.test_var",
@@ -369,6 +365,29 @@ class TestApigatewayParametersMapping:
         mapping = mapper.map_integration_request(
             request_parameters=request_parameters,
             invocation_request=request,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+
+        assert mapping == {
+            "header": {},
+            "path": {},
+            "querystring": {},
+        }
+
+    def test_default_request_mapping_casing(
+        self, default_invocation_request, default_context_variables
+    ):
+        mapper = ParametersMapper()
+        request_parameters = {
+            "integration.request.header.test": "method.request.querystring.QS_value",
+            "integration.request.querystring.test": "method.request.path.PATH_value",
+            "integration.request.path.test": "method.request.header.HEADER_value",
+        }
+
+        mapping = mapper.map_integration_request(
+            request_parameters=request_parameters,
+            invocation_request=default_invocation_request,
             context_variables=default_context_variables,
             stage_variables={},
         )
