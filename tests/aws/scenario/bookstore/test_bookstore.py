@@ -19,7 +19,7 @@ from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
-from localstack.utils.strings import short_uid, to_bytes
+from localstack.utils.strings import to_bytes
 from localstack.utils.sync import retry
 
 """
@@ -394,7 +394,7 @@ class BooksApi(Construct):
         # opensearch
         self.opensearch_domain = opensearch.Domain(
             stack,
-            f"Domain{short_uid()}",
+            "Domain",
             version=opensearch.EngineVersion.OPENSEARCH_2_5,
             ebs=opensearch.EbsOptions(volume_size=10, volume_type=ec2.EbsDeviceVolumeType.GP2),
             advanced_options={"rest.action.multi.allow_explicit_index": "false"},
