@@ -3,7 +3,7 @@
     "recorded-date": "25-09-2023, 10:28:42",
     "recorded-content": {
       "alarm_outputs": {
-        "AlarmArnFromAtt": "arn:aws:cloudwatch:<region>:111111111111:alarm:<resource:1>",
+        "AlarmArnFromAtt": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<resource:1>",
         "AlarmName": "<resource:1>"
       }
     }
@@ -15,27 +15,27 @@
         {
           "ActionsEnabled": true,
           "AlarmActions": [
-            "arn:aws:sns:<region>:111111111111:stack-fd398c48-SNS-7rt9W1qlY3qk"
+            "arn:<partition>:sns:<region>:111111111111:stack-fd398c48-SNS-7rt9W1qlY3qk"
           ],
-          "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+          "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
           "AlarmConfigurationUpdatedTimestamp": "timestamp",
           "AlarmDescription": "Indicates that the system resource usage is high while no known deployment is in progress",
           "AlarmName": "<alarm-name:1>",
           "AlarmRule": "(ALARM(<SubscriptionArn:2>) OR ALARM(<alarm-name:2>))",
           "InsufficientDataActions": [],
           "OKActions": [],
-          "StateReason": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1> was created and its alarm rule evaluates to OK",
+          "StateReason": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1> was created and its alarm rule evaluates to OK",
           "StateReasonData": {
             "triggeringAlarms": [
               {
-                "arn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<SubscriptionArn:2>",
+                "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<SubscriptionArn:2>",
                 "state": {
                   "value": "INSUFFICIENT_DATA",
                   "timestamp": "date"
                 }
               },
               {
-                "arn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:2>",
+                "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:2>",
                 "state": {
                   "value": "INSUFFICIENT_DATA",
                   "timestamp": "date"
@@ -51,7 +51,7 @@
       "metric_alarm": [
         {
           "AlarmName": "<alarm-name:2>",
-          "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:2>",
+          "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:2>",
           "AlarmDescription": "Memory usage is high",
           "AlarmConfigurationUpdatedTimestamp": "timestamp",
           "ActionsEnabled": true,
@@ -85,7 +85,7 @@
       "simple_alarm": [
         {
           "AlarmName": "<alarm-name:1>",
-          "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+          "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
           "AlarmDescription": "uses extended statistic",
           "AlarmConfigurationUpdatedTimestamp": "timestamp",
           "ActionsEnabled": true,

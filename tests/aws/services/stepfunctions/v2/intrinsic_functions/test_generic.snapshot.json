@@ -1115,7 +1115,7 @@
             "stateExitedEventDetails": {
               "name": "State_0",
               "output": {
-                "FunctionResult": "Formatting arguments fst=<ExecArnPart_0idx> and snd={Id=arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>, Name=<ArnPart_0idx>}."
+                "FunctionResult": "Formatting arguments fst=<ExecArnPart_0idx> and snd={Id=arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>, Name=<ArnPart_0idx>}."
               },
               "outputDetails": {
                 "truncated": false
@@ -1127,7 +1127,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "FunctionResult": "Formatting arguments fst=<ExecArnPart_0idx> and snd={Id=arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>, Name=<ArnPart_0idx>}."
+                "FunctionResult": "Formatting arguments fst=<ExecArnPart_0idx> and snd={Id=arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>, Name=<ArnPart_0idx>}."
               },
               "outputDetails": {
                 "truncated": false

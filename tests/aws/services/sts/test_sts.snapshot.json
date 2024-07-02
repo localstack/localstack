@@ -10,7 +10,7 @@
           "SessionToken": "<session-token:1>"
         },
         "FederatedUser": {
-          "Arn": "arn:aws:sts::111111111111:federated-user/<resource:1>",
+          "Arn": "arn:<partition>:sts::111111111111:federated-user/<resource:1>",
           "FederatedUserId": "111111111111:<resource:1>"
         },
         "PackedPolicySize": 0,
@@ -29,7 +29,7 @@
       },
       "create-role": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -54,7 +54,7 @@
       },
       "assume-role": {
         "AssumedRoleUser": {
-          "Arn": "arn:aws:sts::111111111111:assumed-role/<resource:1>/<role-session-name:1>",
+          "Arn": "arn:<partition>:sts::111111111111:assumed-role/<resource:1>/<role-session-name:1>",
           "AssumedRoleId": "<role-id:1>:<role-session-name:1>"
         },
         "Credentials": {

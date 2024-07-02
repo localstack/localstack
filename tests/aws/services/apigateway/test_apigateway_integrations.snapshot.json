@@ -61,7 +61,7 @@
               "Action": "execute-api:Invoke",
               "Effect": "Allow",
               "Principal": "*",
-              "Resource": "arn:aws:execute-api:<region>:111111111111:<id:1>/*"
+              "Resource": "arn:<partition>:execute-api:<region>:111111111111:<id:1>/*"
             }
           ],
           "Version": "2012-10-17"
@@ -341,12 +341,12 @@
       "aws-integration-AWS": {
         "cacheKeyParameters": [],
         "cacheNamespace": "<cache-namespace:1>",
-        "credentials": "arn:aws:iam::111111111111:role/service-role/testfunction-role-oe783psq",
+        "credentials": "arn:<partition>:iam::111111111111:role/service-role/testfunction-role-oe783psq",
         "httpMethod": "POST",
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS",
-        "uri": "arn:aws:apigateway:<region>:s3:path/b/k",
+        "uri": "arn:<partition>:apigateway:<region>:s3:path/b/k",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -359,7 +359,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS",
-        "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:MyLambda/invocations",
+        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:MyLambda/invocations",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -372,7 +372,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS_PROXY",
-        "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:MyLambda/invocations",
+        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:MyLambda/invocations",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201

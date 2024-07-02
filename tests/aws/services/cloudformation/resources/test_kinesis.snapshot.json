@@ -3,7 +3,7 @@
     "recorded-date": "12-09-2022, 14:11:29",
     "recorded-content": {
       "stack_output": {
-        "StreamArnFromAtt": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+        "StreamArnFromAtt": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
         "StreamNameFromRef": "<resource:1>"
       },
       "resource_description": {
@@ -16,7 +16,7 @@
             "PhysicalResourceId": "<resource:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Kinesis::Stream",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -48,7 +48,7 @@
               "ShardId": "shard-id"
             }
           ],
-          "StreamARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+          "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
           "StreamCreationTimestamp": "timestamp",
           "StreamModeDetails": {
             "StreamMode": "PROVISIONED"

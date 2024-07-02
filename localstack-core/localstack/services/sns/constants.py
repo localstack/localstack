@@ -38,4 +38,4 @@ SUBSCRIPTION_TOKENS_ENDPOINT = "/_aws/sns/subscription-tokens"
 # we could parametrize the certificate ID in the future
 SNS_CERT_ENDPOINT = "/_aws/sns/SimpleNotificationService-6c6f63616c737461636b69736e696365.pem"
 
-DUMMY_SUBSCRIPTION_PRINCIPAL = "arn:aws:iam::{{account_id}}:user/DummySNSPrincipal"
+DUMMY_SUBSCRIPTION_PRINCIPAL = "arn:{partition}:iam::{account_id}:user/DummySNSPrincipal"

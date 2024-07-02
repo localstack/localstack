@@ -12,14 +12,14 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
         "State": "Pending",
         "StateReason": "The function is being created.",
@@ -44,14 +44,14 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:2>",
         "FunctionName": "<function-name:2>",
         "Handler": "index.handler",
         "LastModified": "date",
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
         "State": "Pending",
         "StateReason": "The function is being created.",
@@ -81,7 +81,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -89,7 +89,7 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.9",
           "State": "Active",
           "Timeout": 3,
@@ -118,7 +118,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:2>",
           "FunctionName": "<function-name:2>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -126,7 +126,7 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.9",
           "State": "Active",
           "Timeout": 3,
@@ -223,7 +223,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -234,10 +234,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -289,7 +289,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -300,10 +300,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -347,7 +347,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -358,10 +358,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -395,7 +395,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -407,10 +407,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -616,14 +616,14 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.9",
           "State": "Pending",
           "StateReason": "The function is being created.",
@@ -665,7 +665,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -673,7 +673,7 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
         "State": "Active",
         "Timeout": 30,
@@ -701,7 +701,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -712,10 +712,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -750,7 +750,7 @@
             "foo": "bar with 'quotes\""
           },
           "context": {
-            "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+            "invoked_function_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
             "function_version": "1",
             "function_name": "<function-name:1>",
             "memory_limit_in_mb": "128",
@@ -781,7 +781,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -792,10 +792,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -821,7 +821,7 @@
             "foo": "bar with 'quotes\""
           },
           "context": {
-            "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+            "invoked_function_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
             "function_version": "$LATEST",
             "function_name": "<function-name:1>",
             "memory_limit_in_mb": "128",
@@ -857,14 +857,14 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "lambda_integration.handler",
           "LastModified": "date",
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "nodejs16.x",
           "State": "Pending",
           "StateReason": "The function is being created.",
@@ -904,7 +904,7 @@
                 "fizz": "buzz"
               }
             },
-            "invokedFunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+            "invokedFunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
             "awsRequestId": "<uuid:2>"
           }
         },
@@ -932,7 +932,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -944,10 +944,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:2>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:3>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1045,7 +1045,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1056,10 +1056,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1088,7 +1088,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1100,10 +1100,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1130,7 +1130,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1144,10 +1144,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1168,7 +1168,7 @@
         "ExecutedVersion": "$LATEST",
         "Payload": {
           "version_id": "version2",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "version_from_ctx": "$LATEST"
         },
         "StatusCode": 200,
@@ -1181,7 +1181,7 @@
         "ExecutedVersion": "1",
         "Payload": {
           "version_id": "version1",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
           "version_from_ctx": "1"
         },
         "StatusCode": 200,
@@ -1200,7 +1200,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:2",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1212,10 +1212,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:4>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1236,7 +1236,7 @@
         "ExecutedVersion": "2",
         "Payload": {
           "version_id": "version2",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:2",
           "version_from_ctx": "2"
         },
         "StatusCode": 200,
@@ -1255,7 +1255,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:3",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:3",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1266,10 +1266,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:5>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1292,7 +1292,7 @@
         "ExecutedVersion": "3",
         "Payload": {
           "version_id": "version3",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:3",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:3",
           "version_from_ctx": "3"
         },
         "StatusCode": 200,
@@ -1305,7 +1305,7 @@
         "ExecutedVersion": "$LATEST",
         "Payload": {
           "version_id": "version3",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "version_from_ctx": "$LATEST"
         },
         "StatusCode": 200,
@@ -1318,7 +1318,7 @@
         "ExecutedVersion": "2",
         "Payload": {
           "version_id": "version2",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:2",
           "version_from_ctx": "2"
         },
         "StatusCode": 200,
@@ -1331,7 +1331,7 @@
         "ExecutedVersion": "1",
         "Payload": {
           "version_id": "version1",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
           "version_from_ctx": "1"
         },
         "StatusCode": 200,
@@ -1355,7 +1355,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1366,10 +1366,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1389,7 +1389,7 @@
         }
       },
       "create_alias_response": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:alias1",
+        "AliasArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:alias1",
         "Description": "",
         "FunctionVersion": "1",
         "Name": "alias1",
@@ -1403,7 +1403,7 @@
         "ExecutedVersion": "1",
         "Payload": {
           "version_id": "version1",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:alias1",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:alias1",
           "version_from_ctx": "1"
         },
         "StatusCode": 200,
@@ -1416,7 +1416,7 @@
         "ExecutedVersion": "1",
         "Payload": {
           "version_id": "version1",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:alias1",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:alias1",
           "version_from_ctx": "1"
         },
         "StatusCode": 200,
@@ -1435,7 +1435,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1449,10 +1449,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1473,7 +1473,7 @@
         "ExecutedVersion": "1",
         "Payload": {
           "version_id": "version1",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:alias1",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:alias1",
           "version_from_ctx": "1"
         },
         "StatusCode": 200,
@@ -1492,7 +1492,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:2",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1504,10 +1504,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:4>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1528,7 +1528,7 @@
         "ExecutedVersion": "1",
         "Payload": {
           "version_id": "version1",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:alias1",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:alias1",
           "version_from_ctx": "1"
         },
         "StatusCode": 200,
@@ -1538,7 +1538,7 @@
         }
       },
       "update_alias_response": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:alias1",
+        "AliasArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:alias1",
         "Description": "",
         "FunctionVersion": "2",
         "Name": "alias1",
@@ -1552,7 +1552,7 @@
         "ExecutedVersion": "2",
         "Payload": {
           "version_id": "version2",
-          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:alias1",
+          "invoked_arn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:alias1",
           "version_from_ctx": "2"
         },
         "StatusCode": 200,
@@ -1564,9 +1564,9 @@
       "invocation_exc_not_existent": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:non-existent-alias"
+          "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:non-existent-alias"
         },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:non-existent-alias",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:non-existent-alias",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1579,7 +1579,7 @@
     "recorded-date": "08-04-2024, 17:11:17",
     "recorded-content": {
       "create_alias_response": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "AliasArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "Description": "",
         "FunctionVersion": "1",
         "Name": "alias1",
@@ -1614,7 +1614,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -1625,10 +1625,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -1668,17 +1668,17 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.8",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -1711,7 +1711,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1719,10 +1719,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1752,7 +1752,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1760,10 +1760,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1793,7 +1793,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1801,10 +1801,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1822,7 +1822,7 @@
         }
       },
       "create_alias": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
+        "AliasArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
         "Description": "",
         "FunctionVersion": "1",
         "Name": "<alias-name>",
@@ -1850,7 +1850,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -1858,10 +1858,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.8",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -1897,7 +1897,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -1905,10 +1905,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:5>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.8",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -1939,7 +1939,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1947,10 +1947,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:6>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -1980,7 +1980,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:2",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -1988,10 +1988,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:7>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -2009,7 +2009,7 @@
         }
       },
       "update_alias": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
+        "AliasArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
         "Description": "",
         "FunctionVersion": "2",
         "Name": "<alias-name>",
@@ -2062,17 +2062,17 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<request-id>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.10",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -2103,7 +2103,7 @@
       "log_events": [
         {
           "timestamp": "timestamp",
-          "message": "INIT_START Runtime Version: python:3.10.v11\tRuntime Version ARN: arn:aws:lambda:<region>::runtime:<resource:2>\n",
+          "message": "INIT_START Runtime Version: python:3.10.v11\tRuntime Version ARN: arn:<partition>:lambda:<region>::runtime:<resource:2>\n",
           "ingestionTime": "timestamp"
         },
         {
@@ -2167,7 +2167,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -2178,10 +2178,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -2298,7 +2298,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -2310,10 +2310,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -2334,7 +2334,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionUrl": "function-url",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2347,7 +2347,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2406,7 +2406,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2419,7 +2419,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2449,7 +2449,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2462,7 +2462,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2490,7 +2490,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2503,7 +2503,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2533,7 +2533,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2546,7 +2546,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2574,7 +2574,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2587,7 +2587,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2615,7 +2615,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2628,7 +2628,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2656,7 +2656,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2669,7 +2669,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2697,7 +2697,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2710,7 +2710,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -2881,7 +2881,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -2893,10 +2893,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -2936,11 +2936,11 @@
       "put_event_invoke_conf": {
         "DestinationConfig": {
           "OnFailure": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:3>"
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
           },
           "OnSuccess": {}
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
         "LastModified": "datetime",
         "MaximumRetryAttempts": 0,
         "ResponseMetadata": {
@@ -2969,7 +2969,7 @@
           "timestamp": "date",
           "requestContext": {
             "requestId": "<uuid:2>",
-            "functionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+            "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
             "condition": "ZeroReservedConcurrency",
             "approximateInvokeCount": 0
           },
@@ -2997,7 +2997,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -3009,10 +3009,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -3169,7 +3169,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -3183,10 +3183,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -3278,7 +3278,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3291,7 +3291,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -3321,9 +3321,9 @@
       "invoke_function_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+          "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:doesnotexist"
         },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:doesnotexist",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3367,9 +3367,9 @@
       "invoke_function_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+          "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:doesnotexist"
         },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:doesnotexist",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3508,13 +3508,13 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_assume_role[1]": {
     "recorded-date": "08-04-2024, 16:55:26",
     "recorded-content": {
-      "invoke-result-assumed-role-arn": "arn:aws:sts::111111111111:assumed-role/lambda-autogenerated-<lambda-autogenerated-role-prefix>/<function-name>@lambda_function"
+      "invoke-result-assumed-role-arn": "arn:<partition>:sts::111111111111:assumed-role/lambda-autogenerated-<lambda-autogenerated-role-prefix>/<function-name>@lambda_function"
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_assume_role[2]": {
     "recorded-date": "08-04-2024, 16:55:32",
     "recorded-content": {
-      "invoke-result-assumed-role-arn": "arn:aws:sts::111111111111:assumed-role/lambda-autogenerated-<lambda-autogenerated-role-prefix>/<function-name>"
+      "invoke-result-assumed-role-arn": "arn:<partition>:sts::111111111111:assumed-role/lambda-autogenerated-<lambda-autogenerated-role-prefix>/<function-name>"
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_large_payloads": {
@@ -3539,7 +3539,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -3550,10 +3550,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -3586,7 +3586,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
@@ -3600,10 +3600,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:3>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -3656,7 +3656,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
@@ -3667,10 +3667,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -3791,7 +3791,7 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler_two",
         "LastModified": "date",
@@ -3805,10 +3805,10 @@
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.12",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -3843,7 +3843,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler_two",
           "LastModified": "date",
@@ -3855,10 +3855,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -3921,7 +3921,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "InvokeMode": "BUFFERED",
         "ResponseMetadata": {
@@ -3932,7 +3932,7 @@
       "get_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "InvokeMode": "BUFFERED",
         "LastModifiedTime": "date",
@@ -3944,7 +3944,7 @@
       "modify_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "InvokeMode": "RESPONSE_STREAM",
         "LastModifiedTime": "date",
@@ -3956,7 +3956,7 @@
       "get_url_config_2": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "InvokeMode": "RESPONSE_STREAM",
         "LastModifiedTime": "date",
@@ -3968,7 +3968,7 @@
       "modify_lambda_url_config_none": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "InvokeMode": "RESPONSE_STREAM",
         "LastModifiedTime": "date",
@@ -3980,7 +3980,7 @@
       "get_url_config_3": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "InvokeMode": "RESPONSE_STREAM",
         "LastModifiedTime": "date",
@@ -3997,7 +3997,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "InvokeMode": "RESPONSE_STREAM",
         "ResponseMetadata": {
@@ -4011,7 +4011,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -4031,7 +4031,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "InvokeMode": "BUFFERED",
         "ResponseMetadata": {
@@ -4045,7 +4045,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -4065,7 +4065,7 @@
       "create_lambda_url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4078,7 +4078,7 @@
           "Effect": "Allow",
           "Principal": "*",
           "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "lambda:FunctionUrlAuthType": "NONE"
@@ -4176,7 +4176,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "lambda_echo.handler",
           "LastModified": "date",
@@ -4187,10 +4187,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -4225,7 +4225,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "lambda_echo.handler",
           "LastModified": "date",
@@ -4236,10 +4236,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",

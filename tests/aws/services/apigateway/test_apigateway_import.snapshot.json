@@ -845,7 +845,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations"
+          "uri": "arn:<partition>:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:<partition>:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations"
         },
         "methodResponses": {
           "200": {
@@ -892,7 +892,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS_PROXY",
-        "uri": "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations",
+        "uri": "arn:<partition>:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:<partition>:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1078,7 +1078,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produ-GetProductsFunction-c1359550:live/invocations"
+          "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produ-GetProductsFunction-c1359550:live/invocations"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1103,7 +1103,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS_PROXY",
-        "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produ-GetProductsFunction-c1359550:live/invocations",
+        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produ-GetProductsFunction-c1359550:live/invocations",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1231,7 +1231,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produc-GetProductFunction-28378339:live/invocations"
+          "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produc-GetProductFunction-28378339:live/invocations"
         },
         "requestParameters": {
           "method.request.path.product_id": true
@@ -1259,7 +1259,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS_PROXY",
-        "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produc-GetProductFunction-28378339:live/invocations",
+        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produc-GetProductFunction-28378339:live/invocations",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

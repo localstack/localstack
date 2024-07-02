@@ -5,7 +5,7 @@
       "describe_execution": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
         "error": "SomeFailure",
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
         "input": {},
         "inputDetails": {
           "included": true
@@ -14,7 +14,7 @@
         "redriveCount": 0,
         "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "FAILED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -182,7 +182,7 @@
     "recorded-date": "06-03-2024, 10:24:13",
     "recorded-content": {
       "describe_execution": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
         "input": {},
         "inputDetails": {
           "included": true
@@ -191,7 +191,7 @@
         "redriveCount": 0,
         "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "FAILED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -393,11 +393,11 @@
           "time": "date",
           "region": "<region>",
           "resources": [
-            "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
+            "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
           ],
           "detail": {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:2>",
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:2>",
             "name": "test_event_bridge_events-{short_uid()}",
             "status": "RUNNING",
             "startDate": "start-date",
@@ -427,11 +427,11 @@
           "time": "date",
           "region": "<region>",
           "resources": [
-            "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
+            "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
           ],
           "detail": {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:2>",
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:2>",
             "name": "test_event_bridge_events-{short_uid()}",
             "status": "SUCCEEDED",
             "startDate": "start-date",
@@ -567,7 +567,7 @@
                 "message": "HelloWorld!",
                 "query_values_1": {
                   "execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
                       "message": "HelloWorld!"
                     },
@@ -578,8 +578,8 @@
                   },
                   "execution_rolearn": "snf_role_arn",
                   "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
                     "message": "HelloWorld!"
                   },
@@ -587,7 +587,7 @@
                   "state_name": "QueryValues1",
                   "state_enteredtime": "entered-time",
                   "statemachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "state": {
@@ -596,7 +596,7 @@
                   },
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "HelloWorld!"
                       },
@@ -606,7 +606,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -632,7 +632,7 @@
                 "message": "HelloWorld!",
                 "query_values_1": {
                   "execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
                       "message": "HelloWorld!"
                     },
@@ -643,8 +643,8 @@
                   },
                   "execution_rolearn": "snf_role_arn",
                   "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
                     "message": "HelloWorld!"
                   },
@@ -652,7 +652,7 @@
                   "state_name": "QueryValues1",
                   "state_enteredtime": "entered-time",
                   "statemachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "state": {
@@ -661,7 +661,7 @@
                   },
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "HelloWorld!"
                       },
@@ -671,7 +671,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -699,7 +699,7 @@
                 "message": "HelloWorld!",
                 "query_values_1": {
                   "execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
                       "message": "HelloWorld!"
                     },
@@ -710,8 +710,8 @@
                   },
                   "execution_rolearn": "snf_role_arn",
                   "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
                     "message": "HelloWorld!"
                   },
@@ -719,7 +719,7 @@
                   "state_name": "QueryValues1",
                   "state_enteredtime": "entered-time",
                   "statemachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "state": {
@@ -728,7 +728,7 @@
                   },
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "HelloWorld!"
                       },
@@ -738,7 +738,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -751,7 +751,7 @@
                 "query_values_2": {
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "HelloWorld!"
                       },
@@ -761,7 +761,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -784,7 +784,7 @@
                 "message": "HelloWorld!",
                 "query_values_1": {
                   "execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
                       "message": "HelloWorld!"
                     },
@@ -795,8 +795,8 @@
                   },
                   "execution_rolearn": "snf_role_arn",
                   "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
                     "message": "HelloWorld!"
                   },
@@ -804,7 +804,7 @@
                   "state_name": "QueryValues1",
                   "state_enteredtime": "entered-time",
                   "statemachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "state": {
@@ -813,7 +813,7 @@
                   },
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "HelloWorld!"
                       },
@@ -823,7 +823,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -836,7 +836,7 @@
                 "query_values_2": {
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "HelloWorld!"
                       },
@@ -846,7 +846,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {

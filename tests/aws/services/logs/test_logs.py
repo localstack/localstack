@@ -13,6 +13,7 @@ from localstack.testing.config import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
@@ -305,7 +306,7 @@ class TestCloudWatchLogs:
             StatementId=test_lambda_name,
             Principal=f"logs.{region_name}.amazonaws.com",
             Action="lambda:InvokeFunction",
-            SourceArn=f"arn:aws:logs:{region_name}:{account_id}:log-group:{logs_log_group}:*",
+            SourceArn=f"arn:{get_partition(region_name)}:logs:{region_name}:{account_id}:log-group:{logs_log_group}:*",
             SourceAccount=account_id,
         )
 

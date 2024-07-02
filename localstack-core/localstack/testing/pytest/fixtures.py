@@ -41,6 +41,7 @@ from localstack.testing.config import (
     TEST_AWS_REGION_NAME,
 )
 from localstack.utils import testutil
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.bootstrap import is_api_enabled
@@ -1891,6 +1892,11 @@ def region_name(aws_client):
         return aws_client.sts.meta.region_name
     else:
         return TEST_AWS_REGION_NAME
+
+
+@pytest.fixture(scope="session")
+def partition(region_name):
+    return get_partition(region_name)
 
 
 @pytest.fixture(scope="session")

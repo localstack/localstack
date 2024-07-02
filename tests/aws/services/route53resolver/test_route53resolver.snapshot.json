@@ -4,7 +4,7 @@
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "ResolverEndpoint": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:1>",
           "Direction": "INBOUND",
@@ -30,7 +30,7 @@
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "ResolverEndpoint": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:1>",
           "Direction": "OUTBOUND",
@@ -71,7 +71,7 @@
     "recorded-date": "08-09-2023, 08:37:11",
     "recorded-content": {
       "create_resolver_endpoint_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:1>",
         "Direction": "INBOUND",
@@ -93,7 +93,7 @@
     "recorded-date": "08-09-2023, 08:39:43",
     "recorded-content": {
       "create_resolver_endpoint_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:1>",
         "Direction": "INBOUND",
@@ -108,7 +108,7 @@
       },
       "update_resolver_endpoint_res": {
         "ResolverEndpoint": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:1>",
           "Direction": "INBOUND",
@@ -134,7 +134,7 @@
     "recorded-date": "08-09-2023, 08:42:35",
     "recorded-content": {
       "create_resolver_endpoint_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:1>",
         "Direction": "INBOUND",
@@ -149,7 +149,7 @@
       },
       "delete_resolver_endpoint_res": {
         "ResolverEndpoint": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:1>",
           "Direction": "INBOUND",
@@ -180,7 +180,7 @@
     "recorded-date": "08-09-2023, 08:47:16",
     "recorded-content": {
       "create_resolver_endpoint_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:1>",
         "Direction": "OUTBOUND",
@@ -195,7 +195,7 @@
         "StatusMessage": "status-message"
       },
       "create_resolver_rule_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:2>",
         "DomainName": "www.example1.com.",
@@ -216,7 +216,7 @@
       },
       "delete_resolver_rule_res": {
         "ResolverRule": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:2>",
           "DomainName": "www.example1.com.",
@@ -246,7 +246,7 @@
     "recorded-date": "08-09-2023, 08:52:13",
     "recorded-content": {
       "create_resolver_endpoint_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:1>",
         "Direction": "INBOUND",
@@ -277,7 +277,7 @@
     "recorded-date": "08-09-2023, 10:10:19",
     "recorded-content": {
       "create_resolver_endpoint_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:1>",
         "Direction": "OUTBOUND",
@@ -292,7 +292,7 @@
         "StatusMessage": "status-message"
       },
       "create_resolver_rule_res_0": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:2>",
         "DomainName": "www.example0.com.",
@@ -313,7 +313,7 @@
       },
       "delete_resolver_rule_res0": {
         "ResolverRule": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:2>",
           "DomainName": "www.example0.com.",
@@ -338,7 +338,7 @@
         }
       },
       "create_resolver_rule_res_1": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:3>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:3>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:3>",
         "DomainName": "www.example1.com.",
@@ -359,7 +359,7 @@
       },
       "delete_resolver_rule_res1": {
         "ResolverRule": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:3>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:3>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:3>",
           "DomainName": "www.example1.com.",
@@ -384,7 +384,7 @@
         }
       },
       "create_resolver_rule_res_2": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:4>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:4>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:4>",
         "DomainName": "www.example2.com.",
@@ -405,7 +405,7 @@
       },
       "delete_resolver_rule_res2": {
         "ResolverRule": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:4>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:4>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:4>",
           "DomainName": "www.example2.com.",
@@ -451,7 +451,7 @@
     "recorded-date": "08-09-2023, 10:43:50",
     "recorded-content": {
       "create_resolver_endpoint_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:1>",
         "Direction": "OUTBOUND",
@@ -466,7 +466,7 @@
         "StatusMessage": "status-message"
       },
       "create_resolver_rule_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:2>",
         "DomainName": "www.example4.com.",
@@ -525,11 +525,11 @@
     "recorded-date": "08-09-2023, 10:27:08",
     "recorded-content": {
       "create_resolver_query_log_config_res": {
-        "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-query-log-config/<id:1>",
+        "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-query-log-config/<id:1>",
         "AssociationCount": 0,
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:1>",
-        "DestinationArn": "arn:aws:logs:<region>:111111111111:log-group:<Arn:1>",
+        "DestinationArn": "arn:<partition>:logs:<region>:111111111111:log-group:<Arn:1>",
         "Id": "<id:1>",
         "Name": "<name:1>",
         "OwnerId": "111111111111",
@@ -538,11 +538,11 @@
       },
       "delete_resolver_query_log_config_res": {
         "ResolverQueryLogConfig": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-query-log-config/<id:1>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:resolver-query-log-config/<id:1>",
           "AssociationCount": 0,
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:1>",
-          "DestinationArn": "arn:aws:logs:<region>:111111111111:log-group:<Arn:1>",
+          "DestinationArn": "arn:<partition>:logs:<region>:111111111111:log-group:<Arn:1>",
           "Id": "<id:1>",
           "Name": "<name:1>",
           "OwnerId": "111111111111",
@@ -577,7 +577,7 @@
     "recorded-content": {
       "create-firewall-domain-list": {
         "FirewallDomainList": {
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:firewall-domain-list/<id:1>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:firewall-domain-list/<id:1>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:1>",
           "DomainCount": 0,
@@ -595,7 +595,7 @@
       "list-firewall-domain-list-filtered": [
         {
           "Id": "<id:1>",
-          "Arn": "arn:aws:route53resolver:<region>:111111111111:firewall-domain-list/<id:1>",
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:firewall-domain-list/<id:1>",
           "Name": "my_firewall_domain",
           "CreatorRequestId": "<creator-request-id:1>"
         }

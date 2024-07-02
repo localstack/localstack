@@ -3,11 +3,11 @@
     "recorded-date": "01-12-2023, 15:03:52",
     "recorded-content": {
       "outputs": {
-        "RuleWithNameArn": "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<custom-rule-name>",
+        "RuleWithNameArn": "arn:<partition>:events:<region>:111111111111:rule/<event-bus-name>/<custom-rule-name>",
         "RuleWithNameRef": "<event-bus-name>|<custom-rule-name>",
-        "RuleWithoutBusArn": "arn:aws:events:<region>:111111111111:rule/<without-bus-id>",
+        "RuleWithoutBusArn": "arn:<partition>:events:<region>:111111111111:rule/<without-bus-id>",
         "RuleWithoutBusRef": "<without-bus-id>",
-        "RuleWithoutNameArn": "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<rule-id>",
+        "RuleWithoutNameArn": "arn:<partition>:events:<region>:111111111111:rule/<event-bus-name>/<rule-id>",
         "RuleWithoutNameRef": "<event-bus-name>|<rule-id>"
       }
     }

@@ -100,9 +100,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic-name>"
+              "arn:<partition>:sns:<region>:111111111111:<topic-name>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "test messages sent",
             "AlarmName": "<alarm-name:1>",
@@ -154,9 +154,9 @@
       "NumberOfMessagesSent-sqs-msg": {
         "AWSAccountId": "111111111111",
         "AlarmActions": [
-          "arn:aws:sns:<region>:111111111111:<topic-name>"
+          "arn:<partition>:sns:<region>:111111111111:<topic-name>"
         ],
-        "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
         "AlarmConfigurationUpdatedTimestamp": "date",
         "AlarmDescription": "test messages sent",
         "AlarmName": "<alarm-name:1>",

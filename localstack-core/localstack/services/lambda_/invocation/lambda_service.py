@@ -453,7 +453,7 @@ class LambdaService:
                 provisioned_concurrency_config.provisioned_concurrent_executions
             )  # async again
 
-    def can_assume_role(self, role_arn: str) -> bool:
+    def can_assume_role(self, role_arn: str, region: str) -> bool:
         """
         Checks whether lambda can assume the given role.
         This _should_ only fail if IAM enforcement is enabled.
@@ -461,7 +461,7 @@ class LambdaService:
         :param role_arn: Role to assume
         :return: True if the role can be assumed by lambda, false otherwise
         """
-        sts_client = connect_to().sts.request_metadata(service_principal="lambda")
+        sts_client = connect_to(region_name=region).sts.request_metadata(service_principal="lambda")
         try:
             sts_client.assume_role(
                 RoleArn=role_arn,

@@ -19,7 +19,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -54,7 +54,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -98,7 +98,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -141,7 +141,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -175,7 +175,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -209,7 +209,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -250,7 +250,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -293,7 +293,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -336,7 +336,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -374,7 +374,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:2>",
+                "arn": "arn:<partition>:s3:::<resource:2>",
                 "name": "<resource:2>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -417,7 +417,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -458,7 +458,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -514,7 +514,7 @@
                       "ownerIdentity": {
                         "principalId": "<principal-id:1>"
                       },
-                      "arn": "arn:aws:s3:::<resource:1>"
+                      "arn": "arn:<partition>:s3:::<resource:1>"
                     },
                     "object": {
                       "key": "test-data",
@@ -559,7 +559,7 @@
               }
             },
             "Id": "<config-id:1>",
-            "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue>"
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue>"
           },
           {
             "Events": [
@@ -580,7 +580,7 @@
               }
             },
             "Id": "id0002",
-            "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue>"
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue>"
           }
         ],
         "ResponseMetadata": {
@@ -603,7 +603,7 @@
         },
         "s3": {
           "bucket": {
-            "arn": "arn:aws:s3:::<bucket>",
+            "arn": "arn:<partition>:s3:::<bucket>",
             "name": "<bucket>",
             "ownerIdentity": {
               "principalId": "<principal-id:1>"
@@ -635,7 +635,7 @@
               "s3:ObjectCreated:*"
             ],
             "Id": "id123456",
-            "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue>"
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue>"
           }
         ],
         "ResponseMetadata": {
@@ -660,7 +660,7 @@
               }
             },
             "Id": "id123456",
-            "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue>"
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue>"
           }
         ],
         "ResponseMetadata": {
@@ -694,7 +694,7 @@
               }
             },
             "Id": "<id:1>",
-            "QueueArn": "arn:aws:sqs:<region>:111111111111:my-queue-<queue_id>"
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:my-queue-<queue_id>"
           }
         ],
         "ResponseMetadata": {
@@ -750,7 +750,7 @@
       },
       "queue-does-not-exist": {
         "Error": {
-          "ArgumentName1": "arn:aws:sqs:<region>:111111111111:my-queue",
+          "ArgumentName1": "arn:<partition>:sqs:<region>:111111111111:my-queue",
           "ArgumentValue1": "The destination queue does not exist",
           "Code": "InvalidArgument",
           "Message": "Unable to validate the following destination configurations"
@@ -767,7 +767,7 @@
               "s3:ObjectCreated:*"
             ],
             "Id": "id123",
-            "QueueArn": "arn:aws:sqs:<region>:111111111111:my-queue"
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:my-queue"
           }
         ],
         "ResponseMetadata": {
@@ -797,7 +797,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -829,7 +829,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -861,7 +861,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -902,7 +902,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -934,7 +934,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -966,7 +966,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -1016,8 +1016,8 @@
       },
       "multiple-queues-do-not-exist": {
         "Error": {
-          "ArgumentName1": "arn:aws:sqs:<region>:111111111111:my-queue",
-          "ArgumentName2": "arn:aws:sqs:<region>:111111111111:my-queue-2",
+          "ArgumentName1": "arn:<partition>:sqs:<region>:111111111111:my-queue",
+          "ArgumentName2": "arn:<partition>:sqs:<region>:111111111111:my-queue-2",
           "ArgumentValue1": "The destination queue does not exist",
           "ArgumentValue2": "The destination queue does not exist",
           "Code": "InvalidArgument",
@@ -1050,7 +1050,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"
@@ -1090,7 +1090,7 @@
             },
             "s3": {
               "bucket": {
-                "arn": "arn:aws:s3:::<resource:1>",
+                "arn": "arn:<partition>:s3:::<resource:1>",
                 "name": "<resource:1>",
                 "ownerIdentity": {
                   "principalId": "<principal-id:1>"

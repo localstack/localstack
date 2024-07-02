@@ -3,8 +3,8 @@
     "recorded-date": "31-05-2022, 09:32:02",
     "recorded-content": {
       "create_change_set": {
-        "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<change-set-id:1>/<resource:1>",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<change-set-id:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
         "ResponseMetadata": {
           "HTTPStatusCode": 200,
           "HTTPHeaders": {}
@@ -12,8 +12,8 @@
       },
       "describe_change_set": {
         "ChangeSetName": "<change-set-name:1>",
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<change-set-name:1>/<resource:3>",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<change-set-name:1>/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
         "StackName": "<stack-name:1>",
         "CreationTime": "datetime",
         "ExecutionStatus": "AVAILABLE",
@@ -27,7 +27,7 @@
             "ResourceChange": {
               "Action": "Modify",
               "LogicalResourceId": "topic123",
-              "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "ResourceType": "AWS::SNS::Topic",
               "Replacement": "True",
               "Scope": [
@@ -56,9 +56,9 @@
       "list_change_set": {
         "Summaries": [
           {
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
-            "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<change-set-name:1>/<resource:3>",
+            "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<change-set-name:1>/<resource:3>",
             "ChangeSetName": "<change-set-name:1>",
             "ExecutionStatus": "AVAILABLE",
             "Status": "CREATE_COMPLETE",
@@ -77,12 +77,12 @@
     "recorded-date": "10-08-2022, 10:52:55",
     "recorded-content": {
       "first_changeset": {
-        "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         },
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>"
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>"
       },
       "describe_first_cs": {
         "Capabilities": [
@@ -90,7 +90,7 @@
           "CAPABILITY_IAM",
           "CAPABILITY_NAMED_IAM"
         ],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
           {
@@ -113,17 +113,17 @@
           "HTTPStatusCode": 200
         },
         "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
         "StackName": "<stack-name:1>",
         "Status": "CREATE_COMPLETE"
       },
       "nochange_changeset": {
-        "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         },
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>"
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>"
       },
       "describe_nochange": {
         "Capabilities": [
@@ -131,7 +131,7 @@
           "CAPABILITY_IAM",
           "CAPABILITY_NAMED_IAM"
         ],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:2>",
         "Changes": [],
         "CreationTime": "datetime",
@@ -143,26 +143,26 @@
           "HTTPStatusCode": 200
         },
         "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
         "StackName": "<stack-name:1>",
         "Status": "FAILED",
         "StatusReason": "The submitted information didn't contain changes. Submit different information to create a change set."
       },
-      "error_execute_failed": "An error occurred (InvalidChangeSetStatus) when calling the ExecuteChangeSet operation: ChangeSet [arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>] cannot be executed in its current status of [FAILED]"
+      "error_execute_failed": "An error occurred (InvalidChangeSetStatus) when calling the ExecuteChangeSet operation: ChangeSet [arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>] cannot be executed in its current status of [FAILED]"
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_deleted_changeset": {
     "recorded-date": "11-08-2022, 11:11:47",
     "recorded-content": {
       "create": {
-        "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         },
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:2>"
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:2>"
       },
-      "postdelete_changeset_notfound": "An error occurred (ChangeSetNotFound) when calling the DescribeChangeSet operation: ChangeSet [arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>] does not exist"
+      "postdelete_changeset_notfound": "An error occurred (ChangeSetNotFound) when calling the DescribeChangeSet operation: ChangeSet [arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>] does not exist"
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_describe_change_set_nonexisting": {
@@ -203,7 +203,7 @@
             "EnableTerminationProtection": false,
             "NotificationARNs": [],
             "RollbackConfiguration": {},
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "StackStatus": "REVIEW_IN_PROGRESS",
             "StackStatusReason": "User Initiated",
@@ -227,7 +227,7 @@
             "LastUpdatedTime": "datetime",
             "NotificationARNs": [],
             "RollbackConfiguration": {},
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "StackStatus": "DELETE_COMPLETE",
             "Tags": []
@@ -249,7 +249,7 @@
             "EnableTerminationProtection": false,
             "NotificationARNs": [],
             "RollbackConfiguration": {},
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "StackStatus": "REVIEW_IN_PROGRESS",
             "StackStatusReason": "User Initiated",
@@ -263,7 +263,7 @@
       },
       "initial_changeset_id_desc": {
         "Capabilities": [],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-name:1>",
         "Changes": [
           {
@@ -282,7 +282,7 @@
         "IncludeNestedStacks": false,
         "NotificationARNs": [],
         "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
         "StackName": "<stack-name:1>",
         "Status": "CREATE_COMPLETE",
         "ResponseMetadata": {
@@ -292,7 +292,7 @@
       },
       "second_initial_changeset_id_desc": {
         "Capabilities": [],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:4>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:4>",
         "ChangeSetName": "<change-set-name:1>",
         "Changes": [
           {
@@ -311,7 +311,7 @@
         "IncludeNestedStacks": false,
         "NotificationARNs": [],
         "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Status": "CREATE_COMPLETE",
         "ResponseMetadata": {
@@ -325,7 +325,7 @@
     "recorded-date": "22-11-2023, 08:49:15",
     "recorded-content": {
       "create_stack_while_in_review": {
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -342,7 +342,7 @@
             "EnableTerminationProtection": false,
             "NotificationARNs": [],
             "RollbackConfiguration": {},
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "StackStatus": "CREATE_COMPLETE",
             "Tags": []
@@ -355,7 +355,7 @@
       },
       "describe_change_set": {
         "Capabilities": [],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:2>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:2>",
         "ChangeSetName": "<change-set-name:1>",
         "Changes": [
           {
@@ -374,7 +374,7 @@
         "IncludeNestedStacks": false,
         "NotificationARNs": [],
         "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Status": "CREATE_COMPLETE",
         "ResponseMetadata": {
@@ -412,7 +412,7 @@
             "EnableTerminationProtection": false,
             "NotificationARNs": [],
             "RollbackConfiguration": {},
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "StackStatus": "REVIEW_IN_PROGRESS",
             "StackStatusReason": "User Initiated",
@@ -427,7 +427,7 @@
       "recreate_deleted_with_id_exception": {
         "Error": {
           "Code": "ValidationError",
-          "Message": "Stack [arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>] already exists and cannot be created again with the changeSet [revived-stack-changeset].",
+          "Message": "Stack [arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>] already exists and cannot be created again with the changeSet [revived-stack-changeset].",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -442,7 +442,7 @@
     "recorded-content": {
       "initial_changeset": {
         "Capabilities": [],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-name:1>",
         "Changes": [
           {
@@ -461,7 +461,7 @@
         "IncludeNestedStacks": false,
         "NotificationARNs": [],
         "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
         "StackName": "<stack-name:1>",
         "Status": "CREATE_COMPLETE",
         "ResponseMetadata": {
@@ -470,8 +470,8 @@
         }
       },
       "additional_changeset": {
-        "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

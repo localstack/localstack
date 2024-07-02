@@ -173,7 +173,7 @@
           "MessageId": "<uuid:1>",
           "ReceiptHandle": "<receipt-handle:1>",
           "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": "\"Message containing all pre defined variables arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name> <rule-name> date\""
+          "Body": "\"Message containing all pre defined variables arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name> <rule-name> date\""
         }
       ]
     }

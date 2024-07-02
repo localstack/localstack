@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Dict, List, Protocol
 import pytest
 import requests
 from boto3.s3.transfer import KB, TransferConfig
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.testing.aws.util import is_aws_cloud
@@ -447,9 +448,12 @@ class TestS3NotificationsToSQS:
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
         key = "key-by-hostname"
+        s3_client = aws_client_factory(
+            config=Config(signature_version="s3v4"),
+        ).s3
 
         s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectCreated:*"])
-        url = aws_client.s3.generate_presigned_url(
+        url = s3_client.generate_presigned_url(
             "put_object", Params={"Bucket": bucket_name, "Key": key}
         )
         requests.put(url, data="something", verify=False)
@@ -474,7 +478,7 @@ class TestS3NotificationsToSQS:
             sqs_client=sqs_client_region_2,
         )
         # still generate the presign URL with the default client, with the default region
-        url_bucket_region_2 = aws_client.s3.generate_presigned_url(
+        url_bucket_region_2 = s3_client.generate_presigned_url(
             "put_object", Params={"Bucket": bucket_name_region_2, "Key": key}
         )
         requests.put(url_bucket_region_2, data="something", verify=False)

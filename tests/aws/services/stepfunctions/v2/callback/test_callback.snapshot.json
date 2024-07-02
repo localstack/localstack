@@ -13,7 +13,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -170,7 +170,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -309,7 +309,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -449,7 +449,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -602,7 +602,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -621,7 +621,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -639,7 +639,7 @@
             "taskScheduledEventDetails": {
               "parameters": {
                 "Input": null,
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Name": "TestStartTarget"
               },
               "region": "<region>",
@@ -664,7 +664,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -709,7 +709,7 @@
             "previousEventId": 5,
             "taskSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": "{}",
                 "InputDetails": {
                   "Included": true
@@ -720,7 +720,7 @@
                   "Included": true
                 },
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "SUCCEEDED",
                 "StopDate": "stop-date"
               },
@@ -739,7 +739,7 @@
             "stateExitedEventDetails": {
               "name": "StartExecution",
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": "{}",
                 "InputDetails": {
                   "Included": true
@@ -750,7 +750,7 @@
                   "Included": true
                 },
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "SUCCEEDED",
                 "StopDate": "stop-date"
               },
@@ -764,7 +764,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": "{}",
                 "InputDetails": {
                   "Included": true
@@ -775,7 +775,7 @@
                   "Included": true
                 },
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "SUCCEEDED",
                 "StopDate": "stop-date"
               },
@@ -804,7 +804,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -823,7 +823,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -841,7 +841,7 @@
             "taskScheduledEventDetails": {
               "parameters": {
                 "Input": null,
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Name": "TestStartTarget"
               },
               "region": "<region>",
@@ -866,7 +866,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -913,14 +913,14 @@
               "cause": {
                 "Cause": "This state machines raises a 'SomeFailure' failure.",
                 "Error": "SomeFailure",
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": "{}",
                 "InputDetails": {
                   "Included": true
                 },
                 "Name": "TestStartTarget",
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "FAILED",
                 "StopDate": "stop-date"
               },
@@ -936,14 +936,14 @@
               "cause": {
                 "Cause": "This state machines raises a 'SomeFailure' failure.",
                 "Error": "SomeFailure",
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": "{}",
                 "InputDetails": {
                   "Included": true
                 },
                 "Name": "TestStartTarget",
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "FAILED",
                 "StopDate": "stop-date"
               },
@@ -970,7 +970,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": {
                   "Payload": null
                 },
@@ -991,7 +991,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": {
                   "Payload": null
                 },
@@ -1013,7 +1013,7 @@
                 "Input": {
                   "Payload": null
                 },
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Name": "TestStartTarget"
               },
               "region": "<region>",
@@ -1038,7 +1038,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -1084,14 +1084,14 @@
             "taskFailedEventDetails": {
               "cause": {
                 "Error": "States.Timeout",
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": "{\"Payload\":null}",
                 "InputDetails": {
                   "Included": true
                 },
                 "Name": "TestStartTarget",
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "FAILED",
                 "StopDate": "stop-date"
               },
@@ -1106,14 +1106,14 @@
             "executionFailedEventDetails": {
               "cause": {
                 "Error": "States.Timeout",
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": "{\"Payload\":null}",
                 "InputDetails": {
                   "Included": true
                 },
                 "Name": "TestStartTarget",
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "FAILED",
                 "StopDate": "stop-date"
               },
@@ -1140,7 +1140,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -1159,7 +1159,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -1177,7 +1177,7 @@
             "taskScheduledEventDetails": {
               "parameters": {
                 "Input": null,
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Name": "TestStartTarget"
               },
               "region": "<region>",
@@ -1202,7 +1202,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -1247,7 +1247,7 @@
             "previousEventId": 5,
             "taskSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": {},
                 "InputDetails": {
                   "Included": true
@@ -1260,7 +1260,7 @@
                   "Included": true
                 },
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "SUCCEEDED",
                 "StopDate": "stop-date"
               },
@@ -1279,7 +1279,7 @@
             "stateExitedEventDetails": {
               "name": "StartExecution",
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": {},
                 "InputDetails": {
                   "Included": true
@@ -1292,7 +1292,7 @@
                   "Included": true
                 },
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "SUCCEEDED",
                 "StopDate": "stop-date"
               },
@@ -1306,7 +1306,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "Input": {},
                 "InputDetails": {
                   "Included": true
@@ -1319,7 +1319,7 @@
                   "Included": true
                 },
                 "StartDate": "start-date",
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Status": "SUCCEEDED",
                 "StopDate": "stop-date"
               },
@@ -1348,7 +1348,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "body": {
                   "arg1": "Hello",
                   "arg2": "World"
@@ -1357,7 +1357,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1369,7 +1369,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "body": {
                   "arg1": "Hello",
                   "arg2": "World"
@@ -1393,7 +1393,7 @@
                   "arg1": "Hello",
                   "TaskToken": "<task_token:1>"
                 },
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
               },
               "region": "<region>",
               "resource": "publish.waitForTaskToken",
@@ -1505,7 +1505,7 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": {
             "arg2": "World",
             "arg1": "Hello",
@@ -1515,7 +1515,7 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         }
       ]
     }
@@ -1535,7 +1535,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1705,7 +1705,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1870,7 +1870,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2035,7 +2035,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2200,7 +2200,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2365,7 +2365,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2530,7 +2530,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2699,7 +2699,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2986,7 +2986,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -3125,7 +3125,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -3369,7 +3369,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,

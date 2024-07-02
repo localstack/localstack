@@ -8914,7 +8914,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9014,7 +9014,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9114,7 +9114,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9214,7 +9214,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9314,7 +9314,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9403,7 +9403,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9503,7 +9503,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9603,7 +9603,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9703,7 +9703,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9790,7 +9790,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -9829,7 +9829,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
             },
             "previousEventId": 5,
             "timestamp": "timestamp",
@@ -9868,7 +9868,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
             },
             "previousEventId": 8,
             "timestamp": "timestamp",
@@ -9907,7 +9907,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
             },
             "previousEventId": 11,
             "timestamp": "timestamp",
@@ -10050,7 +10050,7 @@
               "input": {
                 "ThisContextObject": {
                   "Execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
                       "Value1": "HelloWorld!",
                       "Value2": null
@@ -10060,7 +10060,7 @@
                     "RoleArn": "snf_role_arn"
                   },
                   "StateMachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "State": {
@@ -10077,7 +10077,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -10112,7 +10112,7 @@
               "input": {
                 "ThisContextObject": {
                   "Execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
                       "Value1": "HelloWorld!",
                       "Value2": null
@@ -10122,7 +10122,7 @@
                     "RoleArn": "snf_role_arn"
                   },
                   "StateMachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "State": {
@@ -10139,7 +10139,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
             },
             "previousEventId": 5,
             "timestamp": "timestamp",
@@ -10174,7 +10174,7 @@
               "input": {
                 "ThisContextObject": {
                   "Execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
                       "Value1": "HelloWorld!",
                       "Value2": null
@@ -10184,7 +10184,7 @@
                     "RoleArn": "snf_role_arn"
                   },
                   "StateMachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "State": {
@@ -10201,7 +10201,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
             },
             "previousEventId": 8,
             "timestamp": "timestamp",
@@ -10236,7 +10236,7 @@
               "input": {
                 "ThisContextObject": {
                   "Execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
                       "Value1": "HelloWorld!",
                       "Value2": null
@@ -10246,7 +10246,7 @@
                     "RoleArn": "snf_role_arn"
                   },
                   "StateMachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "State": {
@@ -10263,7 +10263,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
             },
             "previousEventId": 11,
             "timestamp": "timestamp",
@@ -10410,7 +10410,7 @@
                 "Payload": {
                   "ThisContextObject": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "FunctionName": "<lambda_function_1_name>",
                         "Value1": "HelloWorld!",
@@ -10421,7 +10421,7 @@
                       "RoleArn": "snf_role_arn"
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -10482,7 +10482,7 @@
                 "Payload": {
                   "ThisContextObject": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "FunctionName": "<lambda_function_1_name>",
                         "Value1": "HelloWorld!",
@@ -10493,7 +10493,7 @@
                       "RoleArn": "snf_role_arn"
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -10554,7 +10554,7 @@
                 "Payload": {
                   "ThisContextObject": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "FunctionName": "<lambda_function_1_name>",
                         "Value1": "HelloWorld!",
@@ -10565,7 +10565,7 @@
                       "RoleArn": "snf_role_arn"
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -10626,7 +10626,7 @@
                 "Payload": {
                   "ThisContextObject": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "FunctionName": "<lambda_function_1_name>",
                         "Value1": "HelloWorld!",
@@ -10637,7 +10637,7 @@
                       "RoleArn": "snf_role_arn"
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -10935,7 +10935,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -11135,7 +11135,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -11215,7 +11215,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -12303,7 +12303,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -12423,7 +12423,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -12543,7 +12543,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -13113,7 +13113,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -13233,7 +13233,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -13578,7 +13578,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -13693,7 +13693,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -13729,7 +13729,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 5,
             "timestamp": "timestamp",
@@ -13765,7 +13765,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 8,
             "timestamp": "timestamp",
@@ -13857,7 +13857,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -13893,7 +13893,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 5,
             "timestamp": "timestamp",
@@ -13929,7 +13929,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 8,
             "timestamp": "timestamp",
@@ -14032,7 +14032,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -14132,7 +14132,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -14232,7 +14232,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -14334,7 +14334,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -14425,7 +14425,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -14527,7 +14527,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -14695,7 +14695,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -14797,7 +14797,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -14897,7 +14897,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -18245,7 +18245,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -18347,7 +18347,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -18447,7 +18447,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -18549,7 +18549,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",

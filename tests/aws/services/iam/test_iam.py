@@ -7,6 +7,7 @@ from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
 from localstack.utils.strings import long_uid
 
@@ -39,7 +40,7 @@ class TestIAMExtensions:
         user_response = iam_client_as_user.get_user()
         user = user_response["User"]
         assert user["UserName"] == user_name
-        assert user["Arn"] == f"arn:aws:iam::{account_id}:user/{user_name}"
+        assert user["Arn"] == f"arn:{get_partition(region_name)}:iam::{account_id}:user/{user_name}"
 
     @markers.aws.only_localstack
     def test_get_user_without_username_as_root(self, aws_client):
@@ -360,11 +361,14 @@ class TestIAMIntegrations:
         aws_client.iam.delete_user(UserName=user_name)
 
     @markers.aws.validated
-    def test_attach_detach_role_policy(self, aws_client):
+    def test_attach_detach_role_policy(self, aws_client, region_name):
         role_name = f"s3-role-{short_uid()}"
         policy_name = f"s3-role-policy-{short_uid()}"
 
         policy_arns = [p["Arn"] for p in ADDITIONAL_MANAGED_POLICIES.values()]
+        policy_arns = [
+            arn.replace("arn:aws:", f"arn:{get_partition(region_name)}:") for arn in policy_arns
+        ]
 
         assume_policy_document = {
             "Version": "2012-10-17",
@@ -387,7 +391,7 @@ class TestIAMIntegrations:
                         "s3:ListBucket",
                     ],
                     "Effect": "Allow",
-                    "Resource": ["arn:aws:s3:::bucket_name"],
+                    "Resource": [f"arn:{get_partition(region_name)}:s3:::bucket_name"],
                 }
             ],
         }

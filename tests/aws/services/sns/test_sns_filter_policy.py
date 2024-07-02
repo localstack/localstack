@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.sync import poll_condition, retry
 
 
@@ -945,6 +946,7 @@ class TestSNSFilterPolicyBody:
         sns_create_sqs_subscription_with_filter_policy,
         snapshot,
         aws_client,
+        region_name,
     ):
         # example from https://aws.amazon.com/blogs/compute/introducing-payload-based-message-filtering-for-amazon-sns/
         topic_arn = sns_create_topic()["TopicArn"]
@@ -974,7 +976,7 @@ class TestSNSFilterPolicyBody:
                     "s3": {
                         "bucket": {
                             "name": "insurance-bucket-demo",
-                            "arn": "arn:aws:s3:::insurance-bucket-demo",
+                            "arn": f"arn:{get_partition(region_name)}:s3:::insurance-bucket-demo",
                         },
                         "object": {
                             "key": "auto-insurance-2314.xml",

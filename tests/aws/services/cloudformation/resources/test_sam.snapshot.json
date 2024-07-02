@@ -5,11 +5,11 @@
       "list_attached_role_policies": {
         "AttachedPolicies": [
           {
-            "PolicyArn": "arn:aws:iam::aws:policy/service-role/<policy-name:1>",
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:1>",
             "PolicyName": "<policy-name:1>"
           },
           {
-            "PolicyArn": "arn:aws:iam::aws:policy/<policy-name:2>",
+            "PolicyArn": "arn:<partition>:iam::aws:policy/<policy-name:2>",
             "PolicyName": "<policy-name:2>"
           }
         ],

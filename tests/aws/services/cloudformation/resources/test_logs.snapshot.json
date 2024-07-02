@@ -10,7 +10,7 @@
         {
           "logStreamName": "<resource:1>",
           "creationTime": "timestamp",
-          "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name-output:1>:log-stream:<resource:1>",
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name-output:1>:log-stream:<resource:1>",
           "storedBytes": 0
         }
       ]

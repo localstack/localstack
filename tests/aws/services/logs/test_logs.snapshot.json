@@ -10,13 +10,13 @@
             "Service": "logs.<region>.amazonaws.com"
           },
           "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
               "AWS:SourceAccount": "111111111111"
             },
             "ArnLike": {
-              "AWS:SourceArn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:<resource:2>"
+              "AWS:SourceArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:<resource:2>"
             }
           }
         },
@@ -35,7 +35,7 @@
         "subscriptionFilters": [
           {
             "creationTime": "timestamp",
-            "destinationArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+            "destinationArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
             "distribution": "ByLogStream",
             "filterName": "test",
             "filterPattern": "",
@@ -145,7 +145,7 @@
       "describe-log-groups-prefix": {
         "logGroups": [
           {
-            "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
             "creationTime": "timestamp",
             "logGroupName": "<log-group-name:1>",
             "metricFilterCount": 0,
@@ -160,7 +160,7 @@
       "describe-log-groups-pattern": {
         "logGroups": [
           {
-            "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
             "creationTime": "timestamp",
             "logGroupName": "<log-group-name:1>"
           }
@@ -185,7 +185,7 @@
         {
           "logStreamName": "<log-stream-name:1>",
           "creationTime": "timestamp",
-          "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
           "storedBytes": 0
         }
       ],
@@ -203,7 +203,7 @@
         {
           "logStreamName": "<log-stream-name:1>",
           "creationTime": "timestamp",
-          "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
           "storedBytes": 0
         }
       ],
@@ -211,7 +211,7 @@
         {
           "logStreamName": "<log-stream-name:1>",
           "creationTime": "timestamp",
-          "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
           "storedBytes": 0
         }
       ]

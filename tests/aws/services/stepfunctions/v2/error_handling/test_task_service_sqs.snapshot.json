@@ -13,7 +13,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -166,7 +166,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -319,7 +319,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -411,7 +411,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
             },
             "id": 1,
             "previousEventId": 0,

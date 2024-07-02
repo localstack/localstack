@@ -9,7 +9,7 @@
     "recorded-date": "18-05-2023, 11:09:21",
     "recorded-content": {
       "waitcondition_ref": {
-        "WaitConditionName": "arn:aws:cloudformation:<region>:111111111111:stack/stack-6cc1b50e/f9764ac0-f563-11ed-82f7-061d4a7b8a1e/WaitHandle"
+        "WaitConditionName": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-6cc1b50e/f9764ac0-f563-11ed-82f7-061d4a7b8a1e/WaitHandle"
       }
     }
   },

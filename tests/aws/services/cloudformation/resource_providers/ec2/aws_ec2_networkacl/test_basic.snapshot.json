@@ -39,7 +39,7 @@
               },
               {
                 "Key": "aws:cloudformation:stack-id",
-                "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-a3136b58/5678bc60-781a-11ee-a5d9-12b01e58fcd9"
+                "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-a3136b58/5678bc60-781a-11ee-a5d9-12b01e58fcd9"
               },
               {
                 "Key": "aws:cloudformation:logical-id",

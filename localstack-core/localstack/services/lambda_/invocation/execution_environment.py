@@ -343,7 +343,9 @@ class ExecutionEnvironment:
         return self.runtime_executor.invoke(payload=invoke_payload)
 
     def get_credentials(self) -> Credentials:
-        sts_client = connect_to().sts.request_metadata(service_principal="lambda")
+        sts_client = connect_to(region_name=self.function_version.id.region).sts.request_metadata(
+            service_principal="lambda"
+        )
         role_session_name = self.function_version.id.function_name
 
         # To handle single character function names #9016
