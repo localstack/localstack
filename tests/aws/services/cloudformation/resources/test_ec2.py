@@ -95,8 +95,11 @@ def test_cfn_with_multiple_route_tables(deploy_cfn_template, aws_client):
     assert len(resp["RouteTables"]) == 4
 
 
-@markers.aws.unknown
-def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_client):
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..PropagatingVgws", "$..Tags", "$..Tags..Key", "$..Tags..Value"]
+)
+def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_client, snapshot):
     # TODO: stack does not deploy to AWS
     stack = deploy_cfn_template(
         template_path=os.path.join(THIS_FOLDER, "../../../templates/template37.yaml")
@@ -106,18 +109,11 @@ def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_cli
         Filters=[{"Name": "route-table-id", "Values": [route_table_id]}]
     )["RouteTables"][0]
 
-    assert len(route_table["Associations"]) == 2
-
-    # assert subnet attributes are present
-    vpc_id = stack.outputs["VpcId"]
-    response = aws_client.ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
-    subnets = response["Subnets"]
-    subnet1 = [sub for sub in subnets if sub["CidrBlock"] == "100.0.0.0/24"][0]
-    subnet2 = [sub for sub in subnets if sub["CidrBlock"] == "100.0.2.0/24"][0]
-    assert subnet1["AssignIpv6AddressOnCreation"] is True
-    assert subnet1["EnableDns64"] is True
-    assert subnet1["MapPublicIpOnLaunch"] is True
-    assert subnet2["PrivateDnsNameOptionsOnLaunch"]["HostnameType"] == "ip-name"
+    snapshot.match("route_table", route_table)
+    snapshot.add_transformer(snapshot.transform.key_value("RouteTableId"))
+    snapshot.add_transformer(snapshot.transform.key_value("RouteTableAssociationId"))
+    snapshot.add_transformer(snapshot.transform.key_value("SubnetId"))
+    snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
 
 
 @markers.aws.validated
