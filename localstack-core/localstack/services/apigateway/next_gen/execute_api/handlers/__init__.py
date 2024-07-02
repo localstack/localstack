@@ -1,5 +1,6 @@
 from rolo.gateway import CompositeHandler
 
+from .api_key_validation import ApiKeyValidationHandler
 from .gateway_exception import GatewayExceptionHandler
 from .integration import IntegrationHandler
 from .integration_request import IntegrationRequestHandler
@@ -20,3 +21,4 @@ integration_handler = IntegrationHandler()
 integration_response_handler = IntegrationResponseHandler()
 method_response_handler = MethodResponseHandler()
 gateway_exception_handler = GatewayExceptionHandler()
+api_key_validation_handler = ApiKeyValidationHandler()

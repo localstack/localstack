@@ -23,6 +23,7 @@ class RestApiGateway(Gateway):
                 handlers.parse_request,
                 handlers.route_request,
                 handlers.preprocess_request,
+                handlers.api_key_validation_handler,
                 handlers.method_request_handler,
                 handlers.integration_request_handler,
                 handlers.integration_handler,
