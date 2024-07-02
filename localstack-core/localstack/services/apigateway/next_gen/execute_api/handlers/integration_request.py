@@ -38,7 +38,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
         # TODO: this handler might not be tested yet until `TemplateMappings` are implemented, as overall behavior will
         #  change
-        integration_request_parameters = integration["requestParameters"]
+        integration_request_parameters = integration["requestParameters"] or {}
         request_data_mapping = self.get_integration_request_data(
             context, integration_request_parameters
         )
