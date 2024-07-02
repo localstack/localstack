@@ -4,8 +4,6 @@ Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
       CidrBlock: "100.0.0.0/20"
 
   RouteTable:
@@ -28,9 +26,6 @@ Resources:
       CidrBlock: "100.0.0.0/24"
       VpcId:
         Ref: VPC
-      AssignIpv6AddressOnCreation: True
-      EnableDns64: True
-      MapPublicIpOnLaunch: True
 
   SubnetB:
     Type: AWS::EC2::Subnet
@@ -43,8 +38,6 @@ Resources:
       CidrBlock: "100.0.2.0/24"
       VpcId:
         Ref: VPC
-      PrivateDnsNameOptionsOnLaunch:
-        HostnameType: ip-name
 
   RouteTableAssociationA:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
@@ -53,7 +46,6 @@ Resources:
         Ref: SubnetA
       RouteTableId:
         Ref: RouteTable
-      Main: false
     DependsOn:
       - SubnetA
       - RouteTable
@@ -65,7 +57,6 @@ Resources:
         Ref: SubnetB
       RouteTableId:
         Ref: RouteTable
-      Main: false
     DependsOn:
       - SubnetB
       - RouteTable

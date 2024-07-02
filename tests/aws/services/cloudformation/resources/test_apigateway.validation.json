@@ -5,6 +5,9 @@
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
     "last_validated_date": "2024-04-15T22:59:53+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_rest_api": {
+    "last_validated_date": "2024-06-25T18:12:55+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
     "last_validated_date": "2024-06-17T21:54:26+00:00"
   },

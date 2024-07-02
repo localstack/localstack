@@ -347,66 +347,58 @@ class TestStacksApi:
 
         aws_client.cloudformation.delete_stack(StackName=stack_name)
 
-    # TODO finish this test
-    @pytest.mark.skip(reason="disable rollback not enabled")
-    # @markers.aws.validated
+    @markers.aws.validated
+    @pytest.mark.skipif(reason="disable rollback not enabled", condition=not is_aws_cloud())
     @pytest.mark.parametrize("rollback_disabled, length_expected", [(False, 2), (True, 1)])
-    @markers.aws.unknown
-    def test_failure_options_for_stack_update(self, rollback_disabled, length_expected, aws_client):
+    def test_failure_options_for_stack_update(
+        self, rollback_disabled, length_expected, aws_client, cleanups
+    ):
         stack_name = f"stack-{short_uid()}"
+        template = open(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/multiple_bucket_update.yaml"
+            ),
+            "r",
+        ).read()
 
         aws_client.cloudformation.create_stack(
             StackName=stack_name,
-            TemplateBody=open(
-                os.path.join(
-                    os.path.dirname(__file__), "../../../templates/multiple_kms_keys.yaml"
-                ),
-                "r",
-            ).read(),
-            Parameters=[
-                {"ParameterKey": "Usage", "ParameterValue": "SYMMETRIC_DEFAULT"},
-            ],
+            TemplateBody=template,
         )
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
 
-        assert wait_until(
-            lambda _: stack_process_is_finished(aws_client.cloudformation, stack_name),
-        )
+        def _assert_stack_process_finished():
+            return stack_process_is_finished(aws_client.cloudformation, stack_name)
+
+        assert wait_until(_assert_stack_process_finished)
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)[
             "StackResources"
         ]
         created_resources = [
             resource for resource in resources if "CREATE_COMPLETE" in resource["ResourceStatus"]
         ]
-        print(created_resources)
+        assert len(created_resources) == 2
 
         aws_client.cloudformation.update_stack(
             StackName=stack_name,
-            TemplateBody=open(
-                os.path.join(
-                    os.path.dirname(__file__), "../../../templates/multiple_kms_keys.yaml"
-                ),
-                "r",
-            ).read(),
+            TemplateBody=template,
             DisableRollback=rollback_disabled,
             Parameters=[
-                {"ParameterKey": "Usage", "ParameterValue": "Incorrect Value"},
+                {"ParameterKey": "Days", "ParameterValue": "-1"},
             ],
         )
 
-        assert wait_until(
-            lambda _: stack_process_is_finished(aws_client.cloudformation, stack_name)
-        )
+        assert wait_until(_assert_stack_process_finished)
 
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)[
             "StackResources"
         ]
-        created_resources = [
-            resource for resource in resources if "CREATE_COMPLETE" in resource["ResourceStatus"]
+        updated_resources = [
+            resource
+            for resource in resources
+            if resource["ResourceStatus"] in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
         ]
-        print(created_resources)
-        # assert len(created_resources) == length_expected
-
-        aws_client.cloudformation.delete_stack(StackName=stack_name)
+        assert len(updated_resources) == length_expected
 
 
 def stack_process_is_finished(cfn_client, stack_name):

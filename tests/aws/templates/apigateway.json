@@ -70,7 +70,25 @@
                     "Ref": "AGRA16EMH"
                 },
                 "ContentType": "application/json",
-                "Schema": "{\\n\\t\"title\": \"Calc output\",\\n\\t\"type\": \"object\"}"
+                "Schema": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "title": "PetsModelNoFlatten",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "number": {
+                                "type": "integer"
+                            },
+                            "class": {
+                                "type": "string"
+                            },
+                            "salesPrice": {
+                                "type": "number"
+                            }
+                        }
+                    }
+                }
             },
             "Metadata": {
                 "AWS::CloudFormation::Designer": {

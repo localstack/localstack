@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  Days:
+    Type: String
+    Default: '30'
+
+Resources:
+  Bucket1:
+    Type: AWS::S3::Bucket
+
+  Bucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: 'Enabled'
+      LifecycleConfiguration:
+        Rules:
+          - Id: 'InvalidTransitionRule'
+            Status: 'Enabled'
+            Transitions:
+              - StorageClass: 'GLACIER'
+                TransitionInDays: !Ref Days
