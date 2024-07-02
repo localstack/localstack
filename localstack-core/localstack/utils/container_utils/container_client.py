@@ -438,6 +438,12 @@ class VolumeInfo(NamedTuple):
 
 
 @dataclasses.dataclass
+class LogConfig:
+    type: Literal["json-file", "syslog", "journald", "gelf", "fluentd", "none", "awslogs", "splunk"]
+    config: Dict[str, str] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass
 class ContainerConfiguration:
     image_name: str
     name: Optional[str] = None
@@ -467,6 +473,7 @@ class ContainerConfiguration:
     ulimits: Optional[List[Ulimit]] = None
     labels: Optional[Dict[str, str]] = None
     init: Optional[bool] = None
+    log_config: Optional[LogConfig] = None
 
 
 class ContainerConfigurator(Protocol):
@@ -876,6 +883,7 @@ class ContainerClient(metaclass=ABCMeta):
         platform: Optional[DockerPlatform] = None,
         ulimits: Optional[List[Ulimit]] = None,
         init: Optional[bool] = None,
+        log_config: Optional[LogConfig] = None,
     ) -> str:
         """Creates a container with the given image
 
@@ -912,6 +920,7 @@ class ContainerClient(metaclass=ABCMeta):
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
         init: Optional[bool] = None,
+        log_config: Optional[LogConfig] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
@@ -949,6 +958,7 @@ class ContainerClient(metaclass=ABCMeta):
             privileged=container_config.privileged,
             ulimits=container_config.ulimits,
             init=container_config.init,
+            log_config=container_config.log_config,
         )
 
     @abstractmethod
