@@ -1483,7 +1483,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 lambda_client = connect_to().lambda_
                 lambda_client.create_function(
                     FunctionName="localstack-internal-awssdk",
-                    Runtime=Runtime.nodejs16_x,
+                    Runtime=Runtime.nodejs20_x,
                     Handler="index.handler",
                     Code={"ZipFile": code},
                     Role="arn:aws:iam::{account_id}:role/lambda-test-role".format(

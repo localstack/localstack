@@ -1737,7 +1737,7 @@ def test_rest_api_multi_region(
     lambda_eu_arn = create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
-        runtime=Runtime.nodejs16_x,
+        runtime=Runtime.nodejs20_x,
         region_name="eu-west-1",
         client=lambda_eu_west_1_client,
     )["CreateFunctionResponse"]["FunctionArn"]
@@ -1745,7 +1745,7 @@ def test_rest_api_multi_region(
     lambda_us_arn = create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
-        runtime=Runtime.nodejs16_x,
+        runtime=Runtime.nodejs20_x,
         region_name="us-west-1",
         client=lambda_us_west_1_client,
     )["CreateFunctionResponse"]["FunctionArn"]

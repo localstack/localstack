@@ -3776,7 +3776,7 @@ class TestS3:
             ),
             func_name=function_name,
             role=lambda_su_role,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             envvars={
                 "BUCKET_NAME": bucket_name,
                 "OBJECT_NAME": key,
@@ -7614,6 +7614,7 @@ class TestS3PresignedUrl:
 
         function_name = f"func-integration-{short_uid()}"
         # we need the AWS SDK v2, and Node 16 still has it by default
+        # TODO since Node 16 is getting depricated we should consider ugrading to Node 20
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),

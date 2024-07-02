@@ -1352,7 +1352,7 @@ def create_echo_http_server(aws_client, create_lambda_function):
         create_lambda_function(
             func_name=func_name,
             zip_file=zip_file,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             envvars={"TRIM_X_HEADERS": "1" if trim_x_headers else "0"},
         )
         url_response = lambda_client.create_function_url_config(

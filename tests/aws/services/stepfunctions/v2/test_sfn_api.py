@@ -36,7 +36,7 @@ class TestSnfApi:
         create_lambda_1 = create_lambda_function(
             handler_file=lambda_functions.BASE_ID_FUNCTION,
             func_name="id_function",
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         lambda_arn_1 = create_lambda_1["CreateFunctionResponse"]["FunctionArn"]
 

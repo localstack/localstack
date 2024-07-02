@@ -559,8 +559,8 @@ class TestLambdaBehavior:
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
         [
-            (TEST_LAMBDA_CACHE_NODEJS, Runtime.nodejs18_x),
-            (TEST_LAMBDA_CACHE_PYTHON, Runtime.python3_10),
+            (TEST_LAMBDA_CACHE_NODEJS, Runtime.nodejs20_x),
+            (TEST_LAMBDA_CACHE_PYTHON, Runtime.python3_12),
         ],
         ids=["nodejs", "python"],
     )

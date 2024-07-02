@@ -1094,7 +1094,7 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
             os.path.join(os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.py")
         ),
         get_content=True,
-        runtime=Runtime.python3_10,
+        runtime=Runtime.python3_12,
     )
     aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
@@ -1138,7 +1138,7 @@ def test_lambda_cfn_dead_letter_config_async_invocation(
             )
         ),
         get_content=True,
-        runtime=Runtime.python3_10,
+        runtime=Runtime.python3_12,
     )
     aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 

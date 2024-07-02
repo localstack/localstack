@@ -490,7 +490,7 @@ def test_rest_api_serverless_ref_resolving(
     lambda_authorizer = create_lambda_function(
         func_name=fn_name,
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
 
     create_parameter(

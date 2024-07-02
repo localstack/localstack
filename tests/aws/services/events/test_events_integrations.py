@@ -205,7 +205,7 @@ def test_put_events_with_target_lambda(create_lambda_function, cleanups, aws_cli
     rs = create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=function_name,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
 
     func_arn = rs["CreateFunctionResponse"]["FunctionArn"]
@@ -454,7 +454,7 @@ def test_should_ignore_schedules_for_put_event(create_lambda_function, cleanups,
     create_lambda_function(
         func_name=fn_name,
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
         client=aws_client.lambda_,
     )
 

@@ -79,7 +79,7 @@ class TestKinesisSource:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
 
@@ -151,7 +151,7 @@ class TestKinesisSource:
             create_lambda_function(
                 func_name=function_name,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=Runtime.python3_9,
+                runtime=Runtime.python3_12,
                 role=lambda_su_role,
             )
             create_event_source_mapping_response = create_event_source_mapping(
@@ -208,7 +208,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name_1,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
 
@@ -233,7 +233,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name_2,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         create_event_source_mapping(
@@ -264,7 +264,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PARALLEL_FILE,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
@@ -327,7 +327,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PARALLEL_FILE,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
@@ -388,7 +388,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
@@ -483,7 +483,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=role_arn,
         )
         aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)

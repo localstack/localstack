@@ -53,7 +53,7 @@ class TestApiGatewayCommon:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_AWS_PROXY,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
