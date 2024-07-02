@@ -77,6 +77,16 @@ class OpensearchPackageInstaller(PackageInstaller):
                     mkdir(dir_path)
                     chmod_r(dir_path, 0o777)
 
+                # print file tree for debugging
+                print(f"DEBUG: file tree after installing opensearch to {install_dir_parent}")
+                for root, dirs, files in os.walk(install_dir_parent):
+                    level = root.replace(install_dir_parent, "").count(os.sep)
+                    indent = " " * 4 * level
+                    print(f"{indent}{os.path.basename(root)}/")
+                    subindent = " " * 4 * (level + 1)
+                    for f in files:
+                        print(f"{subindent}{f}")
+
                 parsed_version = semver.VersionInfo.parse(version)
 
                 # setup security based on the version
@@ -92,7 +102,7 @@ class OpensearchPackageInstaller(PackageInstaller):
                             LOG.info("Installing OpenSearch plugin %s", plugin)
 
                             def try_install():
-                                output = run([plugin_binary, "install", "-b", plugin])
+                                output = run([plugin_binary, "install", "-bv", plugin])
                                 LOG.debug("Plugin installation output: %s", output)
 
                             # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
