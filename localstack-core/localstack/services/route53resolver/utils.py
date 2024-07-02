@@ -2,6 +2,7 @@ import re
 
 from localstack.aws.api.route53resolver import ResourceNotFoundException, ValidationException
 from localstack.services.ec2.models import get_ec2_backend
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX
 from localstack.utils.strings import get_random_hex
 
 
@@ -47,7 +48,7 @@ def validate_mutation_protection(mutation_protection):
 
 
 def validate_destination_arn(destination_arn):
-    arn_pattern = r"arn:aws:(kinesis|logs|s3):?(.*)"
+    arn_pattern = rf"{ARN_PARTITION_REGEX}:(kinesis|logs|s3):?(.*)"
     if not re.match(arn_pattern, destination_arn):
         raise ResourceNotFoundException(
             f"[RSLVR-01014] An Amazon Resource Name (ARN) for the destination is required. Trace Id: '{get_trace_id()}'"

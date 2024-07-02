@@ -1,6 +1,7 @@
 import logging
 
 from localstack.http import Request, Response
+from localstack.utils.aws.arns import get_partition
 
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
@@ -15,6 +16,7 @@ class RegionContextEnricher(Handler):
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         context.region = self.get_region(context.request)
+        context.partition = get_partition(context.region)
 
     @staticmethod
     def get_region(request: Request) -> str:

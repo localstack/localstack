@@ -19,6 +19,7 @@ from localstack.services.opensearch.cluster import (
     OpensearchCluster,
     SecurityOptions,
 )
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import (
     PortNotAvailableException,
     call_safe,
@@ -62,7 +63,7 @@ class DomainKey:
 
     @property
     def arn(self):
-        return f"arn:aws:es:{self.region}:{self.account}:domain/{self.domain_name}"
+        return f"arn:{get_partition(self.region)}:es:{self.region}:{self.account}:domain/{self.domain_name}"
 
     @staticmethod
     def from_arn(arn: str) -> "DomainKey":

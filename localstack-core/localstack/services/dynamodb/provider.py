@@ -146,7 +146,11 @@ from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
+from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    get_partition,
+)
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 from localstack.utils.aws.request_context import (
     extract_account_id_from_headers,
@@ -564,17 +568,23 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def _modify_ddblocal_arns(self, chain, context: RequestContext, response: Response):
         """A service response handler that modifies the dynamodb backend response."""
         if response_content := response.get_data(as_text=True):
+
+            def _convert_arn(matchobj):
+                key = matchobj.group(1)
+                partition = get_partition(context.region)
+                table_name = matchobj.group(2)
+                return f'{key}: "arn:{partition}:dynamodb:{context.region}:{context.account_id}:{table_name}"'
+
             # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
             content_replaced = re.sub(
-                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:000000000000:([^"]+)"',
-                rf'\1: "arn:\2:dynamodb:{context.region}:{context.account_id}:\3"',
+                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:[a-z-]+:dynamodb:ddblocal:000000000000:([^"]+)"',
+                _convert_arn,
                 response_content,
             )
             if content_replaced != response_content:
                 response.data = content_replaced
-                context.service_response = (
-                    None  # make sure the service response is parsed again later
-                )
+                # make sure the service response is parsed again later
+                context.service_response = None
 
         # update x-amz-crc32 header required by some clients
         response.headers["x-amz-crc32"] = crc32(response.data) & 0xFFFFFFFF
@@ -1754,8 +1764,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         """
         Set the correct account ID and region in ARNs returned by DynamoDB Local.
         """
-        return arn.replace(":ddblocal:", f":{region_name}:").replace(
-            ":000000000000:", f":{account_id}:"
+        partition = get_partition(region_name)
+        return (
+            arn.replace("arn:aws:", f"arn:{partition}:")
+            .replace(":ddblocal:", f":{region_name}:")
+            .replace(":000000000000:", f":{account_id}:")
         )
 
     def prepare_transact_write_item_records(

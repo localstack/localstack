@@ -14,7 +14,6 @@ from localstack.aws.api.apigateway import (
     Resource,
     RestApi,
 )
-from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -106,7 +105,7 @@ class ApiGatewayStore(BaseStore):
     rest_apis: Dict[str, RestApiContainer] = LocalAttribute(default=CaseInsensitiveDict)
 
     # account details
-    account: Dict[str, Any] = LocalAttribute(default=dict)
+    _account: Dict[str, Any] = LocalAttribute(default=dict)
 
     # maps (domain_name) -> [path_mappings]
     base_path_mappings: Dict[str, List[Dict]] = LocalAttribute(default=dict)
@@ -135,16 +134,20 @@ class ApiGatewayStore(BaseStore):
     def __init__(self):
         super().__init__()
 
-        self.account.update(
-            {
-                "cloudwatchRoleArn": arns.iam_role_arn(
-                    "api-gw-cw-role", DEFAULT_AWS_ACCOUNT_ID
-                ),  # FIXME: account ID must be of the current store
-                "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
-                "features": ["UsagePlans"],
-                "apiKeyVersion": "1",
-            }
-        )
+    @property
+    def account(self):
+        if not self._account:
+            self._account.update(
+                {
+                    "cloudwatchRoleArn": arns.iam_role_arn(
+                        "api-gw-cw-role", self._account_id, self._region_name
+                    ),
+                    "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
+                    "features": ["UsagePlans"],
+                    "apiKeyVersion": "1",
+                }
+            )
+        return self._account
 
 
 apigateway_stores = AccountRegionBundle("apigateway", ApiGatewayStore)
