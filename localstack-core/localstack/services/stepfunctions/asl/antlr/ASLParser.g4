@@ -60,6 +60,7 @@ state_stmt:
     | tolerated_failure_count_path_decl
     | tolerated_failure_percentage_decl
     | tolerated_failure_percentage_path_decl
+    | label_decl
 ;
 
 states_decl: STATES COLON LBRACE state_decl (COMMA state_decl)* RBRACE;
@@ -235,6 +236,8 @@ tolerated_failure_count_path_decl: TOLERATEDFAILURECOUNTPATH COLON STRINGPATH;
 tolerated_failure_percentage_decl: TOLERATEDFAILUREPERCENTAGE COLON NUMBER;
 
 tolerated_failure_percentage_path_decl: TOLERATEDFAILUREPERCENTAGEPATH COLON STRINGPATH;
+
+label_decl: LABEL COLON keyword_or_string;
 
 retry_decl: RETRY COLON LBRACK (retrier_decl (COMMA retrier_decl)*)? RBRACK;
 
@@ -453,6 +456,7 @@ keyword_or_string:
     | TOLERATEDFAILURECOUNTPATH
     | TOLERATEDFAILUREPERCENTAGE
     | TOLERATEDFAILUREPERCENTAGEPATH
+    | LABEL
     | NEXT
     | END
     | CAUSE

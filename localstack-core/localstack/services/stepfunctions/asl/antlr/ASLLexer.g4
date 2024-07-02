@@ -221,6 +221,8 @@ TOLERATEDFAILUREPERCENTAGE: '"ToleratedFailurePercentage"';
 
 TOLERATEDFAILUREPERCENTAGEPATH: '"ToleratedFailurePercentagePath"';
 
+LABEL: '"Label"';
+
 NEXT: '"Next"';
 
 END: '"End"';

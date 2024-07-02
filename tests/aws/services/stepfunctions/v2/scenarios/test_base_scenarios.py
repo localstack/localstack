@@ -1122,6 +1122,35 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    def test_map_state_label(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.json"
+        json_file = json.dumps([{"key1": "value1", "key2": "value2"}])
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+
+        template = ST.load_sfn_template(ST.MAP_STATE_LABEL)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "exec_input",
         [json.dumps({"result": {"done": True}}), json.dumps({"result": {"done": False}})],
