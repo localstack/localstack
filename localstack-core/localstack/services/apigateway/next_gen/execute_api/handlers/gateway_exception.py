@@ -55,6 +55,8 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         headers = self._build_response_headers()
 
         status_code = gateway_response.get("statusCode")
+        if not status_code:
+            status_code = exception.status_code or 500
 
         return Response(response=content, headers=headers, status=status_code)
 

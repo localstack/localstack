@@ -16,10 +16,23 @@ class BaseGatewayException(Exception):
 
     message: str = "Unimplemented Response"
     type: GatewayResponseType
+    status_code: int | str = None
 
-    def __init__(self, message: str = None):
+    def __init__(self, message: str = None, status_code: int | str = None):
         if message is not None:
             self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+
+
+class Default4xxError(BaseGatewayException):
+    type: GatewayResponseType.DEFAULT_4XX
+    status_code = 400
+
+
+class Default5xxError(BaseGatewayException):
+    type: GatewayResponseType.DEFAULT_5XX
+    status_code = 500
 
 
 class AccessDeniedError(BaseGatewayException):
