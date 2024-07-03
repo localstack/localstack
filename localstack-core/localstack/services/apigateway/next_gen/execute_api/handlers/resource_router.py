@@ -1,14 +1,14 @@
 import logging
 from functools import cache
+from http import HTTPMethod
 from typing import Iterable
 
 from werkzeug.exceptions import MethodNotAllowed, NotFound
-from werkzeug.routing import Map, MapAdapter
+from werkzeug.routing import Map, MapAdapter, Rule
 
 from localstack.aws.api.apigateway import Resource
 from localstack.aws.protocol.routing import (
     GreedyPathConverter,
-    StrictMethodRule,
     path_param_regex,
     post_process_arg_name,
     transform_path_params_to_rule_vars,
@@ -21,6 +21,35 @@ from ..context import RestApiInvocationContext
 from ..variables import ContextVariables
 
 LOG = logging.getLogger(__name__)
+
+
+class ApiGatewayMethodRule(Rule):
+    """
+    Small extension to Werkzeug's Rule class which reverts unwanted assumptions made by Werkzeug.
+    Reverted assumptions:
+    - Werkzeug automatically matches HEAD requests to the corresponding GET request (i.e. Werkzeug's rule
+      automatically adds the HEAD HTTP method to a rule which should only match GET requests).
+    Added behavior:
+    - ANY is equivalent to 7 HTTP methods listed. We manually set them to the rule's methods
+    """
+
+    def __init__(self, string: str, method: str, **kwargs) -> None:
+        super().__init__(string=string, methods=[method], **kwargs)
+
+        if method == "ANY":
+            self.methods = {
+                HTTPMethod.DELETE,
+                HTTPMethod.GET,
+                HTTPMethod.HEAD,
+                HTTPMethod.OPTIONS,
+                HTTPMethod.PATCH,
+                HTTPMethod.POST,
+                HTTPMethod.PUT,
+            }
+        else:
+            # Make sure Werkzeug's Rule does not add any other methods
+            # (f.e. the HEAD method even though the rule should only match GET)
+            self.methods = {method.upper()}
 
 
 class RestAPIResourceRouter:
@@ -121,7 +150,7 @@ def get_rule_map_for_resources(resources: Iterable[Resource]) -> Map:
             # translate the requestUri to a Werkzeug rule string
             rule_string = path_param_regex.sub(transform_path_params_to_rule_vars, path)
             rules.append(
-                StrictMethodRule(string=rule_string, method=method, endpoint=resource["id"])
+                ApiGatewayMethodRule(string=rule_string, method=method, endpoint=resource["id"])
             )  # type: ignore
 
     return Map(

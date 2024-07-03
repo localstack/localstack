@@ -84,7 +84,7 @@ class TestParsingHandler:
             body=body,
             headers=headers,
             query_string="test-param=1&test-param-2=2&test-multi=val1&test-multi=val2",
-            path="/normal-path",
+            path=f"/{TEST_API_STAGE}/normal-path",
         )
         context = get_invocation_context(request)
         context.deployment = dummy_deployment
@@ -127,7 +127,11 @@ class TestParsingHandler:
         assert context.context_variables["domainPrefix"] == TEST_API_ID
 
     def test_parse_raw_path(self, dummy_deployment, parse_handler_chain, get_invocation_context):
-        request = Request("GET", "/foo/bar/ed", raw_path="//foo%2Fbar/ed")
+        request = Request(
+            "GET",
+            path=f"/{TEST_API_STAGE}/foo/bar/ed",
+            raw_path=f"/{TEST_API_STAGE}//foo%2Fbar/ed",
+        )
 
         context = get_invocation_context(request)
         context.deployment = dummy_deployment
@@ -146,8 +150,8 @@ class TestParsingHandler:
         # simulate a path request
         request = Request(
             "GET",
-            path=f"/restapis/{TEST_API_ID}/_user_request_/foo/bar/ed",
-            raw_path=f"/restapis/{TEST_API_ID}/_user_request_//foo%2Fbar/ed",
+            path=f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}/foo/bar/ed",
+            raw_path=f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}//foo%2Fbar/ed",
         )
 
         context = get_invocation_context(request)
@@ -234,12 +238,69 @@ class TestRoutingHandler:
             localstack_rest_api=dummy_deployment.rest_api,
         )
 
+    @pytest.fixture
+    def deployment_with_any_routes(self, dummy_deployment):
+        """
+        This can be represented by the following routes:
+        - (No method) - /
+        - GET         - /foo
+        - ANY         - /foo
+        - PUT         - /foo/{param}
+        - ANY         - /foo/{param}
+        """
+        moto_backend: APIGatewayBackend = apigateway_backends[TEST_AWS_ACCOUNT_ID][
+            TEST_AWS_REGION_NAME
+        ]
+        moto_rest_api = moto_backend.apis[TEST_API_ID]
+
+        # path: /
+        root_resource = moto_rest_api.default
+        # path: /foo
+        hard_coded_resource = moto_rest_api.add_child(path="foo", parent_id=root_resource.id)
+        # path: /foo/{param}
+        param_resource = moto_rest_api.add_child(
+            path="{param}",
+            parent_id=hard_coded_resource.id,
+        )
+
+        hard_coded_resource.add_method(
+            method_type="GET",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        hard_coded_resource.add_method(
+            method_type="ANY",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        # we test different order of setting the Method, to make sure ANY is always matched last
+        # because this will influence the original order of the Werkzeug Rules in the Map
+        # Because we only return the `Resource` as the endpoint, we always fetch manually the right
+        # `resourceMethod` from the request method.
+        param_resource.add_method(
+            method_type="ANY",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        param_resource.add_method(
+            method_type="PUT",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+
+        return freeze_rest_api(
+            account_id=dummy_deployment.account_id,
+            region=dummy_deployment.region,
+            moto_rest_api=moto_rest_api,
+            localstack_rest_api=dummy_deployment.rest_api,
+        )
+
     @staticmethod
     def get_path_from_addressing(path: str, addressing: str) -> str:
         if addressing == "host":
-            return path
+            return f"/{TEST_API_STAGE}{path}"
         else:
-            return f"/restapis/{TEST_API_ID}/_user_request_{path}"
+            return f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}{path}"
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_no_param(
@@ -405,3 +466,54 @@ class TestRoutingHandler:
 
         assert context.resource["path"] == "/foo/{param}"
         assert context.invocation_request["path_parameters"] == {"param": "foo%2Fbar"}
+
+    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    def test_route_request_any_is_last(
+        self, deployment_with_any_routes, parse_handler_chain, get_invocation_context, addressing
+    ):
+        handler = InvocationRequestRouter()
+
+        def handle(_request: Request) -> RestApiInvocationContext:
+            _context = get_invocation_context(_request)
+            _context.deployment = deployment_with_any_routes
+            parse_handler_chain.handle(_context, Response())
+            handler(parse_handler_chain, _context, Response())
+            return _context
+
+        request = Request(
+            "GET",
+            path=self.get_path_from_addressing("/foo", addressing),
+        )
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo"
+        assert context.resource["resourceMethods"]["GET"]
+
+        request = Request(
+            "DELETE",
+            path=self.get_path_from_addressing("/foo", addressing),
+        )
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo"
+        assert context.resource["resourceMethods"]["ANY"]
+
+        request = Request(
+            "PUT",
+            path=self.get_path_from_addressing("/foo/random-value", addressing),
+        )
+
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo/{param}"
+        assert context.resource_method == context.resource["resourceMethods"]["PUT"]
+
+        request = Request(
+            "GET",
+            path=self.get_path_from_addressing("/foo/random-value", addressing),
+        )
+
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo/{param}"
+        assert context.resource_method == context.resource["resourceMethods"]["ANY"]
