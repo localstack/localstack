@@ -20,4 +20,6 @@ class MethodResponseHandler(RestApiGatewayHandler):
         context: RestApiInvocationContext,
         response: Response,
     ):
+        # TODO: for AWS/HTTP/MOCK integration:
+        #  > If no method response is defined for the returned status code, API Gateway returns a 500 error.
         return
