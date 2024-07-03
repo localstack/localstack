@@ -99,6 +99,14 @@ def stepfunctions_client_test_state(aws_client_factory):
 
 
 @pytest.fixture
+def stepfunctions_client_sync_executions(aws_client_factory):
+    # For StartSyncExecution calls, boto will prepend "sync-" to the endpoint string. As we operate on localhost,
+    # this function creates a new stepfunctions client with that functionality disabled.
+    # Using this client only for test_state calls forces future occurrences to handle this issue explicitly.
+    return aws_client_factory(config=Config(inject_host_prefix=is_aws_cloud())).stepfunctions
+
+
+@pytest.fixture
 def create_iam_role_for_sfn(aws_client, cleanups, create_state_machine):
     iam_client = aws_client.iam
     stepfunctions_client = aws_client.stepfunctions
@@ -204,12 +212,17 @@ def create_state_machine(aws_client):
 
     yield _create_state_machine
 
+    # Delete all state machine, attempting to stop all running executions.
     for state_machine_arn in _state_machine_arns:
+        # Execution listing and execution stop requests are not allowed for all state machine
+        # types, such as express ones.
         try:
             executions = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
             for execution in executions["executions"]:
                 aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
-
+        except Exception:
+            pass
+        try:
             aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
             LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")

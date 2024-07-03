@@ -105,7 +105,7 @@
     "last_validated_date": "2023-06-22T11:52:39+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_sync_execution": {
-    "last_validated_date": "2024-04-05T20:08:10+00:00"
+    "last_validated_date": "2024-07-03T17:10:25+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_state_machine_status_filter": {
     "last_validated_date": "2024-03-14T21:59:25+00:00"

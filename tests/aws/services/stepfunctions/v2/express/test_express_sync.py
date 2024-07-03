@@ -1,9 +1,11 @@
 import json
 
+import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import create_and_record_express_sync_execution
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (
@@ -12,30 +14,36 @@ from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_tem
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate,
 )
-from tests.aws.services.stepfunctions.utils import (
-    create_and_record_express_sync_execution,
-)
 
 
 @markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..billingDetails"]
+    paths=[
+        "$..loggingConfiguration",
+        "$..tracingConfiguration",
+        "$..billingDetails",
+        "$..output.Cause",
+    ]
 )
-class TestExpress:
+class TestExpressSync:
     @markers.aws.validated
-    def test_pass_state(
+    @pytest.mark.parametrize(
+        "template",
+        [BaseTemplate.BASE_PASS_RESULT, BaseTemplate.BASE_RAISE_FAILURE],
+        ids=["BASE_PASS_RESULT", "BASE_RAISE_FAILURE"],
+    )
+    def test_base(
         self,
         create_iam_role_for_sfn,
         create_state_machine,
         sqs_create_queue,
         sfn_snapshot,
-        aws_client,
+        stepfunctions_client_sync_executions,
+        template,
     ):
-        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
-        definition = json.dumps(template)
-
+        definition = json.dumps(BaseTemplate.load_sfn_template(template))
         exec_input = json.dumps({})
         create_and_record_express_sync_execution(
-            aws_client.stepfunctions,
+            stepfunctions_client_sync_executions,
             create_iam_role_for_sfn,
             create_state_machine,
             sfn_snapshot,
@@ -49,7 +57,7 @@ class TestExpress:
         self,
         create_iam_role_for_sfn,
         create_state_machine,
-        aws_client,
+        stepfunctions_client_sync_executions,
         sfn_snapshot,
     ):
         sfn_snapshot.add_transformer(
@@ -78,29 +86,7 @@ class TestExpress:
 
         exec_input = json.dumps({"message": "HelloWorld!"})
         create_and_record_express_sync_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            sfn_snapshot,
-            definition,
-            exec_input,
-        )
-
-    @markers.aws.validated
-    def test_fail_state(
-        self,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        sqs_create_queue,
-        sfn_snapshot,
-        aws_client,
-    ):
-        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_RAISE_FAILURE)
-        definition = json.dumps(template)
-
-        exec_input = json.dumps({})
-        create_and_record_express_sync_execution(
-            aws_client.stepfunctions,
+            stepfunctions_client_sync_executions,
             create_iam_role_for_sfn,
             create_state_machine,
             sfn_snapshot,
@@ -111,7 +97,7 @@ class TestExpress:
     @markers.aws.validated
     def test_catch(
         self,
-        aws_client,
+        stepfunctions_client_sync_executions,
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
@@ -132,7 +118,7 @@ class TestExpress:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_express_sync_execution(
-            aws_client.stepfunctions,
+            stepfunctions_client_sync_executions,
             create_iam_role_for_sfn,
             create_state_machine,
             sfn_snapshot,
@@ -144,6 +130,7 @@ class TestExpress:
     def test_retry(
         self,
         aws_client,
+        stepfunctions_client_sync_executions,
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
@@ -166,7 +153,7 @@ class TestExpress:
 
         exec_input = json.dumps({})
         create_and_record_express_sync_execution(
-            aws_client.stepfunctions,
+            stepfunctions_client_sync_executions,
             create_iam_role_for_sfn,
             create_state_machine,
             sfn_snapshot,

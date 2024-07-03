@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_create_describe_delete": {
-    "recorded-date": "15-03-2024, 13:45:44",
+    "recorded-date": "26-06-2024, 19:06:21",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -50,8 +50,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_start_describe_history_execution": {
-    "recorded-date": "05-04-2024, 19:51:28",
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_start_async_describe_history_execution": {
+    "recorded-date": "03-07-2024, 17:14:50",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -61,15 +61,22 @@
           "HTTPStatusCode": 200
         }
       },
-      "start_response": {
-        "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:f3e4df91-8412-4a20-8054-fbe366c0e434:<ExecArnPart_0idx>",
-        "startDate": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
+      "end_event": {
+        "details": {
+          "output": {
+            "Arg1": "argument1"
+          },
+          "outputDetails": {
+            "truncated": false
+          }
+        },
+        "event_timestamp": "timestamp",
+        "execution_arn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "id": "4",
+        "previous_event_id": "3",
+        "redrive_count": "0",
+        "type": "ExecutionSucceeded"
       },
-      "message_body": "HelloWorld",
       "list_executions_error": {
         "Error": {
           "Code": "StateMachineTypeNotSupported",
@@ -82,6 +89,17 @@
         }
       },
       "describe_execution_error": {
+        "Error": {
+          "Code": "InvalidArn",
+          "Message": "Invalid Arn: 'Resource type not valid in this context: express'"
+        },
+        "message": "Invalid Arn: 'Resource type not valid in this context: express'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "stop_execution_error": {
         "Error": {
           "Code": "InvalidArn",
           "Message": "Invalid Arn: 'Resource type not valid in this context: express'"
@@ -106,7 +124,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_start_sync_execution": {
-    "recorded-date": "06-04-2024, 14:36:18",
+    "recorded-date": "26-06-2024, 19:06:54",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",

@@ -639,6 +639,14 @@ class TransformerUtility:
         return RegexTransformer(arn_part, arn_part_repl)
 
     @staticmethod
+    def sfn_sm_express_exec_arn(start_exec: StartExecutionOutput, index: int):
+        arn_parts = start_exec["executionArn"].split(":")
+        return [
+            RegexTransformer(arn_parts[-2], f"<ExpressExecArn_Part1_{index}idx>"),
+            RegexTransformer(arn_parts[-1], f"<ExpressExecArn_Part2_{index}idx>"),
+        ]
+
+    @staticmethod
     def sfn_sm_sync_exec_arn(start_exec: StartSyncExecutionOutput, index: int):
         arn_parts = start_exec["executionArn"].split(":")
         return [

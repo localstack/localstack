@@ -1,0 +1,273 @@
+{
+  "tests/aws/services/stepfunctions/v2/express/test_express_sync.py::TestExpressSync::test_base[BASE_PASS_RESULT]": {
+    "recorded-date": "26-06-2024, 19:08:30",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_sync_response": {
+        "billingDetails": {
+          "billedDurationInMilliseconds": 100,
+          "billedMemoryUsedInMB": 64
+        },
+        "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<SyncExecArn_Part1_0idx>",
+        "output": {
+          "Arg1": "argument1"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_sync.py::TestExpressSync::test_base[BASE_RAISE_FAILURE]": {
+    "recorded-date": "26-06-2024, 19:08:43",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_sync_response": {
+        "billingDetails": {
+          "billedDurationInMilliseconds": 100,
+          "billedMemoryUsedInMB": 64
+        },
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<SyncExecArn_Part1_0idx>",
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "FAILED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_sync.py::TestExpressSync::test_query_runtime_memory": {
+    "recorded-date": "26-06-2024, 19:08:56",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_sync_response": {
+        "billingDetails": {
+          "billedDurationInMilliseconds": 100,
+          "billedMemoryUsedInMB": 64
+        },
+        "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+        "input": {
+          "message": "HelloWorld!"
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<SyncExecArn_Part1_0idx>",
+        "output": {
+          "message": "HelloWorld!",
+          "query_values_1": {
+            "execution": {
+              "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+              "Input": {
+                "message": "HelloWorld!"
+              },
+              "Name": "<SyncExecArn_Part1_0idx>",
+              "RoleArn": "sfn_role_arn",
+              "StartTime": "start-time"
+            },
+            "execution_rolearn": "sfn_role_arn",
+            "execution_name": "<SyncExecArn_Part1_0idx>",
+            "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "execution_id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+            "execution_input": {
+              "message": "HelloWorld!"
+            },
+            "execution_starttime": "start-time",
+            "state_name": "QueryValues1",
+            "state_enteredtime": "entered-time",
+            "statemachine": {
+              "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+              "Name": "<ArnPart_0idx>"
+            },
+            "state": {
+              "Name": "QueryValues1",
+              "EnteredTime": "entered-time"
+            },
+            "context_object": {
+              "Execution": {
+                "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+                "Input": {
+                  "message": "HelloWorld!"
+                },
+                "Name": "<SyncExecArn_Part1_0idx>",
+                "RoleArn": "sfn_role_arn",
+                "StartTime": "start-time"
+              },
+              "StateMachine": {
+                "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Name": "<ArnPart_0idx>"
+              },
+              "State": {
+                "Name": "QueryValues1",
+                "EnteredTime": "entered-time"
+              }
+            },
+            "statemachine_name": "<ArnPart_0idx>"
+          },
+          "query_values_2": {
+            "context_object": {
+              "Execution": {
+                "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+                "Input": {
+                  "message": "HelloWorld!"
+                },
+                "Name": "<SyncExecArn_Part1_0idx>",
+                "RoleArn": "sfn_role_arn",
+                "StartTime": "start-time"
+              },
+              "StateMachine": {
+                "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Name": "<ArnPart_0idx>"
+              },
+              "State": {
+                "Name": "QueryValues2",
+                "EnteredTime": "entered-time"
+              }
+            }
+          }
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_sync.py::TestExpressSync::test_catch": {
+    "recorded-date": "26-06-2024, 19:09:21",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_sync_response": {
+        "billingDetails": {
+          "billedDurationInMilliseconds": 400,
+          "billedMemoryUsedInMB": 64
+        },
+        "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+        "input": {
+          "FunctionName": "lambda_function_name",
+          "Payload": null
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<SyncExecArn_Part1_0idx>",
+        "output": {
+          "Error": "Exception",
+          "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"0c095f1f-4f7a-4a28-bde1-5903a8a0328c\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_sync.py::TestExpressSync::test_retry": {
+    "recorded-date": "26-06-2024, 19:09:44",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_sync_response": {
+        "billingDetails": {
+          "billedDurationInMilliseconds": 7500,
+          "billedMemoryUsedInMB": 64
+        },
+        "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<SyncExecArn_Part1_0idx>",
+        "output": {
+          "Error": "Exception",
+          "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"5c1838e9-a1ce-430f-bede-40e86848eb9e\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

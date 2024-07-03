@@ -8,6 +8,7 @@ from typing import Any, Final, Optional
 from localstack.aws.api.stepfunctions import (
     Arn,
     ExecutionFailedEventDetails,
+    StateMachineType,
     Timestamp,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
@@ -50,6 +51,7 @@ class Environment:
     event_history_context: Final[EventHistoryContext]
     cloud_watch_logging_session: Final[Optional[CloudWatchLoggingSession]]
     aws_execution_details: Final[AWSExecutionDetails]
+    execution_type: Final[StateMachineType]
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
     context_object_manager: Final[ContextObjectManager]
@@ -65,6 +67,7 @@ class Environment:
     def __init__(
         self,
         aws_execution_details: AWSExecutionDetails,
+        execution_type: StateMachineType,
         context_object_init: ContextObjectInitData,
         event_history_context: EventHistoryContext,
         cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
@@ -80,6 +83,7 @@ class Environment:
         self.event_history_context = event_history_context
 
         self.aws_execution_details = aws_execution_details
+        self.execution_type = execution_type
         self.callback_pool_manager = CallbackPoolManager(activity_store=activity_store)
         self.map_run_record_pool_manager = MapRunRecordPoolManager()
 
@@ -111,6 +115,7 @@ class Environment:
         )
         frame = cls(
             aws_execution_details=env.aws_execution_details,
+            execution_type=env.execution_type,
             context_object_init=context_object_init,
             event_history_context=event_history_frame_cache,
             cloud_watch_logging_session=env.cloud_watch_logging_session,
@@ -214,3 +219,6 @@ class Environment:
 
     def is_frame(self) -> bool:
         return self._is_frame
+
+    def is_standard_workflow(self) -> bool:
+        return self.execution_type == StateMachineType.STANDARD

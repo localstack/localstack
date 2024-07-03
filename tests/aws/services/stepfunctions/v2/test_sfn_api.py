@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.api.stepfunctions import HistoryEventList
+from localstack.aws.api.stepfunctions import HistoryEventList, StateMachineType
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_aborted,
@@ -1442,6 +1442,7 @@ class TestSnfApi:
         sqs_create_queue,
         sfn_snapshot,
         aws_client,
+        stepfunctions_client_sync_executions,
     ):
         snf_role_arn = create_iam_role_for_sfn()
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -1456,14 +1457,14 @@ class TestSnfApi:
             name=f"statemachine_{short_uid()}",
             definition=definition_str,
             roleArn=snf_role_arn,
-            type="STANDARD",
+            type=StateMachineType.STANDARD,
         )
         state_machine_arn = creation_response["stateMachineArn"]
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
         sfn_snapshot.match("creation_response", creation_response)
 
         with pytest.raises(Exception) as ex:
-            aws_client.stepfunctions.start_sync_execution(
+            stepfunctions_client_sync_executions.start_sync_execution(
                 stateMachineArn=state_machine_arn, input=json.dumps({}), name="SyncExecution"
             )
         sfn_snapshot.match("start_sync_execution_error", ex.value.response)

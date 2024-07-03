@@ -24,6 +24,7 @@ from localstack.aws.api.stepfunctions import (
     LoggingConfiguration,
     LogLevel,
     LongArn,
+    StateMachineType,
 )
 from localstack.services.stepfunctions.asl.eval.event.logging import is_logging_enabled_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -307,20 +308,14 @@ def is_execution_logs_list_complete(
     return _validation_function
 
 
-def await_on_execution_logs(
-    aws_client,
-    log_group_name: str,
-    validation_function: Callable[[HistoryEventList], bool] = None,
-) -> HistoryEventList:
+def _await_on_execution_log_stream_created(aws_client, log_group_name: str) -> str:
     logs_client = aws_client.logs
-    events: HistoryEventList = list()
+    log_stream_name = str()
 
     def _run_check():
-        nonlocal events
-        events.clear()
-
+        nonlocal log_stream_name
         try:
-            log_streams = aws_client.logs.describe_log_streams(logGroupName=log_group_name)[
+            log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)[
                 "logStreams"
             ]
             if not log_streams:
@@ -333,11 +328,31 @@ def await_on_execution_logs(
             ):
                 # SFN has not yet create the log stream for the execution, only the validation steam.
                 return False
+            return True
+        except ClientError:
+            return False
 
+    assert poll_condition(condition=_run_check)
+    return log_stream_name
+
+
+def await_on_execution_logs(
+    aws_client,
+    log_group_name: str,
+    validation_function: Callable[[HistoryEventList], bool] = None,
+) -> HistoryEventList:
+    log_stream_name = _await_on_execution_log_stream_created(aws_client, log_group_name)
+
+    logs_client = aws_client.logs
+    events: HistoryEventList = list()
+
+    def _run_check():
+        nonlocal events
+        events.clear()
+        try:
             log_events = logs_client.get_log_events(
                 logGroupName=log_group_name, logStreamName=log_stream_name, startFromHead=True
             )["events"]
-
             events.extend([json.loads(e["message"]) for e in log_events])
         except ClientError:
             return False
@@ -560,64 +575,75 @@ def create_and_record_express_sync_execution(
     )
 
 
-def launch_and_record_async_execution(
-    stepfunctions_client,
-    logs_client,
+def launch_and_record_express_async_execution(
+    aws_client,
     sfn_snapshot,
     state_machine_arn,
+    log_group_name,
     execution_input,
-    cloud_watch_group_arn,
 ):
-    exec_resp = stepfunctions_client.start_execution(
-        stateMachineArn=state_machine_arn,
-        input=execution_input,
+    start_execution = aws_client.stepfunctions.start_execution(
+        stateMachineArn=state_machine_arn, input=execution_input
     )
-    sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
-    sfn_snapshot.match("start_execution_sync_response", exec_resp)
-    # execution_arn = exec_resp["executionArn"]
+    sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_express_exec_arn(start_execution, 0))
+    execution_arn = start_execution["executionArn"]
 
-    # res = logs_client.filter_log_events(logGroupName=cloud_watch_group_arn)
-    # TODO: wait for cloudwatch api.
+    event_list = await_on_execution_logs(
+        aws_client, log_group_name, validation_function=_is_last_history_event_terminal
+    )
+    # Snapshot only the end event, as AWS StepFunctions implements a flaky approach to logging previous events.
+    end_event = event_list[-1]
+    sfn_snapshot.match("end_event", end_event)
+
+    return execution_arn
 
 
 def create_and_record_express_async_execution(
-    stepfunctions_client,
-    logs_client,
+    aws_client,
     create_iam_role_for_sfn,
     create_state_machine,
-    create_cloud_watch_group_for_sfn,
+    sfn_create_log_group,
     sfn_snapshot,
     definition,
     execution_input,
-):
+    include_execution_data: bool = True,
+) -> tuple[LongArn, LongArn]:
     snf_role_arn = create_iam_role_for_sfn()
     sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
-    log_group_arn = create_cloud_watch_group_for_sfn
+    log_group_name = sfn_create_log_group()
+    log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
+        "logGroups"
+    ][0]["arn"]
+    logging_configuration = LoggingConfiguration(
+        level=LogLevel.ALL,
+        includeExecutionData=include_execution_data,
+        destinations=[
+            LogDestination(
+                cloudWatchLogsLogGroup=CloudWatchLogsLogGroup(logGroupArn=log_group_arn)
+            ),
+        ],
+    )
 
     creation_response = create_state_machine(
         name=f"express_statemachine_{short_uid()}",
         definition=definition,
         roleArn=snf_role_arn,
-        type="EXPRESS",
-        loggingConfiguration={
-            "level": "ALL",
-            "includeExecutionData": True,
-            "destinations": [{"cloudWatchLogsLogGroup": {"logGroupArn": log_group_arn}}],
-        },
+        type=StateMachineType.EXPRESS,
+        loggingConfiguration=logging_configuration,
     )
     state_machine_arn = creation_response["stateMachineArn"]
     sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
     sfn_snapshot.match("creation_response", creation_response)
 
-    launch_and_record_async_execution(
-        stepfunctions_client,
-        logs_client,
+    execution_arn = launch_and_record_express_async_execution(
+        aws_client,
         sfn_snapshot,
         state_machine_arn,
+        log_group_name,
         execution_input,
-        log_group_arn,
     )
+    return state_machine_arn, execution_arn
 
 
 def create_and_record_events(
