@@ -6,8 +6,8 @@ import re
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import List
 
+from plux import PluginManager
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
@@ -180,36 +180,52 @@ class PluginsResource:
     Resource to list information about plux plugins.
     """
 
-    def on_get(self, request):
-        from plux import PluginManager
+    plugin_managers: list[PluginManager] = []
 
-        from localstack.runtime import hooks
+    def __init__(self):
+        # defer imports here to lazy-load code
+        from localstack.runtime import hooks, init
         from localstack.services.plugins import SERVICE_PLUGINS
 
-        plugin_managers: List[PluginManager] = [
-            SERVICE_PLUGINS.plugin_manager,
-            hooks.configure_localstack_container.manager,
-            hooks.prepare_host.manager,
-            hooks.on_infra_ready.manager,
-            hooks.on_infra_start.manager,
-            hooks.on_infra_shutdown.manager,
-        ]
+        # service providers
+        PluginsResource.plugin_managers.append(SERVICE_PLUGINS.plugin_manager)
+        # init script runners
+        PluginsResource.plugin_managers.append(init.init_script_manager().runner_manager)
+        # init hooks
+        PluginsResource.plugin_managers.append(hooks.configure_localstack_container.manager)
+        PluginsResource.plugin_managers.append(hooks.prepare_host.manager)
+        PluginsResource.plugin_managers.append(hooks.on_infra_ready.manager)
+        PluginsResource.plugin_managers.append(hooks.on_infra_start.manager)
+        PluginsResource.plugin_managers.append(hooks.on_infra_shutdown.manager)
 
-        def get_plugin_details(_manager: PluginManager, _name: str):
-            container = _manager.get_container(_name)
-
-            details = {
-                "name": _name,
-                "is_initialized": container.is_init,
-                "is_loaded": container.is_loaded,
-            }
-
-            return details
-
+    def on_get(self, request):
         return {
-            manager.namespace: [get_plugin_details(manager, name) for name in manager.list_names()]
-            for manager in plugin_managers
+            manager.namespace: [
+                self._get_plugin_details(manager, name) for name in manager.list_names()
+            ]
+            for manager in self.plugin_managers
         }
+
+    def _get_plugin_details(self, manager: PluginManager, plugin_name: str) -> dict:
+        container = manager.get_container(plugin_name)
+
+        details = {
+            "name": plugin_name,
+            "is_initialized": container.is_init,
+            "is_loaded": container.is_loaded,
+        }
+
+        # optionally add requires_license information if the plugin provides it
+        requires_license = None
+        if container.plugin:
+            try:
+                requires_license = container.plugin.requires_license
+            except AttributeError:
+                pass
+        if requires_license is not None:
+            details["requires_license"] = requires_license
+
+        return details
 
 
 class InitScriptsResource:
