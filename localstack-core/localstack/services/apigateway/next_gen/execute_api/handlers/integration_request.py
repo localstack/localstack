@@ -1,5 +1,4 @@
 import logging
-from enum import Enum
 
 from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.http import Response
@@ -20,7 +19,7 @@ from ..variables import (
 LOG = logging.getLogger(__name__)
 
 
-class PassthroughBehavior(Enum):
+class PassthroughBehavior(str):
     # TODO maybe this class should be moved where it can also be used for validation in
     #  the provider when we switch out of moto
     WHEN_NO_MATCH = "WHEN_NO_MATCH"
@@ -66,7 +65,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         body, request_override = self.render_request_template_mapping(
             context=context, template=request_template
         )
-        merge_recursive(request_override, request_data_mapping)
+        merge_recursive(request_override, request_data_mapping, overwrite=True)
 
         # TODO: extract the code under into its own method
 
@@ -108,32 +107,33 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         template: str,
     ) -> tuple[str, ContextVarsRequestOverride]:
         request: InvocationRequest = context.invocation_request
-        body = str(request.get("body", ""))
+        body = request.get("body", b"").decode()
 
         if not template:
             return body, {}
 
-        variables = MappingTemplateVariables(
-            context=context.context_variables,
-            stageVariables=context.stage_variables or {},
-            input=MappingTemplateInput(
-                body=body,
-                params=MappingTemplateParams(
-                    path=request.get("path_parameters"),
-                    querystring=request.get("query_string_parameters", {}),
-                    header=request.get("headers", {}),
+        return self._vtl_template.render_request(
+            template=template.strip(),
+            variables=MappingTemplateVariables(
+                context=context.context_variables,
+                stageVariables=context.stage_variables or {},
+                input=MappingTemplateInput(
+                    body=body,
+                    params=MappingTemplateParams(
+                        path=request.get("path_parameters"),
+                        querystring=request.get("query_string_parameters", {}),
+                        header=request.get("headers", {}),
+                    ),
                 ),
             ),
         )
-        result = self._vtl_template.render_vtl(template=template.strip(), variables=variables)
-        return result, variables.get("requestOverride")
 
     def get_request_template(self, integration: Integration, request: InvocationRequest) -> str:
         """
         Attempts to return the request template.
         Will raise UnsupportedMediaTypeError if there are no match according to passthrough behavior.
         """
-        request_templates = integration.get("requestTemplates")
+        request_templates = integration.get("requestTemplates", {})
         passthrough_behavior = integration.get("passthroughBehavior")
         # If content-type is not provided aws assumes application/json
         content_type = request["raw_headers"].get("Content-Type", "application/json")
