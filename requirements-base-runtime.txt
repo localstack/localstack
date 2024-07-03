@@ -9,11 +9,14 @@ attrs==23.2.0
 awscrt==0.20.12
     # via localstack-core (pyproject.toml)
 boto3==1.34.136
-    # via localstack-core (pyproject.toml)
+    # via
+    #   localstack-core (pyproject.toml)
+    #   moto-ext
 botocore==1.34.136
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
+    #   moto-ext
     #   s3transfer
 build==1.2.1
     # via localstack-core (pyproject.toml)
@@ -34,6 +37,7 @@ constantly==23.10.4
 cryptography==42.0.8
     # via
     #   localstack-core (pyproject.toml)
+    #   moto-ext
     #   pyopenssl
 dill==0.3.6
     # via localstack-core (pyproject.toml)
@@ -66,6 +70,8 @@ idna==3.7
     #   requests
 incremental==22.10.0
     # via localstack-twisted
+jinja2==3.1.4
+    # via moto-ext
 jmespath==1.0.1
     # via
     #   boto3
@@ -79,9 +85,12 @@ localstack-twisted==24.3.0
 markdown-it-py==3.0.0
     # via rich
 markupsafe==2.1.5
-    # via werkzeug
+    # via
+    #   jinja2
+    #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
+moto-ext==5.0.10.post1
 packaging==24.1
     # via build
 plux==1.11.0
@@ -103,21 +112,29 @@ pyopenssl==24.1.0
 pyproject-hooks==1.1.0
     # via build
 python-dateutil==2.9.0.post0
-    # via botocore
+    # via
+    #   botocore
+    #   moto-ext
 python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.1
-    # via localstack-core (pyproject.toml)
+    # via
+    #   localstack-core (pyproject.toml)
+    #   responses
 readerwriterlock==1.0.9
     # via localstack-core (pyproject.toml)
 requests==2.32.3
     # via
     #   docker
     #   localstack-core (pyproject.toml)
+    #   moto-ext
     #   requests-aws4auth
+    #   responses
     #   rolo
 requests-aws4auth==1.2.3
     # via localstack-core (pyproject.toml)
+responses==0.25.3
+    # via moto-ext
 rich==13.7.1
     # via localstack-core (pyproject.toml)
 rolo==0.5.1
@@ -142,14 +159,18 @@ urllib3==2.2.2
     #   docker
     #   localstack-core (pyproject.toml)
     #   requests
+    #   responses
 werkzeug==3.0.3
     # via
     #   localstack-core (pyproject.toml)
+    #   moto-ext
     #   rolo
 wsproto==1.2.0
     # via hypercorn
 xmltodict==0.13.0
-    # via localstack-core (pyproject.toml)
+    # via
+    #   localstack-core (pyproject.toml)
+    #   moto-ext
 zope-interface==6.4.post2
     # via localstack-twisted
 
