@@ -102,7 +102,6 @@ def stepfunctions_client_test_state(aws_client_factory):
 def stepfunctions_client_sync_executions(aws_client_factory):
     # For StartSyncExecution calls, boto will prepend "sync-" to the endpoint string. As we operate on localhost,
     # this function creates a new stepfunctions client with that functionality disabled.
-    # Using this client only for test_state calls forces future occurrences to handle this issue explicitly.
     return aws_client_factory(config=Config(inject_host_prefix=is_aws_cloud())).stepfunctions
 
 
