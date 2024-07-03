@@ -7,11 +7,13 @@ from io import BytesIO
 from typing import Any, Dict, Iterator, List, Optional
 from xml.etree import ElementTree
 
-import cbor2
 import pytest
 from botocore.awsrequest import HeadersDict
 from botocore.endpoint import convert_to_response_dict
 from botocore.parsers import ResponseParser, create_parser
+
+# cbor2: explicitly load from private _decoder module to avoid using the (non-patched) C-version
+from cbor2._decoder import loads as cbor2_loads
 from dateutil.tz import tzlocal, tzutc
 from requests.models import Response as RequestsResponse
 from urllib3 import HTTPResponse as UrlLibHttpResponse
@@ -1860,7 +1862,7 @@ def test_json_protocol_cbor_serialization(headers_dict):
     assert result is not None
     assert result.content_type is not None
     assert result.content_type == "application/cbor"
-    parsed_data = cbor2.loads(result.data)
+    parsed_data = cbor2_loads(result.data)
     assert parsed_data == response_data
 
 
