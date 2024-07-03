@@ -3,6 +3,7 @@ from enum import Enum
 
 from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.http import Response
+from localstack.utils.collections import merge_recursive
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
@@ -65,7 +66,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         body, request_override = self.render_request_template_mapping(
             context=context, template=request_template
         )
-        request_data_mapping.update(request_override)
+        merge_recursive(request_override, request_data_mapping)
 
         # TODO: extract the code under into its own method
 

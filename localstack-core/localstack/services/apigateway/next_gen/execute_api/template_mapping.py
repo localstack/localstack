@@ -172,15 +172,19 @@ class ApiGatewayVtlTemplate(VtlTemplate):
         self, template: str, variables: MappingTemplateVariables
     ) -> tuple[str, ContextVarsRequestOverride]:
         vars: MappingTemplateVariables = copy.deepcopy(variables)
-        vars["requestOverride"] = ContextVarsRequestOverride()
+        vars["context"]["requestOverride"] = ContextVarsRequestOverride(
+            querystring={}, header={}, path={}
+        )
         result = self.render_vtl(template=template.strip(), variables=vars)
-        return result, vars["requestOverride"]
+        return result, vars["context"]["requestOverride"]
 
     def render_response(
         self, template: str, variables: MappingTemplateVariables
     ) -> tuple[str, ContextVarsResponseOverride]:
         pass
 
+    # TODO Maybe we don't need those methods and they should belong on the integration response handler?
+    #  And we should raise the appropriate exception from the gateway responses.
     def _render_as_text(self, template: str, variables: dict[str, Any]) -> str:
         """
         Render the given Velocity template string + variables into a plain string.
