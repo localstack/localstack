@@ -108,6 +108,9 @@ from localstack.services.stepfunctions.asl.eval.event.logging import (
 from localstack.services.stepfunctions.asl.parse.asl_parser import (
     ASLParserException,
 )
+from localstack.services.stepfunctions.asl.static_analyser.express_static_analyser import (
+    ExpressStaticAnalyser,
+)
 from localstack.services.stepfunctions.asl.static_analyser.static_analyser import StaticAnalyser
 from localstack.services.stepfunctions.asl.static_analyser.test_state.test_state_analyser import (
     TestStateStaticAnalyser,
@@ -380,9 +383,14 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             cloud_watch_logging_configuration.validate()
 
         # Run static analysers on the definition given.
-        StepFunctionsProvider._validate_definition(
-            definition=state_machine_definition, static_analysers=[StaticAnalyser()]
-        )
+        if state_machine_type == StateMachineType.EXPRESS:
+            StepFunctionsProvider._validate_definition(
+                definition=state_machine_definition, static_analysers=[ExpressStaticAnalyser()]
+            )
+        else:
+            StepFunctionsProvider._validate_definition(
+                definition=state_machine_definition, static_analysers=[StaticAnalyser()]
+            )
 
         # Create the state machine and add it to the store.
         state_machine = StateMachineRevision(

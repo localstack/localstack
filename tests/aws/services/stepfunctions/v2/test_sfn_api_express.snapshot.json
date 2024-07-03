@@ -161,5 +161,61 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_callbacks[WAIT_FOR_TASK_TOKEN]": {
+    "recorded-date": "03-07-2024, 19:43:10",
+    "recorded-content": {
+      "creation_error": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support '.waitForTaskToken' service integration  at /States/Publish/Resource'"
+        },
+        "message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support '.waitForTaskToken' service integration  at /States/Publish/Resource'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_callbacks[SYNC]": {
+    "recorded-date": "03-07-2024, 19:43:23",
+    "recorded-content": {
+      "creation_error": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support '.sync' service integration at /States/StartExecution/Resource'"
+        },
+        "message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support '.sync' service integration at /States/StartExecution/Resource'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_activity_task": {
+    "recorded-date": "03-07-2024, 19:27:25",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "creation_error": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support Activity ARN at /States/ActivityTask/Resource'"
+        },
+        "message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support Activity ARN at /States/ActivityTask/Resource'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
