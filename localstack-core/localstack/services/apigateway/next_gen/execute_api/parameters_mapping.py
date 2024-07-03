@@ -10,6 +10,7 @@ import json
 import logging
 from typing import TypedDict
 
+from localstack.http import Response
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
 
@@ -28,6 +29,12 @@ class RequestDataMapping(TypedDict):
     querystring: dict[str, str | list[str]]
 
 
+class ResponseDataMapping(TypedDict):
+    # Method response header parameters can be mapped from any integration response header or integration response body,
+    # $context variables, or static values.
+    header: dict[str, str]
+
+
 class ParametersMapper:
     def map_integration_request(
         self,
@@ -41,7 +48,6 @@ class ParametersMapper:
             path={},
             querystring={},
         )
-        # TODO: maybe extract functionality and re-use in `map_integration_response`
 
         for integration_mapping, request_mapping in request_parameters.items():
             integration_param_location, param_name = integration_mapping.removeprefix(
@@ -54,39 +60,140 @@ class ParametersMapper:
                     method_req_expr, invocation_request
                 )
 
-            elif request_mapping.startswith("context."):
-                context_var_expr = request_mapping.removeprefix("context.")
-                value = self._retrieve_parameter_from_context_variables(
-                    context_var_expr, context_variables
-                )
-
-            elif request_mapping.startswith("stageVariables."):
-                stage_var_name = request_mapping.removeprefix("stageVariables.")
-                value = self._retrieve_parameter_from_stage_variables(
-                    stage_var_name, stage_variables
-                )
-
-            elif request_mapping.startswith("'") and request_mapping.endswith("'"):
-                value = request_mapping.strip("'")
-
             else:
-                LOG.warning(
-                    "Unrecognized requestParameter value: '%s'. Skipping the parameter mapping.",
-                    request_mapping,
+                value = self._retrieve_parameter_from_variables_and_static(
+                    mapping_value=request_mapping,
+                    context_variables=context_variables,
+                    stage_variables=stage_variables,
                 )
-                value = None
 
             if value:
                 request_data_mapping[integration_param_location][param_name] = value
 
         return request_data_mapping
 
-    def map_integration_response(self):
-        pass
+    def map_integration_response(
+        self,
+        response_parameters: dict[str, str],
+        integration_response: Response,
+        context_variables: ContextVariables,
+        stage_variables: dict[str, str],
+    ) -> ResponseDataMapping:
+        response_data_mapping = ResponseDataMapping(header={})
+
+        for response_mapping, integration_mapping in response_parameters.items():
+            header_name = response_mapping.removeprefix("method.response.header.")
+
+            if integration_mapping.startswith("integration.response."):
+                method_req_expr = integration_mapping.removeprefix("integration.response.")
+                value = self._retrieve_parameter_from_integration_response(
+                    method_req_expr, integration_response
+                )
+            else:
+                value = self._retrieve_parameter_from_variables_and_static(
+                    mapping_value=integration_mapping,
+                    context_variables=context_variables,
+                    stage_variables=stage_variables,
+                )
+
+            if value:
+                response_data_mapping["header"][header_name] = value
+
+        return response_data_mapping
+
+    def _retrieve_parameter_from_variables_and_static(
+        self,
+        mapping_value: str,
+        context_variables: ContextVariables,
+        stage_variables: dict[str, str],
+    ):
+        if mapping_value.startswith("context."):
+            context_var_expr = mapping_value.removeprefix("context.")
+            return self._retrieve_parameter_from_context_variables(
+                context_var_expr, context_variables
+            )
+
+        elif mapping_value.startswith("stageVariables."):
+            stage_var_name = mapping_value.removeprefix("stageVariables.")
+            return self._retrieve_parameter_from_stage_variables(stage_var_name, stage_variables)
+
+        elif mapping_value.startswith("'") and mapping_value.endswith("'"):
+            return mapping_value.strip("'")
+
+        else:
+            LOG.warning(
+                "Unrecognized parameter mapping value: '%s'. Skipping this mapping.",
+                mapping_value,
+            )
+            return None
+
+    def _retrieve_parameter_from_integration_response(
+        self,
+        expr: str,
+        integration_response: Response,
+    ) -> str | None:
+        """
+        See https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
+        :param expr: mapping expression stripped from `integration.response.`:
+                     Can be of the following: `header.<param_name>`, multivalueheader.<param_name>, `body` and
+                     `body.<JSONPath_expression>.`
+        :param integration_response: the Response to map parameters from
+        :return: the value to map in the ResponseDataMapping
+        """
+        if expr.startswith("body"):
+            body = integration_response.get_data(as_text=True)
+            body = body.strip()
+            try:
+                decoded_body = self._json_load(body)
+            except ValueError:
+                # TODO: change
+                raise Default4xxError(message="Invalid JSON in request body")
+
+            if expr == "body":
+                return body
+
+            elif expr.startswith("body."):
+                json_path = expr.removeprefix("body.")
+                return self._get_json_path_from_dict(decoded_body, json_path)
+            else:
+                LOG.warning(
+                    "Unrecognized integration.response parameter: '%s'. Skipping the parameter mapping.",
+                    expr,
+                )
+                return None
+
+        param_type, param_name = expr.split(".")
+
+        if param_type == "header":
+            # TODO: validate casing! for request it was strict?
+            multi_headers = integration_response.headers.getlist(param_name)
+            if multi_headers:
+                return multi_headers[-1]
+
+        elif param_type == "multivalueheader":
+            # TODO: validate casing! for request it was strict?
+            multi_headers = integration_response.headers.getlist(param_name)
+            # TODO: format?
+            return ",".join(multi_headers)
+
+        else:
+            LOG.warning(
+                "Unrecognized integration.response parameter: '%s'. Skipping the parameter mapping.",
+                expr,
+            )
 
     def _retrieve_parameter_from_invocation_request(
         self, expr: str, invocation_request: InvocationRequest
     ) -> str | list[str] | None:
+        """
+        See https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
+        :param expr: mapping expression stripped from `method.request.`:
+                     Can be of the following: `path.<param_name>`, `querystring.<param_name>`,
+                     `multivaluequerystring.<param_name>`, `header.<param_name>`, `multivalueheader.<param_name>`,
+                     `body` and `body.<JSONPath_expression>.`
+        :param invocation_request: the InvocationRequest to map parameters from
+        :return: the value to map in the RequestDataMapping
+        """
         if expr.startswith("body"):
             body = invocation_request["body"] or b"{}"
             body = body.strip()
@@ -163,7 +270,7 @@ class ParametersMapper:
             return None
 
     @staticmethod
-    def _json_load(body: bytes) -> dict | list:
+    def _json_load(body: bytes | str) -> dict | list:
         """
         AWS only tries to JSON decode the body if it starts with some leading characters ({, [, ", ')
         otherwise, it ignores it

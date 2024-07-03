@@ -47,7 +47,7 @@ def default_invocation_request() -> InvocationRequest:
     )
 
 
-class TestApigatewayParametersMapping:
+class TestApigatewayRequestParametersMapping:
     def test_default_request_mapping(self, default_invocation_request, default_context_variables):
         mapper = ParametersMapper()
         request_parameters = {
@@ -397,3 +397,12 @@ class TestApigatewayParametersMapping:
             "path": {},
             "querystring": {},
         }
+
+
+class TestApigatewayResponseParametersMapping:
+    """
+    Only `method.response` headers can be mapping from `responseParameters`.
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
+    """
+
+    pass
