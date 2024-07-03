@@ -138,9 +138,8 @@ class InvocationRequestParser(RestApiGatewayHandler):
             domainPrefix=domain_prefix,
             extendedRequestId=short_uid(),  # TODO: use snapshot tests to verify format
             httpMethod=invocation_request["http_method"],
-            path=invocation_request[
-                "path"
-            ],  # TODO: check if we need the raw path? with forward slashes
+            # TODO: check if we need the raw path? with forward slashes
+            path=f"/{context.stage}{invocation_request['path']}",
             protocol="HTTP/1.1",
             requestId=short_uid(),  # TODO: use snapshot tests to verify format
             requestTime=timestamp(time=now, format=REQUEST_TIME_DATE_FORMAT),
