@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_cfn_handle_iam_role_resource_no_role_name": {
+    "last_validated_date": "2024-06-18T20:29:57+00:00"
+  },
   "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_iam_user_access_key": {
     "last_validated_date": "2023-07-11T06:23:54+00:00"
   },
@@ -13,5 +16,8 @@
   },
   "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_update_inline_policy": {
     "last_validated_date": "2023-04-05T09:55:22+00:00"
+  },
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_updating_stack_with_iam_role": {
+    "last_validated_date": "2024-06-18T21:02:59+00:00"
   }
 }

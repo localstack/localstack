@@ -1,0 +1,36 @@
+Parameters:
+    KeyName:
+        Type: String
+        Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+    InstanceType:
+        Type: String
+        Description: WebServer EC2 instance type
+        Default: t2.micro
+    ImageId:
+        Type: String
+        Description: WebServer EC2 instance type
+        Default: ami-0a70b9d193ae8a799
+Resources:
+   myInstance:
+     Type: 'AWS::EC2::Instance'
+     Properties:
+        ImageId: !Ref ImageId
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyName
+        SecurityGroupIds:
+          - !Ref securityGroup
+
+
+   securityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  InstanceId:
+    Value: !Ref myInstance

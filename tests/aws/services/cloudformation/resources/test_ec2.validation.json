@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_cfn_update_ec2_instance_type": {
+    "last_validated_date": "2024-06-19T19:56:42+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_dhcp_options": {
     "last_validated_date": "2023-10-19T12:51:28+00:00"
   },
@@ -10,5 +13,8 @@
   },
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_vpc_creates_default_sg": {
     "last_validated_date": "2024-04-01T11:21:54+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_vpc_with_route_table": {
+    "last_validated_date": "2024-06-19T16:48:31+00:00"
   }
 }

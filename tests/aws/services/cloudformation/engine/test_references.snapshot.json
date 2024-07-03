@@ -52,5 +52,19 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/engine/test_references.py::test_resolve_transitive_placeholders_in_strings": {
+    "recorded-date": "18-06-2024, 19:55:48",
+    "recorded-content": {
+      "tags": {
+        "Tags": {
+          "test": "arn:aws:ssm:<region>:111111111111:parameter/cdk-bootstrap/.../version"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

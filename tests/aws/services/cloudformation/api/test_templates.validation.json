@@ -13,5 +13,11 @@
   },
   "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary": {
     "last_validated_date": "2023-05-24T13:05:00+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_validate_invalid_json_template_should_fail": {
+    "last_validated_date": "2024-06-18T17:25:49+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_validate_template": {
+    "last_validated_date": "2024-06-18T17:23:30+00:00"
   }
 }

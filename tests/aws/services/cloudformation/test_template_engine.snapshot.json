@@ -618,5 +618,27 @@
         ]
       ]
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestImportValues::test_cfn_with_exports": {
+    "recorded-date": "21-06-2024, 18:37:15",
+    "recorded-content": {
+      "exports": [
+        {
+          "ExportingStackId": "<stack-id>",
+          "Name": "<stack-name>-TestExport-0",
+          "Value": "test"
+        },
+        {
+          "ExportingStackId": "<stack-id>",
+          "Name": "<stack-name>-TestExport-1",
+          "Value": "test"
+        },
+        {
+          "ExportingStackId": "<stack-id>",
+          "Name": "<stack-name>-TestExport-2",
+          "Value": "test"
+        }
+      ]
+    }
   }
 }

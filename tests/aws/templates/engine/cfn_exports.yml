@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  TestParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: "test"
+      Name: "/test/parameter"
+
+Outputs:
+  TestExport:
+    Value: "test"
+    Export:
+      Name: !Sub "${AWS::StackName}-TestExport-0"
+  TestExport1:
+    Value: "test"
+    Export:
+      Name: !Sub "${AWS::StackName}-TestExport-1"
+  TestExport2:
+    Value: "test"
+    Export:
+      Name: !Sub "${AWS::StackName}-TestExport-2"

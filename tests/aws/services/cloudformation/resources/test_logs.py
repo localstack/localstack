@@ -23,3 +23,27 @@ def test_logstream(deploy_cfn_template, snapshot, aws_client):
     )["logStreams"]
     assert aws_client.logs.meta.partition == streams[0]["arn"].split(":")[1]
     snapshot.match("describe_log_streams", streams)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..logGroups..logGroupArn",
+        "$..logGroups..logGroupClass",
+        "$..logGroups..retentionInDays",
+    ]
+)
+def test_cfn_handle_log_group_resource(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/logs_group.yml")
+    )
+
+    log_group_prefix = stack.outputs["LogGroupNameOutput"]
+
+    response = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_prefix)
+    snapshot.match("describe_log_groups", response)
+    snapshot.add_transformer(snapshot.transform.key_value("logGroupName"))
+
+    stack.destroy()
+    response = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_prefix)
+    assert len(response["logGroups"]) == 0

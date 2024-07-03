@@ -280,6 +280,17 @@ class TestIntrinsicFunctions:
             max_wait=120,
         )
 
+    @markers.aws.validated
+    def test_cfn_template_with_short_form_fn_sub(self, deploy_cfn_template):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/cfn_short_sub.yml"
+            ),
+        )
+
+        result = stack.outputs["Result"]
+        assert result == "test"
+
 
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
@@ -492,6 +503,23 @@ class TestPreviousValues:
 
 
 class TestImportValues:
+    @markers.aws.validated
+    def test_cfn_with_exports(self, deploy_cfn_template, aws_client, snapshot):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/cfn_exports.yml"
+            )
+        )
+
+        exports = aws_client.cloudformation.list_exports()["Exports"]
+        filtered = [exp for exp in exports if exp["ExportingStackId"] == stack.stack_id]
+        filtered.sort(key=lambda x: x["Name"])
+
+        snapshot.match("exports", filtered)
+
+        snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
+        snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
+
     @markers.aws.validated
     def test_import_values_across_stacks(self, deploy_cfn_template, aws_client):
         export_name = f"b-{short_uid()}"

@@ -4,6 +4,7 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -85,3 +86,23 @@ def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
         deploy_cfn_template(template=template)
 
     snapshot.match("validation_error", exc_info.value.response)
+
+
+@markers.aws.validated
+def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_client, snapshot):
+    queue_name = f"q-{short_uid()}"
+    parameter_ver = f"v{short_uid()}"
+    stack_name = f"stack-{short_uid()}"
+    stack = deploy_cfn_template(
+        stack_name=stack_name,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/legacy_transitive_ref.yaml"
+        ),
+        max_wait=300 if is_aws_cloud() else 10,
+        parameters={"QueueName": queue_name, "Qualifier": parameter_ver},
+    )
+    tags = aws_client.sqs.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
+    snapshot.add_transformer(
+        snapshot.transform.regex(r"/cdk-bootstrap/(\w+)/", "/cdk-bootstrap/.../")
+    )
+    snapshot.match("tags", tags)
