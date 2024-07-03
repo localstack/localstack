@@ -7,6 +7,7 @@
 #
 # https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
 import json
+import logging
 from typing import TypedDict
 
 from localstack.utils.json import extract_jsonpath
@@ -15,6 +16,8 @@ from localstack.utils.strings import to_str
 from .context import InvocationRequest
 from .gateway_response import Default4xxError
 from .variables import ContextVariables
+
+LOG = logging.getLogger(__name__)
 
 
 class RequestDataMapping(TypedDict):
@@ -67,7 +70,10 @@ class ParametersMapper:
                 value = request_mapping.strip("'")
 
             else:
-                # TODO: verify this
+                LOG.warning(
+                    "Unrecognized requestParameter value: '%s'. Skipping the parameter mapping.",
+                    request_mapping,
+                )
                 value = None
 
             if value:
@@ -80,12 +86,10 @@ class ParametersMapper:
 
     def _retrieve_parameter_from_invocation_request(
         self, expr: str, invocation_request: InvocationRequest
-    ) -> str | list[str]:
+    ) -> str | list[str] | None:
         if expr.startswith("body"):
             body = invocation_request["body"] or b"{}"
             body = body.strip()
-            # AWS only tries to JSON decode the body if it starts with some leading characters ({, [, ", ')
-            # otherwise, it ignores it
             try:
                 decoded_body = self._json_load(body)
             except ValueError:
@@ -97,6 +101,12 @@ class ParametersMapper:
             elif expr.startswith("body."):
                 json_path = expr.removeprefix("body.")
                 return self._get_json_path_from_dict(decoded_body, json_path)
+            else:
+                LOG.warning(
+                    "Unrecognized method.request parameter: '%s'. Skipping the parameter mapping.",
+                    expr,
+                )
+                return None
 
         param_type, param_name = expr.split(".")
         if param_type == "path":
@@ -125,6 +135,12 @@ class ParametersMapper:
         elif param_type == "multivalueheader":
             multi_headers = invocation_request["multi_value_headers"].get(param_name, [])
             return ",".join(multi_headers)
+
+        else:
+            LOG.warning(
+                "Unrecognized method.request parameter: '%s'. Skipping the parameter mapping.",
+                expr,
+            )
 
     def _retrieve_parameter_from_context_variables(
         self, expr: str, context_variables: ContextVariables

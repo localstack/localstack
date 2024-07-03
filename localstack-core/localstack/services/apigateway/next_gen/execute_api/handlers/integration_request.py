@@ -52,8 +52,14 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         # TODO: create helper method to render the different URI with stageVariables and parameters
         rendered_integration_uri = integration["uri"]  # use request_data_mapping["path"]
 
+        # TODO: verify the assumptions about the method with an AWS validated test
+        # if the integration method is defined and is not ANY, we can use it for the integration
+        if not (integration_method := integration["httpMethod"]) or integration_method == "ANY":
+            # otherwise, fallback to the request's method
+            integration_method = context.invocation_request["method"]
+
         integration_request = IntegrationRequest(
-            http_method=integration["httpMethod"],
+            http_method=integration_method,
             uri=rendered_integration_uri,
             query_string_parameters=request_data_mapping["querystring"],
             headers=request_data_mapping["header"],
