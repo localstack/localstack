@@ -85,11 +85,13 @@ from struct import pack
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
-import cbor2
 import xmltodict
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601, ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
+
+# cbor2: explicitly load from private _encoder module to avoid using the (non-patched) C-version
+from cbor2._encoder import dumps as cbor2_dumps
 from werkzeug import Request as WerkzeugRequest
 from werkzeug import Response as WerkzeugResponse
 from werkzeug.datastructures import Headers, MIMEAccept
@@ -513,10 +515,6 @@ class ResponseSerializer(abc.ABC):
     @staticmethod
     def _timestamp_unixtimestamp(value: datetime) -> float:
         return value.timestamp()
-
-    @staticmethod
-    def _timestamp_unixtimestampmillis(value: datetime) -> int:
-        return int(value.timestamp() * 1000)
 
     def _timestamp_rfc822(self, value: datetime) -> str:
         if isinstance(value, datetime):
@@ -1244,7 +1242,7 @@ class JSONResponseSerializer(ResponseSerializer):
                 body["message"] = message
 
         if mime_type in self.CBOR_TYPES:
-            response.set_response(cbor2.dumps(body))
+            response.set_response(cbor2_dumps(body, datetime_as_timestamp=True))
             response.content_type = mime_type
         else:
             response.set_json(body)
@@ -1282,7 +1280,7 @@ class JSONResponseSerializer(ResponseSerializer):
             self._serialize(body, params, shape, None, mime_type)
 
         if mime_type in self.CBOR_TYPES:
-            return cbor2.dumps(body)
+            return cbor2_dumps(body, datetime_as_timestamp=True)
         else:
             return json.dumps(body)
 
@@ -1364,13 +1362,12 @@ class JSONResponseSerializer(ResponseSerializer):
     def _serialize_type_timestamp(
         self, body: dict, value: Any, shape: Shape, key: str, mime_type: str
     ):
-        timestamp_format = (
-            shape.serialization.get("timestampFormat")
-            # CBOR always uses unix timestamp milliseconds
-            if mime_type not in self.CBOR_TYPES
-            else "unixtimestampmillis"
-        )
-        body[key] = self._convert_timestamp_to_str(value, timestamp_format)
+        if mime_type in self.CBOR_TYPES:
+            # CBOR has native support for timestamps
+            body[key] = value
+        else:
+            timestamp_format = shape.serialization.get("timestampFormat")
+            body[key] = self._convert_timestamp_to_str(value, timestamp_format)
 
     def _serialize_type_blob(
         self, body: dict, value: Union[str, bytes], _, key: str, mime_type: str
