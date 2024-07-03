@@ -90,7 +90,7 @@ class EsmWorker:
             # state.event_source_mappings[self.esm_config["UUID"]].update(esm_update)
         while not self._shutdown_event.is_set():
             try:
-                self.poller.poll_events_v2()
+                self.poller.poll_events()
                 # Wait for next short-polling interval
                 # MAYBE: read the poller interval from self.poller if we need the flexibility
                 self._shutdown_event.wait(POLL_INTERVAL_SEC)
