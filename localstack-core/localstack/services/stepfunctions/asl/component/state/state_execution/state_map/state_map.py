@@ -129,10 +129,10 @@ class StateMap(ExecutionState):
         self.max_concurrency_decl.eval(env=env)
         max_concurrency_num = env.stack.pop()
 
-        # Despite MaxConcurrency and Tolerance fields being state level fields, AWS StepFunctions evaluates only the
-        # former as a state level field. With the latter evaluating only after the state start event but being logged
-        # with event ids coherent with state level fields. To adhere with this quirk, an evaluation frame from this
-        # point is created for Tolerance fields evaluation following the state start event.
+        # Despite MaxConcurrency and Tolerance fields being state level fields, AWS StepFunctions evaluates only
+        # MaxConcurrency as a state level field. In contrast, Tolerance is evaluated only after the state start
+        # event but is logged with event IDs coherent with state level fields. To adhere to this quirk, an evaluation
+        # frame from this point is created for the evaluation of Tolerance fields following the state start event.
         frame: Environment = env.open_frame()
         frame.inp = copy.deepcopy(env.inp)
         frame.stack = copy.deepcopy(env.stack)
