@@ -6,7 +6,7 @@ from localstack.http import Response
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import RestApiInvocationContext
-from ..gateway_response import Default5xxError
+from ..gateway_response import ApiConfigurationError
 from ..parameters_mapping import ParametersMapper, ResponseDataMapping
 
 LOG = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         #  maybe we could cache the result in the context? in an IntegrationDetails field?
         is_lambda = False
         if integration_type == IntegrationType.AWS and is_lambda:
-            # fetch errorMessage
+            # TODO: fetch errorMessage
             selection_value = ""
         else:
             selection_value = str(response.status_code)
@@ -113,8 +113,13 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
                 if not response.get("selectionPattern")
             ]
             if not default_responses:
-                # TODO: verify exception
-                raise Default5xxError("Internal server error")
+                # TODO: verify log message when the selection_value is a lambda errorMessage
+                LOG.warning(
+                    "Configuration error: No match for output mapping and no default output mapping configured. "
+                    "Endpoint Response Status Code: %s",
+                    selection_value,
+                )
+                raise ApiConfigurationError("Internal server error")
 
             selected_response = default_responses[0]
             if len(default_responses) > 1:

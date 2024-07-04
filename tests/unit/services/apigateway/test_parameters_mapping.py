@@ -4,8 +4,12 @@ from http import HTTPMethod
 import pytest
 from werkzeug.datastructures import Headers
 
+from localstack.http import Response
 from localstack.services.apigateway.next_gen.execute_api.context import InvocationRequest
-from localstack.services.apigateway.next_gen.execute_api.gateway_response import Default4xxError
+from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
+    Default4xxError,
+    Default5xxError,
+)
 from localstack.services.apigateway.next_gen.execute_api.parameters_mapping import ParametersMapper
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
@@ -375,9 +379,7 @@ class TestApigatewayRequestParametersMapping:
             "querystring": {},
         }
 
-    def test_default_request_mapping_casing(
-        self, default_invocation_request, default_context_variables
-    ):
+    def test_request_mapping_casing(self, default_invocation_request, default_context_variables):
         mapper = ParametersMapper()
         request_parameters = {
             "integration.request.header.test": "method.request.querystring.QS_value",
@@ -405,4 +407,220 @@ class TestApigatewayResponseParametersMapping:
     https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
     """
 
-    pass
+    def test_default_request_mapping(self, default_invocation_request, default_context_variables):
+        # as the scope is more limited for ResponseParameters, we test header fetching, context variables and
+        # stage variables in the same test, as it re-uses the same logic as the TestApigatewayRequestParametersMapping
+        mapper = ParametersMapper()
+        response_parameters = {
+            "method.response.header.method_test": "integration.response.header.test",
+            "method.response.header.api_id": "context.apiId",
+            "method.response.header.my_api_key": "context.identity.apiKey",
+            "method.response.header.my_stage_var": "stageVariables.test_var",
+            # missing value in the Response
+            "method.response.header.missing_test": "integration.response.header.missingtest",
+        }
+
+        integration_response = Response(headers={"test": "value"})
+
+        mapping = mapper.map_integration_response(
+            response_parameters=response_parameters,
+            integration_response=integration_response,
+            context_variables=default_context_variables,
+            stage_variables={"test_var": "a stage variable"},
+        )
+
+        assert mapping == {
+            "header": {
+                "method_test": "value",
+                "api_id": TEST_API_ID,
+                "my_api_key": TEST_IDENTITY_API_KEY,
+                "my_stage_var": "a stage variable",
+            },
+        }
+
+    def test_body_mapping(self, default_invocation_request, default_context_variables):
+        mapper = ParametersMapper()
+        response_parameters = {
+            "method.response.header.body_value": "integration.response.body",
+        }
+        integration_response = Response(b"<This is a body value>")
+
+        mapping = mapper.map_integration_response(
+            response_parameters=response_parameters,
+            integration_response=integration_response,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+
+        assert mapping == {
+            "header": {"body_value": "<This is a body value>"},
+        }
+
+    def test_body_mapping_empty(self, default_invocation_request, default_context_variables):
+        mapper = ParametersMapper()
+        response_parameters = {
+            "method.response.header.body_value": "integration.response.body",
+        }
+        integration_response = Response(b"")
+
+        mapping = mapper.map_integration_response(
+            response_parameters=response_parameters,
+            integration_response=integration_response,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+
+        # this was validated against AWS
+        assert mapping == {
+            "header": {"body_value": "{}"},
+        }
+
+    def test_json_body_mapping(self, default_invocation_request, default_context_variables):
+        mapper = ParametersMapper()
+        response_parameters = {
+            "method.response.header.body_value": "integration.response.body.petstore.pets[0].name",
+        }
+        integration_response = Response(
+            to_bytes(
+                json.dumps(
+                    {
+                        "petstore": {
+                            "pets": [
+                                {"name": "nested pet name value", "type": "Dog"},
+                                {"name": "second nested value", "type": "Cat"},
+                            ]
+                        }
+                    }
+                )
+            )
+        )
+
+        mapping = mapper.map_integration_response(
+            response_parameters=response_parameters,
+            integration_response=integration_response,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+
+        assert mapping == {
+            "header": {"body_value": "nested pet name value"},
+        }
+
+    def test_json_body_mapping_not_found(
+        self, default_invocation_request, default_context_variables
+    ):
+        mapper = ParametersMapper()
+        response_parameters = {
+            "method.response.header.body_value": "integration.response.body.petstore.pets[0].name",
+        }
+        integration_response = Response(
+            to_bytes(
+                json.dumps(
+                    {
+                        "petstore": {
+                            "pets": {
+                                "name": "nested pet name value",
+                                "type": "Dog",
+                            }
+                        }
+                    }
+                )
+            )
+        )
+
+        mapping = mapper.map_integration_response(
+            response_parameters=response_parameters,
+            integration_response=integration_response,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+
+        assert mapping == {
+            "header": {},
+        }
+
+    def test_invalid_json_body_mapping(self, default_invocation_request, default_context_variables):
+        mapper = ParametersMapper()
+        # the only way AWS raises wrong JSON is if the body starts with `{`
+        integration_response = Response(b"\n{wrongjson")
+
+        response_parameters = {
+            "method.response.header.body_value": "integration.response.body.petstore.pets[0].name",
+        }
+
+        with pytest.raises(Default5xxError) as e:
+            mapper.map_integration_response(
+                response_parameters=response_parameters,
+                integration_response=integration_response,
+                context_variables=default_context_variables,
+                stage_variables={},
+            )
+        assert e.value.status_code == 500
+        assert e.value.message == "Internal server error"
+
+        response_parameters = {
+            "method.response.header.body_value": "integration.response.body",
+        }
+
+        with pytest.raises(Default5xxError) as e:
+            mapper.map_integration_response(
+                response_parameters=response_parameters,
+                integration_response=integration_response,
+                context_variables=default_context_variables,
+                stage_variables={},
+            )
+
+        assert e.value.status_code == 500
+        assert e.value.message == "Internal server error"
+
+    def test_multi_headers_mapping(self, default_invocation_request, default_context_variables):
+        mapper = ParametersMapper()
+        response_parameters = {
+            "method.response.header.test": "integration.response.header.testMultiHeader",
+            "method.response.header.test_multi": "integration.response.multivalueheader.testMultiHeader",
+            "method.response.header.test_multi_solo": "integration.response.multivalueheader.testHeader",
+        }
+        integration_response = Response(
+            headers={
+                "testMultiHeader": ["value1", "value2"],
+                "testHeader": "value",
+            }
+        )
+
+        mapping = mapper.map_integration_response(
+            response_parameters=response_parameters,
+            integration_response=integration_response,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+
+        # it seems the mapping picks the last value of the multivalues, but the `headers` part of the context picks the
+        # first one
+        assert mapping == {
+            "header": {"test": "value2", "test_multi": "value1,value2", "test_multi_solo": "value"},
+        }
+
+    def test_response_mapping_casing(self, default_invocation_request, default_context_variables):
+        mapper = ParametersMapper()
+        response_parameters = {
+            "method.response.header.test": "integration.response.header.test",
+            "method.response.header.test2": "integration.response.header.TEST2",
+            "method.response.header.testmulti": "integration.response.multivalueheader.testmulti",
+        }
+        integration_response = Response(
+            headers={
+                "Test": "test",
+                "test2": "test",
+                "TestMulti": ["test", "test2"],
+            }
+        )
+        mapping = mapper.map_integration_response(
+            response_parameters=response_parameters,
+            integration_response=integration_response,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+
+        assert mapping == {
+            "header": {},
+        }

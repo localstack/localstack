@@ -15,7 +15,7 @@ from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
 
 from .context import InvocationRequest
-from .gateway_response import Default4xxError
+from .gateway_response import Default4xxError, Default5xxError
 from .variables import ContextVariables
 
 LOG = logging.getLogger(__name__)
@@ -81,13 +81,16 @@ class ParametersMapper:
     ) -> ResponseDataMapping:
         response_data_mapping = ResponseDataMapping(header={})
 
+        # storing the case-sensitive headers once, the mapping is strict
+        case_sensitive_headers = dict(integration_response.headers.items())
+
         for response_mapping, integration_mapping in response_parameters.items():
             header_name = response_mapping.removeprefix("method.response.header.")
 
             if integration_mapping.startswith("integration.response."):
                 method_req_expr = integration_mapping.removeprefix("integration.response.")
                 value = self._retrieve_parameter_from_integration_response(
-                    method_req_expr, integration_response
+                    method_req_expr, integration_response, case_sensitive_headers
                 )
             else:
                 value = self._retrieve_parameter_from_variables_and_static(
@@ -131,6 +134,7 @@ class ParametersMapper:
         self,
         expr: str,
         integration_response: Response,
+        case_sensitive_headers: dict[str, str],
     ) -> str | None:
         """
         See https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
@@ -141,16 +145,16 @@ class ParametersMapper:
         :return: the value to map in the ResponseDataMapping
         """
         if expr.startswith("body"):
-            body = integration_response.get_data(as_text=True)
+            body = integration_response.get_data() or b"{}"
             body = body.strip()
             try:
                 decoded_body = self._json_load(body)
             except ValueError:
-                # TODO: change
-                raise Default4xxError(message="Invalid JSON in request body")
+                # x-amzn-errortype: InternalFailureException
+                raise Default5xxError(message="Internal server error")
 
             if expr == "body":
-                return body
+                return to_str(body)
 
             elif expr.startswith("body."):
                 json_path = expr.removeprefix("body.")
@@ -165,15 +169,16 @@ class ParametersMapper:
         param_type, param_name = expr.split(".")
 
         if param_type == "header":
-            # TODO: validate casing! for request it was strict?
-            multi_headers = integration_response.headers.getlist(param_name)
-            if multi_headers:
-                return multi_headers[-1]
+            # casing is strict: if you don't specify the exact casing the server is returning, it does not map it to
+            # the response
+            return case_sensitive_headers.get(param_name)
 
         elif param_type == "multivalueheader":
-            # TODO: validate casing! for request it was strict?
+            # validate casing first
+            if param_name not in case_sensitive_headers:
+                return
+
             multi_headers = integration_response.headers.getlist(param_name)
-            # TODO: format?
             return ",".join(multi_headers)
 
         else:
