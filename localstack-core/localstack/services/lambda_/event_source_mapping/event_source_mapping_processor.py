@@ -53,6 +53,9 @@ class EventSourceMappingProcessor(Processor):
                 # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                 error=e.error,
             )
+            # TODO: check whether partial batch item failures is enabled by default or need to be explicitly enabled
+            #  using --function-response-types "ReportBatchItemFailures"
+            #  https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html
             return e.partial_failure_payload
         except (EnricherException, SenderException) as e:
             self.logger.log(
