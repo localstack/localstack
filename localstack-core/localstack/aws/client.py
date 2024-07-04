@@ -2,7 +2,7 @@
 
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Iterable, Optional
 from urllib.parse import urlsplit
 
@@ -173,14 +173,87 @@ def _patch_botocore_json_parser():
         try:
             return fn(self, body_contents)
         except UnicodeDecodeError as json_exception:
-            import cbor2
+            # cbor2: explicitly load from private _decoder module to avoid using the (non-patched) C-version
+            from cbor2._decoder import loads
 
             try:
                 LOG.debug("botocore failed decoding JSON. Trying to decode as CBOR.")
-                return cbor2.loads(body_contents)
+                return loads(body_contents)
             except Exception as cbor_exception:
                 LOG.debug("CBOR fallback decoding failed.")
                 raise cbor_exception from json_exception
+
+
+@hooks.on_infra_start()
+def _patch_cbor2():
+    """
+    Patch fixing the AWS CBOR en-/decoding of datetime fields.
+
+    Unfortunately, Kinesis (the only known service using CBOR) does not use the number of seconds (with floating-point
+    milliseconds - according to RFC8949), but uses milliseconds.
+    Python cbor2 is highly optimized by using a C-implementation by default, which cannot be patched.
+    Instead of `from cbor2 import loads`, directly import the python-native loads implementation to avoid loading the
+    unpatched C implementation:
+    ```
+    from cbor2._decoder import loads
+    from cbor2._decoder import dumps
+    ```
+
+    See https://github.com/aws/aws-sdk-java-v2/issues/4661
+    """
+    from cbor2._decoder import CBORDecodeValueError, semantic_decoders
+    from cbor2._encoder import CBOREncodeValueError, default_encoders
+    from cbor2._types import CBORTag
+
+    def _patched_decode_epoch_datetime(self) -> datetime:
+        """
+        Replaces `cbor2._decoder.CBORDecoder.decode_epoch_datetime` as default datetime semantic_decoder.
+        """
+        # Semantic tag 1
+        value = self._decode()
+
+        try:
+            # The next line is the only change in this patch compared to the original function.
+            # AWS breaks the CBOR spec by using the millis instead of seconds (with floating point support for millis)
+            # https://github.com/aws/aws-sdk-java-v2/issues/4661
+            value = value / 1000
+            tmp = datetime.fromtimestamp(value, timezone.utc)
+        except (OverflowError, OSError, ValueError) as exc:
+            raise CBORDecodeValueError("error decoding datetime from epoch") from exc
+
+        return self.set_shareable(tmp)
+
+    def _patched_encode_datetime(self, value: datetime) -> None:
+        """
+        Replaces `cbor2._encoder.CBOREncoder.encode_datetime` as default datetime default_encoder.
+        """
+        if not value.tzinfo:
+            if self._timezone:
+                value = value.replace(tzinfo=self._timezone)
+            else:
+                raise CBOREncodeValueError(
+                    f"naive datetime {value!r} encountered and no default timezone " "has been set"
+                )
+
+        if self.datetime_as_timestamp:
+            from calendar import timegm
+
+            if not value.microsecond:
+                timestamp: float = timegm(value.utctimetuple())
+            else:
+                timestamp = timegm(value.utctimetuple()) + value.microsecond / 1000000
+            # The next line is the only change in this patch compared to the original function.
+            # AWS breaks the CBOR spec by using the millis instead of seconds (with floating point support for millis)
+            # https://github.com/aws/aws-sdk-java-v2/issues/4661
+            timestamp = timestamp * 1000
+            self.encode_semantic(CBORTag(1, timestamp))
+        else:
+            datestring = value.isoformat().replace("+00:00", "Z")
+            self.encode_semantic(CBORTag(0, datestring))
+
+    # overwrite the default epoch datetime en-/decoder with patched versions
+    default_encoders[datetime] = _patched_encode_datetime
+    semantic_decoders[1] = _patched_decode_epoch_datetime
 
 
 def _create_and_enrich_aws_request(

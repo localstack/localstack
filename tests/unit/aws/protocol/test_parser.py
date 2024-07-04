@@ -642,7 +642,7 @@ def test_json_cbor_blob_parsing():
             "X-Amz-Target": "Kinesis_20131202.PutRecord",
             "x-localstack-tgt-api": "kinesis",
         },
-        "body": b"\xbfjStreamNamedtestdDataMhello, world!lPartitionKeylpartitionkey\xff",
+        "body": b"\xa3dDataTaGVsbG8sIHdvcmxkIQ==jStreamNamedtestlPartitionKeylpartitionkey",
         "url": "/",
         "context": {},
     }
