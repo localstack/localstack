@@ -1849,12 +1849,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def create_event_source_mapping_v2(
         self, context: RequestContext, request: CreateEventSourceMappingRequest
     ) -> EventSourceMappingConfiguration:
-        state = lambda_stores[context.account_id][context.region]
-        function_arn, function_name = api_utils.get_function_arn(
-            request["FunctionName"], context, state
-        )
         # Validations
-        # TODO: validate `context.region` vs. `region(request["FunctionName"])` vs. `region(request["EventSourceArn"])`
+        function_arn, function_name, state = self.validate_event_source_mapping(context, request)
 
         esm_config = EsmConfigFactory(request, function_arn).get_esm_config()
 
@@ -1873,75 +1869,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def create_event_source_mapping_v1(
         self, context: RequestContext, request: CreateEventSourceMappingRequest
     ) -> EventSourceMappingConfiguration:
-        service = None
-        if "SelfManagedEventSource" in request:
-            service = "kafka"
-        if service is None and "EventSourceArn" not in request:
-            raise InvalidParameterValueException("Unrecognized event source.", Type="User")
-        if service is None:
-            service = extract_service_from_arn(request["EventSourceArn"])
-        if service in ["dynamodb", "kinesis", "kafka"] and "StartingPosition" not in request:
-            raise InvalidParameterValueException(
-                "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
-                Type="User",
-            )
-
-        request_function_name = request["FunctionName"]
-        # can be either a partial arn or a full arn for the version/alias
-        function_name, qualifier, account, region = function_locators_from_arn(
-            request_function_name
-        )
-        account = account or context.account_id
-        region = region or context.region
-
-        state = lambda_stores[account][region]
-
-        fn = state.functions.get(function_name)
-        if not fn:
-            raise InvalidParameterValueException("Function does not exist", Type="User")
-
-        if qualifier:
-            # make sure the function version/alias exists
-            if api_utils.qualifier_is_alias(qualifier):
-                fn_alias = fn.aliases.get(qualifier)
-                if not fn_alias:
-                    raise Exception("unknown alias")  # TODO: cover via test
-            elif api_utils.qualifier_is_version(qualifier):
-                fn_version = fn.versions.get(qualifier)
-                if not fn_version:
-                    raise Exception("unknown version")  # TODO: cover via test
-            elif qualifier == "$LATEST":
-                pass
-            else:
-                raise Exception("invalid functionname")  # TODO: cover via test
-            fn_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account, region)
-
-        else:
-            fn_arn = api_utils.unqualified_lambda_arn(function_name, account, region)
-
-        # check for event source duplicates
-        # TODO: currently validated for sqs, kinesis, and dynamodb
-        service_id = load_service(service).service_id
-        for uuid, mapping in state.event_source_mappings.items():
-            if (
-                mapping["FunctionArn"] == fn_arn
-                and mapping["EventSourceArn"] == request["EventSourceArn"]
-            ):
-                if service == "sqs":
-                    # *shakes fist at SQS*
-                    raise ResourceConflictException(
-                        f'An event source mapping with {service_id} arn (" {mapping["EventSourceArn"]} ") '
-                        f'and function (" {function_name} ") already exists. Please update or delete the '
-                        f"existing mapping with UUID {uuid}",
-                        Type="User",
-                    )
-                else:
-                    raise ResourceConflictException(
-                        f'The event source arn (" {mapping["EventSourceArn"]} ") and function '
-                        f'(" {function_name} ") provided mapping already exists. Please update or delete the '
-                        f"existing mapping with UUID {uuid}",
-                        Type="User",
-                    )
+        fn_arn, function_name, state = self.validate_event_source_mapping(context, request)
         # create new event source mappings
         new_uuid = long_uid()
         # defaults etc. vary depending on type of event source
@@ -1994,6 +1922,74 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             "State": "Creating",
         }  # TODO: should be set asynchronously
         return event_source_configuration
+
+    def validate_event_source_mapping(self, context, request):
+        service = None
+        if "SelfManagedEventSource" in request:
+            service = "kafka"
+        if service is None and "EventSourceArn" not in request:
+            raise InvalidParameterValueException("Unrecognized event source.", Type="User")
+        if service is None:
+            service = extract_service_from_arn(request["EventSourceArn"])
+        if service in ["dynamodb", "kinesis", "kafka"] and "StartingPosition" not in request:
+            raise InvalidParameterValueException(
+                "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
+                Type="User",
+            )
+        request_function_name = request["FunctionName"]
+        # can be either a partial arn or a full arn for the version/alias
+        function_name, qualifier, account, region = function_locators_from_arn(
+            request_function_name
+        )
+        # TODO: validate `context.region` vs. `region(request["FunctionName"])` vs. `region(request["EventSourceArn"])`
+        account = account or context.account_id
+        region = region or context.region
+        state = lambda_stores[account][region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise InvalidParameterValueException("Function does not exist", Type="User")
+        if qualifier:
+            # make sure the function version/alias exists
+            if api_utils.qualifier_is_alias(qualifier):
+                fn_alias = fn.aliases.get(qualifier)
+                if not fn_alias:
+                    raise Exception("unknown alias")  # TODO: cover via test
+            elif api_utils.qualifier_is_version(qualifier):
+                fn_version = fn.versions.get(qualifier)
+                if not fn_version:
+                    raise Exception("unknown version")  # TODO: cover via test
+            elif qualifier == "$LATEST":
+                pass
+            else:
+                raise Exception("invalid functionname")  # TODO: cover via test
+            fn_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account, region)
+
+        else:
+            fn_arn = api_utils.unqualified_lambda_arn(function_name, account, region)
+        # check for event source duplicates
+        # TODO: currently validated for sqs, kinesis, and dynamodb
+        service_id = load_service(service).service_id
+        for uuid, mapping in state.event_source_mappings.items():
+            if (
+                mapping["FunctionArn"] == fn_arn
+                and mapping["EventSourceArn"] == request["EventSourceArn"]
+            ):
+                if service == "sqs":
+                    # *shakes fist at SQS*
+                    raise ResourceConflictException(
+                        f'An event source mapping with {service_id} arn (" {mapping["EventSourceArn"]} ") '
+                        f'and function (" {function_name} ") already exists. Please update or delete the '
+                        f"existing mapping with UUID {uuid}",
+                        Type="User",
+                    )
+                else:
+                    raise ResourceConflictException(
+                        f'The event source arn (" {mapping["EventSourceArn"]} ") and function '
+                        f'(" {function_name} ") provided mapping already exists. Please update or delete the '
+                        f"existing mapping with UUID {uuid}",
+                        Type="User",
+                    )
+        return fn_arn, function_name, state
 
     @handler("UpdateEventSourceMapping", expand=False)
     def update_event_source_mapping(
