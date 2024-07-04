@@ -8,7 +8,7 @@ class ContextVarsAuthorizer(TypedDict, total=False):
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
     claims: Optional[dict[str, str]]
     """Claims returned from the Amazon Cognito user pool after the method caller is successfully authenticated"""
-    principal_id: Optional[str]
+    principalId: Optional[str]
     """The principal user identification associated with the token sent by the client and returned from an API Gateway Lambda authorizer"""
 
 
@@ -80,6 +80,8 @@ class ContextVariables(TypedDict, total=False):
     """The API owner's AWS account ID."""
     apiId: str
     """The identifier API Gateway assigns to your API."""
+    authorizer: Optional[ContextVarsAuthorizer]
+    """The principal user identification associated with the token."""
     awsEndpointRequestId: Optional[str]
     """The AWS endpoint's request ID."""
     deploymentId: str
@@ -101,6 +103,8 @@ class ContextVariables(TypedDict, total=False):
     """The request protocol"""
     requestId: str
     """An ID for the request. Clients can override this request ID. """
+    requestOverride: Optional[ContextVarsRequestOverride]
+    """Request override. Only exists for request mapping template"""
     requestTime: str
     """The CLF-formatted request time (dd/MMM/yyyy:HH:mm:ss +-hhmm)."""
     requestTimeEpoch: int
@@ -109,6 +113,8 @@ class ContextVariables(TypedDict, total=False):
     """The identifier that API Gateway assigns to your resource."""
     resourcePath: Optional[str]
     """The path to your resource"""
+    responseOverride: Optional[ContextVarsResponseOverride]
+    """Response override. Only exists for response mapping template"""
     stage: str
     """The deployment stage of the API request """
     wafResponseCode: Optional[str]
