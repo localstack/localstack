@@ -275,7 +275,7 @@ class ParametersMapper:
             return None
 
     @staticmethod
-    def _json_load(body: bytes | str) -> dict | list:
+    def _json_load(body: bytes) -> dict | list:
         """
         AWS only tries to JSON decode the body if it starts with some leading characters ({, [, ", ')
         otherwise, it ignores it
