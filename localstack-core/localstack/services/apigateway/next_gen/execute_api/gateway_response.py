@@ -53,7 +53,7 @@ class InternalFailureException(Default5xxError):
 
 
 class InternalServerError(Default5xxError):
-    code = "InternalServerError"
+    code = "InternalServerErrorException"
 
 
 class AccessDeniedError(BaseGatewayException):
