@@ -10,6 +10,10 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrencyDecl,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.tolerated_failure import (
+    ToleratedFailureCountDecl,
+    ToleratedFailurePercentageDecl,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
 )
@@ -27,6 +31,8 @@ UNIQUE_SUBINSTANCES: Final[set[type]] = {
     Heartbeat,
     MaxItemsDecl,
     MaxConcurrencyDecl,
+    ToleratedFailureCountDecl,
+    ToleratedFailurePercentageDecl,
     ErrorDecl,
     CauseDecl,
 }

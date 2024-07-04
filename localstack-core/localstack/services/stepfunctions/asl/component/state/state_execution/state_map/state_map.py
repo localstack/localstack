@@ -1,3 +1,4 @@
+import copy
 from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType, MapStateStartedEventDetails
@@ -58,9 +59,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.tolerated_failure import (
     ToleratedFailureCount,
-    ToleratedFailureCountPath,
+    ToleratedFailureCountDecl,
     ToleratedFailurePercentage,
-    ToleratedFailurePercentagePath,
+    ToleratedFailurePercentageDecl,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -74,12 +75,12 @@ class StateMap(ExecutionState):
     item_selector: Optional[ItemSelector]
     parameters: Optional[Parameters]
     max_concurrency_decl: MaxConcurrencyDecl
+    tolerated_failure_count_decl: ToleratedFailureCountDecl
+    tolerated_failure_percentage_decl: ToleratedFailurePercentage
     result_path: Optional[ResultPath]
     result_selector: ResultSelector
     retry: Optional[RetryDecl]
     catch: Optional[CatchDecl]
-    tolerated_failure_count: Optional[ToleratedFailureCount]
-    tolerated_failure_percentage: Optional[ToleratedFailurePercentage]
 
     def __init__(self):
         super(StateMap, self).__init__(
@@ -94,14 +95,18 @@ class StateMap(ExecutionState):
         self.item_selector = state_props.get(ItemSelector)
         self.parameters = state_props.get(Parameters)
         self.max_concurrency_decl = state_props.get(MaxConcurrencyDecl) or MaxConcurrency()
+        self.tolerated_failure_count_decl = (
+            state_props.get(ToleratedFailureCountDecl) or ToleratedFailureCount()
+        )
+        self.tolerated_failure_percentage_decl = (
+            state_props.get(ToleratedFailurePercentageDecl) or ToleratedFailurePercentage()
+        )
         self.result_path = state_props.get(ResultPath) or ResultPath(
             result_path_src=ResultPath.DEFAULT_PATH
         )
         self.result_selector = state_props.get(ResultSelector)
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
-
-        # TODO: add check for itemreader used in distributed mode only.
 
         iterator_decl = state_props.get(typ=IteratorDecl)
         item_processor_decl = state_props.get(typ=ItemProcessorDecl)
@@ -120,52 +125,47 @@ class StateMap(ExecutionState):
         else:
             raise ValueError(f"Unknown value for IteratorDecl '{iteration_decl}'.")
 
-        tolerated_failure_count = state_props.get(ToleratedFailureCount)
-        tolerated_failure_count_path = state_props.get(ToleratedFailureCountPath)
-
-        if tolerated_failure_count and tolerated_failure_count_path:
-            raise ValueError(
-                "Cannot define both ToleratedFailureCount and ToleratedFailureCountPath."
-            )
-        self.tolerated_failure_count = (
-            tolerated_failure_count or tolerated_failure_count_path or ToleratedFailureCount()
-        )
-
-        tolerated_failure_percentage = state_props.get(ToleratedFailurePercentage)
-        tolerated_failure_percentage_path = state_props.get(ToleratedFailurePercentagePath)
-
-        if tolerated_failure_percentage and tolerated_failure_percentage_path:
-            raise ValueError(
-                "Cannot define both ToleratedFailurePercentage and ToleratedFailurePercentagePath."
-            )
-        self.tolerated_failure_percentage = (
-            tolerated_failure_percentage
-            or tolerated_failure_percentage_path
-            or ToleratedFailurePercentage()
-        )
-
     def _eval_execution(self, env: Environment) -> None:
+        self.max_concurrency_decl.eval(env=env)
         max_concurrency_num = env.stack.pop()
 
-        self.items_path.eval(env)
-        if self.item_reader:
-            env.event_manager.add_event(
-                context=env.event_history_context,
-                event_type=HistoryEventType.MapStateStarted,
-                event_details=EventDetails(
-                    mapStateStartedEventDetails=MapStateStartedEventDetails(length=0)
-                ),
-            )
-            input_items = None
-        else:
-            input_items = env.stack.pop()
-            env.event_manager.add_event(
-                context=env.event_history_context,
-                event_type=HistoryEventType.MapStateStarted,
-                event_details=EventDetails(
-                    mapStateStartedEventDetails=MapStateStartedEventDetails(length=len(input_items))
-                ),
-            )
+        # Despite MaxConcurrency and Tolerance fields being state level fields, AWS StepFunctions evaluates only
+        # MaxConcurrency as a state level field. In contrast, Tolerance is evaluated only after the state start
+        # event but is logged with event IDs coherent with state level fields. To adhere to this quirk, an evaluation
+        # frame from this point is created for the evaluation of Tolerance fields following the state start event.
+        frame: Environment = env.open_frame()
+        frame.inp = copy.deepcopy(env.inp)
+        frame.stack = copy.deepcopy(env.stack)
+
+        try:
+            self.items_path.eval(env)
+            if self.item_reader:
+                env.event_manager.add_event(
+                    context=env.event_history_context,
+                    event_type=HistoryEventType.MapStateStarted,
+                    event_details=EventDetails(
+                        mapStateStartedEventDetails=MapStateStartedEventDetails(length=0)
+                    ),
+                )
+                input_items = None
+            else:
+                input_items = env.stack.pop()
+                env.event_manager.add_event(
+                    context=env.event_history_context,
+                    event_type=HistoryEventType.MapStateStarted,
+                    event_details=EventDetails(
+                        mapStateStartedEventDetails=MapStateStartedEventDetails(
+                            length=len(input_items)
+                        )
+                    ),
+                )
+
+            self.tolerated_failure_count_decl.eval(env=frame)
+            tolerated_failure_count = frame.stack.pop()
+            self.tolerated_failure_percentage_decl.eval(env=frame)
+            tolerated_failure_percentage = frame.stack.pop()
+        finally:
+            env.close_frame(frame)
 
         if isinstance(self.iteration_component, InlineIterator):
             eval_input = InlineIteratorEvalInput(
@@ -176,10 +176,6 @@ class StateMap(ExecutionState):
                 item_selector=self.item_selector,
             )
         elif isinstance(self.iteration_component, DistributedIterator):
-            self.tolerated_failure_count.eval(env)
-            tolerated_failure_count = env.stack.pop()
-            self.tolerated_failure_percentage.eval(env)
-            tolerated_failure_percentage = env.stack.pop()
             eval_input = DistributedIteratorEvalInput(
                 state_name=self.name,
                 max_concurrency=max_concurrency_num,
@@ -199,10 +195,6 @@ class StateMap(ExecutionState):
                 parameters=self.parameters,
             )
         elif isinstance(self.iteration_component, DistributedItemProcessor):
-            self.tolerated_failure_count.eval(env)
-            tolerated_failure_count = env.stack.pop()
-            self.tolerated_failure_percentage.eval(env)
-            tolerated_failure_percentage = env.stack.pop()
             eval_input = DistributedItemProcessorEvalInput(
                 state_name=self.name,
                 max_concurrency=max_concurrency_num,
@@ -231,9 +223,6 @@ class StateMap(ExecutionState):
         # Initialise the retry counter for execution states.
         env.context_object_manager.context_object["State"]["RetryCount"] = 0
 
-        # Evaluate state level properties.
-        self.max_concurrency_decl.eval(env=env)
-
         # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
         while True:
             try:
@@ -249,10 +238,11 @@ class StateMap(ExecutionState):
                     if retry_outcome == RetryOutcome.CanRetry:
                         continue
 
-                env.event_manager.add_event(
-                    context=env.event_history_context,
-                    event_type=HistoryEventType.MapStateFailed,
-                )
+                if failure_event.event_type != HistoryEventType.ExecutionFailed:
+                    env.event_manager.add_event(
+                        context=env.event_history_context,
+                        event_type=HistoryEventType.MapStateFailed,
+                    )
 
                 if self.catch:
                     catch_outcome: CatchOutcome = self._handle_catch(
