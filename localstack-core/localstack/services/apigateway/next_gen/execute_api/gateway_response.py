@@ -58,25 +58,25 @@ class InternalServerError(Default5xxError):
 
 class AccessDeniedError(BaseGatewayException):
     type = GatewayResponseType.ACCESS_DENIED
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "AccessDeniedException"
 
 
 class ApiConfigurationError(BaseGatewayException):
     type = GatewayResponseType.API_CONFIGURATION_ERROR
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "ApiConfigurationException"
 
 
 class AuthorizerConfigurationError(BaseGatewayException):
     type = GatewayResponseType.AUTHORIZER_CONFIGURATION_ERROR
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "AuthorizerConfigurationException"
 
 
 class AuthorizerFailureError(BaseGatewayException):
     type = GatewayResponseType.AUTHORIZER_FAILURE
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "AuthorizerFailureException"
 
 
@@ -92,13 +92,13 @@ class BadRequestBodyError(BaseGatewayException):
 
 class ExpiredTokenError(BaseGatewayException):
     type = GatewayResponseType.EXPIRED_TOKEN
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "ExpiredTokenException"
 
 
 class IntegrationFailureError(BaseGatewayException):
     type = GatewayResponseType.INTEGRATION_FAILURE
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "IntegrationFailureException"
 
 
@@ -114,7 +114,7 @@ class InvalidAPIKeyError(BaseGatewayException):
 
 class InvalidSignatureError(BaseGatewayException):
     type = GatewayResponseType.INVALID_SIGNATURE
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "InvalidSignatureException"
 
 
@@ -130,13 +130,13 @@ class QuotaExceededError(BaseGatewayException):
 
 class RequestTooLargeError(BaseGatewayException):
     type = GatewayResponseType.REQUEST_TOO_LARGE
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "RequestTooLargeException"
 
 
 class ResourceNotFoundError(BaseGatewayException):
     type = GatewayResponseType.RESOURCE_NOT_FOUND
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "ResourceNotFoundException"
 
 
@@ -157,7 +157,7 @@ class UnsupportedMediaTypeError(BaseGatewayException):
 
 class WafFilteredError(BaseGatewayException):
     type = GatewayResponseType.WAF_FILTERED
-    # Header Untested
+    # TODO validate this header with aws validated tests
     x_header = "WafFilteredException"
 
 
