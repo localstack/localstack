@@ -830,16 +830,16 @@ class TestLambdaURL:
     # TODO: add more tests
 
     @pytest.mark.parametrize(
-        "returnvalue,custom_id",
+        "returnvalue",
         [
-            ('{"hello": "world"}', None),
-            ('{"statusCode": 200, "body": "body123"}', None),
-            ('{"statusCode": 200, "body": "{\\"hello\\": \\"world\\"}"}', None),
-            ('["hello", 3, True]', None),
-            ('"hello"', None),
-            ("3", "my-func-subdomain"),
-            ("3.1", None),
-            ("True", None),
+            '{"hello": "world"}',
+            '{"statusCode": 200, "body": "body123"}',
+            '{"statusCode": 200, "body": "{\\"hello\\": \\"world\\"}"}',
+            '["hello", 3, True]',
+            '"hello"',
+            "3",
+            "3.1",
+            "True",
         ],
         ids=[
             "dict",
@@ -853,9 +853,7 @@ class TestLambdaURL:
         ],
     )
     @markers.aws.validated
-    def test_lambda_url_invocation(
-        self, create_lambda_function, snapshot, returnvalue, custom_id, aws_client
-    ):
+    def test_lambda_url_invocation(self, create_lambda_function, snapshot, returnvalue, aws_client):
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "FunctionUrl", "<function-url>", reference_replacement=False
@@ -868,16 +866,10 @@ class TestLambdaURL:
         handler_code = URL_HANDLER_CODE.replace("<<returnvalue>>", returnvalue)
         files.save_file(handler_file, handler_code)
 
-        if custom_id is None:
-            tags = {}
-        else:
-            tags = {TAG_KEY_CUSTOM_URL: custom_id}
-
         create_lambda_function(
             func_name=function_name,
             handler_file=handler_file,
             runtime=Runtime.python3_12,
-            Tags=tags,
         )
 
         url_config = aws_client.lambda_.create_function_url_config(
@@ -909,6 +901,42 @@ class TestLambdaURL:
                 "content": to_str(result.content),
             },
         )
+
+    # Note: separate from above, since this is explicitly and exclusively
+    # testing invocation via custom_id, which is localstack-only
+    @markers.aws.only_localstack
+    def test_lambda_url_invocation_custom_id(self, create_lambda_function, aws_client):
+        function_name = f"test-function-{short_uid()}"
+        custom_id = "my-custom-id"
+        function_return_value = '{"hello": "world"}'
+
+        handler_file = files.new_tmp_file()
+        handler_code = URL_HANDLER_CODE.replace("<<returnvalue>>", function_return_value)
+        files.save_file(handler_file, handler_code)
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=handler_file,
+            runtime=Runtime.python3_12,
+            Tags={TAG_KEY_CUSTOM_URL: custom_id},
+        )
+
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+
+        url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+        result = safe_requests.post(url, data=b"{'key':'value'}")
+        assert result.status_code == 200
 
     @pytest.mark.parametrize(
         "invoke_mode",

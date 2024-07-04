@@ -28,7 +28,6 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, LogFormat, Runtime
 from localstack.services.lambda_.api_utils import ARCHITECTURES
-from localstack.services.lambda_.invocation.lambda_models import ValidationException
 from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
@@ -4021,7 +4020,9 @@ class TestLambdaUrl:
         assert f"://{custom_id_value}.lambda-url." in url_config_created["FunctionUrl"]
 
     @markers.aws.only_localstack
-    def test_create_url_config_custom_id_tag_invalid_id(self, create_lambda_function, aws_client):
+    def test_create_url_config_custom_id_tag_invalid_id(
+        self, create_lambda_function, aws_client, caplog
+    ):
         custom_id_value = "_not_valid_subdomain"
 
         function_name = f"test-function-{short_uid()}"
@@ -4032,11 +4033,14 @@ class TestLambdaUrl:
             handler="lambda_handler.handler",
             Tags={TAG_KEY_CUSTOM_URL: custom_id_value},
         )
-        with pytest.raises(ValidationException):
-            aws_client.lambda_.create_function_url_config(
-                FunctionName=function_name,
-                AuthType="NONE",
-            )
+
+        caplog.clear()
+        url_config_created = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        assert any("Invalid custom ID tag value" in record.mesage for record in caplog.records)
+        assert f"://{custom_id_value}.lambda-url." not in url_config_created["FunctionUrl"]
 
 
 class TestLambdaSizeLimits:
