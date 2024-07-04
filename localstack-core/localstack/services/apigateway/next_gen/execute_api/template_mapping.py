@@ -18,21 +18,38 @@ import base64
 import copy
 import json
 import logging
-from typing import Any
+from typing import Any, TypedDict
 from urllib.parse import quote_plus, unquote_plus
 
 import xmltodict
 
 from localstack import config
 from localstack.services.apigateway.next_gen.execute_api.variables import (
+    ContextVariables,
     ContextVarsRequestOverride,
     ContextVarsResponseOverride,
-    MappingTemplateVariables,
 )
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe
 
 LOG = logging.getLogger(__name__)
+
+
+class MappingTemplateParams(TypedDict, total=False):
+    path: dict[str, str]
+    querystring: dict[str, str]
+    header: dict[str, str]
+
+
+class MappingTemplateInput(TypedDict, total=False):
+    body: str
+    params: MappingTemplateParams
+
+
+class MappingTemplateVariables(TypedDict, total=False):
+    context: ContextVariables
+    input: MappingTemplateInput
+    stageVariables: dict[str, str]
 
 
 class AttributeDict(dict):

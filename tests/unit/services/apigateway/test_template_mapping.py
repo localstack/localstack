@@ -7,15 +7,15 @@ import xmltodict
 from localstack.constants import APPLICATION_JSON, APPLICATION_XML
 from localstack.services.apigateway.next_gen.execute_api.template_mapping import (
     ApiGatewayVtlTemplate,
+    MappingTemplateInput,
+    MappingTemplateParams,
+    MappingTemplateVariables,
     VelocityUtilApiGateway,
 )
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
     ContextVarsAuthorizer,
     ContextVarsIdentity,
-    MappingTemplateInput,
-    MappingTemplateParams,
-    MappingTemplateVariables,
 )
 
 

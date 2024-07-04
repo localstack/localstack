@@ -1,20 +1,22 @@
 import logging
+from http import HTTPMethod
 
 from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.http import Response
 from localstack.utils.collections import merge_recursive
+from localstack.utils.strings import to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
 from ..gateway_response import UnsupportedMediaTypeError
 from ..parameters_mapping import ParametersMapper, RequestDataMapping
-from ..template_mapping import ApiGatewayVtlTemplate
-from ..variables import (
-    ContextVarsRequestOverride,
+from ..template_mapping import (
+    ApiGatewayVtlTemplate,
     MappingTemplateInput,
     MappingTemplateParams,
     MappingTemplateVariables,
 )
+from ..variables import ContextVarsRequestOverride
 
 LOG = logging.getLogger(__name__)
 
@@ -77,13 +79,20 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         if not (integration_method := integration["httpMethod"]) or integration_method == "ANY":
             # otherwise, fallback to the request's method
             integration_method = context.invocation_request["method"]
+        # AWS doesn't send a body for these methods. Mock needs the body to get the status code
+        # TODO this might need to be done in the integrations?
+        if (
+            integration_method in [HTTPMethod.GET, HTTPMethod.HEAD, HTTPMethod.OPTIONS]
+            and not integration_type == IntegrationType.MOCK
+        ):
+            body = b""
 
         integration_request = IntegrationRequest(
             http_method=integration_method,
             uri=rendered_integration_uri,
             query_string_parameters=request_data_mapping["querystring"],
             headers=request_data_mapping["header"],
-            body=body.encode(),
+            body=body,
         )
         # TODO: log every override that happens afterwards
 
@@ -105,20 +114,20 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         self,
         context: RestApiInvocationContext,
         template: str,
-    ) -> tuple[str, ContextVarsRequestOverride]:
+    ) -> tuple[bytes, ContextVarsRequestOverride]:
         request: InvocationRequest = context.invocation_request
-        body = request.get("body", b"").decode()
+        body = request.get("body")
 
         if not template:
             return body, {}
 
-        return self._vtl_template.render_request(
+        body, request_override = self._vtl_template.render_request(
             template=template.strip(),
             variables=MappingTemplateVariables(
                 context=context.context_variables,
                 stageVariables=context.stage_variables or {},
                 input=MappingTemplateInput(
-                    body=body,
+                    body=to_str(body),
                     params=MappingTemplateParams(
                         path=request.get("path_parameters"),
                         querystring=request.get("query_string_parameters", {}),
@@ -127,6 +136,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 ),
             ),
         )
+        return to_bytes(body), request_override
 
     def get_request_template(self, integration: Integration, request: InvocationRequest) -> str:
         """

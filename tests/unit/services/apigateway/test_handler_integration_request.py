@@ -1,7 +1,6 @@
 from http import HTTPMethod
 
 import pytest
-from werkzeug.datastructures import Headers
 
 from localstack.aws.api.apigateway import Integration, IntegrationType, Method
 from localstack.http import Request, Response
@@ -14,7 +13,10 @@ from localstack.services.apigateway.next_gen.execute_api.context import (
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     UnsupportedMediaTypeError,
 )
-from localstack.services.apigateway.next_gen.execute_api.handlers import IntegrationRequestHandler
+from localstack.services.apigateway.next_gen.execute_api.handlers import (
+    IntegrationRequestHandler,
+    InvocationRequestParser,
+)
 from localstack.services.apigateway.next_gen.execute_api.handlers.integration_request import (
     PassthroughBehavior,
 )
@@ -68,10 +70,10 @@ def create_context():
             resourceId="resource-id",
             apiId=TEST_API_ID,
             httpMethod="POST",
-            path="/stage/root/{path}",
+            path=f"{TEST_API_STAGE}/resource/{{proxy}}",
             requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
-            resourcePath="/root/{path}",
-            stage="stage",
+            resourcePath="/resource/{proxy}",
+            stage=TEST_API_STAGE,
         )
 
         return context
@@ -81,20 +83,17 @@ def create_context():
 
 @pytest.fixture
 def default_invocation_request() -> InvocationRequest:
-    header_dict = {"header": ["ignored-value", "test-header-value"]}
-    headers = Headers(header_dict)
-    return InvocationRequest(
-        http_method=HTTPMethod.POST,
-        raw_path="/test/test-path-value",
-        path="/test/test-path-value",
-        path_parameters={"path": "test-path-value"},
-        query_string_parameters={"qs": "test-qs-value"},
-        raw_headers=headers,
-        headers=dict(headers),
-        multi_value_query_string_parameters={"qs": ["ignored-value", "test-qs-value"]},
-        multi_value_headers=header_dict,
-        body=b"",
+    request = InvocationRequestParser().create_invocation_request(
+        Request(
+            method=HTTPMethod.POST,
+            headers={"header": ["header1", "header2"]},
+            path=f"{TEST_API_STAGE}/resource/path",
+            query_string="qs=qs1&qs=qs2",
+            body=b"",
+        )
     )
+    request["path_parameters"] = {"proxy": "path"}
+    return request
 
 
 @pytest.fixture
@@ -231,8 +230,8 @@ class TestHandlerIntegrationRequest:
         integration_request_handler(context)
         # TODO this test will fail when we implement uri mapping
         assert context.integration_request["uri"] == "https://example.com/{path}"
-        assert context.integration_request["query_string_parameters"] == {"qs": "test-qs-value"}
-        assert context.integration_request["headers"] == {"header": "test-header-value"}
+        assert context.integration_request["query_string_parameters"] == {"qs": "qs2"}
+        assert context.integration_request["headers"] == {"header": "header2"}
 
     def test_request_override(
         self, integration_request_handler, default_invocation_request, create_context
@@ -255,6 +254,19 @@ class TestHandlerIntegrationRequest:
             "header": "headerOverride",
             "multivalue": ["1header", "2header"],
         }
+
+    @pytest.mark.parametrize("method", [HTTPMethod.OPTIONS, HTTPMethod.GET, HTTPMethod.HEAD])
+    def test_no_body_for_method(
+        self, integration_request_handler, default_invocation_request, create_context, method
+    ):
+        requests = default_invocation_request
+        requests["http_method"] = method
+        context = create_context(request=requests)
+        context.resource_method["methodIntegration"]["requestTemplates"] = {
+            "application/json": '{"foo":"bar"}'
+        }
+        integration_request_handler(context)
+        context.integration_request["body"] = b""
 
 
 REQUEST_OVERRIDE = """

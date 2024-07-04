@@ -185,20 +185,3 @@ class LoggingContextVariables(TypedDict, total=False):
     status: Optional[str]
     waf: Optional[LoggingContextVarsWaf]
     xrayTraceId: Optional[str]
-
-
-class MappingTemplateParams(TypedDict, total=False):
-    path: dict[str, str]
-    querystring: dict[str, str]
-    header: dict[str, str]
-
-
-class MappingTemplateInput(TypedDict):
-    body: str
-    params: MappingTemplateParams
-
-
-class MappingTemplateVariables(TypedDict, total=False):
-    context: ContextVariables
-    input: MappingTemplateInput
-    stageVariables: dict[str, str]
