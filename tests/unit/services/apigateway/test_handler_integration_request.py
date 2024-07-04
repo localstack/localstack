@@ -89,7 +89,6 @@ def default_invocation_request() -> InvocationRequest:
             headers={"header": ["header1", "header2"]},
             path=f"{TEST_API_STAGE}/resource/path",
             query_string="qs=qs1&qs=qs2",
-            body=b"",
         )
     )
     request["path_parameters"] = {"proxy": "path"}
