@@ -1,5 +1,5 @@
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:b26d53b2b30673492992d56fa720d7d8b2720f85c3f4702206ac8d1104284cea as java-builder
+FROM eclipse-temurin:21@sha256:3f9bfce63186b9ded168250c8e350631fd643ad00afab5986cf8a7cf79f3b043 as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -19,13 +19,13 @@ jdk.management.agent,\
 java.security.jgss,jdk.security.auth,\
 # Elasticsearch 7+ crashes without Thai Segmentation support
 jdk.localedata --include-locales en,th \
-    --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
-  cp ${JAVA_HOME}/bin/javac /usr/lib/jvm/java-11/bin/javac && \
-  cp -r ${JAVA_HOME}/include /usr/lib/jvm/java-11/include && \
-  mv /usr/lib/jvm/java-11/lib/modules /usr/lib/jvm/java-11/lib/modules.bk; \
-  cp -r ${JAVA_HOME}/lib/* /usr/lib/jvm/java-11/lib/; \
-  mv /usr/lib/jvm/java-11/lib/modules.bk /usr/lib/jvm/java-11/lib/modules; \
-  rm -rf /usr/bin/java ${JAVA_HOME} && ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
+    --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-21 && \
+  cp ${JAVA_HOME}/bin/javac /usr/lib/jvm/java-21/bin/javac && \
+  cp -r ${JAVA_HOME}/include /usr/lib/jvm/java-21/include && \
+  mv /usr/lib/jvm/java-21/lib/modules /usr/lib/jvm/java-21/lib/modules.bk; \
+  cp -r ${JAVA_HOME}/lib/* /usr/lib/jvm/java-21/lib/; \
+  mv /usr/lib/jvm/java-21/lib/modules.bk /usr/lib/jvm/java-21/lib/modules; \
+  rm -rf /usr/bin/java ${JAVA_HOME} && ln -s /usr/lib/jvm/java-21/bin/java /usr/bin/java
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
@@ -85,15 +85,15 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
 
 SHELL [ "/bin/bash", "-c" ]
 
-# Install Java 11
+# Install Java 21
 ENV LANG C.UTF-8
 RUN { \
         echo '#!/bin/sh'; echo 'set -e'; echo; \
         echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
-ENV JAVA_HOME /usr/lib/jvm/java-11
-COPY --from=java-builder /usr/lib/jvm/java-11 $JAVA_HOME
+ENV JAVA_HOME /usr/lib/jvm/java-21
+COPY --from=java-builder /usr/lib/jvm/java-21 $JAVA_HOME
 RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
 ENV PATH "${PATH}:${JAVA_HOME}/bin"
 
