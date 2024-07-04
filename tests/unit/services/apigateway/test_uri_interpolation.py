@@ -82,12 +82,18 @@ class TestUriInterpolationStageVariables:
         assert "{path}" in rendered
 
     def test_uri_interpolating_with_no_variable(self):
-        uri_with_only_braces = "https://test.domain.example/root/${path}"
+        uri = "https://test.domain.example/root/${stageVariables.path}"
+        stage_variables = {}
+        rendered = render_uri_with_stage_variables(uri=uri, stage_variables=stage_variables)
+        assert rendered == "https://test.domain.example/root/"
+
+    def test_uri_interpolation_with_no_stage_var_prefix(self):
+        uri_with_no_prefix = "https://test.domain.example/root/${path}"
         stage_variables = {}
         rendered = render_uri_with_stage_variables(
-            uri=uri_with_only_braces, stage_variables=stage_variables
+            uri=uri_with_no_prefix, stage_variables=stage_variables
         )
-        assert rendered == "https://test.domain.example/root/"
+        assert rendered == "https://test.domain.example/root/${path}"
 
     def test_uri_interpolating_with_bad_format(self):
         # tested against AWS in an integration URI

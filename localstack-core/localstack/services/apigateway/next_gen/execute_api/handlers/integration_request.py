@@ -72,6 +72,9 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
         # looks like the stageVariables rendering part is done in the Integration part in AWS
         # but we can avoid duplication by doing it here for now
+        # TODO: if the integration if of AWS Lambda type and the Lambda is in another account, we cannot render
+        #  stageVariables. Work on that special case later (we can add a quick check for the URI region and set the
+        #  stage variables to an empty dict)
         rendered_integration_uri = self.render_integration_uri(
             uri=integration["uri"],
             path_parameters=request_data_mapping["path"],

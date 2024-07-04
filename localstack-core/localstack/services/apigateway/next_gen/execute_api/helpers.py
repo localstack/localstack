@@ -1,7 +1,7 @@
 import copy
 import logging
+import re
 
-from airspeed.operators import TemplateSyntaxError
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
 from localstack.services.apigateway.models import MergedRestApi, RestApiContainer, RestApiDeployment
@@ -12,6 +12,7 @@ from .moto_helpers import get_resources_from_moto_rest_api
 LOG = logging.getLogger(__name__)
 
 _vtl_template_renderer = VtlTemplate()
+_stage_variable_pattern = re.compile(r"\${stageVariables\.(?P<varName>.*?)}")
 
 
 def freeze_rest_api(
@@ -39,17 +40,14 @@ def render_uri_with_stage_variables(uri: str, stage_variables: dict[str, str]):
     """
     https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html#stage-variables-in-integration-HTTP-uris
     URI=https://${stageVariables.<variable_name>}
-    This format is the same as VTL, so we're using a simplified version. The provider should validate the input.
+    This format is the same as VTL, but we're using a simplified version to only replace `${stageVariables.<param>}`
+    values, as AWS will ignore `${path}` for example
     """
-    try:
-        return _vtl_template_renderer.render_vtl(uri, {"stageVariables": stage_variables})
-    except TemplateSyntaxError:
-        LOG.warning(
-            "The URI provided did not have the right format: the stageVariables could not be rendered: '%s'",
-            uri,
-            exc_info=LOG.isEnabledFor(logging.DEBUG),
-        )
-        return uri
+
+    def replace_match(match_obj: re.Match) -> str:
+        return stage_variables.get(match_obj.group("varName"), "")
+
+    return _stage_variable_pattern.sub(replace_match, uri)
 
 
 def render_uri_with_path_parameters(uri: str, path_parameters: dict[str, str]) -> str:
