@@ -52,7 +52,7 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
 
         content = self._build_response_content(exception)
 
-        headers = self._build_response_headers()
+        headers = self._build_response_headers(exception)
 
         status_code = gateway_response.get("statusCode")
         if not status_code:
@@ -65,6 +65,6 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         #  template body `{"message":$context.error.messageString}`
         return json.dumps({"message": exception.message})
 
-    def _build_response_headers(self) -> dict:
+    def _build_response_headers(self, exception: BaseGatewayException) -> dict:
         # TODO apply responseParameters to the headers and get content-type from the gateway_response
-        return {"content-type": "application/json"}
+        return {"content-type": "application/json", "x-amzn-ErrorType": exception.code}

@@ -6,9 +6,23 @@ from localstack.services.apigateway.models import MergedRestApi, RestApiDeployme
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     AccessDeniedError,
+    BaseGatewayException,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import GatewayExceptionHandler
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+
+
+class TestGatewayResponse:
+    def test_base_response(self):
+        with pytest.raises(BaseGatewayException) as e:
+            raise BaseGatewayException()
+        assert e.value.message == "Unimplemented Response"
+
+    def test_subclassed_response(self):
+        with pytest.raises(BaseGatewayException) as e:
+            raise AccessDeniedError("Access Denied")
+        assert e.value.message == "Access Denied"
+        assert e.value.type == GatewayResponseType.ACCESS_DENIED
 
 
 class TestGatewayResponseHandler:
@@ -49,6 +63,7 @@ class TestGatewayResponseHandler:
 
         assert response.status_code == 403
         assert response.json == {"message": "Access Denied"}
+        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"
 
     def test_gateway_exception_with_default_4xx(self, get_context):
         exception_handler = GatewayExceptionHandler()
@@ -68,6 +83,7 @@ class TestGatewayResponseHandler:
 
         assert response.status_code == 400
         assert response.json == {"message": "Access Denied"}
+        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"
 
     def test_gateway_exception_with_gateway_response(self, get_context):
         exception_handler = GatewayExceptionHandler()
@@ -87,3 +103,4 @@ class TestGatewayResponseHandler:
 
         assert response.status_code == 400
         assert response.json == {"message": "Access Denied"}
+        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"

@@ -15,7 +15,7 @@ from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
 
 from .context import InvocationRequest
-from .gateway_response import Default4xxError, Default5xxError
+from .gateway_response import BadRequestException, InternalFailureException
 from .variables import ContextVariables
 
 LOG = logging.getLogger(__name__)
@@ -150,8 +150,7 @@ class ParametersMapper:
             try:
                 decoded_body = self._json_load(body)
             except ValueError:
-                # x-amzn-errortype: InternalFailureException
-                raise Default5xxError(message="Internal server error")
+                raise InternalFailureException(message="Internal server error")
 
             if expr == "body":
                 return to_str(body)
@@ -205,7 +204,7 @@ class ParametersMapper:
             try:
                 decoded_body = self._json_load(body)
             except ValueError:
-                raise Default4xxError(message="Invalid JSON in request body")
+                raise BadRequestException(message="Invalid JSON in request body")
 
             if expr == "body":
                 return to_str(body)
