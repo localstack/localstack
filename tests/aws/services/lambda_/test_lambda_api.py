@@ -4039,7 +4039,7 @@ class TestLambdaUrl:
             FunctionName=function_name,
             AuthType="NONE",
         )
-        assert any("Invalid custom ID tag value" in record.mesage for record in caplog.records)
+        assert any("Invalid custom ID tag value" in record.message for record in caplog.records)
         assert f"://{custom_id_value}.lambda-url." not in url_config_created["FunctionUrl"]
 
 
