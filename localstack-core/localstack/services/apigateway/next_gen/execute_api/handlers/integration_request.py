@@ -1,5 +1,4 @@
 import logging
-from http import HTTPMethod
 
 from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.http import Response
@@ -79,13 +78,6 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         if not (integration_method := integration["httpMethod"]) or integration_method == "ANY":
             # otherwise, fallback to the request's method
             integration_method = context.invocation_request["method"]
-        # AWS doesn't send a body for these methods. Mock needs the body to get the status code
-        # TODO this might need to be done in the integrations?
-        if (
-            integration_method in [HTTPMethod.GET, HTTPMethod.HEAD, HTTPMethod.OPTIONS]
-            and not integration_type == IntegrationType.MOCK
-        ):
-            body = b""
 
         integration_request = IntegrationRequest(
             http_method=integration_method,
@@ -116,7 +108,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         template: str,
     ) -> tuple[bytes, ContextVarsRequestOverride]:
         request: InvocationRequest = context.invocation_request
-        body = request.get("body")
+        body = request["body"]
 
         if not template:
             return body, {}

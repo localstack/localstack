@@ -255,19 +255,6 @@ class TestHandlerIntegrationRequest:
             "multivalue": ["1header", "2header"],
         }
 
-    @pytest.mark.parametrize("method", [HTTPMethod.OPTIONS, HTTPMethod.GET, HTTPMethod.HEAD])
-    def test_no_body_for_method(
-        self, integration_request_handler, default_invocation_request, create_context, method
-    ):
-        requests = default_invocation_request
-        requests["http_method"] = method
-        context = create_context(request=requests)
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
-            "application/json": '{"foo":"bar"}'
-        }
-        integration_request_handler(context)
-        context.integration_request["body"] = b""
-
     def test_multivalue_mapping(
         self, integration_request_handler, default_invocation_request, create_context
     ):
