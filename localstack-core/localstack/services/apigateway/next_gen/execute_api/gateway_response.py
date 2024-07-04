@@ -17,7 +17,7 @@ class BaseGatewayException(Exception):
     message: str = "Unimplemented Response"
     type: GatewayResponseType
     status_code: int | str = None
-    x_header: str = ""
+    code: str = ""
 
     def __init__(self, message: str = None, status_code: int | str = None):
         if message is not None:
@@ -45,120 +45,120 @@ class Default5xxError(BaseGatewayException):
 
 
 class BadRequestException(Default4xxError):
-    x_header = "BadRequestException"
+    code = "BadRequestException"
 
 
 class InternalFailureException(Default5xxError):
-    x_header = "InternalFailureException"
+    code = "InternalFailureException"
 
 
 class InternalServerError(Default5xxError):
-    x_header = "InternalServerError"
+    code = "InternalServerError"
 
 
 class AccessDeniedError(BaseGatewayException):
     type = GatewayResponseType.ACCESS_DENIED
     # TODO validate this header with aws validated tests
-    x_header = "AccessDeniedException"
+    code = "AccessDeniedException"
 
 
 class ApiConfigurationError(BaseGatewayException):
     type = GatewayResponseType.API_CONFIGURATION_ERROR
     # TODO validate this header with aws validated tests
-    x_header = "ApiConfigurationException"
+    code = "ApiConfigurationException"
 
 
 class AuthorizerConfigurationError(BaseGatewayException):
     type = GatewayResponseType.AUTHORIZER_CONFIGURATION_ERROR
     # TODO validate this header with aws validated tests
-    x_header = "AuthorizerConfigurationException"
+    code = "AuthorizerConfigurationException"
 
 
 class AuthorizerFailureError(BaseGatewayException):
     type = GatewayResponseType.AUTHORIZER_FAILURE
     # TODO validate this header with aws validated tests
-    x_header = "AuthorizerFailureException"
+    code = "AuthorizerFailureException"
 
 
 class BadRequestParametersError(BaseGatewayException):
     type = GatewayResponseType.BAD_REQUEST_PARAMETERS
-    x_header = "BadRequestException"
+    code = "BadRequestException"
 
 
 class BadRequestBodyError(BaseGatewayException):
     type = GatewayResponseType.BAD_REQUEST_BODY
-    x_header = "BadRequestException"
+    code = "BadRequestException"
 
 
 class ExpiredTokenError(BaseGatewayException):
     type = GatewayResponseType.EXPIRED_TOKEN
     # TODO validate this header with aws validated tests
-    x_header = "ExpiredTokenException"
+    code = "ExpiredTokenException"
 
 
 class IntegrationFailureError(BaseGatewayException):
     type = GatewayResponseType.INTEGRATION_FAILURE
     # TODO validate this header with aws validated tests
-    x_header = "IntegrationFailureException"
+    code = "IntegrationFailureException"
 
 
 class IntegrationTimeoutError(BaseGatewayException):
     type = GatewayResponseType.INTEGRATION_TIMEOUT
-    x_header = "InternalServerErrorException"
+    code = "InternalServerErrorException"
 
 
 class InvalidAPIKeyError(BaseGatewayException):
     type = GatewayResponseType.INVALID_API_KEY
-    x_header = "ForbiddenException"
+    code = "ForbiddenException"
 
 
 class InvalidSignatureError(BaseGatewayException):
     type = GatewayResponseType.INVALID_SIGNATURE
     # TODO validate this header with aws validated tests
-    x_header = "InvalidSignatureException"
+    code = "InvalidSignatureException"
 
 
 class MissingAuthTokenError(BaseGatewayException):
     type = GatewayResponseType.MISSING_AUTHENTICATION_TOKEN
-    x_header = "MissingAuthenticationTokenException"
+    code = "MissingAuthenticationTokenException"
 
 
 class QuotaExceededError(BaseGatewayException):
     type = GatewayResponseType.QUOTA_EXCEEDED
-    x_header = "LimitExceededException"
+    code = "LimitExceededException"
 
 
 class RequestTooLargeError(BaseGatewayException):
     type = GatewayResponseType.REQUEST_TOO_LARGE
     # TODO validate this header with aws validated tests
-    x_header = "RequestTooLargeException"
+    code = "RequestTooLargeException"
 
 
 class ResourceNotFoundError(BaseGatewayException):
     type = GatewayResponseType.RESOURCE_NOT_FOUND
     # TODO validate this header with aws validated tests
-    x_header = "ResourceNotFoundException"
+    code = "ResourceNotFoundException"
 
 
 class ThrottledError(BaseGatewayException):
     type = GatewayResponseType.THROTTLED
-    x_header = "TooManyRequestsException"
+    code = "TooManyRequestsException"
 
 
 class UnauthorizedError(BaseGatewayException):
     type = GatewayResponseType.UNAUTHORIZED
-    x_header = "UnauthorizedException"
+    code = "UnauthorizedException"
 
 
 class UnsupportedMediaTypeError(BaseGatewayException):
     type = GatewayResponseType.UNSUPPORTED_MEDIA_TYPE
-    x_header = "BadRequestException"
+    code = "BadRequestException"
 
 
 class WafFilteredError(BaseGatewayException):
     type = GatewayResponseType.WAF_FILTERED
     # TODO validate this header with aws validated tests
-    x_header = "WafFilteredException"
+    code = "WafFilteredException"
 
 
 class GatewayResponseCode(StatusCode, Enum):

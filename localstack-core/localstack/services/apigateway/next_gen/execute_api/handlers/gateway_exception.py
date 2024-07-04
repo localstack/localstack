@@ -67,4 +67,4 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
 
     def _build_response_headers(self, exception: BaseGatewayException) -> dict:
         # TODO apply responseParameters to the headers and get content-type from the gateway_response
-        return {"content-type": "application/json", "x-amzn-errortype": exception.x_header}
+        return {"content-type": "application/json", "x-amzn-ErrorType": exception.code}
