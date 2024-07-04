@@ -17,6 +17,7 @@ class BaseGatewayException(Exception):
     message: str = "Unimplemented Response"
     type: GatewayResponseType
     status_code: int | str = None
+    x_header: str = ""
 
     def __init__(self, message: str = None, status_code: int | str = None):
         if message is not None:
@@ -26,89 +27,138 @@ class BaseGatewayException(Exception):
 
 
 class Default4xxError(BaseGatewayException):
+    """Do not raise from this class directly.
+    Use one of the subclasses instead, as they contain the appropriate header
+    """
+
     type: GatewayResponseType.DEFAULT_4XX
     status_code = 400
 
 
 class Default5xxError(BaseGatewayException):
+    """Do not raise from this class directly.
+    Use one of the subclasses instead, as they contain the appropriate header
+    """
+
     type: GatewayResponseType.DEFAULT_5XX
     status_code = 500
 
 
+class BadRequestException(Default4xxError):
+    x_header = "BadRequestException"
+
+
+class InternalFailureException(Default5xxError):
+    x_header = "InternalFailureException"
+
+
+class InternalServerError(Default5xxError):
+    x_header = "InternalServerError"
+
+
 class AccessDeniedError(BaseGatewayException):
     type = GatewayResponseType.ACCESS_DENIED
+    # Header Untested
+    x_header = "AccessDeniedException"
 
 
 class ApiConfigurationError(BaseGatewayException):
     type = GatewayResponseType.API_CONFIGURATION_ERROR
+    # Header Untested
+    x_header = "ApiConfigurationException"
 
 
 class AuthorizerConfigurationError(BaseGatewayException):
     type = GatewayResponseType.AUTHORIZER_CONFIGURATION_ERROR
+    # Header Untested
+    x_header = "AuthorizerConfigurationException"
 
 
 class AuthorizerFailureError(BaseGatewayException):
     type = GatewayResponseType.AUTHORIZER_FAILURE
+    # Header Untested
+    x_header = "AuthorizerFailureException"
 
 
 class BadRequestParametersError(BaseGatewayException):
     type = GatewayResponseType.BAD_REQUEST_PARAMETERS
+    x_header = "BadRequestException"
 
 
 class BadRequestBodyError(BaseGatewayException):
     type = GatewayResponseType.BAD_REQUEST_BODY
+    x_header = "BadRequestException"
 
 
 class ExpiredTokenError(BaseGatewayException):
     type = GatewayResponseType.EXPIRED_TOKEN
+    # Header Untested
+    x_header = "ExpiredTokenException"
 
 
 class IntegrationFailureError(BaseGatewayException):
     type = GatewayResponseType.INTEGRATION_FAILURE
+    # Header Untested
+    x_header = "IntegrationFailureException"
 
 
 class IntegrationTimeoutError(BaseGatewayException):
     type = GatewayResponseType.INTEGRATION_TIMEOUT
+    x_header = "InternalServerErrorException"
 
 
 class InvalidAPIKeyError(BaseGatewayException):
     type = GatewayResponseType.INVALID_API_KEY
+    x_header = "ForbiddenException"
 
 
 class InvalidSignatureError(BaseGatewayException):
     type = GatewayResponseType.INVALID_SIGNATURE
+    # Header Untested
+    x_header = "InvalidSignatureException"
 
 
 class MissingAuthTokenError(BaseGatewayException):
     type = GatewayResponseType.MISSING_AUTHENTICATION_TOKEN
+    x_header = "MissingAuthenticationTokenException"
 
 
 class QuotaExceededError(BaseGatewayException):
     type = GatewayResponseType.QUOTA_EXCEEDED
+    x_header = "LimitExceededException"
 
 
 class RequestTooLargeError(BaseGatewayException):
     type = GatewayResponseType.REQUEST_TOO_LARGE
+    # Header Untested
+    x_header = "RequestTooLargeException"
 
 
 class ResourceNotFoundError(BaseGatewayException):
     type = GatewayResponseType.RESOURCE_NOT_FOUND
+    # Header Untested
+    x_header = "ResourceNotFoundException"
 
 
 class ThrottledError(BaseGatewayException):
     type = GatewayResponseType.THROTTLED
+    x_header = "TooManyRequestsException"
 
 
 class UnauthorizedError(BaseGatewayException):
     type = GatewayResponseType.UNAUTHORIZED
+    x_header = "UnauthorizedException"
 
 
 class UnsupportedMediaTypeError(BaseGatewayException):
     type = GatewayResponseType.UNSUPPORTED_MEDIA_TYPE
+    x_header = "BadRequestException"
 
 
 class WafFilteredError(BaseGatewayException):
     type = GatewayResponseType.WAF_FILTERED
+    # Header Untested
+    x_header = "WafFilteredException"
 
 
 class GatewayResponseCode(StatusCode, Enum):
