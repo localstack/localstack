@@ -239,7 +239,7 @@ class TestHandlerIntegrationRequest:
         context = create_context(request=default_invocation_request)
         context.resource_method["methodIntegration"]["requestParameters"] = {
             "integration.request.path.path": "method.request.path.path",
-            "integration.request.querystring.qs": "method.request.querystring.qs",
+            "integration.request.querystring.qs": "method.request.multivaluequerystring.qs",
             "integration.request.header.header": "method.request.header.header",
         }
         context.resource_method["methodIntegration"]["uri"] = "https://example.com/{path}"
