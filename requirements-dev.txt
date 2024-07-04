@@ -245,7 +245,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.9.post3
+moto-ext==5.0.10.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
