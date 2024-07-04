@@ -268,6 +268,18 @@ class TestHandlerIntegrationRequest:
         integration_request_handler(context)
         context.integration_request["body"] = b""
 
+    def test_multivalue_mapping(
+        self, integration_request_handler, default_invocation_request, create_context
+    ):
+        context = create_context(request=default_invocation_request)
+        context.resource_method["methodIntegration"]["requestParameters"] = {
+            "integration.request.header.multi": "method.request.multivalueheader.header",
+            "integration.request.querystring.multi": "method.request.multivaluequerystring.qs",
+        }
+        integration_request_handler(context)
+        assert context.integration_request["headers"]["multi"] == "header1,header2"
+        assert context.integration_request["query_string_parameters"]["multi"] == ["qs1", "qs2"]
+
 
 REQUEST_OVERRIDE = """
 #set($context.requestOverride.header.header = "headerOverride")
