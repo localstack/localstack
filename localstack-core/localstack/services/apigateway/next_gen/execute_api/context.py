@@ -15,6 +15,7 @@ class InvocationRequest(TypedDict, total=False):
     http_method: Optional[HTTPMethod]
     """HTTP Method of the incoming request"""
     raw_path: Optional[str]
+    # TODO: verify if raw_path is needed
     """Raw path of the incoming request with no modification, needed to keep double forward slashes"""
     path: Optional[str]
     """Path of the request with no URL decoding"""
