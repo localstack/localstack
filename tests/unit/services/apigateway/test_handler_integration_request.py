@@ -233,31 +233,27 @@ class TestHandlerIntegrationRequest:
         ]
 
     def test_integration_uri_path_params_undefined(
-        self, integration_request_handler, default_invocation_request, create_context
+        self, integration_request_handler, default_context
     ):
-        context = create_context(request=default_invocation_request)
-        context.resource_method["methodIntegration"]["requestParameters"] = {
+        default_context.resource_method["methodIntegration"]["requestParameters"] = {
             "integration.request.path.path": "method.request.path.wrongvalue",
         }
-        context.resource_method["methodIntegration"]["uri"] = "https://example.com/{path}"
-        integration_request_handler(context)
-        assert context.integration_request["uri"] == "https://example.com/{path}"
+        default_context.resource_method["methodIntegration"]["uri"] = "https://example.com/{path}"
+        integration_request_handler(default_context)
+        assert default_context.integration_request["uri"] == "https://example.com/{path}"
 
-    def test_integration_uri_stage_variables(
-        self, integration_request_handler, default_invocation_request, create_context
-    ):
-        context = create_context(request=default_invocation_request)
-        context.stage_variables = {
+    def test_integration_uri_stage_variables(self, integration_request_handler, default_context):
+        default_context.stage_variables = {
             "stageVar": "stageValue",
         }
-        context.resource_method["methodIntegration"]["requestParameters"] = {
+        default_context.resource_method["methodIntegration"]["requestParameters"] = {
             "integration.request.path.path": "method.request.path.proxy",
         }
-        context.resource_method["methodIntegration"]["uri"] = (
+        default_context.resource_method["methodIntegration"]["uri"] = (
             "https://example.com/{path}/${stageVariables.stageVar}"
         )
-        integration_request_handler(context)
-        assert context.integration_request["uri"] == "https://example.com/path/stageValue"
+        integration_request_handler(default_context)
+        assert default_context.integration_request["uri"] == "https://example.com/path/stageValue"
 
 
 REQUEST_OVERRIDE = """
