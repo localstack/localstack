@@ -104,7 +104,7 @@ class TestMethodRequestHandler:
         assert e.value.message == "Missing required request parameters: [proxy]"
 
         # invocation with valid request
-        dummy_context.invocation_request["path"] = "/proxy/path"
+        dummy_context.invocation_request["path_parameters"] = {"proxy": "path"}
         method_request_handler(dummy_context)
 
     def test_validator_request_body_empty_model(self, method_request_handler, dummy_context):

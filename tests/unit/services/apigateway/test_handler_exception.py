@@ -3,6 +3,7 @@ from rolo import Response
 
 from localstack.aws.api.apigateway import GatewayResponse, GatewayResponseType
 from localstack.services.apigateway.models import MergedRestApi, RestApiDeployment
+from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     AccessDeniedError,
@@ -59,7 +60,12 @@ class TestGatewayResponseHandler:
         # Create an Access Denied exception with no Gateway Response configured
         exception = AccessDeniedError("Access Denied")
         response = Response()
-        exception_handler(chain=None, exception=exception, context=get_context(), response=response)
+        exception_handler(
+            chain=RestApiGatewayHandlerChain(),
+            exception=exception,
+            context=get_context(),
+            response=response,
+        )
 
         assert response.status_code == 403
         assert response.json == {"message": "Access Denied"}
@@ -75,7 +81,7 @@ class TestGatewayResponseHandler:
         exception = AccessDeniedError("Access Denied")
         response = Response()
         exception_handler(
-            chain=None,
+            chain=RestApiGatewayHandlerChain(),
             exception=exception,
             context=get_context(gateway_responses),
             response=response,
@@ -95,7 +101,7 @@ class TestGatewayResponseHandler:
         exception = AccessDeniedError("Access Denied")
         response = Response()
         exception_handler(
-            chain=None,
+            chain=RestApiGatewayHandlerChain(),
             exception=exception,
             context=get_context(gateway_responses),
             response=response,
