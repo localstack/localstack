@@ -185,7 +185,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         body = response.data
 
         if not template:
-            return body, {}
+            return body, ContextVarsResponseOverride(status=0, header={})
 
         body, response_override = self._vtl_template.render_response(
             template=template,
@@ -208,5 +208,4 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             isinstance(status, int) and 100 <= status < 600
         ):
             response_override["status"] = 0
-
         return to_bytes(body), response_override

@@ -39,9 +39,12 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
             )
             return
 
+        LOG.debug("Error raised during invocation: %s", exception.type)
         error = self.create_exception_response(exception, context)
         if error:
             response.update_from(error)
+            # Need to terminate the chain here to prevent the response handler to modify this response
+            chain.terminate()
 
     def create_exception_response(
         self, exception: BaseGatewayException, context: RestApiInvocationContext

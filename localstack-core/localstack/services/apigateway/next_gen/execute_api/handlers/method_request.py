@@ -122,7 +122,7 @@ class MethodRequestHandler(RestApiGatewayHandler):
                 case "header":
                     is_missing = param_value not in request.get("headers", [])
                 case "path":
-                    path = request.get("path", "")
+                    path = request.get("path_parameters", "")
                     is_missing = param_value not in path
                 case "querystring":
                     is_missing = param_value not in request.get("query_string_parameters", [])
