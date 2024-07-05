@@ -2,12 +2,22 @@ import logging
 import re
 
 from localstack.aws.api.apigateway import Integration, IntegrationResponse, IntegrationType
+from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
+from localstack.utils.collections import merge_dicts
+from localstack.utils.strings import to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
-from ..context import RestApiInvocationContext
+from ..context import InvocationRequest, RestApiInvocationContext
 from ..gateway_response import ApiConfigurationError
 from ..parameters_mapping import ParametersMapper, ResponseDataMapping
+from ..template_mapping import (
+    ApiGatewayVtlTemplate,
+    MappingTemplateInput,
+    MappingTemplateParams,
+    MappingTemplateVariables,
+)
+from ..variables import ContextVarsResponseOverride
 
 LOG = logging.getLogger(__name__)
 
@@ -20,6 +30,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
 
     def __init__(self):
         self._param_mapper = ParametersMapper()
+        self._vtl_template = ApiGatewayVtlTemplate()
 
     def __call__(
         self,
@@ -62,8 +73,12 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         )
 
         # we can also apply the Response Templates, they will depend on status code + accept header?
-
-        # then responseOverride
+        response_template = self.get_response_template(
+            integration_response=integration_response, request=context.invocation_request
+        )
+        body, response_override = self.render_request_template_mapping(
+            context=context, template=response_template, response=response
+        )
 
         # here we update the `Response`. We basically need to remove all headers and replace them with the mapping, then
         # override them if there are overrides.
@@ -73,8 +88,14 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
                 del response.headers[key]
 
         # there must be some default headers set, snapshot those?
-        if mapped_headers := response_data_mapping.get("header"):
-            response.headers.update(mapped_headers)
+        if headers := merge_dicts(response_data_mapping["header"], response_override["header"]):
+            response.headers.update(headers)
+
+        # We set the status code from the integration response unless there was a response override
+        response.status_code = response_override["status"] or integration_response["statusCode"]
+
+        # The body will be taken from template mapping.
+        response.data = body
 
         response.status_code = int(integration_response["statusCode"])
 
@@ -132,3 +153,60 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
                     selected_response["statusCode"],
                 )
         return selected_response
+
+    @staticmethod
+    def get_response_template(
+        integration_response: IntegrationResponse, request: InvocationRequest
+    ) -> str:
+        """The Response Template is selected from the response templates.
+        If there are no templates defined, the body will pass through.
+        Apigateway looks at the integration request `Accept` header and defaults to `application/json`.
+        If no template is matched, Apigateway will use the "first" existing template and use it as default.
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#transforming-request-response-body
+        """
+        if not (response_templates := integration_response["responseTemplates"]):
+            return ""
+
+        # Aws seems to ignore the integration request headers and uses the invocation request header
+        accept = request["headers"].get("accept", APPLICATION_JSON)
+        if template := response_templates.get(accept):
+            return template
+        # TODO aws seemed to favor application/json as default when unmatched regardless of "first"
+        if template := response_templates.get(APPLICATION_JSON):
+            return template
+        # TODO What is first? do we need to keep an order as to when they were added/modified?
+        template = next(iter(response_templates.values()))
+        LOG.warning("No templates were matched, Using template: %s", template)
+        return template
+
+    def render_request_template_mapping(
+        self, context: RestApiInvocationContext, template: str, response: Response
+    ) -> tuple[bytes, ContextVarsResponseOverride]:
+        body = response.data
+
+        if not template:
+            return body, {}
+
+        body, response_override = self._vtl_template.render_response(
+            template=template,
+            variables=MappingTemplateVariables(
+                context=context.context_variables,
+                stageVariables=context.stage_variables or {},
+                input=MappingTemplateInput(
+                    body=to_str(body),
+                    params=MappingTemplateParams(
+                        path=context.invocation_request.get("path_parameters"),
+                        querystring=context.invocation_request.get("query_string_parameters", {}),
+                        header=context.invocation_request.get("headers", {}),
+                    ),
+                ),
+            ),
+        )
+
+        # AWS ignores the status if the override isn't an integer between 100 and 599
+        if (status := response_override["status"]) and not (
+            isinstance(status, int) and 100 <= status < 600
+        ):
+            response_override["status"] = 0
+
+        return to_bytes(body), response_override

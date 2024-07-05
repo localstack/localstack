@@ -120,7 +120,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             return body, {}
 
         body, request_override = self._vtl_template.render_request(
-            template=template.strip(),
+            template=template,
             variables=MappingTemplateVariables(
                 context=context.context_variables,
                 stageVariables=context.stage_variables or {},
