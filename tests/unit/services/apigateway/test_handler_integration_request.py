@@ -21,7 +21,6 @@ from localstack.services.apigateway.next_gen.execute_api.handlers.integration_re
 )
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
-    ContextVarsRequestOverride,
 )
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
@@ -73,7 +72,6 @@ def default_context():
         apiId=TEST_API_ID,
         httpMethod="POST",
         path=f"{TEST_API_STAGE}/resource/{{proxy}}",
-        requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
         resourcePath="/resource/{proxy}",
         stage=TEST_API_STAGE,
     )
@@ -191,14 +189,14 @@ class TestHandlerIntegrationRequest:
 
     def test_request_parameters(self, integration_request_handler, default_context):
         default_context.resource_method["methodIntegration"]["requestParameters"] = {
-            "integration.request.path.path": "method.request.path.path",
+            "integration.request.path.path": "method.request.path.proxy",
             "integration.request.querystring.qs": "method.request.querystring.qs",
             "integration.request.header.header": "method.request.header.header",
         }
         default_context.resource_method["methodIntegration"]["uri"] = "https://example.com/{path}"
         integration_request_handler(default_context)
         # TODO this test will fail when we implement uri mapping
-        assert default_context.integration_request["uri"] == "https://example.com/{path}"
+        assert default_context.integration_request["uri"] == "https://example.com/path"
         assert default_context.integration_request["query_string_parameters"] == {"qs": "qs2"}
         assert default_context.integration_request["headers"] == {"header": "header2"}
 
@@ -213,8 +211,7 @@ class TestHandlerIntegrationRequest:
             "application/json": REQUEST_OVERRIDE
         }
         integration_request_handler(default_context)
-        # TODO this test will fail when we implement uri mapping
-        assert default_context.integration_request["uri"] == "https://example.com/{path}"
+        assert default_context.integration_request["uri"] == "https://example.com/pathOverride"
         assert default_context.integration_request["query_string_parameters"] == {
             "qs": "queryOverride"
         }
@@ -234,6 +231,29 @@ class TestHandlerIntegrationRequest:
             "qs1",
             "qs2",
         ]
+
+    def test_integration_uri_path_params_undefined(
+        self, integration_request_handler, default_context
+    ):
+        default_context.resource_method["methodIntegration"]["requestParameters"] = {
+            "integration.request.path.path": "method.request.path.wrongvalue",
+        }
+        default_context.resource_method["methodIntegration"]["uri"] = "https://example.com/{path}"
+        integration_request_handler(default_context)
+        assert default_context.integration_request["uri"] == "https://example.com/{path}"
+
+    def test_integration_uri_stage_variables(self, integration_request_handler, default_context):
+        default_context.stage_variables = {
+            "stageVar": "stageValue",
+        }
+        default_context.resource_method["methodIntegration"]["requestParameters"] = {
+            "integration.request.path.path": "method.request.path.proxy",
+        }
+        default_context.resource_method["methodIntegration"]["uri"] = (
+            "https://example.com/{path}/${stageVariables.stageVar}"
+        )
+        integration_request_handler(default_context)
+        assert default_context.integration_request["uri"] == "https://example.com/path/stageValue"
 
 
 REQUEST_OVERRIDE = """

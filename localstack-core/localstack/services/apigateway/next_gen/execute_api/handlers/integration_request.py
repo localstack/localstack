@@ -8,6 +8,7 @@ from localstack.utils.strings import to_bytes, to_str
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
 from ..gateway_response import UnsupportedMediaTypeError
+from ..helpers import render_uri_with_path_parameters, render_uri_with_stage_variables
 from ..parameters_mapping import ParametersMapper, RequestDataMapping
 from ..template_mapping import (
     ApiGatewayVtlTemplate,
@@ -66,12 +67,19 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         body, request_override = self.render_request_template_mapping(
             context=context, template=request_template
         )
+        # TODO: log every override that happens afterwards (in a loop on `request_override`)
         merge_recursive(request_override, request_data_mapping, overwrite=True)
 
-        # TODO: extract the code under into its own method
-
-        # TODO: create helper method to render the different URI with stageVariables and parameters
-        rendered_integration_uri = integration["uri"]  # use request_data_mapping["path"]
+        # looks like the stageVariables rendering part is done in the Integration part in AWS
+        # but we can avoid duplication by doing it here for now
+        # TODO: if the integration if of AWS Lambda type and the Lambda is in another account, we cannot render
+        #  stageVariables. Work on that special case later (we can add a quick check for the URI region and set the
+        #  stage variables to an empty dict)
+        rendered_integration_uri = self.render_integration_uri(
+            uri=integration["uri"],
+            path_parameters=request_data_mapping["path"],
+            stage_variables=context.stage_variables,
+        )
 
         # TODO: verify the assumptions about the method with an AWS validated test
         # if the integration method is defined and is not ANY, we can use it for the integration
@@ -86,7 +94,6 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             headers=request_data_mapping["header"],
             body=body,
         )
-        # TODO: log every override that happens afterwards
 
         # This is the data that downstream integrations might use if they are not of `PROXY_` type
         # LOG.debug("Created integration request from xxx")
@@ -130,7 +137,8 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         )
         return to_bytes(body), request_override
 
-    def get_request_template(self, integration: Integration, request: InvocationRequest) -> str:
+    @staticmethod
+    def get_request_template(integration: Integration, request: InvocationRequest) -> str:
         """
         Attempts to return the request template.
         Will raise UnsupportedMediaTypeError if there are no match according to passthrough behavior.
@@ -163,3 +171,25 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 LOG.debug("Unknown passthrough behavior: '%s'", passthrough_behavior)
 
         return request_template
+
+    @staticmethod
+    def render_integration_uri(
+        uri: str, path_parameters: dict[str, str], stage_variables: dict[str, str]
+    ) -> str:
+        """
+        A URI can contain different value to interpolate / render
+        It will have path parameters substitutions with this shape (can also add a querystring).
+        URI=http://myhost.test/rootpath/{path}
+
+        It can also have another format, for stage variables, documented here:
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html#stage-variables-in-integration-HTTP-uris
+        URI=https://${stageVariables.<variable_name>}
+        This format is the same as VTL.
+
+        :param uri: the integration URI
+        :param path_parameters: the list of path parameters, coming from the parameters mapping and override
+        :param stage_variables: -
+        :return: the rendered URI
+        """
+        uri_with_path = render_uri_with_path_parameters(uri, path_parameters)
+        return render_uri_with_stage_variables(uri_with_path, stage_variables)

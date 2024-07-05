@@ -1,10 +1,16 @@
 import copy
+import logging
+import re
 
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
 from localstack.services.apigateway.models import MergedRestApi, RestApiContainer, RestApiDeployment
 
 from .moto_helpers import get_resources_from_moto_rest_api
+
+LOG = logging.getLogger(__name__)
+
+_stage_variable_pattern = re.compile(r"\${stageVariables\.(?P<varName>.*?)}")
 
 
 def freeze_rest_api(
@@ -26,3 +32,24 @@ def freeze_rest_api(
         region=region,
         rest_api=copy.deepcopy(rest_api),
     )
+
+
+def render_uri_with_stage_variables(uri: str, stage_variables: dict[str, str]):
+    """
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html#stage-variables-in-integration-HTTP-uris
+    URI=https://${stageVariables.<variable_name>}
+    This format is the same as VTL, but we're using a simplified version to only replace `${stageVariables.<param>}`
+    values, as AWS will ignore `${path}` for example
+    """
+
+    def replace_match(match_obj: re.Match) -> str:
+        return stage_variables.get(match_obj.group("varName"), "")
+
+    return _stage_variable_pattern.sub(replace_match, uri)
+
+
+def render_uri_with_path_parameters(uri: str, path_parameters: dict[str, str]) -> str:
+    for key, value in path_parameters.items():
+        uri = uri.replace(f"{{{key}}}", value)
+
+    return uri
