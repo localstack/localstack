@@ -181,3 +181,6 @@ class ScenariosTemplate(TemplateLoader):
     WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"
     )
+    DIRECT_ACCESS_CONTEXT_OBJECT_CHILD_FIELD: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/direct_access_context_object_child_field.json5"
+    )
