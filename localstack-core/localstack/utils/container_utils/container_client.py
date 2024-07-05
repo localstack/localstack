@@ -852,6 +852,7 @@ class ContainerClient(metaclass=ABCMeta):
             labels=container_config.labels,
             ulimits=container_config.ulimits,
             init=container_config.init,
+            log_config=container_config.log_config,
         )
 
     @abstractmethod
