@@ -400,6 +400,56 @@ class TestApigatewayRequestParametersMapping:
             "querystring": {},
         }
 
+    def test_default_values_headers_request_mapping(
+        self, default_invocation_request, default_context_variables
+    ):
+        mapper = ParametersMapper()
+        default_invocation_request["raw_headers"].add("Content-Type", "application/json")
+        default_invocation_request["raw_headers"].add("Accept", "application/json")
+
+        mapping = mapper.map_integration_request(
+            request_parameters={},
+            invocation_request=default_invocation_request,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+
+        assert mapping == {
+            "header": {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            "path": {},
+            "querystring": {},
+        }
+
+    def test_default_values_headers_request_mapping_override(
+        self, default_invocation_request, default_context_variables
+    ):
+        mapper = ParametersMapper()
+        request_parameters = {
+            "integration.request.header.Content-Type": "method.request.header.header_value",
+            "integration.request.header.accept": "method.request.header.header_value",
+        }
+        default_invocation_request["raw_headers"].add("Content-Type", "application/json")
+        default_invocation_request["raw_headers"].add("Accept", "application/json")
+
+        mapping = mapper.map_integration_request(
+            request_parameters=request_parameters,
+            invocation_request=default_invocation_request,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+        assert mapping == {
+            "header": {
+                "Content-Type": "test-header-value",
+                "Accept": "application/json",
+                "accept": "test-header-value",
+            },
+            "path": {},
+            "querystring": {},
+        }
+
 
 class TestApigatewayResponseParametersMapping:
     """

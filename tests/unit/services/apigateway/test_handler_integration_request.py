@@ -220,6 +220,20 @@ class TestHandlerIntegrationRequest:
             "multivalue": ["1header", "2header"],
         }
 
+    def test_request_override_casing(self, integration_request_handler, default_context):
+        default_context.resource_method["methodIntegration"]["requestParameters"] = {
+            "integration.request.header.myHeader": "method.request.header.header",
+        }
+        default_context.resource_method["methodIntegration"]["requestTemplates"] = {
+            "application/json": '#set($context.requestOverride.header.myheader = "headerOverride")'
+        }
+        integration_request_handler(default_context)
+        # TODO: for now, it's up to the integration to properly merge headers (`requests` does it automatically)
+        assert default_context.integration_request["headers"] == {
+            "myHeader": "header2",
+            "myheader": "headerOverride",
+        }
+
     def test_multivalue_mapping(self, integration_request_handler, default_context):
         default_context.resource_method["methodIntegration"]["requestParameters"] = {
             "integration.request.header.multi": "method.request.multivalueheader.header",

@@ -75,8 +75,8 @@ class InvocationRequestParser(RestApiGatewayHandler):
         if "_user_request_" in raw_uri:
             raw_uri = raw_uri.partition("_user_request_")[2]
 
-        # remove the stage from the path
-        raw_uri = raw_uri.replace(f"/{stage_name}", "")
+        # remove the stage from the path, only replace the first occurrence
+        raw_uri = raw_uri.replace(f"/{stage_name}", "", 1)
 
         if raw_uri.startswith("//"):
             # TODO: AWS validate this assumption

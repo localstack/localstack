@@ -48,6 +48,12 @@ class ParametersMapper:
             path={},
             querystring={},
         )
+        # default values, can be overridden with right casing
+        if content_type := invocation_request["raw_headers"].get("Content-Type"):
+            request_data_mapping["header"]["Content-Type"] = content_type
+
+        if accept := invocation_request["raw_headers"].get("Accept"):
+            request_data_mapping["header"]["Accept"] = accept
 
         for integration_mapping, request_mapping in request_parameters.items():
             integration_param_location, param_name = integration_mapping.removeprefix(

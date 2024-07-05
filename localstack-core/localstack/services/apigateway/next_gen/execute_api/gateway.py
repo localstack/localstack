@@ -27,8 +27,6 @@ class RestApiGateway(Gateway):
                 handlers.method_request_handler,
                 handlers.integration_request_handler,
                 handlers.integration_handler,
-                # temporary legacy which executes the legacy logic for now
-                handlers.legacy_handler,
             ]
         )
         self.response_handlers.extend(

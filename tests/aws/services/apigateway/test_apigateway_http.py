@@ -7,6 +7,7 @@ import requests
 from localstack.testing.pytest import markers
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
+from tests.aws.services.apigateway.conftest import is_next_gen_api
 
 
 @pytest.fixture
@@ -42,23 +43,34 @@ def add_http_integration_transformers(snapshot):
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
+        # TODO: shared between HTTP & HTTP_PROXY
+        "$..content.headers.x-amzn-trace-id",
+        "$..content.headers.x-forwarded-for",
+        "$..content.origin",
+        "$..headers.server",
+        "$..headers.x-amz-apigw-id",
+        # TODO: only missing for HTTP_PROXY
+        "$..headers.x-amzn-remapped-x-amzn-requestid",
+        "$..headers.x-amzn-trace-id",
+        # TODO: only missing for HTTP
+        "$..headers.x-amzn-requestid",
+        "$..headers.x-amzn-trace-id",
+    ]
+)
+@markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_next_gen_api(),
+    paths=[
         "$..content.headers.accept-encoding",  # TODO: We add an extra space when adding this header
         "$..content.headers.user-agent",  # TODO: We have to properly set that header on non proxied requests.
         # TODO: x-forwarded-for header is actually set when the request is sent to `requests.request`.
         # Custom servers receive the header, but lambda execution code receives an empty string.
-        "$..content.headers.x-forwarded-for",
         "$..content.headers.x-localstack-edge",
-        "$..headers.server",
-        "$..headers.x-amz-apigw-id",  # TODO: we should add that header when forwarding the response
         #  TODO the remapped headers are currently not added to apigateway response
         "$..headers.x-amzn-remapped-connection",
         "$..headers.x-amzn-remapped-content-length",
         "$..headers.x-amzn-remapped-date",
         "$..headers.x-amzn-remapped-x-amzn-requestid",
-        "$..headers.x-amzn-requestid",
-        "$..headers.x-amzn-trace-id",
-        "$..origin",
-    ]
+    ],
 )
 @pytest.mark.parametrize("integration_type", ["HTTP", "HTTP_PROXY"])
 def test_http_integration_with_lambda(

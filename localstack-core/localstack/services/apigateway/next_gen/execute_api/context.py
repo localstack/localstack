@@ -41,14 +41,12 @@ class IntegrationRequest(TypedDict, total=False):
     """HTTP Method of the incoming request"""
     uri: Optional[str]
     """URI of the integration"""
-    query_string_parameters: Optional[dict[str, str]]
+    query_string_parameters: Optional[dict[str, str | list[str]]]
     """Query string parameters of the request"""
     headers: Optional[dict[str, str]]
+    # TODO: should this be Headers type? would maybe help access in the integrations if we need
+    #  currently, we support headers with same name and different casing, it's up to the integration to support it
     """Headers of the request"""
-    multi_value_query_string_parameters: Optional[dict[str, list[str]]]
-    """Multi value query string parameters of the request"""
-    multi_value_headers: Optional[dict[str, list[str]]]
-    """Multi value headers of the request"""
     body: Optional[bytes]
     """Body content of the request"""
 
