@@ -4,6 +4,7 @@ from typing import Optional, TypedDict
 import requests
 from werkzeug.datastructures import Headers
 
+from localstack.aws.api.apigateway import Integration
 from localstack.http import Response
 
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
@@ -18,7 +19,7 @@ NO_BODY_METHODS = {
 
 
 class SimpleHttpRequest(TypedDict, total=False):
-    method: HTTPMethod
+    method: HTTPMethod | str
     url: str
     params: Optional[dict[str, str | list[str]]]
     data: bytes
@@ -41,7 +42,6 @@ class BaseRestApiHttpIntegration(RestApiIntegration):
             "x-amzn-apigateway-api-id": context.api_id,
             "x-amzn-trace-id": "",  # TODO
             "user-agent": f"AmazonAPIGateway_{context.api_id}",
-            "accept-encoding": "gzip,deflate",
         }
 
 
@@ -95,7 +95,13 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
 
     def invoke(self, context: RestApiInvocationContext) -> Response:
         invocation_req: InvocationRequest = context.invocation_request
-        method = invocation_req["http_method"]
+        integration: Integration = context.resource_method["methodIntegration"]
+
+        # if the integration method is defined and is not ANY, we can use it for the integration
+        if not (method := integration["httpMethod"]) or method == "ANY":
+            # otherwise, fallback to the request's method
+            method = invocation_req["http_method"]
+
         integration_uri = context.resource_method["methodIntegration"]["uri"]
         uri = render_uri_with_path_parameters(
             integration_uri,

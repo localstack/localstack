@@ -81,11 +81,10 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             stage_variables=context.stage_variables,
         )
 
-        # TODO: verify the assumptions about the method with an AWS validated test
         # if the integration method is defined and is not ANY, we can use it for the integration
         if not (integration_method := integration["httpMethod"]) or integration_method == "ANY":
             # otherwise, fallback to the request's method
-            integration_method = context.invocation_request["method"]
+            integration_method = context.invocation_request["http_method"]
 
         integration_request = IntegrationRequest(
             http_method=integration_method,
