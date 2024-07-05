@@ -3,7 +3,6 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
-from aws.services.stepfunctions.templates.activities.activity_templates import ActivityTemplate
 from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
@@ -11,6 +10,9 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_express_sync_execution,
 )
 from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.templates.activities.activity_templates import (
+    ActivityTemplate,
+)
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
     CallbackTemplates,
