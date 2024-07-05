@@ -9,13 +9,13 @@ from werkzeug.datastructures import Headers, MultiDict
 
 from localstack.http import Response
 from localstack.services.apigateway.helpers import REQUEST_TIME_DATE_FORMAT
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import timestamp
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import InvocationRequest, RestApiInvocationContext
 from ..moto_helpers import get_stage_variables
-from ..variables import ContextVariables
+from ..variables import ContextVariables, ContextVarsIdentity
 
 LOG = logging.getLogger(__name__)
 
@@ -138,10 +138,24 @@ class InvocationRequestParser(RestApiGatewayHandler):
             domainPrefix=domain_prefix,
             extendedRequestId=short_uid(),  # TODO: use snapshot tests to verify format
             httpMethod=invocation_request["http_method"],
+            identity=ContextVarsIdentity(
+                accountId=None,
+                accessKey=None,
+                caller=None,
+                cognitoAuthenticationProvider=None,
+                cognitoAuthenticationType=None,
+                cognitoIdentityId=None,
+                cognitoIdentityPoolId=None,
+                principalOrgId=None,
+                sourceIp="127.0.0.1",  # TODO: get the sourceIp from the Request
+                user=None,
+                userAgent=invocation_request["raw_headers"].get("User-Agent"),
+                userArn=None,
+            ),
             # TODO: check if we need the raw path? with forward slashes
             path=f"/{context.stage}{invocation_request['path']}",
             protocol="HTTP/1.1",
-            requestId=short_uid(),  # TODO: use snapshot tests to verify format
+            requestId=long_uid(),
             requestTime=timestamp(time=now, format=REQUEST_TIME_DATE_FORMAT),
             requestTimeEpoch=int(now.timestamp() * 1000),
             stage=context.stage,

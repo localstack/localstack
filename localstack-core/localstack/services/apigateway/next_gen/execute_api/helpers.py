@@ -1,11 +1,13 @@
 import copy
 import logging
 import re
+from typing import Type, TypedDict
 
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
 from localstack.services.apigateway.models import MergedRestApi, RestApiContainer, RestApiDeployment
 
+from .context import RestApiInvocationContext
 from .moto_helpers import get_resources_from_moto_rest_api
 
 LOG = logging.getLogger(__name__)
@@ -53,3 +55,36 @@ def render_uri_with_path_parameters(uri: str, path_parameters: dict[str, str]) -
         uri = uri.replace(f"{{{key}}}", value)
 
     return uri
+
+
+def get_source_arn(context: RestApiInvocationContext):
+    method = context.resource_method["httpMethod"]
+    path = context.resource["path"]
+    return (
+        "arn:aws:execute-api"
+        f":{context.region}"
+        f":{context.account_id}"
+        f":{context.api_id}"
+        f"/{context.stage}/{method}{path}"
+    )
+
+
+def get_lambda_function_arn_from_invocation_uri(uri: str) -> str:
+    """
+    "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:SimpleLambda4ProxyResource/invocations",
+    :param uri: the integration URI value for a lambda function
+    :return: the lambda function ARN
+    """
+    return uri.split(":lambda:path")[1].split("functions/")[1].removesuffix("/invocations")
+
+
+def validate_sub_dict_of_typed_dict(typed_dict: Type[TypedDict], obj: dict) -> bool:
+    """
+    Validate that the object is a subset off the keys of a given `TypedDict`.
+    :param typed_dict: the `TypedDict` blueprint
+    :param obj: the object to validate
+    :return: True if it is a subset, False otherwise
+    """
+    typed_dict_keys = {*typed_dict.__required_keys__, *typed_dict.__optional_keys__}
+
+    return not bool(set(obj) - typed_dict_keys)

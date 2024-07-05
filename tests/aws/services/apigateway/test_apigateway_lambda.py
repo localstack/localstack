@@ -15,6 +15,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url, cr
 from tests.aws.services.apigateway.conftest import (
     APIGATEWAY_ASSUME_ROLE_POLICY,
     APIGATEWAY_LAMBDA_POLICY,
+    is_next_gen_api,
 )
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
@@ -29,65 +30,64 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 REQUEST_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/request-template.vm")
 RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.vm")
 
+CLOUDFRONT_SKIP_HEADERS = [
+    "$..headers.Via",
+    "$..headers.X-Amz-Cf-Id",
+    "$..headers.CloudFront-Forwarded-Proto",
+    "$..headers.CloudFront-Is-Desktop-Viewer",
+    "$..headers.CloudFront-Is-Mobile-Viewer",
+    "$..headers.CloudFront-Is-SmartTV-Viewer",
+    "$..headers.CloudFront-Is-Tablet-Viewer",
+    "$..headers.CloudFront-Viewer-ASN",
+    "$..headers.CloudFront-Viewer-Country",
+    "$..multiValueHeaders.Via",
+    "$..multiValueHeaders.X-Amz-Cf-Id",
+    "$..multiValueHeaders.CloudFront-Forwarded-Proto",
+    "$..multiValueHeaders.CloudFront-Is-Desktop-Viewer",
+    "$..multiValueHeaders.CloudFront-Is-Mobile-Viewer",
+    "$..multiValueHeaders.CloudFront-Is-SmartTV-Viewer",
+    "$..multiValueHeaders.CloudFront-Is-Tablet-Viewer",
+    "$..multiValueHeaders.CloudFront-Viewer-ASN",
+    "$..multiValueHeaders.CloudFront-Viewer-Country",
+]
+
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
+    paths=[
+        *CLOUDFRONT_SKIP_HEADERS,
+        "$..headers.X-Amzn-Trace-Id",
+        "$..headers.X-Forwarded-For",
+        "$..headers.X-Forwarded-Port",
+        "$..headers.X-Forwarded-Proto",
+        "$..multiValueHeaders.X-Amzn-Trace-Id",
+        "$..multiValueHeaders.X-Forwarded-For",
+        "$..multiValueHeaders.X-Forwarded-Port",
+        "$..multiValueHeaders.X-Forwarded-Proto",
+    ]
+)
+@markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_next_gen_api(),
     paths=[
         "$..body",
         "$..headers.Accept",
         "$..headers.Content-Length",
         "$..headers.Accept-Encoding",
-        "$..headers.CloudFront-Forwarded-Proto",
-        "$..headers.CloudFront-Is-Desktop-Viewer",
-        "$..headers.CloudFront-Is-Mobile-Viewer",
-        "$..headers.CloudFront-Is-SmartTV-Viewer",
-        "$..headers.CloudFront-Is-Tablet-Viewer",
-        "$..headers.CloudFront-Viewer-ASN",
-        "$..headers.CloudFront-Viewer-Country",
         "$..headers.Connection",
-        "$..headers.Host",
-        "$..headers.Remote-Addr",
-        "$..headers.Via",
-        "$..headers.X-Amz-Cf-Id",
-        "$..headers.X-Amzn-Trace-Id",
-        "$..headers.X-Forwarded-For",
-        "$..headers.X-Forwarded-Port",
-        "$..headers.X-Forwarded-Proto",
         "$..headers.accept",
         "$..headers.accept-encoding",
         "$..headers.x-localstack-edge",
-        "$..headers.x-localstack-request-url",
-        "$..headers.x-localstack-tgt-api",
         "$..multiValueHeaders.Content-Length",
         "$..multiValueHeaders.Accept",
         "$..multiValueHeaders.Accept-Encoding",
-        "$..multiValueHeaders.CloudFront-Forwarded-Proto",
-        "$..multiValueHeaders.CloudFront-Is-Desktop-Viewer",
-        "$..multiValueHeaders.CloudFront-Is-Mobile-Viewer",
-        "$..multiValueHeaders.CloudFront-Is-SmartTV-Viewer",
-        "$..multiValueHeaders.CloudFront-Is-Tablet-Viewer",
-        "$..multiValueHeaders.CloudFront-Viewer-ASN",
-        "$..multiValueHeaders.CloudFront-Viewer-Country",
         "$..multiValueHeaders.Connection",
-        "$..multiValueHeaders.Host",
-        "$..multiValueHeaders.Remote-Addr",
-        "$..multiValueHeaders.Via",
-        "$..multiValueHeaders.X-Amz-Cf-Id",
-        "$..multiValueHeaders.X-Amzn-Trace-Id",
-        "$..multiValueHeaders.X-Forwarded-For",
-        "$..multiValueHeaders.X-Forwarded-Port",
-        "$..multiValueHeaders.X-Forwarded-Proto",
         "$..multiValueHeaders.accept",
         "$..multiValueHeaders.accept-encoding",
         "$..multiValueHeaders.x-localstack-edge",
-        "$..multiValueHeaders.x-localstack-request-url",
-        "$..multiValueHeaders.x-localstack-tgt-api",
         "$..pathParameters",
-        "$..requestContext.apiId",
         "$..requestContext.authorizer",
         "$..requestContext.deploymentId",
         "$..requestContext.domainName",
-        "$..requestContext.domainPrefix",
         "$..requestContext.extendedRequestId",
         "$..requestContext.identity.accessKey",
         "$..requestContext.identity.accountId",
@@ -100,7 +100,7 @@ RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.
         "$..requestContext.identity.user",
         "$..requestContext.identity.userArn",
         "$..stageVariables",
-    ]
+    ],
 )
 def test_lambda_aws_proxy_integration(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
@@ -109,7 +109,15 @@ def test_lambda_aws_proxy_integration(
     stage_name = "test"
     snapshot.add_transformer(snapshot.transform.apigateway_api())
     snapshot.add_transformer(snapshot.transform.apigateway_proxy_event())
-    snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
+    # TODO: update global transformers, but we will need to regenerate all snapshots at once
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("deploymentId"),
+            snapshot.transform.jsonpath("$..headers.Host", value_replacement="host"),
+            snapshot.transform.jsonpath("$..multiValueHeaders.Host[0]", value_replacement="host"),
+        ],
+        priority=-1,
+    )
 
     # create lambda
     create_function_response = create_lambda_function(

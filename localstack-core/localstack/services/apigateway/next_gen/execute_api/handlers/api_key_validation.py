@@ -36,8 +36,7 @@ class ApiKeyValidationHandler(RestApiGatewayHandler):
         if not method.get("apiKeyRequired"):
             return
 
-        # If the Identity context was not created yet, instantiate it and attach it to the context variables
-        identity = context.context_variables.setdefault("identity", ContextVarsIdentity())
+        identity = context.context_variables.get("identity")
 
         # Look for the api key value in the request. If it is not found, raise an exception
         if not (api_key_value := self.get_request_api_key(rest_api, request, identity)):
