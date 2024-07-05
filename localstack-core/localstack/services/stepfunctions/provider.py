@@ -120,12 +120,18 @@ from localstack.services.stepfunctions.backend.state_machine import (
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.services.stepfunctions.backend.test_state.execution import TestStateExecution
+from localstack.services.stepfunctions.stepfunctions_utils import (
+    assert_pagination_parameters_valid,
+    get_next_page_token_from_arn,
+    normalise_max_results,
+)
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     stepfunctions_activity_arn,
     stepfunctions_execution_state_machine_arn,
     stepfunctions_state_machine_arn,
 )
+from localstack.utils.collections import PaginatedList
 from localstack.utils.strings import long_uid, short_uid
 
 LOG = logging.getLogger(__name__)
@@ -566,12 +572,16 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ListExecutionsOutput:
         self._validate_state_machine_arn(state_machine_arn)
+        assert_pagination_parameters_valid(
+            max_results=max_results,
+            next_token=next_token,
+            next_token_length_limit=3096,
+        )
+        max_results = normalise_max_results(max_results)
 
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
             self._raise_state_machine_does_not_exist(state_machine_arn)
-
-        # TODO: add support for paging
 
         allowed_execution_status = [
             ExecutionStatus.SUCCEEDED,
@@ -604,7 +614,17 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 execution, state_machine_arn=state_machine_arn, status_filter=status_filter
             )
         ]
-        return ListExecutionsOutput(executions=executions)
+
+        executions.sort(key=lambda item: item["startDate"], reverse=True)
+
+        paginated_executions = PaginatedList(executions)
+        page, token_for_next_page = paginated_executions.get_page(
+            token_generator=lambda item: get_next_page_token_from_arn(item.get("executionArn")),
+            page_size=max_results,
+            next_token=next_token,
+        )
+
+        return ListExecutionsOutput(executions=page, nextToken=token_for_next_page)
 
     def list_state_machines(
         self,
@@ -613,14 +633,24 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         next_token: PageToken = None,
         **kwargs,
     ) -> ListStateMachinesOutput:
-        # TODO: add paging support.
+        assert_pagination_parameters_valid(max_results, next_token)
+        max_results = normalise_max_results(max_results)
+
         state_machines: StateMachineList = [
             sm.itemise()
             for sm in self.get_store(context).state_machines.values()
             if isinstance(sm, StateMachineRevision)
         ]
-        state_machines.sort(key=lambda item: item["creationDate"])
-        return ListStateMachinesOutput(stateMachines=state_machines)
+        state_machines.sort(key=lambda item: item["name"])
+
+        paginated_state_machines = PaginatedList(state_machines)
+        page, token_for_next_page = paginated_state_machines.get_page(
+            token_generator=lambda item: get_next_page_token_from_arn(item.get("stateMachineArn")),
+            page_size=max_results,
+            next_token=next_token,
+        )
+
+        return ListStateMachinesOutput(stateMachines=page, nextToken=token_for_next_page)
 
     def list_state_machine_versions(
         self,
@@ -630,8 +660,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         max_results: PageSize = None,
         **kwargs,
     ) -> ListStateMachineVersionsOutput:
-        # TODO: add paging support.
         self._validate_state_machine_arn(state_machine_arn)
+        assert_pagination_parameters_valid(max_results, next_token)
+        max_results = normalise_max_results(max_results)
 
         state_machines = self.get_store(context).state_machines
         state_machine_revision = state_machines.get(state_machine_arn)
@@ -645,11 +676,23 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 state_machine_version_items.append(state_machine_version.itemise())
             else:
                 raise RuntimeError(
-                    f"Expected {version_arn} to be a StateMachine Version, but gott '{type(state_machine_version)}'."
+                    f"Expected {version_arn} to be a StateMachine Version, but got '{type(state_machine_version)}'."
                 )
 
         state_machine_version_items.sort(key=lambda item: item["creationDate"], reverse=True)
-        return ListStateMachineVersionsOutput(stateMachineVersions=state_machine_version_items)
+
+        paginated_state_machine_versions = PaginatedList(state_machine_version_items)
+        page, token_for_next_page = paginated_state_machine_versions.get_page(
+            token_generator=lambda item: get_next_page_token_from_arn(
+                item.get("stateMachineVersionArn")
+            ),
+            page_size=max_results,
+            next_token=next_token,
+        )
+
+        return ListStateMachineVersionsOutput(
+            stateMachineVersions=page, nextToken=token_for_next_page
+        )
 
     def get_execution_history(
         self,
