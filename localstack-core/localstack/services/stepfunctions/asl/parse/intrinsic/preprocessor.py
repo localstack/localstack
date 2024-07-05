@@ -61,7 +61,7 @@ class Preprocessor(ASLIntrinsicParserVisitor):
         if escaped_char.isalpha():
             replacements = {"n": "\n", "t": "\t", "r": "\r"}
             return replacements.get(escaped_char, escaped_char)
-        if escaped_char == '"':
+        elif escaped_char == '"':
             return '"'
         else:
             return match.group(0)
