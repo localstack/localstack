@@ -49,7 +49,12 @@ class TestGatewayResponseHandler:
         exception = Exception("Unhandled exception")
 
         response = Response()
-        exception_handler(chain=None, exception=exception, context=get_context(), response=response)
+        exception_handler(
+            chain=RestApiGatewayHandlerChain(),
+            exception=exception,
+            context=get_context(),
+            response=response,
+        )
 
         assert response.status_code == 500
         assert response.data == b"Error in apigateway invocation: Unhandled exception"
