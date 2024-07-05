@@ -162,16 +162,19 @@ class TestApiGatewayVtlTemplate:
 
         # assert that boolean results of _render_json_result(..) are JSON-parseable
         tstring = '{"mybool": $boolTrue}'
-        result = template._render_as_text(tstring, {"boolTrue": "true"})
+        result = template.render_vtl(tstring, {"boolTrue": "true"})
         assert json.loads(result) == {"mybool": True}
-        result = template._render_as_text(tstring, {"boolTrue": True})
+        result = template.render_vtl(tstring, {"boolTrue": True})
         assert json.loads(result) == {"mybool": True}
+        tstring = '{"mybool": false}'
+        result = template.render_vtl(tstring, {})
+        assert json.loads(result) == {"mybool": False}
 
         # older versions of `airspeed` were rendering booleans as False/True, which is no longer valid now
         tstring = '{"mybool": False}'
         with pytest.raises(JSONDecodeError):
-            result = template._render_as_text(tstring, {})
-            template._validate_json(result)
+            result = template.render_vtl(tstring, {})
+            assert json.loads(result) == {"mybool": False}
 
     # TODO Update the following tests when updating the response params
     # def test_error_when_render_invalid_json(self):
