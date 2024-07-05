@@ -43,9 +43,6 @@ def default_context():
             query_string="qs=qs1&qs=qs2",
         )
     )
-    request = InvocationRequestParser().create_invocation_request(context)
-    request["path_parameters"] = {"proxy": "path"}
-    context.invocation_request = request
 
     # Frozen deployment populated by the router
     context.deployment = RestApiDeployment(
@@ -54,11 +51,18 @@ def default_context():
         rest_api=MergedRestApi(rest_api={}),
     )
 
-    # Context populated by parser handler
+    # Context populated by parser handler before creating the invocation request
     context.region = TEST_AWS_REGION_NAME
     context.account_id = TEST_AWS_ACCOUNT_ID
     context.stage = TEST_API_STAGE
     context.api_id = TEST_API_ID
+
+    request = InvocationRequestParser().create_invocation_request(context)
+    context.invocation_request = request
+
+    # add path_parameters from the router parser
+    request["path_parameters"] = {"proxy": "path"}
+
     context.resource_method = Method(
         methodIntegration=Integration(
             type=IntegrationType.HTTP,

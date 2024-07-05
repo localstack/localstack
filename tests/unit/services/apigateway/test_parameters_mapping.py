@@ -2,14 +2,19 @@ import json
 from http import HTTPMethod
 
 import pytest
+from rolo import Request
 from werkzeug.datastructures import Headers
 
 from localstack.http import Response
-from localstack.services.apigateway.next_gen.execute_api.context import InvocationRequest
+from localstack.services.apigateway.next_gen.execute_api.context import (
+    InvocationRequest,
+    RestApiInvocationContext,
+)
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     Default4xxError,
     Default5xxError,
 )
+from localstack.services.apigateway.next_gen.execute_api.handlers import InvocationRequestParser
 from localstack.services.apigateway.next_gen.execute_api.parameters_mapping import ParametersMapper
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
@@ -18,6 +23,7 @@ from localstack.services.apigateway.next_gen.execute_api.variables import (
 from localstack.utils.strings import to_bytes
 
 TEST_API_ID = "test-api"
+TEST_API_STAGE = "stage"
 TEST_IDENTITY_API_KEY = "random-api-key"
 TEST_USER_AGENT = "test/user-agent"
 
@@ -36,19 +42,21 @@ def default_context_variables() -> ContextVariables:
 
 @pytest.fixture
 def default_invocation_request() -> InvocationRequest:
-    headers = {"header_value": "test-header-value"}
-    return InvocationRequest(
-        http_method=HTTPMethod.POST,
-        raw_path="/test/test-path-value",
-        path="/test/test-path-value",
-        path_parameters={"path_value": "test-path-value"},
-        query_string_parameters={"qs_value": "test-qs-value"},
-        raw_headers=Headers(headers),
-        headers=headers,
-        multi_value_query_string_parameters={"qs_value": ["test-qs-value"]},
-        multi_value_headers={"header_value": ["test-header-value"]},
-        body=b"",
+    context = RestApiInvocationContext(
+        Request(
+            method=HTTPMethod.POST,
+            headers={"header_value": "test-header-value"},
+            path=f"{TEST_API_STAGE}/test/test-path-value",
+            query_string="qs_value=test-qs-value",
+        )
     )
+    # Context populated by parser handler before creating the invocation request
+    context.stage = TEST_API_STAGE
+    context.api_id = TEST_API_ID
+
+    invocation_request = InvocationRequestParser().create_invocation_request(context)
+    invocation_request["path_parameters"] = {"path_value": "test-path-value"}
+    return invocation_request
 
 
 class TestApigatewayRequestParametersMapping:
