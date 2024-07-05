@@ -3,15 +3,17 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
-from aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (
-    ErrorHandlingTemplate,
-)
-from aws.services.stepfunctions.templates.scenarios.scenarios_templates import ScenariosTemplate
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import create_and_record_express_async_execution
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
+from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (
+    ErrorHandlingTemplate,
+)
+from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
+    ScenariosTemplate,
+)
 
 
 @markers.snapshot.skip_snapshot_verify(
