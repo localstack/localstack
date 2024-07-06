@@ -3,7 +3,7 @@
 import inspect
 import os
 import socket
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR
@@ -84,7 +84,7 @@ def inspect_main_container() -> Union[str, Dict]:
         return f"inspect failed: {e}"
 
 
-def get_localstack_version() -> Dict[str, str]:
+def get_localstack_version() -> Dict[str, Optional[str]]:
     return {
         "build-date": os.environ.get("LOCALSTACK_BUILD_DATE"),
         "build-git-hash": os.environ.get("LOCALSTACK_BUILD_GIT_HASH"),

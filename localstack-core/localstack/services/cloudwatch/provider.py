@@ -364,6 +364,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "v": r.value,
                 "t": r.timestamp,
                 "d": [{"n": d.name, "v": d.value} for d in r.dimensions],
+                "account": account_id,
+                "region": region,
             }
             for r in result
         ]

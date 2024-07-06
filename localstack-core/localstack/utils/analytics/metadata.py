@@ -106,7 +106,7 @@ def get_machine_id() -> str:
     return doc["machine_id"]
 
 
-def get_localstack_edition() -> Optional[Literal["enterprise", "pro", "community"]]:
+def get_localstack_edition() -> Literal["enterprise", "pro", "community", "unknown"]:
     if os.path.exists("/usr/lib/localstack/.enterprise-version"):
         return "enterprise"
     elif os.path.exists("/usr/lib/localstack/.pro-version"):
@@ -114,7 +114,7 @@ def get_localstack_edition() -> Optional[Literal["enterprise", "pro", "community
     elif os.path.exists("/usr/lib/localstack/.community-version"):
         return "community"
 
-    return None
+    return "unknown"
 
 
 def is_license_activated() -> bool:
