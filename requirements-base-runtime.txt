@@ -21,7 +21,7 @@ cachetools==5.3.3
     # via localstack-core (pyproject.toml)
 cbor2==5.6.4
     # via localstack-core (pyproject.toml)
-certifi==2024.6.2
+certifi==2024.7.4
     # via requests
 cffi==1.16.0
     # via cryptography
