@@ -46,18 +46,17 @@ def add_http_integration_transformers(snapshot):
         # TODO: shared between HTTP & HTTP_PROXY
         "$..content.headers.x-amzn-trace-id",
         "$..content.headers.x-forwarded-for",
+        "$..headers.x-amz-apigw-id",
+        "$..headers.x-amzn-trace-id",
         "$..content.origin",
         "$..headers.server",
+        # TODO: only missing for HTTP
+        "$..headers.x-amzn-requestid",
         # TODO: for HTTP integration only: requests (urllib3) automatically adds `Accept-Encoding` when sending the
         #  request, seems like we cannot remove it
         "$..headers.accept-encoding",
-        "$..headers.x-amz-apigw-id",
         # TODO: only missing for HTTP_PROXY
         "$..headers.x-amzn-remapped-x-amzn-requestid",
-        "$..headers.x-amzn-trace-id",
-        # TODO: only missing for HTTP
-        "$..headers.x-amzn-requestid",
-        "$..headers.x-amzn-trace-id",
     ]
 )
 @markers.snapshot.skip_snapshot_verify(

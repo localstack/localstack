@@ -44,6 +44,10 @@ class BaseRestApiHttpIntegration(RestApiIntegration):
             "user-agent": f"AmazonAPIGateway_{context.api_id}",
         }
 
+    @staticmethod
+    def _get_integration_timeout(integration: Integration) -> float:
+        return int(integration.get("timeoutInMillis", 29000)) / 1000
+
 
 class RestApiHttpIntegration(BaseRestApiHttpIntegration):
     """
@@ -70,8 +74,9 @@ class RestApiHttpIntegration(BaseRestApiHttpIntegration):
         if method not in NO_BODY_METHODS:
             request_parameters["data"] = integration_req["body"]
 
-        # TODO: configurable timeout (29 by default)
-        # request_parameters["timeout"] = 29
+        # TODO: configurable timeout (29 by default) (check type and default value in provider)
+        # integration: Integration = context.resource_method["methodIntegration"]
+        # request_parameters["timeout"] = self._get_integration_timeout(integration)
         # TODO: check for redirects
         # request_parameters["allow_redirects"] = False
 
@@ -127,6 +132,9 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
         # TODO: validate this for HTTP_PROXY
         if method not in NO_BODY_METHODS:
             request_parameters["data"] = invocation_req["body"]
+
+        # TODO: configurable timeout (29 by default) (check type and default value in provider)
+        # request_parameters["timeout"] = self._get_integration_timeout(integration)
 
         request_response = requests.request(**request_parameters)
 
