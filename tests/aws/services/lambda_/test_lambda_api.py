@@ -4035,10 +4035,11 @@ class TestLambdaUrl:
         )
 
         caplog.clear()
-        url_config_created = aws_client.lambda_.create_function_url_config(
-            FunctionName=function_name,
-            AuthType="NONE",
-        )
+        with caplog.at_level(logging.INFO):
+            url_config_created = aws_client.lambda_.create_function_url_config(
+                FunctionName=function_name,
+                AuthType="NONE",
+            )
         assert any("Invalid custom ID tag value" in record.message for record in caplog.records)
         assert f"://{custom_id_value}.lambda-url." not in url_config_created["FunctionUrl"]
 
