@@ -1076,6 +1076,7 @@ class HostRecovery(str):
 
 
 class HostTenancy(str):
+    default = "default"
     dedicated = "dedicated"
     host = "host"
 
