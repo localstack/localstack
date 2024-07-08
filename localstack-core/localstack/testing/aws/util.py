@@ -190,6 +190,7 @@ def base_aws_session() -> boto3.Session:
     session = boto3.Session(
         aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        region_name=TEST_AWS_REGION_NAME,
     )
     # make sure we consider our custom data paths for legacy specs (like SQS query protocol)
     session._loader.search_paths.append(LOCALSTACK_BUILTIN_DATA_PATH)
