@@ -22,9 +22,6 @@ from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory
-from localstack.constants import (
-    AWS_REGION_US_EAST_1,
-)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -91,7 +88,7 @@ def aws_http_client_factory(aws_session):
         aws_access_key_id: str = None,
         aws_secret_access_key: str = None,
     ):
-        region = region or aws_session.region_name or AWS_REGION_US_EAST_1
+        region = region or TEST_AWS_REGION_NAME
 
         if aws_access_key_id or aws_secret_access_key:
             credentials = botocore.credentials.Credentials(
