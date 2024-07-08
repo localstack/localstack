@@ -345,7 +345,7 @@ class FunctionUrlConfig:
     function_arn: str  # fully qualified ARN
     function_name: str  # resolved name
     cors: Cors
-    url_id: str  # generated unique subdomain id  e.g. pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn
+    url_id: str  # Custom URL (via tag), or generated unique subdomain id  e.g. pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn
     url: str  # full URL (e.g. "https://pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn.lambda-url.eu-west-3.on.aws/")
     auth_type: FunctionUrlAuthType
     creation_time: str  # time

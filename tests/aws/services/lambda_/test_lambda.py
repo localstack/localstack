@@ -23,6 +23,7 @@ from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, InvokeMode, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
@@ -900,6 +901,42 @@ class TestLambdaURL:
                 "content": to_str(result.content),
             },
         )
+
+    # Note: separate from above, since this is explicitly and exclusively
+    # testing invocation via custom_id, which is localstack-only
+    @markers.aws.only_localstack
+    def test_lambda_url_invocation_custom_id(self, create_lambda_function, aws_client):
+        function_name = f"test-function-{short_uid()}"
+        custom_id = "my-custom-id"
+        function_return_value = '{"hello": "world"}'
+
+        handler_file = files.new_tmp_file()
+        handler_code = URL_HANDLER_CODE.replace("<<returnvalue>>", function_return_value)
+        files.save_file(handler_file, handler_code)
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=handler_file,
+            runtime=Runtime.python3_12,
+            Tags={TAG_KEY_CUSTOM_URL: custom_id},
+        )
+
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+
+        url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+        result = safe_requests.post(url, data=b"{'key':'value'}")
+        assert result.status_code == 200
 
     @pytest.mark.parametrize(
         "invoke_mode",

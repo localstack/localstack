@@ -5,6 +5,7 @@ import itertools
 import json
 import logging
 import os
+import re
 import threading
 import time
 from typing import IO, Optional, Tuple
@@ -216,6 +217,11 @@ LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
+
+TAG_KEY_CUSTOM_URL = "_custom_id_"
+# Requirements (from RFC3986 & co): not longer than 63, first char must be
+# alpha, then alphanumeric or hyphen, except cannot start or end with hyphen
+TAG_KEY_CUSTOM_URL_VALIDATOR = re.compile(r"^[A-Za-z]([A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$")
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
@@ -2101,8 +2107,46 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             else api_utils.unqualified_lambda_arn(function_name, account_id, region)
         )
 
-        # create function URL config
-        url_id = api_utils.generate_random_url_id()
+        custom_id: str | None = None
+        # Note: currently this only works with $LATEST. However, it would
+        # be nice if we could specify a custom URL for any alias being
+        # passed via the qualifier parameter. Once a strategy for that has
+        # been decided on, it can go here.
+        if (
+            fn.tags is not None
+            and TAG_KEY_CUSTOM_URL in fn.tags
+            and normalized_qualifier == "$LATEST"
+        ):
+            # Note: I really wanted to add verification here that the
+            # url_id is unique, so we could surface that to the user ASAP.
+            # However, it seems like that information isn't available yet,
+            # since (as far as I can tell) we call
+            # self.router.register_routes() once, in a single shot, for all
+            # of the routes -- and we need to verify that it's unique not
+            # just for this particular lambda function, but for the entire
+            # lambda provider. Therefore... that idea proved non-trivial!
+            custom_id_tag_value = fn.tags[TAG_KEY_CUSTOM_URL]
+            if TAG_KEY_CUSTOM_URL_VALIDATOR.match(custom_id_tag_value):
+                custom_id = custom_id_tag_value
+
+            else:
+                # Note: we're logging here instead of raising to prioritize
+                # strict parity with AWS over the localstack-only custom_id
+                LOG.warning(
+                    "Invalid custom ID tag value for lambda URL (%s=%s). "
+                    + "Replaced with default (random id)",
+                    TAG_KEY_CUSTOM_URL,
+                    custom_id_tag_value,
+                )
+
+        # The url_id is the subdomain used for the URL we're creating. This
+        # is either created randomly (as in AWS), or can be passed as a tag
+        # to the lambda itself (localstack-only).
+        url_id: str
+        if custom_id is None:
+            url_id = api_utils.generate_random_url_id()
+        else:
+            url_id = custom_id
 
         host_definition = localstack_host(custom_port=config.GATEWAY_LISTEN[0].port)
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
