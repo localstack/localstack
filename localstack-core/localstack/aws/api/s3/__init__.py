@@ -2385,6 +2385,12 @@ class HeadObjectRequest(ServiceRequest):
     IfUnmodifiedSince: Optional[IfUnmodifiedSince]
     Key: ObjectKey
     Range: Optional[Range]
+    ResponseCacheControl: Optional[ResponseCacheControl]
+    ResponseContentDisposition: Optional[ResponseContentDisposition]
+    ResponseContentEncoding: Optional[ResponseContentEncoding]
+    ResponseContentLanguage: Optional[ResponseContentLanguage]
+    ResponseContentType: Optional[ResponseContentType]
+    ResponseExpires: Optional[ResponseExpires]
     VersionId: Optional[ObjectVersionId]
     SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
     SSECustomerKey: Optional[SSECustomerKey]
@@ -4074,6 +4080,12 @@ class S3Api:
         if_none_match: IfNoneMatch = None,
         if_unmodified_since: IfUnmodifiedSince = None,
         range: Range = None,
+        response_cache_control: ResponseCacheControl = None,
+        response_content_disposition: ResponseContentDisposition = None,
+        response_content_encoding: ResponseContentEncoding = None,
+        response_content_language: ResponseContentLanguage = None,
+        response_content_type: ResponseContentType = None,
+        response_expires: ResponseExpires = None,
         version_id: ObjectVersionId = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
