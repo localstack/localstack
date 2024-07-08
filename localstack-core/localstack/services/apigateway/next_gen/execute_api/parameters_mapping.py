@@ -49,6 +49,11 @@ class ParametersMapper:
             querystring={},
         )
 
+        # default values, can be overridden with right casing
+        for header in ("Content-Type", "Accept"):
+            if value := invocation_request["raw_headers"].get(header):
+                request_data_mapping["header"][header] = value
+
         for integration_mapping, request_mapping in request_parameters.items():
             integration_param_location, param_name = integration_mapping.removeprefix(
                 "integration.request."

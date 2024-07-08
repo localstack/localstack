@@ -43,9 +43,6 @@ def default_context():
             query_string="qs=qs1&qs=qs2",
         )
     )
-    request = InvocationRequestParser().create_invocation_request(context)
-    request["path_parameters"] = {"proxy": "path"}
-    context.invocation_request = request
 
     # Frozen deployment populated by the router
     context.deployment = RestApiDeployment(
@@ -54,11 +51,18 @@ def default_context():
         rest_api=MergedRestApi(rest_api={}),
     )
 
-    # Context populated by parser handler
+    # Context populated by parser handler before creating the invocation request
     context.region = TEST_AWS_REGION_NAME
     context.account_id = TEST_AWS_ACCOUNT_ID
     context.stage = TEST_API_STAGE
     context.api_id = TEST_API_ID
+
+    request = InvocationRequestParser().create_invocation_request(context)
+    context.invocation_request = request
+
+    # add path_parameters from the router parser
+    request["path_parameters"] = {"proxy": "path"}
+
     context.resource_method = Method(
         methodIntegration=Integration(
             type=IntegrationType.HTTP,
@@ -218,6 +222,20 @@ class TestHandlerIntegrationRequest:
         assert default_context.integration_request["headers"] == {
             "header": "headerOverride",
             "multivalue": ["1header", "2header"],
+        }
+
+    def test_request_override_casing(self, integration_request_handler, default_context):
+        default_context.resource_method["methodIntegration"]["requestParameters"] = {
+            "integration.request.header.myHeader": "method.request.header.header",
+        }
+        default_context.resource_method["methodIntegration"]["requestTemplates"] = {
+            "application/json": '#set($context.requestOverride.header.myheader = "headerOverride")'
+        }
+        integration_request_handler(default_context)
+        # TODO: for now, it's up to the integration to properly merge headers (`requests` does it automatically)
+        assert default_context.integration_request["headers"] == {
+            "myHeader": "header2",
+            "myheader": "headerOverride",
         }
 
     def test_multivalue_mapping(self, integration_request_handler, default_context):

@@ -12,7 +12,7 @@ from .variables import ContextVariables, LoggingContextVariables
 
 
 class InvocationRequest(TypedDict, total=False):
-    http_method: Optional[HTTPMethod]
+    http_method: HTTPMethod
     """HTTP Method of the incoming request"""
     raw_path: Optional[str]
     # TODO: verify if raw_path is needed
@@ -21,35 +21,33 @@ class InvocationRequest(TypedDict, total=False):
     """Path of the request with no URL decoding"""
     path_parameters: Optional[dict[str, str]]
     """Path parameters of the request"""
-    query_string_parameters: Optional[dict[str, str]]
+    query_string_parameters: dict[str, str]
     """Query string parameters of the request"""
     # TODO: need to check if we need the raw headers (as it's practical for casing reasons)
-    raw_headers: Optional[Headers]
+    raw_headers: Headers
     """Raw headers using the Headers datastructure which allows access with no regards to casing"""
-    headers: Optional[dict[str, str]]
+    headers: dict[str, str]
     """Headers of the request"""
-    multi_value_query_string_parameters: Optional[dict[str, list[str]]]
+    multi_value_query_string_parameters: dict[str, list[str]]
     """Multi value query string parameters of the request"""
-    multi_value_headers: Optional[dict[str, list[str]]]
+    multi_value_headers: dict[str, list[str]]
     """Multi value headers of the request"""
-    body: Optional[bytes]
+    body: bytes
     """Body content of the request"""
 
 
 class IntegrationRequest(TypedDict, total=False):
-    http_method: Optional[HTTPMethod]
+    http_method: HTTPMethod
     """HTTP Method of the incoming request"""
-    uri: Optional[str]
+    uri: str
     """URI of the integration"""
-    query_string_parameters: Optional[dict[str, str]]
+    query_string_parameters: dict[str, str | list[str]]
     """Query string parameters of the request"""
-    headers: Optional[dict[str, str]]
+    headers: dict[str, str]
+    # TODO: should this be Headers type? would maybe help access in the integrations if we need
+    #  currently, we support headers with same name and different casing, it's up to the integration to support it
     """Headers of the request"""
-    multi_value_query_string_parameters: Optional[dict[str, list[str]]]
-    """Multi value query string parameters of the request"""
-    multi_value_headers: Optional[dict[str, list[str]]]
-    """Multi value headers of the request"""
-    body: Optional[bytes]
+    body: bytes
     """Body content of the request"""
 
 

@@ -54,7 +54,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         )
 
         # we then need to apply Integration Response parameters mapping, to only return select headers
-        response_parameters = integration_response["responseParameters"] or {}
+        response_parameters = integration_response.get("responseParameters") or {}
         response_data_mapping = self.get_method_response_data(
             context=context,
             response=response,
@@ -68,11 +68,15 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         # here we update the `Response`. We basically need to remove all headers and replace them with the mapping, then
         # override them if there are overrides.
         # for the body, it will maybe depend on configuration?
+        for key in list(response.headers.keys(lower=True)):
+            if key not in ("connection", "content-type"):
+                del response.headers[key]
 
-        response.headers.clear()
         # there must be some default headers set, snapshot those?
         if mapped_headers := response_data_mapping.get("header"):
             response.headers.update(mapped_headers)
+
+        response.status_code = int(integration_response["statusCode"])
 
     def get_method_response_data(
         self,
