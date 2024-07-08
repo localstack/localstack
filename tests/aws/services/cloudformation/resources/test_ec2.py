@@ -10,28 +10,33 @@ from localstack.utils.strings import short_uid
 THIS_FOLDER = os.path.dirname(__file__)
 
 
-@markers.aws.unknown
-def test_simple_route_table_creation_without_vpc(deploy_cfn_template, aws_client):
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..PropagatingVgws"])
+def test_simple_route_table_creation_without_vpc(deploy_cfn_template, aws_client, snapshot):
     ec2 = aws_client.ec2
-    vpc_id = ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
     stack = deploy_cfn_template(
         template_path=os.path.join(THIS_FOLDER, "../../../templates/ec2_route_table_isolated.yaml"),
-        parameters={"MyVpcId": vpc_id},
     )
 
     route_table_id = stack.outputs["RouteTableId"]
     route_table = ec2.describe_route_tables(RouteTableIds=[route_table_id])["RouteTables"][0]
-    assert route_table["RouteTableId"] == route_table_id
+
+    tags = route_table.pop("Tags")
+    tags_dict = {tag["Key"]: tag["Value"] for tag in tags if "aws:cloudformation" not in tag["Key"]}
+    snapshot.match("tags", tags_dict)
+
+    snapshot.match("route_table", route_table)
+    snapshot.add_transformer(snapshot.transform.key_value("VpcId", "vpc-id"))
+    snapshot.add_transformer(snapshot.transform.key_value("RouteTableId", "vpc-id"))
 
     stack.destroy()
     with pytest.raises(ec2.exceptions.ClientError):
         ec2.describe_route_tables(RouteTableIds=[route_table_id])
-    # TODO move vpc to fixture, so we are sure it is deleted after tests
-    ec2.delete_vpc(VpcId=vpc_id)
 
 
-@markers.aws.unknown
-def test_simple_route_table_creation(deploy_cfn_template, aws_client):
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..PropagatingVgws"])
+def test_simple_route_table_creation(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(THIS_FOLDER, "../../../templates/ec2_route_table_simple.yaml")
     )
@@ -39,7 +44,14 @@ def test_simple_route_table_creation(deploy_cfn_template, aws_client):
     route_table_id = stack.outputs["RouteTableId"]
     ec2 = aws_client.ec2
     route_table = ec2.describe_route_tables(RouteTableIds=[route_table_id])["RouteTables"][0]
-    assert route_table["RouteTableId"] == route_table_id
+
+    tags = route_table.pop("Tags")
+    tags_dict = {tag["Key"]: tag["Value"] for tag in tags if "aws:cloudformation" not in tag["Key"]}
+    snapshot.match("tags", tags_dict)
+
+    snapshot.match("route_table", route_table)
+    snapshot.add_transformer(snapshot.transform.key_value("VpcId", "vpc-id"))
+    snapshot.add_transformer(snapshot.transform.key_value("RouteTableId", "vpc-id"))
 
     stack.destroy()
     with pytest.raises(ec2.exceptions.ClientError):
@@ -83,8 +95,11 @@ def test_cfn_with_multiple_route_tables(deploy_cfn_template, aws_client):
     assert len(resp["RouteTables"]) == 4
 
 
-@markers.aws.unknown
-def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_client):
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..PropagatingVgws", "$..Tags", "$..Tags..Key", "$..Tags..Value"]
+)
+def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_client, snapshot):
     # TODO: stack does not deploy to AWS
     stack = deploy_cfn_template(
         template_path=os.path.join(THIS_FOLDER, "../../../templates/template37.yaml")
@@ -94,18 +109,11 @@ def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_cli
         Filters=[{"Name": "route-table-id", "Values": [route_table_id]}]
     )["RouteTables"][0]
 
-    assert len(route_table["Associations"]) == 2
-
-    # assert subnet attributes are present
-    vpc_id = stack.outputs["VpcId"]
-    response = aws_client.ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
-    subnets = response["Subnets"]
-    subnet1 = [sub for sub in subnets if sub["CidrBlock"] == "100.0.0.0/24"][0]
-    subnet2 = [sub for sub in subnets if sub["CidrBlock"] == "100.0.2.0/24"][0]
-    assert subnet1["AssignIpv6AddressOnCreation"] is True
-    assert subnet1["EnableDns64"] is True
-    assert subnet1["MapPublicIpOnLaunch"] is True
-    assert subnet2["PrivateDnsNameOptionsOnLaunch"]["HostnameType"] == "ip-name"
+    snapshot.match("route_table", route_table)
+    snapshot.add_transformer(snapshot.transform.key_value("RouteTableId"))
+    snapshot.add_transformer(snapshot.transform.key_value("RouteTableAssociationId"))
+    snapshot.add_transformer(snapshot.transform.key_value("SubnetId"))
+    snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
 
 
 @markers.aws.validated

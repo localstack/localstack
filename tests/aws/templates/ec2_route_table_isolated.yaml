@@ -1,15 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: A stack that takes a VPC ID as an input and creates a route table in it
-Parameters:
-  MyVpcId:
-    Description: The ID of the existing VPC
-    Type: String
 
 Resources:
+  myVpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+
   myRouteTable:
     Type: 'AWS::EC2::RouteTable'
     Properties:
-      VpcId: !Ref MyVpcId
+      VpcId: !Ref myVpc
       Tags:
         - Key: Name
           Value: Suspicious Route Table

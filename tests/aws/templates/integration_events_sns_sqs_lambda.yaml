@@ -61,7 +61,7 @@ Resources:
           - Arn
       FunctionName: !Ref FunctionName
       Handler: index.handler
-      Runtime: python3.8
+      Runtime: python3.11
     DependsOn:
       - LogFnServiceRoleDefaultPolicy9B17FD14
       - LogFnServiceRoleA176C900

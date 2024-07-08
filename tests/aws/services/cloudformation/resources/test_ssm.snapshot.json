@@ -83,5 +83,35 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ssm.py::test_parameter_defaults": {
+    "recorded-date": "03-07-2024, 20:30:04",
+    "recorded-content": {
+      "ssm_parameter": {
+        "Parameter": {
+          "ARN": "arn:aws:ssm:<region>:111111111111:parameter/<name:1>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "<name:1>",
+          "Type": "String",
+          "Value": "<value:1>",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "ssm_parameter_not_found": {
+        "Error": {
+          "Code": "ParameterNotFound",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

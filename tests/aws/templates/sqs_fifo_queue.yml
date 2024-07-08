@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+    QueueName:
+        Type: String
+        Default: "test-queue"
+        Description: "Name of the SQS queue"
+Resources:
+  FifoQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: !Sub "${QueueName}.fifo"
+      ContentBasedDeduplication: "false"
+      FifoQueue: "true"
+
+Outputs:
+  QueueURL:
+    Value: !GetAtt FifoQueue.QueueName
+    Description: "URL of the SQS queue"
