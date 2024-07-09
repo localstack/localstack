@@ -196,8 +196,12 @@ def log_group_arn(group_name: str, account_id: str, region_name: str) -> str:
 #
 
 
-def events_rule_arn(rule_name: str, account_id: str, region_name: str) -> str:
+def events_rule_arn(
+    rule_name: str, account_id: str, region_name: str, event_bus_name: str = "default"
+) -> str:
     pattern = "arn:aws:events:%s:%s:rule/%s"
+    if event_bus_name != "default":
+        rule_name = f"{event_bus_name}/{rule_name}"
     return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
 
 
