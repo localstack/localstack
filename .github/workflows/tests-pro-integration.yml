@@ -249,7 +249,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            localstack/.filesystem/var/lib/localstack
+            localstack/localstack-core/.filesystem/var/lib/localstack
           # include the matrix group (to re-use the var-libs used in the specific test group)
           key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
           restore-keys: |
