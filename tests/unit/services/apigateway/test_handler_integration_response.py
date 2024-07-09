@@ -114,14 +114,7 @@ def default_context():
     We assume that the parser and other handler have successfully populated the context to this point.
     """
 
-    context = RestApiInvocationContext(
-        Request(
-            # method=HTTPMethod.POST,
-            # headers={"header": ["header1", "header2"]},
-            # path=f"{TEST_API_STAGE}/resource/path",
-            # query_string="qs=qs1&qs=qs2",
-        )
-    )
+    context = RestApiInvocationContext(Request())
 
     # Frozen deployment populated by the router
     context.deployment = RestApiDeployment(
@@ -139,20 +132,10 @@ def default_context():
     request = InvocationRequestParser().create_invocation_request(context)
     context.invocation_request = request
 
-    # add path_parameters from the router parser
-    # request["path_parameters"] = {"proxy": "path"}
-
     context.resource_method = Method(
         methodIntegration=Integration(type=IntegrationType.HTTP), methodResponses={}
     )
-    context.context_variables = ContextVariables(
-        # resourceId="resource-id",
-        # apiId=TEST_API_ID,
-        # httpMethod="POST",
-        # path=f"{TEST_API_STAGE}/resource/{{proxy}}",
-        # resourcePath="/resource/{proxy}",
-        # stage=TEST_API_STAGE,
-    )
+    context.context_variables = ContextVariables()
     return context
 
 
