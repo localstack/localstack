@@ -194,3 +194,12 @@ def remove_leading_extra_slashes(input: str) -> str:
     Example: '///foo/bar' -> '/foo/bar'
     """
     return re.sub(r"^/+", "/", input)
+
+
+def prepend_with_slash(input: str) -> str:
+    """
+    Prepend a slash `/` to a given string if it does not have one already.
+    """
+    if not input.startswith("/"):
+        return f"/{input}"
+    return input
