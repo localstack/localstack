@@ -9,7 +9,6 @@ from localstack.aws.api.events import (
     ManagedBy,
     PutTargetsResultEntryList,
     RemoveTargetsResultEntryList,
-    RoleArn,
     RuleDescription,
     RuleName,
     RuleState,
@@ -29,6 +28,19 @@ RULE_SCHEDULE_RATE_REGEX = re.compile(r"^rate\(\d*\s(minute|minutes|hour|hours|d
 
 
 class RuleService:
+    name: RuleName
+    region: str
+    account_id: str
+    schedule_expression: ScheduleExpression | None
+    event_pattern: EventPattern | None
+    description: RuleDescription | None
+    role_arn: Arn | None
+    tags: TagList | None
+    event_bus_name: EventBusName | None
+    targets: TargetDict | None
+    managed_by: ManagedBy
+    rule: Rule
+
     def __init__(
         self,
         name: RuleName,
@@ -38,7 +50,7 @@ class RuleService:
         event_pattern: Optional[EventPattern] = None,
         state: Optional[RuleState] = None,
         description: Optional[RuleDescription] = None,
-        role_arn: Optional[RoleArn] = None,
+        role_arn: Optional[Arn] = None,
         tags: Optional[TagList] = None,
         event_bus_name: Optional[EventBusName] = None,
         targets: Optional[TargetDict] = None,
