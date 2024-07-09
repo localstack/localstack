@@ -34,7 +34,7 @@ class CountingService(constructs.Construct):
             self,
             "GetOrderIdFunction",
             handler="getOrderId.handler",
-            runtime=lambda_.Runtime.NODEJS_14_X,
+            runtime=lambda_.Runtime.NODEJS_18_X,
             environment={"AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1", "TableName": table.table_name},
             code=fn_code,
         )
@@ -42,20 +42,20 @@ class CountingService(constructs.Construct):
         reset_order_id_function = lambda_.Function(
             self,
             "ResetOrderIdFunction",
-            runtime=lambda_.Runtime.NODEJS_14_X,
+            runtime=lambda_.Runtime.NODEJS_18_X,
             handler="resetOrderId.handler",
             code=fn_code,
         )
 
         event_target = event_targets.LambdaFunction(reset_order_id_function)
-        rule = events.Rule(
+        events.Rule(
             self,
             "rule",
             targets=[event_target],
             schedule=events.Schedule.expression("cron(0 7 * * ? *)"),
         )
 
-        parameter = ssm.StringParameter(
+        ssm.StringParameter(
             self,
             "GetOrderIdFunctionParameter",
             parameter_name=f"/{app_name}/{service}/GetOrderIdFunctionName",

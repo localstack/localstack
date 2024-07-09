@@ -2,7 +2,6 @@ import os
 
 import aws_cdk as cdk
 import constructs
-from aws_cdk.aws_events_targets import LogGroupTargetInput
 from aws_cdk.aws_logs import RetentionDays
 
 from localstack.utils.files import load_file
@@ -60,14 +59,14 @@ class ServerlesspressoCoreStack(cdk.Stack):
         event_bus = cdk.aws_events.EventBus(
             self, "ServerlesspressoEventBus", event_bus_name="Serverlesspresso"
         )
-        core_event_bus_name_param = cdk.aws_ssm.StringParameter(
+        cdk.aws_ssm.StringParameter(
             self,
             "CoreEventBusNameParameter",
             parameter_name=f"/{app_name}/{service}/eventbusname",
             description="EventBus Name",
             string_value=event_bus.event_bus_name,
         )
-        core_event_bus_arn_param = cdk.aws_ssm.StringParameter(
+        cdk.aws_ssm.StringParameter(
             self,
             "CoreEventBusARNParameter",
             parameter_name=f"/{app_name}/{service}/eventbusarn",
@@ -86,7 +85,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
             retention=RetentionDays.INFINITE,
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
-        log_all_res_policy = cdk.aws_logs.ResourcePolicy(
+        cdk.aws_logs.ResourcePolicy(
             self,
             "logallpolicy",
             resource_policy_name="TrustEventsToStoreLogEvents",
@@ -113,7 +112,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
             ],
         )
 
-        log_all_rule = cdk.aws_events.CfnRule(
+        cdk.aws_events.CfnRule(
             self,
             "LogAllRule",
             event_bus_name=event_bus.event_bus_name,
@@ -140,7 +139,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
         get_iot_endpoint_fn = cdk.aws_lambda.Function(
             self,
             "GetIoTEndpointFunction",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=get_iot_endpoint_handler),
         )
@@ -152,7 +151,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
         iot_endpoint = cdk.CfnCustomResource(
             self, "IotEndpoint", service_token=get_iot_endpoint_fn.function_arn
         )
-        iot_realtime_url_param = cdk.aws_ssm.StringParameter(
+        cdk.aws_ssm.StringParameter(
             self,
             "IoTRealtimeParameter",
             parameter_name=f"/{app_name}/{service}/realtime",
@@ -211,7 +210,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
         populate_db_fn = cdk.aws_lambda.Function(
             self,
             "PopulateDbFn",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=populate_db_fn_handler),
             environment={

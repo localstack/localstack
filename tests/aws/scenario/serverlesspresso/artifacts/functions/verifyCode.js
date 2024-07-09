@@ -1,9 +1,12 @@
 // Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop
 
-const AWS = require('aws-sdk')
-AWS.config.update({ region: process.env.AWS_REGION })
-const eventbridge = new AWS.EventBridge()
-const documentClient = new AWS.DynamoDB.DocumentClient()
+const { EventBridge } = require('@aws-sdk/client-eventbridge');
+const eventbridge = new EventBridge()
+
+const { DynamoDBDocument } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDB } = require("@aws-sdk/client-dynamodb");
+
+const documentClient = DynamoDBDocument.from(new DynamoDB())
 
 const TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)
 

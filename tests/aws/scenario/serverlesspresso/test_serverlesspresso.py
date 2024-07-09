@@ -17,6 +17,9 @@ import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+
+# from tests.aws.services.stepfunctions.utils import await_execution_terminated
+from localstack.testing.pytest.stepfunctions.utils import await_execution_terminated
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
@@ -24,7 +27,6 @@ from tests.aws.scenario.serverlesspresso.constructs.serverlesspresso_core_stack 
     SERVERLESSPRESSO_SOURCE,
     ServerlesspressoCoreStack,
 )
-from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 STACK_NAME = "ServerlesspressoStack"
 
@@ -43,27 +45,29 @@ class TestServerlesspressoScenario:
     """
 
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client):
+    def infrastructure(self, aws_client, infrastructure_setup):
         # ================================================================================================
         # upload API files
         # ================================================================================================
 
-        bucket_name = f"serverlesspresso-localstack-testing123"
-        aws_client.s3.create_bucket(Bucket=bucket_name)
-        aws_client.s3.upload_file(
-            Filename=os.path.join(
-                os.path.dirname(__file__), "artifacts/api/order_manager_api.yaml"
-            ),
-            Bucket=bucket_name,
-            Key="api/order_manager_api.yaml",
-        )
-        aws_client.s3.upload_file(
-            Filename=os.path.join(
-                os.path.dirname(__file__), "artifacts/api/config_service_api.yaml"
-            ),
-            Bucket=bucket_name,
-            Key="api/config_service_api.yaml",
-        )
+        bucket_name = f"serverlesspresso-localstack-testing-{short_uid()}"
+
+        def _create_bucket_and_upload_files():
+            aws_client.s3.create_bucket(Bucket=bucket_name)
+            aws_client.s3.upload_file(
+                Filename=os.path.join(
+                    os.path.dirname(__file__), "artifacts/api/order_manager_api.yaml"
+                ),
+                Bucket=bucket_name,
+                Key="api/order_manager_api.yaml",
+            )
+            aws_client.s3.upload_file(
+                Filename=os.path.join(
+                    os.path.dirname(__file__), "artifacts/api/config_service_api.yaml"
+                ),
+                Bucket=bucket_name,
+                Key="api/config_service_api.yaml",
+            )
 
         # ================================================================================================
         # CDK App/stack
@@ -76,8 +80,9 @@ class TestServerlesspressoScenario:
         # Provisioner setup
         # ================================================================================================
 
-        provisioner = InfraProvisioner(aws_client)
+        provisioner = infrastructure_setup(namespace="serverlesspresso", force_synth=True)
         provisioner.add_cdk_stack(stack)
+        provisioner.add_custom_setup(_create_bucket_and_upload_files)
         provisioner.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
         provisioner.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
         with provisioner.provisioner(skip_teardown=True) as prov:
@@ -152,30 +157,6 @@ class TestServerlesspressoScenario:
             StackName=STACK_NAME
         )
         snapshot.match("describe_stack_resources", describe_stack_resources)
-
-        # collect service level describe calls
-        service_resources = {}
-        for stack_resource in describe_stack_resources["StackResources"]:
-            match stack_resource["ResourceType"]:
-                case "AWS::Lambda::Function":
-                    service_resources[
-                        stack_resource["LogicalResourceId"]
-                    ] = aws_client.lambda_.get_function(
-                        FunctionName=stack_resource["PhysicalResourceId"]
-                    )
-                case "AWS::StepFunctions::StateMachine":
-                    service_resources[
-                        stack_resource["LogicalResourceId"]
-                    ] = aws_client.stepfunctions.describe_state_machine(
-                        stateMachineArn=stack_resource["PhysicalResourceId"]
-                    )
-                case "AWS::DynamoDB::Table":
-                    service_resources[
-                        stack_resource["LogicalResourceId"]
-                    ] = aws_client.dynamodb.describe_table(
-                        TableName=stack_resource["PhysicalResourceId"]
-                    )
-        snapshot.match("resources", service_resources)
 
     @markers.aws.validated
     def test_populate_data(self, aws_client, infrastructure: "InfraProvisioner"):
@@ -384,7 +365,7 @@ class TestServerlesspressoScenario:
                 {
                     "Source": SERVERLESSPRESSO_SOURCE,
                     "DetailType": "Validator.NewOrder",
-                    "Detail": json.dumps({"userId": "1", "orderId": f"concurrent-limit-test-FAIL"}),
+                    "Detail": json.dumps({"userId": "1", "orderId": "concurrent-limit-test-FAIL"}),
                     "EventBusName": event_bus_name,
                 }
             ]
@@ -417,14 +398,17 @@ class TestServerlesspressoScenario:
 
         retry(_check_event_exists, sleep=2, retries=10, sleep_before=2)
 
+    @markers.aws.validated
     def test_customer_timeout(self):
         # TODO
         ...
 
+    @markers.aws.validated
     def test_barista_timeout(self):
         # TODO
         ...
 
+    @markers.aws.validated
     def test_full_e2e(self):
         # TODO: do a full test via HTTP requests through apigw, cognito, etc.
         ...

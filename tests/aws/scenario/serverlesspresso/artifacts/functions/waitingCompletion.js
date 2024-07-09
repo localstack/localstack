@@ -2,11 +2,13 @@
 
 'use strict'
 
-const AWS = require('aws-sdk')
-AWS.config.update({ region: process.env.AWS_REGION })
+const { EventBridge } = require('@aws-sdk/client-eventbridge');
+const eventbridge = new EventBridge()
 
-const documentClient = new AWS.DynamoDB.DocumentClient()
-const eventbridge = new AWS.EventBridge()
+const { DynamoDBDocument } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDB } = require("@aws-sdk/client-dynamodb");
+
+const documentClient = DynamoDBDocument.from(new DynamoDB())
 
 // Returns details of a Place ID where the app has user-generated content.
 exports.handler = async (event) => {

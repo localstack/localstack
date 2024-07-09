@@ -1,8 +1,9 @@
 // Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop
 
-const AWS = require('aws-sdk')
-AWS.config.update({ region: process.env.AWS_REGION })
-const documentClient = new AWS.DynamoDB.DocumentClient()
+const { DynamoDBDocument } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDB } = require("@aws-sdk/client-dynamodb");
+
+const documentClient = DynamoDBDocument.from(new DynamoDB())
 
 const TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)
 const NANO_ID_CODE_LENGTH = process.env.CodeLength
@@ -48,7 +49,7 @@ const getItem = async (id) => {
     console.log('getItem params: ', params)
 
     try {
-        const result = await documentClient.query(params).promise()
+        const result = await documentClient.query(params)
         console.log('getItem result: ', result)
         return result
     } catch (err) {
@@ -65,7 +66,7 @@ const saveItem = async (record) => {
     const result = await documentClient.put({
         TableName: process.env.TableName,
         Item
-    }).promise()
+    })
     console.log('saveItem: ', result)
 }
 
@@ -82,7 +83,7 @@ const decrementToken = async (record) => {
         ReturnValues:"UPDATED_NEW"
     }
     console.log(params)
-    const result = await documentClient.update(params).promise()
+    const result = await documentClient.update(params)
     console.log('decrementToken: ', result)
 }
 

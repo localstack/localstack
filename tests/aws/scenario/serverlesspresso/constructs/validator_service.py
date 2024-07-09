@@ -17,7 +17,7 @@ class ValidatorService(constructs.Construct):
         code_length,
         time_interval,
         event_bus,
-        user_pool
+        user_pool,
     ):
         super().__init__(scope, id)
 
@@ -40,7 +40,7 @@ class ValidatorService(constructs.Construct):
         get_qr_code_fn = cdk.aws_lambda.Function(
             self,
             "GetQRcodeFunction",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=get_qr_code_fn_handler),
             environment={
@@ -62,7 +62,7 @@ class ValidatorService(constructs.Construct):
         verify_qr_code_fn = cdk.aws_lambda.Function(
             self,
             "VerifyQRcodeFunction",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=verify_qr_code_fn_handler),
             environment={

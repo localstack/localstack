@@ -1,9 +1,13 @@
-// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop
+// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop/setup/initDB/initMenu.js
 // modified from official sample to fit into a single file
-// Original modified from https://github.com/stelligent/cloudformation-custom-resources/blob/master/lambda/nodejs/customresource.js
-const AWS = require('aws-sdk');
-AWS.config.update({ region: process.env.AWS_REGION || 'us-east-1' });
-const documentClient = new AWS.DynamoDB();
+
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
+
+const documentClient = new DynamoDB({
+  region: process.env.AWS_REGION || 'us-east-1'
+})
+
+
 const configTableName = process.env.configTable
 const countingTableName = process.env.countingTable
 

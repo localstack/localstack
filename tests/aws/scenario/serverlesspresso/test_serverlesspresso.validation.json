@@ -1,0 +1,20 @@
+{
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_barista_timeout": {
+    "last_validated_date": "2024-07-09T20:31:18+00:00"
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_closed_store_aborts": {
+    "last_validated_date": "2024-07-09T19:16:55+00:00"
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_concurrent_order_limit": {
+    "last_validated_date": "2024-07-09T19:17:43+00:00"
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_customer_timeout": {
+    "last_validated_date": "2024-07-09T20:31:18+00:00"
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_full_e2e": {
+    "last_validated_date": "2024-07-09T20:31:18+00:00"
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_workflow_start": {
+    "last_validated_date": "2024-07-09T19:17:34+00:00"
+  }
+}

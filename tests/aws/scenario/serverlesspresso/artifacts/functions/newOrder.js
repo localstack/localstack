@@ -1,10 +1,11 @@
 // Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop
 
-'use strict'
+'use strict';
 
-const AWS = require('aws-sdk')
-AWS.config.update({ region: process.env.AWS_REGION })
-const documentClient = new AWS.DynamoDB.DocumentClient()
+const { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
+
+const documentClient = DynamoDBDocument.from(new DynamoDB())
 
 // Triggered by event: DetailType: "Validator.NewOrder"
 
@@ -22,7 +23,8 @@ exports.handler = async (event) => {
             robot: (event.detail.robot || false),
             TS: Date.now()
         }
-    }).promise()
+    })
 
     console.log({ result })
 }
+

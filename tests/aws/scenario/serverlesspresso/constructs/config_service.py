@@ -56,7 +56,7 @@ class ConfigService(constructs.Construct):
         config_changed_fn = cdk.aws_lambda.Function(
             self,
             "ConfigChangedFunction",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=config_changed_fn_handler),
             environment={

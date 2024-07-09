@@ -15,7 +15,7 @@ class OrderManagerService(constructs.Construct):
         source: str,
         bucket_name: str,
         event_bus,
-        config_table
+        config_table,
     ):
         super().__init__(scope, id)
 
@@ -67,7 +67,7 @@ class OrderManagerService(constructs.Construct):
         validator_new_order_fn = cdk.aws_lambda.Function(
             self,
             "ValidatorNewOrderFunction",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=validator_new_order_fn_handler),
             environment={
@@ -98,7 +98,7 @@ class OrderManagerService(constructs.Construct):
         get_order_by_id_fn = cdk.aws_lambda.Function(
             self,
             "GetOrderByIdFunction",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=get_order_by_id_fn_handler),
             timeout=cdk.Duration.seconds(15),
@@ -110,7 +110,7 @@ class OrderManagerService(constructs.Construct):
         self.workflow_started_fn = workflow_started_fn = cdk.aws_lambda.Function(
             self,
             "WorkFlowStarted",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=workflow_started_fn_handler),
             timeout=cdk.Duration.seconds(15),
@@ -126,7 +126,7 @@ class OrderManagerService(constructs.Construct):
         waiting_completion_fn = cdk.aws_lambda.Function(
             self,
             "WaitingCompletion",
-            runtime=cdk.aws_lambda.Runtime.NODEJS_14_X,
+            runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=waiting_completion_fn_handler),
             timeout=cdk.Duration.seconds(15),

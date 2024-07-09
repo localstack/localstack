@@ -2,10 +2,12 @@
 
 'use strict'
 
-const AWS = require('aws-sdk')
-AWS.config.update({ region: process.env.AWS_REGION })
-const stepFunctions = new AWS.StepFunctions()
-const documentClient = new AWS.DynamoDB.DocumentClient()
+const { DynamoDBDocument } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDB } = require("@aws-sdk/client-dynamodb");
+const { SFN } = require("@aws-sdk/client-sfn");
+
+const stepFunctions = new SFN()
+const documentClient = DynamoDBDocument.from(new DynamoDB())
 
 // Update order
 const getOrder = async (record) => {
@@ -17,7 +19,7 @@ const getOrder = async (record) => {
         }
     }
     // console.log(params)
-    const result = await documentClient.get(params).promise()
+    const result = await documentClient.get(params)
     // console.log(result)
 
     return {
@@ -45,3 +47,4 @@ exports.handler = async (event) => {
         "isBase64Encoded": false
     }
 }
+

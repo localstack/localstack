@@ -1,0 +1,3476 @@
+{
+  "Resources": {
+    "CountingTable14EC498A": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "PK",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "PK",
+            "KeyType": "HASH"
+          }
+        ],
+        "TableName": "serverlesspresso-counting-table"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "ServerlesspressoEventBus4F0AE0D8": {
+      "Type": "AWS::Events::EventBus",
+      "Properties": {
+        "Name": "Serverlesspresso"
+      }
+    },
+    "CoreEventBusNameParameterB5374CC9": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Description": "EventBus Name",
+        "Name": "/Serverlesspresso/core/eventbusname",
+        "Type": "String",
+        "Value": {
+          "Ref": "ServerlesspressoEventBus4F0AE0D8"
+        }
+      }
+    },
+    "CoreEventBusARNParameter18CA5950": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Description": "EventBus ARN",
+        "Name": "/Serverlesspresso/core/eventbusarn",
+        "Type": "String",
+        "Value": {
+          "Fn::GetAtt": [
+            "ServerlesspressoEventBus4F0AE0D8",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "DebugLogGroup630DE26B": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/events/serverlesspressoEventBus"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "logallpolicyResourcePolicyE806BE96": {
+      "Type": "AWS::Logs::ResourcePolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Fn::Join": [
+            "",
+            [
+              "{\"Statement\":[{\"Action\":\"logs:*\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"delivery.logs.amazonaws.com\",\"events.amazonaws.com\"]},\"Resource\":\"",
+              {
+                "Fn::Join": [
+                  ":",
+                  [
+                    "arn:aws:logs",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    "log-group:/aws/events/*:*"
+                  ]
+                ]
+              },
+              "\"}],\"Version\":\"2012-10-17\"}"
+            ]
+          ]
+        },
+        "PolicyName": "TrustEventsToStoreLogEvents"
+      }
+    },
+    "LogAllRule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventBusName": {
+          "Ref": "ServerlesspressoEventBus4F0AE0D8"
+        },
+        "EventPattern": {
+          "source": [
+            "lstesting.serverlesspresso"
+          ]
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "DebugLogGroup630DE26B",
+                "Arn"
+              ]
+            },
+            "Id": "log_to_group"
+          }
+        ]
+      }
+    },
+    "ServerlesspressoRealtime": {
+      "Type": "AWS::IoT::Thing",
+      "Properties": {
+        "AttributePayload": {
+          "Attributes": {}
+        },
+        "ThingName": "serverlesspresso-realtime-workshop"
+      }
+    },
+    "GetIoTEndpointFunctionServiceRole51B8C97E": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "GetIoTEndpointFunctionServiceRoleDefaultPolicyFEDCAA4E": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "iot:DescribeEndpoint",
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "GetIoTEndpointFunctionServiceRoleDefaultPolicyFEDCAA4E",
+        "Roles": [
+          {
+            "Ref": "GetIoTEndpointFunctionServiceRole51B8C97E"
+          }
+        ]
+      }
+    },
+    "GetIoTEndpointFunction5DE30FEA": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { IoT } = require(\"@aws-sdk/client-iot\");\n\nexports.handler = function (event, context) {\n    console.log(\"REQUEST RECEIVED:\\n\" + JSON.stringify(event))\n\n    // For Delete requests, immediately send a SUCCESS response.\n    if (event.RequestType == \"Delete\") {\n        sendResponse(event, context, \"SUCCESS\")\n        return\n    }\n\n    const iot = new IoT()\n    iot.describeEndpoint({ endpointType: \"iot:Data-ATS\" }, (err, data) => {\n        let responseData, responseStatus\n        if (err) {\n            responseStatus = \"FAILED\"\n            responseData = { Error: \"describeEndpoint call failed\" }\n            console.log(responseData.Error + \":\\n\", err)\n        } else {\n            responseStatus = \"SUCCESS\"\n            responseData = { IotEndpointAddress: data.endpointAddress }\n            console.log(\"response data: \" + JSON.stringify(responseData))\n        }\n\n        sendResponse(event, context, responseStatus, responseData)\n    })\n}\n\n// Send response to the pre-signed S3 URL\nfunction sendResponse(event, context, responseStatus, responseData) {\n    let responseBody = JSON.stringify({\n        Status: responseStatus,\n        Reason: `CloudWatch Log Stream: ${context.logStreamName}`,\n        PhysicalResourceId: context.logStreamName,\n        StackId: event.StackId,\n        RequestId: event.RequestId,\n        LogicalResourceId: event.LogicalResourceId,\n        Data: responseData,\n    })\n\n    console.log(\"RESPONSE BODY:\\n\", responseBody)\n\n    const https = require(\"https\")\n    const url = require(\"url\")\n\n    let parsedUrl = url.parse(event.ResponseURL)\n    let options = {\n        hostname: parsedUrl.hostname,\n        port: 443,\n        path: parsedUrl.path,\n        method: \"PUT\",\n        headers: {\n            \"content-type\": \"\",\n            \"content-length\": responseBody.length,\n        },\n    }\n\n    console.log(\"SENDING RESPONSE...\\n\")\n\n    const request = https.request(options, function (response) {\n        console.log(\"STATUS: \" + response.statusCode)\n        console.log(\"HEADERS: \" + JSON.stringify(response.headers))\n        // Tell AWS Lambda that the function execution is done\n        context.done()\n    })\n\n    request.on(\"error\", function (error) {\n        console.log(\"sendResponse Error:\" + error)\n        // Tell AWS Lambda that the function execution is done\n        context.done()\n    })\n\n    // write data to request body\n    request.write(responseBody)\n    request.end()\n}\n\n"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "GetIoTEndpointFunctionServiceRole51B8C97E",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "GetIoTEndpointFunctionServiceRoleDefaultPolicyFEDCAA4E",
+        "GetIoTEndpointFunctionServiceRole51B8C97E"
+      ]
+    },
+    "IotEndpoint": {
+      "Type": "AWS::CloudFormation::CustomResource",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "GetIoTEndpointFunction5DE30FEA",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "IoTRealtimeParameter4E793E0A": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Description": "IoTRealtime URL",
+        "Name": "/Serverlesspresso/core/realtime",
+        "Type": "String",
+        "Value": {
+          "Fn::GetAtt": [
+            "IotEndpoint",
+            "IotEndpointAddress"
+          ]
+        }
+      }
+    },
+    "PublisherServicePublisherFunctionAdminServiceRole4601C4D9": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "PublisherServicePublisherFunctionAdminServiceRoleDefaultPolicy73CA1DD4": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "iot:Connect",
+                "iot:Publish"
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:iot:*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "PublisherServicePublisherFunctionAdminServiceRoleDefaultPolicy73CA1DD4",
+        "Roles": [
+          {
+            "Ref": "PublisherServicePublisherFunctionAdminServiceRole4601C4D9"
+          }
+        ]
+      }
+    },
+    "PublisherServicePublisherFunctionAdmin226F35A2": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { IoTDataPlane } = require('@aws-sdk/client-iot-data-plane');\n\nconst iotdata = new IoTDataPlane({\n    endpoint: \"https://\" + process.env.IOT_DATA_ENDPOINT,\n    region: process.env.AWS_REGION\n})\n\n// Publishes the message to the IoT topic\nconst iotPublish = async function (topic, event) {\n    try {\n        const params = {\n            topic,\n            qos: 1,\n            payload: JSON.stringify({\n                type: event['detail-type'],\n                detail: event.detail\n            })\n        }\n        console.log('Params: ', params)\n        const result = await iotdata.publish(params)\n        console.log('iotPublish success: ', topic, process.env.IOT_DATA_ENDPOINT, result)\n    } catch (err) {\n        console.error('iotPublish error:', err)\n    }\n}\n\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 2))\n    await iotPublish(process.env.IOT_TOPIC, event)\n}\n\n"
+        },
+        "Environment": {
+          "Variables": {
+            "IOT_DATA_ENDPOINT": {
+              "Fn::GetAtt": [
+                "IotEndpoint",
+                "IotEndpointAddress"
+              ]
+            },
+            "IOT_TOPIC": "serverlesspresso-admin"
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "PublisherServicePublisherFunctionAdminServiceRole4601C4D9",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "PublisherServicePublisherFunctionAdminServiceRoleDefaultPolicy73CA1DD4",
+        "PublisherServicePublisherFunctionAdminServiceRole4601C4D9"
+      ]
+    },
+    "PublisherServiceAdminTriggerRuleF3819C56": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventBusName": {
+          "Ref": "ServerlesspressoEventBus4F0AE0D8"
+        },
+        "EventPattern": {
+          "detail-type": [
+            "prefix: 'OrderManager.'",
+            "prefix: 'OrderProcessor.'",
+            "prefix: 'Validator.'",
+            "prefix: 'ConfigService.'"
+          ],
+          "source": [
+            "lstesting.serverlesspresso"
+          ]
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "PublisherServicePublisherFunctionAdmin226F35A2",
+                "Arn"
+              ]
+            },
+            "Id": "Target0"
+          }
+        ]
+      }
+    },
+    "PublisherServiceAdminTriggerRuleAllowEventRuleServerlesspressoStackPublisherServicePublisherFunctionAdmin1D5C595A6147D771": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "PublisherServicePublisherFunctionAdmin226F35A2",
+            "Arn"
+          ]
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "PublisherServiceAdminTriggerRuleF3819C56",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "PublisherServicePublisherFunctionUserServiceRole712DF138": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "PublisherServicePublisherFunctionUserServiceRoleDefaultPolicyBDE8B789": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "iot:Connect",
+                "iot:Publish"
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:iot:*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "PublisherServicePublisherFunctionUserServiceRoleDefaultPolicyBDE8B789",
+        "Roles": [
+          {
+            "Ref": "PublisherServicePublisherFunctionUserServiceRole712DF138"
+          }
+        ]
+      }
+    },
+    "PublisherServicePublisherFunctionUserE00A536B": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\nconst { IoTDataPlane } = require('@aws-sdk/client-iot-data-plane');\n\nconst iotdata = new IoTDataPlane({\n    endpoint: \"https://\" + process.env.IOT_DATA_ENDPOINT,\n    region: process.env.AWS_REGION\n})\n\n// Publishes the message to the IoT topic\nconst iotPublish = async function (baseTopic, event) {\n    const topic = `${baseTopic}${event.detail.userId}`\n\n    try {\n        const params = {\n            topic,\n            qos: 1,\n            payload: JSON.stringify({\n                type: event['detail-type'],\n                detail: event.detail\n            })\n        }\n        console.log('Params: ', params)\n        const result = await iotdata.publish(params)\n        console.log('iotPublish successful: ', topic, result)\n    } catch (err) {\n        console.error('iotPublish error:', err)\n    }\n}\n\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 2))\n    await iotPublish(process.env.IOT_TOPIC, event)\n}\n\n"
+        },
+        "Environment": {
+          "Variables": {
+            "IOT_DATA_ENDPOINT": {
+              "Fn::GetAtt": [
+                "IotEndpoint",
+                "IotEndpointAddress"
+              ]
+            },
+            "IOT_TOPIC": "serverlesspresso-user-"
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "PublisherServicePublisherFunctionUserServiceRole712DF138",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "PublisherServicePublisherFunctionUserServiceRoleDefaultPolicyBDE8B789",
+        "PublisherServicePublisherFunctionUserServiceRole712DF138"
+      ]
+    },
+    "PublisherServiceOrderManagerEvents229DA4C1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventBusName": {
+          "Ref": "ServerlesspressoEventBus4F0AE0D8"
+        },
+        "EventPattern": {
+          "detail-type": [
+            "prefix: 'OrderManager.'"
+          ],
+          "source": [
+            "lstesting.serverlesspresso"
+          ]
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "PublisherServicePublisherFunctionUserE00A536B",
+                "Arn"
+              ]
+            },
+            "Id": "Target0"
+          }
+        ]
+      }
+    },
+    "PublisherServiceOrderManagerEventsAllowEventRuleServerlesspressoStackPublisherServicePublisherFunctionUser0EF82A454E02AE52": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "PublisherServicePublisherFunctionUserE00A536B",
+            "Arn"
+          ]
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "PublisherServiceOrderManagerEvents229DA4C1",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "PublisherServiceOrderProcessorEvents0F679C1F": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventBusName": {
+          "Ref": "ServerlesspressoEventBus4F0AE0D8"
+        },
+        "EventPattern": {
+          "detail-type": [
+            "prefix: 'OrderProcessor.'"
+          ],
+          "source": [
+            "lstesting.serverlesspresso"
+          ]
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "PublisherServicePublisherFunctionUserE00A536B",
+                "Arn"
+              ]
+            },
+            "Id": "Target0"
+          }
+        ]
+      }
+    },
+    "PublisherServiceOrderProcessorEventsAllowEventRuleServerlesspressoStackPublisherServicePublisherFunctionUser0EF82A45AA1E83AE": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "PublisherServicePublisherFunctionUserE00A536B",
+            "Arn"
+          ]
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "PublisherServiceOrderProcessorEvents0F679C1F",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "PublisherServicePublisherFunctionConfigServiceRoleAD16D3A0": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "PublisherServicePublisherFunctionConfigServiceRoleDefaultPolicy268A6115": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "iot:Connect",
+                "iot:Publish"
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:iot:*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "PublisherServicePublisherFunctionConfigServiceRoleDefaultPolicy268A6115",
+        "Roles": [
+          {
+            "Ref": "PublisherServicePublisherFunctionConfigServiceRoleAD16D3A0"
+          }
+        ]
+      }
+    },
+    "PublisherServicePublisherFunctionConfig80C87C83": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { IoTDataPlane } = require('@aws-sdk/client-iot-data-plane');\n\nconst iotdata = new IoTDataPlane({\n    endpoint: \"https://\" + process.env.IOT_DATA_ENDPOINT,\n    region: process.env.AWS_REGION\n})\n\n// Publishes the message to the IoT topic\nconst iotPublish = async function (topic, event) {\n    try {\n        const params = {\n            topic,\n            qos: 1,\n            payload: JSON.stringify({\n                type: event['detail-type'],\n                detail: event.detail\n            })\n        }\n        console.log('Params: ', params)\n        const result = await iotdata.publish(params)\n        console.log('iotPublish success: ', topic, process.env.IOT_DATA_ENDPOINT, result)\n    } catch (err) {\n        console.error('iotPublish error:', err)\n    }\n}\n\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 2))\n    await iotPublish(process.env.IOT_TOPIC, event)\n}\n\n"
+        },
+        "Environment": {
+          "Variables": {
+            "IOT_DATA_ENDPOINT": {
+              "Fn::GetAtt": [
+                "IotEndpoint",
+                "IotEndpointAddress"
+              ]
+            },
+            "IOT_TOPIC": "serverlesspresso-config"
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "PublisherServicePublisherFunctionConfigServiceRoleAD16D3A0",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "PublisherServicePublisherFunctionConfigServiceRoleDefaultPolicy268A6115",
+        "PublisherServicePublisherFunctionConfigServiceRoleAD16D3A0"
+      ]
+    },
+    "PublisherServiceTriggerValidatorFEDE6986": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventBusName": {
+          "Ref": "ServerlesspressoEventBus4F0AE0D8"
+        },
+        "EventPattern": {
+          "detail-type": [
+            "prefix: 'ConfigService.'"
+          ],
+          "source": [
+            "lstesting.serverlesspresso"
+          ]
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "PublisherServicePublisherFunctionConfig80C87C83",
+                "Arn"
+              ]
+            },
+            "Id": "Target0"
+          }
+        ]
+      }
+    },
+    "PublisherServiceTriggerValidatorAllowEventRuleServerlesspressoStackPublisherServicePublisherFunctionConfigBCB2EBFDAD8FF81D": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "PublisherServicePublisherFunctionConfig80C87C83",
+            "Arn"
+          ]
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "PublisherServiceTriggerValidatorFEDE6986",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "UserPool": {
+      "Type": "AWS::Cognito::UserPool",
+      "Properties": {
+        "AccountRecoverySetting": {
+          "RecoveryMechanisms": [
+            {
+              "Name": "verified_phone_number",
+              "Priority": 1
+            },
+            {
+              "Name": "verified_email",
+              "Priority": 2
+            }
+          ]
+        },
+        "AdminCreateUserConfig": {
+          "AllowAdminCreateUserOnly": true
+        },
+        "AutoVerifiedAttributes": [
+          "email"
+        ],
+        "EmailVerificationMessage": "Here is your Serverlesspresso workshop verification code: {####}.",
+        "EmailVerificationSubject": "Serverlesspresso workshop code",
+        "Policies": {
+          "PasswordPolicy": {
+            "MinimumLength": 6,
+            "RequireLowercase": false,
+            "RequireNumbers": false,
+            "RequireSymbols": false,
+            "RequireUppercase": false
+          }
+        },
+        "Schema": [
+          {
+            "Mutable": false,
+            "Name": "email",
+            "Required": true
+          }
+        ],
+        "SmsVerificationMessage": "The verification code to your new account is {####}",
+        "UserPoolName": "ServerlesspressoUserPool",
+        "VerificationMessageTemplate": {
+          "DefaultEmailOption": "CONFIRM_WITH_CODE",
+          "EmailMessage": "Here is your Serverlesspresso workshop verification code: {####}.",
+          "EmailSubject": "Serverlesspresso workshop code",
+          "SmsMessage": "The verification code to your new account is {####}"
+        }
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "AuthServiceUserPoolUserPoolClient16DCF8BB": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "AllowedOAuthFlows": [
+          "implicit",
+          "code"
+        ],
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthScopes": [
+          "profile",
+          "phone",
+          "email",
+          "openid",
+          "aws.cognito.signin.user.admin"
+        ],
+        "CallbackURLs": [
+          "https://example.com"
+        ],
+        "GenerateSecret": false,
+        "SupportedIdentityProviders": [
+          "COGNITO"
+        ],
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      }
+    },
+    "AuthServiceUserPoolParameterD430E204": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Name": "/Serverlesspresso/core/userpool",
+        "Type": "String",
+        "Value": {
+          "Ref": "UserPool"
+        }
+      }
+    },
+    "AuthServiceUserPoolClientParameter43D60525": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Name": "/Serverlesspresso/core/userpoolclient",
+        "Type": "String",
+        "Value": {
+          "Ref": "AuthServiceUserPoolUserPoolClient16DCF8BB"
+        }
+      }
+    },
+    "AuthServiceIdentityPool0DD75433": {
+      "Type": "AWS::Cognito::IdentityPool",
+      "Properties": {
+        "AllowUnauthenticatedIdentities": true,
+        "CognitoIdentityProviders": [
+          {
+            "ClientId": {
+              "Ref": "AuthServiceUserPoolUserPoolClient16DCF8BB"
+            },
+            "ProviderName": {
+              "Fn::Join": [
+                "",
+                [
+                  "cognito-idp.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  "/",
+                  {
+                    "Ref": "UserPool"
+                  }
+                ]
+              ]
+            },
+            "ServerSideTokenCheck": true
+          }
+        ],
+        "IdentityPoolName": "ServerlesspressoIdentityPool"
+      },
+      "DependsOn": [
+        "UserPool",
+        "AuthServiceUserPoolUserPoolClient16DCF8BB"
+      ]
+    },
+    "AuthServiceIdentityPoolAuthenticatedRoleC5B99337": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "cognito-identity.amazonaws.com:aud": {
+                    "Ref": "AuthServiceIdentityPool0DD75433"
+                  }
+                },
+                "ForAnyValue:StringLike": {
+                  "cognito-identity.amazonaws.com:amr": "authenticated"
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": "cognito-identity.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Description": {
+          "Fn::Join": [
+            "",
+            [
+              "Default Authenticated Role for Identity Pool ",
+              {
+                "Fn::GetAtt": [
+                  "AuthServiceIdentityPool0DD75433",
+                  "Name"
+                ]
+              }
+            ]
+          ]
+        }
+      },
+      "DependsOn": [
+        "UserPool",
+        "AuthServiceUserPoolUserPoolClient16DCF8BB"
+      ]
+    },
+    "AuthServiceIdentityPoolUnauthenticatedRole8AD0092E": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "cognito-identity.amazonaws.com:aud": {
+                    "Ref": "AuthServiceIdentityPool0DD75433"
+                  }
+                },
+                "ForAnyValue:StringLike": {
+                  "cognito-identity.amazonaws.com:amr": "unauthenticated"
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": "cognito-identity.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Description": {
+          "Fn::Join": [
+            "",
+            [
+              "Default Unauthenticated Role for Identity Pool ",
+              {
+                "Fn::GetAtt": [
+                  "AuthServiceIdentityPool0DD75433",
+                  "Name"
+                ]
+              }
+            ]
+          ]
+        }
+      },
+      "DependsOn": [
+        "UserPool",
+        "AuthServiceUserPoolUserPoolClient16DCF8BB"
+      ]
+    },
+    "AuthServiceIdentityPoolDefaultRoleAttachmentEC446C7D": {
+      "Type": "AWS::Cognito::IdentityPoolRoleAttachment",
+      "Properties": {
+        "IdentityPoolId": {
+          "Ref": "AuthServiceIdentityPool0DD75433"
+        },
+        "Roles": {
+          "authenticated": {
+            "Fn::GetAtt": [
+              "AuthServiceIdentityPoolAuthenticatedRoleC5B99337",
+              "Arn"
+            ]
+          },
+          "unauthenticated": {
+            "Fn::GetAtt": [
+              "AuthServiceIdentityPoolUnauthenticatedRole8AD0092E",
+              "Arn"
+            ]
+          }
+        }
+      },
+      "DependsOn": [
+        "UserPool",
+        "AuthServiceUserPoolUserPoolClient16DCF8BB"
+      ]
+    },
+    "AuthServiceCognitoUnAuthorizedRoleE9C36CE4": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "cognito-identity.amazonaws.com:aud": {
+                    "Ref": "AuthServiceIdentityPool0DD75433"
+                  }
+                },
+                "ForAnyValue:StringLike": {
+                  "cognito-identity.amazonaws.com:amr": "unauthenticated"
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": "cognito-identity.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "cognito-sync:*",
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":cognito-identity:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":identitypool/",
+                        {
+                          "Ref": "AuthServiceIdentityPool0DD75433"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Action": "iot:Connect",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Action": "iot:Subscribe",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Action": "iot:Receive",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "CognitoUnauthorizedPolicy"
+          }
+        ]
+      }
+    },
+    "AuthServiceCognitoAuthorizedRoleCE60131D": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "cognito-identity.amazonaws.com:aud": {
+                    "Ref": "AuthServiceIdentityPool0DD75433"
+                  }
+                },
+                "ForAnyValue:StringLike": {
+                  "cognito-identity.amazonaws.com:amr": "authenticated"
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": "cognito-identity.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "cognito-sync:*",
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":cognito-identity:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":identitypool/",
+                        {
+                          "Ref": "AuthServiceIdentityPool0DD75433"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Action": "iot:Connect",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Action": "iot:Subscribe",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Action": "iot:Receive",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "CognitoAuthorizedPolicy"
+          }
+        ]
+      }
+    },
+    "ConfigServiceConfigTableD352B014": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "PK",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "PK",
+            "KeyType": "HASH"
+          }
+        ],
+        "StreamSpecification": {
+          "StreamViewType": "NEW_AND_OLD_IMAGES"
+        },
+        "TableName": "serverlesspresso-config-table"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "ConfigServiceRESTApConfigServiceE52F9E36": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Body": {
+          "Fn::Transform": {
+            "Name": "AWS::Include",
+            "Parameters": {
+              "Location": "s3://serverlesspresso-localstack-testing-41f2680b/api/config_service_api.yaml"
+            }
+          }
+        }
+      }
+    },
+    "ConfigServiceConfigChangedFunctionServiceRoleEFB145B1": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "ConfigServiceConfigChangedFunctionServiceRoleDefaultPolicy8F3E2550": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "events:PutEvents",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              }
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ConfigServiceConfigTableD352B014",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            },
+            {
+              "Action": "dynamodb:ListStreams",
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "dynamodb:DescribeStream",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ConfigServiceConfigTableD352B014",
+                  "StreamArn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "ConfigServiceConfigChangedFunctionServiceRoleDefaultPolicy8F3E2550",
+        "Roles": [
+          {
+            "Ref": "ConfigServiceConfigChangedFunctionServiceRoleEFB145B1"
+          }
+        ]
+      }
+    },
+    "ConfigServiceConfigChangedFunction8CB6DB60": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n'use strict'\n\nconst { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');\nconst { DynamoDB } = require('@aws-sdk/client-dynamodb');\nconst { EventBridge } = require('@aws-sdk/client-eventbridge');\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\nconst eventbridge = new EventBridge()\n\n// Returns application config\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 0))\n    const NewImage = event.Records[0].dynamodb.NewImage\n\n    // Publish to EventBridge with change info\n    const params = {\n        Entries: [\n            {\n                Detail: JSON.stringify({ NewImage }),\n                DetailType: 'ConfigService.ConfigChanged',\n                EventBusName: process.env.EventBusName,\n                Source: process.env.Source,\n                Time: new Date\n            }\n        ]\n    }\n\n    console.log('Event: ', JSON.stringify(params, null, 0))\n    const response = await eventbridge.putEvents(params)\n    console.log('EventBridge putEvents:', response)\n}\n\n"
+        },
+        "Environment": {
+          "Variables": {
+            "EventBusName": {
+              "Ref": "ServerlesspressoEventBus4F0AE0D8"
+            },
+            "Source": "lstesting.serverlesspresso"
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "ConfigServiceConfigChangedFunctionServiceRoleEFB145B1",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Timeout": 15
+      },
+      "DependsOn": [
+        "ConfigServiceConfigChangedFunctionServiceRoleDefaultPolicy8F3E2550",
+        "ConfigServiceConfigChangedFunctionServiceRoleEFB145B1"
+      ]
+    },
+    "ConfigServiceConfigChangedFunctionDynamoDBEventSourceServerlesspressoStackConfigServiceConfigTableB10677D51720E2B9": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "BatchSize": 1,
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "ConfigServiceConfigTableD352B014",
+            "StreamArn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "ConfigServiceConfigChangedFunction8CB6DB60"
+        },
+        "StartingPosition": "TRIM_HORIZON"
+      }
+    },
+    "ConfigRESTApiRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "dynamodb:Scan",
+                    "dynamodb:GetItem",
+                    "dynamodb:UpdateItem"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "ConfigServiceConfigTableD352B014",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Action": "dynamodb:Query",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "DynamoDBinteraction"
+          }
+        ]
+      }
+    },
+    "ValidatorServiceValidatorTable7D2B03D6": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "PK",
+            "AttributeType": "N"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "PK",
+            "KeyType": "HASH"
+          }
+        ],
+        "StreamSpecification": {
+          "StreamViewType": "NEW_AND_OLD_IMAGES"
+        },
+        "TableName": "serverlesspresso-validator-table"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "ValidatorServiceGetQRcodeFunctionServiceRoleD6D4A0E9": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "ValidatorServiceGetQRcodeFunctionServiceRoleDefaultPolicyA8D6892D": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:*",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ValidatorServiceValidatorTable7D2B03D6",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "ValidatorServiceGetQRcodeFunctionServiceRoleDefaultPolicyA8D6892D",
+        "Roles": [
+          {
+            "Ref": "ValidatorServiceGetQRcodeFunctionServiceRoleD6D4A0E9"
+          }
+        ]
+      }
+    },
+    "ValidatorServiceGetQRcodeFunctionB2637D0B": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\nconst TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)\nconst NANO_ID_CODE_LENGTH = process.env.CodeLength\nconst AVAILABLE_TOKENS = process.env.TokensPerBucket\n\n// inlined partial nanoid library\nconst urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict'\nconst POOL_SIZE_MULTIPLIER = 128\nlet pool, poolOffset\n\nfunction fillPool(bytes) {\n  if (!pool || pool.length < bytes) {\n    pool = Buffer.allocUnsafe(bytes * POOL_SIZE_MULTIPLIER)\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  } else if (poolOffset + bytes > pool.length) {\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  }\n  poolOffset += bytes\n}\n\nfunction nanoid(size = 21) {\n  fillPool((size -= 0))\n  let id = ''\n  for (let i = poolOffset - size; i < poolOffset; i++) {\n    id += urlAlphabet[pool[i] & 63]\n  }\n  return id\n}\n\nconst getItem = async (id) => {\n    const params = {\n        TableName: process.env.TableName,\n        KeyConditionExpression: \"#pk = :pk\",\n        ExpressionAttributeNames: {\n            \"#pk\": \"PK\"\n        },\n        ExpressionAttributeValues: {\n            \":pk\": id\n        }\n    }\n    console.log('getItem params: ', params)\n\n    try {\n        const result = await documentClient.query(params)\n        console.log('getItem result: ', result)\n        return result\n    } catch (err) {\n        console.error('getItem error: ', err)\n    }\n}\n\nconst saveItem = async (record) => {\n    const Item = {\n        PK: record.last_id,\n        ...record\n    }\n    console.log(Item)\n    const result = await documentClient.put({\n        TableName: process.env.TableName,\n        Item\n    })\n    console.log('saveItem: ', result)\n}\n\nconst decrementToken = async (record) => {\n    const params = {\n        TableName: process.env.TableName,\n        Key: {\n            PK: record.last_id\n        },\n        UpdateExpression: \"set availableTokens = availableTokens - :val\",\n        ExpressionAttributeValues:{\n            \":val\": 1\n        },\n        ReturnValues:\"UPDATED_NEW\"\n    }\n    console.log(params)\n    const result = await documentClient.update(params)\n    console.log('decrementToken: ', result)\n}\n\n\nconst isAdmin = (requestContext) => {\n    try {\n        const groups = requestContext.authorizer.claims['cognito:groups'].replace('[','').replace(']','').split(',')\n        return groups.includes('admin')\n    } catch (err) {\n        return false\n    }\n}\n\n// Returns details of a Place ID where the app has user-generated content.\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 0))\n\n    // If not an admin user, exit\n    if (!isAdmin(event.requestContext)) {\n        return {\n            \"statusCode\": 403\n        }\n    }\n\n    let bucket = {}\n    const CURRENT_TIME_BUCKET_ID = parseInt(Date.now() / TIME_INTERVAL)\n    console.log('Bucket:', CURRENT_TIME_BUCKET_ID, )\n\n    // Load bucket from DynamoDB, if available\n    const result = await getItem(CURRENT_TIME_BUCKET_ID)\n    if ( result.Items.length != 0 ) {\n        bucket = result.Items[0]\n        console.log('Bucket loaded: ', bucket)\n    } else {\n\n        // No bucket info available - create new\n        bucket.last_id = CURRENT_TIME_BUCKET_ID\n        bucket.last_code = nanoid(NANO_ID_CODE_LENGTH)\n        bucket.start_ts = ( TIME_INTERVAL * CURRENT_TIME_BUCKET_ID )\n        bucket.start_full = new Date(bucket.start_ts).toString()\n        bucket.end_ts = ( TIME_INTERVAL * CURRENT_TIME_BUCKET_ID ) + ( TIME_INTERVAL - 1 )\n        bucket.end_full = new Date(bucket.end_ts).toString()\n        bucket.availableTokens = parseInt(AVAILABLE_TOKENS)\n\n        // Save to DDB\n        console.log('New code: ', { bucket })\n        await saveItem(bucket)\n    }\n\n    // Return the code\n    return {\n        statusCode: 200,\n        body: JSON.stringify({bucket}),\n        headers: {\n            \"Access-Control-Allow-Headers\" : \"*\",\n            \"Access-Control-Allow-Origin\": \"*\",\n            \"Access-Control-Allow-Methods\": \"OPTIONS,POST,GET\"\n        },\n    }\n}\n"
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1",
+            "TableName": {
+              "Ref": "ValidatorServiceValidatorTable7D2B03D6"
+            },
+            "TimeInterval": "5",
+            "CodeLength": "10",
+            "TokensPerBucket": "10",
+            "BusName": {
+              "Ref": "ServerlesspressoEventBus4F0AE0D8"
+            },
+            "Source": "lstesting.serverlesspresso"
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "ValidatorServiceGetQRcodeFunctionServiceRoleD6D4A0E9",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Timeout": 15
+      },
+      "DependsOn": [
+        "ValidatorServiceGetQRcodeFunctionServiceRoleDefaultPolicyA8D6892D",
+        "ValidatorServiceGetQRcodeFunctionServiceRoleD6D4A0E9"
+      ]
+    },
+    "ValidatorServiceVerifyQRcodeFunctionServiceRole1AAADEA6": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "ValidatorServiceVerifyQRcodeFunctionServiceRoleDefaultPolicy400E3FFA": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:*",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ValidatorServiceValidatorTable7D2B03D6",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            },
+            {
+              "Action": "events:PutEvents",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "ValidatorServiceVerifyQRcodeFunctionServiceRoleDefaultPolicy400E3FFA",
+        "Roles": [
+          {
+            "Ref": "ValidatorServiceVerifyQRcodeFunctionServiceRole1AAADEA6"
+          }
+        ]
+      }
+    },
+    "ValidatorServiceVerifyQRcodeFunctionE764124F": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { EventBridge } = require('@aws-sdk/client-eventbridge');\nconst eventbridge = new EventBridge()\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\nconst TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)\n\n// inlined partial nanoid library\nconst urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict'\nconst POOL_SIZE_MULTIPLIER = 128\nlet pool, poolOffset\n\nfunction fillPool(bytes) {\n  if (!pool || pool.length < bytes) {\n    pool = Buffer.allocUnsafe(bytes * POOL_SIZE_MULTIPLIER)\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  } else if (poolOffset + bytes > pool.length) {\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  }\n  poolOffset += bytes\n}\n\nfunction nanoid(size = 21) {\n  fillPool((size -= 0))\n  let id = ''\n  for (let i = poolOffset - size; i < poolOffset; i++) {\n    id += urlAlphabet[pool[i] & 63]\n  }\n  return id\n}\n\nconst getItem = async (id) => {\n    const params = {\n        TableName: process.env.TableName,\n        KeyConditionExpression: \"#pk = :pk\",\n        ExpressionAttributeNames: {\n            \"#pk\": \"PK\"\n        },\n        ExpressionAttributeValues: {\n            \":pk\": id\n        }\n    }\n    console.log('getItem params: ', params)\n\n    try {\n        const result = await documentClient.query(params).promise()\n        console.log('getItem result: ', result)\n        return result\n    } catch (err) {\n        console.error('getItem error: ', err)\n    }\n}\n\nconst saveItem = async (record) => {\n    const Item = {\n        PK: record.last_id,\n        ...record\n    }\n    console.log(Item)\n    const result = await documentClient.put({\n        TableName: process.env.TableName,\n        Item\n    }).promise()\n    console.log('saveItem: ', result)\n}\n\nconst decrementToken = async (record) => {\n    const params = {\n        TableName: process.env.TableName,\n        Key: {\n            PK: record.last_id\n        },\n        UpdateExpression: \"set availableTokens = availableTokens - :val\",\n        ExpressionAttributeValues:{\n            \":val\": 1\n        },\n        ReturnValues:\"UPDATED_NEW\"\n    }\n    console.log(params)\n    const result = await documentClient.update(params).promise()\n    console.log('decrementToken: ', result)\n}\n\n\n\n// Verifies a QR code\nexports.handler = async (event,context) => {\n    console.log(JSON.stringify(event, null, 2))\n    let bucket = {}\n\n    // Missing parameters\n    if (!event.queryStringParameters) {\n        return {\n            statusCode: 422,\n            body: JSON.stringify({ error: \"Missing parameter\" })\n        }\n    }\n\n    // Load bucket from DynamoDB, if available\n    const CURRENT_TIME_BUCKET_ID = parseInt(Date.now() / TIME_INTERVAL)\n    console.log('Bucket:', CURRENT_TIME_BUCKET_ID)\n\n    const result = await getItem(CURRENT_TIME_BUCKET_ID)\n    if ( result.Items.length != 0 ) {\n        bucket = result.Items[0]\n        console.log('Bucket loaded: ', bucket)\n    } else {\n        return {\n            statusCode: 400,\n            body: JSON.stringify({\n                error: 'Invalid code'\n            })\n        }\n    }\n\n    // Validate token\n    if (event.queryStringParameters.token != bucket.last_code) {\n        return {\n            statusCode: 400,\n            body: JSON.stringify({\n                error: 'Invalid code'\n            })\n        }\n    }\n\n    // Check if enough tokens\n    if (bucket.availableTokens < 1) {\n        return {\n            statusCode: 200,\n            body: JSON.stringify({\n                error: 'No tokens remaining'\n            })\n        }\n    }\n\n    // Decrement token count\n    const orderId = nanoid()\n    const userId = event.requestContext.authorizer.claims.sub\n\n    bucket.availableTokens--\n    await decrementToken(bucket)\n\n    // Publish to EventBridge with new order ID\n    const response = await eventbridge.putEvents({\n        Entries: [\n            {\n                Detail: JSON.stringify({\n                    orderId,\n                    userId,\n                    Message:\"A Lambda function is invoked by a POST request to Amazon API Gateway. The Lambda function, Takes the token ID from the QR code scan and checks it against the valid token ID's stored in a DynamoDB database. If Valid, a new Step Functions Workflow is started, this workflow ochestrates various AWS services to move the order along to completion.\",\n                    bucket\n                }),\n                DetailType: 'Validator.NewOrder',\n                EventBusName: process.env.BusName,\n\n                Source: process.env.Source,\n                Resources: [context.invokedFunctionArn],\n                Time: new Date\n            }\n        ]\n    }).promise()\n    console.log('EventBridge putEvents:', response)\n\n    // Return the code\n    return {\n        statusCode: 200,\n        body: JSON.stringify({ orderId }),\n        headers: {\n            \"Access-Control-Allow-Headers\" : \"Content-Type\",\n            \"Access-Control-Allow-Origin\": \"*\",\n            \"Access-Control-Allow-Methods\": \"OPTIONS,POST,GET\"\n        },\n    }\n}\n"
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1",
+            "TableName": {
+              "Ref": "ValidatorServiceValidatorTable7D2B03D6"
+            },
+            "TimeInterval": "5",
+            "CodeLength": "10",
+            "TokensPerBucket": "10",
+            "BusName": {
+              "Ref": "ServerlesspressoEventBus4F0AE0D8"
+            },
+            "Source": "lstesting.serverlesspresso"
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "ValidatorServiceVerifyQRcodeFunctionServiceRole1AAADEA6",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Timeout": 10
+      },
+      "DependsOn": [
+        "ValidatorServiceVerifyQRcodeFunctionServiceRoleDefaultPolicy400E3FFA",
+        "ValidatorServiceVerifyQRcodeFunctionServiceRole1AAADEA6"
+      ]
+    },
+    "ValidatorServiceRESTApiValidatorService2534BF48": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "RESTApiValidatorService"
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceCloudWatchRoleC3085C07": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+              ]
+            ]
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "ValidatorServiceRESTApiValidatorServiceAccount37CF6408": {
+      "Type": "AWS::ApiGateway::Account",
+      "Properties": {
+        "CloudWatchRoleArn": {
+          "Fn::GetAtt": [
+            "ValidatorServiceRESTApiValidatorServiceCloudWatchRoleC3085C07",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "ValidatorServiceRESTApiValidatorService2534BF48"
+      ],
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "ValidatorServiceRESTApiValidatorServiceDeployment401B884938f32cda5ad490fd564b1b9358b6403f": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "Description": "Automatically created by the RestApi construct",
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        }
+      },
+      "DependsOn": [
+        "ValidatorServiceRESTApiValidatorServiceOPTIONS994A63FE",
+        "ValidatorServiceRESTApiValidatorServiceqrcodeGET0B5A6E5E",
+        "ValidatorServiceRESTApiValidatorServiceqrcodeOPTIONS8B95B911",
+        "ValidatorServiceRESTApiValidatorServiceqrcodePOST5C3ECBB0",
+        "ValidatorServiceRESTApiValidatorServiceqrcodeF4927AB9"
+      ]
+    },
+    "ValidatorServiceRESTApiValidatorServiceDeploymentStageprod0D251F60": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "DeploymentId": {
+          "Ref": "ValidatorServiceRESTApiValidatorServiceDeployment401B884938f32cda5ad490fd564b1b9358b6403f"
+        },
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        },
+        "StageName": "prod"
+      },
+      "DependsOn": [
+        "ValidatorServiceRESTApiValidatorServiceAccount37CF6408"
+      ]
+    },
+    "ValidatorServiceRESTApiValidatorServiceOPTIONS994A63FE": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'*'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              },
+              "StatusCode": "204"
+            }
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }"
+          },
+          "Type": "MOCK"
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "StatusCode": "204"
+          }
+        ],
+        "ResourceId": {
+          "Fn::GetAtt": [
+            "ValidatorServiceRESTApiValidatorService2534BF48",
+            "RootResourceId"
+          ]
+        },
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        }
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceqrcodeF4927AB9": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ValidatorServiceRESTApiValidatorService2534BF48",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "qr-code",
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        }
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceqrcodeOPTIONS8B95B911": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'*'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              },
+              "StatusCode": "204"
+            }
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }"
+          },
+          "Type": "MOCK"
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "StatusCode": "204"
+          }
+        ],
+        "ResourceId": {
+          "Ref": "ValidatorServiceRESTApiValidatorServiceqrcodeF4927AB9"
+        },
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        }
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceqrcodeGETApiPermissionServerlesspressoStackValidatorServiceRESTApiValidatorServiceA4AB4D15GETqrcode499175C1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ValidatorServiceGetQRcodeFunctionB2637D0B",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+              },
+              "/",
+              {
+                "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageprod0D251F60"
+              },
+              "/GET/qr-code"
+            ]
+          ]
+        }
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceqrcodeGETApiPermissionTestServerlesspressoStackValidatorServiceRESTApiValidatorServiceA4AB4D15GETqrcode714F7094": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ValidatorServiceGetQRcodeFunctionB2637D0B",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+              },
+              "/test-invoke-stage/GET/qr-code"
+            ]
+          ]
+        }
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceqrcodeGET0B5A6E5E": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationScopes": [
+          "aws.cognito.signin.user.admin"
+        ],
+        "AuthorizationType": "COGNITO_USER_POOLS",
+        "AuthorizerId": {
+          "Ref": "ValidatorServiceMyCognitoAuthorizor77B122C1"
+        },
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "ValidatorServiceGetQRcodeFunctionB2637D0B",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ValidatorServiceRESTApiValidatorServiceqrcodeF4927AB9"
+        },
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        }
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceqrcodePOSTApiPermissionServerlesspressoStackValidatorServiceRESTApiValidatorServiceA4AB4D15POSTqrcode76DAB910": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ValidatorServiceVerifyQRcodeFunctionE764124F",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+              },
+              "/",
+              {
+                "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageprod0D251F60"
+              },
+              "/POST/qr-code"
+            ]
+          ]
+        }
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceqrcodePOSTApiPermissionTestServerlesspressoStackValidatorServiceRESTApiValidatorServiceA4AB4D15POSTqrcode3A267582": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ValidatorServiceVerifyQRcodeFunctionE764124F",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+              },
+              "/test-invoke-stage/POST/qr-code"
+            ]
+          ]
+        }
+      }
+    },
+    "ValidatorServiceRESTApiValidatorServiceqrcodePOST5C3ECBB0": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationScopes": [
+          "aws.cognito.signin.user.admin"
+        ],
+        "AuthorizationType": "COGNITO_USER_POOLS",
+        "AuthorizerId": {
+          "Ref": "ValidatorServiceMyCognitoAuthorizor77B122C1"
+        },
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "ValidatorServiceVerifyQRcodeFunctionE764124F",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ValidatorServiceRESTApiValidatorServiceqrcodeF4927AB9"
+        },
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        }
+      }
+    },
+    "ValidatorServiceMyCognitoAuthorizor77B122C1": {
+      "Type": "AWS::ApiGateway::Authorizer",
+      "Properties": {
+        "IdentitySource": "method.request.header.Authorization",
+        "Name": "ServerlesspressoStackValidatorServiceMyCognitoAuthorizorA34A904F",
+        "ProviderARNs": [
+          {
+            "Fn::GetAtt": [
+              "UserPool",
+              "Arn"
+            ]
+          }
+        ],
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        },
+        "Type": "COGNITO_USER_POOLS"
+      }
+    },
+    "OrderManagerServiceOrderTableBBA598CB": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "PK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "SK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "TS",
+            "AttributeType": "N"
+          },
+          {
+            "AttributeName": "ORDERSTATE",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "USERID",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "GSI-status",
+            "KeySchema": [
+              {
+                "AttributeName": "ORDERSTATE",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "SK",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            }
+          },
+          {
+            "IndexName": "GSI-userId",
+            "KeySchema": [
+              {
+                "AttributeName": "USERID",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "SK",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            }
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "PK",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "SK",
+            "KeyType": "RANGE"
+          }
+        ],
+        "LocalSecondaryIndexes": [
+          {
+            "IndexName": "LSI-timestamp",
+            "KeySchema": [
+              {
+                "AttributeName": "PK",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "TS",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            }
+          }
+        ],
+        "StreamSpecification": {
+          "StreamViewType": "NEW_AND_OLD_IMAGES"
+        },
+        "TableName": "serverlesspresso-order-table"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "OrderManagerServiceValidatorNewOrderFunctionServiceRoleAAA14FE5": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "OrderManagerServiceValidatorNewOrderFunctionServiceRoleDefaultPolicy2880B3D1": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OrderManagerServiceOrderTableBBA598CB",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OrderManagerServiceOrderTableBBA598CB",
+                          "Arn"
+                        ]
+                      },
+                      "/index/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "OrderManagerServiceValidatorNewOrderFunctionServiceRoleDefaultPolicy2880B3D1",
+        "Roles": [
+          {
+            "Ref": "OrderManagerServiceValidatorNewOrderFunctionServiceRoleAAA14FE5"
+          }
+        ]
+      }
+    },
+    "OrderManagerServiceValidatorNewOrderFunctionCE5DF2C7": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\n'use strict';\n\nconst { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');\nconst { DynamoDB } = require('@aws-sdk/client-dynamodb');\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\n// Triggered by event: DetailType: \"Validator.NewOrder\"\n\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 2))\n\n    const result = await documentClient.put({\n        TableName: process.env.TableName,\n        Item: {\n            PK: 'orders',\n            SK: event.detail.orderId,\n            USERID: event.detail.userId,\n            ORDERSTATE: 'CREATED',\n            bucketState: event.detail.bucket,\n            robot: (event.detail.robot || false),\n            TS: Date.now()\n        }\n    })\n\n    console.log({ result })\n}\n\n"
+        },
+        "Environment": {
+          "Variables": {
+            "TableName": {
+              "Ref": "OrderManagerServiceOrderTableBBA598CB"
+            }
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "OrderManagerServiceValidatorNewOrderFunctionServiceRoleAAA14FE5",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Timeout": 15
+      },
+      "DependsOn": [
+        "OrderManagerServiceValidatorNewOrderFunctionServiceRoleDefaultPolicy2880B3D1",
+        "OrderManagerServiceValidatorNewOrderFunctionServiceRoleAAA14FE5"
+      ]
+    },
+    "OrderManagerServiceSanitizeOrderLambdaServiceRole0959499C": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "OrderManagerServiceSanitizeOrderLambdaB71F1F12": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "# Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\n\ndef handler(event, ctx):\n    print(event)\n    order = event[\"body\"]\n    print(f\"sanitizeOrder(order): {order}\")\n\n    menu_list = [m[\"M\"] for m in event[\"menu\"][\"Item\"][\"value\"][\"L\"]]\n    ordered_drink = order[\"drink\"]\n\n    # # filter drinks from menu that correspond to ordered drink\n    menu_items_for_drink = [m for m in menu_list if m[\"drink\"][\"S\"] == ordered_drink]\n    if not menu_items_for_drink:\n        return False\n\n    # Check modifiers\n    # TODO: modifiers don't seem to be used at all, so let's just ignore them...\n    # ordered_modifiers = order[\"modifiers\"]\n    # for m in menu_items_for_drink:\n    #     item_modifiers = [im for im in m[\"modifiers\"][\"L\"]]\n\n    # Order and modifiers both exist in the menu\n    return True\n"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "OrderManagerServiceSanitizeOrderLambdaServiceRole0959499C",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.11",
+        "Timeout": 20
+      },
+      "DependsOn": [
+        "OrderManagerServiceSanitizeOrderLambdaServiceRole0959499C"
+      ]
+    },
+    "OrderManagerServiceGetOrderByIdFunctionServiceRoleA913E420": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "OrderManagerServiceGetOrderByIdFunctionEE3AF4C1": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\n'use strict'\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\nconst { SFN } = require(\"@aws-sdk/client-sfn\");\n\nconst stepFunctions = new SFN()\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\n// Update order\nconst getOrder = async (record) => {\n    const params = {\n        TableName: process.env.TableName,\n        Key: {\n            PK: 'orders',\n            SK: record.orderId,\n        }\n    }\n    // console.log(params)\n    const result = await documentClient.get(params)\n    // console.log(result)\n\n    return {\n        orderId: record.orderId,\n        drinkOrder: result.Item.drinkOrder,\n        orderState: result.Item.ORDERSTATE,\n        TS: result.TS\n    }\n}\n\n// Returns list of open orders, sorted by time\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 2))\n\n    const record = {\n        orderId: event.pathParameters.id,\n        userId: event.requestContext.authorizer.jwt.claims.sub\n    }\n\n    const result = await getOrder(record)\n\n    return {\n        \"statusCode\": 200,\n        \"body\": JSON.stringify({ result }),\n        \"isBase64Encoded\": false\n    }\n}\n\n"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "OrderManagerServiceGetOrderByIdFunctionServiceRoleA913E420",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Timeout": 15
+      },
+      "DependsOn": [
+        "OrderManagerServiceGetOrderByIdFunctionServiceRoleA913E420"
+      ]
+    },
+    "OrderManagerServiceWorkFlowStartedServiceRoleFAD459E3": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "OrderManagerServiceWorkFlowStartedServiceRoleDefaultPolicy219C0FF0": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OrderManagerServiceOrderTableBBA598CB",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OrderManagerServiceOrderTableBBA598CB",
+                          "Arn"
+                        ]
+                      },
+                      "/index/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "OrderManagerServiceWorkFlowStartedServiceRoleDefaultPolicy219C0FF0",
+        "Roles": [
+          {
+            "Ref": "OrderManagerServiceWorkFlowStartedServiceRoleFAD459E3"
+          }
+        ]
+      }
+    },
+    "OrderManagerServiceWorkFlowStartedD012DE68": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\n// Returns details of a Place ID where the app has user-generated content.\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 2))\n\n    const params ={\n        TableName: process.env.TableName,\n        Item: {\n            PK: 'orders',\n            SK: event.detail.orderId,\n            USERID: event.detail.userId,\n            ORDERSTATE: 'CREATED',\n            TaskToken: event.detail.TaskToken,\n            robot: (event.detail.robot || false),\n            TS: Date.now()\n        }\n    }\n\n    console.log(params)\n    const result = await documentClient.put(params).promise()\n}\n"
+        },
+        "Environment": {
+          "Variables": {
+            "TableName": {
+              "Ref": "OrderManagerServiceOrderTableBBA598CB"
+            }
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "OrderManagerServiceWorkFlowStartedServiceRoleFAD459E3",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Timeout": 15
+      },
+      "DependsOn": [
+        "OrderManagerServiceWorkFlowStartedServiceRoleDefaultPolicy219C0FF0",
+        "OrderManagerServiceWorkFlowStartedServiceRoleFAD459E3"
+      ]
+    },
+    "OrderManagerServiceWaitingCompletionServiceRoleD67A7CEC": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "OrderManagerServiceWaitingCompletionServiceRoleDefaultPolicy2D83E2B9": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OrderManagerServiceOrderTableBBA598CB",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OrderManagerServiceOrderTableBBA598CB",
+                          "Arn"
+                        ]
+                      },
+                      "/index/*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": "events:PutEvents",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "OrderManagerServiceWaitingCompletionServiceRoleDefaultPolicy2D83E2B9",
+        "Roles": [
+          {
+            "Ref": "OrderManagerServiceWaitingCompletionServiceRoleD67A7CEC"
+          }
+        ]
+      }
+    },
+    "OrderManagerServiceWaitingCompletionFC252249": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\n'use strict'\n\nconst { EventBridge } = require('@aws-sdk/client-eventbridge');\nconst eventbridge = new EventBridge()\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\n// Returns details of a Place ID where the app has user-generated content.\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 2))\n\n    const params = {\n        TableName: process.env.TableName,\n        Key: {\n            PK: 'orders',\n            SK: event.detail.orderId,\n        },\n        UpdateExpression: \"set TS = :TS, TaskToken = :TaskToken, orderNumber = :orderNumber\",\n        ConditionExpression: \"#userId = :userId\",\n        ExpressionAttributeNames:{\n            \"#userId\": \"USERID\"\n        },\n        ExpressionAttributeValues:{\n            \":userId\": event.detail.userId,\n            \":TaskToken\": event.detail.TaskToken,\n            \":orderNumber\": event.detail.orderNumber,\n            \":TS\": Date.now()\n        },\n        ReturnValues: \"ALL_NEW\"\n    }\n\n    console.log(params)\n    const result = await documentClient.update(params).promise()\n    console.log(result)\n\n    // Publish event to EventBridge\n    const ebParams = {\n        Entries: [\n            {\n                Detail: JSON.stringify({\n                    orderId: result.Attributes.SK,\n                    orderNumber: result.Attributes.orderNumber,\n                    state: result.Attributes.ORDERSTATE,\n                    drinkOrder: JSON.parse(result.Attributes.drinkOrder),\n                    userId: result.Attributes.USERID,\n                    robot: result.Attributes.robot,\n                    TS: result.Attributes.TS,\n                    Message:\"A Lambda function is invoked which stores the Step Functions Task Token in an Amazon DynamoDB table. The Task Token is later used to resume the workflow when the barista completes or cancels the order.\"\n                }),\n                DetailType: 'OrderManager.WaitingCompletion',\n                EventBusName: process.env.BusName,\n                Source: process.env.Source,\n                Time: new Date\n            }\n        ]\n    }\n\n    console.log('publishEvent: ', ebParams)\n    const response = await eventbridge.putEvents(ebParams).promise()\n    console.log('EventBridge putEvents:', response)\n}\n"
+        },
+        "Environment": {
+          "Variables": {
+            "TableName": {
+              "Ref": "OrderManagerServiceOrderTableBBA598CB"
+            },
+            "BusName": {
+              "Ref": "ServerlesspressoEventBus4F0AE0D8"
+            },
+            "Source": "lstesting.serverlesspresso"
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "OrderManagerServiceWaitingCompletionServiceRoleD67A7CEC",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Timeout": 15
+      },
+      "DependsOn": [
+        "OrderManagerServiceWaitingCompletionServiceRoleDefaultPolicy2D83E2B9",
+        "OrderManagerServiceWaitingCompletionServiceRoleD67A7CEC"
+      ]
+    },
+    "OrderManagerServiceRESTApiForOrderManager03927D4C": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Body": {
+          "Fn::Transform": {
+            "Name": "AWS::Include",
+            "Parameters": {
+              "Location": "s3://serverlesspresso-localstack-testing-41f2680b/api/order_manager_api.yaml"
+            }
+          }
+        }
+      }
+    },
+    "OrderManagerServiceOrderManagerStateMachineRoleB05D4222": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::FindInMap": [
+                    "ServiceprincipalMap",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "states"
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "OrderManagerServiceOrderManagerStateMachineRoleDefaultPolicy3EF4F643": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "events:PutEvents",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              }
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OrderManagerServiceSanitizeOrderLambdaB71F1F12",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OrderManagerServiceSanitizeOrderLambdaB71F1F12",
+                          "Arn"
+                        ]
+                      },
+                      ":*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ConfigServiceConfigTableD352B014",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            },
+            {
+              "Action": [
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OrderManagerServiceOrderTableBBA598CB",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OrderManagerServiceOrderTableBBA598CB",
+                          "Arn"
+                        ]
+                      },
+                      "/index/*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": [
+                "states:SendTaskSuccess",
+                "states:SendTaskFailure",
+                "states:SendTaskHeartbeat"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "OrderProcessorServiceOrderProcessorWorkflow0C0BFC49"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "OrderManagerServiceOrderManagerStateMachineRoleDefaultPolicy3EF4F643",
+        "Roles": [
+          {
+            "Ref": "OrderManagerServiceOrderManagerStateMachineRoleB05D4222"
+          }
+        ]
+      }
+    },
+    "OrderManagerStateMachine": {
+      "Type": "AWS::StepFunctions::StateMachine",
+      "Properties": {
+        "DefinitionString": "{\n  \"Comment\": \"A description of my state machine\",\n  \"StartAt\": \"Decide Action\",\n  \"States\": {\n    \"Decide Action\": {\n      \"Type\": \"Choice\",\n      \"Choices\": [\n        {\n          \"Variable\": \"$.action\",\n          \"StringEquals\": \"complete\",\n          \"Next\": \"Complete Order\"\n        },\n        {\n          \"Variable\": \"$.action\",\n          \"StringEquals\": \"cancel\",\n          \"Next\": \"Cancel Order\"\n        },\n        {\n          \"Variable\": \"$.action\",\n          \"StringEquals\": \"make\",\n          \"Next\": \"Claim Order\"\n        },\n        {\n          \"Variable\": \"$.action\",\n          \"StringEquals\": \"unmake\",\n          \"Next\": \"Claim Order\"\n        }\n      ],\n      \"Default\": \"Customer Put Order\"\n    },\n    \"Cancel Order\": {\n      \"Type\": \"Pass\",\n      \"Next\": \"DynamoDB Update Order Record\",\n      \"Result\": {\n        \"state\": \"Cancelled\"\n      },\n      \"ResultPath\": \"$.result\"\n    },\n    \"DynamoDB Update Order Record\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:states:::dynamodb:updateItem\",\n      \"Parameters\": {\n        \"TableName\": \"${OMTable}\",\n        \"Key\": {\n          \"PK\": {\n            \"S\": \"orders\"\n          },\n          \"SK\": {\n            \"S.$\": \"$.orderId\"\n          }\n        },\n        \"UpdateExpression\": \"set #OS = :OS\",\n        \"ExpressionAttributeNames\": {\n          \"#OS\": \"ORDERSTATE\"\n        },\n        \"ExpressionAttributeValues\": {\n          \":OS\": {\n            \"S.$\": \"$.result.state\"\n          }\n        },\n        \"ReturnValues\": \"ALL_NEW\"\n      },\n      \"ResultPath\": \"$.result\",\n      \"Next\": \"Construct record (1)\",\n      \"ResultSelector\": {\n        \"Attributes.$\": \"$.Attributes\"\n      }\n    },\n    \"Construct record (1)\": {\n      \"Type\": \"Pass\",\n      \"Next\": \"Emit Completed || Cancelled\",\n      \"ResultPath\": \"$.detail\",\n      \"Parameters\": {\n        \"orderId.$\": \"$.orderId\",\n        \"userId.$\": \"$.result.Attributes.USERID.S\",\n        \"ORDERSTATE.$\": \"$.result.Attributes.ORDERSTATE.S\",\n        \"Message\": \"Barrista has cancelled or completed teh order\"\n      }\n    },\n    \"Emit Completed || Cancelled\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:states:::events:putEvents\",\n      \"Parameters\": {\n        \"Entries\": [\n          {\n            \"Detail.$\": \"States.JsonToString($.detail)\",\n            \"DetailType.$\": \"States.Format('OrderManager.Order{}', $.detail.ORDERSTATE)\",\n            \"EventBusName\": \"Serverlesspresso\",\n            \"Source\": \"lstesting.serverlesspresso\",\n            \"Time.$\": \"$$.State.EnteredTime\"\n          }\n        ]\n      },\n      \"Next\": \"Resume Order Processor 1\",\n      \"ResultPath\": \"$.eventEmit\"\n    },\n    \"Complete Order\": {\n      \"Type\": \"Pass\",\n      \"Next\": \"DynamoDB Update Order Record\",\n      \"Result\": {\n        \"state\": \"Completed\"\n      },\n      \"ResultPath\": \"$.result\"\n    },\n    \"Customer Put Order\": {\n      \"Type\": \"Pass\",\n      \"Next\": \"get menu\"\n    },\n    \"get menu\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:states:::dynamodb:getItem\",\n      \"Parameters\": {\n        \"TableName\": \"${ConfigTable}\",\n        \"Key\": {\n          \"PK\": {\n            \"S\": \"menu\"\n          }\n        }\n      },\n      \"Next\": \"Sanitize order\",\n      \"ResultPath\": \"$.menu\"\n    },\n    \"Sanitize order\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:states:::lambda:invoke\",\n      \"Parameters\": {\n        \"Payload.$\": \"$\",\n        \"FunctionName\": \"${SanitizeOrderLambda}\"\n      },\n      \"Retry\": [\n        {\n          \"ErrorEquals\": [\n            \"Lambda.ServiceException\",\n            \"Lambda.AWSLambdaException\",\n            \"Lambda.SdkClientException\"\n          ],\n          \"IntervalSeconds\": 2,\n          \"MaxAttempts\": 6,\n          \"BackoffRate\": 2\n        }\n      ],\n      \"Next\": \"Is Order Valid?\",\n      \"ResultPath\": \"$.sanitise\"\n    },\n    \"Is Order Valid?\": {\n      \"Type\": \"Choice\",\n      \"Choices\": [\n        {\n          \"Variable\": \"$.sanitise.Payload\",\n          \"BooleanEquals\": false,\n          \"Next\": \"not a valid order\"\n        }\n      ],\n      \"Default\": \"Update order\"\n    },\n    \"not a valid order\": {\n      \"Type\": \"Succeed\"\n    },\n    \"Update order\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:states:::dynamodb:updateItem\",\n      \"Parameters\": {\n        \"TableName\": \"serverlesspresso-order-table\",\n        \"Key\": {\n          \"PK\": {\n            \"S\": \"orders\"\n          },\n          \"SK\": {\n            \"S.$\": \"$.orderId\"\n          }\n        },\n        \"UpdateExpression\": \"set #drinkOrder = :drinkOrder\",\n        \"ConditionExpression\": \"#userId = :userId AND attribute_exists(TaskToken)\",\n        \"ExpressionAttributeNames\": {\n          \"#drinkOrder\": \"drinkOrder\",\n          \"#userId\": \"USERID\"\n        },\n        \"ExpressionAttributeValues\": {\n          \":drinkOrder\": {\n            \"S.$\": \"States.JsonToString($.body)\"\n          },\n          \":userId\": {\n            \"S.$\": \"$.body.userId\"\n          }\n        },\n        \"ReturnValues\": \"ALL_NEW\"\n      },\n      \"Next\": \"Resume Order Processor 2\",\n      \"ResultSelector\": {\n        \"TaskToken.$\": \"$.Attributes.TaskToken.S\"\n      },\n      \"OutputPath\": \"$.record\",\n      \"ResultPath\": \"$.record\"\n    },\n    \"Resume Order Processor 1\": {\n      \"Type\": \"Task\",\n      \"Parameters\": {\n        \"Output\": \"{}\",\n        \"TaskToken.$\": \"$.result.Attributes.TaskToken.S\"\n      },\n      \"Resource\": \"arn:aws:states:::aws-sdk:sfn:sendTaskSuccess\",\n      \"End\": true\n    },\n    \"Resume Order Processor 2\": {\n      \"Type\": \"Task\",\n      \"Parameters\": {\n        \"Output\": \"{}\",\n        \"TaskToken.$\": \"$.TaskToken\"\n      },\n      \"Resource\": \"arn:aws:states:::aws-sdk:sfn:sendTaskSuccess\",\n      \"End\": true\n    },\n    \"Claim Order\": {\n      \"Type\": \"Pass\",\n      \"Next\": \"Make OR Unmake?\"\n    },\n    \"Make OR Unmake?\": {\n      \"Type\": \"Choice\",\n      \"Choices\": [\n        {\n          \"Variable\": \"$.action\",\n          \"StringEquals\": \"unmake\",\n          \"Next\": \"Unmake Order\"\n        },\n        {\n          \"Variable\": \"$.action\",\n          \"StringEquals\": \"make\",\n          \"Next\": \"DynamoDB Update Order\"\n        }\n      ],\n      \"Default\": \"DynamoDB Update Order\"\n    },\n    \"Unmake Order\": {\n      \"Type\": \"Pass\",\n      \"Parameters\": {\n        \"baristaUserId\": \"\",\n        \"orderId.$\": \"$.orderId\",\n        \"Message\": \"The barista has pressed the 'UnMake order' button, this Invokes a Lambda function via API Gateway, which updates the order in DynamoDB and emits a new 'make order' Event.\"\n      },\n      \"Next\": \"DynamoDB Update Order\"\n    },\n    \"DynamoDB Update Order\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:states:::dynamodb:updateItem\",\n      \"Parameters\": {\n        \"TableName\": \"serverlesspresso-order-table\",\n        \"Key\": {\n          \"PK\": {\n            \"S\": \"orders\"\n          },\n          \"SK\": {\n            \"S.$\": \"$.orderId\"\n          }\n        },\n        \"UpdateExpression\": \"set #baristaUserId = :baristaUserId\",\n        \"ExpressionAttributeNames\": {\n          \"#baristaUserId\": \"baristaUserId\"\n        },\n        \"ExpressionAttributeValues\": {\n          \":baristaUserId\": {\n            \"S.$\": \"$.baristaUserId\"\n          }\n        },\n        \"ReturnValues\": \"ALL_NEW\"\n      },\n      \"ResultSelector\": {\n        \"Attributes.$\": \"$.Attributes\"\n      },\n      \"ResultPath\": \"$.result\",\n      \"Next\": \"Construct record\"\n    },\n    \"Construct record\": {\n      \"Type\": \"Pass\",\n      \"Next\": \"EventBridge Emit Making Order\",\n      \"ResultPath\": \"$.detail\",\n      \"Parameters\": {\n        \"baristaUserId.$\": \"$.result.Attributes.baristaUserId.S\",\n        \"orderId.$\": \"$.orderId\",\n        \"userId.$\": \"$.result.Attributes.USERID.S\",\n        \"Message\": \"The barista has pressed the 'Make order' button, this Invokes a Lambda function via API Gateway, which updates the order in DynamoDB and emits a new 'make order' Event.\"\n      }\n    },\n    \"EventBridge Emit Making Order\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:states:::events:putEvents\",\n      \"Parameters\": {\n        \"Entries\": [\n          {\n            \"Detail.$\": \"States.JsonToString($.detail)\",\n            \"DetailType\": \"OrderManager.MakeOrder\",\n            \"EventBusName\": \"Serverlesspresso\",\n            \"Source\": \"lstesting.serverlesspresso\",\n            \"Time.$\": \"$$.State.EnteredTime\"\n          }\n        ]\n      },\n      \"End\": true\n    }\n  }\n}\n",
+        "DefinitionSubstitutions": {
+          "OMTable": {
+            "Ref": "OrderManagerServiceOrderTableBBA598CB"
+          },
+          "ConfigTable": {
+            "Ref": "ConfigServiceConfigTableD352B014"
+          },
+          "SanitizeOrderLambda": {
+            "Ref": "OrderManagerServiceSanitizeOrderLambdaB71F1F12"
+          }
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "OrderManagerServiceOrderManagerStateMachineRoleB05D4222",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "OrderManagerServiceOrderManagerStateMachineRoleDefaultPolicy3EF4F643",
+        "OrderManagerServiceOrderManagerStateMachineRoleB05D4222"
+      ],
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "RESTApiRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "states:StartExecution",
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Ref": "OrderManagerStateMachine"
+                  }
+                },
+                {
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:Query"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "OrderManagerServiceOrderTableBBA598CB",
+                      "Arn"
+                    ]
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "DynamoDBinteraction"
+          }
+        ]
+      }
+    },
+    "OrderProcessorServiceOrderProcessorWorkflowRole021AE0D2": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::FindInMap": [
+                    "ServiceprincipalMap",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "states"
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "OrderProcessorServiceOrderProcessorWorkflowRoleDefaultPolicy9FD87A7D": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":dynamodb:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":table/",
+                    {
+                      "Ref": "ConfigServiceConfigTableD352B014"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "Action": "states:ListExecutions",
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": "events:PutEvents",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              }
+            },
+            {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":dynamodb:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":table/",
+                    {
+                      "Ref": "CountingTable14EC498A"
+                    }
+                  ]
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "OrderProcessorServiceOrderProcessorWorkflowRoleDefaultPolicy9FD87A7D",
+        "Roles": [
+          {
+            "Ref": "OrderProcessorServiceOrderProcessorWorkflowRole021AE0D2"
+          }
+        ]
+      }
+    },
+    "OrderProcessorServiceOrderProcessorWorkflow0C0BFC49": {
+      "Type": "AWS::StepFunctions::StateMachine",
+      "Properties": {
+        "DefinitionString": {
+          "Fn::Join": [
+            "",
+            [
+              "{\"StartAt\":\"DynamoDB Get Shop status\",\"States\":{\"DynamoDB Get Shop status\":{\"Next\":\"Shop open?\",\"Type\":\"Task\",\"ResultPath\":\"$.GetStore\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::dynamodb:getItem\",\"Parameters\":{\"Key\":{\"PK\":{\"S\":\"config\"}},\"TableName\":\"",
+              {
+                "Ref": "ConfigServiceConfigTableD352B014"
+              },
+              "\",\"ConsistentRead\":false}},\"Shop open?\":{\"Type\":\"Choice\",\"Choices\":[{\"Not\":{\"Variable\":\"$.GetStore.Item.storeOpen.BOOL\",\"BooleanEquals\":true},\"Next\":\"Emit - Shop not ready\"}],\"Default\":\"ListExecutions\"},\"ListExecutions\":{\"Next\":\"Is capacity available?\",\"Type\":\"Task\",\"ResultPath\":\"$.isCapacityAvailable\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::aws-sdk:sfn:listExecutions\",\"Parameters\":{\"StateMachineArn.$\":\"$$.StateMachine.Id\",\"MaxResults\":100,\"StatusFilter\":\"RUNNING\"}},\"Is capacity available?\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.isCapacityAvailable.Executions[5]\",\"IsPresent\":true,\"Next\":\"Emit - Shop not ready\"}],\"Default\":\"Emit - Workflow Started TT\"},\"Emit - Workflow Started TT\":{\"Next\":\"Generate Order Number\",\"Catch\":[{\"ErrorEquals\":[\"States.ALL\"],\"Next\":\"Customer timedout\"}],\"Type\":\"Task\",\"HeartbeatSeconds\":300,\"ResultPath\":null,\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::events:putEvents.waitForTaskToken\",\"Parameters\":{\"Entries\":[{\"Detail\":{\"Message\":\"The workflow waits for your order to be submitted. It emits an event with a unique 'task token'. The token is stored in an Amazon DynamoDB table, along with your order ID.\",\"TaskToken.$\":\"$$.Task.Token\",\"orderId.$\":\"$.detail.orderId\",\"userId.$\":\"$.detail.userId\"},\"DetailType\":\"OrderProcessor.WorkflowStarted\",\"EventBusName\":\"",
+              {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              },
+              "\",\"Source\":\"lstesting.serverlesspresso\"}]}},\"Generate Order Number\":{\"Next\":\"Emit - Waiting Completion TT\",\"Type\":\"Task\",\"ResultPath\":\"$.Order.Payload\",\"ResultSelector\":{\"orderNumber.$\":\"$.Attributes.IDvalue.N\"},\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::dynamodb:updateItem\",\"Parameters\":{\"Key\":{\"PK\":{\"S\":\"orderID\"}},\"TableName\":\"",
+              {
+                "Ref": "CountingTable14EC498A"
+              },
+              "\",\"ExpressionAttributeValues\":{\":val\":{\"N\":\"1\"}},\"ReturnValues\":\"UPDATED_NEW\",\"UpdateExpression\":\"set IDvalue = IDvalue + :val\"}},\"Emit - Waiting Completion TT\":{\"Next\":\"Pass\",\"Catch\":[{\"ErrorEquals\":[\"States.Timeout\"],\"ResultPath\":\"$.comment\",\"Next\":\"Barista timedout\"}],\"Type\":\"Task\",\"HeartbeatSeconds\":900,\"ResultPath\":\"$.order\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::events:putEvents.waitForTaskToken\",\"Parameters\":{\"Entries\":[{\"Detail\":{\"Message\":\"You pressed 'submit order'. The workflow resumes using the stored 'task token', it generates your order number. It then pauses again, emitting an event with a new 'task token'.\",\"TaskToken.$\":\"$$.Task.Token\",\"orderId.$\":\"$.detail.orderId\",\"orderNumber.$\":\"$.Order.Payload.orderNumber\",\"userId.$\":\"$.detail.userId\"},\"DetailType\":\"OrderProcessor.WaitingCompletion\",\"EventBusName\":\"",
+              {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              },
+              "\",\"Source\":\"lstesting.serverlesspresso\"}]}},\"Pass\":{\"Type\":\"Pass\",\"Next\":\"Emit - order finished\"},\"Emit - order finished\":{\"End\":true,\"Type\":\"Task\",\"ResultPath\":\"$.order\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::events:putEvents\",\"Parameters\":{\"Entries\":[{\"Detail\":{\"Message\":\"The order has reached the end of the workflow, and so a final event is emitted to alert other services to this.\",\"userId.$\":\"$.detail.userId\",\"orderId.$\":\"$.detail.orderId\"},\"DetailType\":\"OrderProcessor.orderFinished\",\"EventBusName\":\"",
+              {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              },
+              "\",\"Source\":\"lstesting.serverlesspresso\"}]}},\"Barista timedout\":{\"Type\":\"Pass\",\"InputPath\":\"$.cause\",\"Next\":\"Emit - error timeout\"},\"Emit - error timeout\":{\"End\":true,\"Type\":\"Task\",\"HeartbeatSeconds\":900,\"ResultPath\":\"$.order\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::events:putEvents\",\"Parameters\":{\"Entries\":[{\"Detail\":{\"Message\":\"The order timed out. Step Functions waits a set amount of time (5 minutes for a customer, 15 minutes for a barista), no action was taken and so the order is ended.\",\"userId.$\":\"$.detail.userId\",\"orderId.$\":\"$.detail.orderId\",\"cause.$\":\"$.cause\"},\"DetailType\":\"OrderProcessor.OrderTimeOut\",\"EventBusName\":\"",
+              {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              },
+              "\",\"Source\":\"lstesting.serverlesspresso\"}]}},\"Customer timedout\":{\"Type\":\"Pass\",\"Next\":\"Emit - error timeout\"},\"Emit - Shop not ready\":{\"End\":true,\"Type\":\"Task\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::events:putEvents\",\"Parameters\":{\"Entries\":[{\"Detail\":{\"Message\":\"The Step functions workflow checks if the shop is open and has capacity to serve a new order by invoking a Lambda function that queries the Shop config service. The shop was not ready, and so a 'not ready' event is emitted to cancel the current order.\",\"userId.$\":\"$.detail.userId\"},\"DetailType\":\"OrderProcessor.ShopUnavailable\",\"EventBusName\":\"",
+              {
+                "Fn::GetAtt": [
+                  "ServerlesspressoEventBus4F0AE0D8",
+                  "Arn"
+                ]
+              },
+              "\",\"Source\":\"lstesting.serverlesspresso\"}]}}}}"
+            ]
+          ]
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "OrderProcessorServiceOrderProcessorWorkflowRole021AE0D2",
+            "Arn"
+          ]
+        },
+        "StateMachineName": "OrderProcessorWorkflow"
+      },
+      "DependsOn": [
+        "OrderProcessorServiceOrderProcessorWorkflowRoleDefaultPolicy9FD87A7D",
+        "OrderProcessorServiceOrderProcessorWorkflowRole021AE0D2"
+      ],
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "OrderProcessorServiceOrderProcessorWorkflowEventsRole4BC3B8D3": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "OrderProcessorServiceOrderProcessorWorkflowEventsRoleDefaultPolicyB76D09DC": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "OrderProcessorServiceOrderProcessorWorkflow0C0BFC49"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "OrderProcessorServiceOrderProcessorWorkflowEventsRoleDefaultPolicyB76D09DC",
+        "Roles": [
+          {
+            "Ref": "OrderProcessorServiceOrderProcessorWorkflowEventsRole4BC3B8D3"
+          }
+        ]
+      }
+    },
+    "OrderProcessorServiceNewOrder4E49E343": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventBusName": {
+          "Ref": "ServerlesspressoEventBus4F0AE0D8"
+        },
+        "EventPattern": {
+          "detail-type": [
+            "Validator.NewOrder"
+          ],
+          "source": [
+            "lstesting.serverlesspresso"
+          ]
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Ref": "OrderProcessorServiceOrderProcessorWorkflow0C0BFC49"
+            },
+            "Id": "Target0",
+            "RoleArn": {
+              "Fn::GetAtt": [
+                "OrderProcessorServiceOrderProcessorWorkflowEventsRole4BC3B8D3",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "OrderProcessorServiceWorkflowStartedB6F0114D": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventBusName": {
+          "Ref": "ServerlesspressoEventBus4F0AE0D8"
+        },
+        "EventPattern": {
+          "detail-type": [
+            "OrderProcessor.WorkflowStarted"
+          ],
+          "source": [
+            "lstesting.serverlesspresso"
+          ]
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "OrderManagerServiceWorkFlowStartedD012DE68",
+                "Arn"
+              ]
+            },
+            "Id": "Target0"
+          }
+        ]
+      }
+    },
+    "OrderProcessorServiceWorkflowStartedAllowEventRuleServerlesspressoStackOrderManagerServiceWorkFlowStarted62E548D6F96F1AA5": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "OrderManagerServiceWorkFlowStartedD012DE68",
+            "Arn"
+          ]
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "OrderProcessorServiceWorkflowStartedB6F0114D",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "PopulateDbFnServiceRoleB4CF4518": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "PopulateDbFnServiceRoleDefaultPolicy8B14EE23": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ConfigServiceConfigTableD352B014",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "CountingTable14EC498A",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "PopulateDbFnServiceRoleDefaultPolicy8B14EE23",
+        "Roles": [
+          {
+            "Ref": "PopulateDbFnServiceRoleB4CF4518"
+          }
+        ]
+      }
+    },
+    "PopulateDbFnECBC3588": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop/setup/initDB/initMenu.js\n// modified from official sample to fit into a single file\n\nconst { DynamoDB } = require('@aws-sdk/client-dynamodb');\n\nconst documentClient = new DynamoDB({\n  region: process.env.AWS_REGION || 'us-east-1'\n})\n\n\nconst configTableName = process.env.configTable\nconst countingTableName = process.env.countingTable\n\nconst initCountingState = [\n  {\n    \"PK\": {\n      \"S\": \"orderID\"\n    },\n    \"IDvalue\": {\n      \"N\": \"0\"\n    }\n  }\n];\n\nconst initMenuState = [\n   {\n  \"PK\": {\n    \"S\": \"menu\"\n  },\n  \"value\": {\n    \"L\": [\n      {\n        \"M\": {\n          \"available\": {\n            \"BOOL\": true\n          },\n          \"icon\": {\n            \"S\": \"barista-icons_espresso-alternative\"\n          },\n          \"modifiers\": {\n            \"L\": []\n          },\n          \"drink\": {\n            \"S\": \"Espresso\"\n          }\n        }\n      },\n      {\n        \"M\": {\n          \"available\": {\n            \"BOOL\": true\n          },\n          \"icon\": {\n            \"S\": \"barista-icons_cappuccino-alternative\"\n          },\n          \"modifiers\": {\n            \"L\": []\n          },\n          \"drink\": {\n            \"S\": \"Cappuccino\"\n          }\n        }\n      },\n      {\n        \"M\": {\n          \"available\": {\n            \"BOOL\": true\n          },\n          \"icon\": {\n            \"S\": \"barista-icons_cafe-latte\"\n          },\n          \"modifiers\": {\n            \"L\": []\n          },\n          \"drink\": {\n            \"S\": \"Latte\"\n          }\n        }\n      },\n      {\n        \"M\": {\n          \"available\": {\n            \"BOOL\": true\n          },\n          \"icon\": {\n            \"S\": \"barista-icons_flat-white-alternative@2x\"\n          },\n          \"modifiers\": {\n            \"L\": []\n          },\n          \"drink\": {\n            \"S\": \"Flat White\"\n          }\n        }\n      },\n      {\n        \"M\": {\n          \"available\": {\n            \"BOOL\": true\n          },\n          \"icon\": {\n            \"S\": \"barista-icons_americano\"\n          },\n          \"modifiers\": {\n            \"L\": []\n          },\n          \"drink\": {\n            \"S\": \"Americano\"\n          }\n        }\n      },\n      {\n        \"M\": {\n          \"available\": {\n            \"BOOL\": true\n          },\n          \"icon\": {\n            \"S\": \"barista-icons_americano\"\n          },\n          \"modifiers\": {\n            \"L\": []\n          },\n          \"drink\": {\n            \"S\": \"Coffee of the day\"\n          }\n        }\n      }\n    ]\n  }\n},\n    {\n      \"PK\": {\n        \"S\": \"config\"\n      },\n      \"storeOpen\": {\n        \"BOOL\": true\n      },\n      \"maxOrdersPerUser\": {\n        \"N\": \"1\"\n      },\n      \"maxOrdersInQueue\": {\n        \"N\": \"10\"\n      }\n    }\n];\n\nconst initMenu = async () => {\n  try {\n    // BatchWrite params template\n    const params = {\n      RequestItems: {\n        [configTableName]: [],\n        [countingTableName]: []\n      }\n    }\n\n    // Load in d template\n    initMenuState.map((d) => {\n      console.log(d)\n      params.RequestItems[configTableName].push ({\n        PutRequest: {\n          Item: {\n            ...d\n          }\n        }\n      })\n    })\n\n    initCountingState.map((d) => {\n      console.log(d)\n      params.RequestItems[countingTableName].push ({\n        PutRequest: {\n          Item: {\n            ...d\n          }\n        }\n      })\n    })\n\n    console.log('params',JSON.stringify(params,null,0))\n    const result = await documentClient.batchWriteItem(params).promise()\n    console.log('initMenus result: ', result)\n  } catch (err) {\n    console.error('initMenus error: ', err)\n  }\n}\n\nexports.handler = async function (event, context) {\n  console.log('REQUEST RECEIVED:\\n' + JSON.stringify(event))\n  await initMenu()\n  return \"ok\"\n}\n"
+        },
+        "Environment": {
+          "Variables": {
+            "configTable": {
+              "Ref": "ConfigServiceConfigTableD352B014"
+            },
+            "countingTable": {
+              "Ref": "CountingTable14EC498A"
+            }
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "PopulateDbFnServiceRoleB4CF4518",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "PopulateDbFnServiceRoleDefaultPolicy8B14EE23",
+        "PopulateDbFnServiceRoleB4CF4518"
+      ]
+    }
+  },
+  "Outputs": {
+    "ValidatorServiceRESTApiValidatorServiceEndpoint3F21CEDD": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/",
+            {
+              "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageprod0D251F60"
+            },
+            "/"
+          ]
+        ]
+      }
+    },
+    "OrderProcessorWorkflowStateMachineArn": {
+      "Value": {
+        "Ref": "OrderProcessorServiceOrderProcessorWorkflow0C0BFC49"
+      }
+    },
+    "OrderManagerStateMachineArn": {
+      "Value": {
+        "Ref": "OrderManagerStateMachine"
+      }
+    },
+    "PopulateDbFunctionName": {
+      "Value": {
+        "Ref": "PopulateDbFnECBC3588"
+      }
+    },
+    "ConfigTableName": {
+      "Value": {
+        "Ref": "ConfigServiceConfigTableD352B014"
+      }
+    },
+    "CountingTableName": {
+      "Value": {
+        "Ref": "CountingTable14EC498A"
+      }
+    },
+    "OrderTableName": {
+      "Value": {
+        "Ref": "OrderManagerServiceOrderTableBBA598CB"
+      }
+    },
+    "EventBusName": {
+      "Value": {
+        "Ref": "ServerlesspressoEventBus4F0AE0D8"
+      }
+    },
+    "AdminFnName": {
+      "Value": {
+        "Ref": "PublisherServicePublisherFunctionAdmin226F35A2"
+      }
+    },
+    "UserFnName": {
+      "Value": {
+        "Ref": "PublisherServicePublisherFunctionUserE00A536B"
+      }
+    },
+    "ConfigFnName": {
+      "Value": {
+        "Ref": "PublisherServicePublisherFunctionConfig80C87C83"
+      }
+    },
+    "UserPoolId": {
+      "Value": {
+        "Ref": "UserPool"
+      }
+    },
+    "UserPoolClientId": {
+      "Value": {
+        "Ref": "AuthServiceUserPoolUserPoolClient16DCF8BB"
+      }
+    },
+    "ValidatorTableName": {
+      "Value": {
+        "Ref": "ValidatorServiceValidatorTable7D2B03D6"
+      }
+    },
+    "LogAllLogGroupName": {
+      "Value": {
+        "Ref": "DebugLogGroup630DE26B"
+      }
+    }
+  },
+  "Mappings": {
+    "ServiceprincipalMap": {
+      "af-south-1": {
+        "states": "states.af-south-1.amazonaws.com"
+      },
+      "ap-east-1": {
+        "states": "states.ap-east-1.amazonaws.com"
+      },
+      "ap-northeast-1": {
+        "states": "states.ap-northeast-1.amazonaws.com"
+      },
+      "ap-northeast-2": {
+        "states": "states.ap-northeast-2.amazonaws.com"
+      },
+      "ap-northeast-3": {
+        "states": "states.ap-northeast-3.amazonaws.com"
+      },
+      "ap-south-1": {
+        "states": "states.ap-south-1.amazonaws.com"
+      },
+      "ap-south-2": {
+        "states": "states.ap-south-2.amazonaws.com"
+      },
+      "ap-southeast-1": {
+        "states": "states.ap-southeast-1.amazonaws.com"
+      },
+      "ap-southeast-2": {
+        "states": "states.ap-southeast-2.amazonaws.com"
+      },
+      "ap-southeast-3": {
+        "states": "states.ap-southeast-3.amazonaws.com"
+      },
+      "ap-southeast-4": {
+        "states": "states.ap-southeast-4.amazonaws.com"
+      },
+      "ap-southeast-5": {
+        "states": "states.ap-southeast-5.amazonaws.com"
+      },
+      "ap-southeast-7": {
+        "states": "states.ap-southeast-7.amazonaws.com"
+      },
+      "ca-central-1": {
+        "states": "states.ca-central-1.amazonaws.com"
+      },
+      "ca-west-1": {
+        "states": "states.ca-west-1.amazonaws.com"
+      },
+      "cn-north-1": {
+        "states": "states.cn-north-1.amazonaws.com"
+      },
+      "cn-northwest-1": {
+        "states": "states.cn-northwest-1.amazonaws.com"
+      },
+      "eu-central-1": {
+        "states": "states.eu-central-1.amazonaws.com"
+      },
+      "eu-central-2": {
+        "states": "states.eu-central-2.amazonaws.com"
+      },
+      "eu-isoe-west-1": {
+        "states": "states.eu-isoe-west-1.amazonaws.com"
+      },
+      "eu-north-1": {
+        "states": "states.eu-north-1.amazonaws.com"
+      },
+      "eu-south-1": {
+        "states": "states.eu-south-1.amazonaws.com"
+      },
+      "eu-south-2": {
+        "states": "states.eu-south-2.amazonaws.com"
+      },
+      "eu-west-1": {
+        "states": "states.eu-west-1.amazonaws.com"
+      },
+      "eu-west-2": {
+        "states": "states.eu-west-2.amazonaws.com"
+      },
+      "eu-west-3": {
+        "states": "states.eu-west-3.amazonaws.com"
+      },
+      "il-central-1": {
+        "states": "states.il-central-1.amazonaws.com"
+      },
+      "me-central-1": {
+        "states": "states.me-central-1.amazonaws.com"
+      },
+      "me-south-1": {
+        "states": "states.me-south-1.amazonaws.com"
+      },
+      "mx-central-1": {
+        "states": "states.mx-central-1.amazonaws.com"
+      },
+      "sa-east-1": {
+        "states": "states.sa-east-1.amazonaws.com"
+      },
+      "us-east-1": {
+        "states": "states.us-east-1.amazonaws.com"
+      },
+      "us-east-2": {
+        "states": "states.us-east-2.amazonaws.com"
+      },
+      "us-gov-east-1": {
+        "states": "states.us-gov-east-1.amazonaws.com"
+      },
+      "us-gov-west-1": {
+        "states": "states.us-gov-west-1.amazonaws.com"
+      },
+      "us-iso-east-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-iso-west-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-isob-east-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-west-1": {
+        "states": "states.us-west-1.amazonaws.com"
+      },
+      "us-west-2": {
+        "states": "states.us-west-2.amazonaws.com"
+      }
+    }
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Type": "AWS::SSM::Parameter::Value<String>",
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+    }
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5"
+                  ],
+                  {
+                    "Ref": "BootstrapVersion"
+                  }
+                ]
+              }
+            ]
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+        }
+      ]
+    }
+  }
+}

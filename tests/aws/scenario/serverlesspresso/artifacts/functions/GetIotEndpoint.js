@@ -1,6 +1,6 @@
 // Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop
 
-const aws = require("aws-sdk")
+const { IoT } = require("@aws-sdk/client-iot");
 
 exports.handler = function (event, context) {
     console.log("REQUEST RECEIVED:\n" + JSON.stringify(event))
@@ -11,8 +11,8 @@ exports.handler = function (event, context) {
         return
     }
 
-    const iot = new aws.Iot()
-    iot.describeEndpoint({}, (err, data) => {
+    const iot = new IoT()
+    iot.describeEndpoint({ endpointType: "iot:Data-ATS" }, (err, data) => {
         let responseData, responseStatus
         if (err) {
             responseStatus = "FAILED"
@@ -76,3 +76,4 @@ function sendResponse(event, context, responseStatus, responseData) {
     request.write(responseBody)
     request.end()
 }
+

@@ -1,8 +1,9 @@
 // Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop
 
-const AWS = require('aws-sdk')
-AWS.config.update({ region: process.env.AWS_REGION })
-const documentClient = new AWS.DynamoDB.DocumentClient()
+const { DynamoDBDocument } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDB } = require("@aws-sdk/client-dynamodb");
+
+const documentClient = DynamoDBDocument.from(new DynamoDB())
 
 // Returns details of a Place ID where the app has user-generated content.
 exports.handler = async (event) => {
