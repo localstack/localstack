@@ -38,7 +38,12 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
-from localstack.utils.aws.arns import events_archive_arn, events_replay_arn, events_rule_arn
+from localstack.utils.aws.arns import (
+    event_bus_arn,
+    events_archive_arn,
+    events_replay_arn,
+    events_rule_arn,
+)
 from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
@@ -198,18 +203,20 @@ class EventBus:
     tags: TagList = field(default_factory=list)
     policy: Optional[ResourcePolicy] = None
     rules: RuleDict = field(default_factory=dict)
-    arn: Arn = field(init=False)
     creation_time: Timestamp = field(init=False)
     last_modified_time: Timestamp = field(init=False)
 
     def __post_init__(self):
-        self.arn = f"arn:aws:events:{self.region}:{self.account_id}:event-bus/{self.name}"
         self.creation_time = datetime.now(timezone.utc)
         self.last_modified_time = datetime.now(timezone.utc)
         if self.rules is None:
             self.rules = {}
         if self.tags is None:
             self.tags = []
+
+    @property
+    def arn(self) -> Arn:
+        return event_bus_arn(self.name, self.account_id, self.region)
 
 
 EventBusDict = dict[EventBusName, EventBus]
