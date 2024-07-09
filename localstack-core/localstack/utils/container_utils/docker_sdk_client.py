@@ -611,7 +611,7 @@ class SdkDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
+        volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
@@ -636,7 +636,7 @@ class SdkDockerClient(ContainerClient):
             parsed_flags = Util.parse_additional_flags(
                 additional_flags,
                 env_vars=env_vars,
-                mounts=mount_volumes,
+                volumes=volumes,
                 network=network,
                 platform=platform,
                 privileged=privileged,
@@ -647,7 +647,7 @@ class SdkDockerClient(ContainerClient):
             )
             env_vars = parsed_flags.env_vars
             extra_hosts = parsed_flags.extra_hosts
-            mount_volumes = parsed_flags.mounts
+            volumes = parsed_flags.volumes
             labels = parsed_flags.labels
             network = parsed_flags.network
             platform = parsed_flags.platform
@@ -694,8 +694,8 @@ class SdkDockerClient(ContainerClient):
                     for ulimit in ulimits
                 ]
             mounts = None
-            if mount_volumes:
-                mounts = Util.convert_mount_list_to_dict(mount_volumes)
+            if volumes:
+                mounts = Util.convert_mount_list_to_dict(volumes)
 
             def create_container():
                 return self.client().containers.create(
@@ -740,7 +740,7 @@ class SdkDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
+        volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
@@ -771,7 +771,7 @@ class SdkDockerClient(ContainerClient):
                 detach=detach,
                 remove=remove and detach,
                 command=command,
-                mount_volumes=mount_volumes,
+                volumes=volumes,
                 ports=ports,
                 exposed_ports=exposed_ports,
                 env_vars=env_vars,

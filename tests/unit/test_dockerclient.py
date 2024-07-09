@@ -105,7 +105,7 @@ class TestArgumentParsing:
         flags = Util.parse_additional_flags(
             argument_string,
             env_vars=env_vars,
-            mounts=mounts,
+            volumes=mounts,
             network=network,
             platform=platform,
             privileged=privileged,
@@ -130,7 +130,7 @@ class TestArgumentParsing:
             "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"
         )
         flags = Util.parse_additional_flags(
-            argument_string, env_vars=env_vars, ports=ports, mounts=mounts
+            argument_string, env_vars=env_vars, ports=ports, volumes=mounts
         )
         assert {
             "host.docker.internal": "host-gateway",
@@ -151,10 +151,10 @@ class TestArgumentParsing:
     def test_file_paths(self):
         argument_string = r'-v "/tmp/test.jar:/tmp/foo bar/test.jar"'
         flags = Util.parse_additional_flags(argument_string)
-        assert flags.mounts == [(r"/tmp/test.jar", "/tmp/foo bar/test.jar")]
+        assert flags.volumes == [(r"/tmp/test.jar", "/tmp/foo bar/test.jar")]
         argument_string = r'-v "/tmp/test-foo_bar.jar:/tmp/test-foo_bar2.jar"'
         flags = Util.parse_additional_flags(argument_string)
-        assert flags.mounts == [(r"/tmp/test-foo_bar.jar", "/tmp/test-foo_bar2.jar")]
+        assert flags.volumes == [(r"/tmp/test-foo_bar.jar", "/tmp/test-foo_bar2.jar")]
 
     def test_labels(self):
         argument_string = r"--label foo=bar.123"
@@ -220,16 +220,16 @@ class TestArgumentParsing:
     def test_windows_paths(self):
         argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task"'
         flags = Util.parse_additional_flags(argument_string)
-        assert flags.mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
+        assert flags.volumes == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
         argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task:ro"'
         flags = Util.parse_additional_flags(argument_string)
-        assert flags.mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
+        assert flags.volumes == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
         argument_string = r'-v "C:\Users\Some User\Some Path:/var/task:ro"'
         flags = Util.parse_additional_flags(argument_string)
-        assert flags.mounts == [(r"C:\Users\Some User\Some Path", "/var/task")]
+        assert flags.volumes == [(r"C:\Users\Some User\Some Path", "/var/task")]
         argument_string = r'-v "/var/test:/var/task:ro"'
         flags = Util.parse_additional_flags(argument_string)
-        assert flags.mounts == [("/var/test", "/var/task")]
+        assert flags.volumes == [("/var/test", "/var/task")]
 
     def test_random_ports(self):
         argument_string = r"-p 0:80"
