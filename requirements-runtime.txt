@@ -31,7 +31,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.33.22
     # via localstack-core (pyproject.toml)
-awscrt==0.20.12
+awscrt==0.21.0
     # via localstack-core
 boto3==1.34.140
     # via
@@ -58,13 +58,13 @@ cachetools==5.3.3
     #   localstack-core (pyproject.toml)
 cbor2==5.6.4
     # via localstack-core
-certifi==2024.6.2
+certifi==2024.7.4
     # via
     #   opensearch-py
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.4.2
+cfn-lint==1.5.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -91,7 +91,7 @@ dill==0.3.6
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-dnslib==0.9.24
+dnslib==0.9.25
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -159,7 +159,7 @@ jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.22.0
+jsonschema==4.23.0
     # via
     #   aws-sam-translator
     #   openapi-schema-validator
@@ -225,9 +225,9 @@ pyasn1==0.6.0
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.8.0
+pydantic==2.8.2
     # via aws-sam-translator
-pydantic-core==2.20.0
+pydantic-core==2.20.1
     # via pydantic
 pygments==2.18.0
     # via rich
@@ -293,7 +293,7 @@ rich==13.7.1
     #   localstack-core (pyproject.toml)
 rolo==0.5.1
     # via localstack-core
-rpds-py==0.18.1
+rpds-py==0.19.0
     # via
     #   jsonschema
     #   referencing
@@ -315,7 +315,7 @@ six==1.16.0
     #   python-dateutil
     #   requests-aws4auth
     #   rfc3339-validator
-sympy==1.12.1
+sympy==1.13.0
     # via cfn-lint
 tailer==0.4.1
     # via
