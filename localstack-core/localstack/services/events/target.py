@@ -87,6 +87,15 @@ def replace_template_placeholders(
 
 
 class TargetSender(ABC):
+    target: Target
+    rule_arn: Arn
+    rule_name: RuleName
+    service: str
+
+    region: str
+    account_id: str
+    _client: BaseClient | None
+
     def __init__(
         self,
         target: Target,
@@ -434,6 +443,10 @@ class SystemsManagerSender(TargetSender):
 
 class TargetSenderFactory:
     # supported targets: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html
+    target: Target
+    rule_arn: Arn
+    rule_name: RuleName
+
     target_map = {
         "apigateway": ApiGatewayTargetSender,
         "appsync": AppSyncTargetSender,
