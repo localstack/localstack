@@ -47,9 +47,9 @@ commands:
              }
 
              if [[ "$only_acceptance_tests" == "true" ]]; then
-                 set_env_vars "true" "dev" "Only acceptance tests run, the default tag is 'dev'"
+                 set_env_vars "true" "latest" "Only acceptance tests run, the default tag is 'latest'"
              elif [[ "$git_branch" == "master" ]] && [[ "$trigger_source" == "webhook" ]]; then
-                 set_env_vars "true" "dev" "Regular push run to master means only acceptance test run, the default tag is 'dev'"
+                 set_env_vars "true" "latest" "Regular push run to master means only acceptance test run, the default tag is 'latest'"
              else
                  set_env_vars "false" "latest" "All tests run, the default tag is 'latest'"
              fi
