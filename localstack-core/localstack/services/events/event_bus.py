@@ -10,13 +10,21 @@ from localstack.aws.api.events import (
     Principal,
     ResourceNotFoundException,
     StatementId,
-    String,
     TagList,
 )
 from localstack.services.events.models import EventBus, ResourcePolicy, RuleDict, Statement
 
 
 class EventBusService:
+    name: EventBusName
+    region: str
+    account_id: str
+    event_source_name: str | None
+    tags: TagList | None
+    policy: str | None
+    rules: RuleDict | None
+    event_bus: EventBus
+
     def __init__(
         self,
         name: EventBusName,
@@ -38,7 +46,7 @@ class EventBusService:
         )
 
     @property
-    def arn(self):
+    def arn(self) -> Arn:
         return self.event_bus.arn
 
     def put_permission(
@@ -47,7 +55,7 @@ class EventBusService:
         principal: Principal,
         statement_id: StatementId,
         condition: Condition,
-        policy: String,
+        policy: str,
     ):
         if policy and any([action, principal, statement_id, condition]):
             raise ValueError("Combination of policy with other arguments is not allowed")
@@ -87,7 +95,14 @@ class EventBusService:
             ]
             self.event_bus.last_modified_time = datetime.now(timezone.utc)
 
-    def _pars_statement(self, statement_id, action, principal, resource_arn, condition):
+    def _pars_statement(
+        self,
+        statement_id: StatementId,
+        action: Action,
+        principal: Principal,
+        resource_arn: Arn,
+        condition: Condition,
+    ) -> Statement:
         if condition and principal != "*":
             raise ValueError("Condition can only be set when principal is '*'")
         if principal != "*":
