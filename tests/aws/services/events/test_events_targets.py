@@ -50,6 +50,7 @@ class TestEventTargetEvents:
         region_name,
         account_id,
         events_put_rule,
+        create_role_event_bus_source_to_bus_target,
         create_sqs_events_target,
         aws_client,
         snapshot,
@@ -71,43 +72,10 @@ class TestEventTargetEvents:
             ]
 
         # Create permission for event bus source to send events to event bus target
-        role_name_bus_source_to_bus_target = f"event-bus-source-to-target-role-{short_uid()}"
-        assume_role_policy_document_bus_source_to_bus_target = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
-            ],
-        }
+        role_arn_bus_source_to_bus_target = create_role_event_bus_source_to_bus_target()
 
-        role_arn_bus_source_to_bus_target = aws_client.iam.create_role(
-            RoleName=role_name_bus_source_to_bus_target,
-            AssumeRolePolicyDocument=json.dumps(
-                assume_role_policy_document_bus_source_to_bus_target
-            ),
-        )["Role"]["Arn"]
-
-        policy_name_bus_source_to_bus_target = f"event-bus-source-to-target-policy-{short_uid()}"
-        policy_document_bus_source_to_bus_target = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "",
-                    "Effect": "Allow",
-                    "Action": "events:PutEvents",
-                    "Resource": "arn:aws:events:*:*:event-bus/*",
-                }
-            ],
-        }
-
-        aws_client.iam.put_role_policy(
-            RoleName=role_name_bus_source_to_bus_target,
-            PolicyName=policy_name_bus_source_to_bus_target,
-            PolicyDocument=json.dumps(policy_document_bus_source_to_bus_target),
-        )
+        if is_aws_cloud():
+            time.sleep(10)  # required for role propagation
 
         # Permission for event bus target to receive events from event bus source
         aws_client.events.put_permission(
@@ -116,9 +84,6 @@ class TestEventTargetEvents:
             Action="events:PutEvents",
             Principal="*",
         )
-
-        if is_aws_cloud():
-            time.sleep(10)
 
         # Create rule source event bus to target
         rule_name_source_to_target = f"test-rule-source-to-target-{short_uid()}"

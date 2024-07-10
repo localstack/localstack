@@ -68,6 +68,42 @@ def events_create_event_bus(aws_client, region_name, account_id):
 
 
 @pytest.fixture
+def create_role_event_bus_source_to_bus_target(create_iam_role_with_policy):
+    def _create_role_event_bus_to_bus():
+        assume_role_policy_document_bus_source_to_bus_target = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+
+        policy_document_bus_source_to_bus_target = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Action": "events:PutEvents",
+                    "Resource": "arn:aws:events:*:*:event-bus/*",
+                }
+            ],
+        }
+
+        role_arn_bus_source_to_bus_target = create_iam_role_with_policy(
+            RoleDefinition=assume_role_policy_document_bus_source_to_bus_target,
+            PolicyDefinition=policy_document_bus_source_to_bus_target,
+        )
+
+        return role_arn_bus_source_to_bus_target
+
+    yield _create_role_event_bus_to_bus
+
+
+@pytest.fixture
 def events_put_rule(aws_client):
     rules = []
 
@@ -127,70 +163,66 @@ def events_create_archive(aws_client, region_name, account_id):
 
 
 @pytest.fixture
-def events_allow_event_rule_to_sqs_queue(aws_client):
-    def _allow_event_rule(sqs_queue_url, sqs_queue_arn, event_rule_arn) -> None:
-        # allow event rule to write to sqs queue
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=sqs_queue_url,
-            Attributes={
-                "Policy": json.dumps(
+def put_event_to_archive(aws_client, events_create_event_bus, events_create_archive):
+    def _put_event_to_archive(
+        archive_name: str = None,
+        event_pattern: dict = None,
+        event_bus_name: str = None,
+        event_source_arn: str = None,
+        entries: list[dict] = None,
+        num_events: int = 1,
+    ):
+        if not event_bus_name:
+            event_bus_name = f"test-bus-{short_uid()}"
+        if not event_source_arn:
+            response = events_create_event_bus(Name=event_bus_name)
+            event_source_arn = response["EventBusArn"]
+        if not archive_name:
+            archive_name = f"test-archive-{short_uid()}"
+
+        response = events_create_archive(
+            ArchiveName=archive_name,
+            EventSourceArn=event_source_arn,
+            EventPattern=json.dumps(event_pattern),
+            RetentionDays=1,
+        )
+        archive_arn = response["ArchiveArn"]
+
+        if entries:
+            num_events = len(entries)
+        else:
+            entries = []
+            for i in range(num_events):
+                entries.append(
                     {
-                        "Statement": [
-                            {
-                                "Sid": "AllowEventsToQueue",
-                                "Effect": "Allow",
-                                "Principal": {"Service": "events.amazonaws.com"},
-                                "Action": "sqs:SendMessage",
-                                "Resource": sqs_queue_arn,
-                                "Condition": {"ArnEquals": {"aws:SourceArn": event_rule_arn}},
-                            }
-                        ]
+                        "Source": "testSource",
+                        "DetailType": "testDetailType",
+                        "Detail": f"event number {i}",
+                        "EventBusName": event_bus_name,
                     }
                 )
-            },
+
+        aws_client.events.put_events(
+            Entries=entries,
         )
 
-    return _allow_event_rule
+        def wait_for_archive_event_count():
+            response = aws_client.events.describe_archive(ArchiveName=archive_name)
+            event_count = response["EventCount"]
+            assert event_count == num_events
 
+        retry(
+            wait_for_archive_event_count, retries=35, sleep=10
+        )  # events are batched and sent to the archive, this mostly takes at least 5 minutes on AWS
 
-@pytest.fixture
-def clean_up(aws_client):  # TODO remove and use individual fixtures for creating resources instead
-    def _clean_up(
-        bus_name=None,
-        rule_name=None,
-        target_ids=None,
-        queue_url=None,
-        log_group_name=None,
-    ):
-        events_client = aws_client.events
-        kwargs = {"EventBusName": bus_name} if bus_name else {}
-        if target_ids:
-            target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
-            call_safe(
-                events_client.remove_targets,
-                kwargs=dict(Rule=rule_name, Ids=target_ids, Force=True, **kwargs),
-            )
-        if rule_name:
-            call_safe(events_client.delete_rule, kwargs=dict(Name=rule_name, Force=True, **kwargs))
-        if bus_name:
-            call_safe(events_client.delete_event_bus, kwargs=dict(Name=bus_name))
-        if queue_url:
-            sqs_client = aws_client.sqs
-            call_safe(sqs_client.delete_queue, kwargs=dict(QueueUrl=queue_url))
-        if log_group_name:
-            logs_client = aws_client.logs
+        return {
+            "ArchiveName": archive_name,
+            "ArchiveArn": archive_arn,
+            "EventBusName": event_bus_name,
+            "EventBusArn": event_source_arn,
+        }
 
-            def _delete_log_group():
-                log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
-                for log_stream in log_streams["logStreams"]:
-                    logs_client.delete_log_stream(
-                        logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
-                    )
-                logs_client.delete_log_group(logGroupName=log_group_name)
-
-            call_safe(_delete_log_group)
-
-    yield _clean_up
+    yield _put_event_to_archive
 
 
 @pytest.fixture
@@ -229,6 +261,33 @@ def create_sqs_events_target(aws_client, sqs_get_queue_arn):
             aws_client.sqs.delete_queue(QueueUrl=queue_url)
         except Exception as e:
             LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.fixture
+def events_allow_event_rule_to_sqs_queue(aws_client):
+    def _allow_event_rule(sqs_queue_url, sqs_queue_arn, event_rule_arn) -> None:
+        # allow event rule to write to sqs queue
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=sqs_queue_url,
+            Attributes={
+                "Policy": json.dumps(
+                    {
+                        "Statement": [
+                            {
+                                "Sid": "AllowEventsToQueue",
+                                "Effect": "Allow",
+                                "Principal": {"Service": "events.amazonaws.com"},
+                                "Action": "sqs:SendMessage",
+                                "Resource": sqs_queue_arn,
+                                "Condition": {"ArnEquals": {"aws:SourceArn": event_rule_arn}},
+                            }
+                        ]
+                    }
+                )
+            },
+        )
+
+    return _allow_event_rule
 
 
 @pytest.fixture
@@ -346,63 +405,40 @@ def add_resource_policy_logs_events_access(aws_client):
 
 
 @pytest.fixture
-def put_event_to_archive(aws_client, events_create_event_bus, events_create_archive):
-    def _put_event_to_archive(
-        archive_name: str = None,
-        event_pattern: dict = None,
-        event_bus_name: str = None,
-        event_source_arn: str = None,
-        entries: list[dict] = None,
-        num_events: int = 1,
+def clean_up(aws_client):  # TODO remove and use individual fixtures for creating resources instead
+    def _clean_up(
+        bus_name=None,
+        rule_name=None,
+        target_ids=None,
+        queue_url=None,
+        log_group_name=None,
     ):
-        if not event_bus_name:
-            event_bus_name = f"test-bus-{short_uid()}"
-        if not event_source_arn:
-            response = events_create_event_bus(Name=event_bus_name)
-            event_source_arn = response["EventBusArn"]
-        if not archive_name:
-            archive_name = f"test-archive-{short_uid()}"
+        events_client = aws_client.events
+        kwargs = {"EventBusName": bus_name} if bus_name else {}
+        if target_ids:
+            target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
+            call_safe(
+                events_client.remove_targets,
+                kwargs=dict(Rule=rule_name, Ids=target_ids, Force=True, **kwargs),
+            )
+        if rule_name:
+            call_safe(events_client.delete_rule, kwargs=dict(Name=rule_name, Force=True, **kwargs))
+        if bus_name:
+            call_safe(events_client.delete_event_bus, kwargs=dict(Name=bus_name))
+        if queue_url:
+            sqs_client = aws_client.sqs
+            call_safe(sqs_client.delete_queue, kwargs=dict(QueueUrl=queue_url))
+        if log_group_name:
+            logs_client = aws_client.logs
 
-        response = events_create_archive(
-            ArchiveName=archive_name,
-            EventSourceArn=event_source_arn,
-            EventPattern=json.dumps(event_pattern),
-            RetentionDays=1,
-        )
-        archive_arn = response["ArchiveArn"]
+            def _delete_log_group():
+                log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+                for log_stream in log_streams["logStreams"]:
+                    logs_client.delete_log_stream(
+                        logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
+                    )
+                logs_client.delete_log_group(logGroupName=log_group_name)
 
-        if entries:
-            num_events = len(entries)
-        else:
-            entries = []
-            for i in range(num_events):
-                entries.append(
-                    {
-                        "Source": "testSource",
-                        "DetailType": "testDetailType",
-                        "Detail": f"event number {i}",
-                        "EventBusName": event_bus_name,
-                    }
-                )
+            call_safe(_delete_log_group)
 
-        aws_client.events.put_events(
-            Entries=entries,
-        )
-
-        def wait_for_archive_event_count():
-            response = aws_client.events.describe_archive(ArchiveName=archive_name)
-            event_count = response["EventCount"]
-            assert event_count == num_events
-
-        retry(
-            wait_for_archive_event_count, retries=35, sleep=10
-        )  # events are batched and sent to the archive, this mostly takes at least 5 minutes on AWS
-
-        return {
-            "ArchiveName": archive_name,
-            "ArchiveArn": archive_arn,
-            "EventBusName": event_bus_name,
-            "EventBusArn": event_source_arn,
-        }
-
-    yield _put_event_to_archive
+    yield _clean_up
