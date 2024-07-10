@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration": {
-    "recorded-date": "09-07-2024, 15:27:16",
+    "recorded-date": "10-07-2024, 12:28:36",
     "recorded-content": {
       "invocation-payload-without-trailing-slash": {
         "body": null,
@@ -649,7 +649,7 @@
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
           "Host": "<host:1>",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:6>",
+          "Via": "<via:2>",
           "X-Amz-Cf-Id": "<cf-id:6>",
           "X-Amzn-Trace-Id": "<trace-id:6>",
           "X-Forwarded-For": "<source-ip:1>, <ip>",
@@ -697,7 +697,7 @@
             "python-requests/testing"
           ],
           "Via": [
-            "<via:6>"
+            "<via:2>"
           ],
           "X-Amz-Cf-Id": [
             "<cf-id:6>"
@@ -802,7 +802,7 @@
           "Content-Type": "application/json;charset=utf-8",
           "Host": "<host:1>",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:7>",
+          "Via": "<via:6>",
           "X-Amz-Cf-Id": "<cf-id:7>",
           "X-Amzn-Trace-Id": "<trace-id:7>",
           "X-Forwarded-For": "<source-ip:1>, <ip>",
@@ -852,7 +852,7 @@
             "python-requests/testing"
           ],
           "Via": [
-            "<via:7>"
+            "<via:6>"
           ],
           "X-Amz-Cf-Id": [
             "<cf-id:7>"

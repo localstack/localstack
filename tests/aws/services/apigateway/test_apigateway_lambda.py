@@ -31,24 +31,15 @@ REQUEST_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/request-template.vm
 RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.vm")
 
 CLOUDFRONT_SKIP_HEADERS = [
-    "$..headers.Via",
-    "$..headers.X-Amz-Cf-Id",
-    "$..headers.CloudFront-Forwarded-Proto",
-    "$..headers.CloudFront-Is-Desktop-Viewer",
-    "$..headers.CloudFront-Is-Mobile-Viewer",
-    "$..headers.CloudFront-Is-SmartTV-Viewer",
-    "$..headers.CloudFront-Is-Tablet-Viewer",
-    "$..headers.CloudFront-Viewer-ASN",
-    "$..headers.CloudFront-Viewer-Country",
-    "$..multiValueHeaders.Via",
-    "$..multiValueHeaders.X-Amz-Cf-Id",
-    "$..multiValueHeaders.CloudFront-Forwarded-Proto",
-    "$..multiValueHeaders.CloudFront-Is-Desktop-Viewer",
-    "$..multiValueHeaders.CloudFront-Is-Mobile-Viewer",
-    "$..multiValueHeaders.CloudFront-Is-SmartTV-Viewer",
-    "$..multiValueHeaders.CloudFront-Is-Tablet-Viewer",
-    "$..multiValueHeaders.CloudFront-Viewer-ASN",
-    "$..multiValueHeaders.CloudFront-Viewer-Country",
+    "$..Via",
+    "$..X-Amz-Cf-Id",
+    "$..CloudFront-Forwarded-Proto",
+    "$..CloudFront-Is-Desktop-Viewer",
+    "$..CloudFront-Is-Mobile-Viewer",
+    "$..CloudFront-Is-SmartTV-Viewer",
+    "$..CloudFront-Is-Tablet-Viewer",
+    "$..CloudFront-Viewer-ASN",
+    "$..CloudFront-Viewer-Country",
 ]
 
 
@@ -56,34 +47,23 @@ CLOUDFRONT_SKIP_HEADERS = [
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         *CLOUDFRONT_SKIP_HEADERS,
-        "$..headers.X-Amzn-Trace-Id",
-        "$..headers.X-Forwarded-For",
-        "$..headers.X-Forwarded-Port",
-        "$..headers.X-Forwarded-Proto",
-        "$..multiValueHeaders.X-Amzn-Trace-Id",
-        "$..multiValueHeaders.X-Forwarded-For",
-        "$..multiValueHeaders.X-Forwarded-Port",
-        "$..multiValueHeaders.X-Forwarded-Proto",
+        "$..X-Amzn-Trace-Id",
+        "$..X-Forwarded-For",
+        "$..X-Forwarded-Port",
+        "$..X-Forwarded-Proto",
     ]
 )
 @markers.snapshot.skip_snapshot_verify(
     condition=lambda: not is_next_gen_api(),
     paths=[
         "$..body",
-        "$..headers.Accept",
-        "$..headers.Content-Length",
-        "$..headers.Accept-Encoding",
-        "$..headers.Connection",
-        "$..headers.accept",
-        "$..headers.accept-encoding",
-        "$..headers.x-localstack-edge",
-        "$..multiValueHeaders.Content-Length",
-        "$..multiValueHeaders.Accept",
-        "$..multiValueHeaders.Accept-Encoding",
-        "$..multiValueHeaders.Connection",
-        "$..multiValueHeaders.accept",
-        "$..multiValueHeaders.accept-encoding",
-        "$..multiValueHeaders.x-localstack-edge",
+        "$..Accept",
+        "$..accept",
+        "$..Content-Length",
+        "$..Accept-Encoding",
+        "$..Connection",
+        "$..accept-encoding",
+        "$..x-localstack-edge",
         "$..pathParameters",
         "$..requestContext.authorizer",
         "$..requestContext.deploymentId",
@@ -308,8 +288,15 @@ def test_lambda_aws_proxy_integration_non_post_method(
         uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
         credentials=role_arn,
     )
-    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
+    # TODO: comment
+    aws_client.apigateway.put_gateway_response(
+        restApiId=api_id,
+        responseType="INTEGRATION_FAILURE",
+        responseParameters={},
+    )
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
     # invoke rest api
     invocation_url = api_invoke_url(
         api_id=api_id,
@@ -811,7 +798,7 @@ def test_lambda_aws_proxy_response_format(
         "wrong-format",
         "empty-response",
     ]
-
+    # TODO: refactor the test to use a lambda that returns whatever we pass it to instead of pre-defined responses
     for lambda_format_type in format_types:
         # invoke rest api
         invocation_url = api_invoke_url(

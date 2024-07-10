@@ -16,6 +16,7 @@ from localstack.utils.collections import merge_dicts
 from localstack.utils.strings import to_bytes, to_str
 
 from ..context import InvocationRequest, RestApiInvocationContext
+from ..gateway_response import IntegrationFailureError, InternalServerError
 from ..helpers import (
     get_lambda_function_arn_from_invocation_uri,
     get_source_arn,
@@ -96,8 +97,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             method = invocation_req["http_method"]
 
         if method != HTTPMethod.POST:
-            raise Exception
-            # raise ApiGatewayIntegrationError("Internal server error", status_code=500)
+            raise IntegrationFailureError("Internal server error")
 
         input_event = self.create_lambda_input_event(context)
         function_arn = get_lambda_function_arn_from_invocation_uri(integration["uri"])
@@ -108,12 +108,19 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
                 event=to_bytes(json.dumps(input_event)),
                 context=context,
             )
-        except ClientError:
-            # TODO
-            raise
-        except Exception:
-            # TODO
-            raise
+        except ClientError as e:
+            # TODO: more data from the error message?
+            LOG.warning(
+                "Exception during integration invocation: '%s'",
+                e,
+            )
+            raise IntegrationFailureError("Internal server error", status_code=502) from e
+        except Exception as e:
+            LOG.warning(
+                "Unexpected exception during integration invocation: '%s'",
+                e,
+            )
+            raise IntegrationFailureError("Internal server error", status_code=502) from e
 
         lambda_response = self.parse_lambda_response(lambda_payload)
 
@@ -137,8 +144,8 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         event: bytes,
         context: RestApiInvocationContext,
     ) -> bytes:
-        # TODO: properly get the value out
         integration: Integration = context.resource_method["methodIntegration"]
+        # TODO: properly get the value out/validate it?
         raw_headers = context.invocation_request["raw_headers"]
         is_invocation_asynchronous = raw_headers.get("X-Amz-Invocation-Type") == "'Event'"
 
@@ -158,27 +165,46 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             return payload.read()
         return b""
 
-    @staticmethod
-    def parse_lambda_response(payload: bytes) -> LambdaProxyResponse:
+    def parse_lambda_response(self, payload: bytes) -> LambdaProxyResponse:
         try:
             lambda_response = json.loads(payload)
-
         except json.JSONDecodeError:
-            raise
+            raise InternalServerError("Internal server error", status_code=502)
 
         # none of the lambda response fields are mandatory, but you cannot return any other fields
-        if not validate_sub_dict_of_typed_dict(LambdaProxyResponse, lambda_response):
-            LOG.warning(
-                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."} but was: %s',
-                payload,
-            )
-            # status_code = 502
-            # {"message": "Internal server error"}
-            raise Exception
-
-        # TODO: validate type of each values?
+        if not self._is_lambda_response_valid(lambda_response):
+            if "errorMessage" in lambda_response:
+                LOG.debug(
+                    "Lambda execution failed with status 200 due to customer function error: %s. Lambda request id: %s",
+                    lambda_response["errorMessage"],
+                    lambda_response["requestId"],
+                )
+            else:
+                LOG.warning(
+                    'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."} but was: %s',
+                    payload,
+                )
+                LOG.debug(
+                    "Execution failed due to configuration error: Malformed Lambda proxy response"
+                )
+            raise InternalServerError("Internal server error", status_code=502)
 
         return lambda_response
+
+    @staticmethod
+    def _is_lambda_response_valid(lambda_response: dict) -> bool:
+        if not validate_sub_dict_of_typed_dict(LambdaProxyResponse, lambda_response):
+            return False
+
+        if "headers" in lambda_response:
+            headers = lambda_response["headers"]
+            if not isinstance(headers, dict):
+                return False
+            if any(not isinstance(header_value, str) for header_value in headers.values()):
+                return False
+
+        # TODO: add more validations of the values' type
+        return True
 
     def create_lambda_input_event(self, context: RestApiInvocationContext) -> LambdaInputEvent:
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format

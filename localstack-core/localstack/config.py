@@ -1040,7 +1040,7 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
 # TODO: remove
-# os.environ["PROVIDER_OVERRIDE_APIGATEWAY"] = "next_gen"
+os.environ["PROVIDER_OVERRIDE_APIGATEWAY"] = "next_gen"
 
 # Whether the Next Gen APIGW invocation logic is enabled (handler chain)
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") == "next_gen"
