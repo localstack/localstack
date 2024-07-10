@@ -8,6 +8,30 @@ from localstack.aws.api.apigateway import (
 )
 
 
+class GatewayResponseCode(StatusCode, Enum):
+    REQUEST_TOO_LARGE = "413"
+    RESOURCE_NOT_FOUND = "404"
+    AUTHORIZER_CONFIGURATION_ERROR = "500"
+    MISSING_AUTHENTICATION_TOKEN = "403"
+    BAD_REQUEST_BODY = "400"
+    INVALID_SIGNATURE = "403"
+    INVALID_API_KEY = "403"
+    BAD_REQUEST_PARAMETERS = "400"
+    AUTHORIZER_FAILURE = "500"
+    UNAUTHORIZED = "401"
+    INTEGRATION_TIMEOUT = "504"
+    ACCESS_DENIED = "403"
+    DEFAULT_4XX = ""
+    DEFAULT_5XX = ""
+    WAF_FILTERED = "403"
+    QUOTA_EXCEEDED = "429"
+    THROTTLED = "429"
+    API_CONFIGURATION_ERROR = "500"
+    UNSUPPORTED_MEDIA_TYPE = "415"
+    INTEGRATION_FAILURE = "504"
+    EXPIRED_TOKEN = "403"
+
+
 class BaseGatewayException(Exception):
     """
     Base class for all Gateway exceptions
@@ -24,6 +48,9 @@ class BaseGatewayException(Exception):
             self.message = message
         if status_code is not None:
             self.status_code = status_code
+        elif self.status_code is None:
+            # Fallback to the default value
+            self.status_code = GatewayResponseCode[self.type]
 
 
 class Default4xxError(BaseGatewayException):
@@ -31,7 +58,7 @@ class Default4xxError(BaseGatewayException):
     Use one of the subclasses instead, as they contain the appropriate header
     """
 
-    type: GatewayResponseType.DEFAULT_4XX
+    type = GatewayResponseType.DEFAULT_4XX
     status_code = 400
 
 
@@ -40,7 +67,7 @@ class Default5xxError(BaseGatewayException):
     Use one of the subclasses instead, as they contain the appropriate header
     """
 
-    type: GatewayResponseType.DEFAULT_5XX
+    type = GatewayResponseType.DEFAULT_5XX
     status_code = 500
 
 
@@ -98,8 +125,9 @@ class ExpiredTokenError(BaseGatewayException):
 
 class IntegrationFailureError(BaseGatewayException):
     type = GatewayResponseType.INTEGRATION_FAILURE
-    # TODO validate this header with aws validated tests
-    code = "IntegrationFailureException"
+    # TODO: tested manually for now
+    code = "InternalServerErrorException"
+    status_code = 500
 
 
 class IntegrationTimeoutError(BaseGatewayException):
@@ -161,30 +189,6 @@ class WafFilteredError(BaseGatewayException):
     code = "WafFilteredException"
 
 
-class GatewayResponseCode(StatusCode, Enum):
-    REQUEST_TOO_LARGE = "413"
-    RESOURCE_NOT_FOUND = "404"
-    AUTHORIZER_CONFIGURATION_ERROR = "500"
-    MISSING_AUTHENTICATION_TOKEN = "403"
-    BAD_REQUEST_BODY = "400"
-    INVALID_SIGNATURE = "403"
-    INVALID_API_KEY = "403"
-    BAD_REQUEST_PARAMETERS = "400"
-    AUTHORIZER_FAILURE = "500"
-    UNAUTHORIZED = "401"
-    INTEGRATION_TIMEOUT = "504"
-    ACCESS_DENIED = "403"
-    DEFAULT_4XX = ""
-    DEFAULT_5XX = ""
-    WAF_FILTERED = "403"
-    QUOTA_EXCEEDED = "429"
-    THROTTLED = "429"
-    API_CONFIGURATION_ERROR = "500"
-    UNSUPPORTED_MEDIA_TYPE = "415"
-    INTEGRATION_FAILURE = "504"
-    EXPIRED_TOKEN = "403"
-
-
 def build_gateway_response(
     response_type: GatewayResponseType,
     status_code: StatusCode = None,
@@ -199,10 +203,9 @@ def build_gateway_response(
         or {"application/json": '{"message":$context.error.messageString}'},
         responseType=response_type,
         defaultResponse=default_response,
+        statusCode=status_code,
     )
-    if status_code or (status_code := GatewayResponseCode[response_type]):
-        # DEFAULT_4XX and DEFAULT_5XX do not have `statusCode` present in the response
-        response["statusCode"] = status_code
+
     return response
 
 
