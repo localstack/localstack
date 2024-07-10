@@ -720,7 +720,7 @@ class CmdDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
+        volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
@@ -749,11 +749,9 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--entrypoint", entrypoint]
         if privileged:
             cmd += ["--privileged"]
-        if mount_volumes:
+        if volumes:
             cmd += [
-                volume
-                for mount_volume in mount_volumes
-                for volume in ["-v", self._map_to_volume_param(mount_volume)]
+                param for volume in volumes for param in ["-v", self._map_to_volume_param(volume)]
             ]
         if interactive:
             cmd.append("--interactive")
@@ -809,7 +807,7 @@ class CmdDockerClient(ContainerClient):
         return cmd, env_file
 
     @staticmethod
-    def _map_to_volume_param(mount_volume: Union[SimpleVolumeBind, VolumeBind]) -> str:
+    def _map_to_volume_param(volume: Union[SimpleVolumeBind, VolumeBind]) -> str:
         """
         Maps the mount volume, to a parameter for the -v docker cli argument.
 
@@ -817,13 +815,13 @@ class CmdDockerClient(ContainerClient):
         (host_path, container_path) -> host_path:container_path
         VolumeBind(host_dir=host_path, container_dir=container_path, read_only=True) -> host_path:container_path:ro
 
-        :param mount_volume: Either a SimpleVolumeBind, in essence a tuple (host_dir, container_dir), or a VolumeBind object
+        :param volume: Either a SimpleVolumeBind, in essence a tuple (host_dir, container_dir), or a VolumeBind object
         :return: String which is passable as parameter to the docker cli -v option
         """
-        if isinstance(mount_volume, VolumeBind):
-            return mount_volume.to_str()
+        if isinstance(volume, VolumeBind):
+            return volume.to_str()
         else:
-            return f"{mount_volume[0]}:{mount_volume[1]}"
+            return f"{volume[0]}:{volume[1]}"
 
     def _check_and_raise_no_such_container_error(
         self, container_name_or_id: str, error: subprocess.CalledProcessError
