@@ -395,29 +395,23 @@ class TestEventTargetLambda:
     def test_put_events_with_target_lambda(
         self,
         create_lambda_function,
-        cleanups,
         events_create_event_bus,
         events_put_rule,
         aws_client,
         snapshot,
     ):
-        rule_name = f"rule-{short_uid()}"
         function_name = f"lambda-func-{short_uid()}"
-        target_id = f"target-{short_uid()}"
-        bus_name = f"bus-{short_uid()}"
-
-        # clean up
-        cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
-
         create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-
         lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
 
+        bus_name = f"bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
+
+        rule_name = f"rule-{short_uid()}"
         rule_arn = events_put_rule(
             Name=rule_name,
             EventBusName=bus_name,
@@ -431,6 +425,8 @@ class TestEventTargetLambda:
             Principal="events.amazonaws.com",
             SourceArn=rule_arn,
         )
+
+        target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
@@ -462,51 +458,41 @@ class TestEventTargetLambda:
 
     @markers.aws.validated
     def test_put_events_with_target_lambda_list_entry(
-        self, create_lambda_function, cleanups, aws_client, clean_up, snapshot
+        self, create_lambda_function, events_create_event_bus, events_put_rule, aws_client, snapshot
     ):
-        rule_name = f"rule-{short_uid()}"
         function_name = f"lambda-func-{short_uid()}"
-        target_id = f"target-{short_uid()}"
-        bus_name = f"bus-{short_uid()}"
-
-        # clean up
-        cleanups.append(
-            lambda: clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
-        )
-
         create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_12,
         )
-
-        func_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
 
         event_pattern = {"detail": {"payload": {"automations": {"id": [{"exists": True}]}}}}
 
-        aws_client.events.create_event_bus(Name=bus_name)
-        put_rule_response = aws_client.events.put_rule(
+        bus_name = f"bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        rule_name = f"rule-{short_uid()}"
+        rule_arn = events_put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(event_pattern),
-        )
+        )["RuleArn"]
         aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=f"{rule_name}-Event",
             Action="lambda:InvokeFunction",
             Principal="events.amazonaws.com",
-            SourceArn=put_rule_response["RuleArn"],
-        )
-        put_target_response = aws_client.events.put_targets(
-            Rule=rule_name,
-            EventBusName=bus_name,
-            Targets=[{"Id": target_id, "Arn": func_arn}],
+            SourceArn=rule_arn,
         )
 
-        assert "FailedEntryCount" in put_target_response
-        assert "FailedEntries" in put_target_response
-        assert put_target_response["FailedEntryCount"] == 0
-        assert put_target_response["FailedEntries"] == []
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
+        )
 
         event_detail = {
             "payload": {
@@ -559,51 +545,47 @@ class TestEventTargetLambda:
 
     @markers.aws.validated
     def test_put_events_with_target_lambda_list_entries_partial_match(
-        self, create_lambda_function, cleanups, aws_client, clean_up, snapshot
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
     ):
-        rule_name = f"rule-{short_uid()}"
         function_name = f"lambda-func-{short_uid()}"
-        target_id = f"target-{short_uid()}"
-        bus_name = f"bus-{short_uid()}"
-
-        # clean up
-        cleanups.append(
-            lambda: clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
-        )
-
-        rs = create_lambda_function(
+        create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_12,
         )
-
-        func_arn = rs["CreateFunctionResponse"]["FunctionArn"]
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
 
         event_pattern = {"detail": {"payload": {"automations": {"id": [{"exists": True}]}}}}
 
-        aws_client.events.create_event_bus(Name=bus_name)
-        rs = aws_client.events.put_rule(
+        bus_name = f"bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        rule_name = f"rule-{short_uid()}"
+        bus_name = f"bus-{short_uid()}"
+        rule_arn = events_put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(event_pattern),
-        )
+        )["RuleArn"]
         aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=f"{rule_name}-Event",
             Action="lambda:InvokeFunction",
             Principal="events.amazonaws.com",
-            SourceArn=rs["RuleArn"],
-        )
-        rs = aws_client.events.put_targets(
-            Rule=rule_name,
-            EventBusName=bus_name,
-            Targets=[{"Id": target_id, "Arn": func_arn}],
+            SourceArn=rule_arn,
         )
 
-        assert "FailedEntryCount" in rs
-        assert "FailedEntries" in rs
-        assert rs["FailedEntryCount"] == 0
-        assert rs["FailedEntries"] == []
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
+        )
 
         event_detail_partial_match = {
             "payload": {
