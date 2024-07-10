@@ -265,7 +265,7 @@ class ShapeNode:
             )
         elif isinstance(shape, StringShape):
             if shape.enum:
-                output.write(f"class {to_valid_python_name(shape.name)}(str):\n")
+                output.write(f"class {to_valid_python_name(shape.name)}(StrEnum):\n")
                 for value in shape.enum:
                     name = to_valid_python_name(value)
                     output.write(f'    {name} = "{value}"\n')
@@ -315,10 +315,11 @@ class ShapeNode:
 
 
 def generate_service_types(output, service: ServiceModel, doc=True):
+    output.write("from datetime import datetime\n")
+    output.write("from enum import StrEnum\n")
     output.write(
         "from typing import Dict, List, Optional, Iterator, Iterable, IO, Union, TypedDict\n"
     )
-    output.write("from datetime import datetime\n")
     output.write("\n")
     output.write(
         "from localstack.aws.api import handler, RequestContext, ServiceException, ServiceRequest"
