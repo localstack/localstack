@@ -193,9 +193,9 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         if not (response_templates := integration_response["responseTemplates"]):
             return ""
 
-        # Aws seems to ignore the integration request headers and uses the invocation request header
-        accept = request["headers"].get("accept", APPLICATION_JSON)
-        if template := response_templates.get(accept):
+        # The invocation request header is used to find the right response templated
+        accept = request["headers"].get("accept")
+        if accept and (template := response_templates.get(accept)):
             return template
         # TODO aws seemed to favor application/json as default when unmatched regardless of "first"
         if template := response_templates.get(APPLICATION_JSON):
