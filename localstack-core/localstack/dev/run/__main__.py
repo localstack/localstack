@@ -21,7 +21,6 @@ from localstack.utils.strings import short_uid
 
 from .configurators import (
     ConfigEnvironmentConfigurator,
-    CoverageRunScriptConfigurator,
     DependencyMountConfigurator,
     EntryPointMountConfigurator,
     ImageConfigurator,
@@ -265,7 +264,6 @@ def run(
             PortConfigurator(randomize),
             ConfigEnvironmentConfigurator(pro),
             ContainerConfigurators.mount_localstack_volume(host_paths.volume_dir),
-            CoverageRunScriptConfigurator(host_paths=host_paths),
             ContainerConfigurators.config_env_vars,
         ]
 

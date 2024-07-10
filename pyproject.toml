@@ -207,14 +207,19 @@ select = ["B", "C", "E", "F", "I", "W", "T", "B9"]
 [tool.coverage.run]
 relative_files = true
 source = [
-    "localstack-core/localstack"
+    "localstack",
 ]
 omit = [
-    "localstack-core/localstack/aws/api/*",
-    "localstack-core/localstack/extensions/api/*",
-    "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime/*"
+    "*/aws/api/*",
+    "*/extensions/api/*",
+    "*/services/stepfunctions/asl/antlr/runtime/*"
 ]
 dynamic_context = "test_function"
+
+[tool.coverage.paths]
+source = [
+    "localstack-core"
+]
 
 [tool.coverage.report]
 exclude_lines = [
