@@ -287,3 +287,30 @@ class TestHandlerIntegrationResponse:
         response.headers["content-type"] = "text/html"
         integration_response_handler(default_context, response)
         assert response.data == b"json"
+
+    def test_remapped_headers(
+        self, default_context, create_default_response, integration_response_handler
+    ):
+        integration_response = IntegrationResponse(
+            statusCode="200",
+            selectionPattern="",
+            responseParameters={
+                "method.response.header.content-type": "'from params'",
+                "method.response.header.connection": "'from params'",
+            },
+            responseTemplates={"application/json": RESPONSE_OVERRIDES},
+        )
+        default_context.resource_method["methodIntegration"]["integrationResponses"] = {
+            "default": integration_response
+        }
+        response = create_default_response()
+        integration_response_handler(default_context, response)
+        assert response.data == b""
+        assert response.headers.get("content-type") == "application/json"
+        assert response.headers.get("x-amzn-remapped-connection") == "from params"
+        assert response.headers.get("x-amzn-remapped-date") == "from override"
+        assert response.headers.get("x-amzn-remapped-content-type") == "from override"
+
+
+RESPONSE_OVERRIDES = """#set($context.responseOverride.header.content-type = 'from override')
+#set($context.responseOverride.header.date = 'from override')"""
