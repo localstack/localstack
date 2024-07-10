@@ -7,6 +7,7 @@ from botocore.client import BaseClient
 from localstack.aws.api.events import (
     ArchiveState,
     Arn,
+    EventBusName,
     TargetId,
     Timestamp,
 )
@@ -28,6 +29,19 @@ LOG = logging.getLogger(__name__)
 
 
 class ArchiveService:
+    archive_name: ArchiveName
+    region: str
+    account_id: str
+    event_source_arn: Arn
+    description: ArchiveDescription
+    event_pattern: EventPattern
+    retention_days: RetentionDays
+    archive: Archive
+    client: BaseClient
+    event_bus_name: EventBusName
+    rule_name: RuleName
+    target_id: TargetId
+
     def __init__(
         self,
         archive_name: ArchiveName,
@@ -50,10 +64,10 @@ class ArchiveService:
         self.set_state(ArchiveState.CREATING)
         self.set_creation_time()
         self.client: BaseClient = self._initialize_client()
-        self.event_bus_name = extract_event_bus_name(event_source_arn)
+        self.event_bus_name: EventBusName = extract_event_bus_name(event_source_arn)
 
-        self.rule_name = self._create_archive_rule()
-        self.target_id = self._create_archive_target()
+        self.rule_name: RuleName = self._create_archive_rule()
+        self.target_id: TargetId = self._create_archive_target()
         self.set_state(ArchiveState.ENABLED)
 
     def __getattr__(self, name):
