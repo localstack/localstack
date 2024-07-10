@@ -220,7 +220,7 @@ class TestCliContainerLifecycle:
             remove=True,
             entrypoint="",
             command=["bin/localstack", "start", "-d"],
-            mount_volumes=[
+            volumes=[
                 ("/var/run/docker.sock", "/var/run/docker.sock"),
                 (MODULE_MAIN_PATH, "/opt/code/localstack/localstack"),
             ],

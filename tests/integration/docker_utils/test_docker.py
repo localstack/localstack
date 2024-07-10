@@ -507,12 +507,12 @@ class TestDockerClient:
         condition=in_docker(), reason="cannot test volume mounts from host when in docker"
     )
     def test_create_with_volume(self, tmpdir, docker_client: ContainerClient, create_container):
-        mount_volumes = [(tmpdir.realpath(), "/tmp/mypath")]
+        volumes = [(tmpdir.realpath(), "/tmp/mypath")]
 
         c = create_container(
             "alpine",
             command=["sh", "-c", "echo 'foobar' > /tmp/mypath/foo.log"],
-            mount_volumes=mount_volumes,
+            volumes=volumes,
         )
         docker_client.start_container(c.container_id)
         assert tmpdir.join("foo.log").isfile(), "foo.log was not created in mounted dir"
@@ -524,7 +524,7 @@ class TestDockerClient:
     def test_inspect_container_volumes(
         self, tmpdir, docker_client: ContainerClient, create_container
     ):
-        mount_volumes = [
+        volumes = [
             (tmpdir.realpath() / "foo", "/tmp/mypath/foo"),
             ("some_named_volume", "/tmp/mypath/volume"),
         ]
@@ -532,7 +532,7 @@ class TestDockerClient:
         c = create_container(
             "alpine",
             command=["sh", "-c", "while true; do sleep 1; done"],
-            mount_volumes=mount_volumes,
+            volumes=volumes,
         )
         docker_client.start_container(c.container_id)
 
