@@ -1,20 +1,25 @@
 """Tests for integrations between AWS EventBridge and other AWS services."""
 
 import json
+import time
 from datetime import datetime
 
 import pytest
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, resources
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
-from tests.aws.services.events.conftest import assert_valid_event
-from tests.aws.services.events.helper_functions import is_v2_provider, sqs_collect_messages
+from tests.aws.services.events.helper_functions import (
+    assert_valid_event,
+    is_v2_provider,
+    sqs_collect_messages,
+)
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
@@ -35,11 +40,153 @@ class TestEventTargetEvents:
     # cross region and cross account event bus to event buss tests are in test_events_cross_account_region.py
 
     @markers.aws.validated
-    @pytest.mark.parametrize("bus_source", ["default", "custom"])
-    @pytest.mark.parametrize("bus_target", ["default", "custom"])
-    def test_put_events_with_target_events(self, aws_client):
-        # TODO add validated test
-        pass
+    @pytest.mark.parametrize(
+        "bus_combination", [("default", "custom"), ("custom", "custom"), ("custom", "default")]
+    )
+    def test_put_events_with_target_events(
+        self,
+        bus_combination,
+        events_create_event_bus,
+        region_name,
+        account_id,
+        events_put_rule,
+        create_sqs_events_target,
+        aws_client,
+        snapshot,
+    ):
+        # Create event buses
+        bus_source, bus_target = bus_combination
+        if bus_source == "default":
+            event_bus_name_source = "default"
+        if bus_source == "custom":
+            event_bus_name_source = f"test-event-bus-source-{short_uid()}"
+            events_create_event_bus(Name=event_bus_name_source)
+        if bus_target == "default":
+            event_bus_name_target = "default"
+            event_bus_arn_target = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+        if bus_target == "custom":
+            event_bus_name_target = f"test-event-bus-target-{short_uid()}"
+            event_bus_arn_target = events_create_event_bus(Name=event_bus_name_target)[
+                "EventBusArn"
+            ]
+
+        # Create permission for event bus source to send events to event bus target
+        role_name_bus_source_to_bus_target = f"event-bus-source-to-target-role-{short_uid()}"
+        assume_role_policy_document_bus_source_to_bus_target = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+
+        role_arn_bus_source_to_bus_target = aws_client.iam.create_role(
+            RoleName=role_name_bus_source_to_bus_target,
+            AssumeRolePolicyDocument=json.dumps(
+                assume_role_policy_document_bus_source_to_bus_target
+            ),
+        )["Role"]["Arn"]
+
+        policy_name_bus_source_to_bus_target = f"event-bus-source-to-target-policy-{short_uid()}"
+        policy_document_bus_source_to_bus_target = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Action": "events:PutEvents",
+                    "Resource": "arn:aws:events:*:*:event-bus/*",
+                }
+            ],
+        }
+
+        aws_client.iam.put_role_policy(
+            RoleName=role_name_bus_source_to_bus_target,
+            PolicyName=policy_name_bus_source_to_bus_target,
+            PolicyDocument=json.dumps(policy_document_bus_source_to_bus_target),
+        )
+
+        # Permission for event bus target to receive events from event bus source
+        aws_client.events.put_permission(
+            StatementId=f"TargetEventBusAccessPermission{short_uid()}",
+            EventBusName=event_bus_name_target,
+            Action="events:PutEvents",
+            Principal="*",
+        )
+
+        if is_aws_cloud():
+            time.sleep(10)
+
+        # Create rule source event bus to target
+        rule_name_source_to_target = f"test-rule-source-to-target-{short_uid()}"
+        events_put_rule(
+            Name=rule_name_source_to_target,
+            EventBusName=event_bus_name_source,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+
+        # Add target event bus as target
+        target_id_event_bus_target = f"test-target-source-events-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name_source_to_target,
+            EventBusName=event_bus_name_source,
+            Targets=[
+                {
+                    "Id": target_id_event_bus_target,
+                    "Arn": event_bus_arn_target,
+                    "RoleArn": role_arn_bus_source_to_bus_target,
+                }
+            ],
+        )
+
+        # Setup sqs target for target event bus
+        rule_name_target_to_sqs = f"test-rule-target-{short_uid()}"
+        events_put_rule(
+            Name=rule_name_target_to_sqs,
+            EventBusName=event_bus_name_target,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+
+        queue_url, queue_arn = create_sqs_events_target()
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name_target_to_sqs,
+            EventBusName=event_bus_arn_target,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn},
+            ],
+        )
+
+        ######
+        # Test
+        ######
+
+        # Put events into primary event bus
+        aws_client.events.put_events(
+            Entries=[
+                {
+                    "Source": TEST_EVENT_PATTERN["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                    "Detail": json.dumps(EVENT_DETAIL),
+                    "EventBusName": event_bus_name_source,
+                }
+            ],
+        )
+
+        # Collect messages from primary queue
+        messages = sqs_collect_messages(
+            aws_client, queue_url, expected_events_count=1, wait_time=1, retries=5
+        )
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+                snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+            ],
+        )
+        snapshot.match("messages", messages)
 
 
 class TestEventTargetFirehose:
