@@ -2,7 +2,6 @@
 
 import json
 import time
-from datetime import datetime
 
 import pytest
 
@@ -23,6 +22,7 @@ from tests.aws.services.events.helper_functions import (
 )
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 from tests.aws.services.firehose.helper_functions import get_firehose_iam_documents
+from tests.aws.services.kinesis.helper_functions import get_shard_iterator
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 # class TestEventTargetApiGateway:
@@ -251,7 +251,9 @@ class TestEventTargetFirehose:
         )
 
         if is_aws_cloud():
-            time.sleep(30) # not clear yet why but firehose needs time to receive events event though status is ACTIVE
+            time.sleep(
+                30
+            )  # not clear yet why but firehose needs time to receive events event though status is ACTIVE
 
         for _ in range(10):
             aws_client.events.put_events(
@@ -291,53 +293,86 @@ class TestEventTargetFirehose:
 
 
 class TestEventTargetKinesis:
-    @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_events_with_target_kinesis(self, aws_client):
-        rule_name = "rule-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
-        bus_name = "bus-{}".format(short_uid())
-        stream_name = "stream-{}".format(short_uid())
-        stream_arn = arns.kinesis_stream_arn(stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    @markers.aws.validated
+    def test_put_events_with_target_kinesis(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        create_iam_role_with_policy,
+        aws_client,
+        events_create_event_bus,
+        events_put_rule,
+        snapshot,
+    ):
+        # Create a Kinesis stream
+        stream_name = kinesis_create_stream(ShardCount=1)
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+        wait_for_stream_ready(stream_name)
 
-        aws_client.kinesis.create_stream(StreamName=stream_name, ShardCount=1)
+        # Create IAM role event bridge bus to kinesis stream
+        assume_role_policy_document_bus_to_kinesis = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
 
-        aws_client.events.create_event_bus(Name=bus_name)
+        policy_document_bus_to_kinesis = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Action": ["kinesis:PutRecord", "kinesis:PutRecords"],
+                    "Resource": stream_arn,
+                }
+            ],
+        }
+        event_bridge_bus_to_kinesis_role_arn = create_iam_role_with_policy(
+            RoleDefinition=assume_role_policy_document_bus_to_kinesis,
+            PolicyDefinition=policy_document_bus_to_kinesis,
+        )
 
-        aws_client.events.put_rule(
+        # Create an event bus
+        event_bus_name = f"bus-{short_uid()}"
+        events_create_event_bus(Name=event_bus_name)
+
+        rule_name = f"rule-{short_uid()}"
+        events_put_rule(
             Name=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
-        put_response = aws_client.events.put_targets(
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
             Rule=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             Targets=[
                 {
                     "Id": target_id,
                     "Arn": stream_arn,
+                    "RoleArn": event_bridge_bus_to_kinesis_role_arn,
                     "KinesisParameters": {"PartitionKeyPath": "$.detail-type"},
                 }
             ],
         )
 
-        assert "FailedEntryCount" in put_response
-        assert "FailedEntries" in put_response
-        assert put_response["FailedEntryCount"] == 0
-        assert put_response["FailedEntries"] == []
-
-        def check_stream_status():
-            _stream = aws_client.kinesis.describe_stream(StreamName=stream_name)
-            assert _stream["StreamDescription"]["StreamStatus"] == "ACTIVE"
-
-        # wait until stream becomes available
-        retry(check_stream_status, retries=7, sleep=0.8)
+        if is_aws_cloud():
+            time.sleep(
+                30
+            )  # cold start of connection event bus to kinesis takes some time until messages can be sent
 
         aws_client.events.put_events(
             Entries=[
                 {
-                    "EventBusName": bus_name,
+                    "EventBusName": event_bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
                     "Detail": json.dumps(EVENT_DETAIL),
@@ -345,23 +380,14 @@ class TestEventTargetKinesis:
             ]
         )
 
-        stream = aws_client.kinesis.describe_stream(StreamName=stream_name)
-        shard_id = stream["StreamDescription"]["Shards"][0]["ShardId"]
-        shard_iterator = aws_client.kinesis.get_shard_iterator(
-            StreamName=stream_name,
-            ShardId=shard_id,
-            ShardIteratorType="AT_TIMESTAMP",
-            Timestamp=datetime(2020, 1, 1),
-        )["ShardIterator"]
+        shard_iterator = get_shard_iterator(stream_name, aws_client.kinesis)
+        response = aws_client.kinesis.get_records(ShardIterator=shard_iterator)
 
-        record = aws_client.kinesis.get_records(ShardIterator=shard_iterator)["Records"][0]
+        assert len(response["Records"]) == 1
 
-        partition_key = record["PartitionKey"]
-        data = json.loads(record["Data"].decode())
+        data = response["Records"][0]["Data"].decode("utf-8")
 
-        assert partition_key == TEST_EVENT_PATTERN["detail-type"][0]
-        assert data["detail"] == EVENT_DETAIL
-        assert_valid_event(data)
+        snapshot.match("response", data)
 
 
 class TestEventTargetLambda:
