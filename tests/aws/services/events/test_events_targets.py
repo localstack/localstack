@@ -391,7 +391,7 @@ class TestEventTargetKinesis:
 
 
 class TestEventTargetLambda:
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_put_events_with_target_lambda(
         self,
         create_lambda_function,
@@ -399,6 +399,7 @@ class TestEventTargetLambda:
         events_create_event_bus,
         events_put_rule,
         aws_client,
+        snapshot,
     ):
         rule_name = f"rule-{short_uid()}"
         function_name = f"lambda-func-{short_uid()}"
@@ -408,30 +409,33 @@ class TestEventTargetLambda:
         # clean up
         cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
 
-        rs = create_lambda_function(
+        create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
 
-        func_arn = rs["CreateFunctionResponse"]["FunctionArn"]
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
 
         events_create_event_bus(Name=bus_name)
-        events_put_rule(
+        rule_arn = events_put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )["RuleArn"]
+
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId=f"{rule_name}-Event",
+            Action="lambda:InvokeFunction",
+            Principal="events.amazonaws.com",
+            SourceArn=rule_arn,
         )
-        rs = aws_client.events.put_targets(
+        aws_client.events.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
-            Targets=[{"Id": target_id, "Arn": func_arn}],
+            Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
         )
-
-        assert "FailedEntryCount" in rs
-        assert "FailedEntries" in rs
-        assert rs["FailedEntryCount"] == 0
-        assert rs["FailedEntries"] == []
 
         aws_client.events.put_events(
             Entries=[
@@ -453,9 +457,8 @@ class TestEventTargetLambda:
             expected_length=1,
             logs_client=aws_client.logs,
         )
-        actual_event = events[0]
-        assert_valid_event(actual_event)
-        assert actual_event["detail"] == EVENT_DETAIL
+
+        snapshot.match("events", events)
 
     @markers.aws.validated
     def test_put_events_with_target_lambda_list_entry(
