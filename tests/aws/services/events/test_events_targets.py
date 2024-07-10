@@ -11,16 +11,18 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
-from localstack.utils.aws import arns, resources
+from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+from tests.aws.scenario.kinesis_firehose.conftest import get_all_expected_messages_from_s3
 from tests.aws.services.events.helper_functions import (
     assert_valid_event,
     is_v2_provider,
     sqs_collect_messages,
 )
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
+from tests.aws.services.firehose.helper_functions import get_firehose_iam_documents
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 # class TestEventTargetApiGateway:
@@ -155,72 +157,137 @@ class TestEventTargetEvents:
 
 
 class TestEventTargetFirehose:
-    @markers.aws.needs_fixing
-    def test_put_events_with_target_firehose(self, aws_client, clean_up):
-        s3_bucket = "s3-{}".format(short_uid())
-        s3_prefix = "testeventdata"
-        stream_name = "firehose-{}".format(short_uid())
-        rule_name = "rule-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
-        bus_name = "bus-{}".format(short_uid())
-
+    @markers.aws.validated
+    def test_put_events_with_target_firehose(
+        self,
+        aws_client,
+        create_iam_role_with_policy,
+        s3_bucket,
+        firehose_create_delivery_stream,
+        events_create_event_bus,
+        events_put_rule,
+        s3_empty_bucket,
+        snapshot,
+    ):
         # create firehose target bucket
-        resources.get_or_create_bucket(s3_bucket, s3_client=aws_client.s3)
+        bucket_arn = arns.s3_bucket_arn(s3_bucket)
+
+        # Create access policy for firehose
+        role_policy, policy_document = get_firehose_iam_documents(bucket_arn, "*")
+
+        firehose_delivery_stream_to_s3_role_arn = create_iam_role_with_policy(
+            RoleDefinition=role_policy, PolicyDefinition=policy_document
+        )
+
+        if is_aws_cloud():
+            time.sleep(10)  # AWS IAM propagation delay
 
         # create firehose delivery stream to s3
-        stream = aws_client.firehose.create_delivery_stream(
-            DeliveryStreamName=stream_name,
-            S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
-                "BucketARN": arns.s3_bucket_arn(s3_bucket),
-                "Prefix": s3_prefix,
-            },
-        )
-        stream_arn = stream["DeliveryStreamARN"]
+        delivery_stream_name = f"test-delivery-stream-{short_uid()}"
+        s3_prefix = "testeventdata"
 
-        aws_client.events.create_event_bus(Name=bus_name)
-        aws_client.events.put_rule(
+        delivery_stream_arn = firehose_create_delivery_stream(
+            DeliveryStreamName=delivery_stream_name,
+            DeliveryStreamType="DirectPut",
+            ExtendedS3DestinationConfiguration={
+                "BucketARN": bucket_arn,
+                "RoleARN": firehose_delivery_stream_to_s3_role_arn,
+                "Prefix": s3_prefix,
+                "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 1},
+            },
+        )["DeliveryStreamARN"]
+
+        # Create event bus, rule and target
+        event_bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=event_bus_name)
+
+        rule_name = f"rule-{short_uid()}"
+        events_put_rule(
             Name=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
-        rs = aws_client.events.put_targets(
-            Rule=rule_name,
-            EventBusName=bus_name,
-            Targets=[{"Id": target_id, "Arn": stream_arn}],
-        )
 
-        assert "FailedEntryCount" in rs
-        assert "FailedEntries" in rs
-        assert rs["FailedEntryCount"] == 0
-        assert rs["FailedEntries"] == []
-
-        aws_client.events.put_events(
-            Entries=[
+        # Create IAM role event bridge bus to firehose delivery stream
+        assume_role_policy_document_bus_to_firehose = {
+            "Version": "2012-10-17",
+            "Statement": [
                 {
-                    "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["source"][0],
-                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
                 }
-            ]
+            ],
+        }
+
+        policy_document_bus_to_firehose = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Action": ["firehose:PutRecord", "firehose:PutRecordBatch"],
+                    "Resource": delivery_stream_arn,
+                }
+            ],
+        }
+
+        event_bridge_bus_to_firehose_role_arn = create_iam_role_with_policy(
+            RoleDefinition=assume_role_policy_document_bus_to_firehose,
+            PolicyDefinition=policy_document_bus_to_firehose,
         )
 
-        # run tests
-        bucket_contents = aws_client.s3.list_objects(Bucket=s3_bucket)["Contents"]
-        assert len(bucket_contents) == 1
-        key = bucket_contents[0]["Key"]
-        s3_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
-        actual_event = json.loads(s3_object["Body"].read().decode())
-        assert_valid_event(actual_event)
-        assert actual_event["detail"] == EVENT_DETAIL
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": delivery_stream_arn,
+                    "RoleArn": event_bridge_bus_to_firehose_role_arn,
+                }
+            ],
+        )
 
-        # clean up
-        aws_client.firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
+        if is_aws_cloud():
+            time.sleep(30) # not clear yet why but firehose needs time to receive events event though status is ACTIVE
+
+        for _ in range(10):
+            aws_client.events.put_events(
+                Entries=[
+                    {
+                        "EventBusName": event_bus_name,
+                        "Source": TEST_EVENT_PATTERN["source"][0],
+                        "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                        "Detail": json.dumps(EVENT_DETAIL),
+                    }
+                ]
+            )
+
+        ######
+        # Test
+        ######
+
+        if is_aws_cloud():
+            sleep = 10
+            retries = 30
+        else:
+            sleep = 1
+            retries = 5
+
+        bucket_data = get_all_expected_messages_from_s3(
+            aws_client,
+            s3_bucket,
+            expected_message_count=10,
+            sleep=sleep,
+            retries=retries,
+        )
+        snapshot.match("s3", bucket_data)
+
         # empty and delete bucket
-        aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        s3_empty_bucket(s3_bucket)
         aws_client.s3.delete_bucket(Bucket=s3_bucket)
-        clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
 
 
 class TestEventTargetKinesis:
