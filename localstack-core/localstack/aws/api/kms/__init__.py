@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -40,7 +41,7 @@ XksProxyUriPathType = str
 XksProxyVpcEndpointServiceNameType = str
 
 
-class AlgorithmSpec(str):
+class AlgorithmSpec(StrEnum):
     RSAES_PKCS1_V1_5 = "RSAES_PKCS1_V1_5"
     RSAES_OAEP_SHA_1 = "RSAES_OAEP_SHA_1"
     RSAES_OAEP_SHA_256 = "RSAES_OAEP_SHA_256"
@@ -49,7 +50,7 @@ class AlgorithmSpec(str):
     SM2PKE = "SM2PKE"
 
 
-class ConnectionErrorCodeType(str):
+class ConnectionErrorCodeType(StrEnum):
     INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
     CLUSTER_NOT_FOUND = "CLUSTER_NOT_FOUND"
     NETWORK_ERRORS = "NETWORK_ERRORS"
@@ -72,7 +73,7 @@ class ConnectionErrorCodeType(str):
     XKS_PROXY_INVALID_TLS_CONFIGURATION = "XKS_PROXY_INVALID_TLS_CONFIGURATION"
 
 
-class ConnectionStateType(str):
+class ConnectionStateType(StrEnum):
     CONNECTED = "CONNECTED"
     CONNECTING = "CONNECTING"
     FAILED = "FAILED"
@@ -80,12 +81,12 @@ class ConnectionStateType(str):
     DISCONNECTING = "DISCONNECTING"
 
 
-class CustomKeyStoreType(str):
+class CustomKeyStoreType(StrEnum):
     AWS_CLOUDHSM = "AWS_CLOUDHSM"
     EXTERNAL_KEY_STORE = "EXTERNAL_KEY_STORE"
 
 
-class CustomerMasterKeySpec(str):
+class CustomerMasterKeySpec(StrEnum):
     RSA_2048 = "RSA_2048"
     RSA_3072 = "RSA_3072"
     RSA_4096 = "RSA_4096"
@@ -101,7 +102,7 @@ class CustomerMasterKeySpec(str):
     SM2 = "SM2"
 
 
-class DataKeyPairSpec(str):
+class DataKeyPairSpec(StrEnum):
     RSA_2048 = "RSA_2048"
     RSA_3072 = "RSA_3072"
     RSA_4096 = "RSA_4096"
@@ -112,24 +113,24 @@ class DataKeyPairSpec(str):
     SM2 = "SM2"
 
 
-class DataKeySpec(str):
+class DataKeySpec(StrEnum):
     AES_256 = "AES_256"
     AES_128 = "AES_128"
 
 
-class EncryptionAlgorithmSpec(str):
+class EncryptionAlgorithmSpec(StrEnum):
     SYMMETRIC_DEFAULT = "SYMMETRIC_DEFAULT"
     RSAES_OAEP_SHA_1 = "RSAES_OAEP_SHA_1"
     RSAES_OAEP_SHA_256 = "RSAES_OAEP_SHA_256"
     SM2PKE = "SM2PKE"
 
 
-class ExpirationModelType(str):
+class ExpirationModelType(StrEnum):
     KEY_MATERIAL_EXPIRES = "KEY_MATERIAL_EXPIRES"
     KEY_MATERIAL_DOES_NOT_EXPIRE = "KEY_MATERIAL_DOES_NOT_EXPIRE"
 
 
-class GrantOperation(str):
+class GrantOperation(StrEnum):
     Decrypt = "Decrypt"
     Encrypt = "Encrypt"
     GenerateDataKey = "GenerateDataKey"
@@ -149,20 +150,20 @@ class GrantOperation(str):
     DeriveSharedSecret = "DeriveSharedSecret"
 
 
-class KeyAgreementAlgorithmSpec(str):
+class KeyAgreementAlgorithmSpec(StrEnum):
     ECDH = "ECDH"
 
 
-class KeyEncryptionMechanism(str):
+class KeyEncryptionMechanism(StrEnum):
     RSAES_OAEP_SHA_256 = "RSAES_OAEP_SHA_256"
 
 
-class KeyManagerType(str):
+class KeyManagerType(StrEnum):
     AWS = "AWS"
     CUSTOMER = "CUSTOMER"
 
 
-class KeySpec(str):
+class KeySpec(StrEnum):
     RSA_2048 = "RSA_2048"
     RSA_3072 = "RSA_3072"
     RSA_4096 = "RSA_4096"
@@ -178,7 +179,7 @@ class KeySpec(str):
     SM2 = "SM2"
 
 
-class KeyState(str):
+class KeyState(StrEnum):
     Creating = "Creating"
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -189,43 +190,43 @@ class KeyState(str):
     Updating = "Updating"
 
 
-class KeyUsageType(str):
+class KeyUsageType(StrEnum):
     SIGN_VERIFY = "SIGN_VERIFY"
     ENCRYPT_DECRYPT = "ENCRYPT_DECRYPT"
     GENERATE_VERIFY_MAC = "GENERATE_VERIFY_MAC"
     KEY_AGREEMENT = "KEY_AGREEMENT"
 
 
-class MacAlgorithmSpec(str):
+class MacAlgorithmSpec(StrEnum):
     HMAC_SHA_224 = "HMAC_SHA_224"
     HMAC_SHA_256 = "HMAC_SHA_256"
     HMAC_SHA_384 = "HMAC_SHA_384"
     HMAC_SHA_512 = "HMAC_SHA_512"
 
 
-class MessageType(str):
+class MessageType(StrEnum):
     RAW = "RAW"
     DIGEST = "DIGEST"
 
 
-class MultiRegionKeyType(str):
+class MultiRegionKeyType(StrEnum):
     PRIMARY = "PRIMARY"
     REPLICA = "REPLICA"
 
 
-class OriginType(str):
+class OriginType(StrEnum):
     AWS_KMS = "AWS_KMS"
     EXTERNAL = "EXTERNAL"
     AWS_CLOUDHSM = "AWS_CLOUDHSM"
     EXTERNAL_KEY_STORE = "EXTERNAL_KEY_STORE"
 
 
-class RotationType(str):
+class RotationType(StrEnum):
     AUTOMATIC = "AUTOMATIC"
     ON_DEMAND = "ON_DEMAND"
 
 
-class SigningAlgorithmSpec(str):
+class SigningAlgorithmSpec(StrEnum):
     RSASSA_PSS_SHA_256 = "RSASSA_PSS_SHA_256"
     RSASSA_PSS_SHA_384 = "RSASSA_PSS_SHA_384"
     RSASSA_PSS_SHA_512 = "RSASSA_PSS_SHA_512"
@@ -238,14 +239,14 @@ class SigningAlgorithmSpec(str):
     SM2DSA = "SM2DSA"
 
 
-class WrappingKeySpec(str):
+class WrappingKeySpec(StrEnum):
     RSA_2048 = "RSA_2048"
     RSA_3072 = "RSA_3072"
     RSA_4096 = "RSA_4096"
     SM2 = "SM2"
 
 
-class XksProxyConnectivityType(str):
+class XksProxyConnectivityType(StrEnum):
     PUBLIC_ENDPOINT = "PUBLIC_ENDPOINT"
     VPC_ENDPOINT_SERVICE = "VPC_ENDPOINT_SERVICE"
 

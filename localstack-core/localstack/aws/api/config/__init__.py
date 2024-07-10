@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -92,47 +93,47 @@ Value = str
 Version = str
 
 
-class AggregateConformancePackComplianceSummaryGroupKey(str):
+class AggregateConformancePackComplianceSummaryGroupKey(StrEnum):
     ACCOUNT_ID = "ACCOUNT_ID"
     AWS_REGION = "AWS_REGION"
 
 
-class AggregatedSourceStatusType(str):
+class AggregatedSourceStatusType(StrEnum):
     FAILED = "FAILED"
     SUCCEEDED = "SUCCEEDED"
     OUTDATED = "OUTDATED"
 
 
-class AggregatedSourceType(str):
+class AggregatedSourceType(StrEnum):
     ACCOUNT = "ACCOUNT"
     ORGANIZATION = "ORGANIZATION"
 
 
-class ChronologicalOrder(str):
+class ChronologicalOrder(StrEnum):
     Reverse = "Reverse"
     Forward = "Forward"
 
 
-class ComplianceType(str):
+class ComplianceType(StrEnum):
     COMPLIANT = "COMPLIANT"
     NON_COMPLIANT = "NON_COMPLIANT"
     NOT_APPLICABLE = "NOT_APPLICABLE"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 
 
-class ConfigRuleComplianceSummaryGroupKey(str):
+class ConfigRuleComplianceSummaryGroupKey(StrEnum):
     ACCOUNT_ID = "ACCOUNT_ID"
     AWS_REGION = "AWS_REGION"
 
 
-class ConfigRuleState(str):
+class ConfigRuleState(StrEnum):
     ACTIVE = "ACTIVE"
     DELETING = "DELETING"
     DELETING_RESULTS = "DELETING_RESULTS"
     EVALUATING = "EVALUATING"
 
 
-class ConfigurationItemStatus(str):
+class ConfigurationItemStatus(StrEnum):
     OK = "OK"
     ResourceDiscovered = "ResourceDiscovered"
     ResourceNotRecorded = "ResourceNotRecorded"
@@ -140,13 +141,13 @@ class ConfigurationItemStatus(str):
     ResourceDeletedNotRecorded = "ResourceDeletedNotRecorded"
 
 
-class ConformancePackComplianceType(str):
+class ConformancePackComplianceType(StrEnum):
     COMPLIANT = "COMPLIANT"
     NON_COMPLIANT = "NON_COMPLIANT"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 
 
-class ConformancePackState(str):
+class ConformancePackState(StrEnum):
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     CREATE_COMPLETE = "CREATE_COMPLETE"
     CREATE_FAILED = "CREATE_FAILED"
@@ -154,22 +155,22 @@ class ConformancePackState(str):
     DELETE_FAILED = "DELETE_FAILED"
 
 
-class DeliveryStatus(str):
+class DeliveryStatus(StrEnum):
     Success = "Success"
     Failure = "Failure"
     Not_Applicable = "Not_Applicable"
 
 
-class EvaluationMode(str):
+class EvaluationMode(StrEnum):
     DETECTIVE = "DETECTIVE"
     PROACTIVE = "PROACTIVE"
 
 
-class EventSource(str):
+class EventSource(StrEnum):
     aws_config = "aws.config"
 
 
-class MaximumExecutionFrequency(str):
+class MaximumExecutionFrequency(StrEnum):
     One_Hour = "One_Hour"
     Three_Hours = "Three_Hours"
     Six_Hours = "Six_Hours"
@@ -177,7 +178,7 @@ class MaximumExecutionFrequency(str):
     TwentyFour_Hours = "TwentyFour_Hours"
 
 
-class MemberAccountRuleStatus(str):
+class MemberAccountRuleStatus(StrEnum):
     CREATE_SUCCESSFUL = "CREATE_SUCCESSFUL"
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     CREATE_FAILED = "CREATE_FAILED"
@@ -189,25 +190,25 @@ class MemberAccountRuleStatus(str):
     UPDATE_FAILED = "UPDATE_FAILED"
 
 
-class MessageType(str):
+class MessageType(StrEnum):
     ConfigurationItemChangeNotification = "ConfigurationItemChangeNotification"
     ConfigurationSnapshotDeliveryCompleted = "ConfigurationSnapshotDeliveryCompleted"
     ScheduledNotification = "ScheduledNotification"
     OversizedConfigurationItemChangeNotification = "OversizedConfigurationItemChangeNotification"
 
 
-class OrganizationConfigRuleTriggerType(str):
+class OrganizationConfigRuleTriggerType(StrEnum):
     ConfigurationItemChangeNotification = "ConfigurationItemChangeNotification"
     OversizedConfigurationItemChangeNotification = "OversizedConfigurationItemChangeNotification"
     ScheduledNotification = "ScheduledNotification"
 
 
-class OrganizationConfigRuleTriggerTypeNoSN(str):
+class OrganizationConfigRuleTriggerTypeNoSN(StrEnum):
     ConfigurationItemChangeNotification = "ConfigurationItemChangeNotification"
     OversizedConfigurationItemChangeNotification = "OversizedConfigurationItemChangeNotification"
 
 
-class OrganizationResourceDetailedStatus(str):
+class OrganizationResourceDetailedStatus(StrEnum):
     CREATE_SUCCESSFUL = "CREATE_SUCCESSFUL"
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     CREATE_FAILED = "CREATE_FAILED"
@@ -219,7 +220,7 @@ class OrganizationResourceDetailedStatus(str):
     UPDATE_FAILED = "UPDATE_FAILED"
 
 
-class OrganizationResourceStatus(str):
+class OrganizationResourceStatus(StrEnum):
     CREATE_SUCCESSFUL = "CREATE_SUCCESSFUL"
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     CREATE_FAILED = "CREATE_FAILED"
@@ -231,7 +232,7 @@ class OrganizationResourceStatus(str):
     UPDATE_FAILED = "UPDATE_FAILED"
 
 
-class OrganizationRuleStatus(str):
+class OrganizationRuleStatus(StrEnum):
     CREATE_SUCCESSFUL = "CREATE_SUCCESSFUL"
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     CREATE_FAILED = "CREATE_FAILED"
@@ -243,63 +244,63 @@ class OrganizationRuleStatus(str):
     UPDATE_FAILED = "UPDATE_FAILED"
 
 
-class Owner(str):
+class Owner(StrEnum):
     CUSTOM_LAMBDA = "CUSTOM_LAMBDA"
     AWS = "AWS"
     CUSTOM_POLICY = "CUSTOM_POLICY"
 
 
-class RecorderStatus(str):
+class RecorderStatus(StrEnum):
     Pending = "Pending"
     Success = "Success"
     Failure = "Failure"
 
 
-class RecordingFrequency(str):
+class RecordingFrequency(StrEnum):
     CONTINUOUS = "CONTINUOUS"
     DAILY = "DAILY"
 
 
-class RecordingStrategyType(str):
+class RecordingStrategyType(StrEnum):
     ALL_SUPPORTED_RESOURCE_TYPES = "ALL_SUPPORTED_RESOURCE_TYPES"
     INCLUSION_BY_RESOURCE_TYPES = "INCLUSION_BY_RESOURCE_TYPES"
     EXCLUSION_BY_RESOURCE_TYPES = "EXCLUSION_BY_RESOURCE_TYPES"
 
 
-class RemediationExecutionState(str):
+class RemediationExecutionState(StrEnum):
     QUEUED = "QUEUED"
     IN_PROGRESS = "IN_PROGRESS"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
 
 
-class RemediationExecutionStepState(str):
+class RemediationExecutionStepState(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     PENDING = "PENDING"
     FAILED = "FAILED"
 
 
-class RemediationTargetType(str):
+class RemediationTargetType(StrEnum):
     SSM_DOCUMENT = "SSM_DOCUMENT"
 
 
-class ResourceConfigurationSchemaType(str):
+class ResourceConfigurationSchemaType(StrEnum):
     CFN_RESOURCE_SCHEMA = "CFN_RESOURCE_SCHEMA"
 
 
-class ResourceCountGroupKey(str):
+class ResourceCountGroupKey(StrEnum):
     RESOURCE_TYPE = "RESOURCE_TYPE"
     ACCOUNT_ID = "ACCOUNT_ID"
     AWS_REGION = "AWS_REGION"
 
 
-class ResourceEvaluationStatus(str):
+class ResourceEvaluationStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     SUCCEEDED = "SUCCEEDED"
 
 
-class ResourceType(str):
+class ResourceType(StrEnum):
     AWS_EC2_CustomerGateway = "AWS::EC2::CustomerGateway"
     AWS_EC2_EIP = "AWS::EC2::EIP"
     AWS_EC2_Host = "AWS::EC2::Host"
@@ -723,15 +724,15 @@ class ResourceType(str):
     AWS_SSM_Document = "AWS::SSM::Document"
 
 
-class ResourceValueType(str):
+class ResourceValueType(StrEnum):
     RESOURCE_ID = "RESOURCE_ID"
 
 
-class SortBy(str):
+class SortBy(StrEnum):
     SCORE = "SCORE"
 
 
-class SortOrder(str):
+class SortOrder(StrEnum):
     ASCENDING = "ASCENDING"
     DESCENDING = "DESCENDING"
 

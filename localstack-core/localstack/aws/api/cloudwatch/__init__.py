@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -89,29 +90,29 @@ Threshold = float
 TreatMissingData = str
 
 
-class ActionsSuppressedBy(str):
+class ActionsSuppressedBy(StrEnum):
     WaitPeriod = "WaitPeriod"
     ExtensionPeriod = "ExtensionPeriod"
     Alarm = "Alarm"
 
 
-class AlarmType(str):
+class AlarmType(StrEnum):
     CompositeAlarm = "CompositeAlarm"
     MetricAlarm = "MetricAlarm"
 
 
-class AnomalyDetectorStateValue(str):
+class AnomalyDetectorStateValue(StrEnum):
     PENDING_TRAINING = "PENDING_TRAINING"
     TRAINED_INSUFFICIENT_DATA = "TRAINED_INSUFFICIENT_DATA"
     TRAINED = "TRAINED"
 
 
-class AnomalyDetectorType(str):
+class AnomalyDetectorType(StrEnum):
     SINGLE_METRIC = "SINGLE_METRIC"
     METRIC_MATH = "METRIC_MATH"
 
 
-class ComparisonOperator(str):
+class ComparisonOperator(StrEnum):
     GreaterThanOrEqualToThreshold = "GreaterThanOrEqualToThreshold"
     GreaterThanThreshold = "GreaterThanThreshold"
     LessThanThreshold = "LessThanThreshold"
@@ -121,32 +122,32 @@ class ComparisonOperator(str):
     GreaterThanUpperThreshold = "GreaterThanUpperThreshold"
 
 
-class EvaluationState(str):
+class EvaluationState(StrEnum):
     PARTIAL_DATA = "PARTIAL_DATA"
 
 
-class HistoryItemType(str):
+class HistoryItemType(StrEnum):
     ConfigurationUpdate = "ConfigurationUpdate"
     StateUpdate = "StateUpdate"
     Action = "Action"
 
 
-class MetricStreamOutputFormat(str):
+class MetricStreamOutputFormat(StrEnum):
     json = "json"
     opentelemetry0_7 = "opentelemetry0.7"
     opentelemetry1_0 = "opentelemetry1.0"
 
 
-class RecentlyActive(str):
+class RecentlyActive(StrEnum):
     PT3H = "PT3H"
 
 
-class ScanBy(str):
+class ScanBy(StrEnum):
     TimestampDescending = "TimestampDescending"
     TimestampAscending = "TimestampAscending"
 
 
-class StandardUnit(str):
+class StandardUnit(StrEnum):
     Seconds = "Seconds"
     Microseconds = "Microseconds"
     Milliseconds = "Milliseconds"
@@ -176,13 +177,13 @@ class StandardUnit(str):
     None_ = "None"
 
 
-class StateValue(str):
+class StateValue(StrEnum):
     OK = "OK"
     ALARM = "ALARM"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 
 
-class Statistic(str):
+class Statistic(StrEnum):
     SampleCount = "SampleCount"
     Average = "Average"
     Sum = "Sum"
@@ -190,7 +191,7 @@ class Statistic(str):
     Maximum = "Maximum"
 
 
-class StatusCode(str):
+class StatusCode(StrEnum):
     Complete = "Complete"
     InternalError = "InternalError"
     PartialData = "PartialData"

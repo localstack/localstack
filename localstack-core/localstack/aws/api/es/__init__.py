@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -74,12 +75,12 @@ Username = str
 VpcEndpointId = str
 
 
-class AutoTuneDesiredState(str):
+class AutoTuneDesiredState(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class AutoTuneState(str):
+class AutoTuneState(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
     ENABLE_IN_PROGRESS = "ENABLE_IN_PROGRESS"
@@ -91,11 +92,11 @@ class AutoTuneState(str):
     ERROR = "ERROR"
 
 
-class AutoTuneType(str):
+class AutoTuneType(StrEnum):
     SCHEDULED_ACTION = "SCHEDULED_ACTION"
 
 
-class ConfigChangeStatus(str):
+class ConfigChangeStatus(StrEnum):
     Pending = "Pending"
     Initializing = "Initializing"
     Validating = "Validating"
@@ -106,7 +107,7 @@ class ConfigChangeStatus(str):
     Cancelled = "Cancelled"
 
 
-class DeploymentStatus(str):
+class DeploymentStatus(StrEnum):
     PENDING_UPDATE = "PENDING_UPDATE"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -114,13 +115,13 @@ class DeploymentStatus(str):
     ELIGIBLE = "ELIGIBLE"
 
 
-class DescribePackagesFilterName(str):
+class DescribePackagesFilterName(StrEnum):
     PackageID = "PackageID"
     PackageName = "PackageName"
     PackageStatus = "PackageStatus"
 
 
-class DomainPackageStatus(str):
+class DomainPackageStatus(StrEnum):
     ASSOCIATING = "ASSOCIATING"
     ASSOCIATION_FAILED = "ASSOCIATION_FAILED"
     ACTIVE = "ACTIVE"
@@ -128,7 +129,7 @@ class DomainPackageStatus(str):
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
 
 
-class DomainProcessingStatusType(str):
+class DomainProcessingStatusType(StrEnum):
     Creating = "Creating"
     Active = "Active"
     Modifying = "Modifying"
@@ -138,7 +139,7 @@ class DomainProcessingStatusType(str):
     Deleting = "Deleting"
 
 
-class ESPartitionInstanceType(str):
+class ESPartitionInstanceType(StrEnum):
     m3_medium_elasticsearch = "m3.medium.elasticsearch"
     m3_large_elasticsearch = "m3.large.elasticsearch"
     m3_xlarge_elasticsearch = "m3.xlarge.elasticsearch"
@@ -199,17 +200,17 @@ class ESPartitionInstanceType(str):
     i3_16xlarge_elasticsearch = "i3.16xlarge.elasticsearch"
 
 
-class ESWarmPartitionInstanceType(str):
+class ESWarmPartitionInstanceType(StrEnum):
     ultrawarm1_medium_elasticsearch = "ultrawarm1.medium.elasticsearch"
     ultrawarm1_large_elasticsearch = "ultrawarm1.large.elasticsearch"
 
 
-class EngineType(str):
+class EngineType(StrEnum):
     OpenSearch = "OpenSearch"
     Elasticsearch = "Elasticsearch"
 
 
-class InboundCrossClusterSearchConnectionStatusCode(str):
+class InboundCrossClusterSearchConnectionStatusCode(StrEnum):
     PENDING_ACCEPTANCE = "PENDING_ACCEPTANCE"
     APPROVED = "APPROVED"
     REJECTING = "REJECTING"
@@ -218,25 +219,25 @@ class InboundCrossClusterSearchConnectionStatusCode(str):
     DELETED = "DELETED"
 
 
-class InitiatedBy(str):
+class InitiatedBy(StrEnum):
     CUSTOMER = "CUSTOMER"
     SERVICE = "SERVICE"
 
 
-class LogType(str):
+class LogType(StrEnum):
     INDEX_SLOW_LOGS = "INDEX_SLOW_LOGS"
     SEARCH_SLOW_LOGS = "SEARCH_SLOW_LOGS"
     ES_APPLICATION_LOGS = "ES_APPLICATION_LOGS"
     AUDIT_LOGS = "AUDIT_LOGS"
 
 
-class OptionState(str):
+class OptionState(StrEnum):
     RequiresIndexDocuments = "RequiresIndexDocuments"
     Processing = "Processing"
     Active = "Active"
 
 
-class OutboundCrossClusterSearchConnectionStatusCode(str):
+class OutboundCrossClusterSearchConnectionStatusCode(StrEnum):
     PENDING_ACCEPTANCE = "PENDING_ACCEPTANCE"
     VALIDATING = "VALIDATING"
     VALIDATION_FAILED = "VALIDATION_FAILED"
@@ -247,14 +248,14 @@ class OutboundCrossClusterSearchConnectionStatusCode(str):
     DELETED = "DELETED"
 
 
-class OverallChangeStatus(str):
+class OverallChangeStatus(StrEnum):
     PENDING = "PENDING"
     PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
 
-class PackageStatus(str):
+class PackageStatus(StrEnum):
     COPYING = "COPYING"
     COPY_FAILED = "COPY_FAILED"
     VALIDATING = "VALIDATING"
@@ -265,78 +266,78 @@ class PackageStatus(str):
     DELETE_FAILED = "DELETE_FAILED"
 
 
-class PackageType(str):
+class PackageType(StrEnum):
     TXT_DICTIONARY = "TXT-DICTIONARY"
 
 
-class PrincipalType(str):
+class PrincipalType(StrEnum):
     AWS_ACCOUNT = "AWS_ACCOUNT"
     AWS_SERVICE = "AWS_SERVICE"
 
 
-class PropertyValueType(str):
+class PropertyValueType(StrEnum):
     PLAIN_TEXT = "PLAIN_TEXT"
     STRINGIFIED_JSON = "STRINGIFIED_JSON"
 
 
-class ReservedElasticsearchInstancePaymentOption(str):
+class ReservedElasticsearchInstancePaymentOption(StrEnum):
     ALL_UPFRONT = "ALL_UPFRONT"
     PARTIAL_UPFRONT = "PARTIAL_UPFRONT"
     NO_UPFRONT = "NO_UPFRONT"
 
 
-class RollbackOnDisable(str):
+class RollbackOnDisable(StrEnum):
     NO_ROLLBACK = "NO_ROLLBACK"
     DEFAULT_ROLLBACK = "DEFAULT_ROLLBACK"
 
 
-class ScheduledAutoTuneActionType(str):
+class ScheduledAutoTuneActionType(StrEnum):
     JVM_HEAP_SIZE_TUNING = "JVM_HEAP_SIZE_TUNING"
     JVM_YOUNG_GEN_TUNING = "JVM_YOUNG_GEN_TUNING"
 
 
-class ScheduledAutoTuneSeverityType(str):
+class ScheduledAutoTuneSeverityType(StrEnum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
 
 
-class TLSSecurityPolicy(str):
+class TLSSecurityPolicy(StrEnum):
     Policy_Min_TLS_1_0_2019_07 = "Policy-Min-TLS-1-0-2019-07"
     Policy_Min_TLS_1_2_2019_07 = "Policy-Min-TLS-1-2-2019-07"
     Policy_Min_TLS_1_2_PFS_2023_10 = "Policy-Min-TLS-1-2-PFS-2023-10"
 
 
-class TimeUnit(str):
+class TimeUnit(StrEnum):
     HOURS = "HOURS"
 
 
-class UpgradeStatus(str):
+class UpgradeStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     SUCCEEDED = "SUCCEEDED"
     SUCCEEDED_WITH_ISSUES = "SUCCEEDED_WITH_ISSUES"
     FAILED = "FAILED"
 
 
-class UpgradeStep(str):
+class UpgradeStep(StrEnum):
     PRE_UPGRADE_CHECK = "PRE_UPGRADE_CHECK"
     SNAPSHOT = "SNAPSHOT"
     UPGRADE = "UPGRADE"
 
 
-class VolumeType(str):
+class VolumeType(StrEnum):
     standard = "standard"
     gp2 = "gp2"
     io1 = "io1"
     gp3 = "gp3"
 
 
-class VpcEndpointErrorCode(str):
+class VpcEndpointErrorCode(StrEnum):
     ENDPOINT_NOT_FOUND = "ENDPOINT_NOT_FOUND"
     SERVER_ERROR = "SERVER_ERROR"
 
 
-class VpcEndpointStatus(str):
+class VpcEndpointStatus(StrEnum):
     CREATING = "CREATING"
     CREATE_FAILED = "CREATE_FAILED"
     ACTIVE = "ACTIVE"

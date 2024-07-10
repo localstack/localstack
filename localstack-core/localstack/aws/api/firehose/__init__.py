@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -95,12 +96,12 @@ TopicName = str
 Username = str
 
 
-class AmazonOpenSearchServerlessS3BackupMode(str):
+class AmazonOpenSearchServerlessS3BackupMode(StrEnum):
     FailedDocumentsOnly = "FailedDocumentsOnly"
     AllDocuments = "AllDocuments"
 
 
-class AmazonopensearchserviceIndexRotationPeriod(str):
+class AmazonopensearchserviceIndexRotationPeriod(StrEnum):
     NoRotation = "NoRotation"
     OneHour = "OneHour"
     OneDay = "OneDay"
@@ -108,12 +109,12 @@ class AmazonopensearchserviceIndexRotationPeriod(str):
     OneMonth = "OneMonth"
 
 
-class AmazonopensearchserviceS3BackupMode(str):
+class AmazonopensearchserviceS3BackupMode(StrEnum):
     FailedDocumentsOnly = "FailedDocumentsOnly"
     AllDocuments = "AllDocuments"
 
 
-class CompressionFormat(str):
+class CompressionFormat(StrEnum):
     UNCOMPRESSED = "UNCOMPRESSED"
     GZIP = "GZIP"
     ZIP = "ZIP"
@@ -121,22 +122,22 @@ class CompressionFormat(str):
     HADOOP_SNAPPY = "HADOOP_SNAPPY"
 
 
-class Connectivity(str):
+class Connectivity(StrEnum):
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
 
 
-class ContentEncoding(str):
+class ContentEncoding(StrEnum):
     NONE = "NONE"
     GZIP = "GZIP"
 
 
-class DefaultDocumentIdFormat(str):
+class DefaultDocumentIdFormat(StrEnum):
     FIREHOSE_DEFAULT = "FIREHOSE_DEFAULT"
     NO_DOCUMENT_ID = "NO_DOCUMENT_ID"
 
 
-class DeliveryStreamEncryptionStatus(str):
+class DeliveryStreamEncryptionStatus(StrEnum):
     ENABLED = "ENABLED"
     ENABLING = "ENABLING"
     ENABLING_FAILED = "ENABLING_FAILED"
@@ -145,7 +146,7 @@ class DeliveryStreamEncryptionStatus(str):
     DISABLING_FAILED = "DISABLING_FAILED"
 
 
-class DeliveryStreamFailureType(str):
+class DeliveryStreamFailureType(StrEnum):
     RETIRE_KMS_GRANT_FAILED = "RETIRE_KMS_GRANT_FAILED"
     CREATE_KMS_GRANT_FAILED = "CREATE_KMS_GRANT_FAILED"
     KMS_ACCESS_DENIED = "KMS_ACCESS_DENIED"
@@ -163,7 +164,7 @@ class DeliveryStreamFailureType(str):
     UNKNOWN_ERROR = "UNKNOWN_ERROR"
 
 
-class DeliveryStreamStatus(str):
+class DeliveryStreamStatus(StrEnum):
     CREATING = "CREATING"
     CREATING_FAILED = "CREATING_FAILED"
     DELETING = "DELETING"
@@ -171,13 +172,13 @@ class DeliveryStreamStatus(str):
     ACTIVE = "ACTIVE"
 
 
-class DeliveryStreamType(str):
+class DeliveryStreamType(StrEnum):
     DirectPut = "DirectPut"
     KinesisStreamAsSource = "KinesisStreamAsSource"
     MSKAsSource = "MSKAsSource"
 
 
-class ElasticsearchIndexRotationPeriod(str):
+class ElasticsearchIndexRotationPeriod(StrEnum):
     NoRotation = "NoRotation"
     OneHour = "OneHour"
     OneDay = "OneDay"
@@ -185,53 +186,53 @@ class ElasticsearchIndexRotationPeriod(str):
     OneMonth = "OneMonth"
 
 
-class ElasticsearchS3BackupMode(str):
+class ElasticsearchS3BackupMode(StrEnum):
     FailedDocumentsOnly = "FailedDocumentsOnly"
     AllDocuments = "AllDocuments"
 
 
-class HECEndpointType(str):
+class HECEndpointType(StrEnum):
     Raw = "Raw"
     Event = "Event"
 
 
-class HttpEndpointS3BackupMode(str):
+class HttpEndpointS3BackupMode(StrEnum):
     FailedDataOnly = "FailedDataOnly"
     AllData = "AllData"
 
 
-class KeyType(str):
+class KeyType(StrEnum):
     AWS_OWNED_CMK = "AWS_OWNED_CMK"
     CUSTOMER_MANAGED_CMK = "CUSTOMER_MANAGED_CMK"
 
 
-class NoEncryptionConfig(str):
+class NoEncryptionConfig(StrEnum):
     NoEncryption = "NoEncryption"
 
 
-class OrcCompression(str):
+class OrcCompression(StrEnum):
     NONE = "NONE"
     ZLIB = "ZLIB"
     SNAPPY = "SNAPPY"
 
 
-class OrcFormatVersion(str):
+class OrcFormatVersion(StrEnum):
     V0_11 = "V0_11"
     V0_12 = "V0_12"
 
 
-class ParquetCompression(str):
+class ParquetCompression(StrEnum):
     UNCOMPRESSED = "UNCOMPRESSED"
     GZIP = "GZIP"
     SNAPPY = "SNAPPY"
 
 
-class ParquetWriterVersion(str):
+class ParquetWriterVersion(StrEnum):
     V1 = "V1"
     V2 = "V2"
 
 
-class ProcessorParameterName(str):
+class ProcessorParameterName(StrEnum):
     LambdaArn = "LambdaArn"
     NumberOfRetries = "NumberOfRetries"
     MetadataExtractionQuery = "MetadataExtractionQuery"
@@ -245,7 +246,7 @@ class ProcessorParameterName(str):
     DataMessageExtraction = "DataMessageExtraction"
 
 
-class ProcessorType(str):
+class ProcessorType(StrEnum):
     RecordDeAggregation = "RecordDeAggregation"
     Decompression = "Decompression"
     CloudWatchLogProcessing = "CloudWatchLogProcessing"
@@ -254,28 +255,28 @@ class ProcessorType(str):
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
 
 
-class RedshiftS3BackupMode(str):
+class RedshiftS3BackupMode(StrEnum):
     Disabled = "Disabled"
     Enabled = "Enabled"
 
 
-class S3BackupMode(str):
+class S3BackupMode(StrEnum):
     Disabled = "Disabled"
     Enabled = "Enabled"
 
 
-class SnowflakeDataLoadingOption(str):
+class SnowflakeDataLoadingOption(StrEnum):
     JSON_MAPPING = "JSON_MAPPING"
     VARIANT_CONTENT_MAPPING = "VARIANT_CONTENT_MAPPING"
     VARIANT_CONTENT_AND_METADATA_MAPPING = "VARIANT_CONTENT_AND_METADATA_MAPPING"
 
 
-class SnowflakeS3BackupMode(str):
+class SnowflakeS3BackupMode(StrEnum):
     FailedDataOnly = "FailedDataOnly"
     AllData = "AllData"
 
 
-class SplunkS3BackupMode(str):
+class SplunkS3BackupMode(StrEnum):
     FailedEventsOnly = "FailedEventsOnly"
     AllEvents = "AllEvents"
 

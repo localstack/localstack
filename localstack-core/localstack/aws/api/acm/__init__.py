@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -22,7 +23,7 @@ TagValue = str
 ValidationExceptionMessage = str
 
 
-class CertificateStatus(str):
+class CertificateStatus(StrEnum):
     PENDING_VALIDATION = "PENDING_VALIDATION"
     ISSUED = "ISSUED"
     INACTIVE = "INACTIVE"
@@ -32,24 +33,24 @@ class CertificateStatus(str):
     FAILED = "FAILED"
 
 
-class CertificateTransparencyLoggingPreference(str):
+class CertificateTransparencyLoggingPreference(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class CertificateType(str):
+class CertificateType(StrEnum):
     IMPORTED = "IMPORTED"
     AMAZON_ISSUED = "AMAZON_ISSUED"
     PRIVATE = "PRIVATE"
 
 
-class DomainStatus(str):
+class DomainStatus(StrEnum):
     PENDING_VALIDATION = "PENDING_VALIDATION"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
 
 
-class ExtendedKeyUsageName(str):
+class ExtendedKeyUsageName(StrEnum):
     TLS_WEB_SERVER_AUTHENTICATION = "TLS_WEB_SERVER_AUTHENTICATION"
     TLS_WEB_CLIENT_AUTHENTICATION = "TLS_WEB_CLIENT_AUTHENTICATION"
     CODE_SIGNING = "CODE_SIGNING"
@@ -64,7 +65,7 @@ class ExtendedKeyUsageName(str):
     CUSTOM = "CUSTOM"
 
 
-class FailureReason(str):
+class FailureReason(StrEnum):
     NO_AVAILABLE_CONTACTS = "NO_AVAILABLE_CONTACTS"
     ADDITIONAL_VERIFICATION_REQUIRED = "ADDITIONAL_VERIFICATION_REQUIRED"
     DOMAIN_NOT_ALLOWED = "DOMAIN_NOT_ALLOWED"
@@ -84,7 +85,7 @@ class FailureReason(str):
     OTHER = "OTHER"
 
 
-class KeyAlgorithm(str):
+class KeyAlgorithm(StrEnum):
     RSA_1024 = "RSA_1024"
     RSA_2048 = "RSA_2048"
     RSA_3072 = "RSA_3072"
@@ -94,7 +95,7 @@ class KeyAlgorithm(str):
     EC_secp521r1 = "EC_secp521r1"
 
 
-class KeyUsageName(str):
+class KeyUsageName(StrEnum):
     DIGITAL_SIGNATURE = "DIGITAL_SIGNATURE"
     NON_REPUDIATION = "NON_REPUDIATION"
     KEY_ENCIPHERMENT = "KEY_ENCIPHERMENT"
@@ -108,23 +109,23 @@ class KeyUsageName(str):
     CUSTOM = "CUSTOM"
 
 
-class RecordType(str):
+class RecordType(StrEnum):
     CNAME = "CNAME"
 
 
-class RenewalEligibility(str):
+class RenewalEligibility(StrEnum):
     ELIGIBLE = "ELIGIBLE"
     INELIGIBLE = "INELIGIBLE"
 
 
-class RenewalStatus(str):
+class RenewalStatus(StrEnum):
     PENDING_AUTO_RENEWAL = "PENDING_AUTO_RENEWAL"
     PENDING_VALIDATION = "PENDING_VALIDATION"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
 
 
-class RevocationReason(str):
+class RevocationReason(StrEnum):
     UNSPECIFIED = "UNSPECIFIED"
     KEY_COMPROMISE = "KEY_COMPROMISE"
     CA_COMPROMISE = "CA_COMPROMISE"
@@ -137,16 +138,16 @@ class RevocationReason(str):
     A_A_COMPROMISE = "A_A_COMPROMISE"
 
 
-class SortBy(str):
+class SortBy(StrEnum):
     CREATED_AT = "CREATED_AT"
 
 
-class SortOrder(str):
+class SortOrder(StrEnum):
     ASCENDING = "ASCENDING"
     DESCENDING = "DESCENDING"
 
 
-class ValidationMethod(str):
+class ValidationMethod(StrEnum):
     EMAIL = "EMAIL"
     DNS = "DNS"
 

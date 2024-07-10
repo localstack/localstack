@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -13,7 +14,7 @@ TagValue = str
 Token = str
 
 
-class MessageSystemAttributeName(str):
+class MessageSystemAttributeName(StrEnum):
     All = "All"
     SenderId = "SenderId"
     SentTimestamp = "SentTimestamp"
@@ -26,11 +27,11 @@ class MessageSystemAttributeName(str):
     DeadLetterQueueSourceArn = "DeadLetterQueueSourceArn"
 
 
-class MessageSystemAttributeNameForSends(str):
+class MessageSystemAttributeNameForSends(StrEnum):
     AWSTraceHeader = "AWSTraceHeader"
 
 
-class QueueAttributeName(str):
+class QueueAttributeName(StrEnum):
     All = "All"
     Policy = "Policy"
     VisibilityTimeout = "VisibilityTimeout"
