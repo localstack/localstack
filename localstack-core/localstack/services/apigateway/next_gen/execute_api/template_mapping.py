@@ -196,7 +196,9 @@ class ApiGatewayVtlTemplate(VtlTemplate):
     def render_response(
         self, template: str, variables: MappingTemplateVariables
     ) -> tuple[str, ContextVarsResponseOverride]:
-        vars: MappingTemplateVariables = copy.deepcopy(variables)
-        vars["context"]["responseOverride"] = ContextVarsResponseOverride(header={}, status=0)
-        result = self.render_vtl(template=template.strip(), variables=vars)
-        return result, vars["context"]["responseOverride"]
+        variables_copy: MappingTemplateVariables = copy.deepcopy(variables)
+        variables_copy["context"]["responseOverride"] = ContextVarsResponseOverride(
+            header={}, status=0
+        )
+        result = self.render_vtl(template=template.strip(), variables=variables_copy)
+        return result, variables_copy["context"]["responseOverride"]
