@@ -1,10 +1,11 @@
 import logging
 import re
 
+from werkzeug.datastructures import Headers
+
 from localstack.aws.api.apigateway import Integration, IntegrationResponse, IntegrationType
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
-from localstack.utils.collections import merge_dicts
 from localstack.utils.strings import to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
@@ -72,7 +73,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             response_parameters=response_parameters,
         )
 
-        # we can also apply the Response Templates, they will depend on status code + accept header?
+        # We then fetch a response templates and apply the template mapping
         response_template = self.get_response_template(
             integration_response=integration_response, request=context.invocation_request
         )
@@ -82,22 +83,47 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
 
         # here we update the `Response`. We basically need to remove all headers and replace them with the mapping, then
         # override them if there are overrides.
-        # for the body, it will maybe depend on configuration?
-        for key in list(response.headers.keys(lower=True)):
-            if key not in ("connection", "content-type"):
-                del response.headers[key]
-
-        # there must be some default headers set, snapshot those?
-        if headers := merge_dicts(response_data_mapping["header"], response_override["header"]):
-            response.headers.update(headers)
-
-        # We set the status code from the integration response unless there was a response override
-        response.status_code = response_override["status"] or integration_response["statusCode"]
-
-        # The body will be taken from template mapping.
-        response.data = body
-
+        # The status code is pretty straight forward. By default, it would be set by the integration response,
+        # unless there was an override
         response.status_code = int(integration_response["statusCode"])
+        if response_status_override := response_override["status"]:
+            # maybe make a better error message format, same for the overrides for request too
+            LOG.debug("Overriding response status code: '%s'", response_status_override)
+            response.status_code = response_status_override
+
+        # Create a new headers object that we can manipulate before overriding the original response headers
+        headers = Headers(response_data_mapping.get("header"))
+        if header_override := response_override["header"]:
+            LOG.debug("Response header overrides: %s", header_override)
+            headers.update(header_override)
+
+        # When trying to override certain headers, they will instead be remapped
+        # There may be other headers, but these have been confirmed on aws
+        remapped_headers = (
+            "connection",
+            "content-length",
+            "date",
+            "x-amzn-requestid",
+            "content-type",
+        )
+        for header in remapped_headers:
+            if value := headers.get(header):
+                headers[f"x-amzn-remapped-{header}"] = value
+                headers.remove(header)
+
+        # Those headers are passed through from the response headers, there might be more?
+        passthrough_headers = ("connection", "content-type", "content-length")
+        for header in passthrough_headers:
+            if values := response.headers.getlist(header):
+                headers.setlist(header, values)
+
+        # We replace the old response with the newly created one
+        response.headers = headers
+
+        # Body is updated last to make sure the content-length is reset if needed
+        if response_template:
+            LOG.debug("Method response body after transformations: %s", body)
+            response.data = body
 
     def get_method_response_data(
         self,
