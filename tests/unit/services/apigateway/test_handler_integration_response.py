@@ -190,7 +190,7 @@ class TestHandlerIntegrationResponse:
             responseTemplates=None,
         )
         default_context.resource_method["methodIntegration"]["integrationResponses"] = {
-            "default": integration_response
+            "200": integration_response
         }
         # take the status code from the integration response
         response = create_default_response()
@@ -229,7 +229,7 @@ class TestHandlerIntegrationResponse:
             responseTemplates=None,
         )
         default_context.resource_method["methodIntegration"]["integrationResponses"] = {
-            "default": integration_response
+            "200": integration_response
         }
 
         # set constant
@@ -263,9 +263,7 @@ class TestHandlerIntegrationResponse:
             responseTemplates={},
         )
         default_context.resource_method["methodIntegration"]["integrationResponses"] = {
-            # Contrary to integration request, $default will not be chosen as the default template if there are
-            # any other templates added to the integration response
-            "$default": integration_response
+            "200": integration_response
         }
         # if none are set return the original body
         response = create_default_response()
@@ -303,7 +301,7 @@ class TestHandlerIntegrationResponse:
             responseTemplates={"application/json": RESPONSE_OVERRIDES},
         )
         default_context.resource_method["methodIntegration"]["integrationResponses"] = {
-            "application/json": integration_response
+            "200": integration_response
         }
         response = create_default_response()
         integration_response_handler(default_context, response)
