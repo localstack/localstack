@@ -255,6 +255,11 @@ class EventsRuleProvider(ResourceProvider[EventsRuleProperties]):
             if event_bus_name:
                 put_targets_kwargs["EventBusName"] = event_bus_name
 
+            put_targets_kwargs = util.fix_casing_for_boto_request_parameters(
+                put_targets_kwargs,
+                events.meta.service_model.operation_model("PutTargets").input_shape,
+            )
+
             events.put_targets(**put_targets_kwargs)
 
         return ProgressEvent(

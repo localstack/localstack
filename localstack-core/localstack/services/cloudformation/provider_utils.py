@@ -149,8 +149,12 @@ def fix_casing_for_boto_request_parameters(parameters: dict, input_shape: Struct
     :return: a transformed dictionary with the correct casing recursively applied
     """
 
-    def get_correct_key(key: str, members: dict[str, Shape]) -> str:
-        return next((k for k in members if k.lower() == key.lower()), key)
+    def get_fixed_key(key: str, members: dict[str, Shape]) -> str:
+        """return the case-insensitively matched key from the shape or default to the current key"""
+        for k in members:
+            if k.lower() == key.lower():
+                return k
+        return key
 
     def transform_value(value, member_shape):
         if isinstance(value, dict) and hasattr(member_shape, "members"):
@@ -164,7 +168,7 @@ def fix_casing_for_boto_request_parameters(parameters: dict, input_shape: Struct
 
     transformed_dict = {}
     for key, value in parameters.items():
-        correct_key = get_correct_key(key, input_shape.members)
+        correct_key = get_fixed_key(key, input_shape.members)
         member_shape = input_shape.members.get(correct_key)
 
         if isinstance(value, dict) and member_shape and hasattr(member_shape, "members"):
