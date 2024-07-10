@@ -65,7 +65,7 @@ class EventBusService:
             parsed_policy = ResourcePolicy(**policy)
             self.event_bus.policy = parsed_policy
         else:
-            permission_statement = self._pars_statement(
+            permission_statement = self._parse_statement(
                 statement_id, action, principal, self.arn, condition
             )
 
@@ -95,7 +95,7 @@ class EventBusService:
             ]
             self.event_bus.last_modified_time = datetime.now(timezone.utc)
 
-    def _pars_statement(
+    def _parse_statement(
         self,
         statement_id: StatementId,
         action: Action,
