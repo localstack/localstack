@@ -6,7 +6,7 @@ from plux import PluginManager
 
 from localstack import config, constants
 from localstack.runtime import events, hooks
-from localstack.utils import files, net, sync, threads
+from localstack.utils import files, functions, net, sync, threads
 
 from .components import Components
 
@@ -40,6 +40,7 @@ class LocalstackRuntime:
         self.ready = events.infra_ready
         self.stopping = events.infra_stopping
         self.stopped = events.infra_stopped
+        self._lifecycle_lock = threading.RLock()
 
     def run(self):
         """
@@ -88,9 +89,17 @@ class LocalstackRuntime:
         ``RuntimeServer``. The shutdown hooks are actually called by the main control loop (in the main
         thread) after it returns.
         """
-        if self.stopping.is_set():
-            return
-        self.stopping.set()
+        with self._lifecycle_lock:
+            if self.stopping.is_set():
+                return
+            self.stopping.set()
+
+        LOG.debug("[shutdown] Running shutdown hooks ...")
+        functions.call_safe(
+            hooks.on_runtime_shutdown.run,
+            exception_message="[shutdown] error calling shutdown hook",
+        )
+        LOG.debug("[shutdown] Shutting down runtime server ...")
         self.components.runtime_server.shutdown()
 
     def is_ready(self) -> bool:
@@ -122,8 +131,6 @@ class LocalstackRuntime:
         self.ready.set()
 
     def _on_return(self):
-        LOG.debug("[shutdown] Running shutdown hooks ...")
-        hooks.on_runtime_shutdown.run()
         LOG.debug("[shutdown] Cleaning up resources ...")
         self._cleanup_resources()
         self.stopped.set()
