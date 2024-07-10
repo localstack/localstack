@@ -258,44 +258,44 @@ class ServerlesspressoCoreStack(cdk.Stack):
         )
         cdk.CfnOutput(self, "LogAllLogGroupName", value=debug_log_group.log_group_name)
 
-        # cdk.CfnOutput(
-        #     self,
-        #     "DisplayAppURI",
-        #     value=cdk.Fn.sub(
-        #         body="https://workshop-display.serverlesscoffee.com/?region=${AWS::Region}&userPoolId=${UserPoolID}&userPoolWebClientId=${UserPoolWebClientId}&orderManagerEndpoint=${OrderManagerEndpoint}&APIGWEndpointValidatorService=${APIGWEndpointValidatorService}&APIGWEndpointConfigService=${APIGWEndpointConfigService}",
-        #         variables={
-        #             "UserPoolID": user_pool.user_pool_id,
-        #             "UserPoolWebClientId": user_pool_client.user_pool_client_id,
-        #             "OrderManagerEndpoint": cdk.Fn.join(
-        #                 "",
-        #                 [
-        #                     "https://",
-        #                     order_manager_api.attr_rest_api_id,
-        #                     ".execute-api.",
-        #                     self.region,
-        #                     ".amazonaws.com/Prod/",
-        #                 ],
-        #             ),
-        #             "APIGWEndpointValidatorService": cdk.Fn.join(
-        #                 "",
-        #                 [
-        #                     "https://",
-        #                     rest_api_validator_service.rest_api_id,
-        #                     ".execute-api.",
-        #                     self.region,
-        #                     ".amazonaws.com/Prod/",
-        #                 ],
-        #             ),
-        #             "APIGWEndpointConfigService": cdk.Fn.join(
-        #                 "",
-        #                 [
-        #                     "https://",
-        #                     rest_api_config_service.attr_rest_api_id,
-        #                     ".execute-api.",
-        #                     self.region,
-        #                     ".amazonaws.com/Prod/",
-        #                 ],
-        #             ),
-        #         },
-        #     ),
-        # )
+        cdk.CfnOutput(
+            self,
+            "DisplayAppURI",
+            value=cdk.Fn.sub(
+                body="https://workshop-display.serverlesscoffee.com/?region=${AWS::Region}&userPoolId=${UserPoolID}&userPoolWebClientId=${UserPoolWebClientId}&orderManagerEndpoint=${OrderManagerEndpoint}&APIGWEndpointValidatorService=${APIGWEndpointValidatorService}&APIGWEndpointConfigService=${APIGWEndpointConfigService}",
+                variables={
+                    "UserPoolID": auth_service.user_pool.user_pool_id,
+                    "UserPoolWebClientId": auth_service.user_pool_client.user_pool_client_id,
+                    "OrderManagerEndpoint": cdk.Fn.join(
+                        "",
+                        [
+                            "https://",
+                             order_manager_service.order_manager_api.attr_rest_api_id,
+                            ".execute-api.",
+                            self.region,
+                            ".amazonaws.com/Prod/",
+                        ],
+                    ),
+                    "APIGWEndpointValidatorService": cdk.Fn.join(
+                        "",
+                        [
+                            "https://",
+                            validator_service.rest_api_validator_service.rest_api_id,
+                            ".execute-api.",
+                            self.region,
+                            ".amazonaws.com/Prod/",
+                        ],
+                    ),
+                    "APIGWEndpointConfigService": cdk.Fn.join(
+                        "",
+                        [
+                            "https://",
+                            config_service.rest_api_config_service.attr_rest_api_id,
+                            ".execute-api.",
+                            self.region,
+                            ".amazonaws.com/Prod/",
+                        ],
+                    ),
+                },
+            ),
+        )

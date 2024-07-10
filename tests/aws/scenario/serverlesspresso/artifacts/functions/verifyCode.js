@@ -165,7 +165,7 @@ exports.handler = async (event,context) => {
                 Time: new Date
             }
         ]
-    }).promise()
+    })
     console.log('EventBridge putEvents:', response)
 
     // Return the code

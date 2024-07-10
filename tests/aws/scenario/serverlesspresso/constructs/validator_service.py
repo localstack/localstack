@@ -80,7 +80,7 @@ class ValidatorService(constructs.Construct):
         event_bus.grant_put_events_to(verify_qr_code_fn)
 
         # RESTApiValidatorService
-        rest_api_validator_service = cdk.aws_apigateway.RestApi(
+        self.rest_api_validator_service = cdk.aws_apigateway.RestApi(
             self,
             "RESTApiValidatorService",
             default_cors_preflight_options=cdk.aws_apigateway.CorsOptions(
@@ -93,7 +93,7 @@ class ValidatorService(constructs.Construct):
             self, "MyCognitoAuthorizor", cognito_user_pools=[user_pool]
         )
 
-        qr_code_resource = rest_api_validator_service.root.add_resource("qr-code")
+        qr_code_resource = self.rest_api_validator_service.root.add_resource("qr-code")
         get_qr_code = qr_code_resource.add_method(
             "GET",
             authorization_type=cdk.aws_apigateway.AuthorizationType.COGNITO,

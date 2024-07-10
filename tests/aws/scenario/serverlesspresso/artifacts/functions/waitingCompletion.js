@@ -61,6 +61,6 @@ exports.handler = async (event) => {
     }
 
     console.log('publishEvent: ', ebParams)
-    const response = await eventbridge.putEvents(ebParams).promise()
+    const response = await eventbridge.putEvents(ebParams)
     console.log('EventBridge putEvents:', response)
 }

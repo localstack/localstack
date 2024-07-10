@@ -140,7 +140,7 @@ class OrderManagerService(constructs.Construct):
         event_bus.grant_put_events_to(waiting_completion_fn)
 
         # RESTApiForOrderManager
-        order_manager_api = cdk.aws_apigateway.CfnRestApi(
+        self.order_manager_api = cdk.aws_apigateway.CfnRestApi(
             self,
             "RESTApiForOrderManager",
             body=cdk.Fn.transform(

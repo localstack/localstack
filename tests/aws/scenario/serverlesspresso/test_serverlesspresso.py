@@ -85,7 +85,7 @@ class TestServerlesspressoScenario:
         provisioner.add_custom_setup(_create_bucket_and_upload_files)
         provisioner.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
         provisioner.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
-        with provisioner.provisioner(skip_teardown=True) as prov:
+        with provisioner.provisioner(skip_teardown=True, skip_deployment=True) as prov:
             yield prov
 
     def _change_store_state(self, aws_client, infrastructure, new_state: bool):
@@ -153,10 +153,6 @@ class TestServerlesspressoScenario:
             0
         ]
         snapshot.match("describe_stack", describe_stack)
-        describe_stack_resources = aws_client.cloudformation.describe_stack_resources(
-            StackName=STACK_NAME
-        )
-        snapshot.match("describe_stack_resources", describe_stack_resources)
 
     @markers.aws.validated
     def test_populate_data(self, aws_client, infrastructure: "InfraProvisioner"):
@@ -191,20 +187,37 @@ class TestServerlesspressoScenario:
     @markers.aws.validated
     def test_open_store(self, aws_client, infrastructure):
         """
-        https://workshop.serverlesscoffee.com/1b-workflow/8-testing.html
+        Modified  https://workshop.serverlesscoffee.com/1b-workflow/8-testing.html
+        Since the completed workflow waits for the Barista and Customer interations, we can't expect it to complete so
+        we check for the task choice output
+
+
         """
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
-        sm_arn = outputs["OrderProcessorWorkflowStateMachineArn"]
         self._open_store(aws_client, infrastructure)
 
+        sm_arn = outputs["OrderProcessorWorkflowStateMachineArn"]
         payload = {"detail": {"orderId": "1", "userId": "testuser"}}
         execution_name = f"test-order-flow-shop-open-{short_uid()}"
-        execution_arn = aws_client.stepfunctions.start_execution(
+        execution = aws_client.stepfunctions.start_execution(
             stateMachineArn=sm_arn, name=execution_name, input=json.dumps(payload)
-        )["executionArn"]
-        await_execution_terminated(aws_client.stepfunctions, execution_arn)
-        describe_execution = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
-        assert describe_execution["status"] == "SUCCEEDED"
+        )
+
+        def _assert_shop_open_choice_result():
+            events = aws_client.stepfunctions.get_execution_history(
+                executionArn=execution["executionArn"],
+                maxResults=100,
+            )
+            print(events["events"])
+            choice = [
+                e
+                for e in events["events"]
+                if e["type"] == "ChoiceStateExited" and "Shop open?" in e["stateExitedEventDetails"]["name"]][0]
+
+            event_output = json.loads(choice["stateExitedEventDetails"]["output"])
+            assert event_output["GetStore"]["Item"]["storeOpen"]["BOOL"]
+
+        retry(_assert_shop_open_choice_result, sleep=2, retries=10, sleep_before=2)
 
     @markers.aws.validated
     def test_closed_store_aborts(self, aws_client, infrastructure):

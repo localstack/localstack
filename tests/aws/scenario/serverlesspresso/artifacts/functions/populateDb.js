@@ -178,7 +178,7 @@ const initMenu = async () => {
     })
 
     console.log('params',JSON.stringify(params,null,0))
-    const result = await documentClient.batchWriteItem(params).promise()
+    const result = await documentClient.batchWriteItem(params)
     console.log('initMenus result: ', result)
   } catch (err) {
     console.error('initMenus error: ', err)

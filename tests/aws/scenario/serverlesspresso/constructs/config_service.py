@@ -37,7 +37,7 @@ class ConfigService(constructs.Construct):
         #     # api_definition=cdk.aws_apigateway.ApiDefinition.from_inline(api_def)  # TODO: definition includes CFn so we might have to unwrap it and define it completely in CDK
         # )
 
-        rest_api_config_service = cdk.aws_apigateway.CfnRestApi(
+        self.rest_api_config_service = cdk.aws_apigateway.CfnRestApi(
             self,
             "RESTApConfigService",
             body=cdk.Fn.transform(

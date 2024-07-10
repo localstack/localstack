@@ -23,5 +23,5 @@ exports.handler = async (event) => {
     }
 
     console.log(params)
-    const result = await documentClient.put(params).promise()
+    const result = await documentClient.put(params)
 }
