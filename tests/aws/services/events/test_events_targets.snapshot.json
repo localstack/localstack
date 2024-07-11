@@ -558,69 +558,69 @@
     }
   },
   "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[standard]": {
-    "recorded-date": "11-07-2024, 09:05:26",
+    "recorded-date": "11-07-2024, 09:55:26",
     "recorded-content": {
       "messages": [
         {
           "MessageId": "<uuid:1>",
-          "ReceiptHandle": "AQEB+44WMBFFRH/oS1UBPn7mtaVqCXoJNsHIbb0bxXmCaD3AvtbqXcgaeGwtZVlaa47epCwpjgM2I3z9IidP6By7fRxl7MoHRpr8EHx0HC6o9DbOy48Wp+jWzVUxRvvt5eg3SAnhdPoR0M5qpxBEQd7O5LHVA38/T23WlKf9/XQZ5zMXqa77m2AlwStTmUcC4AiTIqpbpWU5iF9mEkimxYH43YWFyWmF3E2XnXIzDkR3v9W59DksJX7kihjFnTYgtQ9oiRudD3ezRQ42cVmA5vjisuG6vUANqQ1r9ABmw942ec7RcPeY0TgWKP+RKGXtUWtsO8+9gMgfqtpnrN0J3iw1EKjl7yL/uj+QHby1DP0KGZpqhomQbNup2ipeOoR+/hGOISd1MYWwu4BnYpNxaQ+yPA==",
-          "MD5OfBody": "e7136a1a67a9ac494607afdbe9d582fd",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
           "Body": {
             "Type": "Notification",
             "MessageId": "<uuid:2>",
-            "TopicArn": "arn:aws:sns:<region>:111111111111:test-topic-06675fa8",
-            "Message": "{\"version\":\"0\",\"id\":\"49c94698-5a63-239f-9c2b-ccd9b49e7f01\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
+            "TopicArn": "topic-arn",
+            "Message": "{\"version\":\"0\",\"id\":\"message-id\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
             "Timestamp": "date",
             "SignatureVersion": "1",
-            "Signature": "j8VbeYSdqgi4UuYXH04h2y+WBDd9ZBYlIRvPF5O4mhHlP6JjYdNBX9Zisf892w0Y7CfZnCaOghojJHgluRUq2ew0kTlE5KT3L5ukggr9aQuRNP/CzufXEcFW2soA1WH/Yk8RUcB8k17SxKI9hRPmHcX5eJnEj6b++f4CrX43JdrSW1EptjS+iPVmwJ03RyDDD3bKxIO4GXnYfeV94Q+0CYXdtscn7Ax/9fHZem/i2xh2Gxp0uc827SsdObjDcOBil86300NdZwS4/3iWn9Me9qJBZwYmo5lUn7R6OXk9NZRNWVsQA4Fmy7gxxYtrIat0xSBAUYs8QH4TPGMTnxUciQ==",
-            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem",
-            "UnsubscribeURL": "https://sns.<region>.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:test-topic-06675fa8:93f65067-6971-4612-acea-18dfa7ef4904"
+            "Signature": "signature",
+            "SigningCertURL": "signing-cert-u-r-l",
+            "UnsubscribeURL": "unsubscribe-u-r-l"
           }
         }
       ]
     }
   },
   "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[domain]": {
-    "recorded-date": "11-07-2024, 09:05:29",
+    "recorded-date": "11-07-2024, 09:55:31",
     "recorded-content": {
       "messages": [
         {
           "MessageId": "<uuid:1>",
-          "ReceiptHandle": "AQEB9sCI5ADC9DEFi8oXmH3hN6RttSPfQKaTcCyixa5O4a7aFnBrUvVUMWKl6aMjsf+eYbipA8/Cu6rw82FjLnKybvj18NuoFOwew2ctN58u+e8rXScATfyXU/h0fqmb3I1QM4Wc/Pzp71OofcYUcZVH6xsWSmYkK/iHBa3LAtJGLU5yWVqWAPihOVXzDoMgsHSBvUskSSQKOcuAphAGiYR/9vZdZpJ5nMnoaPYY4PcTHl0aIh8oiABtcn7R4bGS25kaOXIPG/ucw5V5y3GoHshKTZEGee1RlR1wV5K8ZNJX3msa4SBpag3DkHbrEpxL/y+KXwlB2uSeoA/X/p3u4qIAXHhEX3h5FjrvUslGmrmcvGNeFx1X9OJxAEEXa0iLTl5Z58MAUJ1Dxn6eEyYCuPe7+w==",
-          "MD5OfBody": "383b18fff2c4d39ad1a554a7b7f1534b",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
           "Body": {
             "Type": "Notification",
             "MessageId": "<uuid:2>",
-            "TopicArn": "arn:aws:sns:<region>:111111111111:test-topic-250e8573",
-            "Message": "{\"version\":\"0\",\"id\":\"696b9ac3-2634-c4a1-2c5a-06d01b13fa7d\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
+            "TopicArn": "topic-arn",
+            "Message": "{\"version\":\"0\",\"id\":\"message-id\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
             "Timestamp": "date",
             "SignatureVersion": "1",
-            "Signature": "Cu2mBe1sPFlwUcShNIG9vhSV1FMoPU+1KJP2fKSf19riSJtcTT/EdpeUoQAKCbfUpwZF5EG1IqYaVJKWNUxLDCsc8rn8Xjl4R4WqSQZHOoo2PAFlLL8E6mgxRan4+Yx1BDlKsn4sxTp+NctTZF5g0xEEfjafbZjZD+dQ3hY5+8R5QqMJQmR+kb5QSCKc3WjhfoWMICj+DTkchOQBWstXSe4gIP5lDNSowqnrMEf0KEfDKzpAlI75nFKb/IgaODmo1k0BrMdx7qKtWqNSq1xm7FL0HGPkc+HVmHoFBlx9ZqHL7gsZG5QC25DDgVh3MWW6C0yDlnACSxc8aSU6jkTrnA==",
-            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem",
-            "UnsubscribeURL": "https://sns.<region>.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:test-topic-250e8573:15981200-5483-4d5f-b4b0-573bdeebbc7a"
+            "Signature": "signature",
+            "SigningCertURL": "signing-cert-u-r-l",
+            "UnsubscribeURL": "unsubscribe-u-r-l"
           }
         }
       ]
     }
   },
   "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[path]": {
-    "recorded-date": "11-07-2024, 09:05:33",
+    "recorded-date": "11-07-2024, 09:55:34",
     "recorded-content": {
       "messages": [
         {
           "MessageId": "<uuid:1>",
-          "ReceiptHandle": "AQEBRhsofjA2SDbaGFt5XucB+0163I5Zin5OwTWZMkOzOZnX51y42gmiAua8cJK8E9Bn50ib2/KILDBmAkSkhZ7DxK4XqShjexNj51pYekC2HCsCuDIkVMIyoSCCHqAqPZXcMUPvLQl4VIyRhsWfshsyJ9UgS9EUsVjs2lDlDEIlwVLzxoyUY2bKXVH2wuhBJMKU3cb2sJOro4h8cq2yGyz+iry1+PuEr+RqrFOkIetfxlMN3D1hNod8t2KYbRZh5MerJ2WUjvXSK9JCRyB3jsI5zz6XN8nrZs5YwMqUgjuim3JnaYLXEb8ZOFK3MArba5r/n5i4BrXEqc9fD4lfnSc7ZsViQYPz/Vmi0euB3mZ+VW9Fl0mXQx/H0ReqDhzRJ3AGtTMX0miq7sPOdsgh8CeG6g==",
-          "MD5OfBody": "867a5edb14a88cba47f471a5faf8984d",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
           "Body": {
             "Type": "Notification",
             "MessageId": "<uuid:2>",
-            "TopicArn": "arn:aws:sns:<region>:111111111111:test-topic-2ec3d615",
-            "Message": "{\"version\":\"0\",\"id\":\"e2889e31-389b-54c2-3ee5-24d58f55afa9\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
+            "TopicArn": "topic-arn",
+            "Message": "{\"version\":\"0\",\"id\":\"message-id\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
             "Timestamp": "date",
             "SignatureVersion": "1",
-            "Signature": "bF5nM8JkUN4+iRQ2qDFuLmA00P/4P3byI2w2t6deZMxlWFEL9V/XdcoUVIZxdC7ECK0CJ37x6Lr29XVZYaH2HhSZ5BdxIjVzQvx7fp5TL555p6h6dX8NBIKsJKsHqNBqhaR2O+66cLDiJD6VG/WHBz8/UYhMwAZWDsTnZcVJ/VJCs38l/lQfOmtFJLTXOkIoaFd7cWQ6+hxXH0nieZvcK4+3VAqwfYp9aIf7UJcoX1o8WQXUDOegAVlji19ZH4EH1kP2lVIQsjVUoP4cA9TQeUrnMwgEs75QGkVZk0L6I5zSQ4PSJ/MMop6g8tYb8M4lMqex6g/oiKbuIeOocnXX7A==",
-            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem",
-            "UnsubscribeURL": "https://sns.<region>.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:test-topic-2ec3d615:73f44ad0-465a-438d-a55f-a155ae5ff084"
+            "Signature": "signature",
+            "SigningCertURL": "signing-cert-u-r-l",
+            "UnsubscribeURL": "unsubscribe-u-r-l"
           }
         }
       ]

@@ -24,13 +24,13 @@
     "last_validated_date": "2024-07-11T09:05:04+00:00"
   },
   "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[domain]": {
-    "last_validated_date": "2024-07-11T09:05:29+00:00"
+    "last_validated_date": "2024-07-11T09:55:31+00:00"
   },
   "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[path]": {
-    "last_validated_date": "2024-07-11T09:05:33+00:00"
+    "last_validated_date": "2024-07-11T09:55:34+00:00"
   },
   "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[standard]": {
-    "last_validated_date": "2024-07-11T09:05:26+00:00"
+    "last_validated_date": "2024-07-11T09:55:26+00:00"
   },
   "tests/aws/services/events/test_events_targets.py::TestEventTargetSqs::test_put_events_with_target_sqs": {
     "last_validated_date": "2024-07-11T09:05:35+00:00"

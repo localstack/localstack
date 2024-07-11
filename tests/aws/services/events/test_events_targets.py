@@ -738,6 +738,20 @@ class TestEventTargetSns:
         )
 
         messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1)
+
+        body = json.loads(messages[0]["Body"])
+        message_id = json.loads(body["Message"])["id"]
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+                snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+                snapshot.transform.key_value("Signature", reference_replacement=False),
+                snapshot.transform.key_value("SigningCertURL", reference_replacement=False),
+                snapshot.transform.key_value("UnsubscribeURL", reference_replacement=False),
+                snapshot.transform.regex(topic_arn, "topic-arn"),
+                snapshot.transform.regex(message_id, "message-id"),
+            ]
+        )
         snapshot.match("messages", messages)
 
 
