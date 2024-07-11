@@ -3,13 +3,17 @@ import logging
 import uuid
 
 from localstack_ext.aws.api.pipes import LogLevel
-from localstack_ext.services.pipes.enrichers.enricher import EnricherException
-from localstack_ext.services.pipes.event_processor import EventProcessor
+from localstack_ext.services.pipes.enrichers.enricher import EnricherError
+from localstack_ext.services.pipes.event_processor import (
+    BatchFailureError,
+    EventProcessor,
+    PartialBatchFailureError,
+)
 from localstack_ext.services.pipes.pipe_loggers.pipe_logger import PipeLogger
 from localstack_ext.services.pipes.senders.sender import (
-    PartialFailureSenderException,
+    PartialFailureSenderError,
     Sender,
-    SenderException,
+    SenderError,
 )
 
 LOG = logging.getLogger(__name__)
@@ -23,7 +27,7 @@ class EventSourceMappingEventProcessor(EventProcessor):
         self.sender = sender
         self.logger = logger
 
-    def process_events_batch(self, input_events: list[dict]) -> list[dict]:
+    def process_events_batch(self, input_events: list[dict]) -> None:
         execution_id = uuid.uuid4()
         # Create a copy of the original input events
         events = input_events.copy()
@@ -45,8 +49,7 @@ class EventSourceMappingEventProcessor(EventProcessor):
                 messageType="ExecutionSucceeded",
                 logLevel=LogLevel.INFO,
             )
-            return []
-        except PartialFailureSenderException as e:
+        except PartialFailureSenderError as e:
             self.logger.log(
                 messageType="ExecutionFailed",
                 logLevel=LogLevel.ERROR,
@@ -56,18 +59,18 @@ class EventSourceMappingEventProcessor(EventProcessor):
             # TODO: check whether partial batch item failures is enabled by default or need to be explicitly enabled
             #  using --function-response-types "ReportBatchItemFailures"
             #  https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html
-            return e.partial_failure_payload
-        except (EnricherException, SenderException) as e:
+            raise PartialBatchFailureError from e
+        except (EnricherError, SenderError) as e:
             self.logger.log(
                 messageType="ExecutionFailed",
                 logLevel=LogLevel.ERROR,
                 # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                 error=e.error,
             )
-            raise e
+            raise BatchFailureError from e
         except Exception as e:
             LOG.error(
-                "Error while handling Lambda event source mapping (ESM) events %s for ESM with execution id %s",
+                "Unhandled exception while processing Lambda event source mapping (ESM) events %s for ESM with execution id %s",
                 events,
                 execution_id,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
@@ -97,7 +100,7 @@ class EventSourceMappingEventProcessor(EventProcessor):
                     logLevel=LogLevel.TRACE,
                     # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                 )
-            except PartialFailureSenderException as e:
+            except PartialFailureSenderError as e:
                 self.logger.log(
                     messageType="TargetInvocationPartiallyFailed",
                     logLevel=LogLevel.ERROR,
@@ -105,7 +108,7 @@ class EventSourceMappingEventProcessor(EventProcessor):
                     error=e.error,
                 )
                 raise e
-            except SenderException as e:
+            except SenderError as e:
                 self.logger.log(
                     messageType="TargetInvocationFailed",
                     logLevel=LogLevel.ERROR,
@@ -118,7 +121,7 @@ class EventSourceMappingEventProcessor(EventProcessor):
                 logLevel=LogLevel.INFO,
                 payload=payload,
             )
-        except PartialFailureSenderException as e:
+        except PartialFailureSenderError as e:
             self.logger.log(
                 messageType="TargetStagePartiallyFailed",
                 logLevel=LogLevel.ERROR,
@@ -126,7 +129,7 @@ class EventSourceMappingEventProcessor(EventProcessor):
                 error=e.error,
             )
             raise e
-        except SenderException as e:
+        except SenderError as e:
             self.logger.log(
                 messageType="TargetStageFailed",
                 logLevel=LogLevel.ERROR,
