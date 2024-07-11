@@ -68,9 +68,8 @@ class ContextVarsRequestOverride(TypedDict, total=False):
     querystring: dict[str, str]
 
 
-class ContextVarsResponseOverride(TypedDict, total=False):
+class ContextVarsResponseOverride(TypedDict):
     header: dict[str, str]
-    querystring: dict[str, str]
     status: int
 
 

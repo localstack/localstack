@@ -162,18 +162,81 @@ class TestApiGatewayVtlTemplate:
 
         # assert that boolean results of _render_json_result(..) are JSON-parseable
         tstring = '{"mybool": $boolTrue}'
-        result = template._render_as_text(tstring, {"boolTrue": "true"})
+        result = template.render_vtl(tstring, {"boolTrue": "true"})
         assert json.loads(result) == {"mybool": True}
-        result = template._render_as_text(tstring, {"boolTrue": True})
+        result = template.render_vtl(tstring, {"boolTrue": True})
         assert json.loads(result) == {"mybool": True}
+        tstring = '{"mybool": false}'
+        result = template.render_vtl(tstring, {})
+        assert json.loads(result) == {"mybool": False}
 
         # older versions of `airspeed` were rendering booleans as False/True, which is no longer valid now
         tstring = '{"mybool": False}'
         with pytest.raises(JSONDecodeError):
-            result = template._render_as_text(tstring, {})
-            template._validate_json(result)
+            result = template.render_vtl(tstring, {})
+            assert json.loads(result) == {"mybool": False}
 
-    # TODO Update the following tests when updating the response params
+    @pytest.mark.parametrize("format", [APPLICATION_JSON, APPLICATION_XML])
+    def test_render_response_template(self, format):
+        variables = MappingTemplateVariables(
+            input=MappingTemplateInput(
+                body='{"spam": "eggs"}',
+                params=MappingTemplateParams(
+                    path={"proxy": "path"},
+                    querystring={"baz": "test"},
+                    header={"content-type": format, "accept": format},
+                ),
+            ),
+            context=ContextVariables(
+                httpMethod="POST",
+                stage="local",
+                authorizer=ContextVarsAuthorizer(principalId="12233"),
+                identity=ContextVarsIdentity(accountId="00000", apiKey="11111"),
+                resourcePath="/{proxy}",
+            ),
+            stageVariables={"stageVariable1": "value1", "stageVariable2": "value2"},
+        )
+
+        template = TEMPLATE_JSON if format == APPLICATION_JSON else TEMPLATE_XML
+        template += RESPONSE_OVERRIDE
+
+        rendered_response, response_override = ApiGatewayVtlTemplate().render_response(
+            template=template, variables=variables
+        )
+        if format == APPLICATION_JSON:
+            rendered_response = json.loads(rendered_response)
+            assert rendered_response.get("body") == {"spam": "eggs"}
+            assert rendered_response.get("method") == "POST"
+            assert rendered_response.get("principalId") == "12233"
+        else:
+            rendered_response = xmltodict.parse(rendered_response).get("root", {})
+            # TODO Verify that those difference between xml and json are expected
+            assert rendered_response.get("body") == '{"spam": "eggs"}'
+            assert rendered_response.get("@method") == "POST"
+            assert rendered_response.get("@principalId") == "12233"
+
+        assert rendered_response.get("stage") == "local"
+        assert rendered_response.get("enhancedAuthContext") == {"principalId": "12233"}
+        assert rendered_response.get("identity") == {"accountId": "00000", "apiKey": "11111"}
+        assert rendered_response.get("headers") == {
+            "content-type": format,
+            "accept": format,
+        }
+        assert rendered_response.get("query") == {"baz": "test"}
+        assert rendered_response.get("path") == {"proxy": "path"}
+        assert rendered_response.get("stageVariables") == {
+            "stageVariable1": "value1",
+            "stageVariable2": "value2",
+        }
+
+        assert response_override == {
+            "header": {"multivalue": ["1header", "2header"], "oHeader": "1header"},
+            "status": 400,
+        }
+
+    # TODO The test below are making failing assumption if the returned value isn't of valid type
+    #  for the `Accept`. But AWS doesn't seem to be raising any error.
+    #  Once properly confirmed, we should delete
     # def test_error_when_render_invalid_json(self):
     #     api_context = ApiInvocationContext(
     #         method="POST",
@@ -312,6 +375,13 @@ REQUEST_OVERRIDE = """
 #set($context.requestOverride.header.multivalue = ["1header", "2header"])
 #set($context.requestOverride.path.proxy = "proxy")
 #set($context.requestOverride.querystring.query = "query")
+"""
+
+RESPONSE_OVERRIDE = """
+
+#set($context.responseOverride.header.oHeader = "1header")
+#set($context.responseOverride.header.multivalue = ["1header", "2header"])
+#set($context.responseOverride.status = 400)
 """
 
 TEMPLATE_WRONG_XML = """

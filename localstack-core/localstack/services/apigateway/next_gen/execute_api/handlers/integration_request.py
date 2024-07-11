@@ -120,7 +120,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             return body, {}
 
         body, request_override = self._vtl_template.render_request(
-            template=template.strip(),
+            template=template,
             variables=MappingTemplateVariables(
                 context=context.context_variables,
                 stageVariables=context.stage_variables or {},
@@ -142,7 +142,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         Attempts to return the request template.
         Will raise UnsupportedMediaTypeError if there are no match according to passthrough behavior.
         """
-        request_templates = integration.get("requestTemplates", {})
+        request_templates = integration.get("requestTemplates") or {}
         passthrough_behavior = integration.get("passthroughBehavior")
         # If content-type is not provided aws assumes application/json
         content_type = request["raw_headers"].get("Content-Type", "application/json")

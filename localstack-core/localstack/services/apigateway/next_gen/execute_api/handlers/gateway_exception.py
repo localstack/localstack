@@ -28,6 +28,9 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         context: RestApiInvocationContext,
         response: Response,
     ):
+        # Need to terminate the chain here to prevent the response handler to modify this response
+        chain.terminate()
+
         if not isinstance(exception, BaseGatewayException):
             LOG.warning(
                 "Non Gateway Exception raised: %s",
@@ -39,6 +42,7 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
             )
             return
 
+        LOG.debug("Error raised during invocation: %s", exception.type)
         error = self.create_exception_response(exception, context)
         if error:
             response.update_from(error)
