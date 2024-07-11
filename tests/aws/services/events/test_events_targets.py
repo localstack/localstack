@@ -16,7 +16,6 @@ from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.scenario.kinesis_firehose.conftest import get_all_expected_messages_from_s3
 from tests.aws.services.events.helper_functions import (
-    assert_valid_event,
     is_v2_provider,
     sqs_collect_messages,
 )
@@ -651,52 +650,91 @@ class TestEventTargetLambda:
 
 
 class TestEventTargetSns:
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_put_events_with_target_sns(
         self,
         monkeypatch,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        sns_create_topic,
         sns_subscription,
+        events_create_event_bus,
+        events_put_rule,
         aws_client,
-        clean_up,
+        snapshot,
         strategy,
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
-        queue_name = "test-%s" % short_uid()
-        rule_name = "rule-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
-        bus_name = "bus-{}".format(short_uid())
+        # Create sqs queue and give sns permission to send messages
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+        policy = {
+            "Version": "2012-10-17",
+            "Id": f"sqs-sns-{short_uid()}",
+            "Statement": [
+                {
+                    "Sid": f"SendMessage-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "sns.amazonaws.com"},
+                    "Action": "sqs:SendMessage",
+                    "Resource": queue_arn,
+                }
+            ],
+        }
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
 
-        topic_name = "topic-{}".format(short_uid())
-        topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
-
-        queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        # Create sns topic and subscribe it to sqs queue
+        topic_name = f"test-topic-{short_uid()}"
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
 
         sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
-        aws_client.events.create_event_bus(Name=bus_name)
-        aws_client.events.put_rule(
+        # Enable event bridge to push to sns
+        policy = {
+            "Version": "2012-10-17",
+            "Id": f"sns-eventbridge-{short_uid()}",
+            "Statement": [
+                {
+                    "Sid": f"SendMessage-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sns:Publish",
+                    "Resource": topic_arn,
+                }
+            ],
+        }
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn, AttributeName="Policy", AttributeValue=json.dumps(policy)
+        )
+
+        # Create event bus, rule and target
+        event_bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=event_bus_name)
+
+        rule_name = f"test-rule-{short_uid()}"
+        events_put_rule(
             Name=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
-        rs = aws_client.events.put_targets(
+
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
             Rule=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             Targets=[{"Id": target_id, "Arn": topic_arn}],
         )
 
-        assert "FailedEntryCount" in rs
-        assert "FailedEntries" in rs
-        assert rs["FailedEntryCount"] == 0
-        assert rs["FailedEntries"] == []
-
+        # Test
         aws_client.events.put_events(
             Entries=[
                 {
-                    "EventBusName": bus_name,
+                    "EventBusName": event_bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
                     "Detail": json.dumps(EVENT_DETAIL),
@@ -704,21 +742,8 @@ class TestEventTargetSns:
             ]
         )
 
-        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
-        assert len(messages) == 1
-
-        actual_event = json.loads(messages[0]["Body"]).get("Message")
-        assert_valid_event(actual_event)
-        assert json.loads(actual_event).get("detail") == EVENT_DETAIL
-
-        # clean up
-        aws_client.sns.delete_topic(TopicArn=topic_arn)
-        clean_up(
-            bus_name=bus_name,
-            rule_name=rule_name,
-            target_ids=target_id,
-            queue_url=queue_url,
-        )
+        messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1)
+        snapshot.match("messages", messages)
 
 
 class TestEventTargetSqs:
