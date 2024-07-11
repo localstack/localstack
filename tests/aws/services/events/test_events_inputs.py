@@ -9,7 +9,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.services.events.helper_functions import (
     is_old_provider,
-    is_v2_provider,
     sqs_collect_messages,
 )
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
@@ -26,7 +25,7 @@ INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>
 
 @markers.aws.validated
 @pytest.mark.skipif(
-    not is_v2_provider(),
+    is_old_provider(),
     reason="V1 provider does not support this feature",
 )
 def test_put_event_input_path_and_input_transfomer(
