@@ -557,11 +557,10 @@ class TestEventTargetLambda:
 
         event_pattern = {"detail": {"payload": {"automations": {"id": [{"exists": True}]}}}}
 
-        bus_name = f"bus-{short_uid()}"
+        bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
 
         rule_name = f"rule-{short_uid()}"
-        bus_name = f"bus-{short_uid()}"
         rule_arn = events_put_rule(
             Name=rule_name,
             EventBusName=bus_name,
