@@ -100,13 +100,20 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             raise IntegrationFailureError("Internal server error")
 
         input_event = self.create_lambda_input_event(context)
+
         function_arn = get_lambda_function_arn_from_invocation_uri(integration["uri"])
+        source_arn = get_source_arn(context)
+        # TODO: properly get the value out/validate it?
+        raw_headers = context.invocation_request["raw_headers"]
+        is_invocation_asynchronous = raw_headers.get("X-Amz-Invocation-Type") == "'Event'"
 
         try:
             lambda_payload = self.call_lambda(
                 function_arn=function_arn,
                 event=to_bytes(json.dumps(input_event)),
-                context=context,
+                source_arn=source_arn,
+                credentials=integration.get("credentials"),
+                asynchronous=is_invocation_asynchronous,
             )
         except ClientError as e:
             # TODO: more data from the error message?
@@ -129,12 +136,13 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             lambda_response.get("headers") or {},
             lambda_response.get("multiValueHeaders") or {},
         )
+        # TODO: look into remapped headers (like HTTP_PROXY and integration response handlers)
 
         response = Response(
             headers=Headers(headers),
+            response=lambda_response.get("body") or "",
+            status=lambda_response.get("statusCode") or 200,
         )
-        response.data = lambda_response.get("body") or ""
-        response.status_code = lambda_response.get("statusCode") or 200
 
         return response
 
@@ -142,24 +150,21 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
     def call_lambda(
         function_arn: str,
         event: bytes,
-        context: RestApiInvocationContext,
+        source_arn: str,
+        credentials: str = None,
+        asynchronous: bool = False,
     ) -> bytes:
-        integration: Integration = context.resource_method["methodIntegration"]
-        # TODO: properly get the value out/validate it?
-        raw_headers = context.invocation_request["raw_headers"]
-        is_invocation_asynchronous = raw_headers.get("X-Amz-Invocation-Type") == "'Event'"
-
         lambda_client = get_service_factory(
             region_name=extract_region_from_arn(function_arn),
-            role_arn=integration.get("credentials"),
+            role_arn=credentials,
         ).lambda_
         inv_result = lambda_client.request_metadata(
             service_principal=ServicePrincipal.apigateway,
-            source_arn=get_source_arn(context),
+            source_arn=source_arn,
         ).invoke(
             FunctionName=function_arn,
             Payload=event,
-            InvocationType="Event" if is_invocation_asynchronous else "RequestResponse",
+            InvocationType="Event" if asynchronous else "RequestResponse",
         )
         if payload := inv_result.get("Payload"):
             return payload.read()
