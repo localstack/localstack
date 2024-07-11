@@ -1,15 +1,7 @@
 from typing import Final, Optional
 
 from botocore.exceptions import ClientError
-from localstack_ext.aws.api.batch import (
-    ContainerOverrides,
-    DescribeJobsResponse,
-    EnvironmentVariables,
-    JobDetail,
-    JobDetailList,
-    JobStatus,
-    KeyValuePair,
-)
+from moto.batch.utils import JobStatus
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
@@ -65,21 +57,21 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
     @staticmethod
     def _attach_aws_environment_variables(parameters: dict) -> None:
         # Attaches to the ContainerOverrides environment variables the AWS managed flags.
-        container_overrides: Optional[ContainerOverrides] = parameters.get("ContainerOverrides")
+        container_overrides = parameters.get("ContainerOverrides")
         if container_overrides is None:
-            container_overrides = ContainerOverrides()
+            container_overrides = dict()
             parameters["ContainerOverrides"] = container_overrides
 
-        environment: Optional[EnvironmentVariables] = container_overrides.get("Environment")
+        environment = container_overrides.get("Environment")
         if environment is None:
             environment = list()
             container_overrides["Environment"] = environment
 
         environment.append(
-            KeyValuePair(
-                name=_ENVIRONMENT_VARIABLE_MANAGED_BY_AWS,
-                value=_ENVIRONMENT_VARIABLE_MANAGED_BY_AWS_VALUE,
-            )
+            {
+                "name": _ENVIRONMENT_VARIABLE_MANAGED_BY_AWS,
+                "value": _ENVIRONMENT_VARIABLE_MANAGED_BY_AWS_VALUE,
+            }
         )
 
     def _before_eval_execution(
@@ -154,10 +146,10 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         job_id = submission_output["JobId"]
 
         def _has_terminated() -> Optional[dict]:
-            describe_jobs_response: DescribeJobsResponse = batch_client.describe_jobs(jobs=[job_id])
-            describe_jobs: JobDetailList = describe_jobs_response["jobs"]
+            describe_jobs_response = batch_client.describe_jobs(jobs=[job_id])
+            describe_jobs = describe_jobs_response["jobs"]
             if describe_jobs:
-                describe_job: JobDetail = describe_jobs[0]
+                describe_job = describe_jobs[0]
                 describe_job_status: JobStatus = describe_job["status"]
                 # Add raise error if abnormal state
                 if describe_job_status in _BATCH_JOB_TERMINATION_STATUS_SET:
