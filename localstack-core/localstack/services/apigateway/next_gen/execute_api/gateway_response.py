@@ -39,7 +39,7 @@ class BaseGatewayException(Exception):
     """
 
     message: str = "Unimplemented Response"
-    type: GatewayResponseType
+    type: GatewayResponseType = None
     status_code: int | str = None
     code: str = ""
 
@@ -48,7 +48,7 @@ class BaseGatewayException(Exception):
             self.message = message
         if status_code is not None:
             self.status_code = status_code
-        elif self.status_code is None:
+        elif self.status_code is None and self.type:
             # Fallback to the default value
             self.status_code = GatewayResponseCode[self.type]
 
