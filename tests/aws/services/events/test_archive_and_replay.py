@@ -24,25 +24,17 @@ class TestArchive:
     def test_create_list_describe_update_delete_archive(
         self,
         event_bus_type,
-        region_name,
-        account_id,
-        events_create_event_bus,
+        events_create_default_or_custom_event_bus,
         events_create_archive,
         aws_client,
         snapshot,
     ):
-        if event_bus_type == "default":
-            event_bus_name = "default"
-            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
-        if event_bus_type == "custom":
-            event_bus_name = f"test-bus-{short_uid()}"
-            response = events_create_event_bus(Name=event_bus_name)
-            event_source_arn = response["EventBusArn"]
+        event_bus_name, event_bus_arn = events_create_default_or_custom_event_bus(event_bus_type)
 
         archive_name = f"test-archive-{short_uid()}"
         response_create_archive = events_create_archive(
             ArchiveName=archive_name,
-            EventSourceArn=event_source_arn,  # ARN of the source event bus
+            EventSourceArn=event_bus_arn,  # ARN of the source event bus
             Description="description of the archive",
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             RetentionDays=1,
@@ -82,26 +74,18 @@ class TestArchive:
     def test_list_archive_with_name_prefix(
         self,
         event_bus_type,
-        region_name,
-        account_id,
-        events_create_event_bus,
+        events_create_default_or_custom_event_bus,
         events_create_archive,
         aws_client,
         snapshot,
     ):
-        if event_bus_type == "default":
-            event_bus_name = "default"
-            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
-        if event_bus_type == "custom":
-            event_bus_name = f"test-bus-{short_uid()}"
-            response = events_create_event_bus(Name=event_bus_name)
-            event_source_arn = response["EventBusArn"]
+        event_bus_name, event_bus_arn = events_create_default_or_custom_event_bus(event_bus_type)
 
         archive_name_prefix = "test-archive"
         archive_name = f"{archive_name_prefix}-{short_uid()}"
         events_create_archive(
             ArchiveName=archive_name,
-            EventSourceArn=event_source_arn,
+            EventSourceArn=event_bus_arn,
             Description="description of the archive",
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             RetentionDays=1,
@@ -132,32 +116,24 @@ class TestArchive:
     def test_list_archive_with_source_arn(
         self,
         event_bus_type,
-        region_name,
-        account_id,
-        events_create_event_bus,
+        events_create_default_or_custom_event_bus,
         events_create_archive,
         aws_client,
         snapshot,
     ):
-        if event_bus_type == "default":
-            event_bus_name = "default"
-            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
-        if event_bus_type == "custom":
-            event_bus_name = f"test-bus-{short_uid()}"
-            response = events_create_event_bus(Name=event_bus_name)
-            event_source_arn = response["EventBusArn"]
+        event_bus_name, event_bus_arn = events_create_default_or_custom_event_bus(event_bus_type)
 
         archive_name = f"test-archive-{short_uid()}"
         events_create_archive(
             ArchiveName=archive_name,
-            EventSourceArn=event_source_arn,
+            EventSourceArn=event_bus_arn,
             Description="description of the archive",
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             RetentionDays=1,
         )
 
         response_list_archives_source_arn = aws_client.events.list_archives(
-            EventSourceArn=event_source_arn
+            EventSourceArn=event_bus_arn
         )
 
         snapshot.add_transformer(
@@ -173,25 +149,17 @@ class TestArchive:
     def test_list_archive_state_enabled(
         self,
         event_bus_type,
-        region_name,
-        account_id,
-        events_create_event_bus,
+        events_create_default_or_custom_event_bus,
         events_create_archive,
         aws_client,
         snapshot,
     ):
-        if event_bus_type == "default":
-            event_bus_name = "default"
-            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
-        if event_bus_type == "custom":
-            event_bus_name = f"test-bus-{short_uid()}"
-            response = events_create_event_bus(Name=event_bus_name)
-            event_source_arn = response["EventBusArn"]
+        event_bus_name, event_bus_arn = events_create_default_or_custom_event_bus(event_bus_type)
 
         archive_name = f"test-archive-{short_uid()}"
         events_create_archive(
             ArchiveName=archive_name,
-            EventSourceArn=event_source_arn,
+            EventSourceArn=event_bus_arn,
             Description="description of the archive",
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             RetentionDays=1,
@@ -218,27 +186,19 @@ class TestArchive:
         self,
         event_bus_type,
         archive_pattern_match,
-        region_name,
-        account_id,
-        events_create_event_bus,
+        events_create_default_or_custom_event_bus,
         events_create_archive,
         aws_client,
         put_events_with_filter_to_sqs,
         snapshot,
     ):
-        if event_bus_type == "default":
-            event_bus_name = "default"
-            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
-        if event_bus_type == "custom":
-            event_bus_name = f"test-bus-{short_uid()}"
-            response = events_create_event_bus(Name=event_bus_name)
-            event_source_arn = response["EventBusArn"]
+        event_bus_name, event_bus_arn = events_create_default_or_custom_event_bus(event_bus_type)
 
         archive_name = f"test-archive-{short_uid()}"
         if archive_pattern_match:
             events_create_archive(
                 ArchiveName=archive_name,
-                EventSourceArn=event_source_arn,
+                EventSourceArn=event_bus_arn,
                 Description="description of the archive",
                 EventPattern=json.dumps(TEST_EVENT_PATTERN),
                 RetentionDays=1,
@@ -246,7 +206,7 @@ class TestArchive:
         else:
             events_create_archive(
                 ArchiveName=archive_name,
-                EventSourceArn=event_source_arn,
+                EventSourceArn=event_bus_arn,
                 Description="description of the archive",
                 RetentionDays=1,
             )
@@ -297,25 +257,17 @@ class TestArchive:
     def test_create_archive_error_duplicate(
         self,
         event_bus_type,
-        events_create_event_bus,
-        region_name,
-        account_id,
+        events_create_default_or_custom_event_bus,
         events_create_archive,
         aws_client,
         snapshot,
     ):
-        if event_bus_type == "default":
-            event_bus_name = "default"
-            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
-        if event_bus_type == "custom":
-            event_bus_name = f"test-bus-{short_uid()}"
-            response = events_create_event_bus(Name=event_bus_name)
-            event_source_arn = response["EventBusArn"]
+        _, event_bus_arn = events_create_default_or_custom_event_bus(event_bus_type)
 
         archive_name = f"test-archive-{short_uid()}"
         events_create_archive(
             ArchiveName=archive_name,
-            EventSourceArn=event_source_arn,
+            EventSourceArn=event_bus_arn,
             Description="description of the archive",
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             RetentionDays=1,
@@ -323,7 +275,7 @@ class TestArchive:
         with pytest.raises(Exception) as error:
             aws_client.events.create_archive(
                 ArchiveName=archive_name,
-                EventSourceArn=event_source_arn,
+                EventSourceArn=event_bus_arn,
                 Description="description of the archive",
                 EventPattern=json.dumps(TEST_EVENT_PATTERN),
                 RetentionDays=1,
@@ -415,9 +367,7 @@ class TestReplay:
     def test_start_list_describe_canceled_replay(
         self,
         event_bus_type,
-        region_name,
-        account_id,
-        events_create_event_bus,
+        events_create_default_or_custom_event_bus,
         events_put_rule,
         create_sqs_events_target,
         put_event_to_archive,
@@ -428,13 +378,7 @@ class TestReplay:
         event_end_time = event_start_time + timedelta(minutes=1)
 
         # setup event bus
-        if event_bus_type == "default":
-            event_bus_name = "default"
-            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
-        if event_bus_type == "custom":
-            event_bus_name = f"test-bus-{short_uid()}"
-            response = events_create_event_bus(Name=event_bus_name)
-            event_source_arn = response["EventBusArn"]
+        event_bus_name, event_bus_arn = events_create_default_or_custom_event_bus(event_bus_type)
 
         # setup rule
         rule_name = f"test-rule-{short_uid()}"
@@ -473,7 +417,7 @@ class TestReplay:
             archive_name,
             TEST_EVENT_PATTERN,
             event_bus_name,
-            event_source_arn,
+            event_bus_arn,
             entries,
         )["ArchiveArn"]
         sqs_collect_messages(
@@ -489,7 +433,7 @@ class TestReplay:
             EventStartTime=event_start_time,
             EventEndTime=event_end_time,
             Destination={
-                "Arn": event_source_arn,
+                "Arn": event_bus_arn,
                 "FilterArns": [
                     rule_arn,
                 ],
@@ -533,7 +477,7 @@ class TestReplay:
             EventStartTime=event_start_time,
             EventEndTime=event_end_time,
             Destination={
-                "Arn": event_source_arn,
+                "Arn": event_bus_arn,
                 "FilterArns": [
                     rule_arn,
                 ],
