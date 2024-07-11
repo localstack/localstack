@@ -1837,7 +1837,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
-    "recorded-date": "20-11-2023, 17:25:12",
+    "recorded-date": "11-07-2024, 13:53:37",
     "recorded-content": {
       "put-obj-0": {
         "ETag": "\"86639701cdcc5b39438a5f009bd74cb1\"",
@@ -1918,24 +1918,76 @@
           "HTTPStatusCode": 204
         }
       },
-      "put-object-tags-delete-marker": {
-        "VersionId": "<version-id:1>",
+      "put-object-tags-delete-marker-id": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "PUT",
+          "ResourceType": "DeleteMarker"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 405
         }
       },
-      "get-object-tags-delete-marker": {
-        "TagSet": [
-          {
-            "Key": "tag1",
-            "Value": "tag1"
-          }
-        ],
-        "VersionId": "<version-id:1>",
+      "get-object-tags-delete-marker-id": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "GET",
+          "ResourceType": "DeleteMarker"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 405
+        }
+      },
+      "delete-object-tags-delete-marker-id": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "DELETE",
+          "ResourceType": "DeleteMarker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 405
+        }
+      },
+      "put-object-tags-delete-marker-latest": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "PUT",
+          "ResourceType": "DeleteMarker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 405
+        }
+      },
+      "get-object-tags-delete-marker-latest": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "GET",
+          "ResourceType": "DeleteMarker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 405
+        }
+      },
+      "delete-object-tags-delete-marker-latest": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "DELETE",
+          "ResourceType": "DeleteMarker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 405
         }
       }
     }
