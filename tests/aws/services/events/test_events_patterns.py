@@ -17,31 +17,6 @@ COMPLEX_MULTI_KEY_EVENT_PATTERN = os.path.join(
 )
 COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_event.json")
 
-
-def load_request_templates(directory_path: str) -> List[Tuple[dict, str]]:
-    json5_files = list_files_with_suffix(directory_path, ".json5")
-    return [load_request_template(file_path) for file_path in json5_files]
-
-
-def load_request_template(file_path: str) -> Tuple[dict, str]:
-    with open(file_path, "r") as df:
-        template = json5.load(df)
-    return template, Path(file_path).stem
-
-
-def list_files_with_suffix(directory_path: str, suffix: str) -> List[str]:
-    files = []
-    for root, _, filenames in os.walk(directory_path):
-        for filename in filenames:
-            if filename.endswith(suffix):
-                absolute_filepath = os.path.join(root, filename)
-                files.append(absolute_filepath)
-
-    return files
-
-
-request_template_tuples = load_request_templates(REQUEST_TEMPLATE_DIR)
-
 SKIP_LABELS = [
     # Failing exception tests:
     "arrays_empty_EXC",
@@ -75,6 +50,31 @@ SKIP_LABELS = [
     "or-exists",
     "or-exists-parent",
 ]
+
+
+def load_request_templates(directory_path: str) -> List[Tuple[dict, str]]:
+    json5_files = list_files_with_suffix(directory_path, ".json5")
+    return [load_request_template(file_path) for file_path in json5_files]
+
+
+def load_request_template(file_path: str) -> Tuple[dict, str]:
+    with open(file_path, "r") as df:
+        template = json5.load(df)
+    return template, Path(file_path).stem
+
+
+def list_files_with_suffix(directory_path: str, suffix: str) -> List[str]:
+    files = []
+    for root, _, filenames in os.walk(directory_path):
+        for filename in filenames:
+            if filename.endswith(suffix):
+                absolute_filepath = os.path.join(root, filename)
+                files.append(absolute_filepath)
+
+    return files
+
+
+request_template_tuples = load_request_templates(REQUEST_TEMPLATE_DIR)
 
 
 # TODO: extend these test cases based on the open source docs + tests: https://github.com/aws/event-ruler
