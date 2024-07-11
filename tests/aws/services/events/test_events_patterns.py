@@ -161,46 +161,45 @@ class TestTestEventPattern:
         )
         assert response["Result"]
 
+    @markers.aws.validated
+    def test_test_event_pattern_source(self, aws_client, snapshot, account_id, region_name):
+        response = aws_client.events.test_event_pattern(
+            Event=json.dumps(
+                {
+                    "id": "1",
+                    "source": "order",
+                    "detail-type": "Test",
+                    "account": account_id,
+                    "region": region_name,
+                    "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                }
+            ),
+            EventPattern=json.dumps(
+                {
+                    "source": ["order"],
+                    "detail-type": ["Test"],
+                }
+            ),
+        )
+        snapshot.match("eventbridge-test-event-pattern-response", response)
 
-@markers.aws.validated
-def test_event_pattern_source(aws_client, snapshot, account_id, region_name):
-    response = aws_client.events.test_event_pattern(
-        Event=json.dumps(
-            {
-                "id": "1",
-                "source": "order",
-                "detail-type": "Test",
-                "account": account_id,
-                "region": region_name,
-                "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            }
-        ),
-        EventPattern=json.dumps(
-            {
-                "source": ["order"],
-                "detail-type": ["Test"],
-            }
-        ),
-    )
-    snapshot.match("eventbridge-test-event-pattern-response", response)
-
-    # negative test, source is not matched
-    response = aws_client.events.test_event_pattern(
-        Event=json.dumps(
-            {
-                "id": "1",
-                "source": "order",
-                "detail-type": "Test",
-                "account": account_id,
-                "region": region_name,
-                "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            }
-        ),
-        EventPattern=json.dumps(
-            {
-                "source": ["shipment"],
-                "detail-type": ["Test"],
-            }
-        ),
-    )
-    snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
+        # negative test, source is not matched
+        response = aws_client.events.test_event_pattern(
+            Event=json.dumps(
+                {
+                    "id": "1",
+                    "source": "order",
+                    "detail-type": "Test",
+                    "account": account_id,
+                    "region": region_name,
+                    "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                }
+            ),
+            EventPattern=json.dumps(
+                {
+                    "source": ["shipment"],
+                    "detail-type": ["Test"],
+                }
+            ),
+        )
+        snapshot.match("eventbridge-test-event-pattern-response-no-match", response)

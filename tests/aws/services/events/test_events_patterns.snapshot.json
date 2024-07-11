@@ -423,7 +423,7 @@
     "recorded-date": "11-07-2024, 11:55:57",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_event_pattern_source": {
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern_source": {
     "recorded-date": "11-07-2024, 11:55:57",
     "recorded-content": {
       "eventbridge-test-event-pattern-response": {

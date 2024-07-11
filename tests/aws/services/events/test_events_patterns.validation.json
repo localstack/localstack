@@ -239,7 +239,7 @@
   "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern_with_multi_key": {
     "last_validated_date": "2024-07-11T11:55:57+00:00"
   },
-  "tests/aws/services/events/test_events_patterns.py::test_event_pattern_source": {
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern_source": {
     "last_validated_date": "2024-07-11T11:55:57+00:00"
   }
 }
