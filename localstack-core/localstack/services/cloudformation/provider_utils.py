@@ -180,6 +180,8 @@ def fix_casing_for_boto_request_parameters(parameters: dict, input_shape: Struct
                 transform_value(item, member_shape.member) if isinstance(item, dict) else item
                 for item in value
             ]
+        elif member_shape is None:
+            continue  # skipping this entry, so it's not included in the transformed dict
         else:
             transformed_dict[correct_key] = value
 
