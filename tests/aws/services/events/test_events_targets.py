@@ -801,11 +801,8 @@ class TestEventTargetSqs:
         snapshot.match("messages", messages)
 
 
-class TestEventTargetStepFunctions:
-    @markers.aws.validated
-    def test_put_events_target_state_machine(self, aws_client):
-        # TODO add test
-        pass
+# class TestEventTargetStepFunctions:
+#     # TODO add test for StepFunctions
 
 
 class TestEventTargetSystemsManager:
