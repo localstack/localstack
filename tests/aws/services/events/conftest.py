@@ -67,6 +67,21 @@ def events_create_event_bus(aws_client, region_name, account_id):
 
 
 @pytest.fixture
+def events_create_default_or_custom_event_bus(events_create_event_bus, region_name, account_id):
+    def _create_default_or_custom_event_bus(event_bus_type: str = "default"):
+        if event_bus_type == "default":
+            event_bus_name = "default"
+            event_bus_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+        if event_bus_type == "custom":
+            event_bus_name = f"test-bus-{short_uid()}"
+            response = events_create_event_bus(Name=event_bus_name)
+            event_bus_arn = response["EventBusArn"]
+        return event_bus_name, event_bus_arn
+
+    return _create_default_or_custom_event_bus
+
+
+@pytest.fixture
 def create_role_event_bus_source_to_bus_target(create_iam_role_with_policy):
     def _create_role_event_bus_to_bus():
         assume_role_policy_document_bus_source_to_bus_target = {
