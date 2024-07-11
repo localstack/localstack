@@ -167,7 +167,10 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
 
         rest_api_container.gateway_responses[response_type] = gateway_response
 
-        # TODO: explain CRUD provider defaults are different than Invocation default
+        # The CRUD provider has a weird behavior: for some responses (for now, INTEGRATION_FAILURE), it sets the default
+        # status code to `504`. However, in the actual invocation logic, it returns 500. To deal with the inconsistency,
+        # we need to set the value to None if not provided by the user, so that the invocation logic can properly return
+        # 500, and the CRUD layer can still return 504 even though it is technically wrong.
         response = gateway_response.copy()
         if response.get("statusCode") is None:
             response["statusCode"] = GatewayResponseCode[response_type]
@@ -221,13 +224,16 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
         return GatewayResponses(items=gateway_responses)
 
 
-def _get_gateway_response_or_default(response_type, user_gateway_resp):
+def _get_gateway_response_or_default(
+    response_type: GatewayResponseType,
+    gateway_responses: dict[GatewayResponseType, GatewayResponse],
+) -> GatewayResponse:
     """
-    :param response_type:
-    :param user_gateway_resp:
-    :return:
+    Utility function that overrides the behavior of `get_gateway_response_or_default` by setting a default status code
+    from the `GatewayResponseCode` values. In reality, some default values in the invocation layer are different from
+    what the CRUD layer of API Gateway is returning.
     """
-    response = get_gateway_response_or_default(response_type, user_gateway_resp)
+    response = get_gateway_response_or_default(response_type, gateway_responses)
     if response.get("statusCode") is None and (status_code := GatewayResponseCode[response_type]):
         response["statusCode"] = status_code
 
