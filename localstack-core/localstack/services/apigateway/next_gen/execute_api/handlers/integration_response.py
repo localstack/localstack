@@ -97,22 +97,22 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             LOG.debug("Response header overrides: %s", header_override)
             headers.update(header_override)
 
+        # setting up default content-type
+        if not headers.get("content-type"):
+            headers.set("Content-Type", APPLICATION_JSON)
+
+        # TODO : refactor the following into method response using table from
+        #  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-known-issues.html#api-gateway-known-issues-rest-apis
         # When trying to override certain headers, they will instead be remapped
         # There may be other headers, but these have been confirmed on aws
-        remapped_headers = (
-            "connection",
-            "content-length",
-            "date",
-            "x-amzn-requestid",
-            "content-type",
-        )
+        remapped_headers = ("connection", "content-length", "date", "x-amzn-requestid")
         for header in remapped_headers:
             if value := headers.get(header):
                 headers[f"x-amzn-remapped-{header}"] = value
                 headers.remove(header)
 
         # Those headers are passed through from the response headers, there might be more?
-        passthrough_headers = ("connection", "content-type", "content-length")
+        passthrough_headers = ("connection", "content-length")
         for header in passthrough_headers:
             if values := response.headers.getlist(header):
                 headers.setlist(header, values)
@@ -194,8 +194,8 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             return ""
 
         # The invocation request header is used to find the right response templated
-        accept = request["headers"].get("accept")
-        if accept and (template := response_templates.get(accept)):
+        accepts = request["raw_headers"].getlist("accept")
+        if accepts and (template := response_templates.get(accepts[-1])):
             return template
         # TODO aws seemed to favor application/json as default when unmatched regardless of "first"
         if template := response_templates.get(APPLICATION_JSON):

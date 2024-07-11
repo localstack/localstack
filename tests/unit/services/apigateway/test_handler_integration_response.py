@@ -295,7 +295,7 @@ class TestHandlerIntegrationResponse:
             statusCode="200",
             selectionPattern="",
             responseParameters={
-                "method.response.header.content-type": "'from params'",
+                "method.response.header.content-length": "'from params'",
                 "method.response.header.connection": "'from params'",
             },
             responseTemplates={"application/json": RESPONSE_OVERRIDES},
@@ -309,8 +309,8 @@ class TestHandlerIntegrationResponse:
         assert response.headers.get("content-type") == "application/json"
         assert response.headers.get("x-amzn-remapped-connection") == "from params"
         assert response.headers.get("x-amzn-remapped-date") == "from override"
-        assert response.headers.get("x-amzn-remapped-content-type") == "from override"
+        assert response.headers.get("x-amzn-remapped-content-length") == "from override"
 
 
-RESPONSE_OVERRIDES = """#set($context.responseOverride.header.content-type = 'from override')
+RESPONSE_OVERRIDES = """#set($context.responseOverride.header.content-length = 'from override')
 #set($context.responseOverride.header.date = 'from override')"""
