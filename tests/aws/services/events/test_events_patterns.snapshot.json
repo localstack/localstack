@@ -1,18 +1,22 @@
 {
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_wildcard_repeating]": {
-    "recorded-date": "08-04-2024, 19:33:54",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_wildcard_repeating]": {
+    "recorded-date": "11-07-2024, 11:55:45",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_suffix_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:54",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[list_within_dict]": {
+    "recorded-date": "11-07-2024, 11:55:45",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[complex_multi_match]": {
-    "recorded-date": "08-04-2024, 19:33:55",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_suffix_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:45",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[int_nolist_EXC]": {
-    "recorded-date": "08-04-2024, 19:33:55",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[complex_multi_match]": {
+    "recorded-date": "11-07-2024, 11:55:45",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[int_nolist_EXC]": {
+    "recorded-date": "11-07-2024, 11:55:45",
     "recorded-content": {
       "int_nolist_EXC": {
         "exception_message": {
@@ -29,40 +33,40 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[arrays]": {
-    "recorded-date": "08-04-2024, 19:33:55",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[arrays]": {
+    "recorded-date": "11-07-2024, 11:55:45",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_wildcard_repeating_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:56",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_wildcard_repeating_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:46",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_ignorecase_list_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:56",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_ignorecase_list_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:46",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_wildcard_simplified]": {
-    "recorded-date": "08-04-2024, 19:33:56",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_wildcard_simplified]": {
+    "recorded-date": "11-07-2024, 11:55:46",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[or-exists]": {
-    "recorded-date": "08-04-2024, 19:33:56",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[or-exists]": {
+    "recorded-date": "11-07-2024, 11:55:46",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_wildcard_nonrepeating]": {
-    "recorded-date": "08-04-2024, 19:33:56",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_wildcard_nonrepeating]": {
+    "recorded-date": "11-07-2024, 11:55:46",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[complex_multi_match_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:56",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[complex_multi_match_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:46",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_string]": {
-    "recorded-date": "08-04-2024, 19:33:56",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_string]": {
+    "recorded-date": "11-07-2024, 11:55:46",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_numeric_operatorcasing_EXC]": {
-    "recorded-date": "08-04-2024, 19:33:56",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_numeric_operatorcasing_EXC]": {
+    "recorded-date": "11-07-2024, 11:55:46",
     "recorded-content": {
       "content_numeric_operatorcasing_EXC": {
         "exception_message": {
@@ -79,20 +83,20 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_number_list_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:57",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_number_list_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:47",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_ip_address]": {
-    "recorded-date": "08-04-2024, 19:33:57",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_ip_address]": {
+    "recorded-date": "11-07-2024, 11:55:47",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_prefix_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:57",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_prefix_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:47",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[string_nolist_EXC]": {
-    "recorded-date": "08-04-2024, 19:33:57",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[string_nolist_EXC]": {
+    "recorded-date": "11-07-2024, 11:55:47",
     "recorded-content": {
       "string_nolist_EXC": {
         "exception_message": {
@@ -109,20 +113,28 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_string_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:58",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[exists_dynamodb_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:48",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[boolean_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:58",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_string_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:48",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[or-exists-parent]": {
-    "recorded-date": "08-04-2024, 19:33:58",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[boolean_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:48",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[arrays_empty_EXC]": {
-    "recorded-date": "08-04-2024, 19:33:58",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[exists_dynamodb]": {
+    "recorded-date": "11-07-2024, 11:55:48",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[or-exists-parent]": {
+    "recorded-date": "11-07-2024, 11:55:48",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[arrays_empty_EXC]": {
+    "recorded-date": "11-07-2024, 11:55:48",
     "recorded-content": {
       "arrays_empty_EXC": {
         "exception_message": {
@@ -139,56 +151,56 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[nested_json_NEG]": {
-    "recorded-date": "08-04-2024, 19:33:59",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[nested_json_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:49",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[dot_joining_pattern]": {
-    "recorded-date": "08-04-2024, 19:33:59",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[dot_joining_pattern]": {
+    "recorded-date": "11-07-2024, 11:55:49",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[operator_multiple_list]": {
-    "recorded-date": "08-04-2024, 19:33:59",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[operator_multiple_list]": {
+    "recorded-date": "11-07-2024, 11:55:49",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_string_list]": {
-    "recorded-date": "08-04-2024, 19:33:59",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_string_list]": {
+    "recorded-date": "11-07-2024, 11:55:49",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[dynamodb]": {
-    "recorded-date": "08-04-2024, 19:33:59",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[dynamodb]": {
+    "recorded-date": "11-07-2024, 11:55:49",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_ignorecase]": {
-    "recorded-date": "08-04-2024, 19:33:59",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_ignorecase]": {
+    "recorded-date": "11-07-2024, 11:55:49",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[string_empty]": {
-    "recorded-date": "08-04-2024, 19:33:59",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[string_empty]": {
+    "recorded-date": "11-07-2024, 11:55:49",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[complex_many_rules]": {
-    "recorded-date": "08-04-2024, 19:34:00",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[complex_many_rules]": {
+    "recorded-date": "11-07-2024, 11:55:50",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[null_value]": {
-    "recorded-date": "08-04-2024, 19:34:00",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[null_value]": {
+    "recorded-date": "11-07-2024, 11:55:50",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_number_list]": {
-    "recorded-date": "08-04-2024, 19:34:00",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_number_list]": {
+    "recorded-date": "11-07-2024, 11:55:50",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_wildcard_nonrepeating_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:00",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_wildcard_nonrepeating_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:50",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_number_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:00",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_number_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:50",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[operator_case_sensitive_EXC]": {
-    "recorded-date": "08-04-2024, 19:34:00",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[operator_case_sensitive_EXC]": {
+    "recorded-date": "11-07-2024, 11:55:50",
     "recorded-content": {
       "operator_case_sensitive_EXC": {
         "exception_message": {
@@ -205,16 +217,16 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_exists]": {
-    "recorded-date": "08-04-2024, 19:34:01",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_exists]": {
+    "recorded-date": "11-07-2024, 11:55:51",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_ip_address_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:01",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_ip_address_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:51",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_numeric_EXC]": {
-    "recorded-date": "08-04-2024, 19:34:01",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_numeric_EXC]": {
+    "recorded-date": "11-07-2024, 11:55:51",
     "recorded-content": {
       "content_numeric_EXC": {
         "exception_message": {
@@ -231,88 +243,88 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[complex_or_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:01",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[complex_or_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:51",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[complex_or]": {
-    "recorded-date": "08-04-2024, 19:34:01",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[complex_or]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_numeric_and_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:02",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_numeric_and_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[dot_joining_event]": {
-    "recorded-date": "08-04-2024, 19:34:02",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[dot_joining_event]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_suffix_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:02",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_suffix_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_prefix_ignorecase]": {
-    "recorded-date": "08-04-2024, 19:34:02",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_prefix_ignorecase]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_suffix_ignorecase]": {
-    "recorded-date": "08-04-2024, 19:34:02",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_suffix_ignorecase]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[null_value_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:02",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[null_value_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[dot_joining_pattern_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:02",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[dot_joining_pattern_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_prefix]": {
-    "recorded-date": "08-04-2024, 19:34:02",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_prefix]": {
+    "recorded-date": "11-07-2024, 11:55:52",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[sample1]": {
-    "recorded-date": "08-04-2024, 19:34:03",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[sample1]": {
+    "recorded-date": "11-07-2024, 11:55:53",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[key_case_sensitive_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:03",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[key_case_sensitive_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:53",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[dot_joining_event_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:03",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[dot_joining_event_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:53",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[prefix]": {
-    "recorded-date": "08-04-2024, 19:34:03",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[prefix]": {
+    "recorded-date": "11-07-2024, 11:55:53",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_suffix]": {
-    "recorded-date": "08-04-2024, 19:34:03",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_suffix]": {
+    "recorded-date": "11-07-2024, 11:55:53",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_ignorecase_list]": {
-    "recorded-date": "08-04-2024, 19:34:03",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_ignorecase_list]": {
+    "recorded-date": "11-07-2024, 11:55:53",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_prefix_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:03",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_prefix_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:53",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[string]": {
-    "recorded-date": "08-04-2024, 19:34:03",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[string]": {
+    "recorded-date": "11-07-2024, 11:55:53",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[arrays_empty_null_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:04",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[arrays_empty_null_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:54",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_suffix_ignorecase_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:04",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_suffix_ignorecase_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:54",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_wildcard_complex_EXC]": {
-    "recorded-date": "08-04-2024, 19:34:04",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_wildcard_complex_EXC]": {
+    "recorded-date": "11-07-2024, 11:55:54",
     "recorded-content": {
       "content_wildcard_complex_EXC": {
         "exception_message": {
@@ -329,56 +341,56 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_string_list_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:04",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_string_list_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:54",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_prefix]": {
-    "recorded-date": "08-04-2024, 19:34:04",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_prefix]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_ignorecase_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:05",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_ignorecase_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[minimal]": {
-    "recorded-date": "08-04-2024, 19:34:05",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[minimal]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_exists_false]": {
-    "recorded-date": "08-04-2024, 19:34:05",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_exists_false]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[number_comparison_float]": {
-    "recorded-date": "08-04-2024, 19:34:05",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[number_comparison_float]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_ignorecase_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:05",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_ignorecase_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_suffix]": {
-    "recorded-date": "08-04-2024, 19:34:05",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_suffix]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[arrays_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:05",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[arrays_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_ignorecase]": {
-    "recorded-date": "08-04-2024, 19:34:05",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_ignorecase]": {
+    "recorded-date": "11-07-2024, 11:55:55",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_exists_false_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:06",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_exists_false_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:56",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_exists_NEG]": {
-    "recorded-date": "08-04-2024, 19:34:06",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_exists_NEG]": {
+    "recorded-date": "11-07-2024, 11:55:56",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_numeric_syntax_EXC]": {
-    "recorded-date": "08-04-2024, 19:34:06",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_numeric_syntax_EXC]": {
+    "recorded-date": "11-07-2024, 11:55:56",
     "recorded-content": {
       "content_numeric_syntax_EXC": {
         "exception_message": {
@@ -395,44 +407,24 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_numeric_and]": {
-    "recorded-date": "08-04-2024, 19:34:06",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_numeric_and]": {
+    "recorded-date": "11-07-2024, 11:55:56",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[boolean]": {
-    "recorded-date": "08-04-2024, 19:34:06",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[boolean]": {
+    "recorded-date": "11-07-2024, 11:55:57",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[content_anything_but_number]": {
-    "recorded-date": "08-04-2024, 19:34:06",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[content_anything_but_number]": {
+    "recorded-date": "11-07-2024, 11:55:57",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[or-anything-but]": {
-    "recorded-date": "08-04-2024, 19:34:07",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[list_within_dict]": {
-    "recorded-date": "08-04-2024, 19:33:54",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[exists_false_dynamodb_NEG]": {
-    "recorded-date": "09-04-2024, 16:47:27",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[exists_false_dynamodb]": {
-    "recorded-date": "09-04-2024, 16:21:59",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[exists_dynamodb]": {
-    "recorded-date": "09-04-2024, 16:51:30",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events_patterns.py::test_test_event_pattern[exists_dynamodb_NEG]": {
-    "recorded-date": "09-04-2024, 16:51:59",
+  "tests/aws/services/events/test_events_patterns.py::TestTestEventPattern::test_test_event_pattern[or-anything-but]": {
+    "recorded-date": "11-07-2024, 11:55:57",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_events_patterns.py::test_event_pattern_source": {
-    "recorded-date": "29-04-2024, 14:12:14",
+    "recorded-date": "11-07-2024, 11:55:57",
     "recorded-content": {
       "eventbridge-test-event-pattern-response": {
         "Result": true,
