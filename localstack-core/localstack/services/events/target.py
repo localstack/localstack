@@ -398,10 +398,7 @@ class SqsTargetSender(TargetSender):
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         self.client.send_message(
             QueueUrl=queue_url,
-            MessageBody=to_json_str(
-                event,
-                separators=(",", ":"),
-            ),
+            MessageBody=to_json_str(event),
             **kwargs,
         )
 

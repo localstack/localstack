@@ -38,7 +38,7 @@ class EventJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = None) -> str:
+def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str:
     return json.dumps(obj, cls=EventJSONEncoder, separators=separators)
 
 
