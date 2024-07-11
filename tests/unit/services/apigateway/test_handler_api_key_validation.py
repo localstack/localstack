@@ -70,10 +70,11 @@ def create_context():
         context.api_id = TEST_API_ID
         context.resource_method = method or Method()
         context.context_variables = ContextVariables()
+        context.context_variables["identity"] = ContextVarsIdentity()
 
         # Context populated by a Lambda Authorizer
         if api_key is not None:
-            context.context_variables["identity"] = ContextVarsIdentity(apiKey=api_key)
+            context.context_variables["identity"]["apiKey"] = api_key
         return context
 
     return _create_context
