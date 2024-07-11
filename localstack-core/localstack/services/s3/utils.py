@@ -517,7 +517,7 @@ def uses_host_addressing(headers: Dict[str, str]) -> str | None:
         return bucket_name
 
 
-def get_class_attrs_from_spec_class(spec_class: StrEnum) -> set[str]:
+def get_class_attrs_from_spec_class(spec_class: type[StrEnum]) -> set[str]:
     return {str(spec) for spec in spec_class}
 
 
