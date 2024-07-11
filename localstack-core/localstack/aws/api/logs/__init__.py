@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Dict, Iterator, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -96,7 +97,7 @@ Unmask = bool
 Value = str
 
 
-class AnomalyDetectorStatus(str):
+class AnomalyDetectorStatus(StrEnum):
     INITIALIZING = "INITIALIZING"
     TRAINING = "TRAINING"
     ANALYZING = "ANALYZING"
@@ -105,25 +106,25 @@ class AnomalyDetectorStatus(str):
     PAUSED = "PAUSED"
 
 
-class DataProtectionStatus(str):
+class DataProtectionStatus(StrEnum):
     ACTIVATED = "ACTIVATED"
     DELETED = "DELETED"
     ARCHIVED = "ARCHIVED"
     DISABLED = "DISABLED"
 
 
-class DeliveryDestinationType(str):
+class DeliveryDestinationType(StrEnum):
     S3 = "S3"
     CWL = "CWL"
     FH = "FH"
 
 
-class Distribution(str):
+class Distribution(StrEnum):
     Random = "Random"
     ByLogStream = "ByLogStream"
 
 
-class EvaluationFrequency(str):
+class EvaluationFrequency(StrEnum):
     ONE_MIN = "ONE_MIN"
     FIVE_MIN = "FIVE_MIN"
     TEN_MIN = "TEN_MIN"
@@ -132,7 +133,7 @@ class EvaluationFrequency(str):
     ONE_HOUR = "ONE_HOUR"
 
 
-class ExportTaskStatusCode(str):
+class ExportTaskStatusCode(StrEnum):
     CANCELLED = "CANCELLED"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
@@ -141,21 +142,21 @@ class ExportTaskStatusCode(str):
     RUNNING = "RUNNING"
 
 
-class InheritedProperty(str):
+class InheritedProperty(StrEnum):
     ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
 
 
-class LogGroupClass(str):
+class LogGroupClass(StrEnum):
     STANDARD = "STANDARD"
     INFREQUENT_ACCESS = "INFREQUENT_ACCESS"
 
 
-class OrderBy(str):
+class OrderBy(StrEnum):
     LogStreamName = "LogStreamName"
     LastEventTime = "LastEventTime"
 
 
-class OutputFormat(str):
+class OutputFormat(StrEnum):
     json = "json"
     plain = "plain"
     w3c = "w3c"
@@ -163,12 +164,12 @@ class OutputFormat(str):
     parquet = "parquet"
 
 
-class PolicyType(str):
+class PolicyType(StrEnum):
     DATA_PROTECTION_POLICY = "DATA_PROTECTION_POLICY"
     SUBSCRIPTION_FILTER_POLICY = "SUBSCRIPTION_FILTER_POLICY"
 
 
-class QueryStatus(str):
+class QueryStatus(StrEnum):
     Scheduled = "Scheduled"
     Running = "Running"
     Complete = "Complete"
@@ -178,11 +179,11 @@ class QueryStatus(str):
     Unknown = "Unknown"
 
 
-class Scope(str):
+class Scope(StrEnum):
     ALL = "ALL"
 
 
-class StandardUnit(str):
+class StandardUnit(StrEnum):
     Seconds = "Seconds"
     Microseconds = "Microseconds"
     Milliseconds = "Milliseconds"
@@ -212,23 +213,23 @@ class StandardUnit(str):
     None_ = "None"
 
 
-class State(str):
+class State(StrEnum):
     Active = "Active"
     Suppressed = "Suppressed"
     Baseline = "Baseline"
 
 
-class SuppressionState(str):
+class SuppressionState(StrEnum):
     SUPPRESSED = "SUPPRESSED"
     UNSUPPRESSED = "UNSUPPRESSED"
 
 
-class SuppressionType(str):
+class SuppressionType(StrEnum):
     LIMITED = "LIMITED"
     INFINITE = "INFINITE"
 
 
-class SuppressionUnit(str):
+class SuppressionUnit(StrEnum):
     SECONDS = "SECONDS"
     MINUTES = "MINUTES"
     HOURS = "HOURS"

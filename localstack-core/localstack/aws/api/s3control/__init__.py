@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -111,20 +112,20 @@ TrafficDialPercentage = int
 VpcId = str
 
 
-class AsyncOperationName(str):
+class AsyncOperationName(StrEnum):
     CreateMultiRegionAccessPoint = "CreateMultiRegionAccessPoint"
     DeleteMultiRegionAccessPoint = "DeleteMultiRegionAccessPoint"
     PutMultiRegionAccessPointPolicy = "PutMultiRegionAccessPointPolicy"
 
 
-class BucketCannedACL(str):
+class BucketCannedACL(StrEnum):
     private = "private"
     public_read = "public-read"
     public_read_write = "public-read-write"
     authenticated_read = "authenticated-read"
 
 
-class BucketLocationConstraint(str):
+class BucketLocationConstraint(StrEnum):
     EU = "EU"
     eu_west_1 = "eu-west-1"
     us_west_1 = "us-west-1"
@@ -138,63 +139,63 @@ class BucketLocationConstraint(str):
     eu_central_1 = "eu-central-1"
 
 
-class BucketVersioningStatus(str):
+class BucketVersioningStatus(StrEnum):
     Enabled = "Enabled"
     Suspended = "Suspended"
 
 
-class DeleteMarkerReplicationStatus(str):
+class DeleteMarkerReplicationStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ExistingObjectReplicationStatus(str):
+class ExistingObjectReplicationStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ExpirationStatus(str):
+class ExpirationStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class Format(str):
+class Format(StrEnum):
     CSV = "CSV"
     Parquet = "Parquet"
 
 
-class GeneratedManifestFormat(str):
+class GeneratedManifestFormat(StrEnum):
     S3InventoryReport_CSV_20211130 = "S3InventoryReport_CSV_20211130"
 
 
-class GranteeType(str):
+class GranteeType(StrEnum):
     DIRECTORY_USER = "DIRECTORY_USER"
     DIRECTORY_GROUP = "DIRECTORY_GROUP"
     IAM = "IAM"
 
 
-class JobManifestFieldName(str):
+class JobManifestFieldName(StrEnum):
     Ignore = "Ignore"
     Bucket = "Bucket"
     Key = "Key"
     VersionId = "VersionId"
 
 
-class JobManifestFormat(str):
+class JobManifestFormat(StrEnum):
     S3BatchOperations_CSV_20180820 = "S3BatchOperations_CSV_20180820"
     S3InventoryReport_CSV_20161130 = "S3InventoryReport_CSV_20161130"
 
 
-class JobReportFormat(str):
+class JobReportFormat(StrEnum):
     Report_CSV_20180820 = "Report_CSV_20180820"
 
 
-class JobReportScope(str):
+class JobReportScope(StrEnum):
     AllTasks = "AllTasks"
     FailedTasksOnly = "FailedTasksOnly"
 
 
-class JobStatus(str):
+class JobStatus(StrEnum):
     Active = "Active"
     Cancelled = "Cancelled"
     Cancelling = "Cancelling"
@@ -210,22 +211,22 @@ class JobStatus(str):
     Suspended = "Suspended"
 
 
-class MFADelete(str):
+class MFADelete(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class MFADeleteStatus(str):
+class MFADeleteStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class MetricsStatus(str):
+class MetricsStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class MultiRegionAccessPointStatus(str):
+class MultiRegionAccessPointStatus(StrEnum):
     READY = "READY"
     INCONSISTENT_ACROSS_REGIONS = "INCONSISTENT_ACROSS_REGIONS"
     CREATING = "CREATING"
@@ -234,31 +235,31 @@ class MultiRegionAccessPointStatus(str):
     DELETING = "DELETING"
 
 
-class NetworkOrigin(str):
+class NetworkOrigin(StrEnum):
     Internet = "Internet"
     VPC = "VPC"
 
 
-class ObjectLambdaAccessPointAliasStatus(str):
+class ObjectLambdaAccessPointAliasStatus(StrEnum):
     PROVISIONING = "PROVISIONING"
     READY = "READY"
 
 
-class ObjectLambdaAllowedFeature(str):
+class ObjectLambdaAllowedFeature(StrEnum):
     GetObject_Range = "GetObject-Range"
     GetObject_PartNumber = "GetObject-PartNumber"
     HeadObject_Range = "HeadObject-Range"
     HeadObject_PartNumber = "HeadObject-PartNumber"
 
 
-class ObjectLambdaTransformationConfigurationAction(str):
+class ObjectLambdaTransformationConfigurationAction(StrEnum):
     GetObject = "GetObject"
     HeadObject = "HeadObject"
     ListObjects = "ListObjects"
     ListObjectsV2 = "ListObjectsV2"
 
 
-class OperationName(str):
+class OperationName(StrEnum):
     LambdaInvoke = "LambdaInvoke"
     S3PutObjectCopy = "S3PutObjectCopy"
     S3PutObjectAcl = "S3PutObjectAcl"
@@ -270,43 +271,43 @@ class OperationName(str):
     S3ReplicateObject = "S3ReplicateObject"
 
 
-class OutputSchemaVersion(str):
+class OutputSchemaVersion(StrEnum):
     V_1 = "V_1"
 
 
-class OwnerOverride(str):
+class OwnerOverride(StrEnum):
     Destination = "Destination"
 
 
-class Permission(str):
+class Permission(StrEnum):
     READ = "READ"
     WRITE = "WRITE"
     READWRITE = "READWRITE"
 
 
-class Privilege(str):
+class Privilege(StrEnum):
     Minimal = "Minimal"
     Default = "Default"
 
 
-class ReplicaModificationsStatus(str):
+class ReplicaModificationsStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ReplicationRuleStatus(str):
+class ReplicationRuleStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ReplicationStatus(str):
+class ReplicationStatus(StrEnum):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     REPLICA = "REPLICA"
     NONE = "NONE"
 
 
-class ReplicationStorageClass(str):
+class ReplicationStorageClass(StrEnum):
     STANDARD = "STANDARD"
     REDUCED_REDUNDANCY = "REDUCED_REDUNDANCY"
     STANDARD_IA = "STANDARD_IA"
@@ -318,17 +319,17 @@ class ReplicationStorageClass(str):
     GLACIER_IR = "GLACIER_IR"
 
 
-class ReplicationTimeStatus(str):
+class ReplicationTimeStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class RequestedJobStatus(str):
+class RequestedJobStatus(StrEnum):
     Cancelled = "Cancelled"
     Ready = "Ready"
 
 
-class S3CannedAccessControlList(str):
+class S3CannedAccessControlList(StrEnum):
     private = "private"
     public_read = "public-read"
     public_read_write = "public-read-write"
@@ -338,45 +339,45 @@ class S3CannedAccessControlList(str):
     bucket_owner_full_control = "bucket-owner-full-control"
 
 
-class S3ChecksumAlgorithm(str):
+class S3ChecksumAlgorithm(StrEnum):
     CRC32 = "CRC32"
     CRC32C = "CRC32C"
     SHA1 = "SHA1"
     SHA256 = "SHA256"
 
 
-class S3GlacierJobTier(str):
+class S3GlacierJobTier(StrEnum):
     BULK = "BULK"
     STANDARD = "STANDARD"
 
 
-class S3GranteeTypeIdentifier(str):
+class S3GranteeTypeIdentifier(StrEnum):
     id = "id"
     emailAddress = "emailAddress"
     uri = "uri"
 
 
-class S3MetadataDirective(str):
+class S3MetadataDirective(StrEnum):
     COPY = "COPY"
     REPLACE = "REPLACE"
 
 
-class S3ObjectLockLegalHoldStatus(str):
+class S3ObjectLockLegalHoldStatus(StrEnum):
     OFF = "OFF"
     ON = "ON"
 
 
-class S3ObjectLockMode(str):
+class S3ObjectLockMode(StrEnum):
     COMPLIANCE = "COMPLIANCE"
     GOVERNANCE = "GOVERNANCE"
 
 
-class S3ObjectLockRetentionMode(str):
+class S3ObjectLockRetentionMode(StrEnum):
     COMPLIANCE = "COMPLIANCE"
     GOVERNANCE = "GOVERNANCE"
 
 
-class S3Permission(str):
+class S3Permission(StrEnum):
     FULL_CONTROL = "FULL_CONTROL"
     READ = "READ"
     WRITE = "WRITE"
@@ -384,16 +385,16 @@ class S3Permission(str):
     WRITE_ACP = "WRITE_ACP"
 
 
-class S3PrefixType(str):
+class S3PrefixType(StrEnum):
     Object = "Object"
 
 
-class S3SSEAlgorithm(str):
+class S3SSEAlgorithm(StrEnum):
     AES256 = "AES256"
     KMS = "KMS"
 
 
-class S3StorageClass(str):
+class S3StorageClass(StrEnum):
     STANDARD = "STANDARD"
     STANDARD_IA = "STANDARD_IA"
     ONEZONE_IA = "ONEZONE_IA"
@@ -403,12 +404,12 @@ class S3StorageClass(str):
     GLACIER_IR = "GLACIER_IR"
 
 
-class SseKmsEncryptedObjectsStatus(str):
+class SseKmsEncryptedObjectsStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class TransitionStorageClass(str):
+class TransitionStorageClass(StrEnum):
     GLACIER = "GLACIER"
     STANDARD_IA = "STANDARD_IA"
     ONEZONE_IA = "ONEZONE_IA"

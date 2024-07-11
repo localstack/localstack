@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -25,46 +26,46 @@ TagKey = str
 TagValue = str
 
 
-class GroupConfigurationStatus(str):
+class GroupConfigurationStatus(StrEnum):
     UPDATING = "UPDATING"
     UPDATE_COMPLETE = "UPDATE_COMPLETE"
     UPDATE_FAILED = "UPDATE_FAILED"
 
 
-class GroupFilterName(str):
+class GroupFilterName(StrEnum):
     resource_type = "resource-type"
     configuration_type = "configuration-type"
 
 
-class GroupLifecycleEventsDesiredStatus(str):
+class GroupLifecycleEventsDesiredStatus(StrEnum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
 
 
-class GroupLifecycleEventsStatus(str):
+class GroupLifecycleEventsStatus(StrEnum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
     IN_PROGRESS = "IN_PROGRESS"
     ERROR = "ERROR"
 
 
-class QueryErrorCode(str):
+class QueryErrorCode(StrEnum):
     CLOUDFORMATION_STACK_INACTIVE = "CLOUDFORMATION_STACK_INACTIVE"
     CLOUDFORMATION_STACK_NOT_EXISTING = "CLOUDFORMATION_STACK_NOT_EXISTING"
     CLOUDFORMATION_STACK_UNASSUMABLE_ROLE = "CLOUDFORMATION_STACK_UNASSUMABLE_ROLE"
     RESOURCE_TYPE_NOT_SUPPORTED = "RESOURCE_TYPE_NOT_SUPPORTED"
 
 
-class QueryType(str):
+class QueryType(StrEnum):
     TAG_FILTERS_1_0 = "TAG_FILTERS_1_0"
     CLOUDFORMATION_STACK_1_0 = "CLOUDFORMATION_STACK_1_0"
 
 
-class ResourceFilterName(str):
+class ResourceFilterName(StrEnum):
     resource_type = "resource-type"
 
 
-class ResourceStatusValue(str):
+class ResourceStatusValue(StrEnum):
     PENDING = "PENDING"
 
 

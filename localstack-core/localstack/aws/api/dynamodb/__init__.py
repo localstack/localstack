@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -87,37 +88,37 @@ TimeToLiveEnabled = bool
 UpdateExpression = str
 
 
-class ApproximateCreationDateTimePrecision(str):
+class ApproximateCreationDateTimePrecision(StrEnum):
     MILLISECOND = "MILLISECOND"
     MICROSECOND = "MICROSECOND"
 
 
-class AttributeAction(str):
+class AttributeAction(StrEnum):
     ADD = "ADD"
     PUT = "PUT"
     DELETE = "DELETE"
 
 
-class BackupStatus(str):
+class BackupStatus(StrEnum):
     CREATING = "CREATING"
     DELETED = "DELETED"
     AVAILABLE = "AVAILABLE"
 
 
-class BackupType(str):
+class BackupType(StrEnum):
     USER = "USER"
     SYSTEM = "SYSTEM"
     AWS_BACKUP = "AWS_BACKUP"
 
 
-class BackupTypeFilter(str):
+class BackupTypeFilter(StrEnum):
     USER = "USER"
     SYSTEM = "SYSTEM"
     AWS_BACKUP = "AWS_BACKUP"
     ALL = "ALL"
 
 
-class BatchStatementErrorCodeEnum(str):
+class BatchStatementErrorCodeEnum(StrEnum):
     ConditionalCheckFailed = "ConditionalCheckFailed"
     ItemCollectionSizeLimitExceeded = "ItemCollectionSizeLimitExceeded"
     RequestLimitExceeded = "RequestLimitExceeded"
@@ -131,12 +132,12 @@ class BatchStatementErrorCodeEnum(str):
     DuplicateItem = "DuplicateItem"
 
 
-class BillingMode(str):
+class BillingMode(StrEnum):
     PROVISIONED = "PROVISIONED"
     PAY_PER_REQUEST = "PAY_PER_REQUEST"
 
 
-class ComparisonOperator(str):
+class ComparisonOperator(StrEnum):
     EQ = "EQ"
     NE = "NE"
     IN = "IN"
@@ -152,22 +153,22 @@ class ComparisonOperator(str):
     BEGINS_WITH = "BEGINS_WITH"
 
 
-class ConditionalOperator(str):
+class ConditionalOperator(StrEnum):
     AND = "AND"
     OR = "OR"
 
 
-class ContinuousBackupsStatus(str):
+class ContinuousBackupsStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class ContributorInsightsAction(str):
+class ContributorInsightsAction(StrEnum):
     ENABLE = "ENABLE"
     DISABLE = "DISABLE"
 
 
-class ContributorInsightsStatus(str):
+class ContributorInsightsStatus(StrEnum):
     ENABLING = "ENABLING"
     ENABLED = "ENABLED"
     DISABLING = "DISABLING"
@@ -175,7 +176,7 @@ class ContributorInsightsStatus(str):
     FAILED = "FAILED"
 
 
-class DestinationStatus(str):
+class DestinationStatus(StrEnum):
     ENABLING = "ENABLING"
     ACTIVE = "ACTIVE"
     DISABLING = "DISABLING"
@@ -184,35 +185,35 @@ class DestinationStatus(str):
     UPDATING = "UPDATING"
 
 
-class ExportFormat(str):
+class ExportFormat(StrEnum):
     DYNAMODB_JSON = "DYNAMODB_JSON"
     ION = "ION"
 
 
-class ExportStatus(str):
+class ExportStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
 
-class ExportType(str):
+class ExportType(StrEnum):
     FULL_EXPORT = "FULL_EXPORT"
     INCREMENTAL_EXPORT = "INCREMENTAL_EXPORT"
 
 
-class ExportViewType(str):
+class ExportViewType(StrEnum):
     NEW_IMAGE = "NEW_IMAGE"
     NEW_AND_OLD_IMAGES = "NEW_AND_OLD_IMAGES"
 
 
-class GlobalTableStatus(str):
+class GlobalTableStatus(StrEnum):
     CREATING = "CREATING"
     ACTIVE = "ACTIVE"
     DELETING = "DELETING"
     UPDATING = "UPDATING"
 
 
-class ImportStatus(str):
+class ImportStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     CANCELLING = "CANCELLING"
@@ -220,42 +221,42 @@ class ImportStatus(str):
     FAILED = "FAILED"
 
 
-class IndexStatus(str):
+class IndexStatus(StrEnum):
     CREATING = "CREATING"
     UPDATING = "UPDATING"
     DELETING = "DELETING"
     ACTIVE = "ACTIVE"
 
 
-class InputCompressionType(str):
+class InputCompressionType(StrEnum):
     GZIP = "GZIP"
     ZSTD = "ZSTD"
     NONE = "NONE"
 
 
-class InputFormat(str):
+class InputFormat(StrEnum):
     DYNAMODB_JSON = "DYNAMODB_JSON"
     ION = "ION"
     CSV = "CSV"
 
 
-class KeyType(str):
+class KeyType(StrEnum):
     HASH = "HASH"
     RANGE = "RANGE"
 
 
-class PointInTimeRecoveryStatus(str):
+class PointInTimeRecoveryStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class ProjectionType(str):
+class ProjectionType(StrEnum):
     ALL = "ALL"
     KEYS_ONLY = "KEYS_ONLY"
     INCLUDE = "INCLUDE"
 
 
-class ReplicaStatus(str):
+class ReplicaStatus(StrEnum):
     CREATING = "CREATING"
     CREATION_FAILED = "CREATION_FAILED"
     UPDATING = "UPDATING"
@@ -265,18 +266,18 @@ class ReplicaStatus(str):
     INACCESSIBLE_ENCRYPTION_CREDENTIALS = "INACCESSIBLE_ENCRYPTION_CREDENTIALS"
 
 
-class ReturnConsumedCapacity(str):
+class ReturnConsumedCapacity(StrEnum):
     INDEXES = "INDEXES"
     TOTAL = "TOTAL"
     NONE = "NONE"
 
 
-class ReturnItemCollectionMetrics(str):
+class ReturnItemCollectionMetrics(StrEnum):
     SIZE = "SIZE"
     NONE = "NONE"
 
 
-class ReturnValue(str):
+class ReturnValue(StrEnum):
     NONE = "NONE"
     ALL_OLD = "ALL_OLD"
     UPDATED_OLD = "UPDATED_OLD"
@@ -284,17 +285,17 @@ class ReturnValue(str):
     UPDATED_NEW = "UPDATED_NEW"
 
 
-class ReturnValuesOnConditionCheckFailure(str):
+class ReturnValuesOnConditionCheckFailure(StrEnum):
     ALL_OLD = "ALL_OLD"
     NONE = "NONE"
 
 
-class S3SseAlgorithm(str):
+class S3SseAlgorithm(StrEnum):
     AES256 = "AES256"
     KMS = "KMS"
 
 
-class SSEStatus(str):
+class SSEStatus(StrEnum):
     ENABLING = "ENABLING"
     ENABLED = "ENABLED"
     DISABLING = "DISABLING"
@@ -302,37 +303,37 @@ class SSEStatus(str):
     UPDATING = "UPDATING"
 
 
-class SSEType(str):
+class SSEType(StrEnum):
     AES256 = "AES256"
     KMS = "KMS"
 
 
-class ScalarAttributeType(str):
+class ScalarAttributeType(StrEnum):
     S = "S"
     N = "N"
     B = "B"
 
 
-class Select(str):
+class Select(StrEnum):
     ALL_ATTRIBUTES = "ALL_ATTRIBUTES"
     ALL_PROJECTED_ATTRIBUTES = "ALL_PROJECTED_ATTRIBUTES"
     SPECIFIC_ATTRIBUTES = "SPECIFIC_ATTRIBUTES"
     COUNT = "COUNT"
 
 
-class StreamViewType(str):
+class StreamViewType(StrEnum):
     NEW_IMAGE = "NEW_IMAGE"
     OLD_IMAGE = "OLD_IMAGE"
     NEW_AND_OLD_IMAGES = "NEW_AND_OLD_IMAGES"
     KEYS_ONLY = "KEYS_ONLY"
 
 
-class TableClass(str):
+class TableClass(StrEnum):
     STANDARD = "STANDARD"
     STANDARD_INFREQUENT_ACCESS = "STANDARD_INFREQUENT_ACCESS"
 
 
-class TableStatus(str):
+class TableStatus(StrEnum):
     CREATING = "CREATING"
     UPDATING = "UPDATING"
     DELETING = "DELETING"
@@ -342,7 +343,7 @@ class TableStatus(str):
     ARCHIVED = "ARCHIVED"
 
 
-class TimeToLiveStatus(str):
+class TimeToLiveStatus(StrEnum):
     ENABLING = "ENABLING"
     DISABLING = "DISABLING"
     ENABLED = "ENABLED"

@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -107,7 +108,7 @@ TraceHeader = str
 TransformerInput = str
 
 
-class ApiDestinationHttpMethod(str):
+class ApiDestinationHttpMethod(StrEnum):
     POST = "POST"
     GET = "GET"
     HEAD = "HEAD"
@@ -117,12 +118,12 @@ class ApiDestinationHttpMethod(str):
     DELETE = "DELETE"
 
 
-class ApiDestinationState(str):
+class ApiDestinationState(StrEnum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
 
 
-class ArchiveState(str):
+class ArchiveState(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
     CREATING = "CREATING"
@@ -131,24 +132,24 @@ class ArchiveState(str):
     UPDATE_FAILED = "UPDATE_FAILED"
 
 
-class AssignPublicIp(str):
+class AssignPublicIp(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class ConnectionAuthorizationType(str):
+class ConnectionAuthorizationType(StrEnum):
     BASIC = "BASIC"
     OAUTH_CLIENT_CREDENTIALS = "OAUTH_CLIENT_CREDENTIALS"
     API_KEY = "API_KEY"
 
 
-class ConnectionOAuthHttpMethod(str):
+class ConnectionOAuthHttpMethod(StrEnum):
     GET = "GET"
     POST = "POST"
     PUT = "PUT"
 
 
-class ConnectionState(str):
+class ConnectionState(StrEnum):
     CREATING = "CREATING"
     UPDATING = "UPDATING"
     DELETING = "DELETING"
@@ -158,7 +159,7 @@ class ConnectionState(str):
     DEAUTHORIZING = "DEAUTHORIZING"
 
 
-class EndpointState(str):
+class EndpointState(StrEnum):
     ACTIVE = "ACTIVE"
     CREATING = "CREATING"
     UPDATING = "UPDATING"
@@ -168,34 +169,34 @@ class EndpointState(str):
     DELETE_FAILED = "DELETE_FAILED"
 
 
-class EventSourceState(str):
+class EventSourceState(StrEnum):
     PENDING = "PENDING"
     ACTIVE = "ACTIVE"
     DELETED = "DELETED"
 
 
-class LaunchType(str):
+class LaunchType(StrEnum):
     EC2 = "EC2"
     FARGATE = "FARGATE"
     EXTERNAL = "EXTERNAL"
 
 
-class PlacementConstraintType(str):
+class PlacementConstraintType(StrEnum):
     distinctInstance = "distinctInstance"
     memberOf = "memberOf"
 
 
-class PlacementStrategyType(str):
+class PlacementStrategyType(StrEnum):
     random = "random"
     spread = "spread"
     binpack = "binpack"
 
 
-class PropagateTags(str):
+class PropagateTags(StrEnum):
     TASK_DEFINITION = "TASK_DEFINITION"
 
 
-class ReplayState(str):
+class ReplayState(StrEnum):
     STARTING = "STARTING"
     RUNNING = "RUNNING"
     CANCELLING = "CANCELLING"
@@ -204,12 +205,12 @@ class ReplayState(str):
     FAILED = "FAILED"
 
 
-class ReplicationState(str):
+class ReplicationState(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class RuleState(str):
+class RuleState(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"

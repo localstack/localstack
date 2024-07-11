@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import IO, Dict, Iterable, Iterator, List, Optional, TypedDict, Union
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -99,7 +100,7 @@ Weight = float
 WorkingDirectory = str
 
 
-class ApplicationLogLevel(str):
+class ApplicationLogLevel(StrEnum):
     TRACE = "TRACE"
     DEBUG = "DEBUG"
     INFO = "INFO"
@@ -108,62 +109,62 @@ class ApplicationLogLevel(str):
     FATAL = "FATAL"
 
 
-class Architecture(str):
+class Architecture(StrEnum):
     x86_64 = "x86_64"
     arm64 = "arm64"
 
 
-class CodeSigningPolicy(str):
+class CodeSigningPolicy(StrEnum):
     Warn = "Warn"
     Enforce = "Enforce"
 
 
-class EndPointType(str):
+class EndPointType(StrEnum):
     KAFKA_BOOTSTRAP_SERVERS = "KAFKA_BOOTSTRAP_SERVERS"
 
 
-class EventSourcePosition(str):
+class EventSourcePosition(StrEnum):
     TRIM_HORIZON = "TRIM_HORIZON"
     LATEST = "LATEST"
     AT_TIMESTAMP = "AT_TIMESTAMP"
 
 
-class FullDocument(str):
+class FullDocument(StrEnum):
     UpdateLookup = "UpdateLookup"
     Default = "Default"
 
 
-class FunctionResponseType(str):
+class FunctionResponseType(StrEnum):
     ReportBatchItemFailures = "ReportBatchItemFailures"
 
 
-class FunctionUrlAuthType(str):
+class FunctionUrlAuthType(StrEnum):
     NONE = "NONE"
     AWS_IAM = "AWS_IAM"
 
 
-class FunctionVersion(str):
+class FunctionVersion(StrEnum):
     ALL = "ALL"
 
 
-class InvocationType(str):
+class InvocationType(StrEnum):
     Event = "Event"
     RequestResponse = "RequestResponse"
     DryRun = "DryRun"
 
 
-class InvokeMode(str):
+class InvokeMode(StrEnum):
     BUFFERED = "BUFFERED"
     RESPONSE_STREAM = "RESPONSE_STREAM"
 
 
-class LastUpdateStatus(str):
+class LastUpdateStatus(StrEnum):
     Successful = "Successful"
     Failed = "Failed"
     InProgress = "InProgress"
 
 
-class LastUpdateStatusReasonCode(str):
+class LastUpdateStatusReasonCode(StrEnum):
     EniLimitExceeded = "EniLimitExceeded"
     InsufficientRolePermissions = "InsufficientRolePermissions"
     InvalidConfiguration = "InvalidConfiguration"
@@ -187,33 +188,33 @@ class LastUpdateStatusReasonCode(str):
     FunctionError = "FunctionError"
 
 
-class LogFormat(str):
+class LogFormat(StrEnum):
     JSON = "JSON"
     Text = "Text"
 
 
-class LogType(str):
+class LogType(StrEnum):
     None_ = "None"
     Tail = "Tail"
 
 
-class PackageType(str):
+class PackageType(StrEnum):
     Zip = "Zip"
     Image = "Image"
 
 
-class ProvisionedConcurrencyStatusEnum(str):
+class ProvisionedConcurrencyStatusEnum(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     READY = "READY"
     FAILED = "FAILED"
 
 
-class ResponseStreamingInvocationType(str):
+class ResponseStreamingInvocationType(StrEnum):
     RequestResponse = "RequestResponse"
     DryRun = "DryRun"
 
 
-class Runtime(str):
+class Runtime(StrEnum):
     nodejs = "nodejs"
     nodejs4_3 = "nodejs4.3"
     nodejs6_10 = "nodejs6.10"
@@ -254,17 +255,17 @@ class Runtime(str):
     java21 = "java21"
 
 
-class SnapStartApplyOn(str):
+class SnapStartApplyOn(StrEnum):
     PublishedVersions = "PublishedVersions"
     None_ = "None"
 
 
-class SnapStartOptimizationStatus(str):
+class SnapStartOptimizationStatus(StrEnum):
     On = "On"
     Off = "Off"
 
 
-class SourceAccessType(str):
+class SourceAccessType(StrEnum):
     BASIC_AUTH = "BASIC_AUTH"
     VPC_SUBNET = "VPC_SUBNET"
     VPC_SECURITY_GROUP = "VPC_SECURITY_GROUP"
@@ -275,14 +276,14 @@ class SourceAccessType(str):
     SERVER_ROOT_CA_CERTIFICATE = "SERVER_ROOT_CA_CERTIFICATE"
 
 
-class State(str):
+class State(StrEnum):
     Pending = "Pending"
     Active = "Active"
     Inactive = "Inactive"
     Failed = "Failed"
 
 
-class StateReasonCode(str):
+class StateReasonCode(StrEnum):
     Idle = "Idle"
     Creating = "Creating"
     Restoring = "Restoring"
@@ -309,13 +310,13 @@ class StateReasonCode(str):
     FunctionError = "FunctionError"
 
 
-class SystemLogLevel(str):
+class SystemLogLevel(StrEnum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARN = "WARN"
 
 
-class ThrottleReason(str):
+class ThrottleReason(StrEnum):
     ConcurrentInvocationLimitExceeded = "ConcurrentInvocationLimitExceeded"
     FunctionInvocationRateLimitExceeded = "FunctionInvocationRateLimitExceeded"
     ReservedFunctionConcurrentInvocationLimitExceeded = (
@@ -326,12 +327,12 @@ class ThrottleReason(str):
     ConcurrentSnapshotCreateLimitExceeded = "ConcurrentSnapshotCreateLimitExceeded"
 
 
-class TracingMode(str):
+class TracingMode(StrEnum):
     Active = "Active"
     PassThrough = "PassThrough"
 
 
-class UpdateRuntimeOn(str):
+class UpdateRuntimeOn(StrEnum):
     Auto = "Auto"
     Manual = "Manual"
     FunctionUpdate = "FunctionUpdate"
