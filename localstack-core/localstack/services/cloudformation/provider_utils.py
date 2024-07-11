@@ -141,7 +141,7 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
     return params
 
 
-def fix_casing_for_boto_request_parameters(parameters: dict, input_shape: StructureShape) -> dict:
+def convert_request_kwargs(parameters: dict, input_shape: StructureShape) -> dict:
     """
     Transform a dict of request kwargs for a boto3 request by making sure the keys in the structure recursively conform to the specified input shape.
     :param parameters: the kwargs that would be passed to the boto3 client call, e.g. boto3.client("s3").create_bucket(**parameters)
@@ -158,32 +158,38 @@ def fix_casing_for_boto_request_parameters(parameters: dict, input_shape: Struct
 
     def transform_value(value, member_shape):
         if isinstance(value, dict) and hasattr(member_shape, "members"):
-            return fix_casing_for_boto_request_parameters(value, member_shape)
+            return convert_request_kwargs(value, member_shape)
         elif isinstance(value, list) and hasattr(member_shape, "member"):
-            return [
-                transform_value(item, member_shape.member) if isinstance(item, dict) else item
-                for item in value
-            ]
-        return value
+            return [transform_value(item, member_shape.member) for item in value]
+
+        # fix the typing of the value
+        match member_shape.type_name:
+            case "string":
+                return str(value)
+            case "integer" | "long":
+                return int(value)
+            case "boolean":
+                if isinstance(value, bool):
+                    return value
+                return True if value.lower() == "true" else False
+            case _:
+                return value
 
     transformed_dict = {}
     for key, value in parameters.items():
         correct_key = get_fixed_key(key, input_shape.members)
         member_shape = input_shape.members.get(correct_key)
 
-        if isinstance(value, dict) and member_shape and hasattr(member_shape, "members"):
-            transformed_dict[correct_key] = fix_casing_for_boto_request_parameters(
-                value, member_shape
-            )
-        elif isinstance(value, list) and member_shape and hasattr(member_shape, "member"):
-            transformed_dict[correct_key] = [
-                transform_value(item, member_shape.member) if isinstance(item, dict) else item
-                for item in value
-            ]
-        elif member_shape is None:
+        if member_shape is None:
             continue  # skipping this entry, so it's not included in the transformed dict
+        elif isinstance(value, dict) and hasattr(member_shape, "members"):
+            transformed_dict[correct_key] = convert_request_kwargs(value, member_shape)
+        elif isinstance(value, list) and hasattr(member_shape, "member"):
+            transformed_dict[correct_key] = [
+                transform_value(item, member_shape.member) for item in value
+            ]
         else:
-            transformed_dict[correct_key] = value
+            transformed_dict[correct_key] = transform_value(value, member_shape)
 
     return transformed_dict
 
