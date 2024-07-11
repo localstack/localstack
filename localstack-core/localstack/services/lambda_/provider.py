@@ -1924,6 +1924,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         return event_source_configuration
 
     def validate_event_source_mapping(self, context, request):
+        # TODO: test whether stream ARNs are valid sources for Pipes or ESM or whether only DynamoDB table ARNs work
+
         service = None
         if "SelfManagedEventSource" in request:
             service = "kafka"
