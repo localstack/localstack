@@ -4,8 +4,8 @@ import uuid
 
 from localstack_ext.aws.api.pipes import LogLevel
 from localstack_ext.services.pipes.enrichers.enricher import EnricherException
+from localstack_ext.services.pipes.event_processor import EventProcessor
 from localstack_ext.services.pipes.pipe_loggers.pipe_logger import PipeLogger
-from localstack_ext.services.pipes.processor import Processor
 from localstack_ext.services.pipes.senders.sender import (
     PartialFailureSenderException,
     Sender,
@@ -15,7 +15,7 @@ from localstack_ext.services.pipes.senders.sender import (
 LOG = logging.getLogger(__name__)
 
 
-class EventSourceMappingProcessor(Processor):
+class EventSourceMappingEventProcessor(EventProcessor):
     sender: Sender
     logger: PipeLogger
 
