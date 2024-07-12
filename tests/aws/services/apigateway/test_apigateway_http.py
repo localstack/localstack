@@ -100,7 +100,7 @@ def test_http_integration_with_lambda(
             data=json.dumps({"message": "hello world"}),
             headers={
                 "Content-Type": "application/json",
-                "accept": "application/json",
+                "accept": "application/xml",
                 "user-Agent": "test/integration",
             },
             verify=False,

@@ -77,6 +77,9 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         response_template = self.get_response_template(
             integration_response=integration_response, request=context.invocation_request
         )
+        print(f"{context.deployment_id=}")
+        print(f"{response_template=}")
+        print(f"{response.data=}")
         body, response_override = self.render_request_template_mapping(
             context=context, template=response_template, response=response
         )

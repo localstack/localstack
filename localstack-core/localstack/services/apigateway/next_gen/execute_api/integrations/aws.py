@@ -1,21 +1,31 @@
 import base64
 import json
 import logging
+from functools import lru_cache
 from http import HTTPMethod
-from typing import Optional, TypedDict
+from typing import Literal, Optional, TypedDict
+from urllib.parse import urlparse
 
+import requests
 from botocore.exceptions import ClientError
 from werkzeug.datastructures import Headers
 
+from localstack import config
 from localstack.aws.api.apigateway import Integration
+from localstack.aws.connect import (
+    INTERNAL_REQUEST_PARAMS_HEADER,
+    InternalRequestParameters,
+    connect_to,
+    dump_dto,
+)
+from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.http import Response
-from localstack.services.apigateway.integration import get_service_factory
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.collections import merge_dicts
 from localstack.utils.strings import to_bytes, to_str
 
-from ..context import InvocationRequest, RestApiInvocationContext
+from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
 from ..gateway_response import IntegrationFailureError, InternalServerError
 from ..helpers import (
     get_lambda_function_arn_from_invocation_uri,
@@ -26,6 +36,12 @@ from ..variables import ContextVariables
 from .core import RestApiIntegration
 
 LOG = logging.getLogger(__name__)
+
+NO_BODY_METHODS = {
+    HTTPMethod.OPTIONS,
+    HTTPMethod.GET,
+    HTTPMethod.HEAD,
+}
 
 
 class LambdaProxyResponse(TypedDict, total=False):
@@ -49,6 +65,66 @@ class LambdaInputEvent(TypedDict, total=False):
     requestContext: ContextVariables
     pathParameters: dict[str, str]
     stageVariables: dict[str, str]
+
+
+class ParsedAwsIntegrationUri(TypedDict):
+    service_name: str
+    region_name: str
+    action_type: Literal["path", "action"]
+    path: str
+
+
+@lru_cache(maxsize=64)
+def get_service_factory(region_name: str, role_arn: str):
+    if role_arn:
+        return connect_to.with_assumed_role(
+            role_arn=role_arn,
+            region_name=region_name,
+            service_principal=ServicePrincipal.apigateway,
+            session_name="BackplaneAssumeRoleSession",
+        )
+    else:
+        return connect_to(region_name=region_name)
+
+
+@lru_cache(maxsize=64)
+def get_internal_mocked_headers(
+    service_name: str,
+    region_name: str,
+    source_arn: str,
+    role_arn: str | None,
+) -> dict[str, str]:
+    if role_arn:
+        access_key_id = (
+            connect_to()
+            .sts.request_metadata(service_principal=ServicePrincipal.apigateway)
+            .assume_role(RoleArn=role_arn, RoleSessionName="BackplaneAssumeRoleSession")[
+                "Credentials"
+            ]["AccessKeyId"]
+        )
+    else:
+        access_key_id = None
+
+    dto = InternalRequestParameters(
+        service_principal=ServicePrincipal.apigateway, source_arn=source_arn
+    )
+    # TODO: maybe use the localstack.utils.aws.client.SigningHttpClient instead of directly mocking the Authorization
+    #  header (but will need to select the right signer depending on the service?)
+    headers = {
+        "Authorization": (
+            "AWS4-HMAC-SHA256 "
+            + f"Credential={access_key_id}/20160623/{region_name}/{service_name}/aws4_request, "
+            + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
+        ),
+        INTERNAL_REQUEST_PARAMS_HEADER: dump_dto(dto),
+    }
+
+    return headers
+
+
+@lru_cache(maxsize=64)
+def get_target_prefix_for_service(service_name: str) -> str | None:
+    return get_service_catalog().get(service_name).metadata.get("targetPrefix")
 
 
 class RestApiAwsIntegration(RestApiIntegration):
@@ -75,6 +151,158 @@ class RestApiAwsIntegration(RestApiIntegration):
     """
 
     name = "AWS"
+
+    # TODO: it seems in AWS, you don't need to manually set the `X-Amz-Target` header when using the `action` type.
+    #  for now, we know `events` needs the user to manually add the header, but Kinesis and DynamoDB don't.
+    #  Maybe reverse the list to exclude instead of include.
+    SERVICES_AUTO_TARGET = ["dynamodb", "kinesis", "ssm"]
+
+    # TODO: some services still target the Query protocol (validated with AWS), even though SSM for example is JSON for
+    #  as long as the Boto SDK exists. We will need to emulate the Query protocol and translate it to JSON
+    SERVICES_LEGACY_QUERY_PROTOCOL = ["ssm"]
+
+    def __init__(self):
+        self._base_domain = config.internal_service_url()
+        self._base_host = ""
+
+    def invoke(self, context: RestApiInvocationContext) -> Response:
+        integration: Integration = context.resource_method["methodIntegration"]
+        integration_req: IntegrationRequest = context.integration_request
+        method = integration_req["http_method"]
+        parsed_uri = self.parse_aws_integration_uri(integration["uri"])
+        service_name = parsed_uri["service_name"]
+        integration_region = parsed_uri["region_name"]
+
+        headers = integration_req["headers"] | get_internal_mocked_headers(
+            service_name=service_name,
+            region_name=integration_region,
+            source_arn=get_source_arn(context),
+            role_arn=integration.get("credentials"),
+        )
+        query_params = integration_req["query_string_parameters"].copy()
+        data = integration_req["body"]
+
+        if parsed_uri["action_type"] == "path":
+            # the Path action type allows you to override the path the request is sent to, like you would send to AWS
+            path = f"/{parsed_uri['path']}"
+        else:
+            # Action passes the `Action` query string parameter
+            path = ""
+            action = parsed_uri["path"]
+
+            if target := self.get_action_service_target(service_name, action):
+                headers["X-Amz-Target"] = target
+
+            if service_name in self.SERVICES_LEGACY_QUERY_PROTOCOL:
+                # this has been tested in AWS: for `ssm`, it fully overrides the body because SSM uses the Query
+                # protocol, so we simulate it that way
+                data = self.get_payload_from_query_string(query_params)
+
+            query_params["Action"] = action
+
+        url = f"{self._base_domain}{path}"
+        headers["Host"] = self.get_internal_host_for_service(
+            service_name=service_name, region_name=integration_region
+        )
+
+        request_parameters = {
+            "method": method,
+            "url": url,
+            "params": integration_req["query_string_parameters"],
+            "headers": headers,
+        }
+
+        if method not in NO_BODY_METHODS:
+            request_parameters["data"] = data
+
+        request_response = requests.request(**request_parameters)
+        response_content = request_response.content
+
+        if (
+            parsed_uri["action_type"] == "action"
+            and service_name in self.SERVICES_LEGACY_QUERY_PROTOCOL
+        ):
+            response_content = self.format_response_content_legacy(
+                payload=response_content,
+                service_name=service_name,
+                action=parsed_uri["path"],
+                request_id=context.context_variables["requestId"],
+            )
+
+        return Response(
+            response=response_content,
+            status=request_response.status_code,
+            headers=Headers(dict(request_response.headers)),
+        )
+
+    @staticmethod
+    def parse_aws_integration_uri(uri: str) -> ParsedAwsIntegrationUri:
+        """
+        The URI can be of 2 shapes: Path or Action.
+        Path  : arn:aws:apigateway:us-west-2:s3:path/{bucket}/{key}
+        Action: arn:aws:apigateway:us-east-1:kinesis:action/PutRecord
+        :param uri: the URI of the AWS integration
+        :return: a ParsedAwsIntegrationUri containing the service name, the region and the type of action
+        """
+        arn, _, path = uri.partition("/")
+        split_arn = arn.split(":", maxsplit=5)
+        *_, region_name, service_name, action_type = split_arn
+        return ParsedAwsIntegrationUri(
+            region_name=region_name,
+            service_name=service_name,
+            action_type=action_type,
+            path=path,
+        )
+
+    def get_action_service_target(self, service_name: str, action: str) -> str | None:
+        if service_name not in self.SERVICES_AUTO_TARGET:
+            return None
+
+        target_prefix = get_target_prefix_for_service(service_name)
+        if not target_prefix:
+            return None
+
+        return f"{target_prefix}.{action}"
+
+    def get_internal_host_for_service(self, service_name: str, region_name: str):
+        url = self._base_domain
+        if service_name == "sqs":
+            # This follow the new SQS_ENDPOINT_STRATEGY=standard
+            url = config.external_service_url(subdomains=f"sqs.{region_name}")
+
+        return urlparse(url).netloc
+
+    @staticmethod
+    def get_payload_from_query_string(query_string_parameters: dict) -> str:
+        return json.dumps(query_string_parameters)
+
+    @staticmethod
+    def format_response_content_legacy(
+        service_name: str, action: str, payload: bytes, request_id: str
+    ) -> bytes:
+        # TODO: not sure how much we need to support this, this supports SSM for now, once we write more tests for
+        #  `action` type, see if we can generalize more
+        data = json.loads(payload)
+        try:
+            # we try to populate the missing fields from the OperationModel of the operation
+            operation_model = get_service_catalog().get(service_name).operation_model(action)
+            for key in operation_model.output_shape.members:
+                if key not in data:
+                    data[key] = None
+
+        except Exception:
+            # the operation above is only for parity reason, skips if it fail
+            pass
+
+        wrapped = {
+            f"{action}Response": {
+                f"{action}Result": data,
+                "ResponseMetadata": {
+                    "RequestId": request_id,
+                },
+            }
+        }
+        return to_bytes(json.dumps(wrapped))
 
 
 class RestApiAwsProxyIntegration(RestApiIntegration):

@@ -17,6 +17,7 @@ def test_apigateway_to_kinesis(
     wait_for_stream_ready,
     create_rest_api_with_integration,
     snapshot,
+    region_name,
     aws_client,
 ):
     snapshot.add_transformer(snapshot.transform.apigateway_api())
@@ -34,7 +35,6 @@ def test_apigateway_to_kinesis(
     shard_id = first_stream_shard_data["ShardId"]
 
     # create REST API with Kinesis integration
-    region_name = aws_client.apigateway.meta.region_name
     integration_uri = f"arn:aws:apigateway:{region_name}:kinesis:action/PutRecord"
     request_templates = {
         "application/json": json.dumps(
