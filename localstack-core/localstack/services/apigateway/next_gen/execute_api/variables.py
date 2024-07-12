@@ -31,6 +31,8 @@ class ContextVarsIdentity(TypedDict, total=False):
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
     accountId: Optional[str]
     """The AWS account ID associated with the request."""
+    accessKey: Optional[str]
+    """The AWS access key associated with the request."""
     apiKey: Optional[str]
     """For API methods that require an API key, this variable is the API key associated with the method request."""
     apiKeyId: Optional[str]
