@@ -1,5 +1,6 @@
 # Testing in LocalStack
 
+- [Test Types](test-types/README.md)
 - [Integration Tests](integration-tests/README.md)
 - [Parity Testing](parity-testing/README.md)
 - [Multi-account and Multi-region Testing](multi-account-region-testing/README.md)
