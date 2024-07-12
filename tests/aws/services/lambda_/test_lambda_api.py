@@ -1584,6 +1584,10 @@ class TestLambdaVersions:
         )
         snapshot.match("list_versions_result_end", list_versions_result_end)
 
+        aws_client.lambda_.delete_function(
+            FunctionName=f"{function_name}:{first_publish_response['Version']}"
+        )
+
     @markers.aws.validated
     def test_publish_with_wrong_sha256(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
