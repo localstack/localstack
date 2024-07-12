@@ -1171,17 +1171,48 @@ class TestS3BucketObjectTagging:
         # Put a DeleteMarker on top of the stack
         delete_current = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("put-delete-marker", delete_current)
+        version_id_delete_marker = delete_current["VersionId"]
 
-        # test to put/get tagging on a DeleteMarker
-        put_bucket_tags = aws_client.s3.put_object_tagging(
-            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1, Tagging=tag_set_2
-        )
-        snapshot.match("put-object-tags-delete-marker", put_bucket_tags)
+        # test to put/get tagging on the DeleteMarker
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                VersionId=version_id_delete_marker,
+                Tagging=tag_set_2,
+            )
+        snapshot.match("put-object-tags-delete-marker-id", e.value.response)
 
-        get_bucket_tags = aws_client.s3.get_object_tagging(
-            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
-        )
-        snapshot.match("get-object-tags-delete-marker", get_bucket_tags)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_tagging(
+                Bucket=s3_bucket, Key=object_key, VersionId=version_id_delete_marker
+            )
+        snapshot.match("get-object-tags-delete-marker-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object_tagging(
+                Bucket=s3_bucket, Key=object_key, VersionId=version_id_delete_marker
+            )
+        snapshot.match("delete-object-tags-delete-marker-id", e.value.response)
+
+        # test to put/get tagging on latest version (DeleteMarker)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2)
+        snapshot.match("put-object-tags-delete-marker-latest", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+            )
+        snapshot.match("get-object-tags-delete-marker-latest", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+            )
+        snapshot.match("delete-object-tags-delete-marker-latest", e.value.response)
 
     @markers.aws.validated
     def test_put_object_with_tags(self, s3_bucket, aws_client, snapshot):

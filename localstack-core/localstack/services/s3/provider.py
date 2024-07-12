@@ -2645,11 +2645,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> PutObjectTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        s3_object = s3_bucket.get_object(
-            key=key,
-            version_id=version_id,
-            raise_for_delete_marker=False,  # We can tag DeleteMarker
-        )
+        s3_object = s3_bucket.get_object(key=key, version_id=version_id, http_method="PUT")
 
         if "TagSet" not in tagging:
             raise MalformedXML()
@@ -2681,12 +2677,23 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         try:
-            s3_object = s3_bucket.get_object(
-                key=key,
-                version_id=version_id,
-                raise_for_delete_marker=False,  # We can tag DeleteMarker
-            )
+            s3_object = s3_bucket.get_object(key=key, version_id=version_id)
         except NoSuchKey as e:
+            # TODO: remove the hack under and update the S3Bucket model before the next major version, as it might break
+            #  persistence: we need to remove the `raise_for_delete_marker` parameter and replace it with the error type
+            #  to raise (MethodNotAllowed or NoSuchKey)
+            if s3_bucket.versioning_status and (
+                s3_object_version := s3_bucket.objects.get(key, version_id)
+            ):
+                raise MethodNotAllowed(
+                    "The specified method is not allowed against this resource.",
+                    Method="GET",
+                    ResourceType="DeleteMarker",
+                    DeleteMarker=True,
+                    Allow="DELETE",
+                    VersionId=s3_object_version.version_id,
+                )
+
             # There a weird AWS validated bug in S3: the returned key contains the bucket name as well
             # follow AWS on this one
             e.Key = f"{bucket}/{key}"
@@ -2712,11 +2719,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> DeleteObjectTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        s3_object = s3_bucket.get_object(
-            key=key,
-            version_id=version_id,
-            raise_for_delete_marker=False,
-        )
+        s3_object = s3_bucket.get_object(key=key, version_id=version_id, http_method="DELETE")
 
         store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
         response = DeleteObjectTaggingOutput()

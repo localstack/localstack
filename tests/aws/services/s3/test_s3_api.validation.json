@@ -39,7 +39,7 @@
     "last_validated_date": "2023-08-02T22:04:47+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
-    "last_validated_date": "2023-11-20T16:25:12+00:00"
+    "last_validated_date": "2024-07-11T13:53:37+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
     "last_validated_date": "2023-08-02T21:52:10+00:00"

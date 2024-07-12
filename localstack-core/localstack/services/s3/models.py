@@ -171,6 +171,8 @@ class S3Bucket:
         see: https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeleteMarker.html
         :param raise_for_delete_marker: optional, indicates if the method should raise an exception if the found object
         is a S3DeleteMarker. If False, it can return a S3DeleteMarker
+        TODO: we need to remove the `raise_for_delete_marker` parameter and replace it with the error type to raise
+         (MethodNotAllowed or NoSuchKey)
         :return:
         :raises NoSuchKey if the object key does not exist at all, or if the object is a DeleteMarker
         :raises MethodNotAllowed if the object is a DeleteMarker and the operation is not allowed against it
