@@ -10,6 +10,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceCondition,
     ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
@@ -20,34 +21,39 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
+_SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
+    ResourceCondition.WaitForTaskToken,
+}
+_ERROR_NAME_CLIENT: Final[str] = "SQS.SdkClientException"
+_ERROR_NAME_AWS: Final[str] = "SQS.AmazonSQSException"
+_SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
+    "sendmessage": {
+        "DelaySeconds",
+        "MessageAttribute",
+        "MessageBody",
+        "MessageDeduplicationId",
+        "MessageGroupId",
+        "QueueUrl",
+    }
+}
+
 
 class StateTaskServiceSqs(StateTaskServiceCallback):
-    _ERROR_NAME_CLIENT: Final[str] = "SQS.SdkClientException"
-    _ERROR_NAME_AWS: Final[str] = "SQS.AmazonSQSException"
-
-    _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
-        "sendmessage": {
-            "DelaySeconds",
-            "MessageAttribute",
-            "MessageBody",
-            "MessageDeduplicationId",
-            "MessageGroupId",
-            "QueueUrl",
-        }
-    }
+    def __init__(self):
+        super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+        return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, ClientError):
             return FailureEvent(
                 env=env,
-                error_name=CustomErrorName(self._ERROR_NAME_CLIENT),
+                error_name=CustomErrorName(_ERROR_NAME_CLIENT),
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
                     taskFailedEventDetails=TaskFailedEventDetails(
-                        error=self._ERROR_NAME_CLIENT,
+                        error=_ERROR_NAME_CLIENT,
                         cause=ex.response["Error"][
                             "Message"
                         ],  # TODO: update to report expected cause.

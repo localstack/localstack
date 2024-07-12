@@ -19,62 +19,62 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 
+_ERROR_NAME_AWS: Final[str] = "DynamoDB.AmazonDynamoDBException"
+
+_SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
+    "getitem": {
+        "Key",
+        "TableName",
+        "AttributesToGet",
+        "ConsistentRead",
+        "ExpressionAttributeNames",
+        "ProjectionExpression",
+        "ReturnConsumedCapacity",
+    },
+    "putitem": {
+        "Item",
+        "TableName",
+        "ConditionalOperator",
+        "ConditionExpression",
+        "Expected",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
+        "ReturnConsumedCapacity",
+        "ReturnItemCollectionMetrics",
+        "ReturnValues",
+    },
+    "deleteitem": {
+        "Key",
+        "TableName",
+        "ConditionalOperator",
+        "ConditionExpression",
+        "Expected",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
+        "ReturnConsumedCapacity",
+        "ReturnItemCollectionMetrics",
+        "ReturnValues",
+    },
+    "updateitem": {
+        "Key",
+        "TableName",
+        "AttributeUpdates",
+        "ConditionalOperator",
+        "ConditionExpression",
+        "Expected",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
+        "ReturnConsumedCapacity",
+        "ReturnItemCollectionMetrics",
+        "ReturnValues",
+        "UpdateExpression",
+    },
+}
+
 
 class StateTaskServiceDynamoDB(StateTaskService):
-    _ERROR_NAME_AWS: Final[str] = "DynamoDB.AmazonDynamoDBException"
-
-    _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
-        "getitem": {
-            "Key",
-            "TableName",
-            "AttributesToGet",
-            "ConsistentRead",
-            "ExpressionAttributeNames",
-            "ProjectionExpression",
-            "ReturnConsumedCapacity",
-        },
-        "putitem": {
-            "Item",
-            "TableName",
-            "ConditionalOperator",
-            "ConditionExpression",
-            "Expected",
-            "ExpressionAttributeNames",
-            "ExpressionAttributeValues",
-            "ReturnConsumedCapacity",
-            "ReturnItemCollectionMetrics",
-            "ReturnValues",
-        },
-        "deleteitem": {
-            "Key",
-            "TableName",
-            "ConditionalOperator",
-            "ConditionExpression",
-            "Expected",
-            "ExpressionAttributeNames",
-            "ExpressionAttributeValues",
-            "ReturnConsumedCapacity",
-            "ReturnItemCollectionMetrics",
-            "ReturnValues",
-        },
-        "updateitem": {
-            "Key",
-            "TableName",
-            "AttributeUpdates",
-            "ConditionalOperator",
-            "ConditionExpression",
-            "Expected",
-            "ExpressionAttributeNames",
-            "ExpressionAttributeValues",
-            "ReturnConsumedCapacity",
-            "ReturnItemCollectionMetrics",
-            "ReturnValues",
-            "UpdateExpression",
-        },
-    }
-
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+        return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
     def _error_cause_from_client_error(client_error: ClientError) -> tuple[str, str]:
@@ -113,11 +113,11 @@ class StateTaskServiceDynamoDB(StateTaskService):
         else:
             return FailureEvent(
                 env=env,
-                error_name=CustomErrorName(self._ERROR_NAME_AWS),
+                error_name=CustomErrorName(_ERROR_NAME_AWS),
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
                     taskFailedEventDetails=TaskFailedEventDetails(
-                        error=self._ERROR_NAME_AWS,
+                        error=_ERROR_NAME_AWS,
                         cause=str(ex),  # TODO: update to report expected cause.
                         resource=self._get_sfn_resource(),
                         resourceType=self._get_sfn_resource_type(),

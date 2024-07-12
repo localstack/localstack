@@ -35,6 +35,10 @@ class CallbackOutcomeFailure(CallbackOutcome):
         self.cause = cause
 
 
+class CallbackOutcomeTimedOut(CallbackOutcome):
+    pass
+
+
 class CallbackTimeoutError(TimeoutError):
     pass
 

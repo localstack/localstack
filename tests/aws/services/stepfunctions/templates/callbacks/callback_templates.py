@@ -13,6 +13,9 @@ class CallbackTemplates(TemplateLoader):
     SFN_START_EXECUTION_SYNC2: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sfn_start_execution_sync2.json5"
     )
+    SFN_START_EXECUTION_SYNC_WITH_TASK_TOKEN: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sfn_start_execution_sync_with_task_token.json5"
+    )
     SNS_PUBLIC_WAIT_FOR_TASK_TOKEN: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sns_publish_wait_for_task_token.json5"
     )

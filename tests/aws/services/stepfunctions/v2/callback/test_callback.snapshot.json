@@ -3564,5 +3564,165 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sync_with_task_token": {
+    "recorded-date": "12-07-2024, 07:34:57",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:1>",
+                "Name": "<resource:3>",
+                "QueueUrl": "sqs_queue_url"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:1>",
+                "Name": "<resource:3>",
+                "QueueUrl": "sqs_queue_url"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartExecution"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Input": {
+                  "TaskToken": "<task_token:1>",
+                  "QueueUrl": "sqs_queue_url"
+                },
+                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:1>",
+                "Name": "<resource:3>"
+              },
+              "region": "<region>",
+              "resource": "startExecution.sync",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "startExecution.sync",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<resource:1>:<resource:3>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "164"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "164",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution.sync",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": "\"SQS_SEND_MESSAGE_AND_WAIT\"",
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution.sync",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "StartExecution",
+              "output": "\"SQS_SEND_MESSAGE_AND_WAIT\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "\"SQS_SEND_MESSAGE_AND_WAIT\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
