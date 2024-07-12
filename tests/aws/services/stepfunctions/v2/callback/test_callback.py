@@ -787,9 +787,6 @@ class TestCallback:
         create_state_machine,
         sfn_snapshot,
     ):
-        # This tests simulates a sync integration pattern interrupt via a manual
-        # SendTaskSuccess command about the task's TaskToken.
-
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..output.StartDate",
@@ -820,17 +817,13 @@ class TestCallback:
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
 
-        # Set up the queue on which the worker sending SendTaskSuccess requests will be listening for
-        # TaskToken values to accept.
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
         sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs_queue_name"))
-        # Start the worker which requests SendTaskSuccess about the incoming TaskToken values on the queue.
+
         sqs_send_task_success_state_machine(queue_url)
 
-        # Create the child state machine, which receives the parent's TaskToken, forwards it to the SendTaskSuccess
-        # worker and simulates a long-lasting task by waiting.
         template_target = BT.load_sfn_template(ST.SQS_SEND_MESSAGE_AND_WAIT)
         definition_target = json.dumps(template_target)
         state_machine_arn_target = create(
@@ -840,13 +833,9 @@ class TestCallback:
             definition_target,
         )
 
-        # Create the parent state machine, which starts the child state machine with a sync integration pattern.
         template = CT.load_sfn_template(CT.SFN_START_EXECUTION_SYNC_WITH_TASK_TOKEN)
         definition = json.dumps(template)
 
-        # Start the stack and record the behaviour of the parent state machine. The events recorded
-        # should show the sync integration pattern about the child state machine being interrupted
-        # by the SendTaskSuccess state machine.
         exec_input = json.dumps(
             {
                 "StateMachineArn": state_machine_arn_target,
