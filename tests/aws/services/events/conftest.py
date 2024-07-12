@@ -164,11 +164,11 @@ def events_create_archive(aws_client, region_name, account_id):
 @pytest.fixture
 def put_event_to_archive(aws_client, events_create_event_bus, events_create_archive):
     def _put_event_to_archive(
-        archive_name: str = None,
-        event_pattern: dict = None,
-        event_bus_name: str = None,
-        event_source_arn: str = None,
-        entries: list[dict] = None,
+        archive_name: str | None = None,
+        event_pattern: dict | None = None,
+        event_bus_name: str | None = None,
+        event_source_arn: str | None = None,
+        entries: list[dict] | None = None,
         num_events: int = 1,
     ):
         if not event_bus_name:
