@@ -155,11 +155,15 @@ class RestApiAwsIntegration(RestApiIntegration):
     # TODO: it seems in AWS, you don't need to manually set the `X-Amz-Target` header when using the `action` type.
     #  for now, we know `events` needs the user to manually add the header, but Kinesis and DynamoDB don't.
     #  Maybe reverse the list to exclude instead of include.
-    SERVICES_AUTO_TARGET = ["dynamodb", "kinesis", "ssm"]
+    SERVICES_AUTO_TARGET = ["dynamodb", "kinesis", "ssm", "stepfunctions"]
 
     # TODO: some services still target the Query protocol (validated with AWS), even though SSM for example is JSON for
     #  as long as the Boto SDK exists. We will need to emulate the Query protocol and translate it to JSON
     SERVICES_LEGACY_QUERY_PROTOCOL = ["ssm"]
+
+    SERVICE_MAP = {
+        "states": "stepfunctions",
+    }
 
     def __init__(self):
         self._base_domain = config.internal_service_url()
@@ -235,8 +239,7 @@ class RestApiAwsIntegration(RestApiIntegration):
             headers=Headers(dict(request_response.headers)),
         )
 
-    @staticmethod
-    def parse_aws_integration_uri(uri: str) -> ParsedAwsIntegrationUri:
+    def parse_aws_integration_uri(self, uri: str) -> ParsedAwsIntegrationUri:
         """
         The URI can be of 2 shapes: Path or Action.
         Path  : arn:aws:apigateway:us-west-2:s3:path/{bucket}/{key}
@@ -247,9 +250,10 @@ class RestApiAwsIntegration(RestApiIntegration):
         arn, _, path = uri.partition("/")
         split_arn = arn.split(":", maxsplit=5)
         *_, region_name, service_name, action_type = split_arn
+        boto_service_name = self.SERVICE_MAP.get(service_name, service_name)
         return ParsedAwsIntegrationUri(
             region_name=region_name,
-            service_name=service_name,
+            service_name=boto_service_name,
             action_type=action_type,
             path=path,
         )

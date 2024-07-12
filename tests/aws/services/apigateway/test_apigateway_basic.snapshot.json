@@ -1,19 +1,4 @@
 {
-  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigateway_with_step_function_integration[StartExecution]": {
-    "recorded-date": "07-09-2023, 22:40:26",
-    "recorded-content": {
-      "start_execution_response": {
-        "executionArn": "<executionArn:1>",
-        "startDate": "<startDate>"
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigateway_with_step_function_integration[DeleteStateMachine]": {
-    "recorded-date": "07-09-2023, 22:40:38",
-    "recorded-content": {
-      "delete_state_machine_response": {}
-    }
-  },
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigw_test_invoke_method_api": {
     "recorded-date": "04-02-2024, 18:48:24",
     "recorded-content": {
