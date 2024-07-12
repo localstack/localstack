@@ -6,8 +6,6 @@ from localstack import config
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
-
-# from tests.aws.services.events.helper_functions import sqs_collect_messages
 from localstack.utils.common import retry, short_uid
 from localstack.utils.strings import to_str
 
@@ -160,8 +158,8 @@ class TestSSM:
         exc.match(f"Maintenance window {invalid_name} does not exist")
 
     @markers.aws.needs_fixing
-    # remove parameters, set correct parameter prefix name, use events_create_event_bus and events_put_rule fixture,
-    # # remove clean_up, use create_sqs_events_target fixture, use snapshot
+    # TODO: remove parameters, set correct parameter prefix name, use events_create_event_bus and events_put_rule fixture,
+    # remove clean_up, use create_sqs_events_target fixture, use snapshot
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_trigger_event_on_systems_manager_change(
         self, monkeypatch, aws_client, clean_up, strategy
