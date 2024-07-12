@@ -1314,7 +1314,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # delete a version of the function
             version = function.versions.pop(qualifier, None)
             if version:
-                self.lambda_service.stop_version(version.qualified_arn())
+                self.lambda_service.stop_version(version.id.qualified_arn())
                 destroy_code_if_not_used(code=version.config.code, function=function)
         else:
             # delete the whole function

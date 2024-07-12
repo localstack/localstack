@@ -1582,7 +1582,17 @@ class TestLambdaVersions:
         list_versions_result_end = aws_client.lambda_.list_versions_by_function(
             FunctionName=function_name
         )
-        snapshot.match("list_versions_result_end", list_versions_result_end)
+        snapshot.match("list_versions_result_after_third_publish", list_versions_result_end)
+
+        aws_client.lambda_.delete_function(
+            FunctionName=f"{function_name}:{first_publish_response['Version']}"
+        )
+        list_versions_result_end = aws_client.lambda_.list_versions_by_function(
+            FunctionName=function_name
+        )
+        snapshot.match(
+            "list_versions_result_after_deletion_of_first_version", list_versions_result_end
+        )
 
     @markers.aws.validated
     def test_publish_with_wrong_sha256(
