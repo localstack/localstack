@@ -145,7 +145,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetEvents::test_put_events_with_target_events[bus_combination0]": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetEvents::test_put_events_with_target_events[bus_combination0]": {
     "recorded-date": "11-07-2024, 08:59:28",
     "recorded-content": {
       "messages": [
@@ -174,7 +174,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetEvents::test_put_events_with_target_events[bus_combination1]": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetEvents::test_put_events_with_target_events[bus_combination1]": {
     "recorded-date": "11-07-2024, 08:59:42",
     "recorded-content": {
       "messages": [
@@ -203,7 +203,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetEvents::test_put_events_with_target_events[bus_combination2]": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetEvents::test_put_events_with_target_events[bus_combination2]": {
     "recorded-date": "11-07-2024, 08:59:57",
     "recorded-content": {
       "messages": [
@@ -232,7 +232,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetFirehose::test_put_events_with_target_firehose": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetFirehose::test_put_events_with_target_firehose": {
     "recorded-date": "11-07-2024, 09:03:40",
     "recorded-content": {
       "s3": [
@@ -409,7 +409,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetKinesis::test_put_events_with_target_kinesis": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetKinesis::test_put_events_with_target_kinesis": {
     "recorded-date": "11-07-2024, 09:04:25",
     "recorded-content": {
       "response": {
@@ -431,7 +431,7 @@
       }
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetLambda::test_put_events_with_target_lambda": {
     "recorded-date": "11-07-2024, 09:04:48",
     "recorded-content": {
       "events": [
@@ -455,7 +455,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda_list_entry": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetLambda::test_put_events_with_target_lambda_list_entry": {
     "recorded-date": "11-07-2024, 09:05:04",
     "recorded-content": {
       "events": [
@@ -503,7 +503,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetLambda::test_put_events_with_target_lambda_list_entries_partial_match": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetLambda::test_put_events_with_target_lambda_list_entries_partial_match": {
     "recorded-date": "11-07-2024, 09:19:35",
     "recorded-content": {
       "events": [
@@ -557,7 +557,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[standard]": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSns::test_put_events_with_target_sns[standard]": {
     "recorded-date": "11-07-2024, 09:55:26",
     "recorded-content": {
       "messages": [
@@ -580,7 +580,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[domain]": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSns::test_put_events_with_target_sns[domain]": {
     "recorded-date": "11-07-2024, 09:55:31",
     "recorded-content": {
       "messages": [
@@ -603,7 +603,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetSns::test_put_events_with_target_sns[path]": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSns::test_put_events_with_target_sns[path]": {
     "recorded-date": "11-07-2024, 09:55:34",
     "recorded-content": {
       "messages": [
@@ -626,7 +626,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetSqs::test_put_events_with_target_sqs": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSqs::test_put_events_with_target_sqs": {
     "recorded-date": "11-07-2024, 09:05:35",
     "recorded-content": {
       "message": [
@@ -655,7 +655,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_targets.py::TestEventTargetSqs::test_put_events_with_target_sqs_event_detail_match": {
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSqs::test_put_events_with_target_sqs_event_detail_match": {
     "recorded-date": "11-07-2024, 09:05:43",
     "recorded-content": {
       "messages": [

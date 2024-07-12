@@ -34,7 +34,7 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 #   - StepFunctions
 
 
-class TestEventTargetEvents:
+class TestEventsTargetEvents:
     # cross region and cross account event bus to event buss tests are in test_events_cross_account_region.py
 
     @markers.aws.validated
@@ -153,7 +153,7 @@ class TestEventTargetEvents:
         snapshot.match("messages", messages)
 
 
-class TestEventTargetFirehose:
+class TestEventsTargetFirehose:
     @markers.aws.validated
     def test_put_events_with_target_firehose(
         self,
@@ -289,7 +289,7 @@ class TestEventTargetFirehose:
         aws_client.s3.delete_bucket(Bucket=s3_bucket)
 
 
-class TestEventTargetKinesis:
+class TestEventsTargetKinesis:
     @markers.aws.validated
     def test_put_events_with_target_kinesis(
         self,
@@ -387,7 +387,7 @@ class TestEventTargetKinesis:
         snapshot.match("response", data)
 
 
-class TestEventTargetLambda:
+class TestEventsTargetLambda:
     @markers.aws.validated
     def test_put_events_with_target_lambda(
         self,
@@ -635,7 +635,7 @@ class TestEventTargetLambda:
         snapshot.match("events", events)
 
 
-class TestEventTargetSns:
+class TestEventsTargetSns:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
@@ -747,7 +747,7 @@ class TestEventTargetSns:
         snapshot.match("messages", messages)
 
 
-class TestEventTargetSqs:
+class TestEventsTargetSqs:
     @markers.aws.validated
     def test_put_events_with_target_sqs(self, put_events_with_filter_to_sqs, snapshot):
         entries = [
