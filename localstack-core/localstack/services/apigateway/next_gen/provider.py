@@ -30,6 +30,7 @@ from localstack.services.moto import call_moto
 from ..models import apigateway_stores
 from .execute_api.gateway_response import (
     DEFAULT_GATEWAY_RESPONSES,
+    GatewayResponseCode,
     build_gateway_response,
     get_gateway_response_or_default,
 )
@@ -163,8 +164,18 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             response_type=response_type,
             default_response=False,
         )
+
         rest_api_container.gateway_responses[response_type] = gateway_response
-        return gateway_response
+
+        # The CRUD provider has a weird behavior: for some responses (for now, INTEGRATION_FAILURE), it sets the default
+        # status code to `504`. However, in the actual invocation logic, it returns 500. To deal with the inconsistency,
+        # we need to set the value to None if not provided by the user, so that the invocation logic can properly return
+        # 500, and the CRUD layer can still return 504 even though it is technically wrong.
+        response = gateway_response.copy()
+        if response.get("statusCode") is None:
+            response["statusCode"] = GatewayResponseCode[response_type]
+
+        return response
 
     def get_gateway_response(
         self,
@@ -185,7 +196,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
                 message=f"1 validation error detected: Value '{response_type}' at 'responseType' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(DEFAULT_GATEWAY_RESPONSES)}]",
             )
 
-        gateway_response = get_gateway_response_or_default(
+        gateway_response = _get_gateway_response_or_default(
             response_type, rest_api_container.gateway_responses
         )
         # TODO: add validation with the parameters? seems like it validated client side? how to try?
@@ -207,7 +218,23 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
 
         user_gateway_resp = rest_api_container.gateway_responses
         gateway_responses = [
-            get_gateway_response_or_default(response_type, user_gateway_resp)
+            _get_gateway_response_or_default(response_type, user_gateway_resp)
             for response_type in DEFAULT_GATEWAY_RESPONSES
         ]
         return GatewayResponses(items=gateway_responses)
+
+
+def _get_gateway_response_or_default(
+    response_type: GatewayResponseType,
+    gateway_responses: dict[GatewayResponseType, GatewayResponse],
+) -> GatewayResponse:
+    """
+    Utility function that overrides the behavior of `get_gateway_response_or_default` by setting a default status code
+    from the `GatewayResponseCode` values. In reality, some default values in the invocation layer are different from
+    what the CRUD layer of API Gateway is returning.
+    """
+    response = get_gateway_response_or_default(response_type, gateway_responses)
+    if response.get("statusCode") is None and (status_code := GatewayResponseCode[response_type]):
+        response["statusCode"] = status_code
+
+    return response
