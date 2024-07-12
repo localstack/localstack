@@ -1,4 +1,6 @@
-"""Tests for integrations between AWS EventBridge and other AWS services."""
+"""Tests for integrations between AWS EventBridge and other AWS services.
+Tests are separated in different classes for each target service.
+Classes are ordered alphabetically."""
 
 import json
 import time
@@ -20,17 +22,16 @@ from tests.aws.services.firehose.helper_functions import get_firehose_iam_docume
 from tests.aws.services.kinesis.helper_functions import get_shard_iterator
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
-# class TestEventTargetApiGateway:
-#     # TODO add test once API Gateway is supported
-
-# class TestEventTargetAppSync:
-#     # TODO add test once AppSync is supported
-
-# class TestEventTargetBatch:
-#     # TODO add test once Batch is supported
-
-# class TestEventTargetContainer:
-#     # TODO add test once Container is supported
+# TODO:
+# - Add tests for the following services:
+#   - API Gateway
+#   - AppSync
+#   - Batch
+#   - Container
+#   - Logs
+#   - Redshift
+#   - Sagemaker
+#   - StepFunctions
 
 
 class TestEventTargetEvents:
@@ -634,17 +635,6 @@ class TestEventTargetLambda:
         snapshot.match("events", events)
 
 
-# class TestEventsTargetLogs:
-#     # TODO add test once Logs is supported
-
-# class TestEventTargetRedshift:
-#     # TODO add test once Redshift is supported
-
-
-# class TestEventTargetSagemaker:
-#     # TODO add test once Sagemaker is supported
-
-
 class TestEventTargetSns:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
@@ -811,7 +801,3 @@ class TestEventTargetSqs:
             ],
         )
         snapshot.match("messages", messages)
-
-
-# class TestEventTargetStepFunctions:
-#     # TODO add test for StepFunctions
