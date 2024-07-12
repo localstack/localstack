@@ -36,13 +36,15 @@ def freeze_rest_api(
     )
 
 
-def render_uri_with_stage_variables(uri: str, stage_variables: dict[str, str]):
+def render_uri_with_stage_variables(uri: str | None, stage_variables: dict[str, str]) -> str | None:
     """
     https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html#stage-variables-in-integration-HTTP-uris
     URI=https://${stageVariables.<variable_name>}
     This format is the same as VTL, but we're using a simplified version to only replace `${stageVariables.<param>}`
     values, as AWS will ignore `${path}` for example
     """
+    if not uri:
+        return uri
 
     def replace_match(match_obj: re.Match) -> str:
         return stage_variables.get(match_obj.group("varName"), "")
