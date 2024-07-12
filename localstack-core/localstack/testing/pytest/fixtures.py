@@ -2215,7 +2215,9 @@ def hosted_zone(aws_client):
 
 
 @pytest.fixture
-def clean_up(aws_client):  # legacy clean up fixtures for eventbridge
+def clean_up(
+    aws_client,
+):  # TODO: legacy clean up fixtures for eventbridge - remove and use individual fixtures for creating resources instead
     def _clean_up(
         bus_name=None,
         rule_name=None,
