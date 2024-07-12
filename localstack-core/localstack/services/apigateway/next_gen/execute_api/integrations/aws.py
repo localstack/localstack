@@ -30,6 +30,8 @@ from ..gateway_response import IntegrationFailureError, InternalServerError
 from ..helpers import (
     get_lambda_function_arn_from_invocation_uri,
     get_source_arn,
+    render_integration_uri,
+    render_uri_with_stage_variables,
     validate_sub_dict_of_typed_dict,
 )
 from ..variables import ContextVariables
@@ -173,15 +175,18 @@ class RestApiAwsIntegration(RestApiIntegration):
         integration: Integration = context.resource_method["methodIntegration"]
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
-        parsed_uri = self.parse_aws_integration_uri(integration["uri"])
+        parsed_uri = self.parse_aws_integration_uri(integration_req["uri"])
         service_name = parsed_uri["service_name"]
         integration_region = parsed_uri["region_name"]
+
+        if credentials := integration.get("credentials"):
+            credentials = render_uri_with_stage_variables(credentials, context.stage_variables)
 
         headers = integration_req["headers"] | get_internal_mocked_headers(
             service_name=service_name,
             region_name=integration_region,
             source_arn=get_source_arn(context),
-            role_arn=integration.get("credentials"),
+            role_arn=credentials,
         )
         query_params = integration_req["query_string_parameters"].copy()
         data = integration_req["body"]
@@ -333,18 +338,29 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
 
         input_event = self.create_lambda_input_event(context)
 
-        function_arn = get_lambda_function_arn_from_invocation_uri(integration["uri"])
+        # TODO: verify path/stage variables rendering in AWS_PROXY
+        integration_uri = render_integration_uri(
+            integration["uri"],
+            path_parameters=invocation_req["path_parameters"],
+            stage_variables=context.stage_variables,
+        )
+
+        function_arn = get_lambda_function_arn_from_invocation_uri(integration_uri)
         source_arn = get_source_arn(context)
         # TODO: properly get the value out/validate it?
         raw_headers = context.invocation_request["raw_headers"]
         is_invocation_asynchronous = raw_headers.get("X-Amz-Invocation-Type") == "'Event'"
+
+        # TODO: write test for credentials rendering
+        if credentials := integration.get("credentials"):
+            credentials = render_uri_with_stage_variables(credentials, context.stage_variables)
 
         try:
             lambda_payload = self.call_lambda(
                 function_arn=function_arn,
                 event=to_bytes(json.dumps(input_event)),
                 source_arn=source_arn,
-                credentials=integration.get("credentials"),
+                credentials=credentials,
                 asynchronous=is_invocation_asynchronous,
             )
         except ClientError as e:
@@ -363,15 +379,17 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
 
         lambda_response = self.parse_lambda_response(lambda_payload)
 
-        headers = merge_dicts(
-            {"Content-Type": "application/json"},
+        headers = Headers({"Content-Type": "application/json"})
+
+        response_headers = merge_dicts(
             lambda_response.get("headers") or {},
             lambda_response.get("multiValueHeaders") or {},
         )
+        headers.update(response_headers)
         # TODO: look into remapped headers (like HTTP_PROXY and integration response handlers)
 
         response = Response(
-            headers=Headers(headers),
+            headers=headers,
             response=lambda_response.get("body") or "",
             status=lambda_response.get("statusCode") or 200,
         )

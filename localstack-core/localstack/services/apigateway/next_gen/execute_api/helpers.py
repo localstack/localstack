@@ -59,6 +59,28 @@ def render_uri_with_path_parameters(uri: str, path_parameters: dict[str, str]) -
     return uri
 
 
+def render_integration_uri(
+    uri: str, path_parameters: dict[str, str], stage_variables: dict[str, str]
+) -> str:
+    """
+    A URI can contain different value to interpolate / render
+    It will have path parameters substitutions with this shape (can also add a querystring).
+    URI=http://myhost.test/rootpath/{path}
+
+    It can also have another format, for stage variables, documented here:
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html#stage-variables-in-integration-HTTP-uris
+    URI=https://${stageVariables.<variable_name>}
+    This format is the same as VTL.
+
+    :param uri: the integration URI
+    :param path_parameters: the list of path parameters, coming from the parameters mapping and override
+    :param stage_variables: -
+    :return: the rendered URI
+    """
+    uri_with_path = render_uri_with_path_parameters(uri, path_parameters)
+    return render_uri_with_stage_variables(uri_with_path, stage_variables)
+
+
 def get_source_arn(context: RestApiInvocationContext):
     method = context.resource_method["httpMethod"]
     path = context.resource["path"]

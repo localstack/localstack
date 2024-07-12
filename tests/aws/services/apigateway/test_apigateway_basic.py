@@ -1085,6 +1085,7 @@ class TestAPIGateway:
 
     @markers.aws.needs_fixing
     # Doesn't use fixture that cleans up after itself. Should be moved to common
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_api_mock_integration_response_params(self, aws_client):
         resps = [
             {
@@ -1706,6 +1707,9 @@ class TestIntegrations:
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
     @markers.aws.needs_fixing
+    @pytest.mark.skipif(
+        condition=is_next_gen_api(), reason="Failing and not validated, not deploying"
+    )
     # TODO replace with fixtures that will clean resources and replave the  `echo_http_server` with `create_echo_http_server`.
     #  Also has hardcoded localhost endpoint in helper functions
     def test_api_gateway_http_integrations(

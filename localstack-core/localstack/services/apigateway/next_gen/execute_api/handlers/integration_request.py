@@ -8,7 +8,7 @@ from localstack.utils.strings import to_bytes, to_str
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
 from ..gateway_response import UnsupportedMediaTypeError
-from ..helpers import render_uri_with_path_parameters, render_uri_with_stage_variables
+from ..helpers import render_integration_uri
 from ..parameters_mapping import ParametersMapper, RequestDataMapping
 from ..template_mapping import (
     ApiGatewayVtlTemplate,
@@ -50,8 +50,6 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
         if integration_type in (IntegrationType.AWS_PROXY, IntegrationType.HTTP_PROXY):
             # `PROXY` types cannot use integration mapping templates
-            # TODO: check if PROXY can still parameters mapping and substitution in URI for example? normally not
-            # See
             return
 
         # find request template to raise UnsupportedMediaTypeError early
@@ -75,7 +73,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         # TODO: if the integration if of AWS Lambda type and the Lambda is in another account, we cannot render
         #  stageVariables. Work on that special case later (we can add a quick check for the URI region and set the
         #  stage variables to an empty dict)
-        rendered_integration_uri = self.render_integration_uri(
+        rendered_integration_uri = render_integration_uri(
             uri=integration["uri"],
             path_parameters=request_data_mapping["path"],
             stage_variables=context.stage_variables,
@@ -170,25 +168,3 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 LOG.debug("Unknown passthrough behavior: '%s'", passthrough_behavior)
 
         return request_template
-
-    @staticmethod
-    def render_integration_uri(
-        uri: str, path_parameters: dict[str, str], stage_variables: dict[str, str]
-    ) -> str:
-        """
-        A URI can contain different value to interpolate / render
-        It will have path parameters substitutions with this shape (can also add a querystring).
-        URI=http://myhost.test/rootpath/{path}
-
-        It can also have another format, for stage variables, documented here:
-        https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html#stage-variables-in-integration-HTTP-uris
-        URI=https://${stageVariables.<variable_name>}
-        This format is the same as VTL.
-
-        :param uri: the integration URI
-        :param path_parameters: the list of path parameters, coming from the parameters mapping and override
-        :param stage_variables: -
-        :return: the rendered URI
-        """
-        uri_with_path = render_uri_with_path_parameters(uri, path_parameters)
-        return render_uri_with_stage_variables(uri_with_path, stage_variables)

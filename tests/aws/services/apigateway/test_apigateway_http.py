@@ -38,6 +38,15 @@ def add_http_integration_transformers(snapshot):
         ),
         priority=1,
     )
+    # remove the reference replacement, as sometimes we can have a difference with `date`
+    snapshot.add_transformer(
+        snapshot.transform.key_value(
+            "x-amzn-remapped-date",
+            value_replacement="<date>",
+            reference_replacement=False,
+        ),
+        priority=-1,
+    )
 
 
 @markers.aws.validated
