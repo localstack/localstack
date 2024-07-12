@@ -289,7 +289,12 @@ def test_lambda_aws_proxy_integration_non_post_method(
         credentials=role_arn,
     )
 
-    # TODO: comment
+    # Note: we are adding a GatewayResponse here to test a weird AWS bug: when the AWS_PROXY integration fails, it
+    # internally raises an IntegrationFailure error.
+    # However, in the documentation, it is written than this error should return 504. But like this test shows, when the
+    # user does not update the status code, it returns 500, unlike what the documentation and APIGW returns when calling
+    # `GetGatewayResponse`.
+    # TODO: in the future, write a specific test for this behavior
     aws_client.apigateway.put_gateway_response(
         restApiId=api_id,
         responseType="INTEGRATION_FAILURE",

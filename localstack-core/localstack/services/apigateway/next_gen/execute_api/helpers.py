@@ -75,7 +75,7 @@ def get_lambda_function_arn_from_invocation_uri(uri: str) -> str:
     :param uri: the integration URI value for a lambda function
     :return: the lambda function ARN
     """
-    return uri.split(":lambda:path")[1].split("functions/")[1].removesuffix("/invocations")
+    return uri.split("functions/")[1].removesuffix("/invocations")
 
 
 def validate_sub_dict_of_typed_dict(typed_dict: Type[TypedDict], obj: dict) -> bool:

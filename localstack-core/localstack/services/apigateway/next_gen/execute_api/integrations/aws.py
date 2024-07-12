@@ -198,6 +198,9 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
 
     @staticmethod
     def _is_lambda_response_valid(lambda_response: dict) -> bool:
+        if not isinstance(lambda_response, dict):
+            return False
+
         if not validate_sub_dict_of_typed_dict(LambdaProxyResponse, lambda_response):
             return False
 
