@@ -51,7 +51,7 @@ class IntegrationRequest(TypedDict, total=False):
     """Body content of the request"""
 
 
-class BaseResponse(TypedDict, total=False):
+class BaseResponse(TypedDict):
     """Base class for Response objects in the context"""
 
     status_code: int
