@@ -19,6 +19,7 @@ from localstack.aws.connect import (
     dump_dto,
 )
 from localstack.aws.protocol.service_router import get_service_catalog
+from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -379,7 +380,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
 
         lambda_response = self.parse_lambda_response(lambda_payload)
 
-        headers = Headers({"Content-Type": "application/json"})
+        headers = Headers({"Content-Type": APPLICATION_JSON})
 
         response_headers = merge_dicts(
             lambda_response.get("headers") or {},

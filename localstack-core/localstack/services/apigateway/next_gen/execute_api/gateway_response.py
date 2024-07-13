@@ -6,6 +6,7 @@ from localstack.aws.api.apigateway import (
     MapOfStringToString,
     StatusCode,
 )
+from localstack.constants import APPLICATION_JSON
 
 
 class GatewayResponseCode(StatusCode, Enum):
@@ -200,7 +201,7 @@ def build_gateway_response(
     response = GatewayResponse(
         responseParameters=response_parameters or {},
         responseTemplates=response_templates
-        or {"application/json": '{"message":$context.error.messageString}'},
+        or {APPLICATION_JSON: '{"message":$context.error.messageString}'},
         responseType=response_type,
         defaultResponse=default_response,
         statusCode=status_code,

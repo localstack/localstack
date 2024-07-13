@@ -10,6 +10,7 @@ import json
 import logging
 from typing import TypedDict
 
+from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
@@ -51,7 +52,7 @@ class ParametersMapper:
 
         # default values, can be overridden with right casing
         for header in ("Content-Type", "Accept"):
-            request_data_mapping["header"][header] = "application/json"
+            request_data_mapping["header"][header] = APPLICATION_JSON
 
         for integration_mapping, request_mapping in request_parameters.items():
             integration_param_location, param_name = integration_mapping.removeprefix(
