@@ -444,6 +444,22 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
                 )
             raise InternalServerError("Internal server error", status_code=502)
 
+        def serialize_header(value: bool | str) -> str:
+            if isinstance(value, bool):
+                return "true" if value else "false"
+            return value
+
+        if headers := lambda_response.get("headers"):
+            lambda_response["headers"] = {k: serialize_header(v) for k, v in headers.items()}
+
+        if multi_value_headers := lambda_response.get("multiValueHeaders"):
+            lambda_response["multiValueHeaders"] = {
+                k: [serialize_header(v) for v in values]
+                if isinstance(values, list)
+                else serialize_header(values)
+                for k, values in multi_value_headers.items()
+            }
+
         return lambda_response
 
     @staticmethod
@@ -458,7 +474,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             headers = lambda_response["headers"]
             if not isinstance(headers, dict):
                 return False
-            if any(not isinstance(header_value, str) for header_value in headers.values()):
+            if any(not isinstance(header_value, (str, bool)) for header_value in headers.values()):
                 return False
 
         # TODO: add more validations of the values' type
