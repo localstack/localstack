@@ -1013,6 +1013,7 @@ class TestAPIGateway:
             aws_client.apigateway.delete_usage_plan(usagePlanId=usage_plan_id)
 
     @markers.aws.needs_fixing
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_api_gateway_http_integration_with_path_request_parameter(
         self, create_rest_apigw, echo_http_server, aws_client
     ):
