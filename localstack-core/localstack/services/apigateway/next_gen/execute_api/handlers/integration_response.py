@@ -148,6 +148,9 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
     def select_integration_response(
         selection_value: str, integration_responses: dict[str, IntegrationResponse]
     ) -> IntegrationResponse:
+        if not integration_responses:
+            raise ApiConfigurationError("Internal server error")
+
         if select_by_pattern := [
             response
             for response in integration_responses.values()
