@@ -110,8 +110,8 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
                 headers[f"x-amzn-remapped-{header}"] = value
                 headers.remove(header)
 
-        # Those headers are passed through from the response headers, there might be more?
-        passthrough_headers = ("connection", "content-length")
+        # # Those headers are passed through from the response headers, there might be more?
+        passthrough_headers = ["connection"]
         for header in passthrough_headers:
             if values := response.headers.getlist(header):
                 headers.setlist(header, values)
@@ -119,10 +119,9 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         # We replace the old response with the newly created one
         response.headers = headers
 
-        # Body is updated last to make sure the content-length is reset if needed
-        if response_template:
-            LOG.debug("Method response body after transformations: %s", body)
-            response.data = body
+        # Body is updated last to make sure the content-length is set
+        LOG.debug("Method response body after transformations: %s", body)
+        response.data = body
 
     def get_method_response_data(
         self,
@@ -239,6 +238,8 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
     def parse_error_message_from_lambda(payload: str) -> str:
         try:
             lambda_response = json.loads(payload)
+            if not isinstance(lambda_response, dict):
+                return ""
             return lambda_response.get("errorMessage", "")
         except json.JSONDecodeError:
             return ""
