@@ -20,13 +20,17 @@ from localstack.aws.connect import (
 )
 from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.constants import APPLICATION_JSON
-from localstack.http import Response
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.collections import merge_dicts
 from localstack.utils.strings import to_bytes, to_str
 
-from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
+from ..context import (
+    EndpointResponse,
+    IntegrationRequest,
+    InvocationRequest,
+    RestApiInvocationContext,
+)
 from ..gateway_response import IntegrationFailureError, InternalServerError
 from ..helpers import (
     get_lambda_function_arn_from_invocation_uri,
@@ -172,7 +176,7 @@ class RestApiAwsIntegration(RestApiIntegration):
         self._base_domain = config.internal_service_url()
         self._base_host = ""
 
-    def invoke(self, context: RestApiInvocationContext) -> Response:
+    def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         integration: Integration = context.resource_method["methodIntegration"]
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
@@ -239,9 +243,9 @@ class RestApiAwsIntegration(RestApiIntegration):
                 request_id=context.context_variables["requestId"],
             )
 
-        return Response(
-            response=response_content,
-            status=request_response.status_code,
+        return EndpointResponse(
+            body=response_content,
+            status_code=request_response.status_code,
             headers=Headers(dict(request_response.headers)),
         )
 
@@ -326,7 +330,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
 
     name = "AWS_PROXY"
 
-    def invoke(self, context: RestApiInvocationContext) -> Response:
+    def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         invocation_req: InvocationRequest = context.invocation_request
         integration: Integration = context.resource_method["methodIntegration"]
         # if the integration method is defined and is not ANY, we can use it for the integration
@@ -389,13 +393,11 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         headers.update(response_headers)
         # TODO: look into remapped headers (like HTTP_PROXY and integration response handlers)
 
-        response = Response(
+        return EndpointResponse(
             headers=headers,
-            response=lambda_response.get("body") or "",
-            status=lambda_response.get("statusCode") or 200,
+            body=to_bytes(lambda_response.get("body") or ""),
+            status_code=lambda_response.get("statusCode") or 200,
         )
-
-        return response
 
     @staticmethod
     def call_lambda(

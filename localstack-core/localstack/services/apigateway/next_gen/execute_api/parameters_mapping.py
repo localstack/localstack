@@ -11,11 +11,10 @@ import logging
 from typing import TypedDict
 
 from localstack.constants import APPLICATION_JSON
-from localstack.http import Response
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
 
-from .context import InvocationRequest
+from .context import EndpointResponse, InvocationRequest
 from .gateway_response import BadRequestException, InternalFailureException
 from .variables import ContextVariables
 
@@ -80,14 +79,14 @@ class ParametersMapper:
     def map_integration_response(
         self,
         response_parameters: dict[str, str],
-        integration_response: Response,
+        integration_response: EndpointResponse,
         context_variables: ContextVariables,
         stage_variables: dict[str, str],
     ) -> ResponseDataMapping:
         response_data_mapping = ResponseDataMapping(header={})
 
         # storing the case-sensitive headers once, the mapping is strict
-        case_sensitive_headers = dict(integration_response.headers.items())
+        case_sensitive_headers = dict(integration_response["headers"].items())
 
         for response_mapping, integration_mapping in response_parameters.items():
             header_name = response_mapping.removeprefix("method.response.header.")
@@ -138,7 +137,7 @@ class ParametersMapper:
     def _retrieve_parameter_from_integration_response(
         self,
         expr: str,
-        integration_response: Response,
+        integration_response: EndpointResponse,
         case_sensitive_headers: dict[str, str],
     ) -> str | None:
         """
@@ -150,7 +149,7 @@ class ParametersMapper:
         :return: the value to map in the ResponseDataMapping
         """
         if expr.startswith("body"):
-            body = integration_response.get_data() or b"{}"
+            body = integration_response.get("body") or b"{}"
             body = body.strip()
             try:
                 decoded_body = self._json_load(body)
@@ -182,7 +181,7 @@ class ParametersMapper:
             if param_name not in case_sensitive_headers:
                 return
 
-            multi_headers = integration_response.headers.getlist(param_name)
+            multi_headers = integration_response["headers"].getlist(param_name)
             return ",".join(multi_headers)
 
         else:

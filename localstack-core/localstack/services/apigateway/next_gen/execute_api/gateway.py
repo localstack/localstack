@@ -27,12 +27,12 @@ class RestApiGateway(Gateway):
                 handlers.method_request_handler,
                 handlers.integration_request_handler,
                 handlers.integration_handler,
+                handlers.integration_response_handler,
+                handlers.method_response_handler,
             ]
         )
         self.response_handlers.extend(
             [
-                handlers.integration_response_handler,
-                handlers.method_response_handler,
                 # add composite response handlers?
             ]
         )

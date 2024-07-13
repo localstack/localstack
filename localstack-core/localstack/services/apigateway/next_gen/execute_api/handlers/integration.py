@@ -3,7 +3,7 @@ import logging
 from localstack.http import Response
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
-from ..context import RestApiInvocationContext
+from ..context import EndpointResponse, RestApiInvocationContext
 from ..integrations import REST_API_INTEGRATIONS
 
 LOG = logging.getLogger(__name__)
@@ -19,6 +19,7 @@ class IntegrationHandler(RestApiGatewayHandler):
         response: Response,
     ):
         integration_type = context.resource_method["methodIntegration"]["type"]
+        is_proxy = "PROXY" in integration_type
 
         integration = REST_API_INTEGRATIONS.get(integration_type)
 
@@ -28,5 +29,7 @@ class IntegrationHandler(RestApiGatewayHandler):
                 f"This integration type is not yet supported: {integration_type}"
             )
 
-        integration_response = integration.invoke(context)
-        response.update_from(integration_response)
+        endpoint_response: EndpointResponse = integration.invoke(context)
+        context.endpoint_response = endpoint_response
+        if is_proxy:
+            context.invocation_response = endpoint_response

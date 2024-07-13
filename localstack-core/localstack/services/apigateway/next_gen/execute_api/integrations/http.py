@@ -5,9 +5,13 @@ import requests
 from werkzeug.datastructures import Headers
 
 from localstack.aws.api.apigateway import Integration
-from localstack.http import Response
 
-from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
+from ..context import (
+    EndpointResponse,
+    IntegrationRequest,
+    InvocationRequest,
+    RestApiInvocationContext,
+)
 from ..helpers import render_integration_uri
 from .core import RestApiIntegration
 
@@ -57,7 +61,7 @@ class RestApiHttpIntegration(BaseRestApiHttpIntegration):
 
     name = "HTTP"
 
-    def invoke(self, context: RestApiInvocationContext) -> Response:
+    def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
 
@@ -82,9 +86,9 @@ class RestApiHttpIntegration(BaseRestApiHttpIntegration):
 
         request_response = requests.request(**request_parameters)
 
-        return Response(
-            response=request_response.content,
-            status=request_response.status_code,
+        return EndpointResponse(
+            body=request_response.content,
+            status_code=request_response.status_code,
             headers=Headers(dict(request_response.headers)),
         )
 
@@ -98,7 +102,7 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
 
     name = "HTTP_PROXY"
 
-    def invoke(self, context: RestApiInvocationContext) -> Response:
+    def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         invocation_req: InvocationRequest = context.invocation_request
         integration: Integration = context.resource_method["methodIntegration"]
 
@@ -146,8 +150,8 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
             if value := request_response.headers.get(header):
                 response_headers[f"x-amzn-remapped-{header}"] = value
 
-        return Response(
-            response=request_response.content,
-            status=request_response.status_code,
+        return EndpointResponse(
+            body=request_response.content,
+            status_code=request_response.status_code,
             headers=response_headers,
         )
