@@ -2,10 +2,11 @@ import json
 import logging
 from json import JSONDecodeError
 
-from localstack.http import Response
+from werkzeug.datastructures import Headers
+
 from localstack.utils.strings import to_str
 
-from ..context import IntegrationRequest, RestApiInvocationContext
+from ..context import EndpointResponse, IntegrationRequest, RestApiInvocationContext
 from ..gateway_response import InternalServerError
 from .core import RestApiIntegration
 
@@ -24,7 +25,7 @@ class RestApiMockIntegration(RestApiIntegration):
 
     name = "MOCK"
 
-    def invoke(self, context: RestApiInvocationContext) -> Response:
+    def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         integration_req: IntegrationRequest = context.integration_request
 
         status_code = self.get_status_code(integration_req)
@@ -36,7 +37,7 @@ class RestApiMockIntegration(RestApiIntegration):
             )
             raise InternalServerError("Internal server error")
 
-        return Response(status=status_code)
+        return EndpointResponse(status_code=status_code, body=b"", headers=Headers())
 
     @staticmethod
     def get_status_code(integration_req: IntegrationRequest) -> int | None:
