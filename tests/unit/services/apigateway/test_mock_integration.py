@@ -26,7 +26,7 @@ class TestMockIntegration:
 
         ctx = create_default_context(body='{"statusCode": 200}')
         response = mock_integration.invoke(ctx)
-        assert response.status_code == 200
+        assert response["status_code"] == 200
 
         # It needs to be an integer
         ctx = create_default_context(body='{"statusCode": "200"}')
@@ -37,12 +37,12 @@ class TestMockIntegration:
         # Any integer will do
         ctx = create_default_context(body='{"statusCode": 0}')
         response = mock_integration.invoke(ctx)
-        assert response.status_code == 0
+        assert response["status_code"] == 0
 
         # Literally any
         ctx = create_default_context(body='{"statusCode": -1000}')
         response = mock_integration.invoke(ctx)
-        assert response.status_code == -1000
+        assert response["status_code"] == -1000
 
         # Malformed Json
         ctx = create_default_context(body='{"statusCode": 200')
