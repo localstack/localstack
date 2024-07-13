@@ -72,6 +72,7 @@ def add_http_integration_transformers(snapshot):
     condition=lambda: not is_next_gen_api(),
     paths=[
         "$..content.headers.user-agent",  # TODO: We have to properly set that header on non proxied requests.
+        "$..content.headers.accept",  # legacy does not properly manage accept header
         # TODO: x-forwarded-for header is actually set when the request is sent to `requests.request`.
         # Custom servers receive the header, but lambda execution code receives an empty string.
         "$..content.headers.x-localstack-edge",
