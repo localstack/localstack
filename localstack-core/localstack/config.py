@@ -660,9 +660,6 @@ GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
 # the gateway server that should be used (supported: hypercorn, twisted dev: werkzeug)
 GATEWAY_SERVER = os.environ.get("GATEWAY_SERVER", "").strip() or "twisted"
 
-# whether to use the legacy runtime (``localstack.service.infra``)
-LEGACY_RUNTIME = is_env_true("LEGACY_RUNTIME")
-
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
@@ -1211,7 +1208,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_SNS_GCM_PUBLISHING",
-    "LEGACY_RUNTIME",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",
