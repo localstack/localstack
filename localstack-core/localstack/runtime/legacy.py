@@ -9,6 +9,8 @@ LOG = logging.getLogger(__name__)
 
 
 def signal_supervisor_restart():
+    # TODO: we should think about moving the localstack-supervisor into a script in the runtime,
+    #  and make `signal_supervisor_restart` part of the supervisor code.
     if pid := os.environ.get("SUPERVISOR_PID"):
         os.kill(int(pid), signal.SIGUSR1)
     else:
