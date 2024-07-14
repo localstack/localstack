@@ -64,8 +64,6 @@ class LocalstackRuntime:
         # TODO: ideally we pass down a `shutdown` event that can be waited on so we can cancel the thread
         #  if the runtime shuts down beforehand
         threading.Thread(target=self._run_ready_monitor, daemon=True).start()
-        # FIXME: legacy compatibility code
-        threading.Thread(target=self._run_shutdown_monitor, daemon=True).start()
 
         # run the main control loop of the server and block execution
         try:
@@ -168,14 +166,6 @@ class LocalstackRuntime:
     def _cleanup_resources(self):
         threads.cleanup_threads_and_processes()
         self._clear_tmp_directory()
-
-    def _run_shutdown_monitor(self):
-        # FIXME: legacy compatibility code. this can be removed once we replace access to the
-        #  ``SHUTDOWN_INFRA`` event with ``get_current_runtime().shutdown()``.
-        from localstack.runtime import legacy
-
-        legacy.SHUTDOWN_INFRA.wait()
-        self.shutdown()
 
 
 def create_from_environment() -> LocalstackRuntime:

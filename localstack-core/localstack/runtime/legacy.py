@@ -4,7 +4,6 @@ and at the same time doesn't need ``localstack.services.infra``, which imports A
 import logging
 import os
 import signal
-import threading
 
 from localstack.runtime import events
 
@@ -13,9 +12,6 @@ LOG = logging.getLogger(__name__)
 # event flag indicating the infrastructure has been started and that the ready marker has been printed
 # TODO: deprecated, use events.infra_ready
 INFRA_READY = events.infra_ready
-
-# event flag indicating that the infrastructure has been shut down
-SHUTDOWN_INFRA = threading.Event()
 
 
 def signal_supervisor_restart():
