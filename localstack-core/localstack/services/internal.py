@@ -14,7 +14,7 @@ from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Resource, Response, Router
 from localstack.http.dispatcher import handler_dispatcher
-from localstack.runtime.legacy import exit_infra, signal_supervisor_restart
+from localstack.runtime.legacy import signal_supervisor_restart
 from localstack.utils.analytics.metadata import (
     get_client_metadata,
     get_localstack_edition,
@@ -71,7 +71,9 @@ class HealthResource:
         if data.get("action") == "restart":
             signal_supervisor_restart()
         elif data.get("action") == "kill":
-            exit_infra(0)
+            from localstack.runtime import get_current_runtime
+
+            get_current_runtime().exit(0)
 
         return Response("ok", 200)
 

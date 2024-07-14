@@ -40,6 +40,7 @@ class LocalstackRuntime:
         self.ready = events.infra_ready
         self.stopping = events.infra_stopping
         self.stopped = events.infra_stopped
+        self.exit_code = 0
         self._lifecycle_lock = threading.RLock()
 
     def run(self):
@@ -167,21 +168,6 @@ class LocalstackRuntime:
     def _cleanup_resources(self):
         threads.cleanup_threads_and_processes()
         self._clear_tmp_directory()
-
-    # more legacy compatibility code
-    @property
-    def exit_code(self):
-        # FIXME: legacy compatibility code
-        from localstack.runtime import legacy
-
-        return legacy.EXIT_CODE.get()
-
-    @exit_code.setter
-    def exit_code(self, value):
-        # FIXME: legacy compatibility code
-        from localstack.runtime import legacy
-
-        legacy.EXIT_CODE.set(value)
 
     def _run_shutdown_monitor(self):
         # FIXME: legacy compatibility code. this can be removed once we replace access to the
