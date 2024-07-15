@@ -1,8 +1,14 @@
 {
   "tests/aws/services/cloudformation/engine/test_process.py::TestCreateChangesetSync::test_invalid_yaml": {
-    "recorded-date": "14-07-2024, 15:48:34",
+    "recorded-date": "15-07-2024, 03:21:26",
     "recorded-content": {
       "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: YAML not well-formed. (line 4, column 1)"
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_process.py::TestCreateChangesetSync::test_missing_required_top_level_key": {
+    "recorded-date": "15-07-2024, 03:22:25",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: At least one Resources member must be defined."
     }
   }
 }
