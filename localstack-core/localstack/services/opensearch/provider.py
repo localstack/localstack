@@ -17,6 +17,7 @@ from localstack.aws.api.opensearch import (
     AdvancedSecurityOptions,
     AdvancedSecurityOptionsInput,
     AdvancedSecurityOptionsStatus,
+    AIMLOptionsInput,
     AutoTuneDesiredState,
     AutoTuneOptions,
     AutoTuneOptionsInput,
@@ -491,6 +492,7 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
         auto_tune_options: AutoTuneOptionsInput = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
+        aiml_options: AIMLOptionsInput = None,
         **kwargs,
     ) -> CreateDomainResponse:
         store = self.get_store(context.account_id, context.region)

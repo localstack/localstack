@@ -261,6 +261,21 @@ class MasterNodeStatus(StrEnum):
     UnAvailable = "UnAvailable"
 
 
+class NaturalLanguageQueryGenerationCurrentState(StrEnum):
+    NOT_ENABLED = "NOT_ENABLED"
+    ENABLE_COMPLETE = "ENABLE_COMPLETE"
+    ENABLE_IN_PROGRESS = "ENABLE_IN_PROGRESS"
+    ENABLE_FAILED = "ENABLE_FAILED"
+    DISABLE_COMPLETE = "DISABLE_COMPLETE"
+    DISABLE_IN_PROGRESS = "DISABLE_IN_PROGRESS"
+    DISABLE_FAILED = "DISABLE_FAILED"
+
+
+class NaturalLanguageQueryGenerationDesiredState(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+
+
 class NodeStatus(StrEnum):
     Active = "Active"
     StandBy = "StandBy"
@@ -609,6 +624,39 @@ class ValidationException(ServiceException):
     status_code: int = 400
 
 
+class NaturalLanguageQueryGenerationOptionsInput(TypedDict, total=False):
+    DesiredState: Optional[NaturalLanguageQueryGenerationDesiredState]
+
+
+class AIMLOptionsInput(TypedDict, total=False):
+    NaturalLanguageQueryGenerationOptions: Optional[NaturalLanguageQueryGenerationOptionsInput]
+
+
+class NaturalLanguageQueryGenerationOptionsOutput(TypedDict, total=False):
+    DesiredState: Optional[NaturalLanguageQueryGenerationDesiredState]
+    CurrentState: Optional[NaturalLanguageQueryGenerationCurrentState]
+
+
+class AIMLOptionsOutput(TypedDict, total=False):
+    NaturalLanguageQueryGenerationOptions: Optional[NaturalLanguageQueryGenerationOptionsOutput]
+
+
+UpdateTimestamp = datetime
+
+
+class OptionStatus(TypedDict, total=False):
+    CreationDate: UpdateTimestamp
+    UpdateDate: UpdateTimestamp
+    UpdateVersion: Optional[UIntValue]
+    State: OptionState
+    PendingDeletion: Optional[Boolean]
+
+
+class AIMLOptionsStatus(TypedDict, total=False):
+    Options: Optional[AIMLOptionsOutput]
+    Status: Optional[OptionStatus]
+
+
 class AWSDomainInformation(TypedDict, total=False):
     OwnerId: Optional[OwnerId]
     DomainName: DomainName
@@ -638,17 +686,6 @@ class InboundConnection(TypedDict, total=False):
 
 class AcceptInboundConnectionResponse(TypedDict, total=False):
     Connection: Optional[InboundConnection]
-
-
-UpdateTimestamp = datetime
-
-
-class OptionStatus(TypedDict, total=False):
-    CreationDate: UpdateTimestamp
-    UpdateDate: UpdateTimestamp
-    UpdateVersion: Optional[UIntValue]
-    State: OptionState
-    PendingDeletion: Optional[Boolean]
 
 
 class AccessPoliciesStatus(TypedDict, total=False):
@@ -1124,6 +1161,7 @@ class CreateDomainRequest(ServiceRequest):
     AutoTuneOptions: Optional[AutoTuneOptionsInput]
     OffPeakWindowOptions: Optional[OffPeakWindowOptions]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
+    AIMLOptions: Optional[AIMLOptionsInput]
 
 
 class ModifyingProperties(TypedDict, total=False):
@@ -1179,6 +1217,7 @@ class DomainStatus(TypedDict, total=False):
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
     DomainProcessingStatus: Optional[DomainProcessingStatusType]
     ModifyingProperties: Optional[ModifyingPropertiesList]
+    AIMLOptions: Optional[AIMLOptionsOutput]
 
 
 class CreateDomainResponse(TypedDict, total=False):
@@ -1446,6 +1485,7 @@ class DomainConfig(TypedDict, total=False):
     OffPeakWindowOptions: Optional[OffPeakWindowOptionsStatus]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptionsStatus]
     ModifyingProperties: Optional[ModifyingPropertiesList]
+    AIMLOptions: Optional[AIMLOptionsStatus]
 
 
 class DescribeDomainConfigResponse(TypedDict, total=False):
@@ -2127,6 +2167,7 @@ class UpdateDomainConfigRequest(ServiceRequest):
     DryRunMode: Optional[DryRunMode]
     OffPeakWindowOptions: Optional[OffPeakWindowOptions]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
+    AIMLOptions: Optional[AIMLOptionsInput]
 
 
 class UpdateDomainConfigResponse(TypedDict, total=False):
@@ -2256,6 +2297,7 @@ class OpensearchApi:
         auto_tune_options: AutoTuneOptionsInput = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
+        aiml_options: AIMLOptionsInput = None,
         **kwargs,
     ) -> CreateDomainResponse:
         raise NotImplementedError
@@ -2713,6 +2755,7 @@ class OpensearchApi:
         dry_run_mode: DryRunMode = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
+        aiml_options: AIMLOptionsInput = None,
         **kwargs,
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError

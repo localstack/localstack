@@ -2132,6 +2132,11 @@ class IpamManagementState(StrEnum):
     ignored = "ignored"
 
 
+class IpamNetworkInterfaceAttachmentStatus(StrEnum):
+    available = "available"
+    in_use = "in-use"
+
+
 class IpamOverlapStatus(StrEnum):
     overlapping = "overlapping"
     nonoverlapping = "nonoverlapping"
@@ -7741,6 +7746,7 @@ class CreatePlacementGroupResult(TypedDict, total=False):
 class CreatePublicIpv4PoolRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
+    NetworkBorderGroup: Optional[String]
 
 
 class CreatePublicIpv4PoolResult(TypedDict, total=False):
@@ -9566,6 +9572,7 @@ class DeletePlacementGroupRequest(ServiceRequest):
 class DeletePublicIpv4PoolRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     PoolId: Ipv4PoolEc2Id
+    NetworkBorderGroup: Optional[String]
 
 
 class DeletePublicIpv4PoolResult(TypedDict, total=False):
@@ -15468,7 +15475,9 @@ class IpamDiscoveredResourceCidr(TypedDict, total=False):
     ResourceTags: Optional[IpamResourceTagList]
     IpUsage: Optional[BoxedDouble]
     VpcId: Optional[String]
+    NetworkInterfaceAttachmentStatus: Optional[IpamNetworkInterfaceAttachmentStatus]
     SampleTime: Optional[MillisecondDateTime]
+    AvailabilityZoneId: Optional[String]
 
 
 IpamDiscoveredResourceCidrSet = List[IpamDiscoveredResourceCidr]
@@ -15541,6 +15550,7 @@ class IpamResourceCidr(TypedDict, total=False):
     ManagementState: Optional[IpamManagementState]
     OverlapStatus: Optional[IpamOverlapStatus]
     VpcId: Optional[String]
+    AvailabilityZoneId: Optional[String]
 
 
 IpamResourceCidrSet = List[IpamResourceCidr]
@@ -17474,6 +17484,7 @@ class ProvisionPublicIpv4PoolCidrRequest(ServiceRequest):
     IpamPoolId: IpamPoolId
     PoolId: Ipv4PoolEc2Id
     NetmaskLength: Integer
+    NetworkBorderGroup: Optional[String]
 
 
 class ProvisionPublicIpv4PoolCidrResult(TypedDict, total=False):
@@ -19638,6 +19649,7 @@ class Ec2Api:
         context: RequestContext,
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        network_border_group: String = None,
         **kwargs,
     ) -> CreatePublicIpv4PoolResult:
         raise NotImplementedError
@@ -20602,7 +20614,12 @@ class Ec2Api:
 
     @handler("DeletePublicIpv4Pool")
     def delete_public_ipv4_pool(
-        self, context: RequestContext, pool_id: Ipv4PoolEc2Id, dry_run: Boolean = None, **kwargs
+        self,
+        context: RequestContext,
+        pool_id: Ipv4PoolEc2Id,
+        dry_run: Boolean = None,
+        network_border_group: String = None,
+        **kwargs,
     ) -> DeletePublicIpv4PoolResult:
         raise NotImplementedError
 
@@ -25157,6 +25174,7 @@ class Ec2Api:
         pool_id: Ipv4PoolEc2Id,
         netmask_length: Integer,
         dry_run: Boolean = None,
+        network_border_group: String = None,
         **kwargs,
     ) -> ProvisionPublicIpv4PoolCidrResult:
         raise NotImplementedError
