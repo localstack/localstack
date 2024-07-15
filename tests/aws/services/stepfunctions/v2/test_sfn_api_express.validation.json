@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_create_describe_delete": {
+    "last_validated_date": "2024-06-26T19:06:21+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_activity_task": {
+    "last_validated_date": "2024-07-03T19:27:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_callbacks[SYNC]": {
+    "last_validated_date": "2024-07-03T19:43:23+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_callbacks[WAIT_FOR_TASK_TOKEN]": {
+    "last_validated_date": "2024-07-03T19:43:10+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_start_async_describe_history_execution": {
+    "last_validated_date": "2024-07-03T17:14:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_start_sync_execution": {
+    "last_validated_date": "2024-06-26T19:06:54+00:00"
+  }
+}

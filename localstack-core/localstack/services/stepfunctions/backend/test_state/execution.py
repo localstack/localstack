@@ -8,6 +8,7 @@ from localstack.aws.api.stepfunctions import (
     Arn,
     ExecutionStatus,
     InspectionLevel,
+    StateMachineType,
     TestExecutionStatus,
     TestStateOutput,
     Timestamp,
@@ -64,6 +65,7 @@ class TestStateExecution(Execution):
     ):
         super().__init__(
             name=name,
+            sm_type=StateMachineType.STANDARD,
             role_arn=role_arn,
             exec_arn=exec_arn,
             account_id=account_id,
@@ -83,6 +85,7 @@ class TestStateExecution(Execution):
 
     def _get_start_execution_worker(self) -> TestStateExecutionWorker:
         return TestStateExecutionWorker(
+            execution_type=StateMachineType.STANDARD,
             definition=self.state_machine.definition,
             input_data=self.input_data,
             exec_comm=self._get_start_execution_worker_comm(),

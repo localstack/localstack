@@ -7,6 +7,7 @@ from botocore.utils import ArnParser, InvalidArnException
 
 from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID
 from localstack.aws.connect import connect_to
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -280,9 +281,9 @@ def stepfunctions_state_machine_arn(name: str, account_id: str, region_name: str
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
-def stepfunctions_execution_state_machine_arn(state_machine_arn: str, execution_name: str) -> str:
+def stepfunctions_standard_execution_arn(state_machine_arn: str, execution_name: str) -> str:
     arn_data: ArnData = parse_arn(state_machine_arn)
-    execution_arn = ":".join(
+    standard_execution_arn = ":".join(
         [
             "arn",
             arn_data["partition"],
@@ -294,7 +295,25 @@ def stepfunctions_execution_state_machine_arn(state_machine_arn: str, execution_
             execution_name,
         ]
     )
-    return execution_arn
+    return standard_execution_arn
+
+
+def stepfunctions_express_execution_arn(state_machine_arn: str, execution_name: str) -> str:
+    arn_data: ArnData = parse_arn(state_machine_arn)
+    express_execution_arn = ":".join(
+        [
+            "arn",
+            arn_data["partition"],
+            arn_data["service"],
+            arn_data["region"],
+            arn_data["account"],
+            "express",
+            "".join(arn_data["resource"].split(":")[1:]),
+            execution_name,
+            long_uid(),
+        ]
+    )
+    return express_execution_arn
 
 
 def stepfunctions_activity_arn(name: str, account_id: str, region_name: str) -> str:

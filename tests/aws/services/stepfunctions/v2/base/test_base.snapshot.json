@@ -524,14 +524,14 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_query_context_object_values": {
-    "recorded-date": "07-02-2024, 13:52:16",
+    "recorded-date": "15-07-2024, 13:00:19",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "message": "HelloWorld!"
+                "message": "TestMessage"
               },
               "inputDetails": {
                 "truncated": false
@@ -548,7 +548,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "message": "HelloWorld!"
+                "message": "TestMessage"
               },
               "inputDetails": {
                 "truncated": false
@@ -564,12 +564,12 @@
             "stateExitedEventDetails": {
               "name": "QueryValues1",
               "output": {
-                "message": "HelloWorld!",
+                "message": "TestMessage",
                 "query_values_1": {
                   "execution": {
                     "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
-                      "message": "HelloWorld!"
+                      "message": "TestMessage"
                     },
                     "StartTime": "start-time",
                     "Name": "<ExecArnPart_0idx>",
@@ -581,7 +581,7 @@
                   "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "execution_starttime": "start-time",
                   "state_name": "QueryValues1",
@@ -598,7 +598,7 @@
                     "Execution": {
                       "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -629,12 +629,12 @@
             "previousEventId": 3,
             "stateEnteredEventDetails": {
               "input": {
-                "message": "HelloWorld!",
+                "message": "TestMessage",
                 "query_values_1": {
                   "execution": {
                     "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
-                      "message": "HelloWorld!"
+                      "message": "TestMessage"
                     },
                     "StartTime": "start-time",
                     "Name": "<ExecArnPart_0idx>",
@@ -646,7 +646,7 @@
                   "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "execution_starttime": "start-time",
                   "state_name": "QueryValues1",
@@ -663,7 +663,7 @@
                     "Execution": {
                       "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -696,12 +696,12 @@
             "stateExitedEventDetails": {
               "name": "QueryValues2",
               "output": {
-                "message": "HelloWorld!",
+                "message": "TestMessage",
                 "query_values_1": {
                   "execution": {
                     "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
-                      "message": "HelloWorld!"
+                      "message": "TestMessage"
                     },
                     "StartTime": "start-time",
                     "Name": "<ExecArnPart_0idx>",
@@ -713,7 +713,7 @@
                   "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "execution_starttime": "start-time",
                   "state_name": "QueryValues1",
@@ -730,7 +730,7 @@
                     "Execution": {
                       "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -753,7 +753,7 @@
                     "Execution": {
                       "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -781,12 +781,12 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "message": "HelloWorld!",
+                "message": "TestMessage",
                 "query_values_1": {
                   "execution": {
                     "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
-                      "message": "HelloWorld!"
+                      "message": "TestMessage"
                     },
                     "StartTime": "start-time",
                     "Name": "<ExecArnPart_0idx>",
@@ -798,7 +798,7 @@
                   "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "execution_starttime": "start-time",
                   "state_name": "QueryValues1",
@@ -815,7 +815,7 @@
                     "Execution": {
                       "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -838,7 +838,7 @@
                     "Execution": {
                       "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",

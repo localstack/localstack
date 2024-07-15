@@ -65,10 +65,12 @@ from localstack.aws.api.stepfunctions import (
     SensitiveData,
     SensitiveError,
     StartExecutionOutput,
+    StartSyncExecutionOutput,
     StateMachineAlreadyExists,
     StateMachineDoesNotExist,
     StateMachineList,
     StateMachineType,
+    StateMachineTypeNotSupported,
     StepfunctionsApi,
     StopExecutionOutput,
     TagKeyList,
@@ -106,12 +108,15 @@ from localstack.services.stepfunctions.asl.eval.event.logging import (
 from localstack.services.stepfunctions.asl.parse.asl_parser import (
     ASLParserException,
 )
+from localstack.services.stepfunctions.asl.static_analyser.express_static_analyser import (
+    ExpressStaticAnalyser,
+)
 from localstack.services.stepfunctions.asl.static_analyser.static_analyser import StaticAnalyser
 from localstack.services.stepfunctions.asl.static_analyser.test_state.test_state_analyser import (
     TestStateStaticAnalyser,
 )
 from localstack.services.stepfunctions.backend.activity import Activity, ActivityTask
-from localstack.services.stepfunctions.backend.execution import Execution
+from localstack.services.stepfunctions.backend.execution import Execution, SyncExecution
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
     StateMachineRevision,
@@ -128,7 +133,8 @@ from localstack.services.stepfunctions.stepfunctions_utils import (
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     stepfunctions_activity_arn,
-    stepfunctions_execution_state_machine_arn,
+    stepfunctions_express_execution_arn,
+    stepfunctions_standard_execution_arn,
     stepfunctions_state_machine_arn,
 )
 from localstack.utils.collections import PaginatedList
@@ -152,7 +158,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     )
 
     _STATE_MACHINE_EXECUTION_ARN_REGEX: Final[re.Pattern] = re.compile(
-        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:(stateMachine|execution):[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)?$"
+        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:(stateMachine|execution|express):[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)*$"
     )
 
     _ACTIVITY_ARN_REGEX: Final[re.Pattern] = re.compile(
@@ -169,7 +175,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def _raise_state_machine_does_not_exist(state_machine_arn: str) -> None:
         raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
 
-    def _validate_state_machine_execution_arn(self, execution_arn: str) -> None:
+    @staticmethod
+    def _validate_state_machine_execution_arn(execution_arn: str) -> None:
         # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
         if not StepFunctionsProvider._STATE_MACHINE_EXECUTION_ARN_REGEX.match(execution_arn):
             raise InvalidArn(f"Invalid arn: '{execution_arn}'")
@@ -179,6 +186,18 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
         if not StepFunctionsProvider._ACTIVITY_ARN_REGEX.match(activity_arn):
             raise InvalidArn(f"Invalid arn: '{activity_arn}'")
+
+    def _raise_state_machine_type_not_supported(self):
+        raise StateMachineTypeNotSupported(
+            "This operation is not supported by this type of state machine"
+        )
+
+    @staticmethod
+    def _raise_resource_type_not_in_context(resource_type: str) -> None:
+        lower_resource_type = resource_type.lower()
+        raise InvalidArn(
+            f"Invalid Arn: 'Resource type not valid in this context: {lower_resource_type}'"
+        )
 
     @staticmethod
     def _validate_activity_name(name: str) -> None:
@@ -370,9 +389,14 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             cloud_watch_logging_configuration.validate()
 
         # Run static analysers on the definition given.
-        StepFunctionsProvider._validate_definition(
-            definition=state_machine_definition, static_analysers=[StaticAnalyser()]
-        )
+        if state_machine_type == StateMachineType.EXPRESS:
+            StepFunctionsProvider._validate_definition(
+                definition=state_machine_definition, static_analysers=[ExpressStaticAnalyser()]
+            )
+        else:
+            StepFunctionsProvider._validate_definition(
+                definition=state_machine_definition, static_analysers=[StaticAnalyser()]
+            )
 
         # Create the state machine and add it to the store.
         state_machine = StateMachineRevision(
@@ -487,14 +511,14 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> StartExecutionOutput:
         self._validate_state_machine_arn(state_machine_arn)
-        state_machine: Optional[StateMachineInstance] = self.get_store(context).state_machines.get(
-            state_machine_arn
-        )
-        if not state_machine:
+        unsafe_state_machine: Optional[StateMachineInstance] = self.get_store(
+            context
+        ).state_machines.get(state_machine_arn)
+        if not unsafe_state_machine:
             self._raise_state_machine_does_not_exist(state_machine_arn)
 
         # Update event change parameters about the state machine and should not affect those about this execution.
-        state_machine_clone = copy.deepcopy(state_machine)
+        state_machine_clone = copy.deepcopy(unsafe_state_machine)
 
         if input is None:
             input_data = dict()
@@ -505,27 +529,31 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 raise InvalidExecutionInput(str(ex))  # TODO: report parsing error like AWS.
 
         normalised_state_machine_arn = (
-            state_machine.source_arn
-            if isinstance(state_machine, StateMachineVersion)
-            else state_machine.arn
+            state_machine_clone.source_arn
+            if isinstance(state_machine_clone, StateMachineVersion)
+            else state_machine_clone.arn
         )
         exec_name = name or long_uid()  # TODO: validate name format
-        exec_arn = stepfunctions_execution_state_machine_arn(
-            normalised_state_machine_arn, exec_name
-        )
+        if state_machine_clone.sm_type == StateMachineType.STANDARD:
+            exec_arn = stepfunctions_standard_execution_arn(normalised_state_machine_arn, exec_name)
+        else:
+            # Exhaustive check on STANDARD and EXPRESS type, validated on creation.
+            exec_arn = stepfunctions_express_execution_arn(normalised_state_machine_arn, exec_name)
+
         if exec_arn in self.get_store(context).executions:
             raise InvalidName()  # TODO
 
         # Create the execution logging session, if logging is configured.
         cloud_watch_logging_session = None
-        if state_machine.cloud_watch_logging_configuration is not None:
+        if state_machine_clone.cloud_watch_logging_configuration is not None:
             cloud_watch_logging_session = CloudWatchLoggingSession(
                 execution_arn=exec_arn,
-                configuration=state_machine.cloud_watch_logging_configuration,
+                configuration=state_machine_clone.cloud_watch_logging_configuration,
             )
 
         execution = Execution(
             name=exec_name,
+            sm_type=state_machine_clone.sm_type,
             role_arn=state_machine_clone.role_arn,
             exec_arn=exec_arn,
             account_id=context.account_id,
@@ -542,11 +570,84 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         execution.start()
         return execution.to_start_output()
 
+    def start_sync_execution(
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        name: Name = None,
+        input: SensitiveData = None,
+        trace_header: TraceHeader = None,
+        **kwargs,
+    ) -> StartSyncExecutionOutput:
+        self._validate_state_machine_arn(state_machine_arn)
+        unsafe_state_machine: Optional[StateMachineInstance] = self.get_store(
+            context
+        ).state_machines.get(state_machine_arn)
+        if not unsafe_state_machine:
+            self._raise_state_machine_does_not_exist(state_machine_arn)
+
+        if unsafe_state_machine.sm_type == StateMachineType.STANDARD:
+            self._raise_state_machine_type_not_supported()
+
+        # Update event change parameters about the state machine and should not affect those about this execution.
+        state_machine_clone = copy.deepcopy(unsafe_state_machine)
+
+        if input is None:
+            input_data = dict()
+        else:
+            try:
+                input_data = json.loads(input)
+            except Exception as ex:
+                raise InvalidExecutionInput(str(ex))  # TODO: report parsing error like AWS.
+
+        normalised_state_machine_arn = (
+            state_machine_clone.source_arn
+            if isinstance(state_machine_clone, StateMachineVersion)
+            else state_machine_clone.arn
+        )
+        exec_name = name or long_uid()  # TODO: validate name format
+        exec_arn = stepfunctions_express_execution_arn(normalised_state_machine_arn, exec_name)
+
+        if exec_arn in self.get_store(context).executions:
+            raise InvalidName()  # TODO
+
+        # Create the execution logging session, if logging is configured.
+        cloud_watch_logging_session = None
+        if state_machine_clone.cloud_watch_logging_configuration is not None:
+            cloud_watch_logging_session = CloudWatchLoggingSession(
+                execution_arn=exec_arn,
+                configuration=state_machine_clone.cloud_watch_logging_configuration,
+            )
+
+        execution = SyncExecution(
+            name=exec_name,
+            sm_type=state_machine_clone.sm_type,
+            role_arn=state_machine_clone.role_arn,
+            exec_arn=exec_arn,
+            account_id=context.account_id,
+            region_name=context.region,
+            state_machine=state_machine_clone,
+            start_date=datetime.datetime.now(tz=datetime.timezone.utc),
+            cloud_watch_logging_session=cloud_watch_logging_session,
+            input_data=input_data,
+            trace_header=trace_header,
+            activity_store=self.get_store(context).activities,
+        )
+        self.get_store(context).executions[exec_arn] = execution
+
+        execution.start()
+        return execution.to_start_sync_execution_output()
+
     def describe_execution(
         self, context: RequestContext, execution_arn: Arn, **kwargs
     ) -> DescribeExecutionOutput:
         self._validate_state_machine_execution_arn(execution_arn)
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
+
+        # Action only compatible with STANDARD workflows.
+        if execution.sm_type != StateMachineType.STANDARD:
+            self._raise_resource_type_not_in_context(resource_type=execution.sm_type)
+
         return execution.to_describe_output()
 
     @staticmethod
@@ -582,6 +683,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
             self._raise_state_machine_does_not_exist(state_machine_arn)
+
+        if state_machine.sm_type != StateMachineType.STANDARD:
+            self._raise_state_machine_type_not_supported()
+
+        # TODO: add support for paging
 
         allowed_execution_status = [
             ExecutionStatus.SUCCEEDED,
@@ -707,6 +813,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # TODO: add support for paging, ordering, and other manipulations.
         self._validate_state_machine_execution_arn(execution_arn)
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
+
+        # Action only compatible with STANDARD workflows.
+        if execution.sm_type != StateMachineType.STANDARD:
+            self._raise_resource_type_not_in_context(resource_type=execution.sm_type)
+
         history: GetExecutionHistoryOutput = execution.to_history_output()
         if reverse_order:
             history["events"].reverse()
@@ -749,6 +860,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> StopExecutionOutput:
         self._validate_state_machine_execution_arn(execution_arn)
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
+
+        # Action only compatible with STANDARD workflows.
+        if execution.sm_type != StateMachineType.STANDARD:
+            self._raise_resource_type_not_in_context(resource_type=execution.sm_type)
+
         stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
         execution.stop(stop_date=stop_date, cause=cause, error=error)
         return StopExecutionOutput(stopDate=stop_date)
@@ -961,7 +1077,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             role_arn=role_arn,
             definition=definition,
         )
-        exec_arn = stepfunctions_execution_state_machine_arn(state_machine.arn, name)
+        exec_arn = stepfunctions_standard_execution_arn(state_machine.arn, name)
 
         input_json = json.loads(input)
         execution = TestStateExecution(
