@@ -4,6 +4,9 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from botocore.utils import ArnParser
+
+from localstack.aws.api import RequestContext
 from localstack.aws.api.events import (
     ArchiveName,
     Arn,
@@ -14,7 +17,11 @@ from localstack.aws.api.events import (
     RuleArn,
     Timestamp,
 )
-from localstack.services.events.models import FormattedEvent, ResourceType, ValidationException
+from localstack.services.events.models import (
+    FormattedEvent,
+    ResourceType,
+    ValidationException,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import long_uid
 
@@ -40,6 +47,23 @@ class EventJSONEncoder(json.JSONEncoder):
 
 def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str:
     return json.dumps(obj, cls=EventJSONEncoder, separators=separators)
+
+
+def extract_region_and_account_id(
+    name_or_arn: EventBusNameOrArn, context: RequestContext
+) -> tuple[str, str]:
+    """Returns the region and account id from the arn,
+    or falls back on the region and account id of the context"""
+    account_id = None
+    region = None
+    if ArnParser.is_arn(name_or_arn):
+        parsed_arn = parse_arn(name_or_arn)
+        region = parsed_arn.get("region")
+        account_id = parsed_arn.get("account")
+    if not account_id or not region:
+        region = context.get("region")
+        account_id = context.get("account_id")
+    return region, account_id
 
 
 def extract_event_bus_name(

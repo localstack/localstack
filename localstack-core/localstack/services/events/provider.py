@@ -115,9 +115,14 @@ from localstack.services.events.models import (
 from localstack.services.events.replay import ReplayService, ReplayServiceDict
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
-from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
+from localstack.services.events.target import (
+    TargetSender,
+    TargetSenderDict,
+    TargetSenderFactory,
+)
 from localstack.services.events.utils import (
     extract_event_bus_name,
+    extract_region_and_account_id,
     format_event,
     get_resource_type,
     is_archive_arn,
@@ -207,7 +212,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> CreateEventBusResponse:
         region = context.region
         account_id = context.account_id
-        store = self.get_store(context)
+        store = self.get_store(region, account_id)
         if name in store.event_buses.keys():
             raise ResourceAlreadyExistsException(f"Event bus {name} already exists.")
         event_bus_service = self.create_event_bus_service(
@@ -227,7 +232,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def delete_event_bus(self, context: RequestContext, name: EventBusName, **kwargs) -> None:
         if name == "default":
             raise ValidationException("Cannot delete event bus default.")
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         try:
             if event_bus := self.get_event_bus(name, store):
                 del self._event_bus_services_store[event_bus.arn]
@@ -243,7 +250,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, name: EventBusNameOrArn = None, **kwargs
     ) -> DescribeEventBusResponse:
         name = extract_event_bus_name(name)
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus = self.get_event_bus(name, store)
 
         response = self._event_bus_to_api_type_event_bus(event_bus)
@@ -258,7 +267,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListEventBusesResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_buses = (
             get_filtered_dict(name_prefix, store.event_buses) if name_prefix else store.event_buses
         )
@@ -285,7 +296,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         policy: String = None,
         **kwargs,
     ) -> None:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus = self.get_event_bus(event_bus_name, store)
         event_bus_service = self._event_bus_services_store[event_bus.arn]
         event_bus_service.put_permission(action, principal, statement_id, condition, policy)
@@ -299,7 +312,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: NonPartnerEventBusName = None,
         **kwargs,
     ) -> None:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus = self.get_event_bus(event_bus_name, store)
         event_bus_service = self._event_bus_services_store[event_bus.arn]
         if remove_all_permissions:
@@ -320,7 +335,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> None:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
@@ -335,7 +352,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         force: Boolean = None,
         **kwargs,
     ) -> None:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         try:
@@ -356,7 +375,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> DescribeRuleResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
@@ -372,7 +393,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> None:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
@@ -388,7 +411,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListRulesResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rules = get_filtered_dict(name_prefix, event_bus.rules) if name_prefix else event_bus.rules
@@ -429,8 +454,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> PutRuleResponse:
         region = context.region
         account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus_name = extract_event_bus_name(event_bus_name)
-        store = self.get_store(context)
         event_bus = self.get_event_bus(event_bus_name, store)
         existing_rule = event_bus.rules.get(name)
         targets = existing_rule.targets if existing_rule else None
@@ -483,7 +508,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListTargetsByRuleResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule, event_bus)
@@ -508,7 +535,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> PutTargetsResponse:
         region = context.region
         account_id = context.account_id
-        rule_service = self.get_rule_service(context, rule, event_bus_name)
+        rule_service = self.get_rule_service(region, account_id, rule, event_bus_name)
         failed_entries = rule_service.add_targets(targets)
         rule_arn = rule_service.arn
         rule_name = rule_service.rule.name
@@ -535,7 +562,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         force: Boolean = None,
         **kwargs,
     ) -> RemoveTargetsResponse:
-        rule_service = self.get_rule_service(context, rule, event_bus_name)
+        region = context.region
+        account_id = context.account_id
+        rule_service = self.get_rule_service(region, account_id, rule, event_bus_name)
         failed_entries = rule_service.remove_targets(ids)
         self._delete_target_sender(ids, rule_service.rule)
 
@@ -560,7 +589,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> CreateArchiveResponse:
         region = context.region
         account_id = context.account_id
-        store = self.get_store(context)
+        store = self.get_store(region, account_id)
         if archive_name in store.archives.keys():
             raise ResourceAlreadyExistsException(f"Archive {archive_name} already exists.")
         self._check_event_bus_exists(event_source_arn, store)
@@ -586,7 +615,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def delete_archive(
         self, context: RequestContext, archive_name: ArchiveName, **kwargs
     ) -> DeleteArchiveResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         if archive := self.get_archive(archive_name, store):
             try:
                 archive_service = self._archive_service_store.pop(archive.arn)
@@ -599,7 +630,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_archive(
         self, context: RequestContext, archive_name: ArchiveName, **kwargs
     ) -> DescribeArchiveResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         archive = self.get_archive(archive_name, store)
 
         response = self._archive_to_describe_archive_response(archive)
@@ -616,7 +649,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListArchivesResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         if event_source_arn:
             self._check_event_bus_exists(event_source_arn, store)
             archives = {
@@ -649,7 +684,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         retention_days: RetentionDays = None,
         **kwargs,
     ) -> UpdateArchiveResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         try:
             archive = self.get_archive(archive_name, store)
         except ResourceNotFoundException:
@@ -693,7 +730,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     @handler("PutPartnerEvents")
     def put_partner_events(
-        self, context: RequestContext, entries: PutPartnerEventsRequestEntryList, **kwargs
+        self,
+        context: RequestContext,
+        entries: PutPartnerEventsRequestEntryList,
+        **kwargs,
     ) -> PutPartnerEventsResponse:
         raise NotImplementedError
 
@@ -705,7 +745,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def cancel_replay(
         self, context: RequestContext, replay_name: ReplayName, **kwargs
     ) -> CancelReplayResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         replay = self.get_replay(replay_name, store)
         replay_service = self._replay_service_store[replay.arn]
         replay_service.stop()
@@ -720,7 +762,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_replay(
         self, context: RequestContext, replay_name: ReplayName, **kwargs
     ) -> DescribeReplayResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         replay = self.get_replay(replay_name, store)
 
         response = self._replay_to_describe_replay_response(replay)
@@ -737,7 +781,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListReplaysResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         if event_source_arn:
             replays = {
                 key: replay
@@ -773,7 +819,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> StartReplayResponse:
         region = context.region
         account_id = context.account_id
-        store = self.get_store(context)
+        store = self.get_store(region, account_id)
         if replay_name in store.replays.keys():
             raise ResourceAlreadyExistsException(f"Replay {replay_name} already exists.")
         self._validate_replay_time(event_start_time, event_end_time)
@@ -822,7 +868,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: Arn, **kwargs
     ) -> ListTagsForResourceResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         resource_type = get_resource_type(resource_arn)
         self._check_resource_exists(resource_arn, resource_type, store)
         tags = store.TAGS.list_tags_for_resource(resource_arn)
@@ -834,7 +882,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> TagResourceResponse:
         # each tag key must be unique
         # https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html#tag-best-practices
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         resource_type = get_resource_type(resource_arn)
         self._check_resource_exists(resource_arn, resource_type, store)
         check_unique_tags(tags)
@@ -844,7 +894,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def untag_resource(
         self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceResponse:
-        store = self.get_store(context)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
         resource_type = get_resource_type(resource_arn)
         self._check_resource_exists(resource_arn, resource_type, store)
         store.TAGS.untag_resource(resource_arn, tag_keys)
@@ -853,11 +905,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     # Methods
     #########
 
-    def get_store(self, context: RequestContext) -> EventsStore:
+    def get_store(self, region: str, account_id: str) -> EventsStore:
         """Returns the events store for the account and region.
         On first call, creates the default event bus for the account region."""
-        region = context.region
-        account_id = context.account_id
         store = events_store[account_id][region]
         # create default event bus for account region on first call
         default_event_bus_name = "default"
@@ -894,9 +944,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         raise ResourceNotFoundException(f"Replay {name} does not exist.")
 
     def get_rule_service(
-        self, context: RequestContext, rule_name: RuleName, event_bus_name: EventBusName
+        self,
+        region: str,
+        account_id: str,
+        rule_name: RuleName,
+        event_bus_name: EventBusName,
     ) -> RuleService:
-        store = self.get_store(context)
+        store = self.get_store(region, account_id)
         event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule_name, event_bus)
@@ -1246,11 +1300,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return {key: value for key, value in replay_dict.items() if value is not None}
 
     def _put_to_archive(
-        self, context: RequestContext, archive_target_id: str, event: FormattedEvent
+        self,
+        region: str,
+        account_id: str,
+        archive_target_id: str,
+        event: FormattedEvent,
     ) -> None:
         archive_name = ARCHIVE_TARGET_ID_NAME_PATTERN.match(archive_target_id).group("name")
 
-        store = self.get_store(context)
+        store = self.get_store(region, account_id)
         archive = self.get_archive(archive_name, store)
         archive_service = self._archive_service_store[archive.arn]
         archive_service.put_events([event])
@@ -1266,13 +1324,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         processed_entries = []
         failed_entry_count = 0
         for event in entries:
-            event_bus_name = event.get("EventBusName", "default")
+            event_bus_name_or_arn = event.get("EventBusName", "default")
+            event_bus_name = extract_event_bus_name(event_bus_name_or_arn)
             if event_failed_validation := validate_event(event):
                 processed_entries.append(event_failed_validation)
                 failed_entry_count += 1
                 continue
-            event_formatted = format_event(event, context.region, context.account_id)
-            store = self.get_store(context)
+            region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
+            event_formatted = format_event(event, region, account_id)
+            store = self.get_store(region, account_id)
             try:
                 event_bus = self.get_event_bus(event_bus_name, store)
             except ResourceNotFoundException:
@@ -1288,7 +1348,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         target_arn = target["Arn"]
                         if is_archive_arn(target_arn):
                             self._put_to_archive(
-                                context, archive_target_id=target["Id"], event=event_formatted
+                                region,
+                                account_id,
+                                archive_target_id=target["Id"],
+                                event=event_formatted,
                             )
                         else:
                             target_sender = self._target_sender_store[target_arn]
