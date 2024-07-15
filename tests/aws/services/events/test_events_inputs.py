@@ -68,7 +68,7 @@ def test_put_event_input_path_and_input_transformer(
         )
 
     snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
-    snapshot.match("missing-key-exception", exception)
+    snapshot.match("duplicated-input-operations-error", exception)
 
 
 class TestInputPath:
@@ -386,7 +386,7 @@ class TestInputTransformer:
             )
 
         snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
-        snapshot.match("missing-key-exception", exception)
+        snapshot.match("missing-key-exception-error", exception)
 
     @markers.aws.validated
     @pytest.mark.skipif(
