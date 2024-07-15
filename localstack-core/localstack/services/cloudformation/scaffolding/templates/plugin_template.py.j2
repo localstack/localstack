@@ -3,7 +3,7 @@ from typing import Optional, Type
 from localstack.services.cloudformation.resource_provider import ResourceProvider
 {%- if pro %}
 {%- set base_class = "CloudFormationResourceProviderPluginExt" %}
-{%- set root_module = "localstack_ext" %}
+{%- set root_module = "localstack.pro.core" %}
 {%- else %}
 {%- set base_class = "CloudFormationResourceProviderPlugin" %}
 {%- set root_module = "localstack" %}

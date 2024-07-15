@@ -173,7 +173,7 @@ class Directories:
             tmp=tmp_dir,
             mounted_tmp=tmp_dir,
             functions=None,
-            data=os.path.join(tmp_dir, "state"),  # used by localstack_ext config TODO: remove
+            data=os.path.join(tmp_dir, "state"),  # used by localstack-pro config TODO: remove
             logs=os.path.join(tmp_dir, "logs"),  # used for container logs
             config=None,  # in the context of the CLI, config.CONFIG_DIR should be used
             init=None,

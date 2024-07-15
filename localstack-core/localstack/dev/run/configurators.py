@@ -24,7 +24,7 @@ from .paths import CommunityContainerPaths, ContainerPaths, HostPaths, ProContai
 
 
 class ConfigEnvironmentConfigurator:
-    """Configures the environment variables from the localstack and localstack_ext config."""
+    """Configures the environment variables from the localstack and localstack-pro config."""
 
     def __init__(self, pro: bool):
         self.pro = pro
@@ -34,8 +34,8 @@ class ConfigEnvironmentConfigurator:
             cfg.env_vars = {}
 
         if self.pro:
-            # import localstack_ext config extends the list of config vars
-            from localstack_ext import config as config_ext  # noqa
+            # import localstack.pro.core.config extends the list of config vars
+            from localstack.pro.core import config as config_pro  # noqa
 
         ContainerConfigurators.config_env_vars(cfg)
 
@@ -133,14 +133,16 @@ class SourceVolumeMountConfigurator:
         # ext source code if available
         if self.pro:
             source = (
-                self.host_paths.localstack_ext_project_dir
+                self.host_paths.localstack_pro_project_dir
                 / "localstack-pro-core"
-                / "localstack_ext"
+                / "localstack"
+                / "pro"
+                / "core"
             )
             if source.exists():
                 cfg.volumes.add(
                     VolumeBind(
-                        str(source), self.container_paths.localstack_ext_source_dir, read_only=True
+                        str(source), self.container_paths.localstack_pro_source_dir, read_only=True
                     )
                 )
 
@@ -158,7 +160,7 @@ class SourceVolumeMountConfigurator:
 
         # docker entrypoint
         if self.pro:
-            source = self.host_paths.localstack_ext_project_dir / "bin" / "docker-entrypoint.sh"
+            source = self.host_paths.localstack_pro_project_dir / "bin" / "docker-entrypoint.sh"
         else:
             source = self.host_paths.localstack_project_dir / "bin" / "docker-entrypoint.sh"
         if source.exists():
@@ -190,7 +192,7 @@ class EntryPointMountConfigurator:
     Mounts ``entry_points.txt`` files of localstack and dependencies into the venv in the container.
 
     For example, when starting the pro container, the entrypoints of localstack-ext on the host would be in
-    ``~/workspace/localstack-ext/localstack_ext.egg-info/entry_points.txt``
+    ``~/workspace/localstack-ext/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
     which needs to be mounted into the distribution info of the installed dependency within the container:
     ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-2.1.0.dev0.dist-info/entry_points.txt``.
     """

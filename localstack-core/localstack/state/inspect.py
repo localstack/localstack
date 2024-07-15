@@ -70,7 +70,7 @@ class ReflectionStateLocator:
 
         # try to load AccountRegionBundle from predictable location
         attribute_name = f"{service_name}_stores"
-        module_name = f"localstack_ext.services.{service_name}.models"
+        module_name = f"localstack.pro.core.services.{service_name}.models"
 
         # it first looks for a module in ext; eventually, it falls back to community
         attribute = _load_attribute_from_module(module_name, attribute_name)
