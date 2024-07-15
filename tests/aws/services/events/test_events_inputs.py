@@ -28,7 +28,7 @@ INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>
     is_old_provider(),
     reason="V1 provider does not support this feature",
 )
-def test_put_event_input_path_and_input_transfomer(
+def test_put_event_input_path_and_input_transformer(
     create_sqs_events_target, events_create_event_bus, events_put_rule, aws_client, snapshot
 ):
     _, queue_arn = create_sqs_events_target()

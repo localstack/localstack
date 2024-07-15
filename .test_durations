@@ -842,7 +842,7 @@
     "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>\"]": 0.11978025600001274,
     "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"{[/Check with special starting characters for event of <detail-type> type\"]": 0.11936591799985763,
     "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": 0.0006529859997499443,
-    "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transfomer": 0.0006545790001837304,
+    "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transformer": 0.0006545790001837304,
     "tests/aws/services/events/test_events_targets.py::TestEventsTargetFirehose::test_put_events_with_target_firehose": 0.07406386900083817,
     "tests/aws/services/events/test_events_targets.py::TestEventsTargetKinesis::test_put_events_with_target_kinesis": 0.9582597469998291,
     "tests/aws/services/events/test_events_targets.py::TestEventsTargetLambda::test_put_events_with_target_lambda": 4.074284712000008,

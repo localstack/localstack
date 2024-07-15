@@ -219,7 +219,7 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transfomer": {
+  "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transformer": {
     "recorded-date": "13-05-2024, 13:01:15",
     "recorded-content": {
       "missing-key-exception": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutTargets operation: Only one of Input, InputPath, or InputTransformer must be provided for target <target-id>.') tblen=3>"
