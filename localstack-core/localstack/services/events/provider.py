@@ -540,7 +540,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule_arn = rule_service.arn
         rule_name = rule_service.rule.name
         for target in targets:  # TODO only add successful targets
-            self.create_target_sender(target, rule_arn, rule_name)
+            self.create_target_sender(target, rule_arn, rule_name, region, account_id)
 
         if rule_service.schedule_cron:
             schedule_job_function = self._get_scheduled_rule_job_function(
@@ -1005,9 +1005,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return rule_service
 
     def create_target_sender(
-        self, target: Target, rule_arn: Arn, rule_name: RuleName
+        self, target: Target, rule_arn: Arn, rule_name: RuleName, region: str, account_id: str
     ) -> TargetSender:
-        target_sender = TargetSenderFactory(target, rule_arn, rule_name).get_target_sender()
+        target_sender = TargetSenderFactory(
+            target, rule_arn, rule_name, region, account_id
+        ).get_target_sender()
         self._target_sender_store[target_sender.arn] = target_sender
         return target_sender
 

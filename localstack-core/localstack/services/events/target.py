@@ -16,7 +16,6 @@ from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
-    extract_resource_from_arn,
     extract_service_from_arn,
     firehose_name,
     sqs_queue_url_for_arn,
@@ -94,6 +93,8 @@ class TargetSender(ABC):
 
     region: str
     account_id: str
+    target_region: str
+    target_account_id: str
     _client: BaseClient | None
 
     def __init__(
@@ -102,14 +103,18 @@ class TargetSender(ABC):
         rule_arn: Arn,
         rule_name: RuleName,
         service: str,
+        region: str,
+        account_id: str,
     ):
         self.target = target
         self.rule_arn = rule_arn
         self.rule_name = rule_name
         self.service = service
+        self.region = region
+        self.account_id = account_id
 
-        self.region = extract_region_from_arn(self.target["Arn"])
-        self.account_id = extract_account_id_from_arn(self.target["Arn"])
+        self.target_region = extract_region_from_arn(self.target["Arn"])
+        self.target_account_id = extract_account_id_from_arn(self.target["Arn"])
 
         self._validate_input(target)
         self._client: BaseClient | None = None
@@ -165,14 +170,11 @@ class TargetSender(ABC):
     def _initialize_client(self) -> BaseClient:
         """Initializes internal boto client.
         If a role from a target is provided, the client will be initialized with the assumed role.
-        If no role is provided or the role is not in the target account,
-        the client will be initialized with the account ID and region.
+        If no role is provided, the client will be initialized with the account ID and region.
         In both cases event bridge is requested as service principal"""
         service_principal = ServicePrincipal.events
         role_arn = self.target.get("RoleArn")
-        if role_arn and self.account_id == extract_account_id_from_arn(
-            role_arn
-        ):  # required for cross account
+        if role_arn:  # required for cross account
             # assumed role sessions expire after 6 hours in AWS, currently no expiration in LocalStack
             client_factory = connect_to.with_assumed_role(
                 role_arn=role_arn,
@@ -260,14 +262,13 @@ class EventsTargetSender(TargetSender):
     def send_event(self, event):
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
-        event_bus_name = extract_resource_from_arn(self.target["Arn"]).split("/")[-1]
         source = self._get_source(event)
         detail_type = self._get_detail_type(event)
         detail = event.get("detail", event)
         resources = self._get_resources(event)
         entries = [
             {
-                "EventBusName": event_bus_name,
+                "EventBusName": self.target["Arn"],  # use arn for target account and region
                 "Source": source,
                 "DetailType": detail_type,
                 "Detail": json.dumps(detail),
@@ -283,19 +284,17 @@ class EventsTargetSender(TargetSender):
         event bus communication in the trace header. For event bus to event bus communication
         in a different account the event id is preserved. This is not the case if the region differs."""
         original_id = event.get("id")
-        original_account = event.get("account")
-        original_region = event.get("region")
-        if original_region != self.region and original_account != self.account_id:
+        if self.region != self.target_region and self.account_id != self.target_account_id:
             return json.dumps(
                 {
-                    "original_region": original_region,
-                    "original_account": original_account,
+                    "original_region": self.region,
+                    "original_account": self.account_id,
                 }
             )
-        if original_region != self.region:
-            return json.dumps({"original_region": original_region})
-        if original_account != self.account_id:
-            return json.dumps({"original_id": original_id, "original_account": original_account})
+        if self.region != self.target_region:
+            return json.dumps({"original_region": self.region})
+        if self.account_id != self.target_account_id:
+            return json.dumps({"original_id": original_id, "original_account": self.account_id})
 
     def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
         if isinstance(event, dict) and (source := event.get("source")):
@@ -438,6 +437,8 @@ class TargetSenderFactory:
     target: Target
     rule_arn: Arn
     rule_name: RuleName
+    region: str
+    account_id: str
 
     target_map = {
         "apigateway": ApiGatewayTargetSender,
@@ -457,10 +458,14 @@ class TargetSenderFactory:
         # TODO custom endpoints via http target
     }
 
-    def __init__(self, target: Target, rule_arn: Arn, rule_name: RuleName):
+    def __init__(
+        self, target: Target, rule_arn: Arn, rule_name: RuleName, region: str, account_id: str
+    ):
         self.target = target
         self.rule_arn = rule_arn
         self.rule_name = rule_name
+        self.region = region
+        self.account_id = account_id
 
     def get_target_sender(self) -> TargetSender:
         service = extract_service_from_arn(self.target["Arn"])
@@ -468,5 +473,7 @@ class TargetSenderFactory:
             target_sender_class = self.target_map[service]
         else:
             raise Exception(f"Unsupported target for Service: {service}")
-        target_sender = target_sender_class(self.target, self.rule_arn, self.rule_name, service)
+        target_sender = target_sender_class(
+            self.target, self.rule_arn, self.rule_name, service, self.region, self.account_id
+        )
         return target_sender
