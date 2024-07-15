@@ -189,17 +189,21 @@ def run(
         somedir                              <- your workspace directory
         ├── localstack                       <- execute script in here
         │   ├── ...
-        │   ├── localstack                   <- will be mounted into the container
-        │   ├── localstack_core.egg-info
+        │   ├── localstack-core
+        │   │   ├── localstack               <- will be mounted into the container
+        │   │   └── localstack_core.egg-info
         │   ├── pyproject.toml
         │   ├── tests
         │   └── ...
         ├── localstack-ext                   <- or execute script in here
         │   ├── ...
-        │   ├── localstack_ext               <- will be mounted into the container
-        │   ├── localstack_ext.egg-info
-        │   ├── pyproject.toml
-        │   ├── tests
+        │   ├── localstack-pro-core
+        │   │   ├── localstack
+        │   │   │   └── pro
+        │   │   │       └── core             <- will be mounted into the container
+        │   │   ├── localstack_ext.egg-info
+        │   │   ├── pyproject.toml
+        │   │   └── tests
         │   └── ...
         ├── moto
         │   ├── AUTHORS.md
@@ -252,7 +256,7 @@ def run(
         # replicate pro startup
         if pro:
             try:
-                from localstack_ext.plugins import modify_gateway_listen_config
+                from localstack.pro.core.plugins import modify_gateway_listen_config
 
                 modify_gateway_listen_config(config)
             except ImportError:

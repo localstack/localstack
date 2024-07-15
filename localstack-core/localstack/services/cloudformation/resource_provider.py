@@ -30,7 +30,7 @@ from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE
 
 PRO_RESOURCE_PROVIDERS = False
 try:
-    from localstack_ext.services.cloudformation.resource_provider import (
+    from localstack.pro.core.services.cloudformation.resource_provider import (
         CloudFormationResourceProviderPluginExt,
     )
 
