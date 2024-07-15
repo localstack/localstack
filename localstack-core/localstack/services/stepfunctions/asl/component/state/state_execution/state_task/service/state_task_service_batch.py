@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Any, Callable, Final, Optional
 
 from botocore.exceptions import ClientError
 from moto.batch.utils import JobStatus
@@ -29,30 +29,38 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
+_SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
+    ResourceCondition.WaitForTaskToken,
+    ResourceCondition.Sync,
+}
+
 _BATCH_JOB_TERMINATION_STATUS_SET: Final[set[JobStatus]] = {JobStatus.SUCCEEDED, JobStatus.FAILED}
 
 _ENVIRONMENT_VARIABLE_MANAGED_BY_AWS: Final[str] = "MANAGED_BY_AWS"
 _ENVIRONMENT_VARIABLE_MANAGED_BY_AWS_VALUE: Final[str] = "STARTED_BY_STEP_FUNCTIONS"
 
+_SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
+    "submitjob": {
+        "ArrayProperties",
+        "ContainerOverrides",
+        "DependsOn",
+        "JobDefinition",
+        "JobName",
+        "JobQueue",
+        "Parameters",
+        "RetryStrategy",
+        "Timeout",
+        "Tags",
+    }
+}
+
 
 class StateTaskServiceBatch(StateTaskServiceCallback):
-    _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
-        "submitjob": {
-            "ArrayProperties",
-            "ContainerOverrides",
-            "DependsOn",
-            "JobDefinition",
-            "JobName",
-            "JobQueue",
-            "Parameters",
-            "RetryStrategy",
-            "Timeout",
-            "Tags",
-        }
-    }
+    def __init__(self):
+        super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+        return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
     def _attach_aws_environment_variables(parameters: dict) -> None:
@@ -115,28 +123,12 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
             )
         return super()._from_error(env=env, ex=ex)
 
-    def _eval_service_task(
+    def _build_sync_resolver(
         self,
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-    ):
-        service_name = self._get_boto_service_name()
-        api_action = self._get_boto_service_action()
-        batch_client = boto_client_for(
-            region=resource_runtime_part.region,
-            account=resource_runtime_part.account,
-            service=service_name,
-        )
-        response = getattr(batch_client, api_action)(**normalised_parameters)
-        response.pop("ResponseMetadata", None)
-        env.stack.append(response)
-
-    def _sync_to_submit_job(
-        self,
-        env: Environment,
-        resource_runtime_part: ResourceRuntimePart,
-    ) -> None:
+    ) -> Callable[[], Optional[Any]]:
         batch_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
@@ -145,7 +137,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         submission_output: dict = env.stack.pop()
         job_id = submission_output["JobId"]
 
-        def _has_terminated() -> Optional[dict]:
+        def _sync_resolver() -> Optional[dict]:
             describe_jobs_response = batch_client.describe_jobs(jobs=[job_id])
             describe_jobs = describe_jobs_response["jobs"]
             if describe_jobs:
@@ -176,27 +168,21 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
                     )
             return None
 
-        termination_output: Optional[dict] = None
-        while env.is_running() and termination_output is None:
-            self._throttle_sync_iteration()
-            termination_output: Optional[dict] = _has_terminated()
+        return _sync_resolver
 
-        env.stack.append(termination_output)
-
-    def _sync(
+    def _eval_service_task(
         self,
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-    ) -> None:
-        match self._get_boto_service_action():
-            case "submit_job":
-                return self._sync_to_submit_job(
-                    env=env, resource_runtime_part=resource_runtime_part
-                )
-            case _:
-                super()._sync(
-                    env=env,
-                    resource_runtime_part=resource_runtime_part,
-                    normalised_parameters=normalised_parameters,
-                )
+    ):
+        service_name = self._get_boto_service_name()
+        api_action = self._get_boto_service_action()
+        batch_client = boto_client_for(
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
+            service=service_name,
+        )
+        response = getattr(batch_client, api_action)(**normalised_parameters)
+        response.pop("ResponseMetadata", None)
+        env.stack.append(response)
