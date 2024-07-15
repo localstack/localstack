@@ -9,24 +9,6 @@ from localstack import config, constants
 from localstack.runtime.exceptions import LocalstackExit
 
 
-def main_legacy():
-    from localstack.services import infra
-
-    # signal handler to make sure SIGTERM properly shuts down localstack
-    def _terminate_localstack(sig: int, frame):
-        infra.exit_infra(0)
-
-    # SIGINT is currently managed implicitly in start_infra via `except KeyboardInterrupt`
-    signal.signal(signal.SIGTERM, _terminate_localstack)
-
-    try:
-        infra.start_infra(asynchronous=False)
-    except LocalstackExit as e:
-        sys.exit(e.code)
-
-    sys.exit(infra.EXIT_CODE.get())
-
-
 def print_runtime_information(in_docker: bool = False):
     # FIXME: this is legacy code from the old CLI, reconcile with new CLI and runtime output
     from localstack.utils.container_networking import get_main_container_name
@@ -70,7 +52,7 @@ def print_runtime_information(in_docker: bool = False):
     print()
 
 
-def main_v2():
+def main():
     from localstack.logging.setup import setup_logging_from_config
     from localstack.runtime import current
 
@@ -105,13 +87,6 @@ def main_v2():
         raise
 
     sys.exit(runtime.exit_code)
-
-
-def main():
-    if config.LEGACY_RUNTIME:
-        main_legacy()
-    else:
-        main_v2()
 
 
 if __name__ == "__main__":

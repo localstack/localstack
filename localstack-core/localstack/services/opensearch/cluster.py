@@ -17,7 +17,6 @@ from localstack.aws.api.opensearch import (
 from localstack.http.client import SimpleRequestsClient
 from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
-from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
 from localstack.utils.aws.arns import parse_arn
@@ -36,6 +35,7 @@ from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 INTERNAL_USER_AUTH = ("localstack-internal", "localstack-internal")
+DEFAULT_BACKEND_HOST = "127.0.0.1"
 
 CommandSettings = Dict[str, str]
 
