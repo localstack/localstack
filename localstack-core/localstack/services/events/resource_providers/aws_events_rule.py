@@ -255,6 +255,11 @@ class EventsRuleProvider(ResourceProvider[EventsRuleProperties]):
             if event_bus_name:
                 put_targets_kwargs["EventBusName"] = event_bus_name
 
+            put_targets_kwargs = util.convert_request_kwargs(
+                put_targets_kwargs,
+                events.meta.service_model.operation_model("PutTargets").input_shape,
+            )
+
             events.put_targets(**put_targets_kwargs)
 
         return ProgressEvent(
