@@ -54,7 +54,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_query_runtime_memory": {
-    "recorded-date": "03-07-2024, 16:28:15",
+    "recorded-date": "15-07-2024, 12:58:13",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -67,12 +67,12 @@
       "end_event": {
         "details": {
           "output": {
-            "message": "HelloWorld!",
+            "message": "TestMessage",
             "query_values_1": {
               "execution": {
                 "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
                 "Input": {
-                  "message": "HelloWorld!"
+                  "message": "TestMessage"
                 },
                 "Name": "<ExpressExecArn_Part1_0idx>",
                 "RoleArn": "sfn_role_arn",
@@ -84,7 +84,7 @@
               "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
               "execution_id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
               "execution_input": {
-                "message": "HelloWorld!"
+                "message": "TestMessage"
               },
               "execution_starttime": "start-time",
               "state_name": "QueryValues1",
@@ -101,7 +101,7 @@
                 "Execution": {
                   "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
                   "Input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "Name": "<ExpressExecArn_Part1_0idx>",
                   "RoleArn": "sfn_role_arn",
@@ -124,7 +124,7 @@
                 "Execution": {
                   "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
                   "Input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "Name": "<ExpressExecArn_Part1_0idx>",
                   "RoleArn": "sfn_role_arn",
@@ -156,7 +156,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_catch": {
-    "recorded-date": "03-07-2024, 16:33:03",
+    "recorded-date": "15-07-2024, 13:31:21",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -170,7 +170,7 @@
         "details": {
           "output": {
             "Error": "Exception",
-            "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"30ebd6a2-7614-461d-a18f-61af2149852c\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+            "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":<request-id>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
           },
           "outputDetails": {
             "truncated": false
@@ -186,7 +186,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_retry": {
-    "recorded-date": "03-07-2024, 16:41:44",
+    "recorded-date": "15-07-2024, 13:37:47",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -200,7 +200,7 @@
         "details": {
           "output": {
             "Error": "Exception",
-            "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"6967e9ab-0e08-4f85-9420-f9bd30bc9d50\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+            "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<request-id>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
           },
           "outputDetails": {
             "truncated": false

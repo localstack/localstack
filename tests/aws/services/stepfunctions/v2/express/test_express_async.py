@@ -18,7 +18,6 @@ from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates im
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         "$..billingDetails",
         "$..redrive_count",
@@ -88,7 +87,7 @@ class TestExpressAsync:
         template = BaseTemplate.load_sfn_template(BaseTemplate.QUERY_CONTEXT_OBJECT_VALUES)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"message": "HelloWorld!"})
+        exec_input = json.dumps({"message": "TestMessage"})
         create_and_record_express_async_execution(
             aws_client,
             create_iam_role_for_sfn,
@@ -116,6 +115,11 @@ class TestExpressAsync:
             runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        sfn_snapshot.add_transformer(
+            RegexTransformer(
+                r'\\"requestId\\":\\"([a-f0-9\-]+)\\"', '\\"requestId\\":<request-id>\\"'
+            )
+        )
 
         template = ErrorHandlingTemplate.load_sfn_template(
             ErrorHandlingTemplate.AWS_SERVICE_LAMBDA_INVOKE_CATCH_ALL
@@ -150,6 +154,11 @@ class TestExpressAsync:
             runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        sfn_snapshot.add_transformer(
+            RegexTransformer(
+                r'\\"requestId\\": \\"([a-f0-9\-]+)\\"', '\\"requestId\\": \\"<request-id>\\"'
+            )
+        )
         function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
 
         template = ScenariosTemplate.load_sfn_template(

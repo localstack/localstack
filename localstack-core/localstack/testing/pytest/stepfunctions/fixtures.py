@@ -9,6 +9,7 @@ from localstack_snapshot.snapshots.transformer import (
     RegexTransformer,
 )
 
+from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.stepfunctions.utils import await_execution_success
 from localstack.utils.strings import short_uid
@@ -201,27 +202,32 @@ def create_iam_role_for_sfn(aws_client, cleanups, create_state_machine):
 
 @pytest.fixture
 def create_state_machine(aws_client):
-    _state_machine_arns: Final[list[str]] = list()
+    # The following stores the ARNs of create state machines and whether these are STANDARD or not.
+    _state_machine_arn_and_standard_flag: Final[list[tuple[str, bool]]] = list()
 
     def _create_state_machine(**kwargs):
         create_output = aws_client.stepfunctions.create_state_machine(**kwargs)
         create_output_arn = create_output["stateMachineArn"]
-        _state_machine_arns.append(create_output_arn)
+
+        is_standard_flag = (
+            kwargs.get("type", StateMachineType.STANDARD) == StateMachineType.STANDARD
+        )
+        _state_machine_arn_and_standard_flag.append((create_output_arn, is_standard_flag))
+
         return create_output
 
     yield _create_state_machine
 
-    # Delete all state machine, attempting to stop all running executions.
-    for state_machine_arn in _state_machine_arns:
-        # Execution listing and execution stop requests are not allowed for all state machine
-        # types, such as express ones.
+    # Delete all state machine, attempting to stop all running executions of STANDARD state machines,
+    # as other types, such as EXPRESS, cannot be manually stopped.
+    for state_machine_arn, is_standard in _state_machine_arn_and_standard_flag:
         try:
-            executions = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
-            for execution in executions["executions"]:
-                aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
-        except Exception:
-            pass
-        try:
+            if is_standard:
+                executions = aws_client.stepfunctions.list_executions(
+                    stateMachineArn=state_machine_arn
+                )
+                for execution in executions["executions"]:
+                    aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
             aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
             LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")

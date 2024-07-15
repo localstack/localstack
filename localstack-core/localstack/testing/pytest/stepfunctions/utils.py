@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import time
 from typing import Callable, Final, Optional
 
 from botocore.exceptions import ClientError
@@ -12,7 +11,6 @@ from localstack_snapshot.snapshots.transformer import (
     TransformContext,
 )
 
-from localstack.aws.api.sqs import Message, MessageList, ReceiveMessageResult
 from localstack.aws.api.stepfunctions import (
     CloudWatchLogsLogGroup,
     CreateStateMachineOutput,
@@ -211,35 +209,6 @@ def await_execution_terminated(stepfunctions_client, execution_arn: str) -> Hist
         execution_arn=execution_arn,
         check_func=_is_last_history_event_terminal,
     )
-
-
-def await_on_sqs_message(
-    sqs_client,
-    queue_url: str,
-    validation_function: Optional[Callable[[Message], bool]] = None,
-    timeout_seconds: int = 120,
-    interval_seconds: int = 1,
-) -> Optional[Message]:
-    result: Optional[Message] = None
-    while not result and timeout_seconds:
-        response: ReceiveMessageResult = sqs_client.receive_message(
-            QueueUrl=queue_url, WaitTimeSeconds=1, MaxNumberOfMessages=1
-        )
-
-        messages: MessageList = response.get("Messages", [])
-        if messages:
-            message: Message = messages[0]
-            if validation_function is None or validation_function(message):
-                result = message
-                break
-
-        time.sleep(interval_seconds)
-        timeout_seconds -= interval_seconds
-
-    if not result:
-        LOG.warning("Timed out whilst awaiting for sqs message to satisfy condition for execution.")
-
-    return result
 
 
 def await_execution_lists_terminated(
@@ -561,7 +530,7 @@ def create_and_record_express_sync_execution(
         name=f"express_statemachine_{short_uid()}",
         definition=definition,
         roleArn=snf_role_arn,
-        type="EXPRESS",
+        type=StateMachineType.EXPRESS,
     )
     state_machine_arn = creation_response["stateMachineArn"]
     sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))

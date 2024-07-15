@@ -125,6 +125,11 @@ from localstack.services.stepfunctions.backend.state_machine import (
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.services.stepfunctions.backend.test_state.execution import TestStateExecution
+from localstack.services.stepfunctions.stepfunctions_utils import (
+    assert_pagination_parameters_valid,
+    get_next_page_token_from_arn,
+    normalise_max_results,
+)
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     stepfunctions_activity_arn,
@@ -132,6 +137,7 @@ from localstack.utils.aws.arns import (
     stepfunctions_standard_execution_arn,
     stepfunctions_state_machine_arn,
 )
+from localstack.utils.collections import PaginatedList
 from localstack.utils.strings import long_uid, short_uid
 
 LOG = logging.getLogger(__name__)

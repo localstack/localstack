@@ -77,7 +77,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/express/test_express_sync.py::TestExpressSync::test_query_runtime_memory": {
-    "recorded-date": "26-06-2024, 19:08:56",
+    "recorded-date": "15-07-2024, 12:59:18",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -94,19 +94,19 @@
         },
         "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
         "input": {
-          "message": "HelloWorld!"
+          "message": "TestMessage"
         },
         "inputDetails": {
           "included": true
         },
         "name": "<SyncExecArn_Part1_0idx>",
         "output": {
-          "message": "HelloWorld!",
+          "message": "TestMessage",
           "query_values_1": {
             "execution": {
               "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
               "Input": {
-                "message": "HelloWorld!"
+                "message": "TestMessage"
               },
               "Name": "<SyncExecArn_Part1_0idx>",
               "RoleArn": "sfn_role_arn",
@@ -117,7 +117,7 @@
             "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
             "execution_id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
             "execution_input": {
-              "message": "HelloWorld!"
+              "message": "TestMessage"
             },
             "execution_starttime": "start-time",
             "state_name": "QueryValues1",
@@ -134,7 +134,7 @@
               "Execution": {
                 "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
                 "Input": {
-                  "message": "HelloWorld!"
+                  "message": "TestMessage"
                 },
                 "Name": "<SyncExecArn_Part1_0idx>",
                 "RoleArn": "sfn_role_arn",
@@ -156,7 +156,7 @@
               "Execution": {
                 "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
                 "Input": {
-                  "message": "HelloWorld!"
+                  "message": "TestMessage"
                 },
                 "Name": "<SyncExecArn_Part1_0idx>",
                 "RoleArn": "sfn_role_arn",
@@ -188,7 +188,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/express/test_express_sync.py::TestExpressSync::test_catch": {
-    "recorded-date": "26-06-2024, 19:09:21",
+    "recorded-date": "15-07-2024, 13:29:30",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -200,7 +200,7 @@
       },
       "start_execution_sync_response": {
         "billingDetails": {
-          "billedDurationInMilliseconds": 400,
+          "billedDurationInMilliseconds": 300,
           "billedMemoryUsedInMB": 64
         },
         "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
@@ -214,7 +214,7 @@
         "name": "<SyncExecArn_Part1_0idx>",
         "output": {
           "Error": "Exception",
-          "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"0c095f1f-4f7a-4a28-bde1-5903a8a0328c\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+          "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":<request-id>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
         },
         "outputDetails": {
           "included": true
@@ -231,7 +231,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/express/test_express_sync.py::TestExpressSync::test_retry": {
-    "recorded-date": "26-06-2024, 19:09:44",
+    "recorded-date": "15-07-2024, 13:37:02",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -243,7 +243,7 @@
       },
       "start_execution_sync_response": {
         "billingDetails": {
-          "billedDurationInMilliseconds": 7500,
+          "billedDurationInMilliseconds": 7600,
           "billedMemoryUsedInMB": 64
         },
         "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
@@ -254,7 +254,7 @@
         "name": "<SyncExecArn_Part1_0idx>",
         "output": {
           "Error": "Exception",
-          "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"5c1838e9-a1ce-430f-bede-40e86848eb9e\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+          "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<request-id>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
         },
         "outputDetails": {
           "included": true

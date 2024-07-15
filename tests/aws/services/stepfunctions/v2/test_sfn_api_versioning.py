@@ -3,6 +3,7 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
+from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_lists_terminated,
@@ -57,7 +58,7 @@ class TestSnfApiVersioning:
             definition=definition_str,
             roleArn=snf_role_arn,
             publish=True,
-            type="EXPRESS",
+            type=StateMachineType.EXPRESS,
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
