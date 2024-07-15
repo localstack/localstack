@@ -32,6 +32,7 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackOutcomeTimedOut,
     CallbackTimeoutError,
     HeartbeatEndpoint,
+    HeartbeatTimedOut,
     HeartbeatTimeoutError,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -104,6 +105,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         sync_resolver: Callable[[], Optional[Any]],
     ) -> CallbackOutcome | Any:
         callback_output: Optional[CallbackOutcome] = None
+
         if ResourceCondition.WaitForTaskToken in self._supported_integration_patterns:
 
             def _local_update_wait_for_task_token():
@@ -119,7 +121,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             TMP_THREADS.append(thread_wait_for_task_token)
             thread_wait_for_task_token.start()
             # Note: the stopping of this worker thread is handled indirectly through the state of env.
-            #       an exception in this thread will invalidate env, and therefore the worker threa.
+            #       an exception in this thread will invalidate env, and therefore the worker thread.
             #       hence why here there are no explicit stopping logic for thread_wait_for_task_token.
 
             sync_result: Optional[Any] = None
@@ -190,21 +192,26 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                 sync_resolver=sync_resolver,
             )
 
-        # Handle the integration pattern's output.
-        if not isinstance(outcome, CallbackOutcome):
-            env.stack.append(outcome)
-            return
+        # Now that the outcome is collected and the process has finished, ensure all waiting
+        # threads on this endpoint (or task) will stop. This is in an effort to release resources
+        # sooner than when these would eventually synchronise with the updated environment state
+        # of this task.
+        callback_endpoint.interrupt_all()
 
+        # Handle Callback outcome types.
         if isinstance(outcome, CallbackOutcomeTimedOut):
             raise CallbackTimeoutError()
+        elif isinstance(outcome, HeartbeatTimedOut):
+            raise HeartbeatTimeoutError()
         elif isinstance(outcome, CallbackOutcomeFailure):
             raise CallbackOutcomeFailureError(callback_outcome_failure=outcome)
         elif isinstance(outcome, CallbackOutcomeSuccess):
             outcome_output = json.loads(outcome.output)
             env.stack.append(outcome_output)
-            return
-
-        raise NotImplementedError(f"Unsupported outcome type '{type(outcome)}'.")
+        # Otherwise the outcome is the result of the integration pattern (sync, sync2)
+        # therefore push it onto the evaluation stack for the next operations.
+        else:
+            env.stack.append(outcome)
 
     def _wait_for_task_token_timeout(  # noqa
         self,
@@ -212,7 +219,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         callback_endpoint: CallbackEndpoint,
     ) -> Optional[CallbackOutcome]:
         # Awaits a callback notification and returns the outcome received.
-        # If the operation times out it returns None.
+        # If the operation times out or is interrupted it returns None.
 
         # Although the timeout is handled already be the superclass (ExecutionState),
         # the timeout value is specified here too, to allow this child process to terminate earlier even if
@@ -232,13 +239,14 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         while (
             env.is_running()
             and outcome
-            is None  # Note: the lifetime of this environment is this tasks's not the entire state machine program.
+            is None  # Note: the lifetime of this environment is this task's not the entire state machine program.
         ):  # Until subprocess hasn't timed out or result wasn't received.
             received = heartbeat_endpoint.clear_and_wait()
             if not received and env.is_running():  # Heartbeat timed out.
-                raise HeartbeatTimeoutError()
-            outcome = callback_endpoint.get_outcome()
-            return outcome
+                outcome = HeartbeatTimedOut()
+            else:
+                outcome = callback_endpoint.get_outcome()
+        return outcome
 
     def _assert_integration_pattern_is_supported(self):
         integration_pattern = self.resource.condition
