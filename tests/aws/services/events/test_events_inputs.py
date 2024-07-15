@@ -348,7 +348,6 @@ class TestInputTransformer:
         events_create_event_bus,
         events_put_rule,
         aws_client_factory,
-        aws_client,
         snapshot,
     ):
         _, queue_arn = create_sqs_events_target()
