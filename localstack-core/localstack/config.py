@@ -1038,6 +1038,15 @@ LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
 # Whether the Next Gen APIGW invocation logic is enabled (handler chain)
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") == "next_gen"
+if APIGW_NEXT_GEN_PROVIDER:
+    # in order to not have conflicts with different implementation registering their own router, we need to have all of
+    # them use the same new implementation
+    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYV2"):
+        os.environ["PROVIDER_OVERRIDE_APIGATEWAYV2"] = "next_gen"
+
+    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"):
+        os.environ["PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"] = "next_gen"
+
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
