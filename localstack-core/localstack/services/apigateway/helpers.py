@@ -874,6 +874,9 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
                     % (sqs_region, sqs_account, queue_name),
                     "requestTemplates": {"application/json": template},
+                    "requestParameters": {
+                        "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
+                    },
                 }
             ],
         }

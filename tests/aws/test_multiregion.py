@@ -64,6 +64,7 @@ class TestMultiRegion:
         queue_name1 = "q-%s" % short_uid()
         sqs_1.create_queue(QueueName=queue_name1)
         queue_arn = arns.sqs_queue_arn(queue_name1, region_name=REGION3, account_id=account_id)
+
         result = connect_api_gateway_to_sqs(
             api_name3,
             stage_name="test",
@@ -72,6 +73,7 @@ class TestMultiRegion:
             account_id=account_id,
             region_name=REGION3,
         )
+
         api_id = result["id"]
         result = gw_3.get_rest_apis()["items"]
         assert result[-1]["name"] == api_name3
