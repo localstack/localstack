@@ -69,7 +69,7 @@ class EndpointResponse(BaseResponse):
 
 
 class InvocationResponse(BaseResponse):
-    """Represents the response coming after being serialized in an integration response in AWS"""
+    """Represents the response coming after being serialized in an Integration Response in AWS"""
 
     pass
 

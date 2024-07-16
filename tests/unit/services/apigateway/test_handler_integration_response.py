@@ -148,20 +148,6 @@ def ctx():
     return context
 
 
-#
-# @pytest.fixture
-# def create_default_response():
-#     def _response():
-#         return Response(
-#             status=200,
-#             headers={"content-type": "application/json", "header": ["multi", "header"]},
-#             response=b'{"foo":"bar"}',
-#         )
-#
-#     return _response
-#
-
-
 @pytest.fixture
 def integration_response_handler():
     """Returns a dummy integration response handler invoker for testing."""

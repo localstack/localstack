@@ -6,7 +6,9 @@ from localstack.services.apigateway.next_gen.execute_api.context import (
     RestApiInvocationContext,
 )
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import InternalServerError
-from localstack.services.apigateway.next_gen.execute_api.integrations import RestApiMockIntegration
+from localstack.services.apigateway.next_gen.execute_api.integrations.mock import (
+    RestApiMockIntegration,
+)
 from localstack.utils.strings import to_bytes
 
 
