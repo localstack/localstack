@@ -110,7 +110,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
                 headers[f"x-amzn-remapped-{header}"] = value
                 headers.remove(header)
 
-        # # Those headers are passed through from the response headers, there might be more?
+        # Those headers are passed through from the response headers, there might be more?
         passthrough_headers = ["connection"]
         for header in passthrough_headers:
             if values := response.headers.getlist(header):
