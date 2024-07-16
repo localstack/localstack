@@ -95,241 +95,25 @@ class TestOpensearchProvider:
     """
 
     @markers.aws.validated
-    def test_list_versions(self, aws_client):
+    def test_list_versions(self, aws_client, snapshot):
         response = aws_client.opensearch.list_versions()
+        versions = sorted(
+            version
+            for version in response["Versions"]
+            # LocalStack does not support these versions
+            if version not in ["Elasticsearch_1.5", "Elasticsearch_2.3"]
+        )
+        snapshot.match("versions", versions)
 
-        assert "Versions" in response
-        versions = response["Versions"]
-
-        expected_versions = [
-            "OpenSearch_2.5",
-            "OpenSearch_2.3",
-            "OpenSearch_1.3",
-            "OpenSearch_1.2",
-            "OpenSearch_1.1",
-            "OpenSearch_1.0",
-            "Elasticsearch_7.10",
-            "Elasticsearch_7.9",
-            "Elasticsearch_7.8",
-            "Elasticsearch_7.7",
-            "Elasticsearch_7.4",
-            "Elasticsearch_7.1",
-            "Elasticsearch_6.8",
-            "Elasticsearch_6.7",
-            "Elasticsearch_6.5",
-            "Elasticsearch_6.4",
-            "Elasticsearch_6.3",
-            "Elasticsearch_6.2",
-            "Elasticsearch_6.0",
-            "Elasticsearch_5.6",
-            "Elasticsearch_5.5",
-            "Elasticsearch_5.3",
-            "Elasticsearch_5.1",
-        ]
-        # We iterate over the expected versions to avoid breaking the test if new versions are supported
-        for expected_version in expected_versions:
-            assert expected_version in versions
-
-    @markers.aws.needs_fixing
-    def test_get_compatible_versions(self, aws_client):
+    @markers.aws.validated
+    def test_get_compatible_versions(self, aws_client, snapshot):
         response = aws_client.opensearch.get_compatible_versions()
-
-        assert "CompatibleVersions" in response
-
-        compatible_versions = response["CompatibleVersions"]
-
-        assert len(compatible_versions) >= 20
-        expected_compatible_versions = [
-            {
-                "SourceVersion": "OpenSearch_2.9",
-                "TargetVersions": ["OpenSearch_2.11"],
-            },
-            {
-                "SourceVersion": "OpenSearch_2.7",
-                "TargetVersions": ["OpenSearch_2.9", "OpenSearch_2.11"],
-            },
-            {
-                "SourceVersion": "OpenSearch_2.5",
-                "TargetVersions": [
-                    "OpenSearch_2.7",
-                    "OpenSearch_2.9",
-                    "OpenSearch_2.11",
-                ],
-            },
-            {
-                "SourceVersion": "OpenSearch_2.3",
-                "TargetVersions": [
-                    "OpenSearch_2.5",
-                    "OpenSearch_2.7",
-                    "OpenSearch_2.9",
-                    "OpenSearch_2.11",
-                ],
-            },
-            {
-                "SourceVersion": "OpenSearch_1.0",
-                "TargetVersions": ["OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3"],
-            },
-            {
-                "SourceVersion": "OpenSearch_1.1",
-                "TargetVersions": ["OpenSearch_1.2", "OpenSearch_1.3"],
-            },
-            {
-                "SourceVersion": "OpenSearch_1.2",
-                "TargetVersions": ["OpenSearch_1.3"],
-            },
-            {
-                "SourceVersion": "OpenSearch_1.3",
-                "TargetVersions": [
-                    "OpenSearch_2.3",
-                    "OpenSearch_2.5",
-                    "OpenSearch_2.7",
-                    "OpenSearch_2.9",
-                    "OpenSearch_2.11",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_7.10",
-                "TargetVersions": [
-                    "OpenSearch_1.0",
-                    "OpenSearch_1.1",
-                    "OpenSearch_1.2",
-                    "OpenSearch_1.3",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_7.9",
-                "TargetVersions": [
-                    "Elasticsearch_7.10",
-                    "OpenSearch_1.0",
-                    "OpenSearch_1.1",
-                    "OpenSearch_1.2",
-                    "OpenSearch_1.3",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_7.8",
-                "TargetVersions": [
-                    "Elasticsearch_7.9",
-                    "Elasticsearch_7.10",
-                    "OpenSearch_1.0",
-                    "OpenSearch_1.1",
-                    "OpenSearch_1.2",
-                    "OpenSearch_1.3",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_7.7",
-                "TargetVersions": [
-                    "Elasticsearch_7.8",
-                    "Elasticsearch_7.9",
-                    "Elasticsearch_7.10",
-                    "OpenSearch_1.0",
-                    "OpenSearch_1.1",
-                    "OpenSearch_1.2",
-                    "OpenSearch_1.3",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_7.4",
-                "TargetVersions": [
-                    "Elasticsearch_7.7",
-                    "Elasticsearch_7.8",
-                    "Elasticsearch_7.9",
-                    "Elasticsearch_7.10",
-                    "OpenSearch_1.0",
-                    "OpenSearch_1.1",
-                    "OpenSearch_1.2",
-                    "OpenSearch_1.3",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_7.1",
-                "TargetVersions": [
-                    "Elasticsearch_7.4",
-                    "Elasticsearch_7.7",
-                    "Elasticsearch_7.8",
-                    "Elasticsearch_7.9",
-                    "Elasticsearch_7.10",
-                    "OpenSearch_1.0",
-                    "OpenSearch_1.1",
-                    "OpenSearch_1.2",
-                    "OpenSearch_1.3",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_6.8",
-                "TargetVersions": [
-                    "Elasticsearch_7.1",
-                    "Elasticsearch_7.4",
-                    "Elasticsearch_7.7",
-                    "Elasticsearch_7.8",
-                    "Elasticsearch_7.9",
-                    "Elasticsearch_7.10",
-                    "OpenSearch_1.0",
-                    "OpenSearch_1.1",
-                    "OpenSearch_1.2",
-                    "OpenSearch_1.3",
-                ],
-            },
-            {"SourceVersion": "Elasticsearch_6.7", "TargetVersions": ["Elasticsearch_6.8"]},
-            {
-                "SourceVersion": "Elasticsearch_6.5",
-                "TargetVersions": ["Elasticsearch_6.7", "Elasticsearch_6.8"],
-            },
-            {
-                "SourceVersion": "Elasticsearch_6.4",
-                "TargetVersions": [
-                    "Elasticsearch_6.5",
-                    "Elasticsearch_6.7",
-                    "Elasticsearch_6.8",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_6.3",
-                "TargetVersions": [
-                    "Elasticsearch_6.4",
-                    "Elasticsearch_6.5",
-                    "Elasticsearch_6.7",
-                    "Elasticsearch_6.8",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_6.2",
-                "TargetVersions": [
-                    "Elasticsearch_6.3",
-                    "Elasticsearch_6.4",
-                    "Elasticsearch_6.5",
-                    "Elasticsearch_6.7",
-                    "Elasticsearch_6.8",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_6.0",
-                "TargetVersions": [
-                    "Elasticsearch_6.3",
-                    "Elasticsearch_6.4",
-                    "Elasticsearch_6.5",
-                    "Elasticsearch_6.7",
-                    "Elasticsearch_6.8",
-                ],
-            },
-            {
-                "SourceVersion": "Elasticsearch_5.6",
-                "TargetVersions": [
-                    "Elasticsearch_6.3",
-                    "Elasticsearch_6.4",
-                    "Elasticsearch_6.5",
-                    "Elasticsearch_6.7",
-                    "Elasticsearch_6.8",
-                ],
-            },
-            {"SourceVersion": "Elasticsearch_5.5", "TargetVersions": ["Elasticsearch_5.6"]},
-            {"SourceVersion": "Elasticsearch_5.3", "TargetVersions": ["Elasticsearch_5.6"]},
-            {"SourceVersion": "Elasticsearch_5.1", "TargetVersions": ["Elasticsearch_5.6"]},
-        ]
-        # Iterate over the expected compatible versions to avoid breaking the test if new versions are supported
-        for expected_compatible_version in expected_compatible_versions:
-            assert expected_compatible_version in compatible_versions
+        source_versions = sorted(
+            version["SourceVersion"] for version in response["CompatibleVersions"]
+        )
+        snapshot.match("source_versions", source_versions)
+        for version in sorted(response["CompatibleVersions"], key=lambda x: x["SourceVersion"]):
+            snapshot.match(f"source_{version['SourceVersion'].lower()}", version["TargetVersions"])
 
     @markers.aws.needs_fixing
     def test_get_compatible_version_for_domain(self, opensearch_create_domain, aws_client):
