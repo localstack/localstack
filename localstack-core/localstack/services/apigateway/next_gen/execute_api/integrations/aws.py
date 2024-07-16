@@ -53,7 +53,7 @@ NO_BODY_METHODS = {
 
 class LambdaProxyResponse(TypedDict, total=False):
     body: Optional[str]
-    statusCode: Optional[int]
+    statusCode: Optional[int | str]
     headers: Optional[dict[str, str]]
     isBase64Encoded: Optional[bool]
     multiValueHeaders: Optional[dict[str, list[str]]]
@@ -396,7 +396,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         return EndpointResponse(
             headers=headers,
             body=to_bytes(lambda_response.get("body") or ""),
-            status_code=lambda_response.get("statusCode") or 200,
+            status_code=int(lambda_response.get("statusCode") or 200),
         )
 
     @staticmethod
@@ -478,6 +478,12 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             if not isinstance(headers, dict):
                 return False
             if any(not isinstance(header_value, (str, bool)) for header_value in headers.values()):
+                return False
+
+        if "statusCode" in lambda_response:
+            try:
+                int(lambda_response["statusCode"])
+            except ValueError:
                 return False
 
         # TODO: add more validations of the values' type
