@@ -76,7 +76,11 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"test": "test-qs-value"},
+            "header": {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "test": "test-qs-value",
+            },
             "path": {"test": "test-header-value"},
             "querystring": {"test": "test-path-value"},
         }
@@ -95,7 +99,11 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"api_id": TEST_API_ID},
+            "header": {
+                "api_id": TEST_API_ID,
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -115,7 +123,11 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"my_api_key": TEST_IDENTITY_API_KEY},
+            "header": {
+                "my_api_key": TEST_IDENTITY_API_KEY,
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {"userAgent": TEST_USER_AGENT},
         }
@@ -134,7 +146,11 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"my_stage_var": "a stage variable"},
+            "header": {
+                "my_stage_var": "a stage variable",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -154,7 +170,11 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"body_value": "<This is a body value>"},
+            "header": {
+                "body_value": "<This is a body value>",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -176,7 +196,11 @@ class TestApigatewayRequestParametersMapping:
         # it does not forward the body even with passthrough, but the content of `method.request.body` is `{}`
         # if the body is empty
         assert mapping == {
-            "header": {"body_value": "{}"},
+            "header": {
+                "body_value": "{}",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -208,7 +232,11 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"body_value": "nested pet name value"},
+            "header": {
+                "body_value": "nested pet name value",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -242,7 +270,10 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {},
+            "header": {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -315,7 +346,13 @@ class TestApigatewayRequestParametersMapping:
         # it seems the mapping picks the last value of the multivalues, but the `headers` part of the context picks the
         # first one
         assert mapping == {
-            "header": {"test": "value2", "test_multi": "value1,value2", "test_multi_solo": "value"},
+            "header": {
+                "test": "value2",
+                "test_multi": "value1,value2",
+                "test_multi_solo": "value",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -348,7 +385,10 @@ class TestApigatewayRequestParametersMapping:
         # it seems the mapping picks the last value of the multivalues, but the `headers` part of the context picks the
         # first one
         assert mapping == {
-            "header": {},
+            "header": {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {
                 "test": "value2",
@@ -382,7 +422,10 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {},
+            "header": {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -403,7 +446,10 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {},
+            "header": {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
             "path": {},
             "querystring": {},
         }
@@ -412,8 +458,8 @@ class TestApigatewayRequestParametersMapping:
         self, default_invocation_request, default_context_variables
     ):
         mapper = ParametersMapper()
-        default_invocation_request["raw_headers"].add("Content-Type", "application/json")
-        default_invocation_request["raw_headers"].add("Accept", "application/json")
+        default_invocation_request["raw_headers"].add("Content-Type", "application/xml")
+        default_invocation_request["raw_headers"].add("Accept", "application/xml")
 
         mapping = mapper.map_integration_request(
             request_parameters={},

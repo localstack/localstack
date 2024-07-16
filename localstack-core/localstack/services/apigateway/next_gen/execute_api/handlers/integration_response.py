@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 
@@ -51,12 +52,10 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
 
         # we first need to find the right IntegrationResponse based on their selection template, linked to the status
         # code of the Response
-        # TODO: create util to get the AWS integration type from the URI
-        #  maybe we could cache the result in the context? in an IntegrationDetails field?
-        is_lambda = False
-        if integration_type == IntegrationType.AWS and is_lambda:
-            # TODO: fetch errorMessage
-            selection_value = ""
+        if integration_type == IntegrationType.AWS and "lambda:path/" in integration["uri"]:
+            selection_value = self.parse_error_message_from_lambda(response.data) or str(
+                response.status_code
+            )
         else:
             selection_value = str(response.status_code)
 
@@ -235,3 +234,11 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         ):
             response_override["status"] = 0
         return to_bytes(body), response_override
+
+    @staticmethod
+    def parse_error_message_from_lambda(payload: str) -> str:
+        try:
+            lambda_response = json.loads(payload)
+            return lambda_response.get("errorMessage", "")
+        except json.JSONDecodeError:
+            return ""

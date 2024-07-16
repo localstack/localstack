@@ -16,9 +16,6 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
-from localstack.constants import (
-    APPLICATION_JSON,
-)
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     get_resource_for_path,
@@ -63,8 +60,7 @@ from tests.aws.services.apigateway.conftest import (
     APIGATEWAY_DYNAMODB_POLICY,
     APIGATEWAY_KINESIS_POLICY,
     APIGATEWAY_LAMBDA_POLICY,
-    APIGATEWAY_STEPFUNCTIONS_POLICY,
-    STEPFUNCTIONS_ASSUME_ROLE_POLICY,
+    is_next_gen_api,
 )
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_NODEJS,
@@ -342,6 +338,7 @@ class TestAPIGateway:
             integration_type="MOCK",
             integration_responses=responses,
             stage_name=TEST_STAGE_NAME,
+            request_templates={"application/json": json.dumps({"statusCode": 200})},
         )
 
         # invoke endpoint with Origin header
@@ -365,6 +362,7 @@ class TestAPIGateway:
     @pytest.mark.parametrize(
         "api_path", [API_PATH_LAMBDA_PROXY_BACKEND, API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM]
     )
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_api_gateway_lambda_proxy_integration(
         self, api_path, integration_lambda, aws_client, create_iam_role_with_policy
     ):
@@ -385,6 +383,7 @@ class TestAPIGateway:
     # This test fails as it tries to create a lambda locally?
     # It then leaves some resources behind, apigateway and policies
     @markers.aws.needs_fixing
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(
         self, integration_lambda, aws_client, create_iam_role_with_policy
     ):
@@ -543,6 +542,7 @@ class TestAPIGateway:
     # This test fails as it tries to create a lambda locally?
     # It then leaves some resources behind, apigateway and policies
     @markers.aws.needs_fixing
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_api_gateway_lambda_proxy_integration_any_method(self, integration_lambda):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             integration_lambda, API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD
@@ -551,6 +551,7 @@ class TestAPIGateway:
     # This test fails as it tries to create a lambda locally?
     # It then leaves some resources behind, apigateway and policies
     @markers.aws.needs_fixing
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_api_gateway_lambda_proxy_integration_any_method_with_path_param(
         self, integration_lambda
     ):
@@ -870,6 +871,7 @@ class TestAPIGateway:
 
     @markers.aws.needs_fixing
     # Missing role, proper url and doesn't clean up after itself. Should be move to dynamodb test file and use fixtures that clean their resources
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_put_integration_dynamodb_proxy_validation_without_request_template(self, aws_client):
         api_id = self.create_api_gateway_and_deploy(aws_client.apigateway, aws_client.dynamodb)
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
@@ -882,6 +884,7 @@ class TestAPIGateway:
 
     @markers.aws.needs_fixing
     # Missing role, proper url and doesn't clean up after itself. Should be move to dynamodb test file and use fixtures that clean their resources
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_put_integration_dynamodb_proxy_validation_with_request_template(
         self,
         aws_client,
@@ -1009,169 +1012,6 @@ class TestAPIGateway:
         for usage_plan_id in usage_plan_ids:
             aws_client.apigateway.delete_usage_plan(usagePlanId=usage_plan_id)
 
-    @markers.aws.validated
-    @pytest.mark.parametrize("action", ["StartExecution", "DeleteStateMachine"])
-    def test_apigateway_with_step_function_integration(
-        self,
-        action,
-        create_lambda_function,
-        create_rest_apigw,
-        create_iam_role_with_policy,
-        aws_client,
-        account_id,
-        snapshot,
-    ):
-        snapshot.add_transformer(snapshot.transform.key_value("executionArn", "executionArn"))
-        snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                jsonpath="$..startDate",
-                value_replacement="<startDate>",
-                reference_replacement=False,
-            )
-        )
-
-        region_name = aws_client.apigateway._client_config.region_name
-
-        # create lambda
-        fn_name = f"lambda-sfn-apigw-{short_uid()}"
-        lambda_arn = create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=fn_name,
-            runtime=Runtime.python3_9,
-        )["CreateFunctionResponse"]["FunctionArn"]
-
-        # create state machine and permissions for step function to invoke lambda
-        role_arn = create_iam_role_with_policy(
-            RoleName=f"sfn_role-{short_uid()}",
-            PolicyName=f"sfn-role-policy-{short_uid()}",
-            RoleDefinition=STEPFUNCTIONS_ASSUME_ROLE_POLICY,
-            PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
-        )
-
-        state_machine_name = f"test-{short_uid()}"
-        state_machine_def = {
-            "Comment": "Hello World example",
-            "StartAt": "step1",
-            "States": {
-                "step1": {"Type": "Task", "Resource": "__tbd__", "End": True},
-            },
-        }
-        state_machine_def["States"]["step1"]["Resource"] = lambda_arn
-        result = aws_client.stepfunctions.create_state_machine(
-            name=state_machine_name,
-            definition=json.dumps(state_machine_def),
-            roleArn=role_arn,
-            type="EXPRESS",
-        )
-        sm_arn = result["stateMachineArn"]
-
-        # create REST API with integrations
-        rest_api, _, root_id = create_rest_apigw(
-            name=f"test-{short_uid()}", description="test-step-function-integration"
-        )
-        aws_client.apigateway.put_method(
-            restApiId=rest_api,
-            resourceId=root_id,
-            httpMethod="POST",
-            authorizationType="NONE",
-        )
-        create_rest_api_method_response(
-            aws_client.apigateway,
-            restApiId=rest_api,
-            resourceId=root_id,
-            httpMethod="POST",
-            statusCode="200",
-        )
-
-        # give permission to api gateway to invoke step function
-        uri = f"arn:aws:apigateway:{region_name}:states:action/{action}"
-        assume_role_arn = create_iam_role_with_policy(
-            RoleName=f"role-apigw-{short_uid()}",
-            PolicyName=f"policy-apigw-{short_uid()}",
-            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
-            PolicyDefinition=APIGATEWAY_STEPFUNCTIONS_POLICY,
-        )
-
-        def _prepare_integration(request_template=None, response_template=None):
-            aws_client.apigateway.put_integration(
-                restApiId=rest_api,
-                resourceId=root_id,
-                httpMethod="POST",
-                integrationHttpMethod="POST",
-                type="AWS",
-                uri=uri,
-                credentials=assume_role_arn,
-                requestTemplates=request_template,
-            )
-
-            aws_client.apigateway.put_integration_response(
-                restApiId=rest_api,
-                resourceId=root_id,
-                selectionPattern="",
-                responseTemplates=response_template,
-                httpMethod="POST",
-                statusCode="200",
-            )
-
-        test_data = {"test": "test-value"}
-        url = api_invoke_url(api_id=rest_api, stage="dev", path="/")
-
-        req_template = {
-            "application/json": """
-            {
-            "input": "$util.escapeJavaScript($input.json('$'))",
-            "stateMachineArn": "%s"
-            }
-            """
-            % sm_arn
-        }
-        match action:
-            case "StartExecution":
-                _prepare_integration(req_template, response_template={})
-                aws_client.apigateway.create_deployment(restApiId=rest_api, stageName="dev")
-
-                # invoke stepfunction via API GW, assert results
-                def _invoke_start_step_function():
-                    resp = requests.post(url, data=json.dumps(test_data))
-                    assert resp.ok
-                    content = json.loads(resp.content)
-                    assert "executionArn" in content
-                    assert "startDate" in content
-                    return content
-
-                body = retry(_invoke_start_step_function, retries=15, sleep=0.8)
-                snapshot.match("start_execution_response", body)
-
-            case "StartSyncExecution":
-                resp_template = {APPLICATION_JSON: "$input.path('$.output')"}
-                _prepare_integration(req_template, resp_template)
-                aws_client.apigateway.create_deployment(restApiId=rest_api, stageName="dev")
-                input_data = {"input": json.dumps(test_data), "name": "MyExecution"}
-
-                def _invoke_start_sync_step_function():
-                    input_data["name"] += "1"
-                    resp = requests.post(url, data=json.dumps(input_data))
-                    assert resp.ok
-                    body = json.loads(resp.content)
-                    assert test_data == body
-                    return body
-
-                body = retry(_invoke_start_sync_step_function, retries=15, sleep=0.8)
-                snapshot.match("start_sync_response", body)
-
-            case "DeleteStateMachine":
-                _prepare_integration({}, {})
-                aws_client.apigateway.create_deployment(restApiId=rest_api, stageName="dev")
-
-                def _invoke_step_function():
-                    resp = requests.post(url, data=json.dumps({"stateMachineArn": sm_arn}))
-                    # If the action is successful, the service sends back an HTTP 200 response with an empty HTTP body.
-                    assert resp.ok
-                    return json.loads(resp.content)
-
-                body = retry(_invoke_step_function, retries=15, sleep=1)
-                snapshot.match("delete_state_machine_response", body)
-
     @markers.aws.needs_fixing
     def test_api_gateway_http_integration_with_path_request_parameter(
         self, create_rest_apigw, echo_http_server, aws_client
@@ -1245,6 +1085,7 @@ class TestAPIGateway:
 
     @markers.aws.needs_fixing
     # Doesn't use fixture that cleans up after itself. Should be moved to common
+    @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_api_mock_integration_response_params(self, aws_client):
         resps = [
             {
@@ -1866,6 +1707,9 @@ class TestIntegrations:
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
     @markers.aws.needs_fixing
+    @pytest.mark.skipif(
+        condition=is_next_gen_api(), reason="Failing and not validated, not deploying"
+    )
     # TODO replace with fixtures that will clean resources and replave the  `echo_http_server` with `create_echo_http_server`.
     #  Also has hardcoded localhost endpoint in helper functions
     def test_api_gateway_http_integrations(

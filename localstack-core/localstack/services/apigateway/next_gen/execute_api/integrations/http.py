@@ -8,7 +8,7 @@ from localstack.aws.api.apigateway import Integration
 from localstack.http import Response
 
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
-from ..helpers import render_uri_with_path_parameters
+from ..helpers import render_integration_uri
 from .core import RestApiIntegration
 
 NO_BODY_METHODS = {
@@ -108,9 +108,11 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
             method = invocation_req["http_method"]
 
         integration_uri = context.resource_method["methodIntegration"]["uri"]
-        uri = render_uri_with_path_parameters(
+        # TODO: verify stage variables rendering in HTTP_PROXY
+        uri = render_integration_uri(
             integration_uri,
             path_parameters=invocation_req["path_parameters"],
+            stage_variables=context.stage_variables,
         )
 
         default_apigw_headers = self._get_default_headers(context)

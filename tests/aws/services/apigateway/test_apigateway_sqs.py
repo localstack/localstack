@@ -198,9 +198,9 @@ def test_sqs_request_and_response_xml_templates_integration(
 
     invocation_url = api_invoke_url(api_id=api_id, stage=TEST_STAGE_NAME, path="/sqs")
 
-    def invoke_api(url, is_valid_xml=None):
+    def invoke_api(url, validate_xml=None):
         _response = requests.post(url, data="<xml>Hello World</xml>", verify=False)
-        if is_valid_xml:
+        if validate_xml:
             assert is_valid_xml(_response.content.decode("utf-8"))
             return _response
 
@@ -250,7 +250,7 @@ def test_sqs_request_and_response_xml_templates_integration(
         patchOperations=[{"op": "replace", "path": "/deploymentId", "value": deployment["id"]}],
     )
 
-    response = retry(invoke_api, sleep=2, retries=10, url=invocation_url, is_valid_xml=is_valid_xml)
+    response = retry(invoke_api, sleep=2, retries=10, url=invocation_url, validate_xml=True)
 
     xml_body = to_str(response.content)
     # snapshotting would be great, but the response differs from AWS on the XML on the element order
