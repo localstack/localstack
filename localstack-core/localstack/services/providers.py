@@ -51,11 +51,10 @@ def awsconfig():
 
 @aws_provider(api="cloudwatch", name="default")
 def cloudwatch():
-    from localstack.services.cloudwatch.provider import CloudwatchProvider
-    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.cloudwatch.provider_v2 import CloudwatchProvider
 
     provider = CloudwatchProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="cloudwatch", name="v1")
