@@ -31,7 +31,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.33.26
     # via localstack-core (pyproject.toml)
-awscrt==0.21.0
+awscrt==0.21.2
     # via localstack-core
 boto3==1.34.144
     # via
@@ -51,7 +51,7 @@ build==1.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.3.3
+cachetools==5.4.0
     # via
     #   airspeed-ext
     #   localstack-core
@@ -64,7 +64,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.5.1
+cfn-lint==1.6.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -139,13 +139,13 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==0.12.0
+joserfc==1.0.0
     # via moto-ext
 jpype1==1.5.0
     # via localstack-core (pyproject.toml)
 json5==0.9.25
     # via localstack-core (pyproject.toml)
-jsondiff==2.1.1
+jsondiff==2.1.2
     # via moto-ext
 jsonpatch==1.33
     # via

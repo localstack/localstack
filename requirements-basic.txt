@@ -6,7 +6,7 @@
 #
 build==1.2.1
     # via localstack-core (pyproject.toml)
-cachetools==5.3.3
+cachetools==5.4.0
     # via localstack-core (pyproject.toml)
 certifi==2024.7.4
     # via requests

@@ -6,7 +6,7 @@
 #
 attrs==23.2.0
     # via localstack-twisted
-awscrt==0.21.0
+awscrt==0.21.2
     # via localstack-core (pyproject.toml)
 boto3==1.34.144
     # via localstack-core (pyproject.toml)
@@ -17,7 +17,7 @@ botocore==1.34.144
     #   s3transfer
 build==1.2.1
     # via localstack-core (pyproject.toml)
-cachetools==5.3.3
+cachetools==5.4.0
     # via localstack-core (pyproject.toml)
 cbor2==5.6.4
     # via localstack-core (pyproject.toml)
