@@ -1,7 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
-  Value:
-    Type: String
   ChildStackURL:
     Type: String
   KeyValue:

@@ -365,31 +365,31 @@ class TestSsmParameters:
 
     @markers.aws.validated
     def test_ssm_nested_with_nested_stack(self, s3_create_bucket, deploy_cfn_template, aws_client):
+        """
+        When resolving the references in the cloudformation template for 'Fn::GetAtt' we need to consider the attribute subname.
+        Eg: In "Fn::GetAtt": "ChildParam.Outputs.Value", where attribute reference is ChildParam.Outputs.Value the:
+        resource logical id is ChildParam and attribute name is Outputs we need to fetch the Value attribute from the resource properties
+        of the model instance.
+        """
+
         bucket_name = s3_create_bucket()
         domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
 
-        nested_stacks = ["nested_child_ssm.yaml", "nested_parent_ssm.yaml"]
-        urls = []
-
-        for nested_stack in nested_stacks:
-            aws_client.s3.upload_file(
-                os.path.join(os.path.dirname(__file__), "../../templates/", nested_stack),
-                Bucket=bucket_name,
-                Key=nested_stack,
-            )
-
-            urls.append(f"https://{bucket_name}.s3.{domain}/{nested_stack}")
+        aws_client.s3.upload_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/nested_child_ssm.yaml"),
+            Bucket=bucket_name,
+            Key="nested_child_ssm.yaml",
+        )
 
         key_value = "child-2-param-name"
 
         deploy_cfn_template(
             max_wait=120 if is_aws_cloud() else 20,
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../templates/nested_grandparent_ssm.yaml"
+                os.path.dirname(__file__), "../../templates/nested_parent_ssm.yaml"
             ),
             parameters={
-                "ChildStackURL": urls[0],
-                "ParentStackURL": urls[1],
+                "ChildStackURL": f"https://{bucket_name}.s3.{domain}/nested_child_ssm.yaml",
                 "KeyValue": key_value,
             },
         )
