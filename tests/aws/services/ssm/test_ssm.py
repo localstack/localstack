@@ -150,6 +150,16 @@ class TestSSM:
         assert found_param["Value"] == "value"
 
     @markers.aws.validated
+    def test_get_parameter_by_arn(self, create_parameter, aws_client, snapshot, cleanups):
+        param_name = f"param-{short_uid()}"
+        create_parameter(Name=param_name, Value="test", Type="String")
+        parameter_by_name = aws_client.ssm.get_parameter(Name=param_name)["Parameter"]
+
+        parameter_by_arn = aws_client.ssm.get_parameter(Name=parameter_by_name["ARN"])["Parameter"]
+        snapshot.match("Parameter", parameter_by_arn)
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+
+    @markers.aws.validated
     def test_get_inexistent_maintenance_window(self, aws_client):
         invalid_name = "mw-00000000000000000"
         with pytest.raises(aws_client.ssm.exceptions.DoesNotExistException) as exc:

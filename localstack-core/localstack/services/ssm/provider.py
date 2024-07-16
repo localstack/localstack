@@ -80,6 +80,7 @@ from localstack.aws.api.ssm import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto, call_moto_with_request
+from localstack.utils.aws.arns import extract_resource_from_arn, is_arn
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import remove_attributes
 from localstack.utils.objects import keys_to_lower
@@ -363,6 +364,9 @@ class SsmProvider(SsmApi, ABC):
     @staticmethod
     def _normalize_name(param_name: ParameterName, validate=False) -> ParameterName:
         if validate:
+            if is_arn(param_name):
+                return extract_resource_from_arn(param_name).split("/")[-1]
+
             if "//" in param_name or ("/" in param_name and not param_name.startswith("/")):
                 raise InvalidParameterNameException()
         param_name = param_name.strip("/")

@@ -547,3 +547,11 @@ def sqs_queue_name(queue_arn: str) -> str:
 
 def s3_bucket_name(bucket_name_or_arn: str) -> str:
     return bucket_name_or_arn.split(":::")[-1]
+
+
+def is_arn(possible_arn: str) -> bool:
+    try:
+        parse_arn(possible_arn)
+        return True
+    except InvalidArnException:
+        return False
