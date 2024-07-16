@@ -1,6 +1,7 @@
 import logging
 
 from localstack.aws.api.apigateway import Integration, IntegrationType
+from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
 from localstack.utils.collections import merge_recursive
 from localstack.utils.strings import to_bytes, to_str
@@ -143,7 +144,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         request_templates = integration.get("requestTemplates") or {}
         passthrough_behavior = integration.get("passthroughBehavior")
         # If content-type is not provided aws assumes application/json
-        content_type = request["raw_headers"].get("Content-Type", "application/json")
+        content_type = request["raw_headers"].get("Content-Type", APPLICATION_JSON)
         # first look to for a template associated to the content-type, otherwise look for the $default template
         request_template = request_templates.get(content_type) or request_templates.get("$default")
 

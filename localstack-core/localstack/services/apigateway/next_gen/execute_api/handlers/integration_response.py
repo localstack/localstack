@@ -10,7 +10,12 @@ from localstack.http import Response
 from localstack.utils.strings import to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
-from ..context import InvocationRequest, RestApiInvocationContext
+from ..context import (
+    EndpointResponse,
+    InvocationRequest,
+    InvocationResponse,
+    RestApiInvocationContext,
+)
 from ..gateway_response import ApiConfigurationError
 from ..parameters_mapping import ParametersMapper, ResponseDataMapping
 from ..template_mapping import (
@@ -50,14 +55,17 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             # TODO: verify assumptions against AWS
             return
 
+        endpoint_response: EndpointResponse = context.endpoint_response
+        status_code = endpoint_response["status_code"]
+        body = endpoint_response["body"]
+        headers = endpoint_response["headers"]
+
         # we first need to find the right IntegrationResponse based on their selection template, linked to the status
         # code of the Response
         if integration_type == IntegrationType.AWS and "lambda:path/" in integration["uri"]:
-            selection_value = self.parse_error_message_from_lambda(response.data) or str(
-                response.status_code
-            )
+            selection_value = self.parse_error_message_from_lambda(body) or str(status_code)
         else:
-            selection_value = str(response.status_code)
+            selection_value = str(status_code)
 
         integration_response: IntegrationResponse = self.select_integration_response(
             selection_value,
@@ -68,7 +76,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         response_parameters = integration_response.get("responseParameters") or {}
         response_data_mapping = self.get_method_response_data(
             context=context,
-            response=response,
+            response=endpoint_response,
             response_parameters=response_parameters,
         )
 
@@ -77,28 +85,28 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             integration_response=integration_response, request=context.invocation_request
         )
         body, response_override = self.render_request_template_mapping(
-            context=context, template=response_template, response=response
+            context=context, template=response_template, body=body
         )
 
-        # here we update the `Response`. We basically need to remove all headers and replace them with the mapping, then
+        # We basically need to remove all headers and replace them with the mapping, then
         # override them if there are overrides.
         # The status code is pretty straight forward. By default, it would be set by the integration response,
         # unless there was an override
-        response.status_code = int(integration_response["statusCode"])
+        response_status_code = int(integration_response["statusCode"])
         if response_status_override := response_override["status"]:
             # maybe make a better error message format, same for the overrides for request too
             LOG.debug("Overriding response status code: '%s'", response_status_override)
-            response.status_code = response_status_override
+            response_status_code = response_status_override
 
         # Create a new headers object that we can manipulate before overriding the original response headers
-        headers = Headers(response_data_mapping.get("header"))
+        response_headers = Headers(response_data_mapping.get("header"))
         if header_override := response_override["header"]:
             LOG.debug("Response header overrides: %s", header_override)
-            headers.update(header_override)
+            response_headers.update(header_override)
 
         # setting up default content-type
-        if not headers.get("content-type"):
-            headers.set("Content-Type", APPLICATION_JSON)
+        if not response_headers.get("content-type"):
+            response_headers.set("Content-Type", APPLICATION_JSON)
 
         # TODO : refactor the following into method response using table from
         #  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-known-issues.html#api-gateway-known-issues-rest-apis
@@ -106,27 +114,27 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         # There may be other headers, but these have been confirmed on aws
         remapped_headers = ("connection", "content-length", "date", "x-amzn-requestid")
         for header in remapped_headers:
-            if value := headers.get(header):
-                headers[f"x-amzn-remapped-{header}"] = value
-                headers.remove(header)
+            if value := response_headers.get(header):
+                response_headers[f"x-amzn-remapped-{header}"] = value
+                response_headers.remove(header)
 
         # Those headers are passed through from the response headers, there might be more?
         passthrough_headers = ["connection"]
         for header in passthrough_headers:
-            if values := response.headers.getlist(header):
-                headers.setlist(header, values)
+            if values := headers.getlist(header):
+                response_headers.setlist(header, values)
 
-        # We replace the old response with the newly created one
-        response.headers = headers
-
-        # Body is updated last to make sure the content-length is set
         LOG.debug("Method response body after transformations: %s", body)
-        response.data = body
+        context.invocation_response = InvocationResponse(
+            body=body,
+            headers=response_headers,
+            status_code=response_status_code,
+        )
 
     def get_method_response_data(
         self,
         context: RestApiInvocationContext,
-        response: Response,
+        response: EndpointResponse,
         response_parameters: dict[str, str],
     ) -> ResponseDataMapping:
         return self._param_mapper.map_integration_response(
@@ -140,6 +148,9 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
     def select_integration_response(
         selection_value: str, integration_responses: dict[str, IntegrationResponse]
     ) -> IntegrationResponse:
+        if not integration_responses:
+            raise ApiConfigurationError("Internal server error")
+
         if select_by_pattern := [
             response
             for response in integration_responses.values()
@@ -204,10 +215,8 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         return template
 
     def render_request_template_mapping(
-        self, context: RestApiInvocationContext, template: str, response: Response
+        self, context: RestApiInvocationContext, template: str, body: bytes | str
     ) -> tuple[bytes, ContextVarsResponseOverride]:
-        body = response.data
-
         if not template:
             return body, ContextVarsResponseOverride(status=0, header={})
 

@@ -10,11 +10,11 @@ import json
 import logging
 from typing import TypedDict
 
-from localstack.http import Response
+from localstack.constants import APPLICATION_JSON
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
 
-from .context import InvocationRequest
+from .context import EndpointResponse, InvocationRequest
 from .gateway_response import BadRequestException, InternalFailureException
 from .variables import ContextVariables
 
@@ -51,7 +51,7 @@ class ParametersMapper:
 
         # default values, can be overridden with right casing
         for header in ("Content-Type", "Accept"):
-            request_data_mapping["header"][header] = "application/json"
+            request_data_mapping["header"][header] = APPLICATION_JSON
 
         for integration_mapping, request_mapping in request_parameters.items():
             integration_param_location, param_name = integration_mapping.removeprefix(
@@ -79,14 +79,14 @@ class ParametersMapper:
     def map_integration_response(
         self,
         response_parameters: dict[str, str],
-        integration_response: Response,
+        integration_response: EndpointResponse,
         context_variables: ContextVariables,
         stage_variables: dict[str, str],
     ) -> ResponseDataMapping:
         response_data_mapping = ResponseDataMapping(header={})
 
         # storing the case-sensitive headers once, the mapping is strict
-        case_sensitive_headers = dict(integration_response.headers.items())
+        case_sensitive_headers = dict(integration_response["headers"].items())
 
         for response_mapping, integration_mapping in response_parameters.items():
             header_name = response_mapping.removeprefix("method.response.header.")
@@ -137,7 +137,7 @@ class ParametersMapper:
     def _retrieve_parameter_from_integration_response(
         self,
         expr: str,
-        integration_response: Response,
+        integration_response: EndpointResponse,
         case_sensitive_headers: dict[str, str],
     ) -> str | None:
         """
@@ -149,7 +149,7 @@ class ParametersMapper:
         :return: the value to map in the ResponseDataMapping
         """
         if expr.startswith("body"):
-            body = integration_response.get_data() or b"{}"
+            body = integration_response.get("body") or b"{}"
             body = body.strip()
             try:
                 decoded_body = self._json_load(body)
@@ -181,7 +181,7 @@ class ParametersMapper:
             if param_name not in case_sensitive_headers:
                 return
 
-            multi_headers = integration_response.headers.getlist(param_name)
+            multi_headers = integration_response["headers"].getlist(param_name)
             return ",".join(multi_headers)
 
         else:

@@ -51,6 +51,29 @@ class IntegrationRequest(TypedDict, total=False):
     """Body content of the request"""
 
 
+class BaseResponse(TypedDict):
+    """Base class for Response objects in the context"""
+
+    status_code: int
+    """Status code of the response"""
+    headers: Headers
+    """Headers of the response"""
+    body: bytes
+    """Body content of the response"""
+
+
+class EndpointResponse(BaseResponse):
+    """Represents the response coming from an integration, called Endpoint Response in AWS"""
+
+    pass
+
+
+class InvocationResponse(BaseResponse):
+    """Represents the response coming after being serialized in an Integration Response in AWS"""
+
+    pass
+
+
 class RestApiInvocationContext(RequestContext):
     """
     This context is going to be used to pass relevant information across an API Gateway invocation.
@@ -82,6 +105,10 @@ class RestApiInvocationContext(RequestContext):
     """Additional $context variables available only for access logging, not yet implemented"""
     integration_request: Optional[IntegrationRequest]
     """Contains the data needed to construct an HTTP request to an Integration"""
+    endpoint_response: Optional[EndpointResponse]
+    """Contains the data returned by an Integration"""
+    invocation_response: Optional[InvocationResponse]
+    """Contains the data serialized and to be returned by an invocation"""
 
     def __init__(self, request: Request):
         super().__init__(request)
@@ -98,3 +125,5 @@ class RestApiInvocationContext(RequestContext):
         self.context_variables = None
         self.logging_context_variables = None
         self.integration_request = None
+        self.endpoint_response = None
+        self.invocation_response = None

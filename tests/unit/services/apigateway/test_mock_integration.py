@@ -6,7 +6,9 @@ from localstack.services.apigateway.next_gen.execute_api.context import (
     RestApiInvocationContext,
 )
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import InternalServerError
-from localstack.services.apigateway.next_gen.execute_api.integrations import RestApiMockIntegration
+from localstack.services.apigateway.next_gen.execute_api.integrations.mock import (
+    RestApiMockIntegration,
+)
 from localstack.utils.strings import to_bytes
 
 
@@ -26,7 +28,7 @@ class TestMockIntegration:
 
         ctx = create_default_context(body='{"statusCode": 200}')
         response = mock_integration.invoke(ctx)
-        assert response.status_code == 200
+        assert response["status_code"] == 200
 
         # It needs to be an integer
         ctx = create_default_context(body='{"statusCode": "200"}')
@@ -37,12 +39,12 @@ class TestMockIntegration:
         # Any integer will do
         ctx = create_default_context(body='{"statusCode": 0}')
         response = mock_integration.invoke(ctx)
-        assert response.status_code == 0
+        assert response["status_code"] == 0
 
         # Literally any
         ctx = create_default_context(body='{"statusCode": -1000}')
         response = mock_integration.invoke(ctx)
-        assert response.status_code == -1000
+        assert response["status_code"] == -1000
 
         # Malformed Json
         ctx = create_default_context(body='{"statusCode": 200')

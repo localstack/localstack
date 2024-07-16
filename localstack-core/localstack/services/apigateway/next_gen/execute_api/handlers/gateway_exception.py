@@ -3,6 +3,7 @@ import logging
 
 from rolo import Response
 
+from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.next_gen.execute_api.api import (
     RestApiGatewayExceptionHandler,
     RestApiGatewayHandlerChain,
@@ -28,9 +29,6 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         context: RestApiInvocationContext,
         response: Response,
     ):
-        # Need to terminate the chain here to prevent the response handler to modify this response
-        chain.terminate()
-
         if not isinstance(exception, BaseGatewayException):
             LOG.warning(
                 "Non Gateway Exception raised: %s",
@@ -71,4 +69,4 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
 
     def _build_response_headers(self, exception: BaseGatewayException) -> dict:
         # TODO apply responseParameters to the headers and get content-type from the gateway_response
-        return {"content-type": "application/json", "x-amzn-ErrorType": exception.code}
+        return {"content-type": APPLICATION_JSON, "x-amzn-ErrorType": exception.code}
