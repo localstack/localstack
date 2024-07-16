@@ -905,7 +905,7 @@ workflows:
           requires:
             - preflight
             - test-selection
-      - itest-cloudwatch-v2-provider:
+      - itest-cloudwatch-v1-provider:
           requires:
             - preflight
             - test-selection
@@ -973,7 +973,7 @@ workflows:
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
+            - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
@@ -988,7 +988,7 @@ workflows:
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
+            - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
