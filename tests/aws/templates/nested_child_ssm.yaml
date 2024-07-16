@@ -1,0 +1,16 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  KeyValue:
+    Type: String
+Resources:
+  Param:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: child-param-name
+      Type: String
+      Value: !Ref KeyValue
+Outputs:
+  Name:
+    Value: !Ref Param
+  Value:
+    Value: !GetAtt Param.Value

@@ -1,0 +1,22 @@
+Parameters:
+  ChildStackURL:
+    Type: String
+
+  ParentStackURL:
+    Type: String
+
+  KeyValue:
+    Type: String
+
+Resources:
+  Param:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref ParentStackURL
+      Parameters:
+        Value: |-
+            {
+              "Fn::GetAtt": "ChildParam.Outputs.Value"
+            }
+        ChildStackURL: !Ref ChildStackURL
+        KeyValue: !Ref KeyValue
