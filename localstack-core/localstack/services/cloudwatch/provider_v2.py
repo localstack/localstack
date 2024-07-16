@@ -437,11 +437,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
         composite_to_metric_alarm = {
             "AlarmName": request.get("AlarmName"),
-            "Description": request.get("AlarmDescription"),
+            "AlarmDescription": request.get("AlarmDescription"),
             "AlarmActions": request.get("AlarmActions", []),
             "OKActions": request.get("OKActions", []),
             "InsufficientDataActions": request.get("InsufficientDataActions", []),
-            "ActionsEnabled": request.get("ActionsEnabled"),
+            "ActionsEnabled": request.get("ActionsEnabled", True),
             "AlarmRule": request.get("AlarmRule"),
             "Tags": request.get("Tags", []),
         }
