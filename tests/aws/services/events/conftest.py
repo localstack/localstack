@@ -416,3 +416,41 @@ def add_resource_policy_logs_events_access(aws_client):
 
     for policy_name in policies:
         aws_client.logs.delete_resource_policy(policyName=policy_name)
+
+
+@pytest.fixture
+def get_primary_secondary_client(
+    aws_client_factory,
+    secondary_aws_client_factory,
+    region_name,
+    secondary_region_name,
+    account_id,
+    secondary_account_id,
+):
+    def _get_primary_secondary_clients(cross_scenario: str):
+        secondary_region = secondary_region_name
+        secondary_account = secondary_account_id
+        if cross_scenario not in ["region", "account", "region_account"]:
+            raise ValueError(f"cross_scenario {cross_scenario} not supported")
+
+        primary_client = aws_client_factory(region_name=region_name)
+
+        if cross_scenario == "region":
+            secondary_account = account_id
+            secondary_client = aws_client_factory(region_name=secondary_region_name)
+
+        elif cross_scenario == "account":
+            secondary_region = region_name
+            secondary_client = secondary_aws_client_factory(region_name=region_name)
+
+        elif cross_scenario == "region_account":
+            secondary_client = secondary_aws_client_factory(region_name=secondary_region)
+
+        return {
+            "primary_aws_client": primary_client,
+            "secondary_aws_client": secondary_client,
+            "secondary_region_name": secondary_region,
+            "secondary_account_id": secondary_account,
+        }
+
+    return _get_primary_secondary_clients

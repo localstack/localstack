@@ -21,33 +21,24 @@ def test_event_bus_to_event_bus_cross_account_region(
     cross_scenario,
     event_bus_name,
     region_name,
-    secondary_region_name,
     account_id,
-    secondary_account_id,
-    aws_client_factory,
-    secondary_aws_client_factory,
+    get_primary_secondary_client,
     cleanups,
     snapshot,
 ):
+    # Create aws clients
+    response = get_primary_secondary_client(cross_scenario)
+    aws_client = response["primary_aws_client"]
+    secondary_aws_client = response["secondary_aws_client"]
+    secondary_region_name = response["secondary_region_name"]
+    secondary_account_id = response["secondary_account_id"]
+
     # overwriting randomized region https://docs.localstack.cloud/contributing/multi-account-region-testing/
     # requires manually adding region replacement for snapshot
     snapshot.add_transformer(snapshot.transform.regex(region_name, "<region>"))
     snapshot.add_transformer(snapshot.transform.regex(secondary_region_name, "<region-secondary>"))
     snapshot.add_transformer(snapshot.transform.regex(account_id, "<account>"))
     snapshot.add_transformer(snapshot.transform.regex(secondary_account_id, "<account-secondary>"))
-
-    # Create aws clients
-    if cross_scenario == "region":
-        secondary_account_id = account_id
-        aws_client = aws_client_factory(region_name=region_name)
-        secondary_aws_client = aws_client_factory(region_name=secondary_region_name)
-    if cross_scenario == "account":
-        secondary_region_name = region_name
-        aws_client = aws_client_factory(region_name=region_name)
-        secondary_aws_client = secondary_aws_client_factory(region_name=region_name)
-    if cross_scenario == "region_account":
-        aws_client = aws_client_factory(region_name=region_name)
-        secondary_aws_client = secondary_aws_client_factory(region_name=secondary_region_name)
 
     # Create event buses
     if event_bus_name == "default":
