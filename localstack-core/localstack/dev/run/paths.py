@@ -11,7 +11,7 @@ class HostPaths:
     ``~/workspace/ls/localstack-ext``, ..."""
 
     localstack_project_dir: Path
-    localstack_ext_project_dir: Path
+    localstack_pro_project_dir: Path
     moto_project_dir: Path
     postgresql_proxy: Path
     rolo_dir: Path
@@ -26,7 +26,7 @@ class HostPaths:
     ):
         self.workspace_dir = Path(workspace_dir or os.path.abspath(os.path.join(os.getcwd(), "..")))
         self.localstack_project_dir = self.workspace_dir / "localstack"
-        self.localstack_ext_project_dir = self.workspace_dir / "localstack-ext"
+        self.localstack_pro_project_dir = self.workspace_dir / "localstack-ext"
         self.moto_project_dir = self.workspace_dir / "moto"
         self.postgresql_proxy = self.workspace_dir / "postgresql-proxy"
         self.rolo_dir = self.workspace_dir / "rolo"
@@ -47,7 +47,7 @@ class ContainerPaths:
     docker_entrypoint: str = "/usr/local/bin/docker-entrypoint.sh"
     localstack_supervisor: str = "/usr/local/bin/localstack-supervisor"
     localstack_source_dir: str
-    localstack_ext_source_dir: Optional[str]
+    localstack_pro_source_dir: Optional[str]
 
     def dependency_source(self, name: str) -> str:
         """Returns path of the given source dependency in the site-packages directory."""
@@ -66,4 +66,4 @@ class ProContainerPaths(ContainerPaths):
 
     def __init__(self):
         self.localstack_source_dir = self.dependency_source("localstack")
-        self.localstack_ext_source_dir = self.dependency_source("localstack_ext")
+        self.localstack_pro_source_dir = self.dependency_source("localstack_ext")

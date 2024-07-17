@@ -1,5 +1,5 @@
 """Lambda models for internal use and persistence.
-The LambdaProviderPro in localstack-ext imports this model and configures persistence.
+The LambdaProviderPro in localstack-pro imports this model and configures persistence.
 The actual function code is stored in S3 (see S3Code).
 """
 

@@ -202,7 +202,7 @@ def cmd_config_show(format_: str) -> None:
 
     try:
         # only load the ext config if it's available
-        from localstack_ext import config as ext_config
+        from localstack.pro.core import config as ext_config
 
         assert ext_config
     except ImportError:
