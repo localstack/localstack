@@ -117,7 +117,10 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                     heartbeat_endpoint=heartbeat_endpoint,
                 )
 
-            thread_wait_for_task_token = threading.Thread(target=_local_update_wait_for_task_token)
+            thread_wait_for_task_token = threading.Thread(
+                target=_local_update_wait_for_task_token,
+                name=f"WaitForTaskToken_SyncTask_{self.resource.resource_arn}",
+            )
             TMP_THREADS.append(thread_wait_for_task_token)
             thread_wait_for_task_token.start()
             # Note: the stopping of this worker thread is handled indirectly through the state of env.
