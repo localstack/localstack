@@ -127,7 +127,9 @@ class SourceVolumeMountConfigurator:
         source = self.host_paths.localstack_project_dir / "localstack-core" / "localstack"
         if source.exists():
             cfg.volumes.add(
-                VolumeBind(str(source), self.container_paths.localstack_source_dir, read_only=True)
+                # read_only=False is a temporary workaround to make the mounting of the pro source work
+                # this can be reverted once we don't need the nested mounting anymore
+                VolumeBind(str(source), self.container_paths.localstack_source_dir, read_only=False)
             )
 
         # ext source code if available
