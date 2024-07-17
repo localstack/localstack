@@ -81,7 +81,7 @@ def list_files_with_suffix(directory_path: str, suffix: str) -> List[str]:
 request_template_tuples = load_request_templates(REQUEST_TEMPLATE_DIR)
 
 
-class TestTestEventPattern:
+class TestEventPattern:
     # TODO: extend these test cases based on the open source docs + tests: https://github.com/aws/event-ruler
     #  For example, "JSON Array Matching", "And and Or Relationship among fields with Ruler", rule validation,
     #  and exception handling.
@@ -91,7 +91,7 @@ class TestTestEventPattern:
         ids=[t[1] for t in request_template_tuples],
     )
     @markers.aws.validated
-    def test_test_event_pattern(self, aws_client, snapshot, request_template, label):
+    def test_event_pattern(self, aws_client, snapshot, request_template, label):
         """This parametrized test handles three outcomes:
         a) MATCH (default): The EventPattern matches the Event yielding true as result.
         b) NO MATCH (_NEG suffix): The EventPattern does NOT match the Event yielding false as result.
@@ -127,7 +127,7 @@ class TestTestEventPattern:
                 assert response["Result"]
 
     @markers.aws.validated
-    def test_test_event_pattern_with_multi_key(self, aws_client):
+    def test_event_pattern_with_multi_key(self, aws_client):
         """Test the special case of a duplicate JSON key separately because it requires working around the
         uniqueness constraints of the JSON5 library and Python dicts, which would already de-deduplicate the key "location".
         This example is based on the following AWS documentation:
@@ -147,7 +147,7 @@ class TestTestEventPattern:
             assert response["Result"]
 
     @markers.aws.validated
-    def test_test_event_pattern_with_escape_characters(self, aws_client):
+    def test_event_pattern_with_escape_characters(self, aws_client):
         r"""Test the special case of using escape characters separately because it requires working around JSON escaping.
         Escape characters are explained in the AWS documentation:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-wildcard-matching
@@ -166,7 +166,7 @@ class TestTestEventPattern:
         assert response["Result"]
 
     @markers.aws.validated
-    def test_test_event_pattern_source(self, aws_client, snapshot, account_id, region_name):
+    def test_event_pattern_source(self, aws_client, snapshot, account_id, region_name):
         response = aws_client.events.test_event_pattern(
             Event=json.dumps(
                 {
