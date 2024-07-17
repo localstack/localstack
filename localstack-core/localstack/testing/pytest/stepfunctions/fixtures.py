@@ -24,6 +24,52 @@ def sfn_snapshot(snapshot):
 
 
 @pytest.fixture
+def sfn_batch_snapshot(sfn_snapshot):
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..JobDefinition", replacement="job-definition")
+    )
+    sfn_snapshot.add_transformer(JsonpathTransformer(jsonpath="$..JobName", replacement="job-name"))
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..JobQueue", replacement="job-queue")
+    )
+    sfn_snapshot.add_transformer(JsonpathTransformer(jsonpath="$..roleArn", replacement="role-arn"))
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..x-amz-apigw-id", replacement="x-amz-apigw-id", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..X-Amzn-Trace-Id", replacement="X-Amzn-Trace-Id", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(JsonpathTransformer(jsonpath="$..TaskArn", replacement="task-arn"))
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..ExecutionRoleArn", replacement="execution-role-arn")
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..LogStreamName", replacement="log-stream-name")
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..StartedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..StoppedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..CreatedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..PrivateIpv4Address",
+            replacement="private-ipv4-address",
+            replace_reference=False,
+        )
+    )
+    return sfn_snapshot
+
+
+@pytest.fixture
 def sfn_ecs_snapshot(sfn_snapshot):
     sfn_snapshot.add_transformer(JsonpathTransformer(jsonpath="$..TaskArn", replacement="task_arn"))
     sfn_snapshot.add_transformer(
