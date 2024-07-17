@@ -66,4 +66,4 @@ class ProContainerPaths(ContainerPaths):
 
     def __init__(self):
         self.localstack_source_dir = self.dependency_source("localstack")
-        self.localstack_pro_source_dir = self.dependency_source("localstack_ext")
+        self.localstack_pro_source_dir = self.dependency_source("localstack") + "/pro/core"
