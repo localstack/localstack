@@ -460,5 +460,64 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventsCrossAccountRegion::test_put_events[default-region]": {
+    "recorded-date": "17-07-2024, 14:11:00",
+    "recorded-content": {
+      "messages": []
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventsCrossAccountRegion::test_put_events[default-account]": {
+    "recorded-date": "17-07-2024, 14:11:03",
+    "recorded-content": {
+      "messages": []
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventsCrossAccountRegion::test_put_events[default-region_account]": {
+    "recorded-date": "17-07-2024, 14:11:09",
+    "recorded-content": {
+      "messages": []
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventsCrossAccountRegion::test_put_events[custom-region]": {
+    "recorded-date": "17-07-2024, 14:11:13",
+    "recorded-content": {
+      "cross-region-put-events-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutEvents operation: Cross-region api call is not allowed.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventsCrossAccountRegion::test_put_events[custom-account]": {
+    "recorded-date": "17-07-2024, 14:11:15",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventsCrossAccountRegion::test_put_events[custom-region_account]": {
+    "recorded-date": "17-07-2024, 14:11:19",
+    "recorded-content": {
+      "cross-region-put-events-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutEvents operation: Cross-region api call is not allowed.') tblen=3>"
+    }
   }
 }

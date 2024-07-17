@@ -2,12 +2,19 @@ import json
 import time
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
-from tests.aws.services.events.helper_functions import is_old_provider, sqs_collect_messages
-from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN_NO_SOURCE
+from tests.aws.services.events.helper_functions import (
+    is_old_provider,
+    sqs_collect_messages,
+)
+from tests.aws.services.events.test_events import (
+    EVENT_DETAIL,
+    TEST_EVENT_PATTERN_NO_SOURCE,
+)
 
 SOURCE_PRIMARY = "source-primary"
 SOURCE_SECONDARY = "source-secondary"
@@ -84,7 +91,8 @@ def test_event_bus_to_event_bus_cross_account_region(
         ],
     }
     aws_client.sqs.set_queue_attributes(
-        QueueUrl=queue_url_primary, Attributes={"Policy": json.dumps(policy_events_sqs_primary)}
+        QueueUrl=queue_url_primary,
+        Attributes={"Policy": json.dumps(policy_events_sqs_primary)},
     )
 
     queue_name_secondary = f"test-queue-secondary-{short_uid()}"
@@ -311,3 +319,162 @@ def test_event_bus_to_event_bus_cross_account_region(
         PolicyName=policy_name_bus_primary_to_bus_secondary,
     )
     aws_client.iam.delete_role(RoleName=role_name_bus_primary_to_bus_secondary)
+
+
+class TestEventsCrossAccountRegion:
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="Not supported in v1 provider")
+    @pytest.mark.parametrize("cross_scenario", ["region", "account", "region_account"])
+    @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
+    def test_put_events(
+        self,
+        cross_scenario,
+        event_bus_type,
+        region_name,
+        secondary_region_name,
+        account_id,
+        secondary_account_id,
+        get_primary_secondary_client,
+        snapshot,
+    ):
+        # Create aws clients
+        response = get_primary_secondary_client(cross_scenario)
+        aws_client = response["primary_aws_client"]
+        secondary_aws_client = response["secondary_aws_client"]
+        secondary_region_name = response["secondary_region_name"]
+        secondary_account_id = response["secondary_account_id"]
+
+        # overwriting randomized region https://docs.localstack.cloud/contributing/multi-account-region-testing/
+        # requires manually adding region replacement for snapshot
+        snapshot.add_transformer(snapshot.transform.regex(region_name, "<region>"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(secondary_region_name, "<region-secondary>")
+        )
+        snapshot.add_transformer(snapshot.transform.regex(account_id, "<account>"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(secondary_account_id, "<account-secondary>")
+        )
+
+        # Create event bus in secondary region / account
+        if event_bus_type == "default":
+            event_bus_name = "default"
+            event_bus_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+        else:
+            event_bus_name = f"test-bus-{short_uid()}"
+            response = secondary_aws_client.events.create_event_bus(Name=event_bus_name)
+            event_bus_arn = response["EventBusArn"]
+
+        # Allow principal to put event to event bus
+        secondary_aws_client.events.put_permission(
+            StatementId=f"TargetEventBusAccessPermission{short_uid()}",
+            EventBusName=event_bus_name,
+            Action="events:PutEvents",
+            Principal="*",
+        )
+
+        # Create SQS queue in secondary region / account
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url = secondary_aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
+        queue_arn = secondary_aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        policy = {
+            "Version": "2012-10-17",
+            "Id": f"sqs-eventbridge-{short_uid()}",
+            "Statement": [
+                {
+                    "Sid": f"SendMessage-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sqs:SendMessage",
+                    "Resource": queue_arn,
+                }
+            ],
+        }
+        secondary_aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
+
+        # Create rule in secondary region / account
+        rule_name = f"test-rule-sqs-{short_uid()}"
+        secondary_aws_client.events.put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps({"source": [SOURCE_PRIMARY]}),
+            EventBusName=event_bus_name,
+        )
+
+        # Create target in secondary region / account
+        target_id_sqs_primary = f"test-target-primary-sqs-{short_uid()}"
+        secondary_aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name,
+            Targets=[
+                {
+                    "Id": target_id_sqs_primary,
+                    "Arn": queue_arn,
+                }
+            ],
+        )
+
+        ######
+        # Test
+        ######
+
+        # Put events into primary event bus
+        if event_bus_type == "custom" and cross_scenario in ["region", "region_account"]:
+            with pytest.raises(ClientError) as e:
+                aws_client.events.put_events(
+                    Entries=[
+                        {
+                            "Source": SOURCE_PRIMARY,
+                            "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
+                            "Detail": json.dumps(EVENT_DETAIL),
+                            "EventBusName": event_bus_arn,  # using arn for cross region / cross account
+                        }
+                    ],
+                )
+            snapshot.match("cross-region-put-events-error", e)
+        else:
+            aws_client.events.put_events(
+                Entries=[
+                    {
+                        "Source": SOURCE_PRIMARY,
+                        "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
+                        "Detail": json.dumps(EVENT_DETAIL),
+                        "EventBusName": event_bus_arn,  # using arn for cross region / cross account
+                    }
+                ],
+            )
+
+            if event_bus_type == "default":
+                expected_events_count = (
+                    0  # put_events for cross region or cross account on
+                    # default bus no client or server side error, but no events in event bus
+                )
+            else:
+                expected_events_count = 1
+
+            # Collect messages from primary queue
+            messages = sqs_collect_messages(
+                secondary_aws_client,
+                queue_url,
+                expected_events_count=expected_events_count,
+                wait_time=1,
+                retries=5,
+            )
+            snapshot.add_transformers_list(
+                [
+                    snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+                    snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+                ],
+            )
+            snapshot.match("messages", messages)
+
+            # Cleanup
+            secondary_aws_client.events.remove_targets(
+                Rule=rule_name, EventBusName=event_bus_name, Ids=[target_id_sqs_primary]
+            )
+            secondary_aws_client.events.delete_rule(EventBusName=event_bus_name, Name=rule_name)
+            if event_bus_type == "custom":
+                secondary_aws_client.events.delete_event_bus(Name=event_bus_name)
+            secondary_aws_client.sqs.delete_queue(QueueUrl=queue_url)
