@@ -182,6 +182,8 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                         normalised_parameters=normalised_parameters,
                     )
                 else:
+                    # The condition checks about the resource's condition is exhaustive leaving
+                    # only Sync2 ResourceCondition types in this block.
                     sync_resolver = self._build_sync2_resolver(
                         env=env,
                         resource_runtime_part=resource_runtime_part,
