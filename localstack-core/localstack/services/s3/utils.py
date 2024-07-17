@@ -237,13 +237,9 @@ class S3CRC32Checksum:
     __slots__ = ["checksum"]
 
     def __init__(self):
-        self.checksum = None
+        self.checksum = zlib.crc32(b"")
 
     def update(self, value: bytes):
-        if self.checksum is None:
-            self.checksum = zlib.crc32(value)
-            return
-
         self.checksum = zlib.crc32(value, self.checksum)
 
     def digest(self) -> bytes:
