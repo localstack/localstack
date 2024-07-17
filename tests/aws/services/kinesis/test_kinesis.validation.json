@@ -27,7 +27,7 @@
     "last_validated_date": "2024-06-21T15:20:46+00:00"
   },
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_at_timestamp_cbor": {
-    "last_validated_date": "2024-07-04T09:16:32+00:00"
+    "last_validated_date": "2024-07-17T20:16:42+00:00"
   },
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_sequence_number_as_iterator": {
     "last_validated_date": "2022-08-26T07:29:21+00:00"
