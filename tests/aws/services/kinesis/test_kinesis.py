@@ -670,6 +670,48 @@ class TestKinesis:
         )
         assert "ShardIterator" in shard_iterator_response_data
 
+    @markers.aws.validated
+    def test_cbor_blob_handling(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        aws_client,
+        kinesis_http_client,
+    ):
+        # create stream
+        stream_name = kinesis_create_stream(ShardCount=1)
+        wait_for_stream_ready(stream_name)
+
+        test_data = f"hello world {short_uid()}"
+
+        # put a record on to the stream
+        kinesis_http_client.post(
+            operation="PutRecord",
+            payload={
+                "Data": test_data.encode("utf-8"),
+                "PartitionKey": f"key-{short_uid()}",
+                "StreamName": stream_name,
+            },
+        )
+
+        # don't need to get shard iterator manually, so use the SDK
+        shard_iterator: str | None = get_shard_iterator(stream_name, aws_client.kinesis)
+        assert shard_iterator is not None
+
+        def _get_record():
+            # send get records request via the http client
+            get_records_response = kinesis_http_client.post(
+                operation="GetRecords",
+                payload={
+                    "ShardIterator": shard_iterator,
+                },
+            )
+            assert len(get_records_response["Records"]) == 1
+            return get_records_response["Records"][0]
+
+        record = retry(_get_record, sleep=1, retries=5)
+        assert record["Data"].decode("utf-8") == test_data
+
 
 class TestKinesisPythonClient:
     @markers.skip_offline
