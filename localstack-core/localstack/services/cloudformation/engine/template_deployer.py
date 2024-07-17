@@ -73,7 +73,11 @@ class NoStackUpdates(Exception):
 
 
 def get_attr_from_model_instance(
-    resource: dict, attribute_name: str, resource_type: str, resource_id: str
+    resource: dict,
+    attribute_name: str,
+    resource_type: str,
+    resource_id: str,
+    attribute_sub_name: Optional[str] = None,
 ) -> str:
     properties = resource.get("Properties", {})
     # if there's no entry in VALID_GETATT_PROPERTIES for the resource type we still default to "open" and accept anything
@@ -87,6 +91,8 @@ def get_attr_from_model_instance(
         )  # TODO: check CFn behavior via snapshot
 
     attribute_candidate = properties.get(attribute_name)
+    if attribute_sub_name:
+        return attribute_candidate.get(attribute_sub_name)
     if "." in attribute_name:
         # was used for legacy, but keeping it since it might have to work for a custom resource as well
         if attribute_candidate:
@@ -307,6 +313,7 @@ def _resolve_refs_recursively(
             attr_ref = attr_ref.split(".") if isinstance(attr_ref, str) else attr_ref
             resource_logical_id = attr_ref[0]
             attribute_name = attr_ref[1]
+            attribute_sub_name = attr_ref[2] if len(attr_ref) > 2 else None
 
             # the attribute name can be a Ref
             attribute_name = resolve_refs_recursively(
@@ -322,8 +329,13 @@ def _resolve_refs_recursively(
             resource = resources.get(resource_logical_id)
 
             resolved_getatt = get_attr_from_model_instance(
-                resource, attribute_name, get_resource_type(resource), resource_logical_id
+                resource,
+                attribute_name,
+                get_resource_type(resource),
+                resource_logical_id,
+                attribute_sub_name,
             )
+
             # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
             if resolved_getatt is None:
                 raise DependencyNotYetSatisfied(

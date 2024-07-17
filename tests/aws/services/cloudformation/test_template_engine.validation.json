@@ -2,11 +2,11 @@
   "tests/aws/services/cloudformation/test_template_engine.py::TestImportValues::test_cfn_with_exports": {
     "last_validated_date": "2024-06-21T18:37:15+00:00"
   },
-  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_cfn_template_with_short_form_fn_sub": {
-    "last_validated_date": "2024-06-20T20:41:15+00:00"
-  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestImports::test_stack_imports": {
     "last_validated_date": "2024-07-04T14:19:31+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_cfn_template_with_short_form_fn_sub": {
+    "last_validated_date": "2024-06-20T20:41:15+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function": {
     "last_validated_date": "2024-04-03T07:12:29+00:00"
@@ -82,6 +82,9 @@
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
     "last_validated_date": "2023-01-15T16:54:23+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_ssm_nested_with_nested_stack": {
+    "last_validated_date": "2024-07-16T16:38:43+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestStackEvents::test_invalid_stack_deploy": {
     "last_validated_date": "2023-06-12T15:08:47+00:00"

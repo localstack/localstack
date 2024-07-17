@@ -11,6 +11,7 @@ import yaml
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.common import short_uid
@@ -361,6 +362,41 @@ class TestSsmParameters:
 
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
+
+    @markers.aws.validated
+    def test_ssm_nested_with_nested_stack(self, s3_create_bucket, deploy_cfn_template, aws_client):
+        """
+        When resolving the references in the cloudformation template for 'Fn::GetAtt' we need to consider the attribute subname.
+        Eg: In "Fn::GetAtt": "ChildParam.Outputs.Value", where attribute reference is ChildParam.Outputs.Value the:
+        resource logical id is ChildParam and attribute name is Outputs we need to fetch the Value attribute from the resource properties
+        of the model instance.
+        """
+
+        bucket_name = s3_create_bucket()
+        domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
+
+        aws_client.s3.upload_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/nested_child_ssm.yaml"),
+            Bucket=bucket_name,
+            Key="nested_child_ssm.yaml",
+        )
+
+        key_value = "child-2-param-name"
+
+        deploy_cfn_template(
+            max_wait=120 if is_aws_cloud() else 20,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/nested_parent_ssm.yaml"
+            ),
+            parameters={
+                "ChildStackURL": f"https://{bucket_name}.s3.{domain}/nested_child_ssm.yaml",
+                "KeyValue": key_value,
+            },
+        )
+
+        ssm_parameter = aws_client.ssm.get_parameter(Name="test-param")["Parameter"]["Value"]
+
+        assert ssm_parameter == key_value
 
 
 class TestSecretsManagerParameters:
