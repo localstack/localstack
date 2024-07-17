@@ -1,7 +1,6 @@
 import json
 import os
 import re
-from typing import List
 
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
@@ -62,7 +61,7 @@ def test_composite_alarm_creation(aws_client, deploy_cfn_template, snapshot):
     composite_alarm_name = stack.outputs["CompositeAlarmName"]
 
     def alarm_action_name_transformer(key: str, val: str):
-        if key == "AlarmActions" and isinstance(val, List) and len(val) == 1:
+        if key == "AlarmActions" and isinstance(val, list) and len(val) == 1:
             # we expect only one item in the list
             value = val[0]
             match = re.match(PATTERN_ARN, value)
