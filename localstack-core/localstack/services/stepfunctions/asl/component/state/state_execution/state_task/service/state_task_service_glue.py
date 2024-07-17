@@ -1,4 +1,4 @@
-from typing import Callable, Final, Optional
+from typing import Any, Callable, Final, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -18,6 +18,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
     StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceCondition,
     ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
@@ -27,6 +28,10 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+
+_SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
+    ResourceCondition.Sync,
+}
 
 # Set of JobRunState value that indicate the JobRun had terminated in an abnormal state.
 _JOB_RUN_STATE_ABNORMAL_TERMINAL_VALUE: Final[set[str]] = {"FAILED", "TIMEOUT", "ERROR"}
@@ -44,23 +49,31 @@ _HANDLER_REFLECTION_PREFIX: Final[str] = "_handle_"
 _SYNC_HANDLER_REFLECTION_PREFIX: Final[str] = "_sync_to_"
 # The type of (sync)handler function for StateTaskServiceGlue objects.
 _API_ACTION_HANDLER_TYPE = Callable[[Environment, ResourceRuntimePart, dict], None]
+# The type of (sync)handler builder function for StateTaskServiceGlue objects.
+_API_ACTION_HANDLER_BUILDER_TYPE = Callable[
+    [Environment, ResourceRuntimePart, dict], Callable[[], Optional[Any]]
+]
 
 
 class StateTaskServiceGlue(StateTaskServiceCallback):
-    def _get_handler_by_reflection(self, prefix: str) -> _API_ACTION_HANDLER_TYPE:
-        # Retrieve the request handler based on the service action and prefix value.
+    def __init__(self):
+        super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
+
+    def _get_api_action_handler(self) -> _API_ACTION_HANDLER_TYPE:
         api_action = self._get_boto_service_action()
-        handler_name = prefix + api_action
+        handler_name = _HANDLER_REFLECTION_PREFIX + api_action
         resolver_handler = getattr(self, handler_name)
         if resolver_handler is None:
             raise ValueError(f"Unknown or unsupported glue action '{api_action}'.")
         return resolver_handler
 
-    def _get_api_action_handler(self) -> _API_ACTION_HANDLER_TYPE:
-        return self._get_handler_by_reflection(_HANDLER_REFLECTION_PREFIX)
-
-    def _get_api_action_sync_handler(self) -> _API_ACTION_HANDLER_TYPE:
-        return self._get_handler_by_reflection(_SYNC_HANDLER_REFLECTION_PREFIX)
+    def _get_api_action_sync_builder_handler(self) -> _API_ACTION_HANDLER_BUILDER_TYPE:
+        api_action = self._get_boto_service_action()
+        handler_name = _SYNC_HANDLER_REFLECTION_PREFIX + api_action
+        resolver_handler = getattr(self, handler_name)
+        if resolver_handler is None:
+            raise ValueError(f"Unknown or unsupported glue action '{api_action}'.")
+        return resolver_handler
 
     @staticmethod
     def _get_glue_client(resource_runtime_part: ResourceRuntimePart) -> boto3.client:
@@ -129,7 +142,7 @@ class StateTaskServiceGlue(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-    ):
+    ) -> Callable[[], Optional[Any]]:
         # Poll the job run state from glue, using GetJobRun until the job has terminated. Hence, append the output
         # of GetJobRun to the state.
 
@@ -141,7 +154,7 @@ class StateTaskServiceGlue(StateTaskServiceCallback):
 
         glue_client = self._get_glue_client(resource_runtime_part=resource_runtime_part)
 
-        def _has_terminated() -> Optional[dict]:
+        def _sync_resolver() -> Optional[Any]:
             # Sample GetJobRun until completion.
             get_job_run_response: dict = glue_client.get_job_run(JobName=job_name, RunId=job_run_id)
             job_run: dict = get_job_run_response["JobRun"]
@@ -177,19 +190,14 @@ class StateTaskServiceGlue(StateTaskServiceCallback):
                 )
             )
 
-        termination_output: Optional[dict] = None
-        while env.is_running() and not termination_output:
-            self._throttle_sync_iteration()
-            termination_output = _has_terminated()
+        return _sync_resolver
 
-        env.stack.append(termination_output)
-
-    def _sync(
+    def _build_sync_resolver(
         self,
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-    ) -> None:
-        # Source the sync action handler and delegate the evaluation.
-        sync_handler = self._get_api_action_sync_handler()
-        sync_handler(env, resource_runtime_part, normalised_parameters)
+    ) -> Callable[[], Optional[Any]]:
+        sync_resolver_builder = self._get_api_action_sync_builder_handler()
+        sync_resolver = sync_resolver_builder(env, resource_runtime_part, normalised_parameters)
+        return sync_resolver

@@ -13,6 +13,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     lambda_eval_utils,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceCondition,
     ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
@@ -21,22 +22,28 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
+_SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
+    ResourceCondition.WaitForTaskToken,
+}
+_SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
+    "invoke": {
+        "ClientContext",
+        "FunctionName",
+        "InvocationType",
+        "Qualifier",
+        "Payload",
+        # Outside the specification, but supported in practice:
+        "LogType",
+    }
+}
+
 
 class StateTaskServiceLambda(StateTaskServiceCallback):
-    _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
-        "invoke": {
-            "ClientContext",
-            "FunctionName",
-            "InvocationType",
-            "Qualifier",
-            "Payload",
-            # Outside the specification, but supported in practice:
-            "LogType",
-        }
-    }
+    def __init__(self):
+        super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+        return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
     def _error_cause_from_client_error(client_error: ClientError) -> tuple[str, str]:
