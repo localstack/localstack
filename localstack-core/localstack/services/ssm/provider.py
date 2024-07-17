@@ -363,10 +363,10 @@ class SsmProvider(SsmApi, ABC):
 
     @staticmethod
     def _normalize_name(param_name: ParameterName, validate=False) -> ParameterName:
-        if validate:
-            if is_arn(param_name):
-                return extract_resource_from_arn(param_name).split("/")[-1]
+        if is_arn(param_name):
+            return extract_resource_from_arn(param_name).split("/")[-1]
 
+        if validate:
             if "//" in param_name or ("/" in param_name and not param_name.startswith("/")):
                 raise InvalidParameterNameException()
         param_name = param_name.strip("/")
