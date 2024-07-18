@@ -23,15 +23,10 @@ class InvocationRequest(TypedDict, total=False):
     """Path parameters of the request"""
     query_string_parameters: dict[str, str]
     """Query string parameters of the request"""
-    # TODO: need to check if we need the raw headers (as it's practical for casing reasons)
-    raw_headers: Headers
+    headers: Headers
     """Raw headers using the Headers datastructure which allows access with no regards to casing"""
-    headers: dict[str, str]
-    """Headers of the request"""
     multi_value_query_string_parameters: dict[str, list[str]]
     """Multi value query string parameters of the request"""
-    multi_value_headers: dict[str, list[str]]
-    """Multi value headers of the request"""
     body: bytes
     """Body content of the request"""
 

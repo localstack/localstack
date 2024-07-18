@@ -243,12 +243,12 @@ class ParametersMapper:
             return multi_qs_params
 
         elif param_type == "header":
-            multi_headers = invocation_request["multi_value_headers"].get(param_name)
+            multi_headers = invocation_request["headers"].getlist(param_name)
             if multi_headers:
                 return multi_headers[-1]
 
         elif param_type == "multivalueheader":
-            multi_headers = invocation_request["multi_value_headers"].get(param_name, [])
+            multi_headers = invocation_request["headers"].getlist(param_name)
             return ",".join(multi_headers)
 
         else:

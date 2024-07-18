@@ -14,6 +14,7 @@ from localstack.utils.time import timestamp
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import InvocationRequest, RestApiInvocationContext
+from ..header_utils import should_drop_header_from_invocation
 from ..moto_helpers import get_stage_variables
 from ..variables import ContextVariables, ContextVarsIdentity
 
@@ -46,16 +47,12 @@ class InvocationRequestParser(RestApiGatewayHandler):
     def create_invocation_request(self, context: RestApiInvocationContext) -> InvocationRequest:
         request = context.request
         params, multi_value_params = self._get_single_and_multi_values_from_multidict(request.args)
-        headers, multi_value_headers = self._get_single_and_multi_values_from_headers(
-            request.headers
-        )
+        headers = self._get_invocation_headers(request.headers)
         invocation_request = InvocationRequest(
             http_method=request.method,
             query_string_parameters=params,
             multi_value_query_string_parameters=multi_value_params,
-            raw_headers=request.headers,
             headers=headers,
-            multi_value_headers=multi_value_headers,
             body=restore_payload(request),
         )
 
@@ -107,20 +104,14 @@ class InvocationRequestParser(RestApiGatewayHandler):
         return single_values, dict(multi_values)
 
     @staticmethod
-    def _get_single_and_multi_values_from_headers(
-        headers: Headers,
-    ) -> tuple[dict[str, str], dict[str, list[str]]]:
-        single_values = {}
-        multi_values = {}
-
-        for key in dict(headers).keys():
-            # TODO: AWS verify multi value headers to see which one AWS keeps (first or last)
-            if key not in single_values:
-                single_values[key] = headers[key]
-
-            multi_values[key] = headers.getlist(key)
-
-        return single_values, multi_values
+    def _get_invocation_headers(headers: Headers) -> Headers:
+        invocation_headers = Headers()
+        for key, value in headers:
+            if should_drop_header_from_invocation(key):
+                LOG.debug("Dropping header from invocation request: '%s'", key)
+                continue
+            invocation_headers.add(key, value)
+        return invocation_headers
 
     @staticmethod
     def create_context_variables(context: RestApiInvocationContext) -> ContextVariables:
