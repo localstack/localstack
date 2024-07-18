@@ -1204,7 +1204,7 @@ class TestLambdaURL:
             snapshot.add_transformer(snapshot.transform.key_value(key))
         echo_url = create_echo_http_server()
         response = requests.post(
-            url=echo_url + "/path/1?q=query",
+            url=echo_url + "/pa2%Fth/1?q=query&multiQuery=foo&multiQuery=%2Fbar",
             headers={
                 "content-type": "application/json",
                 "ExTrA-HeadErs": "With WeiRd CapS",
