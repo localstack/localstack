@@ -96,26 +96,13 @@ class TestParsingHandler:
         assert context.region == TEST_AWS_REGION_NAME
 
         assert context.invocation_request["http_method"] == "GET"
-        assert context.invocation_request["raw_headers"] == Headers(
+        assert context.invocation_request["headers"] == Headers(
             {
                 "host": host_header,
                 "test-header": "value1",
                 "test-header-multi": ["value2", "value3"],
-                "content-length": len(body),
             }
         )
-        assert context.invocation_request["headers"] == {
-            "host": host_header,
-            "test-header": "value1",
-            "test-header-multi": "value2",
-            "content-length": "11",
-        }
-        assert context.invocation_request["multi_value_headers"] == {
-            "host": [host_header],
-            "test-header": ["value1"],
-            "test-header-multi": ["value2", "value3"],
-            "content-length": ["11"],
-        }
         assert context.invocation_request["body"] == body
         assert (
             context.invocation_request["path"]

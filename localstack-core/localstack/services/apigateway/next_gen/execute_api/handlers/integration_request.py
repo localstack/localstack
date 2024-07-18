@@ -1,5 +1,7 @@
 import logging
 
+from werkzeug.datastructures import Headers
+
 from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
@@ -89,7 +91,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             http_method=integration_method,
             uri=rendered_integration_uri,
             query_string_parameters=request_data_mapping["querystring"],
-            headers=request_data_mapping["header"],
+            headers=Headers(request_data_mapping["header"]),
             body=body,
         )
 
@@ -128,7 +130,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                     params=MappingTemplateParams(
                         path=request.get("path_parameters"),
                         querystring=request.get("query_string_parameters", {}),
-                        header=request.get("headers", {}),
+                        header=request.get("headers"),
                     ),
                 ),
             ),
@@ -144,7 +146,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         request_templates = integration.get("requestTemplates") or {}
         passthrough_behavior = integration.get("passthroughBehavior")
         # If content-type is not provided aws assumes application/json
-        content_type = request["raw_headers"].get("Content-Type", APPLICATION_JSON)
+        content_type = request["headers"].get("Content-Type", APPLICATION_JSON)
         # first look to for a template associated to the content-type, otherwise look for the $default template
         request_template = request_templates.get(content_type) or request_templates.get("$default")
 

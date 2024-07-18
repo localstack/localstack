@@ -113,6 +113,8 @@ class MethodRequestHandler(RestApiGatewayHandler):
         if not (request_parameters := method.get("requestParameters")):
             return missing_params
 
+        case_sensitive_headers = list(request.get("headers").keys())
+
         for request_parameter, required in sorted(request_parameters.items()):
             if not required:
                 continue
@@ -120,7 +122,7 @@ class MethodRequestHandler(RestApiGatewayHandler):
             param_type, param_value = request_parameter.removeprefix("method.request.").split(".")
             match param_type:
                 case "header":
-                    is_missing = param_value not in request.get("headers", [])
+                    is_missing = param_value not in case_sensitive_headers
                 case "path":
                     path = request.get("path_parameters", "")
                     is_missing = param_value not in path

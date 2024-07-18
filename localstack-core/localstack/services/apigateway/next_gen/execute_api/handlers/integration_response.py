@@ -84,7 +84,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         response_template = self.get_response_template(
             integration_response=integration_response, request=context.invocation_request
         )
-        body, response_override = self.render_request_template_mapping(
+        body, response_override = self.render_response_template_mapping(
             context=context, template=response_template, body=body
         )
 
@@ -203,7 +203,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             return ""
 
         # The invocation request header is used to find the right response templated
-        accepts = request["raw_headers"].getlist("accept")
+        accepts = request["headers"].getlist("accept")
         if accepts and (template := response_templates.get(accepts[-1])):
             return template
         # TODO aws seemed to favor application/json as default when unmatched regardless of "first"
@@ -214,7 +214,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         LOG.warning("No templates were matched, Using template: %s", template)
         return template
 
-    def render_request_template_mapping(
+    def render_response_template_mapping(
         self, context: RestApiInvocationContext, template: str, body: bytes | str
     ) -> tuple[bytes, ContextVarsResponseOverride]:
         if not template:

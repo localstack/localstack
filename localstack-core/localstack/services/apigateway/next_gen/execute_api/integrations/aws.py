@@ -32,6 +32,7 @@ from ..context import (
     RestApiInvocationContext,
 )
 from ..gateway_response import IntegrationFailureError, InternalServerError
+from ..header_utils import build_multi_value_headers
 from ..helpers import (
     get_lambda_function_arn_from_invocation_uri,
     get_source_arn,
@@ -187,11 +188,14 @@ class RestApiAwsIntegration(RestApiIntegration):
         if credentials := integration.get("credentials"):
             credentials = render_uri_with_stage_variables(credentials, context.stage_variables)
 
-        headers = integration_req["headers"] | get_internal_mocked_headers(
-            service_name=service_name,
-            region_name=integration_region,
-            source_arn=get_source_arn(context),
-            role_arn=credentials,
+        headers = integration_req["headers"]
+        headers.update(
+            get_internal_mocked_headers(
+                service_name=service_name,
+                region_name=integration_region,
+                source_arn=get_source_arn(context),
+                role_arn=credentials,
+            )
         )
         query_params = integration_req["query_string_parameters"].copy()
         data = integration_req["body"]
@@ -353,7 +357,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         function_arn = get_lambda_function_arn_from_invocation_uri(integration_uri)
         source_arn = get_source_arn(context)
         # TODO: properly get the value out/validate it?
-        raw_headers = context.invocation_request["raw_headers"]
+        raw_headers = context.invocation_request["headers"]
         is_invocation_asynchronous = raw_headers.get("X-Amz-Invocation-Type") == "'Event'"
 
         # TODO: write test for credentials rendering
@@ -497,8 +501,10 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         body, is_b64_encoded = self._format_body(invocation_req["body"])
 
         input_event = LambdaInputEvent(
-            headers=self._format_headers(invocation_req["headers"]),
-            multiValueHeaders=self._format_headers(invocation_req["multi_value_headers"]),
+            headers=self._format_headers(dict(invocation_req["headers"])),
+            multiValueHeaders=self._format_headers(
+                build_multi_value_headers(invocation_req["headers"])
+            ),
             body=body or None,
             isBase64Encoded=is_b64_encoded,
             requestContext=context.context_variables,
