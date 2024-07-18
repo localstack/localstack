@@ -51,25 +51,49 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         integration: Integration = context.resource_method["methodIntegration"]
         integration_type = integration["type"]
 
-        if integration_type in (IntegrationType.AWS_PROXY, IntegrationType.HTTP_PROXY):
-            # `PROXY` types cannot use integration mapping templates
-            return
-
-        # find request template to raise UnsupportedMediaTypeError early
-        request_template = self.get_request_template(
-            integration=integration, request=context.invocation_request
-        )
-
         integration_request_parameters = integration["requestParameters"] or {}
         request_data_mapping = self.get_integration_request_data(
             context, integration_request_parameters
         )
+        path_parameters = request_data_mapping["path"]
 
-        body, request_override = self.render_request_template_mapping(
-            context=context, template=request_template
-        )
-        # TODO: log every override that happens afterwards (in a loop on `request_override`)
-        merge_recursive(request_override, request_data_mapping, overwrite=True)
+        if integration_type in (IntegrationType.AWS_PROXY, IntegrationType.HTTP_PROXY):
+            # `PROXY` types cannot use integration mapping templates, they pass most of the data straight
+            headers = context.invocation_request["headers"]
+            query_string_parameters: dict[str, list[str]] = context.invocation_request[
+                "multi_value_query_string_parameters"
+            ]
+            body = context.invocation_request["body"]
+
+            # HTTP_PROXY still make uses of the request data mappings, and merges it with the invocation request
+            # this is undocumented but validated behavior
+            if integration_type == IntegrationType.HTTP_PROXY:
+                headers = headers.copy()
+                headers.update(request_data_mapping["header"])
+
+                query_string_parameters = self._merge_http_proxy_query_string(
+                    query_string_parameters, request_data_mapping["querystring"]
+                )
+
+            else:
+                # AWS_PROXY does not allow URI path rendering
+                # TODO: verify this
+                path_parameters = {}
+
+        else:
+            # find request template to raise UnsupportedMediaTypeError early
+            request_template = self.get_request_template(
+                integration=integration, request=context.invocation_request
+            )
+
+            body, request_override = self.render_request_template_mapping(
+                context=context, template=request_template
+            )
+            # TODO: log every override that happens afterwards (in a loop on `request_override`)
+            merge_recursive(request_override, request_data_mapping, overwrite=True)
+
+            headers = Headers(request_data_mapping["header"])
+            query_string_parameters = request_data_mapping["querystring"]
 
         # looks like the stageVariables rendering part is done in the Integration part in AWS
         # but we can avoid duplication by doing it here for now
@@ -78,7 +102,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         #  stage variables to an empty dict)
         rendered_integration_uri = render_integration_uri(
             uri=integration["uri"],
-            path_parameters=request_data_mapping["path"],
+            path_parameters=path_parameters,
             stage_variables=context.stage_variables,
         )
 
@@ -90,12 +114,11 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         integration_request = IntegrationRequest(
             http_method=integration_method,
             uri=rendered_integration_uri,
-            query_string_parameters=request_data_mapping["querystring"],
-            headers=Headers(request_data_mapping["header"]),
+            query_string_parameters=query_string_parameters,
+            headers=headers,
             body=body,
         )
 
-        # This is the data that downstream integrations might use if they are not of `PROXY_` type
         # LOG.debug("Created integration request from xxx")
         context.integration_request = integration_request
 
@@ -171,3 +194,20 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 LOG.debug("Unknown passthrough behavior: '%s'", passthrough_behavior)
 
         return request_template
+
+    @staticmethod
+    def _merge_http_proxy_query_string(
+        query_string_parameters: dict[str, list[str]],
+        mapped_query_string: dict[str, str | list[str]],
+    ):
+        new_query_string_parameters = {k: v.copy() for k, v in query_string_parameters.items()}
+        for param, value in mapped_query_string.items():
+            if existing := new_query_string_parameters.get(param):
+                if isinstance(value, list):
+                    existing.extend(value)
+                else:
+                    existing.append(value)
+            else:
+                new_query_string_parameters[param] = value
+
+        return new_query_string_parameters

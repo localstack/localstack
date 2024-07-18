@@ -9,11 +9,9 @@ from localstack.aws.api.apigateway import Integration
 from ..context import (
     EndpointResponse,
     IntegrationRequest,
-    InvocationRequest,
     RestApiInvocationContext,
 )
 from ..header_utils import build_multi_value_headers
-from ..helpers import render_integration_uri
 from .core import RestApiIntegration
 
 NO_BODY_METHODS = {
@@ -104,25 +102,12 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
     name = "HTTP_PROXY"
 
     def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
-        invocation_req: InvocationRequest = context.invocation_request
-        integration: Integration = context.resource_method["methodIntegration"]
-
-        # if the integration method is defined and is not ANY, we can use it for the integration
-        if not (method := integration["httpMethod"]) or method == "ANY":
-            # otherwise, fallback to the request's method
-            method = invocation_req["http_method"]
-
-        integration_uri = context.resource_method["methodIntegration"]["uri"]
-        # TODO: verify stage variables rendering in HTTP_PROXY
-        uri = render_integration_uri(
-            integration_uri,
-            path_parameters=invocation_req["path_parameters"],
-            stage_variables=context.stage_variables,
-        )
+        integration_req: IntegrationRequest = context.integration_request
+        method = integration_req["http_method"]
 
         default_apigw_headers = self._get_default_headers(context)
 
-        multi_value_headers = build_multi_value_headers(invocation_req["headers"])
+        multi_value_headers = build_multi_value_headers(integration_req["headers"])
         request_headers = {key: ",".join(value) for key, value in multi_value_headers.items()}
         # TODO: check which headers to pop
         request_headers.pop("Host", None)
@@ -130,16 +115,17 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
 
         request_parameters: SimpleHttpRequest = {
             "method": method,
-            "url": uri,
-            "params": invocation_req["multi_value_query_string_parameters"],
+            "url": integration_req["uri"],
+            "params": integration_req["query_string_parameters"],
             "headers": default_apigw_headers,
         }
 
         # TODO: validate this for HTTP_PROXY
         if method not in NO_BODY_METHODS:
-            request_parameters["data"] = invocation_req["body"]
+            request_parameters["data"] = integration_req["body"]
 
         # TODO: configurable timeout (29 by default) (check type and default value in provider)
+        # integration: Integration = context.resource_method["methodIntegration"]
         # request_parameters["timeout"] = self._get_integration_timeout(integration)
 
         request_response = requests.request(**request_parameters)

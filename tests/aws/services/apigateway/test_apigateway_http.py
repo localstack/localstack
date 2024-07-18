@@ -4,6 +4,7 @@ from http import HTTPMethod
 import pytest
 import requests
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
@@ -36,7 +37,7 @@ def add_http_integration_transformers(snapshot):
             reference_replacement=True,
             value_replacement="content_length",
         ),
-        priority=1,
+        priority=2,
     )
     # remove the reference replacement, as sometimes we can have a difference with `date`
     snapshot.add_transformer(
@@ -220,7 +221,7 @@ def test_http_integration_method(
             data=json.dumps({"message": "hello world"}),
             headers={
                 "Content-Type": "application/json",
-                "accept": "application/json",
+                "Accept": "application/json",
                 "user-Agent": "test/integration",
             },
             verify=False,
@@ -232,3 +233,81 @@ def test_http_integration_method(
     for http_method in ("POST", "PUT", "GET"):
         invoke_response = retry(invoke_api, sleep=2, retries=10, url=invocation_url, method="POST")
         snapshot.match(f"http-invocation-lambda-url-{http_method.lower()}", invoke_response)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..headers.x-amz-apigw-id",
+        "$..content.origin",
+        "$..headers.server",
+        "$..headers.x-amzn-remapped-x-amzn-requestid",
+    ]
+)
+@pytest.mark.skipif(
+    condition=not is_next_gen_api() and not is_aws_cloud(),
+    reason="Wrong behavior in legacy implementation",
+)
+def test_http_proxy_integration_request_data_mappings(
+    create_echo_http_server,
+    create_rest_api_with_integration,
+    snapshot,
+    add_http_integration_transformers,
+):
+    echo_server_url = create_echo_http_server(trim_x_headers=True)
+    # create api gateway
+    stage_name = "test"
+    req_parameters = {
+        "integration.request.header.headerVar": "method.request.header.foobar",
+        "integration.request.path.qsVar": "method.request.querystring.testVar",
+        "integration.request.path.pathVar": "method.request.path.pathVariable",
+        "integration.request.querystring.queryString": "method.request.querystring.testQueryString",
+        "integration.request.querystring.testQs": "method.request.querystring.testQueryString",
+        "integration.request.querystring.testEmptyQs": "method.request.header.emptyheader",
+    }
+
+    # Note: you cannot use path parameters directly, if you set `testValue={pathVariable}` it will fail
+    integration_uri = f"{echo_server_url}?testVar={{pathVar}}&testQs={{qsVar}}"
+
+    api_id = create_rest_api_with_integration(
+        integration_uri=integration_uri,
+        integration_type="HTTP_PROXY",
+        stage=stage_name,
+        path_part="{pathVariable}",
+        req_parameters=req_parameters,
+    )
+
+    snapshot.match("api_id", {"rest_api_id": api_id})
+    invocation_url = api_invoke_url(
+        api_id=api_id,
+        stage=stage_name,
+        path="/foobar",
+    )
+
+    def invoke_api(url):
+        response = requests.post(
+            url,
+            data=json.dumps({"message": "hello world"}),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "foobar": "mapped-value",
+                "user-Agent": "test/integration",
+                "headerVar": "request-value",
+            },
+            params={
+                "testQueryString": "foo",
+                "testVar": "bar",
+            },
+            verify=False,
+        )
+        assert response.status_code == 200
+        return {
+            "content": response.json(),
+            "headers": {k.lower(): v for k, v in dict(response.headers).items()},
+            "status_code": response.status_code,
+        }
+
+    # retry is necessary against AWS, probably IAM permission delay
+    invoke_response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+    snapshot.match("http-proxy-invocation", invoke_response)
