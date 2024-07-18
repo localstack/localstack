@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventsCrossAccountRegion::test_put_events[custom-account]": {
+    "last_validated_date": "2024-07-18T07:45:08+00:00"
+  },
   "tests/aws/services/events/test_events_cross_account_region.py::test_event_bus_to_event_bus_cross_account_region[custom-account]": {
     "last_validated_date": "2024-06-14T11:13:34+00:00"
   },
