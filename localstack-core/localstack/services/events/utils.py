@@ -215,6 +215,7 @@ def get_trace_header_encoded_region_account(
     source_account_id: str,
     target_region: str,
     target_account_id: str,
+    new_message_id: bool = False,
 ) -> str | None:
     """Encode the original region and account_id for cross-region and cross-account
     event bus communication in the trace header. For event bus to event bus communication
@@ -230,4 +231,7 @@ def get_trace_header_encoded_region_account(
     if source_region != target_region:
         return json.dumps({"original_region": source_region})
     if source_account_id != target_account_id:
-        return json.dumps({"original_id": original_id, "original_account": source_account_id})
+        if new_message_id:
+            return json.dumps({"original_account": source_account_id})
+        else:
+            return json.dumps({"original_id": original_id, "original_account": source_account_id})

@@ -125,6 +125,7 @@ from localstack.services.events.utils import (
     extract_region_and_account_id,
     format_event,
     get_resource_type,
+    get_trace_header_encoded_region_account,
     is_archive_arn,
     recursive_remove_none_values_from_dict,
     to_json_str,
@@ -1333,6 +1334,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 failed_entry_count += 1
                 continue
             region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
+            if encoded_original_id := get_trace_header_encoded_region_account(
+                event, context.region, context.account_id, region, account_id, new_message_id=True
+            ):
+                event["TraceHeader"] = encoded_original_id
             event_formatted = format_event(event, region, account_id)
             store = self.get_store(region, account_id)
             try:
