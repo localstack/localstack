@@ -207,3 +207,27 @@ def re_format_event(event: FormattedEvent, event_bus_name: EventBusName) -> PutE
     if event.get("replay-name"):
         re_formatted_event["ReplayName"] = event["replay_name"]
     return re_formatted_event
+
+
+def get_trace_header_encoded_region_account(
+    event: FormattedEvent,
+    source_region: str,
+    source_account_id: str,
+    target_region: str,
+    target_account_id: str,
+) -> str | None:
+    """Encode the original region and account_id for cross-region and cross-account
+    event bus communication in the trace header. For event bus to event bus communication
+    in a different account the event id is preserved. This is not the case if the region differs."""
+    original_id = event.get("id")
+    if source_region != target_region and source_account_id != target_account_id:
+        return json.dumps(
+            {
+                "original_region": source_region,
+                "original_account": source_account_id,
+            }
+        )
+    if source_region != target_region:
+        return json.dumps({"original_region": source_region})
+    if source_account_id != target_account_id:
+        return json.dumps({"original_id": original_id, "original_account": source_account_id})

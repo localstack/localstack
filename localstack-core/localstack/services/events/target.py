@@ -11,7 +11,11 @@ from botocore.client import BaseClient
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
-from localstack.services.events.utils import event_time_to_time_string, to_json_str
+from localstack.services.events.utils import (
+    event_time_to_time_string,
+    get_trace_header_encoded_region_account,
+    to_json_str,
+)
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
@@ -275,26 +279,11 @@ class EventsTargetSender(TargetSender):
                 "Resources": resources,
             }
         ]
-        if encoded_original_id := self._get_trace_header_encoded_region_account(event):
+        if encoded_original_id := get_trace_header_encoded_region_account(
+            event, self.region, self.account_id, self.target_region, self.target_account_id
+        ):
             entries[0]["TraceHeader"] = encoded_original_id
         self.client.put_events(Entries=entries)
-
-    def _get_trace_header_encoded_region_account(self, event: FormattedEvent) -> str | None:
-        """Encode the original region and account_id for cross-region and cross-account
-        event bus communication in the trace header. For event bus to event bus communication
-        in a different account the event id is preserved. This is not the case if the region differs."""
-        original_id = event.get("id")
-        if self.region != self.target_region and self.account_id != self.target_account_id:
-            return json.dumps(
-                {
-                    "original_region": self.region,
-                    "original_account": self.account_id,
-                }
-            )
-        if self.region != self.target_region:
-            return json.dumps({"original_region": self.region})
-        if self.account_id != self.target_account_id:
-            return json.dumps({"original_id": original_id, "original_account": self.account_id})
 
     def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
         if isinstance(event, dict) and (source := event.get("source")):
