@@ -1,22 +1,23 @@
-from localstack_ext.aws.api.pipes import (
+from localstack.aws.api.lambda_ import (
+    EventSourceMappingConfiguration,
+)
+from localstack.aws.api.pipes import (
     PipeSourceParameters,
     PipeSourceSqsQueueParameters,
     PipeTargetInvocationType,
     PipeTargetLambdaFunctionParameters,
     PipeTargetParameters,
 )
-from localstack_ext.services.pipes.pipe_loggers.noops_pipe_logger import NoOpsPipeLogger
-from localstack_ext.services.pipes.pipe_utils import get_internal_client
-from localstack_ext.services.pipes.pollers.sqs_poller import SqsPoller
-from localstack_ext.services.pipes.senders.lambda_sender import LambdaSender
-
-from localstack.aws.api.lambda_ import (
-    EventSourceMappingConfiguration,
-)
 from localstack.services.lambda_.event_source_mapping.esm_worker import EsmWorker
 from localstack.services.lambda_.event_source_mapping.event_source_mapping_event_processor import (
     EventSourceMappingEventProcessor,
 )
+from localstack.services.lambda_.event_source_mapping.pipe_loggers.noops_pipe_logger import (
+    NoOpsPipeLogger,
+)
+from localstack.services.lambda_.event_source_mapping.pipe_utils import get_internal_client
+from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import SqsPoller
+from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 

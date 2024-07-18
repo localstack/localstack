@@ -2,15 +2,14 @@ import json
 import logging
 import uuid
 
-from localstack_ext.aws.api.pipes import LogLevel
-from localstack_ext.services.pipes.enrichers.enricher import EnricherError
-from localstack_ext.services.pipes.event_processor import (
+from localstack.aws.api.pipes import LogLevel
+from localstack.services.lambda_.event_source_mapping.event_processor import (
     BatchFailureError,
     EventProcessor,
     PartialBatchFailureError,
 )
-from localstack_ext.services.pipes.pipe_loggers.pipe_logger import PipeLogger
-from localstack_ext.services.pipes.senders.sender import (
+from localstack.services.lambda_.event_source_mapping.pipe_loggers.pipe_logger import PipeLogger
+from localstack.services.lambda_.event_source_mapping.senders.sender import (
     PartialFailureSenderError,
     Sender,
     SenderError,
@@ -60,7 +59,7 @@ class EventSourceMappingEventProcessor(EventProcessor):
             #  using --function-response-types "ReportBatchItemFailures"
             #  https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html
             raise PartialBatchFailureError from e
-        except (EnricherError, SenderError) as e:
+        except SenderError as e:
             self.logger.log(
                 messageType="ExecutionFailed",
                 logLevel=LogLevel.ERROR,

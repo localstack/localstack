@@ -1,11 +1,10 @@
 import logging
 import threading
 
-from localstack_ext.services.pipes.pollers.poller import Poller
-
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
+from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
 from localstack.utils.threads import FuncThread
 
 POLL_INTERVAL_SEC: float = 1
