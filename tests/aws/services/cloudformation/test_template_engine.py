@@ -1162,3 +1162,38 @@ class TestStackEvents:
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("failed_event", failed_event)
         assert "ResourceStatusReason" in failed_event
+
+
+class TestPseudoParameters:
+    @markers.aws.validated
+    @pytest.mark.skip(reason="WIP")
+    def test_stack_id(self, deploy_cfn_template, snapshot):
+        template = {
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Ref": "AWS::StackId",
+                        },
+                    },
+                },
+            },
+            "Outputs": {
+                "StackId": {
+                    "Value": {
+                        "Fn::GetAtt": [
+                            "MyParameter",
+                            "Value",
+                        ],
+                    },
+                },
+            },
+        }
+
+        stack = deploy_cfn_template(template=json.dumps(template))
+
+        snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
+
+        snapshot.match("StackId", stack.outputs["StackId"])
