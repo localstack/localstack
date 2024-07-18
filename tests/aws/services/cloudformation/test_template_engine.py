@@ -1166,7 +1166,6 @@ class TestStackEvents:
 
 class TestPseudoParameters:
     @markers.aws.validated
-    @pytest.mark.skip(reason="WIP")
     def test_stack_id(self, deploy_cfn_template, snapshot):
         template = {
             "Resources": {
