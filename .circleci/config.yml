@@ -487,7 +487,7 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-cloudwatch-v2-provider:
+  itest-cloudwatch-v1-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     environment:
@@ -500,14 +500,14 @@ jobs:
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
-          name: Test CloudWatch v2 provider
+          name: Test CloudWatch v1 provider
           environment:
-            PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
+            PROVIDER_OVERRIDE_CLOUDWATCH: "v1"
             TEST_PATH: "tests/aws/services/cloudwatch/"
             COVERAGE_ARGS: "-p"
           command: |
-            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
+            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV1.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v1.xml -o junit_suite_name='cloudwatch_v1'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -905,7 +905,7 @@ workflows:
           requires:
             - preflight
             - test-selection
-      - itest-cloudwatch-v2-provider:
+      - itest-cloudwatch-v1-provider:
           requires:
             - preflight
             - test-selection
@@ -973,7 +973,7 @@ workflows:
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
+            - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
@@ -988,7 +988,7 @@ workflows:
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
+            - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64

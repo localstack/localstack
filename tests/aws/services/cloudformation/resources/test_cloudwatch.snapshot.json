@@ -9,33 +9,33 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_cloudwatch.py::test_composite_alarm_creation": {
-    "recorded-date": "27-11-2023, 09:26:48",
+    "recorded-date": "16-07-2024, 10:41:22",
     "recorded-content": {
       "composite_alarm": [
         {
           "ActionsEnabled": true,
           "AlarmActions": [
-            "arn:aws:sns:<region>:111111111111:stack-fd398c48-SNS-7rt9W1qlY3qk"
+            "arn:aws:sns:<region>:111111111111:<alarm-action-name:1>"
           ],
-          "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+          "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:HighResourceUsage",
           "AlarmConfigurationUpdatedTimestamp": "timestamp",
           "AlarmDescription": "Indicates that the system resource usage is high while no known deployment is in progress",
-          "AlarmName": "<alarm-name:1>",
-          "AlarmRule": "(ALARM(<SubscriptionArn:2>) OR ALARM(<alarm-name:2>))",
+          "AlarmName": "HighResourceUsage",
+          "AlarmRule": "(ALARM(HighCPUUsage) OR ALARM(HighMemoryUsage))",
           "InsufficientDataActions": [],
           "OKActions": [],
-          "StateReason": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1> was created and its alarm rule evaluates to OK",
+          "StateReason": "arn:aws:cloudwatch:<region>:111111111111:alarm:HighResourceUsage was created and its alarm rule evaluates to OK",
           "StateReasonData": {
             "triggeringAlarms": [
               {
-                "arn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<SubscriptionArn:2>",
+                "arn": "arn:aws:cloudwatch:<region>:111111111111:alarm:HighCPUUsage",
                 "state": {
                   "value": "INSUFFICIENT_DATA",
                   "timestamp": "date"
                 }
               },
               {
-                "arn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:2>",
+                "arn": "arn:aws:cloudwatch:<region>:111111111111:alarm:HighMemoryUsage",
                 "state": {
                   "value": "INSUFFICIENT_DATA",
                   "timestamp": "date"
@@ -50,8 +50,8 @@
       ],
       "metric_alarm": [
         {
-          "AlarmName": "<alarm-name:2>",
-          "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:2>",
+          "AlarmName": "HighMemoryUsage",
+          "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:HighMemoryUsage",
           "AlarmDescription": "Memory usage is high",
           "AlarmConfigurationUpdatedTimestamp": "timestamp",
           "ActionsEnabled": true,
@@ -62,7 +62,7 @@
           "StateReason": "Unchecked: Initial alarm creation",
           "StateUpdatedTimestamp": "timestamp",
           "MetricName": "MemoryUsage",
-          "Namespace": "<namespace:1>",
+          "Namespace": "CustomNamespace",
           "Statistic": "Average",
           "Dimensions": [],
           "Period": 60,

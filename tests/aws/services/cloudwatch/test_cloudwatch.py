@@ -32,7 +32,7 @@ LOG = logging.getLogger(__name__)
 
 
 def is_old_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2" and not is_aws_cloud()
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") == "v1" and not is_aws_cloud()
 
 
 class TestCloudwatch:
