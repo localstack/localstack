@@ -188,11 +188,14 @@ class RestApiAwsIntegration(RestApiIntegration):
         if credentials := integration.get("credentials"):
             credentials = render_uri_with_stage_variables(credentials, context.stage_variables)
 
-        headers = integration_req["headers"] | get_internal_mocked_headers(
-            service_name=service_name,
-            region_name=integration_region,
-            source_arn=get_source_arn(context),
-            role_arn=credentials,
+        headers = integration_req["headers"]
+        headers.update(
+            get_internal_mocked_headers(
+                service_name=service_name,
+                region_name=integration_region,
+                source_arn=get_source_arn(context),
+                role_arn=credentials,
+            )
         )
         query_params = integration_req["query_string_parameters"].copy()
         data = integration_req["body"]
