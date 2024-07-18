@@ -1,23 +1,20 @@
+import json
+
 import aws_cdk as cdk
 import aws_cdk.aws_lambda_event_sources as eventsources
 import pytest
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_sqs as sqs
-from localstack_ext.services.pipes.senders.sqs_sender import SqsSender
 
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from tests.aws.services.lambda_.test_lambda_integration_sqs import LAMBDA_SQS_INTEGRATION_FILE
 
-STACK_NAME = "LambdaEventSourceMappingsStack"
-
-# # TODO: consolidate with tests/aws/services/pipes/test_pipes.py and fix this local HACK
-# PIPES_FOLDER = Path("/Users/joe/Projects/LocalStack/localstack-ext/tests/aws/services/pipes")
-# TEST_LAMBDA_PYTHON_S3_INTEGRATION = os.path.join(PIPES_FOLDER, "functions/target_s3_integration.py")
+STACK_NAME = "LambdaEventSourceMappingSqsStack"
 
 
-# Stolen from tests.aws.services.lambda_.test_lambda_integration_sqs._snapshot_transformers
+# Taken from tests.aws.services.lambda_.test_lambda_integration_sqs._snapshot_transformers
 @pytest.fixture(autouse=True)
 def _snapshot_transformers(snapshot):
     # manual transformers since we are passing SQS attributes through lambdas and back again
@@ -33,7 +30,7 @@ def _snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("md5OfBody"))
 
 
-class TestEventSourceMappingSqs:
+class TestLambdaEsmSqs:
     """Lambda Event Source Mapping test for the scenario: SQS => Lambda using an SQS destination queue for validation"""
 
     @pytest.fixture(scope="class", autouse=True)
@@ -43,7 +40,7 @@ class TestEventSourceMappingSqs:
 
         # Source (including IAM, outputs, etc)
         source_queue = sqs.Queue(stack, "SourceQueue")
-        cdk.CfnOutput(stack, "SourceArn", value=source_queue.queue_arn)
+        cdk.CfnOutput(stack, "SourceQueueUrl", value=source_queue.queue_url)
 
         destination_queue = sqs.Queue(stack, "DestinationQueue")
         cdk.CfnOutput(stack, "DestinationQueueUrl", value=destination_queue.queue_url)
@@ -63,33 +60,18 @@ class TestEventSourceMappingSqs:
         # > execution role so it can consume messages from the queue.
         event_source = eventsources.SqsEventSource(source_queue, batch_size=1)
         target_function.add_event_source(event_source)
-        # TODO: fix CDK token resolving because this throws the error:
-        # @jsii/kernel.RuntimeError: Error: SqsEventSource is not yet bound to an event source mapping
-        # Now it works magically?!
         cdk.CfnOutput(
             stack,
             "LambdaEventSourceMappingUUID",
             value=event_source.event_source_mapping_id,
         )
 
-        # # ALTERNATIVE: fix permissions when not using the high-level util (which does not yield a return value :upside)
-        # event_source_mapping = target_function.add_event_source_mapping(
-        #     event_source_arn=source_queue.queue_arn,
-        #     id="LambdaEventSourceMapping",
-        #     batch_size=1,
-        # )
-        # cdk.CfnOutput(
-        #     stack,
-        #     "LambdaEventSourceMappingUUID",
-        #     value=event_source_mapping.event_source_mapping_id,
-        # )
-
         # TODO for dev: skip_teardown=True
         with infra.provisioner() as prov:
             yield prov
 
     @markers.aws.validated
-    def test_event_source_mappings_sqs(
+    def test_lambda_event_source_mapping_sqs(
         self, aws_client, infrastructure, s3_empty_bucket, cleanups, snapshot
     ):
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
@@ -98,22 +80,21 @@ class TestEventSourceMappingSqs:
         )
 
         # TODO: needed? requires UUID, which is a lazy CDK token failing upon outputting via CF
+        # TODO: Do we really need to wait for ESM to be enabled here to mitigate flakes or does CloudFormation does this automatically? at least in AWS?
         _await_event_source_mapping_enabled(
             aws_client.lambda_, outputs["LambdaEventSourceMappingUUID"]
         )
 
         # Send event to the source
-        events_to_send = [
-            {
-                "message": "event1",
-                "destination": outputs["DestinationQueueUrl"],
-                "fail_attempts": 0,
-            }
-        ]
-        sqs_sender = SqsSender(outputs["SourceArn"], target_client=aws_client.sqs)
-        sqs_sender.send_events(events_to_send)
-
-        # TODO: do we need to wait for ESM to be enabled here to mitigate flakes or does CF does this automatically (at least in AWS)?!
+        event = {
+            "message": "event1",
+            "destination": outputs["DestinationQueueUrl"],
+            "fail_attempts": 0,
+        }
+        aws_client.sqs.send_message(
+            QueueUrl=outputs["SourceQueueUrl"],
+            MessageBody=json.dumps(event),
+        )
 
         # Wait for the first invocation result
         first_response = aws_client.sqs.receive_message(

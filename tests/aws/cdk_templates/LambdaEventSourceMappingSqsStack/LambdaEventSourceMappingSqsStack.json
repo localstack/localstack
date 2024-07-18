@@ -107,7 +107,7 @@
         "TargetFunctionServiceRoleF757D6E7"
       ]
     },
-    "TargetFunctionSqsEventSourceLambdaEventSourceMappingsStackSourceQueueCDB2490E44F101B5": {
+    "TargetFunctionSqsEventSourceLambdaEventSourceMappingSqsStackSourceQueue83843EED15868B4A": {
       "Type": "AWS::Lambda::EventSourceMapping",
       "Properties": {
         "BatchSize": 1,
@@ -136,7 +136,7 @@
     },
     "LambdaEventSourceMappingUUID": {
       "Value": {
-        "Ref": "TargetFunctionSqsEventSourceLambdaEventSourceMappingsStackSourceQueueCDB2490E44F101B5"
+        "Ref": "TargetFunctionSqsEventSourceLambdaEventSourceMappingSqsStackSourceQueue83843EED15868B4A"
       }
     }
   }
