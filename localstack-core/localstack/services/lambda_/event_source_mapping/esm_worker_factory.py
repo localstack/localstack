@@ -8,10 +8,10 @@ from localstack.aws.api.pipes import (
     PipeTargetLambdaFunctionParameters,
     PipeTargetParameters,
 )
-from localstack.services.lambda_.event_source_mapping.esm_worker import EsmWorker
-from localstack.services.lambda_.event_source_mapping.event_source_mapping_event_processor import (
-    EventSourceMappingEventProcessor,
+from localstack.services.lambda_.event_source_mapping.esm_event_processor import (
+    EsmEventProcessor,
 )
+from localstack.services.lambda_.event_source_mapping.esm_worker import EsmWorker
 from localstack.services.lambda_.event_source_mapping.pipe_loggers.noops_pipe_logger import (
     NoOpsPipeLogger,
 )
@@ -56,7 +56,7 @@ class EsmWorkerFactory:
         logger = NoOpsPipeLogger()
 
         # Event Source Mapping processor
-        esm_processor = EventSourceMappingEventProcessor(sender=sender, logger=logger)
+        esm_processor = EsmEventProcessor(sender=sender, logger=logger)
 
         # Poller
         source_arn = self.event_source_mapping_config["EventSourceArn"]

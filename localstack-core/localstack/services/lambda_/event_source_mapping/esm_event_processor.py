@@ -18,7 +18,7 @@ from localstack.services.lambda_.event_source_mapping.senders.sender import (
 LOG = logging.getLogger(__name__)
 
 
-class EventSourceMappingEventProcessor(EventProcessor):
+class EsmEventProcessor(EventProcessor):
     sender: Sender
     logger: PipeLogger
 
