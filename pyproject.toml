@@ -230,7 +230,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-log_cli = true
+log_cli = false
 log_level = "DEBUG"
 log_cli_format = "%(asctime)s.%(msecs)03d %(levelname)5s --- [%(threadName)12s] %(name)-26s : %(message)s"
 log_cli_date_format = "%Y-%m-%dT%H:%M:%S"
