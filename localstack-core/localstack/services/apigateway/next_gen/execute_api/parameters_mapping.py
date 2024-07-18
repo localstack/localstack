@@ -10,7 +10,6 @@ import json
 import logging
 from typing import TypedDict
 
-from localstack.constants import APPLICATION_JSON
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
 
@@ -49,11 +48,6 @@ class ParametersMapper:
             path={},
             querystring={},
         )
-
-        # default values, can be overridden with right casing
-        for header in ("Content-Type", "Accept"):
-            request_data_mapping["header"][header] = APPLICATION_JSON
-
         # storing the case-sensitive headers once, the mapping is strict
         case_sensitive_headers = build_multi_value_headers(invocation_request["headers"])
 

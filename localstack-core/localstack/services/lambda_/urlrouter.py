@@ -3,7 +3,6 @@
 import base64
 import json
 import logging
-import urllib
 from datetime import datetime
 from http import HTTPStatus
 
@@ -81,9 +80,7 @@ class FunctionUrlRouter:
             # TODO: x-amzn-requestid
             return response
 
-        event = event_for_lambda_url(
-            api_id, request.full_path, restore_payload(request), request.headers, request.method
-        )
+        event = event_for_lambda_url(api_id, request)
 
         match = FULL_FN_ARN_PATTERN.search(lambda_url_config.function_arn).groupdict()
 
@@ -104,18 +101,20 @@ class FunctionUrlRouter:
         return response
 
 
-def event_for_lambda_url(api_id: str, path: str, data, headers, method: str) -> dict:
-    raw_path = path.split("?")[0]
-    raw_query_string = path.split("?")[1] if len(path.split("?")) > 1 else ""
-    query_string_parameters = (
-        {} if not raw_query_string else dict(urllib.parse.parse_qsl(raw_query_string))
-    )
+def event_for_lambda_url(api_id: str, request: Request) -> dict:
+    partitioned_uri = request.full_path.partition("?")
+    raw_path = partitioned_uri[0]
+    raw_query_string = partitioned_uri[2]
+
+    query_string_parameters = {k: ",".join(request.args.getlist(k)) for k in request.args.keys()}
 
     now = datetime.utcnow()
     readable = timestamp(time=now, format=TIMESTAMP_READABLE_FORMAT)
     if not any(char in readable for char in ["+", "-"]):
         readable += "+0000"
 
+    data = restore_payload(request)
+    headers = request.headers
     source_ip = headers.get("Remote-Addr", "")
     request_context = {
         "accountId": "anonymous",
@@ -123,7 +122,7 @@ def event_for_lambda_url(api_id: str, path: str, data, headers, method: str) -> 
         "domainName": headers.get("Host", ""),
         "domainPrefix": api_id,
         "http": {
-            "method": method,
+            "method": request.method,
             "path": raw_path,
             "protocol": "HTTP/1.1",
             "sourceIp": source_ip,
