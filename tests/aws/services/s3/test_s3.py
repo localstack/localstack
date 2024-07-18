@@ -3400,8 +3400,9 @@ class TestS3:
             "X-Amz-Date": "20190918T051509Z",
             "X-Amz-Decoded-Content-Length": str(len(body)),
             "Content-Encoding": "aws-chunked",
+            "X-Amz-Trailer": "x-amz-checksum-crc32",
         }
-        data = "23\r\n" f"{body}\r\n" "0\r\n" "x-amz-checksum-crc32:AKHICA==\r\n" "\r\n"
+        data = f"23\r\n{body}\r\n0\r\nx-amz-checksum-crc32:AKHICA==\r\n\r\n"
         # put object
         url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
         requests.put(url, data, headers=headers, verify=False)
@@ -3410,6 +3411,34 @@ class TestS3:
         download_file_object = to_str(downloaded_object["Body"].read())
         assert len(body) == len(str(download_file_object))
         assert body == str(download_file_object)
+
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(
+        reason="Not implemented in other providers than v3, moto fails at decoding",
+        condition=LEGACY_V2_S3_PROVIDER,
+    )
+    def test_put_object_chunked_newlines_no_sig_empty_body(
+        self, s3_bucket, aws_client, region_name
+    ):
+        object_key = "data"
+        headers = {
+            "Authorization": mock_aws_request_headers(
+                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
+            )["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": "0",
+            "Content-Encoding": "aws-chunked",
+            "X-Amz-Trailer": "x-amz-checksum-crc32",
+        }
+        data = "0\r\nx-amz-checksum-crc32:AAAAAA==\r\n\r\n"
+        # put object
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
+        requests.put(url, data, headers=headers, verify=False)
+        # get object and assert content length
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        download_file_object = to_str(downloaded_object["Body"].read())
+        assert len(str(download_file_object)) == 0
 
     @markers.aws.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
