@@ -38,7 +38,7 @@ from localstack.services.cloudformation.resource_provider import (
 from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
 )
-from localstack.services.cloudformation.stores import exports_map
+from localstack.services.cloudformation.stores import exports_map, find_stack
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe
 from localstack.utils.strings import to_bytes, to_str
@@ -147,8 +147,10 @@ def resolve_ref(
     if ref == "AWS::StackName":
         return stack_name
     if ref == "AWS::StackId":
-        # TODO return proper stack id!
-        return stack_name
+        stack = find_stack(account_id, region_name, stack_name)
+        if not stack:
+            raise ValueError(f"No stack {stack_name} found")
+        return stack.stack_id
     if ref == "AWS::AccountId":
         return account_id
     if ref == "AWS::NoValue":
