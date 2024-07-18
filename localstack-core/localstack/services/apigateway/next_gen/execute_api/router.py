@@ -15,7 +15,6 @@ from .gateway import RestApiGateway
 LOG = logging.getLogger(__name__)
 
 
-# TODO: subclass from -ext, and this handler will do the dispatching between v1 and v2 Gateways
 class ApiGatewayEndpoint:
     """
     This class is the endpoint for API Gateway invocations of the `execute-api` route. It will take the incoming
@@ -34,18 +33,21 @@ class ApiGatewayEndpoint:
         # api_id can be cased because of custom-tag id
         api_id, stage = kwargs.get("api_id", "").lower(), kwargs.get("stage")
         if self.is_rest_api(api_id, stage):
-            LOG.debug("APIGW v1 Endpoint called")
-            response = Response()
-            context = RestApiInvocationContext(request)
-            self.populate_rest_api_invocation_context(context, api_id, stage)
-
-            self.rest_gateway.process_with_context(context, response)
-
-            return response
+            return self.process_rest_api_invocation(request, api_id, stage)
 
         else:
             # TODO: return right response
             return Response("Not authorized", status=403)
+
+    def process_rest_api_invocation(self, request: Request, api_id: str, stage: str) -> Response:
+        LOG.debug("APIGW v1 Endpoint called")
+        response = Response()
+        context = RestApiInvocationContext(request)
+        self.populate_rest_api_invocation_context(context, api_id, stage)
+
+        self.rest_gateway.process_with_context(context, response)
+
+        return response
 
     def is_rest_api(self, api_id: str, stage: str):
         return (api_id, stage) in self._global_store.active_deployments
