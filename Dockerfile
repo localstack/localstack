@@ -172,7 +172,7 @@ FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 
 # add project files necessary to install all dependencies
-ADD Makefile pyproject.toml VERSION ./
+ADD Makefile pyproject.toml VERSION setup.py ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
