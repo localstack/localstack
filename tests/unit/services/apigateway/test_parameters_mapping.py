@@ -45,7 +45,7 @@ def default_invocation_request() -> InvocationRequest:
     context = RestApiInvocationContext(
         Request(
             method=HTTPMethod.POST,
-            headers={"header_value": "test-header-value"},
+            headers=Headers({"header_value": "test-header-value"}),
             path=f"{TEST_API_STAGE}/test/test-path-value",
             query_string="qs_value=test-qs-value",
         )
@@ -336,14 +336,8 @@ class TestApigatewayRequestParametersMapping:
 
         headers = {"testMultiHeader": ["value1", "value2"], "testHeader": "value"}
 
-        default_invocation_request["raw_headers"] = Headers(headers)
+        default_invocation_request["headers"] = Headers(headers)
         # this is how AWS maps to the variables passed to proxy integration, it only picks the first of the multi values
-        default_invocation_request["headers"] = {"testMultiHeader": "value1", "testHeader": "value"}
-
-        default_invocation_request["multi_value_headers"] = {
-            "testMultiHeader": ["value1", "value2"],
-            "testHeader": ["value"],
-        }
 
         mapping = mapper.map_integration_request(
             request_parameters=request_parameters,
@@ -415,9 +409,7 @@ class TestApigatewayRequestParametersMapping:
         }
 
         request = InvocationRequest(
-            raw_headers=Headers(),
-            headers={},
-            multi_value_headers={},
+            headers=Headers(),
             query_string_parameters={},
             multi_value_query_string_parameters={},
             path_parameters={},
@@ -467,8 +459,8 @@ class TestApigatewayRequestParametersMapping:
         self, default_invocation_request, default_context_variables
     ):
         mapper = ParametersMapper()
-        default_invocation_request["raw_headers"].add("Content-Type", "application/xml")
-        default_invocation_request["raw_headers"].add("Accept", "application/xml")
+        default_invocation_request["headers"].add("Content-Type", "application/xml")
+        default_invocation_request["headers"].add("Accept", "application/xml")
 
         mapping = mapper.map_integration_request(
             request_parameters={},
@@ -494,8 +486,8 @@ class TestApigatewayRequestParametersMapping:
             "integration.request.header.Content-Type": "method.request.header.header_value",
             "integration.request.header.accept": "method.request.header.header_value",
         }
-        default_invocation_request["raw_headers"].add("Content-Type", "application/json")
-        default_invocation_request["raw_headers"].add("Accept", "application/json")
+        default_invocation_request["headers"].add("Content-Type", "application/json")
+        default_invocation_request["headers"].add("Accept", "application/json")
 
         mapping = mapper.map_integration_request(
             request_parameters=request_parameters,

@@ -1,5 +1,7 @@
 import logging
 
+from werkzeug.datastructures import Headers
+
 from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
@@ -89,7 +91,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             http_method=integration_method,
             uri=rendered_integration_uri,
             query_string_parameters=request_data_mapping["querystring"],
-            headers=request_data_mapping["header"],
+            headers=Headers(request_data_mapping["header"]),
             body=body,
         )
 

@@ -1,6 +1,7 @@
 from http import HTTPMethod
 
 import pytest
+from werkzeug.datastructures import Headers
 
 from localstack.aws.api.apigateway import Integration, IntegrationType, Method
 from localstack.http import Request, Response
@@ -98,10 +99,12 @@ class TestHandlerIntegrationRequest:
         integration_request_handler(default_context)
         assert default_context.integration_request == {
             "body": b"",
-            "headers": {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-            },
+            "headers": Headers(
+                {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                }
+            ),
             "http_method": "POST",
             "query_string_parameters": {},
             "uri": "https://example.com",
@@ -205,11 +208,13 @@ class TestHandlerIntegrationRequest:
         # TODO this test will fail when we implement uri mapping
         assert default_context.integration_request["uri"] == "https://example.com/path"
         assert default_context.integration_request["query_string_parameters"] == {"qs": "qs2"}
-        assert default_context.integration_request["headers"] == {
-            "header": "header2",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        }
+        assert default_context.integration_request["headers"] == Headers(
+            {
+                "header": "header2",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            }
+        )
 
     def test_request_override(self, integration_request_handler, default_context):
         default_context.resource_method["methodIntegration"]["requestParameters"] = {
@@ -226,12 +231,14 @@ class TestHandlerIntegrationRequest:
         assert default_context.integration_request["query_string_parameters"] == {
             "qs": "queryOverride"
         }
-        assert default_context.integration_request["headers"] == {
-            "header": "headerOverride",
-            "multivalue": ["1header", "2header"],
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        }
+        assert default_context.integration_request["headers"] == Headers(
+            {
+                "header": "headerOverride",
+                "multivalue": ["1header", "2header"],
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            }
+        )
 
     def test_request_override_casing(self, integration_request_handler, default_context):
         default_context.resource_method["methodIntegration"]["requestParameters"] = {
@@ -242,12 +249,14 @@ class TestHandlerIntegrationRequest:
         }
         integration_request_handler(default_context)
         # TODO: for now, it's up to the integration to properly merge headers (`requests` does it automatically)
-        assert default_context.integration_request["headers"] == {
-            "myHeader": "header2",
-            "myheader": "headerOverride",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        }
+        assert default_context.integration_request["headers"] == Headers(
+            {
+                "myHeader": "header2",
+                "myheader": "headerOverride",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            }
+        )
 
     def test_multivalue_mapping(self, integration_request_handler, default_context):
         default_context.resource_method["methodIntegration"]["requestParameters"] = {

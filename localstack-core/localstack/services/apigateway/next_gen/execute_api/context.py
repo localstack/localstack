@@ -39,8 +39,6 @@ class IntegrationRequest(TypedDict, total=False):
     query_string_parameters: dict[str, str | list[str]]
     """Query string parameters of the request"""
     headers: Headers
-    # TODO: should this be Headers type? would maybe help access in the integrations if we need
-    #  currently, we support headers with same name and different casing, it's up to the integration to support it
     """Headers of the request"""
     body: bytes
     """Body content of the request"""

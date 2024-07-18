@@ -53,6 +53,9 @@ class ParametersMapper:
         for header in ("Content-Type", "Accept"):
             request_data_mapping["header"][header] = APPLICATION_JSON
 
+        # storing the case-sensitive headers once, the mapping is strict
+        case_sensitive_headers = dict(invocation_request["headers"].items())
+
         for integration_mapping, request_mapping in request_parameters.items():
             integration_param_location, param_name = integration_mapping.removeprefix(
                 "integration.request."
@@ -61,7 +64,7 @@ class ParametersMapper:
             if request_mapping.startswith("method.request."):
                 method_req_expr = request_mapping.removeprefix("method.request.")
                 value = self._retrieve_parameter_from_invocation_request(
-                    method_req_expr, invocation_request
+                    method_req_expr, invocation_request, case_sensitive_headers
                 )
 
             else:
@@ -191,7 +194,10 @@ class ParametersMapper:
             )
 
     def _retrieve_parameter_from_invocation_request(
-        self, expr: str, invocation_request: InvocationRequest
+        self,
+        expr: str,
+        invocation_request: InvocationRequest,
+        case_sensitive_headers: dict[str, str],
     ) -> str | list[str] | None:
         """
         See https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
@@ -243,11 +249,15 @@ class ParametersMapper:
             return multi_qs_params
 
         elif param_type == "header":
-            multi_headers = invocation_request["headers"].getlist(param_name)
-            if multi_headers:
-                return multi_headers[-1]
+            # casing is strict: if you don't specify the exact casing the server is returning, it does not map it to
+            # the request
+            return case_sensitive_headers.get(param_name)
 
         elif param_type == "multivalueheader":
+            # validate casing first
+            if param_name not in case_sensitive_headers:
+                return
+
             multi_headers = invocation_request["headers"].getlist(param_name)
             return ",".join(multi_headers)
 
