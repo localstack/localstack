@@ -130,15 +130,13 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
 
         responses = model.get("MethodResponses", [])
         for response in responses:
-            kwargs = util.convert_request_kwargs(
-                response, operation_model("PutMethodResponse").input_shape
-            )
-
             apigw.put_method_response(
                 restApiId=model.get("RestApiId"),
                 resourceId=model.get("ResourceId"),
                 httpMethod=model.get("HttpMethod"),
-                **kwargs,
+                **util.convert_request_kwargs(
+                    response, operation_model("PutMethodResponse").input_shape
+                ),
             )
 
         return ProgressEvent(
@@ -174,12 +172,13 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
         #  restAPI or resource has been already deleted
         model = request.desired_state
         apigw = request.aws_client_factory.apigateway
-        kwargs = util.convert_request_kwargs(
-            model, apigw.meta.service_model.operation_model("DeleteMethod").input_shape
-        )
 
         try:
-            apigw.delete_method(**kwargs)
+            apigw.delete_method(
+                **util.convert_request_kwargs(
+                    model, apigw.meta.service_model.operation_model("DeleteMethod").input_shape
+                )
+            )
         except apigw.exceptions.NotFoundException:
             pass
 
@@ -216,15 +215,16 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
 
         if integration := deepcopy(model.get("Integration")):
             integration.update(must_params)
-            kwargs = util.convert_request_kwargs(
-                integration, operation_model("PutIntegration").input_shape
+            apigw.put_integration(
+                **util.convert_request_kwargs(
+                    integration, operation_model("PutIntegration").input_shape
+                )
             )
-            apigw.put_integration(**kwargs)
 
         else:
-            kwargs = {"AuthorizationType": model.get("AuthorizationType"), **must_params}
+            must_params.update({"AuthorizationType": model.get("AuthorizationType")})
             apigw.put_method(
-                **util.convert_request_kwargs(kwargs, operation_model("PutMethod").input_shape)
+                **util.convert_request_kwargs(must_params, operation_model("PutMethod").input_shape)
             )
 
         return ProgressEvent(
