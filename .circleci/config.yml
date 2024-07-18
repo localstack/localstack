@@ -563,7 +563,7 @@ jobs:
           name: Test ApiGateway Next Gen provider
           environment:
             PROVIDER_OVERRIDE_APIGATEWAY: "next_gen"
-            TEST_PATH: "tests/aws/services/apigateway/ tests/unit/services/apigateway/"
+            TEST_PATH: "tests/aws/services/apigateway/"
             COVERAGE_ARGS: "-p"
           command: |
             COVERAGE_FILE="target/coverage/.coverage.apigwNG.${CIRCLE_NODE_INDEX}" \
