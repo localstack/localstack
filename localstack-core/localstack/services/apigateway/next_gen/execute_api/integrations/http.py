@@ -123,7 +123,7 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
         default_apigw_headers = self._get_default_headers(context)
 
         multi_value_headers = build_multi_value_headers(invocation_req["headers"])
-        request_headers = {key: ",".join(value) for key, value in multi_value_headers}
+        request_headers = {key: ",".join(value) for key, value in multi_value_headers.items()}
         # TODO: check which headers to pop
         request_headers.pop("Host", None)
         default_apigw_headers.update(request_headers)
