@@ -898,6 +898,15 @@ class BaseJSONRequestParser(RequestParser, ABC):
             return self._convert_str_to_timestamp(node, self.CBOR_TIMESTAMP_FORMAT)
         return super()._parse_timestamp(request, shape, node, uri_params)
 
+    def _parse_blob(
+        self, request: Request, shape: Shape, node: bool, uri_params: Mapping[str, Any] = None
+    ) -> bytes:
+        if isinstance(node, bytes) and request.mimetype.startswith("application/x-amz-cbor"):
+            # CBOR does not base64 encode binary data
+            return bytes(node)
+        else:
+            return super()._parse_blob(request, shape, node, uri_params)
+
 
 class JSONRequestParser(BaseJSONRequestParser):
     """
