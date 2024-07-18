@@ -128,7 +128,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                     params=MappingTemplateParams(
                         path=request.get("path_parameters"),
                         querystring=request.get("query_string_parameters", {}),
-                        header=request.get("headers", {}),
+                        header=dict(request.get("headers", {})),
                     ),
                 ),
             ),
@@ -144,7 +144,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         request_templates = integration.get("requestTemplates") or {}
         passthrough_behavior = integration.get("passthroughBehavior")
         # If content-type is not provided aws assumes application/json
-        content_type = request["raw_headers"].get("Content-Type", APPLICATION_JSON)
+        content_type = request["headers"].get("Content-Type", APPLICATION_JSON)
         # first look to for a template associated to the content-type, otherwise look for the $default template
         request_template = request_templates.get(content_type) or request_templates.get("$default")
 

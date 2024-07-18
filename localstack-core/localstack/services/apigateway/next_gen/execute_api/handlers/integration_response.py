@@ -203,7 +203,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             return ""
 
         # The invocation request header is used to find the right response templated
-        accepts = request["raw_headers"].getlist("accept")
+        accepts = request["headers"].getlist("accept")
         if accepts and (template := response_templates.get(accepts[-1])):
             return template
         # TODO aws seemed to favor application/json as default when unmatched regardless of "first"

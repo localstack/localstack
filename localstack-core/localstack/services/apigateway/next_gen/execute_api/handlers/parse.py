@@ -116,7 +116,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
     @staticmethod
     def create_context_variables(context: RestApiInvocationContext) -> ContextVariables:
         invocation_request: InvocationRequest = context.invocation_request
-        domain_name = invocation_request["raw_headers"].get("Host", "")
+        domain_name = invocation_request["headers"].get("Host", "")
         domain_prefix = domain_name.split(".")[0]
         now = datetime.datetime.now()
 
@@ -140,7 +140,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
                 principalOrgId=None,
                 sourceIp="127.0.0.1",  # TODO: get the sourceIp from the Request
                 user=None,
-                userAgent=invocation_request["raw_headers"].get("User-Agent"),
+                userAgent=invocation_request["headers"].get("User-Agent"),
                 userArn=None,
             ),
             # TODO: check if we need the raw path? with forward slashes

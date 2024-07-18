@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+from collections import defaultdict
 from functools import lru_cache
 from http import HTTPMethod
 from typing import Literal, Optional, TypedDict
@@ -353,7 +354,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         function_arn = get_lambda_function_arn_from_invocation_uri(integration_uri)
         source_arn = get_source_arn(context)
         # TODO: properly get the value out/validate it?
-        raw_headers = context.invocation_request["raw_headers"]
+        raw_headers = context.invocation_request["headers"]
         is_invocation_asynchronous = raw_headers.get("X-Amz-Invocation-Type") == "'Event'"
 
         # TODO: write test for credentials rendering
@@ -497,8 +498,10 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         body, is_b64_encoded = self._format_body(invocation_req["body"])
 
         input_event = LambdaInputEvent(
-            headers=self._format_headers(invocation_req["headers"]),
-            multiValueHeaders=self._format_headers(invocation_req["multi_value_headers"]),
+            headers=self._format_headers(dict(invocation_req["headers"])),
+            multiValueHeaders=self._format_headers(
+                self._build_multi_value_headers(invocation_req["headers"])
+            ),
             body=body or None,
             isBase64Encoded=is_b64_encoded,
             requestContext=context.context_variables,
@@ -513,6 +516,14 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         )
 
         return input_event
+
+    @staticmethod
+    def _build_multi_value_headers(headers: Headers) -> dict[str, list[str]]:
+        multi_value_headers = defaultdict(list)
+        for key, value in headers:
+            multi_value_headers[key].append(value)
+
+        return multi_value_headers
 
     @staticmethod
     def _format_headers(headers: dict[str, str | list[str]]) -> dict[str, str | list[str]]:

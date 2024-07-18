@@ -105,7 +105,7 @@ class ApiKeyValidationHandler(RestApiGatewayHandler):
         match api_key_source := rest_api.get("apiKeySource"):
             case ApiKeySourceType.HEADER:
                 LOG.debug("Looking for api key in header 'X-API-Key'")
-                return request.get("raw_headers", {}).get("X-API-Key")
+                return request.get("headers", {}).get("X-API-Key")
             case ApiKeySourceType.AUTHORIZER:
                 LOG.debug("Looking for api key in Identity Context")
                 return identity.get("apiKey")
