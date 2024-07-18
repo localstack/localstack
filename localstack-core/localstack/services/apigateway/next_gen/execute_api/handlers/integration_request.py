@@ -69,7 +69,12 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             # this is undocumented but validated behavior
             if integration_type == IntegrationType.HTTP_PROXY:
                 headers = headers.copy()
-                headers.update(request_data_mapping["header"])
+                to_merge = {
+                    k: v
+                    for k, v in request_data_mapping["header"].items()
+                    if k not in ("Content-Type", "Accept")
+                }
+                headers.update(to_merge)
 
                 query_string_parameters = self._merge_http_proxy_query_string(
                     query_string_parameters, request_data_mapping["querystring"]
@@ -81,6 +86,13 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 path_parameters = {}
 
         else:
+            # default values, can be overridden with right casing
+            default_headers = {
+                "Content-Type": APPLICATION_JSON,
+                "Accept": APPLICATION_JSON,
+            }
+            request_data_mapping["header"] = default_headers | request_data_mapping["header"]
+
             # find request template to raise UnsupportedMediaTypeError early
             request_template = self.get_request_template(
                 integration=integration, request=context.invocation_request
