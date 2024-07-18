@@ -1334,10 +1334,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 failed_entry_count += 1
                 continue
             region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
-            if encoded_original_id := get_trace_header_encoded_region_account(
-                event, context.region, context.account_id, region, account_id, new_message_id=True
+            if encoded_trace_header := get_trace_header_encoded_region_account(
+                event, context.region, context.account_id, region, account_id
             ):
-                event["TraceHeader"] = encoded_original_id
+                event["TraceHeader"] = encoded_trace_header
             event_formatted = format_event(event, region, account_id)
             store = self.get_store(region, account_id)
             try:

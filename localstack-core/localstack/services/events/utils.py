@@ -20,6 +20,7 @@ from localstack.aws.api.events import (
 from localstack.services.events.models import (
     FormattedEvent,
     ResourceType,
+    TransformedEvent,
     ValidationException,
 )
 from localstack.utils.aws.arns import parse_arn
@@ -210,17 +211,17 @@ def re_format_event(event: FormattedEvent, event_bus_name: EventBusName) -> PutE
 
 
 def get_trace_header_encoded_region_account(
-    event: FormattedEvent,
+    event: PutEventsRequestEntry | FormattedEvent | TransformedEvent,
     source_region: str,
     source_account_id: str,
     target_region: str,
     target_account_id: str,
-    new_message_id: bool = False,
 ) -> str | None:
     """Encode the original region and account_id for cross-region and cross-account
     event bus communication in the trace header. For event bus to event bus communication
     in a different account the event id is preserved. This is not the case if the region differs."""
-    original_id = event.get("id")
+    if event.get("TraceHeader"):
+        return None
     if source_region != target_region and source_account_id != target_account_id:
         return json.dumps(
             {
@@ -231,7 +232,7 @@ def get_trace_header_encoded_region_account(
     if source_region != target_region:
         return json.dumps({"original_region": source_region})
     if source_account_id != target_account_id:
-        if new_message_id:
-            return json.dumps({"original_account": source_account_id})
-        else:
+        if original_id := event.get("id"):
             return json.dumps({"original_id": original_id, "original_account": source_account_id})
+        else:
+            return json.dumps({"original_account": source_account_id})
