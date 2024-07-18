@@ -84,7 +84,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         response_template = self.get_response_template(
             integration_response=integration_response, request=context.invocation_request
         )
-        body, response_override = self.render_request_template_mapping(
+        body, response_override = self.render_response_template_mapping(
             context=context, template=response_template, body=body
         )
 
@@ -214,7 +214,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         LOG.warning("No templates were matched, Using template: %s", template)
         return template
 
-    def render_request_template_mapping(
+    def render_response_template_mapping(
         self, context: RestApiInvocationContext, template: str, body: bytes | str
     ) -> tuple[bytes, ContextVarsResponseOverride]:
         if not template:

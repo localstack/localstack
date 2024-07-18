@@ -12,6 +12,7 @@ from ..context import (
     InvocationRequest,
     RestApiInvocationContext,
 )
+from ..header_utils import build_multi_value_headers
 from ..helpers import render_integration_uri
 from .core import RestApiIntegration
 
@@ -121,8 +122,8 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
 
         default_apigw_headers = self._get_default_headers(context)
 
-        raw_headers = invocation_req["headers"]
-        request_headers = {key: ",".join(raw_headers.getlist(key)) for key in raw_headers.keys()}
+        multi_value_headers = build_multi_value_headers(invocation_req["headers"])
+        request_headers = {key: ",".join(value) for key, value in multi_value_headers}
         # TODO: check which headers to pop
         request_headers.pop("Host", None)
         default_apigw_headers.update(request_headers)

@@ -1,7 +1,6 @@
 import base64
 import json
 import logging
-from collections import defaultdict
 from functools import lru_cache
 from http import HTTPMethod
 from typing import Literal, Optional, TypedDict
@@ -33,6 +32,7 @@ from ..context import (
     RestApiInvocationContext,
 )
 from ..gateway_response import IntegrationFailureError, InternalServerError
+from ..header_utils import build_multi_value_headers
 from ..helpers import (
     get_lambda_function_arn_from_invocation_uri,
     get_source_arn,
@@ -503,7 +503,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         input_event = LambdaInputEvent(
             headers=self._format_headers(dict(invocation_req["headers"])),
             multiValueHeaders=self._format_headers(
-                self._build_multi_value_headers(invocation_req["headers"])
+                build_multi_value_headers(invocation_req["headers"])
             ),
             body=body or None,
             isBase64Encoded=is_b64_encoded,
@@ -519,14 +519,6 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         )
 
         return input_event
-
-    @staticmethod
-    def _build_multi_value_headers(headers: Headers) -> dict[str, list[str]]:
-        multi_value_headers = defaultdict(list)
-        for key, value in headers:
-            multi_value_headers[key].append(value)
-
-        return multi_value_headers
 
     @staticmethod
     def _format_headers(headers: dict[str, str | list[str]]) -> dict[str, str | list[str]]:

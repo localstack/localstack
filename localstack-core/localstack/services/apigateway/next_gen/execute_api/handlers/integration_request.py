@@ -130,7 +130,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                     params=MappingTemplateParams(
                         path=request.get("path_parameters"),
                         querystring=request.get("query_string_parameters", {}),
-                        header=dict(request.get("headers", {})),
+                        header=request.get("headers"),
                     ),
                 ),
             ),
