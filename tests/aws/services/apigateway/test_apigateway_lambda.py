@@ -44,15 +44,7 @@ CLOUDFRONT_SKIP_HEADERS = [
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        *CLOUDFRONT_SKIP_HEADERS,
-        "$..X-Amzn-Trace-Id",
-        "$..X-Forwarded-For",
-        "$..X-Forwarded-Port",
-        "$..X-Forwarded-Proto",
-    ]
-)
+@markers.snapshot.skip_snapshot_verify(paths=[*CLOUDFRONT_SKIP_HEADERS, "$..X-Forwarded-Proto"])
 @markers.snapshot.skip_snapshot_verify(
     condition=lambda: not is_next_gen_api(),
     paths=[
@@ -80,6 +72,9 @@ CLOUDFRONT_SKIP_HEADERS = [
         "$..requestContext.identity.user",
         "$..requestContext.identity.userArn",
         "$..stageVariables",
+        "$..X-Amzn-Trace-Id",
+        "$..X-Forwarded-For",
+        "$..X-Forwarded-Port",
     ],
 )
 def test_lambda_aws_proxy_integration(
@@ -901,15 +896,7 @@ def test_lambda_rust_proxy_integration(
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        *CLOUDFRONT_SKIP_HEADERS,
-        "$..X-Amzn-Trace-Id",
-        "$..X-Forwarded-For",
-        "$..X-Forwarded-Port",
-        "$..X-Forwarded-Proto",
-    ]
-)
+@markers.snapshot.skip_snapshot_verify(paths=[*CLOUDFRONT_SKIP_HEADERS, "$..X-Forwarded-Proto"])
 @markers.snapshot.skip_snapshot_verify(
     condition=lambda: not is_next_gen_api(),
     paths=[
@@ -939,6 +926,9 @@ def test_lambda_rust_proxy_integration(
         "$..requestContext.identity.user",
         "$..requestContext.identity.userArn",
         "$..stageVariables",
+        "$..X-Amzn-Trace-Id",
+        "$..X-Forwarded-For",
+        "$..X-Forwarded-Port",
     ],
 )
 def test_lambda_aws_proxy_integration_request_data_mapping(

@@ -11,19 +11,20 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     api_invoke_url,
     create_rest_api_integration,
 )
-from tests.aws.services.apigateway.conftest import DEFAULT_STAGE_NAME
+from tests.aws.services.apigateway.conftest import DEFAULT_STAGE_NAME, is_next_gen_api
 
 
 @markers.aws.validated
 @pytest.mark.parametrize("ddb_action", ["PutItem", "Query", "Scan"])
 @markers.snapshot.skip_snapshot_verify(
+    condition=not is_next_gen_api(),
     paths=[
         "$..headers.connection",
         "$..headers.x-amz-apigw-id",
         "$..headers.x-amzn-requestid",
         "$..headers.x-amzn-trace-id",
         "$..headers.server",
-    ]
+    ],
 )
 def test_rest_api_to_dynamodb_integration(
     ddb_action,

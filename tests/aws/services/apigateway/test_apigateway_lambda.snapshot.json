@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration": {
-    "recorded-date": "10-07-2024, 12:28:36",
+    "recorded-date": "19-07-2024, 17:39:12",
     "recorded-content": {
       "invocation-payload-without-trailing-slash": {
         "body": null,
@@ -20,8 +20,8 @@
           "Via": "<via:1>",
           "X-Amz-Cf-Id": "<cf-id:1>",
           "X-Amzn-Trace-Id": "<trace-id:1>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "https",
           "tEsT-HEADeR": "aValUE"
         },
@@ -73,12 +73,8 @@
           "X-Amzn-Trace-Id": [
             "<trace-id:1>"
           ],
-          "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
-          ],
-          "X-Forwarded-Port": [
-            "443"
-          ],
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": [
             "https"
           ],
@@ -144,8 +140,8 @@
           "Via": "<via:2>",
           "X-Amz-Cf-Id": "<cf-id:2>",
           "X-Amzn-Trace-Id": "<trace-id:2>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "https",
           "tEsT-HEADeR": "aValUE"
         },
@@ -197,12 +193,8 @@
           "X-Amzn-Trace-Id": [
             "<trace-id:2>"
           ],
-          "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
-          ],
-          "X-Forwarded-Port": [
-            "443"
-          ],
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": [
             "https"
           ],
@@ -268,8 +260,8 @@
           "Via": "<via:3>",
           "X-Amz-Cf-Id": "<cf-id:3>",
           "X-Amzn-Trace-Id": "<trace-id:3>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "https",
           "tEsT-HEADeR": "aValUE"
         },
@@ -321,12 +313,8 @@
           "X-Amzn-Trace-Id": [
             "<trace-id:3>"
           ],
-          "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
-          ],
-          "X-Forwarded-Port": [
-            "443"
-          ],
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": [
             "https"
           ],
@@ -398,8 +386,8 @@
           "Via": "<via:4>",
           "X-Amz-Cf-Id": "<cf-id:4>",
           "X-Amzn-Trace-Id": "<trace-id:4>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "https",
           "tEsT-HEADeR": "aValUE"
         },
@@ -451,12 +439,8 @@
           "X-Amzn-Trace-Id": [
             "<trace-id:4>"
           ],
-          "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
-          ],
-          "X-Forwarded-Port": [
-            "443"
-          ],
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": [
             "https"
           ],
@@ -525,11 +509,11 @@
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
           "Host": "<host:1>",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:5>",
+          "Via": "<via:4>",
           "X-Amz-Cf-Id": "<cf-id:5>",
           "X-Amzn-Trace-Id": "<trace-id:5>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "https",
           "tEsT-HEADeR": "aValUE"
         },
@@ -573,7 +557,7 @@
             "python-requests/testing"
           ],
           "Via": [
-            "<via:5>"
+            "<via:4>"
           ],
           "X-Amz-Cf-Id": [
             "<cf-id:5>"
@@ -581,12 +565,8 @@
           "X-Amzn-Trace-Id": [
             "<trace-id:5>"
           ],
-          "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
-          ],
-          "X-Forwarded-Port": [
-            "443"
-          ],
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": [
             "https"
           ],
@@ -649,11 +629,11 @@
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
           "Host": "<host:1>",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:2>",
+          "Via": "<via:5>",
           "X-Amz-Cf-Id": "<cf-id:6>",
           "X-Amzn-Trace-Id": "<trace-id:6>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "https",
           "tEsT-HEADeR": "aValUE"
         },
@@ -697,7 +677,7 @@
             "python-requests/testing"
           ],
           "Via": [
-            "<via:2>"
+            "<via:5>"
           ],
           "X-Amz-Cf-Id": [
             "<cf-id:6>"
@@ -705,12 +685,8 @@
           "X-Amzn-Trace-Id": [
             "<trace-id:6>"
           ],
-          "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
-          ],
-          "X-Forwarded-Port": [
-            "443"
-          ],
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": [
             "https"
           ],
@@ -805,8 +781,8 @@
           "Via": "<via:6>",
           "X-Amz-Cf-Id": "<cf-id:7>",
           "X-Amzn-Trace-Id": "<trace-id:7>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "https"
         },
         "httpMethod": "POST",
@@ -860,12 +836,8 @@
           "X-Amzn-Trace-Id": [
             "<trace-id:7>"
           ],
-          "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
-          ],
-          "X-Forwarded-Port": [
-            "443"
-          ],
+          "X-Forwarded-For": "<X-Forwarded-For>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": [
             "https"
           ]
@@ -1094,7 +1066,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration_request_data_mapping": {
-    "recorded-date": "18-07-2024, 15:01:27",
+    "recorded-date": "19-07-2024, 17:42:49",
     "recorded-content": {
       "api_id": {
         "rest_api_id": "<rest_api_id:1>"
@@ -1120,8 +1092,8 @@
             "Via": "<via:1>",
             "X-Amz-Cf-Id": "<cf-id:1>",
             "X-Amzn-Trace-Id": "<trace-id:1>",
-            "X-Forwarded-For": "<source-ip:1>, <ip>",
-            "X-Forwarded-Port": "443",
+            "X-Forwarded-For": "<X-Forwarded-For>",
+            "X-Forwarded-Port": "<X-Forwarded-Port>",
             "X-Forwarded-Proto": "https",
             "foobar": "mapped-value",
             "headerVar": "request-value"
@@ -1174,12 +1146,8 @@
             "X-Amzn-Trace-Id": [
               "<trace-id:1>"
             ],
-            "X-Forwarded-For": [
-              "<source-ip:1>, <ip>"
-            ],
-            "X-Forwarded-Port": [
-              "443"
-            ],
+            "X-Forwarded-For": "<X-Forwarded-For>",
+            "X-Forwarded-Port": "<X-Forwarded-Port>",
             "X-Forwarded-Proto": [
               "https"
             ],
