@@ -10,6 +10,7 @@ from localstack.services.apigateway.next_gen.execute_api.gateway_response import
     BaseGatewayException,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import GatewayExceptionHandler
+from localstack.services.apigateway.next_gen.execute_api.variables import ContextVariables
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 
@@ -36,6 +37,7 @@ class TestGatewayResponseHandler:
                 region=TEST_AWS_REGION_NAME,
                 rest_api=MergedRestApi(None),
             )
+            context.context_variables = ContextVariables(requestId="REQUEST_ID")
             if gateway_responses:
                 context.deployment.rest_api.gateway_responses = gateway_responses
             return context
