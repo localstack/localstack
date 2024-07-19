@@ -6,7 +6,7 @@ from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
 from localstack.utils.collections import merge_recursive
-from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.strings import to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
@@ -65,7 +65,8 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
         if integration_type in (IntegrationType.AWS_PROXY, IntegrationType.HTTP_PROXY):
             # `PROXY` types cannot use integration mapping templates, they pass most of the data straight
-            headers = context.invocation_request["headers"]
+            # We make a copy to avoid modifying the invocation headers and keep a cleaner history
+            headers = context.invocation_request["headers"].copy()
             query_string_parameters: dict[str, list[str]] = context.invocation_request[
                 "multi_value_query_string_parameters"
             ]
@@ -74,7 +75,6 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             # HTTP_PROXY still make uses of the request data mappings, and merges it with the invocation request
             # this is undocumented but validated behavior
             if integration_type == IntegrationType.HTTP_PROXY:
-                headers = headers.copy()
                 drop_invocation_headers(headers, integration_type)
                 headers.update(request_data_mapping["header"])
 
@@ -83,10 +83,11 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 )
 
             else:
-                headers.set("X-Amzn-Trace-Id", short_uid())  # TODO
                 headers.set("X-Forwarded-For", context.request.remote_addr)
                 headers.set("X-Forwarded-Port", context.request.environ.get("SERVER_PORT"))
-                headers.set("X-Forwarded-Proto", context.request.environ.get("SERVER_PROTOCOL"))
+                # TODO X-Forwarded-Proto breaks Lambda RUST
+                #  tests.aws.services.apigateway.test_apigateway_lambda.test_lambda_rust_proxy_integration
+                # headers.set("X-Forwarded-Proto", context.request.environ.get("SERVER_PROTOCOL"))
                 # AWS_PROXY does not allow URI path rendering
                 # TODO: verify this
                 path_parameters = {}

@@ -69,13 +69,15 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
 
         return Response(response=content, headers=headers, status=status_code)
 
-    def _build_response_content(self, exception: BaseGatewayException) -> str:
+    @staticmethod
+    def _build_response_content(exception: BaseGatewayException) -> str:
         # TODO apply responseTemplates to the content. We should also handle the default simply by managing the default
         #  template body `{"message":$context.error.messageString}`
         return json.dumps({"message": exception.message})
 
+    @staticmethod
     def _build_response_headers(
-        self, exception: BaseGatewayException, context: RestApiInvocationContext
+        exception: BaseGatewayException, context: RestApiInvocationContext
     ) -> dict:
         # TODO apply responseParameters to the headers and get content-type from the gateway_response
         headers = Headers({"x-amzn-ErrorType": exception.code})

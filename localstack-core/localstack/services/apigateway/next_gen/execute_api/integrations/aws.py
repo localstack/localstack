@@ -431,7 +431,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
                 LOG.debug(
                     "Lambda execution failed with status 200 due to customer function error: %s. Lambda request id: %s",
                     lambda_response["errorMessage"],
-                    lambda_response["requestId"],
+                    lambda_response.get("requestId", "<Unknown Request Id>"),
                 )
             else:
                 LOG.warning(

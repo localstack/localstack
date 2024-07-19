@@ -96,7 +96,6 @@ def integration_request_handler():
 class TestHandlerIntegrationRequest:
     def test_noop(self, integration_request_handler, default_context):
         integration_request_handler(default_context)
-        print(default_context.integration_request)
         assert default_context.integration_request["body"] == b""
         assert default_context.integration_request["headers"]["Accept"] == "application/json"
         assert default_context.integration_request["http_method"] == "POST"

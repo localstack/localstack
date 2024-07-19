@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from http import HTTPMethod
 from typing import Iterable
 
 from werkzeug.datastructures.headers import Headers
@@ -85,7 +86,7 @@ REMAPPED_FROM_INTEGRATION_RESPONSE_NON_PROXY = [
     "WWW-Authenticate",
 ]
 # Default headers
-DEFAULT_REQUEST_HEADERS = {"Accept": APPLICATION_JSON}
+DEFAULT_REQUEST_HEADERS = {"Accept": APPLICATION_JSON, "Connection": "keep-alive"}
 DEFAULT_RESPONSE_HEADERS = {"Content-Type": APPLICATION_JSON}
 
 
@@ -165,7 +166,7 @@ def validate_request_headers(headers: dict[str, str], integration_type: Integrat
             raise InternalServerError("Internal server error")
 
 
-def _set_default_headers(headers: Headers, default_headers: dict[str, str]):
+def set_default_headers(headers: Headers, default_headers: dict[str, str]):
     for header, value in default_headers.items():
         if not headers.get(header):
             headers.set(header, value)
@@ -177,7 +178,11 @@ def set_default_response_headers(
     integration_type: IntegrationType = None,
 ):
     """Utils to set the default apigw headers. Trace id isn't applied to HTTP_PROXY and Gateway Responses"""
-    _set_default_headers(headers, DEFAULT_RESPONSE_HEADERS)
+    default_headers = {}
+    if (connection := context.request.headers.get("Connection")) and connection != "close":
+        default_headers["Connection"] = connection
+
+    set_default_headers(headers, {**DEFAULT_RESPONSE_HEADERS, **default_headers})
     headers.set("x-amzn-RequestId", context.context_variables["requestId"])
     # Todo, as we go into monitoring, we might want to have these values come from the context?
     headers.set("x-amz-apigw-id", short_uid() + "=")
@@ -188,9 +193,16 @@ def set_default_response_headers(
 def set_default_request_headers(
     headers: Headers, integration_type: IntegrationType, context: RestApiInvocationContext
 ):
-    _set_default_headers(
-        headers, {**DEFAULT_REQUEST_HEADERS, "User-Agent": f"AmazonAPIGateway_{context.api_id}"}
-    )
+    default_headers = {
+        **DEFAULT_REQUEST_HEADERS,
+        "User-Agent": f"AmazonAPIGateway_{context.api_id}",
+    }
+    if (
+        content_type := context.request.headers.get("Content-Type")
+    ) and context.request.method not in {HTTPMethod.OPTIONS, HTTPMethod.GET, HTTPMethod.HEAD}:
+        default_headers["Content-Type"] = content_type
+
+    set_default_headers(headers, default_headers)
     headers.set("X-Amzn-Trace-Id", short_uid())  # TODO
     if integration_type not in (IntegrationType.AWS_PROXY, IntegrationType.AWS):
         headers.set("X-Amzn-Apigateway-Api-Id", context.api_id)

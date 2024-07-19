@@ -30,16 +30,6 @@ class SimpleHttpRequest(TypedDict, total=False):
 
 class BaseRestApiHttpIntegration(RestApiIntegration):
     @staticmethod
-    def _get_default_headers(context: RestApiInvocationContext) -> dict[str, str]:
-        # passing full context as the trace-id will probably also come from it
-        # TODO: get right casing in case we can override them with mappings/override?
-        return {
-            "x-amzn-apigateway-api-id": context.api_id,
-            "x-amzn-trace-id": "",  # TODO
-            "user-agent": f"AmazonAPIGateway_{context.api_id}",
-        }
-
-    @staticmethod
     def _get_integration_timeout(integration: Integration) -> float:
         return int(integration.get("timeoutInMillis", 29000)) / 1000
 
@@ -56,14 +46,11 @@ class RestApiHttpIntegration(BaseRestApiHttpIntegration):
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
 
-        default_apigw_headers = self._get_default_headers(context)
-        default_apigw_headers.update(integration_req["headers"])
-
         request_parameters: SimpleHttpRequest = {
             "method": method,
             "url": integration_req["uri"],
             "params": integration_req["query_string_parameters"],
-            "headers": default_apigw_headers,
+            "headers": integration_req["headers"],
         }
 
         if method not in NO_BODY_METHODS:
@@ -97,17 +84,14 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
 
-        default_apigw_headers = self._get_default_headers(context)
-
         multi_value_headers = build_multi_value_headers(integration_req["headers"])
         request_headers = {key: ",".join(value) for key, value in multi_value_headers.items()}
-        default_apigw_headers.update(request_headers)
 
         request_parameters: SimpleHttpRequest = {
             "method": method,
             "url": integration_req["uri"],
             "params": integration_req["query_string_parameters"],
-            "headers": default_apigw_headers,
+            "headers": request_headers,
         }
 
         # TODO: validate this for HTTP_PROXY
