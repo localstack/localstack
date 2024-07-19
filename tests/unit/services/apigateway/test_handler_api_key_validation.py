@@ -51,7 +51,7 @@ def create_context():
         context = RestApiInvocationContext(Request())
 
         # The api key validator only relies on the raw headers from the invocation requests
-        context.invocation_request = InvocationRequest(raw_headers=Headers(headers))
+        context.invocation_request = InvocationRequest(headers=Headers(headers))
 
         # Frozen deployment populated by the router
         context.deployment = RestApiDeployment(

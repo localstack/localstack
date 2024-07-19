@@ -1092,5 +1092,156 @@
         "message": "Internal server error"
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration_request_data_mapping": {
+    "recorded-date": "18-07-2024, 15:01:27",
+    "recorded-content": {
+      "api_id": {
+        "rest_api_id": "<rest_api_id:1>"
+      },
+      "http-proxy-invocation-data-mapping": {
+        "content": {
+          "body": {
+            "message": "hello world"
+          },
+          "headers": {
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip, deflate",
+            "CloudFront-Forwarded-Proto": "https",
+            "CloudFront-Is-Desktop-Viewer": "true",
+            "CloudFront-Is-Mobile-Viewer": "false",
+            "CloudFront-Is-SmartTV-Viewer": "false",
+            "CloudFront-Is-Tablet-Viewer": "false",
+            "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+            "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+            "Content-Type": "application/json",
+            "Host": "<host:1>",
+            "User-Agent": "test/integration",
+            "Via": "<via:1>",
+            "X-Amz-Cf-Id": "<cf-id:1>",
+            "X-Amzn-Trace-Id": "<trace-id:1>",
+            "X-Forwarded-For": "<source-ip:1>, <ip>",
+            "X-Forwarded-Port": "443",
+            "X-Forwarded-Proto": "https",
+            "foobar": "mapped-value",
+            "headerVar": "request-value"
+          },
+          "httpMethod": "POST",
+          "isBase64Encoded": false,
+          "multiValueHeaders": {
+            "Accept": [
+              "application/json"
+            ],
+            "Accept-Encoding": [
+              "gzip, deflate"
+            ],
+            "CloudFront-Forwarded-Proto": [
+              "https"
+            ],
+            "CloudFront-Is-Desktop-Viewer": [
+              "true"
+            ],
+            "CloudFront-Is-Mobile-Viewer": [
+              "false"
+            ],
+            "CloudFront-Is-SmartTV-Viewer": [
+              "false"
+            ],
+            "CloudFront-Is-Tablet-Viewer": [
+              "false"
+            ],
+            "CloudFront-Viewer-ASN": [
+              "<cloudfront-asn:1>"
+            ],
+            "CloudFront-Viewer-Country": [
+              "<cloudfront-country:1>"
+            ],
+            "Content-Type": [
+              "application/json"
+            ],
+            "Host": [
+              "<host:1>"
+            ],
+            "User-Agent": [
+              "test/integration"
+            ],
+            "Via": [
+              "<via:1>"
+            ],
+            "X-Amz-Cf-Id": [
+              "<cf-id:1>"
+            ],
+            "X-Amzn-Trace-Id": [
+              "<trace-id:1>"
+            ],
+            "X-Forwarded-For": [
+              "<source-ip:1>, <ip>"
+            ],
+            "X-Forwarded-Port": [
+              "443"
+            ],
+            "X-Forwarded-Proto": [
+              "https"
+            ],
+            "foobar": [
+              "mapped-value"
+            ],
+            "headerVar": [
+              "request-value"
+            ]
+          },
+          "multiValueQueryStringParameters": {
+            "testQueryString": [
+              "foo"
+            ],
+            "testVar": [
+              "bar"
+            ]
+          },
+          "path": "/foobar",
+          "pathParameters": {
+            "pathVariable": "foobar"
+          },
+          "queryStringParameters": {
+            "testQueryString": "foo",
+            "testVar": "bar"
+          },
+          "requestContext": {
+            "accountId": "111111111111",
+            "apiId": "<rest_api_id:1>",
+            "deploymentId": "<deployment-id:1>",
+            "domainName": "<host:1>",
+            "domainPrefix": "<rest_api_id:1>",
+            "extendedRequestId": "<extended-request-id:1>",
+            "httpMethod": "POST",
+            "identity": {
+              "accessKey": null,
+              "accountId": null,
+              "caller": null,
+              "cognitoAuthenticationProvider": null,
+              "cognitoAuthenticationType": null,
+              "cognitoIdentityId": null,
+              "cognitoIdentityPoolId": null,
+              "principalOrgId": null,
+              "sourceIp": "<source-ip:1>",
+              "user": null,
+              "userAgent": "test/integration",
+              "userArn": null
+            },
+            "path": "/test/foobar",
+            "protocol": "HTTP/1.1",
+            "requestId": "<uuid:1>",
+            "requestTime": "<request-time>",
+            "requestTimeEpoch": "<request-time-epoch>",
+            "resourceId": "<resource-id:1>",
+            "resourcePath": "/{pathVariable}",
+            "stage": "test"
+          },
+          "resource": "/{pathVariable}",
+          "stageVariables": null
+        },
+        "status_code": 200
+      }
+    }
   }
 }

@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from werkzeug.datastructures import Headers
 
 from localstack.aws.api.apigateway import Method, Model, RequestValidator, RestApi
 from localstack.http import Request, Response
@@ -85,7 +86,7 @@ class TestMethodRequestHandler:
 
         # Invocation with no valid element
         dummy_context.invocation_request = InvocationRequest(
-            headers={}, query_string_parameters={}, path=""
+            headers=Headers(), query_string_parameters={}, path=""
         )
         with pytest.raises(BadRequestParametersError) as e:
             method_request_handler(dummy_context)

@@ -32,10 +32,10 @@ from ..context import (
     RestApiInvocationContext,
 )
 from ..gateway_response import IntegrationFailureError, InternalServerError
+from ..header_utils import build_multi_value_headers
 from ..helpers import (
     get_lambda_function_arn_from_invocation_uri,
     get_source_arn,
-    render_integration_uri,
     render_uri_with_stage_variables,
     validate_sub_dict_of_typed_dict,
 )
@@ -187,11 +187,14 @@ class RestApiAwsIntegration(RestApiIntegration):
         if credentials := integration.get("credentials"):
             credentials = render_uri_with_stage_variables(credentials, context.stage_variables)
 
-        headers = integration_req["headers"] | get_internal_mocked_headers(
-            service_name=service_name,
-            region_name=integration_region,
-            source_arn=get_source_arn(context),
-            role_arn=credentials,
+        headers = integration_req["headers"]
+        headers.update(
+            get_internal_mocked_headers(
+                service_name=service_name,
+                region_name=integration_region,
+                source_arn=get_source_arn(context),
+                role_arn=credentials,
+            )
         )
         query_params = integration_req["query_string_parameters"].copy()
         data = integration_req["body"]
@@ -331,30 +334,24 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
     name = "AWS_PROXY"
 
     def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
-        invocation_req: InvocationRequest = context.invocation_request
         integration: Integration = context.resource_method["methodIntegration"]
-        # if the integration method is defined and is not ANY, we can use it for the integration
-        if not (method := integration["httpMethod"]) or method == "ANY":
-            # otherwise, fallback to the request's method
-            method = invocation_req["http_method"]
+
+        integration_req: IntegrationRequest = context.integration_request
+        method = integration_req["http_method"]
 
         if method != HTTPMethod.POST:
             raise IntegrationFailureError("Internal server error")
 
         input_event = self.create_lambda_input_event(context)
 
-        # TODO: verify path/stage variables rendering in AWS_PROXY
-        integration_uri = render_integration_uri(
-            integration["uri"],
-            path_parameters=invocation_req["path_parameters"],
-            stage_variables=context.stage_variables,
-        )
+        # TODO: verify stage variables rendering in AWS_PROXY
+        integration_uri = integration_req["uri"]
 
         function_arn = get_lambda_function_arn_from_invocation_uri(integration_uri)
         source_arn = get_source_arn(context)
         # TODO: properly get the value out/validate it?
-        raw_headers = context.invocation_request["raw_headers"]
-        is_invocation_asynchronous = raw_headers.get("X-Amz-Invocation-Type") == "'Event'"
+        headers = integration_req["headers"]
+        is_invocation_asynchronous = headers.get("X-Amz-Invocation-Type") == "'Event'"
 
         # TODO: write test for credentials rendering
         if credentials := integration.get("credentials"):
@@ -491,18 +488,24 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
 
     def create_lambda_input_event(self, context: RestApiInvocationContext) -> LambdaInputEvent:
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
+        # for building the Lambda Payload, we need access to the Invocation Request, as some data is not available in
+        # the integration request and does not make sense for it
         invocation_req: InvocationRequest = context.invocation_request
+        integration_req: IntegrationRequest = context.integration_request
 
         # TODO: binary support of APIGW
-        body, is_b64_encoded = self._format_body(invocation_req["body"])
+        body, is_b64_encoded = self._format_body(integration_req["body"])
 
         input_event = LambdaInputEvent(
-            headers=self._format_headers(invocation_req["headers"]),
-            multiValueHeaders=self._format_headers(invocation_req["multi_value_headers"]),
+            headers=self._format_headers(dict(integration_req["headers"])),
+            multiValueHeaders=self._format_headers(
+                build_multi_value_headers(integration_req["headers"])
+            ),
             body=body or None,
             isBase64Encoded=is_b64_encoded,
             requestContext=context.context_variables,
             stageVariables=context.stage_variables,
+            # still using the InvocationRequest query string parameters as the logic is the same, maybe refactor?
             queryStringParameters=invocation_req["query_string_parameters"] or None,
             multiValueQueryStringParameters=invocation_req["multi_value_query_string_parameters"]
             or None,
@@ -519,10 +522,10 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         # Some headers get capitalized like in CloudFront, see
         # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html#add-origin-custom-headers-forward-authorization
         # It seems AWS_PROXY lambda integrations are behind CloudFront, as seen by the returned headers in AWS
-        to_capitalize: list[str] = ["authorization"]  # some headers get capitalized
+        to_capitalize: list[str] = ["authorization", "user-agent"]  # some headers get capitalized
         to_filter: list[str] = ["content-length", "connection"]
         headers = {
-            k.capitalize() if k.lower() in to_capitalize else k: v
+            k.title() if k.lower() in to_capitalize else k: v
             for k, v in headers.items()
             if k.lower() not in to_filter
         }

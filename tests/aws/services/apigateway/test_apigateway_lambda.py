@@ -898,3 +898,158 @@ def test_lambda_rust_proxy_integration(
 
     result = retry(_invoke_url, retries=20, sleep=2, url=url)
     assert result.text == f"Hello, {first_name}!"
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        *CLOUDFRONT_SKIP_HEADERS,
+        "$..X-Amzn-Trace-Id",
+        "$..X-Forwarded-For",
+        "$..X-Forwarded-Port",
+        "$..X-Forwarded-Proto",
+    ]
+)
+@markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_next_gen_api(),
+    paths=[
+        "$..body",
+        "$..accept",
+        "$..Accept",
+        "$..accept-encoding",
+        "$..Accept-Encoding",
+        "$..Content-Length",
+        "$..Connection",
+        "$..user-Agent",
+        "$..User-Agent",
+        "$..x-localstack-edge",
+        "$..pathParameters",
+        "$..requestContext.authorizer",
+        "$..requestContext.deploymentId",
+        "$..requestContext.domainName",
+        "$..requestContext.extendedRequestId",
+        "$..requestContext.identity.accessKey",
+        "$..requestContext.identity.accountId",
+        "$..requestContext.identity.caller",
+        "$..requestContext.identity.cognitoAuthenticationProvider",
+        "$..requestContext.identity.cognitoAuthenticationType",
+        "$..requestContext.identity.cognitoIdentityId",
+        "$..requestContext.identity.cognitoIdentityPoolId",
+        "$..requestContext.identity.principalOrgId",
+        "$..requestContext.identity.user",
+        "$..requestContext.identity.userArn",
+        "$..stageVariables",
+    ],
+)
+def test_lambda_aws_proxy_integration_request_data_mapping(
+    create_rest_apigw,
+    create_lambda_function,
+    create_role_with_policy,
+    snapshot,
+    aws_client,
+    create_rest_api_with_integration,
+):
+    function_name = f"test-function-{short_uid()}"
+    stage_name = "test"
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformer(snapshot.transform.apigateway_proxy_event())
+    # TODO: update global transformers, but we will need to regenerate all snapshots at once
+    snapshot.add_transformer(snapshot.transform.key_value("rest_api_id"))
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("deploymentId"),
+            snapshot.transform.jsonpath("$..headers.Host", value_replacement="host"),
+            snapshot.transform.jsonpath("$..multiValueHeaders.Host[0]", value_replacement="host"),
+        ],
+        priority=-1,
+    )
+
+    # create lambda
+    create_function_response = create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_AWS_PROXY,
+        handler="lambda_aws_proxy.handler",
+        runtime=Runtime.python3_12,
+    )
+    # create invocation role
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+
+    api_id, _, root = create_rest_apigw(
+        name=f"test-api-{short_uid()}",
+        description="Integration test API",
+    )
+
+    snapshot.match("api_id", {"rest_api_id": api_id})
+
+    resource_id = aws_client.apigateway.create_resource(
+        restApiId=api_id, parentId=root, pathPart="{pathVariable}"
+    )["id"]
+
+    # This test is there to verify that AWS_PROXY does not use the requestParameters
+    req_parameters = {
+        "integration.request.header.headerVar": "method.request.header.foobar",
+        "integration.request.path.qsVar": "method.request.querystring.testVar",
+        "integration.request.path.pathVar": "method.request.path.pathVariable",
+        "integration.request.querystring.queryString": "method.request.querystring.testQueryString",
+        "integration.request.querystring.testQs": "method.request.querystring.testQueryString",
+        "integration.request.querystring.testEmptyQs": "method.request.header.emptyheader",
+    }
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        authorizationType="NONE",
+        requestParameters={value: True for value in req_parameters.values()},
+    )
+
+    # Lambda AWS_PROXY integration
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        type="AWS_PROXY",
+        integrationHttpMethod="POST",
+        uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        credentials=role_arn,
+        requestParameters=req_parameters,
+    )
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+    stage_name = "test"
+
+    invocation_url = api_invoke_url(
+        api_id=api_id,
+        stage=stage_name,
+        path="/foobar",
+    )
+
+    def invoke_api(url):
+        response = requests.post(
+            url,
+            data=json.dumps({"message": "hello world"}),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "foobar": "mapped-value",
+                "user-Agent": "test/integration",
+                "headerVar": "request-value",
+            },
+            params={
+                "testQueryString": "foo",
+                "testVar": "bar",
+            },
+            verify=False,
+        )
+        assert response.status_code == 200
+        return {
+            "content": response.json(),
+            "status_code": response.status_code,
+        }
+
+    # retry is necessary against AWS, probably IAM permission delay
+    invoke_response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+    snapshot.match("http-proxy-invocation-data-mapping", invoke_response)
