@@ -388,7 +388,6 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             lambda_response.get("multiValueHeaders") or {},
         )
         headers.update(response_headers)
-        # TODO: look into remapped headers (like HTTP_PROXY and integration response handlers)
 
         return EndpointResponse(
             headers=headers,

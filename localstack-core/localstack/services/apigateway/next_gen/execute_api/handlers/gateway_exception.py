@@ -2,8 +2,8 @@ import json
 import logging
 
 from rolo import Response
+from werkzeug.datastructures import Headers
 
-from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.next_gen.execute_api.api import (
     RestApiGatewayExceptionHandler,
     RestApiGatewayHandlerChain,
@@ -12,6 +12,9 @@ from localstack.services.apigateway.next_gen.execute_api.context import RestApiI
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     BaseGatewayException,
     get_gateway_response_or_default,
+)
+from localstack.services.apigateway.next_gen.execute_api.header_utils import (
+    set_default_response_headers,
 )
 
 LOG = logging.getLogger(__name__)
@@ -40,7 +43,11 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
             )
             return
 
-        LOG.debug("Error raised during invocation: %s", exception.type)
+        LOG.info(
+            "Error raised during invocation: %s",
+            exception.type,
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
         error = self.create_exception_response(exception, context)
         if error:
             response.update_from(error)
@@ -54,7 +61,7 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
 
         content = self._build_response_content(exception)
 
-        headers = self._build_response_headers(exception)
+        headers = self._build_response_headers(exception, context)
 
         status_code = gateway_response.get("statusCode")
         if not status_code:
@@ -67,6 +74,10 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         #  template body `{"message":$context.error.messageString}`
         return json.dumps({"message": exception.message})
 
-    def _build_response_headers(self, exception: BaseGatewayException) -> dict:
+    def _build_response_headers(
+        self, exception: BaseGatewayException, context: RestApiInvocationContext
+    ) -> dict:
         # TODO apply responseParameters to the headers and get content-type from the gateway_response
-        return {"content-type": APPLICATION_JSON, "x-amzn-ErrorType": exception.code}
+        headers = Headers({"x-amzn-ErrorType": exception.code})
+        set_default_response_headers(headers, context)
+        return headers

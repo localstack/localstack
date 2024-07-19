@@ -6,19 +6,11 @@ from werkzeug.datastructures import Headers
 
 from localstack.aws.api.apigateway import Integration
 
-from ..context import (
-    EndpointResponse,
-    IntegrationRequest,
-    RestApiInvocationContext,
-)
+from ..context import EndpointResponse, IntegrationRequest, RestApiInvocationContext
 from ..header_utils import build_multi_value_headers
 from .core import RestApiIntegration
 
-NO_BODY_METHODS = {
-    HTTPMethod.OPTIONS,
-    HTTPMethod.GET,
-    HTTPMethod.HEAD,
-}
+NO_BODY_METHODS = {HTTPMethod.OPTIONS, HTTPMethod.GET, HTTPMethod.HEAD}
 
 
 class SimpleHttpRequest(TypedDict, total=False):
@@ -109,8 +101,6 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
 
         multi_value_headers = build_multi_value_headers(integration_req["headers"])
         request_headers = {key: ",".join(value) for key, value in multi_value_headers.items()}
-        # TODO: check which headers to pop
-        request_headers.pop("Host", None)
         default_apigw_headers.update(request_headers)
 
         request_parameters: SimpleHttpRequest = {
@@ -129,12 +119,7 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
         # request_parameters["timeout"] = self._get_integration_timeout(integration)
 
         request_response = requests.request(**request_parameters)
-
         response_headers = Headers(dict(request_response.headers))
-        remapped = ["connection", "content-length", "date", "x-amzn-requestid"]
-        for header in remapped:
-            if value := request_response.headers.get(header):
-                response_headers[f"x-amzn-remapped-{header}"] = value
 
         return EndpointResponse(
             body=request_response.content,

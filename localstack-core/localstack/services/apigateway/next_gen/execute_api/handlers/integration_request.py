@@ -6,11 +6,17 @@ from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
 from localstack.utils.collections import merge_recursive
-from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
 from ..gateway_response import UnsupportedMediaTypeError
+from ..header_utils import (
+    drop_invocation_headers,
+    drop_request_headers,
+    set_default_request_headers,
+    validate_request_headers,
+)
 from ..helpers import render_integration_uri
 from ..parameters_mapping import ParametersMapper, RequestDataMapping
 from ..template_mapping import (
@@ -69,30 +75,23 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             # this is undocumented but validated behavior
             if integration_type == IntegrationType.HTTP_PROXY:
                 headers = headers.copy()
-                to_merge = {
-                    k: v
-                    for k, v in request_data_mapping["header"].items()
-                    if k not in ("Content-Type", "Accept")
-                }
-                headers.update(to_merge)
+                drop_invocation_headers(headers, integration_type)
+                headers.update(request_data_mapping["header"])
 
                 query_string_parameters = self._merge_http_proxy_query_string(
                     query_string_parameters, request_data_mapping["querystring"]
                 )
 
             else:
+                headers.set("X-Amzn-Trace-Id", short_uid())  # TODO
+                headers.set("X-Forwarded-For", context.request.remote_addr)
+                headers.set("X-Forwarded-Port", context.request.environ.get("SERVER_PORT"))
+                headers.set("X-Forwarded-Proto", context.request.environ.get("SERVER_PROTOCOL"))
                 # AWS_PROXY does not allow URI path rendering
                 # TODO: verify this
                 path_parameters = {}
 
         else:
-            # default values, can be overridden with right casing
-            default_headers = {
-                "Content-Type": APPLICATION_JSON,
-                "Accept": APPLICATION_JSON,
-            }
-            request_data_mapping["header"] = default_headers | request_data_mapping["header"]
-
             # find request template to raise UnsupportedMediaTypeError early
             request_template = self.get_request_template(
                 integration=integration, request=context.invocation_request
@@ -106,6 +105,12 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
             headers = Headers(request_data_mapping["header"])
             query_string_parameters = request_data_mapping["querystring"]
+
+        # Some headers can't be modified by parameter mappings or mapping templates.
+        # Aws will raise in those were present. Even for AWS_PROXY, where it is not applying them.
+        validate_request_headers(request_data_mapping["header"], integration_type)
+        drop_request_headers(headers, integration_type)
+        set_default_request_headers(headers, integration_type, context)
 
         # looks like the stageVariables rendering part is done in the Integration part in AWS
         # but we can avoid duplication by doing it here for now

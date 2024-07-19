@@ -58,7 +58,6 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         endpoint_response: EndpointResponse = context.endpoint_response
         status_code = endpoint_response["status_code"]
         body = endpoint_response["body"]
-        headers = endpoint_response["headers"]
 
         # we first need to find the right IntegrationResponse based on their selection template, linked to the status
         # code of the Response
@@ -103,26 +102,6 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         if header_override := response_override["header"]:
             LOG.debug("Response header overrides: %s", header_override)
             response_headers.update(header_override)
-
-        # setting up default content-type
-        if not response_headers.get("content-type"):
-            response_headers.set("Content-Type", APPLICATION_JSON)
-
-        # TODO : refactor the following into method response using table from
-        #  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-known-issues.html#api-gateway-known-issues-rest-apis
-        # When trying to override certain headers, they will instead be remapped
-        # There may be other headers, but these have been confirmed on aws
-        remapped_headers = ("connection", "content-length", "date", "x-amzn-requestid")
-        for header in remapped_headers:
-            if value := response_headers.get(header):
-                response_headers[f"x-amzn-remapped-{header}"] = value
-                response_headers.remove(header)
-
-        # Those headers are passed through from the response headers, there might be more?
-        passthrough_headers = ["connection"]
-        for header in passthrough_headers:
-            if values := headers.getlist(header):
-                response_headers.setlist(header, values)
 
         LOG.debug("Method response body after transformations: %s", body)
         context.invocation_response = InvocationResponse(
