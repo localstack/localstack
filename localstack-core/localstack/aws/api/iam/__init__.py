@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -109,12 +110,12 @@ userNameType = str
 virtualMFADeviceName = str
 
 
-class AccessAdvisorUsageGranularityType(str):
+class AccessAdvisorUsageGranularityType(StrEnum):
     SERVICE_LEVEL = "SERVICE_LEVEL"
     ACTION_LEVEL = "ACTION_LEVEL"
 
 
-class ContextKeyTypeEnum(str):
+class ContextKeyTypeEnum(StrEnum):
     string = "string"
     stringList = "stringList"
     numeric = "numeric"
@@ -129,14 +130,14 @@ class ContextKeyTypeEnum(str):
     dateList = "dateList"
 
 
-class DeletionTaskStatusType(str):
+class DeletionTaskStatusType(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     NOT_STARTED = "NOT_STARTED"
 
 
-class EntityType(str):
+class EntityType(StrEnum):
     User = "User"
     Role = "Role"
     Group = "Group"
@@ -144,17 +145,17 @@ class EntityType(str):
     AWSManagedPolicy = "AWSManagedPolicy"
 
 
-class PermissionsBoundaryAttachmentType(str):
+class PermissionsBoundaryAttachmentType(StrEnum):
     PermissionsBoundaryPolicy = "PermissionsBoundaryPolicy"
 
 
-class PolicyEvaluationDecisionType(str):
+class PolicyEvaluationDecisionType(StrEnum):
     allowed = "allowed"
     explicitDeny = "explicitDeny"
     implicitDeny = "implicitDeny"
 
 
-class PolicySourceType(str):
+class PolicySourceType(StrEnum):
     user = "user"
     group = "group"
     role = "role"
@@ -164,73 +165,73 @@ class PolicySourceType(str):
     none = "none"
 
 
-class PolicyUsageType(str):
+class PolicyUsageType(StrEnum):
     PermissionsPolicy = "PermissionsPolicy"
     PermissionsBoundary = "PermissionsBoundary"
 
 
-class ReportFormatType(str):
+class ReportFormatType(StrEnum):
     text_csv = "text/csv"
 
 
-class ReportStateType(str):
+class ReportStateType(StrEnum):
     STARTED = "STARTED"
     INPROGRESS = "INPROGRESS"
     COMPLETE = "COMPLETE"
 
 
-class assignmentStatusType(str):
+class assignmentStatusType(StrEnum):
     Assigned = "Assigned"
     Unassigned = "Unassigned"
     Any = "Any"
 
 
-class encodingType(str):
+class encodingType(StrEnum):
     SSH = "SSH"
     PEM = "PEM"
 
 
-class globalEndpointTokenVersion(str):
+class globalEndpointTokenVersion(StrEnum):
     v1Token = "v1Token"
     v2Token = "v2Token"
 
 
-class jobStatusType(str):
+class jobStatusType(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
 
-class policyOwnerEntityType(str):
+class policyOwnerEntityType(StrEnum):
     USER = "USER"
     ROLE = "ROLE"
     GROUP = "GROUP"
 
 
-class policyScopeType(str):
+class policyScopeType(StrEnum):
     All = "All"
     AWS = "AWS"
     Local = "Local"
 
 
-class policyType(str):
+class policyType(StrEnum):
     INLINE = "INLINE"
     MANAGED = "MANAGED"
 
 
-class sortKeyType(str):
+class sortKeyType(StrEnum):
     SERVICE_NAMESPACE_ASCENDING = "SERVICE_NAMESPACE_ASCENDING"
     SERVICE_NAMESPACE_DESCENDING = "SERVICE_NAMESPACE_DESCENDING"
     LAST_AUTHENTICATED_TIME_ASCENDING = "LAST_AUTHENTICATED_TIME_ASCENDING"
     LAST_AUTHENTICATED_TIME_DESCENDING = "LAST_AUTHENTICATED_TIME_DESCENDING"
 
 
-class statusType(str):
+class statusType(StrEnum):
     Active = "Active"
     Inactive = "Inactive"
 
 
-class summaryKeyType(str):
+class summaryKeyType(StrEnum):
     Users = "Users"
     UsersQuota = "UsersQuota"
     Groups = "Groups"

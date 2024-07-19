@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, Iterator, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -35,18 +36,18 @@ TagKey = str
 TagValue = str
 
 
-class ConsumerStatus(str):
+class ConsumerStatus(StrEnum):
     CREATING = "CREATING"
     DELETING = "DELETING"
     ACTIVE = "ACTIVE"
 
 
-class EncryptionType(str):
+class EncryptionType(StrEnum):
     NONE = "NONE"
     KMS = "KMS"
 
 
-class MetricsName(str):
+class MetricsName(StrEnum):
     IncomingBytes = "IncomingBytes"
     IncomingRecords = "IncomingRecords"
     OutgoingBytes = "OutgoingBytes"
@@ -57,11 +58,11 @@ class MetricsName(str):
     ALL = "ALL"
 
 
-class ScalingType(str):
+class ScalingType(StrEnum):
     UNIFORM_SCALING = "UNIFORM_SCALING"
 
 
-class ShardFilterType(str):
+class ShardFilterType(StrEnum):
     AFTER_SHARD_ID = "AFTER_SHARD_ID"
     AT_TRIM_HORIZON = "AT_TRIM_HORIZON"
     FROM_TRIM_HORIZON = "FROM_TRIM_HORIZON"
@@ -70,7 +71,7 @@ class ShardFilterType(str):
     FROM_TIMESTAMP = "FROM_TIMESTAMP"
 
 
-class ShardIteratorType(str):
+class ShardIteratorType(StrEnum):
     AT_SEQUENCE_NUMBER = "AT_SEQUENCE_NUMBER"
     AFTER_SEQUENCE_NUMBER = "AFTER_SEQUENCE_NUMBER"
     TRIM_HORIZON = "TRIM_HORIZON"
@@ -78,12 +79,12 @@ class ShardIteratorType(str):
     AT_TIMESTAMP = "AT_TIMESTAMP"
 
 
-class StreamMode(str):
+class StreamMode(StrEnum):
     PROVISIONED = "PROVISIONED"
     ON_DEMAND = "ON_DEMAND"
 
 
-class StreamStatus(str):
+class StreamStatus(StrEnum):
     CREATING = "CREATING"
     DELETING = "DELETING"
     ACTIVE = "ACTIVE"

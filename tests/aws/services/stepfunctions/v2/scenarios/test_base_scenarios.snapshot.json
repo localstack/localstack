@@ -15653,7 +15653,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[max_concurrency_value0]": {
-    "recorded-date": "22-04-2024, 19:57:20",
+    "recorded-date": "19-06-2024, 13:49:19",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -15712,7 +15712,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[0]": {
-    "recorded-date": "22-04-2024, 19:57:47",
+    "recorded-date": "19-06-2024, 13:49:47",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -15873,7 +15873,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[1]": {
-    "recorded-date": "22-04-2024, 19:58:01",
+    "recorded-date": "19-06-2024, 13:50:01",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -16065,7 +16065,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[NoNumber]": {
-    "recorded-date": "22-04-2024, 19:57:33",
+    "recorded-date": "19-06-2024, 13:49:33",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -18196,17 +18196,14 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count": {
-    "recorded-date": "15-06-2024, 02:25:44",
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_values[count_literal]": {
+    "recorded-date": "19-06-2024, 12:31:11",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json"
-              },
+              "input": "[0]",
               "inputDetails": {
                 "truncated": false
               },
@@ -18221,10 +18218,7 @@
             "id": 2,
             "previousEventId": 0,
             "stateEnteredEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json"
-              },
+              "input": "[0]",
               "inputDetails": {
                 "truncated": false
               },
@@ -18236,7 +18230,7 @@
           {
             "id": 3,
             "mapStateStartedEventDetails": {
-              "length": 0
+              "length": 1
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -18268,7 +18262,7 @@
             "previousEventId": 5,
             "stateExitedEventDetails": {
               "name": "MapState",
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[0]",
               "outputDetails": {
                 "truncated": false
               }
@@ -18278,7 +18272,7 @@
           },
           {
             "executionSucceededEventDetails": {
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[0]",
               "outputDetails": {
                 "truncated": false
               }
@@ -18296,18 +18290,14 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path": {
-    "recorded-date": "15-06-2024, 02:27:56",
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_values[percentage_literal]": {
+    "recorded-date": "19-06-2024, 12:31:29",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json",
-                "ToleratedFailureCount": 10
-              },
+              "input": "[0]",
               "inputDetails": {
                 "truncated": false
               },
@@ -18322,11 +18312,7 @@
             "id": 2,
             "previousEventId": 0,
             "stateEnteredEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json",
-                "ToleratedFailureCount": 10
-              },
+              "input": "[0]",
               "inputDetails": {
                 "truncated": false
               },
@@ -18338,7 +18324,7 @@
           {
             "id": 3,
             "mapStateStartedEventDetails": {
-              "length": 0
+              "length": 1
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -18370,7 +18356,7 @@
             "previousEventId": 5,
             "stateExitedEventDetails": {
               "name": "MapState",
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[0]",
               "outputDetails": {
                 "truncated": false
               }
@@ -18380,7 +18366,7 @@
           },
           {
             "executionSucceededEventDetails": {
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[0]",
               "outputDetails": {
                 "truncated": false
               }
@@ -18398,16 +18384,18 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage": {
-    "recorded-date": "15-06-2024, 02:28:25",
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[tolerated_failure_count_value0]": {
+    "recorded-date": "19-06-2024, 12:38:12",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json"
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": {}
               },
               "inputDetails": {
                 "truncated": false
@@ -18424,8 +18412,10 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json"
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": {}
               },
               "inputDetails": {
                 "truncated": false
@@ -18438,7 +18428,211 @@
           {
             "id": 3,
             "mapStateStartedEventDetails": {
-              "length": 0
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). The ToleratedFailureCountPath field refers to value \"{}\" which is not a valid integer: $.ToleratedFailureCount",
+              "error": "States.Runtime"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[NoNumber]": {
+    "recorded-date": "19-06-2024, 12:38:26",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": "NoNumber"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": "NoNumber"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). The ToleratedFailureCountPath field refers to value \"NoNumber\" which is not a valid integer: $.ToleratedFailureCount",
+              "error": "States.Runtime"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[-1]": {
+    "recorded-date": "19-06-2024, 12:38:41",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": -1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": -1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). ToleratedFailureCount cannot be negative.",
+              "error": "States.Runtime"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[0]": {
+    "recorded-date": "19-06-2024, 12:38:58",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -18470,7 +18664,7 @@
             "previousEventId": 5,
             "stateExitedEventDetails": {
               "name": "MapState",
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[0]",
               "outputDetails": {
                 "truncated": false
               }
@@ -18480,7 +18674,7 @@
           },
           {
             "executionSucceededEventDetails": {
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[0]",
               "outputDetails": {
                 "truncated": false
               }
@@ -18498,17 +18692,18 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path": {
-    "recorded-date": "15-06-2024, 02:28:36",
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_count_path[1]": {
+    "recorded-date": "19-06-2024, 12:39:14",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json",
-                "ToleratedFailurePercentage": 0.5
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": 1
               },
               "inputDetails": {
                 "truncated": false
@@ -18525,9 +18720,10 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json",
-                "ToleratedFailurePercentage": 0.5
+                "Items": [
+                  0
+                ],
+                "ToleratedFailureCount": 1
               },
               "inputDetails": {
                 "truncated": false
@@ -18540,7 +18736,7 @@
           {
             "id": 3,
             "mapStateStartedEventDetails": {
-              "length": 0
+              "length": 1
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -18572,7 +18768,7 @@
             "previousEventId": 5,
             "stateExitedEventDetails": {
               "name": "MapState",
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[0]",
               "outputDetails": {
                 "truncated": false
               }
@@ -18582,7 +18778,7 @@
           },
           {
             "executionSucceededEventDetails": {
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[0]",
               "outputDetails": {
                 "truncated": false
               }
@@ -18591,6 +18787,762 @@
             "previousEventId": 7,
             "timestamp": "timestamp",
             "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[tolerated_failure_percentage_value0]": {
+    "recorded-date": "19-06-2024, 14:36:53",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": {}
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": {}
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). The ToleratedFailurePercentagePath field refers to value \"{}\" which is not a valid float: $.ToleratedFailurePercentage",
+              "error": "States.Runtime"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[NoNumber]": {
+    "recorded-date": "19-06-2024, 14:37:07",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": "NoNumber"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": "NoNumber"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). The ToleratedFailurePercentagePath field refers to value \"NoNumber\" which is not a valid float: $.ToleratedFailurePercentage",
+              "error": "States.Runtime"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[-1.1]": {
+    "recorded-date": "19-06-2024, 14:37:21",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": -1.1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": -1.1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). ToleratedFailurePercentage must be between 0 and 100.",
+              "error": "States.Runtime"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[-1]": {
+    "recorded-date": "19-06-2024, 14:37:35",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": -1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": -1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). ToleratedFailurePercentage must be between 0 and 100.",
+              "error": "States.Runtime"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[0]": {
+    "recorded-date": "19-06-2024, 14:37:51",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[0]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[0]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[1]": {
+    "recorded-date": "19-06-2024, 14:38:08",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[0]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[0]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[1.1]": {
+    "recorded-date": "19-06-2024, 14:38:23",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 1.1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 1.1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[0]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[0]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[100]": {
+    "recorded-date": "19-06-2024, 14:38:39",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 100
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 100
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[0]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[0]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_tolerated_failure_percentage_path[100.1]": {
+    "recorded-date": "19-06-2024, 14:38:59",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 100.1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Items": [
+                  0
+                ],
+                "ToleratedFailurePercentage": 100.1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). ToleratedFailurePercentage must be between 0 and 100.",
+              "error": "States.Runtime"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
           }
         ],
         "ResponseMetadata": {

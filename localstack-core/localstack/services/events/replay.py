@@ -18,6 +18,16 @@ from localstack.services.events.utils import (
 
 
 class ReplayService:
+    name: ReplayName
+    region: str
+    account_id: str
+    event_source_arn: Arn
+    destination: ReplayDestination
+    event_start_time: Timestamp
+    event_end_time: Timestamp
+    description: ReplayDescription
+    replay: Replay
+
     def __init__(
         self,
         name: ReplayName,

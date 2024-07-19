@@ -23,17 +23,16 @@ class RestApiGateway(Gateway):
                 handlers.parse_request,
                 handlers.route_request,
                 handlers.preprocess_request,
+                handlers.api_key_validation_handler,
                 handlers.method_request_handler,
                 handlers.integration_request_handler,
                 handlers.integration_handler,
-                # temporary legacy which executes the legacy logic for now
-                handlers.legacy_handler,
+                handlers.integration_response_handler,
+                handlers.method_response_handler,
             ]
         )
         self.response_handlers.extend(
             [
-                handlers.integration_response_handler,
-                handlers.method_response_handler,
                 # add composite response handlers?
             ]
         )

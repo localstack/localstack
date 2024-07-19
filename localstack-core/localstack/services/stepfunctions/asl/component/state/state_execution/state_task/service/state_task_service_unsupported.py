@@ -1,6 +1,8 @@
 import logging
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceCondition,
     ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
@@ -11,8 +13,15 @@ from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_
 
 LOG = logging.getLogger(__name__)
 
+_SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
+    ResourceCondition.WaitForTaskToken,
+}
+
 
 class StateTaskServiceUnsupported(StateTaskServiceCallback):
+    def __init__(self):
+        super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
+
     def _log_unsupported_warning(self):
         # Logs that the optimised service integration is not supported,
         # however the request is being forwarded to the service.

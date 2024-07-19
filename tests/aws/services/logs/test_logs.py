@@ -295,7 +295,7 @@ class TestCloudWatchLogs:
         func_arn = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=test_lambda_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )["CreateFunctionResponse"]["FunctionArn"]
         aws_client.lambda_.invoke(FunctionName=test_lambda_name, Payload=b"{}")
         # get account-id to set the correct policy

@@ -26,10 +26,16 @@ from botocore.exceptions import ClientError, ParamValidationError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
-from localstack.aws.api.lambda_ import Architecture, LogFormat, Runtime
+from localstack.aws.api.lambda_ import (
+    Architecture,
+    LogFormat,
+    Runtime,
+)
 from localstack.services.lambda_.api_utils import ARCHITECTURES
+from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
+    DEPRECATED_RUNTIMES,
     SNAP_START_SUPPORTED_RUNTIMES,
 )
 from localstack.testing.aws.lambda_utils import (
@@ -75,6 +81,50 @@ def string_length_bytes(s: str) -> int:
 def environment_length_bytes(e: dict) -> int:
     serialized_environment = json.dumps(e, separators=(":", ","))
     return string_length_bytes(serialized_environment)
+
+
+class TestRuntimeValidation:
+    @markers.aws.only_localstack
+    def test_create_deprecated_function_runtime_with_validation_disabled(
+        self, create_lambda_function, lambda_su_role, aws_client, monkeypatch
+    ):
+        monkeypatch.setattr(config, "LAMBDA_RUNTIME_VALIDATION", 0)
+        function_name = f"fn-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_7,
+            role=lambda_su_role,
+            MemorySize=256,
+            Timeout=5,
+            LoggingConfig={
+                "LogFormat": LogFormat.JSON,
+            },
+        )
+
+    @markers.aws.validated
+    @markers.lambda_runtime_update
+    @pytest.mark.parametrize("runtime", DEPRECATED_RUNTIMES)
+    def test_create_deprecated_function_runtime_with_validation_enabled(
+        self, runtime, lambda_su_role, aws_client, monkeypatch, snapshot
+    ):
+        monkeypatch.setattr(config, "LAMBDA_RUNTIME_VALIDATION", 1)
+        function_name = f"fn-{short_uid()}"
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            testutil.create_lambda_function(
+                client=aws_client.lambda_,
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                func_name=function_name,
+                runtime=runtime,
+                role=lambda_su_role,
+                MemorySize=256,
+                Timeout=5,
+                LoggingConfig={
+                    "LogFormat": LogFormat.JSON,
+                },
+            )
+        snapshot.match("deprecation_error", e.value.response)
 
 
 class TestPartialARNMatching:
@@ -1532,7 +1582,17 @@ class TestLambdaVersions:
         list_versions_result_end = aws_client.lambda_.list_versions_by_function(
             FunctionName=function_name
         )
-        snapshot.match("list_versions_result_end", list_versions_result_end)
+        snapshot.match("list_versions_result_after_third_publish", list_versions_result_end)
+
+        aws_client.lambda_.delete_function(
+            FunctionName=f"{function_name}:{first_publish_response['Version']}"
+        )
+        list_versions_result_end = aws_client.lambda_.list_versions_by_function(
+            FunctionName=function_name
+        )
+        snapshot.match(
+            "list_versions_result_after_deletion_of_first_version", list_versions_result_end
+        )
 
     @markers.aws.validated
     def test_publish_with_wrong_sha256(
@@ -3997,6 +4057,50 @@ class TestLambdaUrl:
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as ex:
             aws_client.lambda_.get_function_url_config(FunctionName=function_name)
         snapshot.match("failed_getter", ex.value.response)
+
+    @markers.aws.only_localstack
+    def test_create_url_config_custom_id_tag(self, create_lambda_function, aws_client):
+        custom_id_value = "my-custom-subdomain"
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
+            runtime=Runtime.nodejs20_x,
+            handler="lambda_handler.handler",
+            Tags={TAG_KEY_CUSTOM_URL: custom_id_value},
+        )
+        url_config_created = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        # Since we're not comparing the entire string, this should be robust to
+        # region changes, https vs http, etc
+        assert f"://{custom_id_value}.lambda-url." in url_config_created["FunctionUrl"]
+
+    @markers.aws.only_localstack
+    def test_create_url_config_custom_id_tag_invalid_id(
+        self, create_lambda_function, aws_client, caplog
+    ):
+        custom_id_value = "_not_valid_subdomain"
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
+            runtime=Runtime.nodejs20_x,
+            handler="lambda_handler.handler",
+            Tags={TAG_KEY_CUSTOM_URL: custom_id_value},
+        )
+
+        caplog.clear()
+        with caplog.at_level(logging.INFO):
+            url_config_created = aws_client.lambda_.create_function_url_config(
+                FunctionName=function_name,
+                AuthType="NONE",
+            )
+        assert any("Invalid custom ID tag value" in record.message for record in caplog.records)
+        assert f"://{custom_id_value}.lambda-url." not in url_config_created["FunctionUrl"]
 
 
 class TestLambdaSizeLimits:

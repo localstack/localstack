@@ -11,7 +11,7 @@ from botocore.client import BaseClient
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
-from localstack.services.events.utils import EventJSONEncoder, event_time_to_time_string
+from localstack.services.events.utils import event_time_to_time_string, to_json_str
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
@@ -76,7 +76,7 @@ def replace_template_placeholders(
         key = match.group(1)
         value = replacements.get(key, match.group(0))  # handle non defined placeholders
         if is_json:
-            return json.dumps(value, cls=EventJSONEncoder)
+            return to_json_str(value)
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
         return value
@@ -87,6 +87,15 @@ def replace_template_placeholders(
 
 
 class TargetSender(ABC):
+    target: Target
+    rule_arn: Arn
+    rule_name: RuleName
+    service: str
+
+    region: str
+    account_id: str
+    _client: BaseClient | None
+
     def __init__(
         self,
         target: Target,
@@ -312,7 +321,7 @@ class FirehoseTargetSender(TargetSender):
         delivery_stream_name = firehose_name(self.target["Arn"])
         self.client.put_record(
             DeliveryStreamName=delivery_stream_name,
-            Record={"Data": to_bytes(json.dumps(event, cls=EventJSONEncoder))},
+            Record={"Data": to_bytes(to_json_str(event))},
         )
 
 
@@ -323,7 +332,7 @@ class KinesisTargetSender(TargetSender):
         partition_key = event.get(partition_key_path, event["id"])
         self.client.put_record(
             StreamName=stream_name,
-            Data=to_bytes(json.dumps(event, cls=EventJSONEncoder)),
+            Data=to_bytes(to_json_str(event)),
             PartitionKey=partition_key,
         )
 
@@ -340,7 +349,7 @@ class LambdaTargetSender(TargetSender):
         asynchronous = True  # TODO clarify default behavior of AWS
         self.client.invoke(
             FunctionName=self.target["Arn"],
-            Payload=to_bytes(json.dumps(event, cls=EventJSONEncoder)),
+            Payload=to_bytes(to_json_str(event)),
             InvocationType="Event" if asynchronous else "RequestResponse",
         )
 
@@ -356,7 +365,7 @@ class LogsTargetSender(TargetSender):
             logEvents=[
                 {
                     "timestamp": now_utc(millis=True),
-                    "message": json.dumps(event, cls=EventJSONEncoder),
+                    "message": to_json_str(event),
                 }
             ],
         )
@@ -379,9 +388,7 @@ class SagemakerTargetSender(TargetSender):
 
 class SnsTargetSender(TargetSender):
     def send_event(self, event):
-        self.client.publish(
-            TopicArn=self.target["Arn"], Message=json.dumps(event, cls=EventJSONEncoder)
-        )
+        self.client.publish(TopicArn=self.target["Arn"], Message=to_json_str(event))
 
 
 class SqsTargetSender(TargetSender):
@@ -391,11 +398,7 @@ class SqsTargetSender(TargetSender):
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         self.client.send_message(
             QueueUrl=queue_url,
-            MessageBody=json.dumps(
-                event,
-                separators=(",", ":"),
-                cls=EventJSONEncoder,
-            ),
+            MessageBody=to_json_str(event),
             **kwargs,
         )
 
@@ -404,9 +407,7 @@ class StatesTargetSender(TargetSender):
     """Step Functions Target Sender"""
 
     def send_event(self, event):
-        self.client.start_execution(
-            stateMachineArn=self.target["Arn"], input=json.dumps(event, cls=EventJSONEncoder)
-        )
+        self.client.start_execution(stateMachineArn=self.target["Arn"], input=to_json_str(event))
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
@@ -434,6 +435,10 @@ class SystemsManagerSender(TargetSender):
 
 class TargetSenderFactory:
     # supported targets: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html
+    target: Target
+    rule_arn: Arn
+    rule_name: RuleName
+
     target_map = {
         "apigateway": ApiGatewayTargetSender,
         "appsync": AppSyncTargetSender,

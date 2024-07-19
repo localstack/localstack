@@ -5,7 +5,8 @@ import hashlib
 import logging
 import re
 import zlib
-from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
+from enum import StrEnum
+from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Union
 from urllib import parse as urlparser
 
 import xmltodict
@@ -236,13 +237,9 @@ class S3CRC32Checksum:
     __slots__ = ["checksum"]
 
     def __init__(self):
-        self.checksum = None
+        self.checksum = zlib.crc32(b"")
 
     def update(self, value: bytes):
-        if self.checksum is None:
-            self.checksum = zlib.crc32(value)
-            return
-
         self.checksum = zlib.crc32(value, self.checksum)
 
     def digest(self) -> bytes:
@@ -516,8 +513,8 @@ def uses_host_addressing(headers: Dict[str, str]) -> str | None:
         return bucket_name
 
 
-def get_class_attrs_from_spec_class(spec_class: Type[str]) -> set[str]:
-    return {getattr(spec_class, attr) for attr in vars(spec_class) if not attr.startswith("__")}
+def get_class_attrs_from_spec_class(spec_class: type[StrEnum]) -> set[str]:
+    return {str(spec) for spec in spec_class}
 
 
 def get_system_metadata_from_request(request: dict) -> Metadata:

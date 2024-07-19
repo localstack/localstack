@@ -263,7 +263,7 @@ class TestSnfBase:
         template = BaseTemplate.load_sfn_template(BaseTemplate.QUERY_CONTEXT_OBJECT_VALUES)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"message": "HelloWorld!"})
+        exec_input = json.dumps({"message": "TestMessage"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

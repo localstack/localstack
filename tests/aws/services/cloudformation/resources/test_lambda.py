@@ -95,6 +95,35 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
     snapshot.match("updated_source_mappings", source_mappings)
 
 
+@pytest.mark.skip(
+    reason="fails/times out. Provider not able to update lambda function environment variables"
+)
+@markers.aws.validated
+def test_update_lambda_function(s3_create_bucket, deploy_cfn_template, aws_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
+        ),
+        parameters={"Environment": "ORIGINAL"},
+    )
+
+    function_name = stack.outputs["LambdaName"]
+    response = aws_client.lambda_.get_function(FunctionName=function_name)
+    assert response["Configuration"]["Environment"]["Variables"]["TEST"] == "ORIGINAL"
+
+    deploy_cfn_template(
+        stack_name=stack.stack_name,
+        is_update=True,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
+        ),
+        parameters={"Environment": "UPDATED"},
+    )
+
+    response = aws_client.lambda_.get_function(FunctionName=function_name)
+    assert response["Configuration"]["Environment"]["Variables"]["TEST"] == "UPDATED"
+
+
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Metadata",
@@ -1094,7 +1123,7 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
             os.path.join(os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.py")
         ),
         get_content=True,
-        runtime=Runtime.python3_10,
+        runtime=Runtime.python3_12,
     )
     aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
@@ -1138,7 +1167,7 @@ def test_lambda_cfn_dead_letter_config_async_invocation(
             )
         ),
         get_content=True,
-        runtime=Runtime.python3_10,
+        runtime=Runtime.python3_12,
     )
     aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 

@@ -68,7 +68,7 @@ def try_cluster_health(cluster_url: str):
 
 @pytest.mark.skip(reason="flaky")
 class TestElasticsearchProvider:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_list_versions(self, aws_client):
         response = aws_client.es.list_elasticsearch_versions()
 
@@ -79,7 +79,7 @@ class TestElasticsearchProvider:
         assert "OpenSearch_1.1" in versions
         assert "7.10" in versions
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_get_compatible_versions(self, aws_client):
         response = aws_client.es.get_compatible_elasticsearch_versions()
 
@@ -116,7 +116,7 @@ class TestElasticsearchProvider:
         } in versions
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_get_compatible_version_for_domain(self, opensearch_domain, aws_client):
         response = aws_client.es.get_compatible_elasticsearch_versions(DomainName=opensearch_domain)
         assert "CompatibleElasticsearchVersions" in response
@@ -126,7 +126,7 @@ class TestElasticsearchProvider:
         assert len(versions) == 0
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_create_domain(self, opensearch_create_domain, aws_client):
         es_domain = opensearch_create_domain(EngineVersion=ELASTICSEARCH_DEFAULT_VERSION)
         response = aws_client.es.list_domain_names(EngineType="Elasticsearch")
@@ -134,7 +134,7 @@ class TestElasticsearchProvider:
         assert es_domain in domain_names
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_create_existing_domain_causes_exception(self, opensearch_create_domain, aws_client):
         domain_name = opensearch_create_domain(EngineVersion=ELASTICSEARCH_DEFAULT_VERSION)
 
@@ -143,7 +143,7 @@ class TestElasticsearchProvider:
         assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_describe_domains(self, opensearch_create_domain, aws_client):
         opensearch_domain = opensearch_create_domain(EngineVersion=ELASTICSEARCH_DEFAULT_VERSION)
         response = aws_client.es.describe_elasticsearch_domains(DomainNames=[opensearch_domain])
@@ -151,7 +151,7 @@ class TestElasticsearchProvider:
         assert response["DomainStatusList"][0]["DomainName"] == opensearch_domain
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_domain_version(self, opensearch_domain, opensearch_create_domain, aws_client):
         response = aws_client.es.describe_elasticsearch_domain(DomainName=opensearch_domain)
         assert "DomainStatus" in response
@@ -166,7 +166,7 @@ class TestElasticsearchProvider:
         assert status["ElasticsearchVersion"] == "7.10"
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_path_endpoint_strategy(self, monkeypatch, opensearch_create_domain, aws_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
@@ -180,7 +180,7 @@ class TestElasticsearchProvider:
         endpoint = status["Endpoint"]
         assert endpoint.endswith(f"/{domain_name}")
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_update_domain_config(self, opensearch_domain, aws_client):
         initial_response = aws_client.es.describe_elasticsearch_domain_config(
             DomainName=opensearch_domain

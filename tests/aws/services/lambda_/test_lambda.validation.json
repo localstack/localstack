@@ -189,7 +189,7 @@
     "last_validated_date": "2024-03-28T22:20:14+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture_default": {
-    "last_validated_date": "2024-04-08T16:57:30+00:00"
+    "last_validated_date": "2024-07-18T14:18:07+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture_trim_x_headers": {
     "last_validated_date": "2024-04-08T16:57:34+00:00"

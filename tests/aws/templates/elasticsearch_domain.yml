@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  DomainName:
+    Type: String
+    Default: dev
+Resources:
+  MyElasticsearchDomain:
+    Type: AWS::Elasticsearch::Domain
+    Properties:
+      DomainName: !Ref "DomainName"
+      Tags:
+        - Key: k1
+          Value: v1
+        - Key: k2
+          Value: v2
+      ElasticsearchVersion: '7.10'
+      ElasticsearchClusterConfig:
+        DedicatedMasterEnabled: true
+        InstanceCount: '2'
+        ZoneAwarenessEnabled: true
+        InstanceType: 'm3.medium.elasticsearch'
+        DedicatedMasterType: 'm3.medium.elasticsearch'
+        DedicatedMasterCount: '3'
+      EBSOptions:
+        EBSEnabled: true
+        Iops: '0'
+        VolumeSize: '20'
+        VolumeType: 'gp2'
+Outputs:
+  MyElasticsearchDomainEndpoint:
+    Value: !GetAtt MyElasticsearchDomain.DomainEndpoint
+
+  MyElasticsearchArn:
+    Value: !GetAtt MyElasticsearchDomain.Arn
+
+  MyElasticsearchDomainArn:
+    Value: !GetAtt MyElasticsearchDomain.DomainArn
+
+  MyElasticsearchRef:
+    Value: !Ref MyElasticsearchDomain

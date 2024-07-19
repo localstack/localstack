@@ -10,7 +10,7 @@ from typing import Callable, Optional, Union
 import moto.backends as moto_backends
 from moto.core.base_backend import BackendDict
 from moto.core.exceptions import RESTError
-from moto.moto_server.utilities import RegexConverter
+from rolo.router import RegexConverter
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, Rule
 
@@ -176,7 +176,7 @@ def load_moto_routing_table(service: str) -> Map:
         backend = backend_dict["global"]
 
     url_map = Map()
-    url_map.converters["regex"] = RegexConverter
+    url_map.converters["regex"] = _PartIsolatingRegexConverter
 
     for url_path, handler in backend.flask_paths.items():
         # Some URL patterns in moto have optional trailing slashes, for example the route53 pattern:
@@ -191,3 +191,16 @@ def load_moto_routing_table(service: str) -> Map:
         url_map.add(Rule(url_path, endpoint=endpoint, strict_slashes=strict_slashes))
 
     return url_map
+
+
+class _PartIsolatingRegexConverter(RegexConverter):
+    """
+    Werkzeug converter with disabled path isolation.
+    This converter is equivalent to moto.moto_server.utilities.RegexConverter.
+    It is necessary to be duplicated here to avoid a transitive import of flask.
+    """
+
+    part_isolating = False
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)

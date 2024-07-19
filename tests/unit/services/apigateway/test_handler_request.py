@@ -1,9 +1,10 @@
 import pytest
-from moto.apigateway.models import APIGatewayBackend, apigateway_backends
+from moto.apigateway.models import APIGatewayBackend, Stage, apigateway_backends
+from moto.apigateway.models import RestAPI as MotoRestAPI
 from werkzeug.datastructures import Headers
 
 from localstack.http import Request, Response
-from localstack.services.apigateway.models import MotoRestAPI, RestApiContainer, RestApiDeployment
+from localstack.services.apigateway.models import RestApiContainer
 from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.handlers.parse import (
@@ -12,6 +13,7 @@ from localstack.services.apigateway.next_gen.execute_api.handlers.parse import (
 from localstack.services.apigateway.next_gen.execute_api.handlers.resource_router import (
     InvocationRequestRouter,
 )
+from localstack.services.apigateway.next_gen.execute_api.helpers import freeze_rest_api
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 TEST_API_ID = "testapi"
@@ -33,15 +35,32 @@ def dummy_deployment():
     )
 
     moto_backend.apis[TEST_API_ID] = moto_rest_api
+    moto_rest_api.stages[TEST_API_STAGE] = Stage(
+        name=TEST_API_STAGE,
+        variables={"foo": "bar"},
+    )
 
-    yield RestApiDeployment(
+    yield freeze_rest_api(
         account_id=TEST_AWS_ACCOUNT_ID,
         region=TEST_AWS_REGION_NAME,
-        localstack_rest_api=RestApiContainer(rest_api={}),
         moto_rest_api=moto_rest_api,
+        localstack_rest_api=RestApiContainer(rest_api={}),
     )
 
     moto_backend.reset()
+
+
+@pytest.fixture
+def get_invocation_context():
+    def _create_context(request: Request) -> RestApiInvocationContext:
+        context = RestApiInvocationContext(request)
+        context.api_id = TEST_API_ID
+        context.stage = TEST_API_STAGE
+        context.account_id = TEST_AWS_ACCOUNT_ID
+        context.region = TEST_AWS_REGION_NAME
+        return context
+
+    return _create_context
 
 
 @pytest.fixture
@@ -51,16 +70,23 @@ def parse_handler_chain() -> RestApiGatewayHandlerChain:
 
 
 class TestParsingHandler:
-    def test_parse_request(self, dummy_deployment, parse_handler_chain):
-        headers = Headers({"test-header": "value1", "test-header-multi": ["value2", "value3"]})
+    def test_parse_request(self, dummy_deployment, parse_handler_chain, get_invocation_context):
+        host_header = f"{TEST_API_ID}.execute-api.host.com"
+        headers = Headers(
+            {
+                "test-header": "value1",
+                "test-header-multi": ["value2", "value3"],
+                "host": host_header,
+            }
+        )
         body = b"random-body"
         request = Request(
             body=body,
             headers=headers,
             query_string="test-param=1&test-param-2=2&test-multi=val1&test-multi=val2",
-            path="/normal-path",
+            path=f"/{TEST_API_STAGE}/normal-path",
         )
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = dummy_deployment
 
         parse_handler_chain.handle(context, Response())
@@ -70,23 +96,13 @@ class TestParsingHandler:
         assert context.region == TEST_AWS_REGION_NAME
 
         assert context.invocation_request["http_method"] == "GET"
-        assert context.invocation_request["raw_headers"] == Headers(
+        assert context.invocation_request["headers"] == Headers(
             {
+                "host": host_header,
                 "test-header": "value1",
                 "test-header-multi": ["value2", "value3"],
-                "content-length": len(body),
             }
         )
-        assert context.invocation_request["headers"] == {
-            "test-header": "value1",
-            "test-header-multi": "value2",
-            "content-length": "11",
-        }
-        assert context.invocation_request["multi_value_headers"] == {
-            "test-header": ["value1"],
-            "test-header-multi": ["value2", "value3"],
-            "content-length": ["11"],
-        }
         assert context.invocation_request["body"] == body
         assert (
             context.invocation_request["path"]
@@ -94,10 +110,18 @@ class TestParsingHandler:
             == "/normal-path"
         )
 
-    def test_parse_raw_path(self, dummy_deployment, parse_handler_chain):
-        request = Request("GET", "/foo/bar/ed", raw_path="//foo%2Fbar/ed")
+        assert context.context_variables["domainName"] == host_header
+        assert context.context_variables["domainPrefix"] == TEST_API_ID
+        assert context.context_variables["path"] == f"/{TEST_API_STAGE}/normal-path"
 
-        context = RestApiInvocationContext(request)
+    def test_parse_raw_path(self, dummy_deployment, parse_handler_chain, get_invocation_context):
+        request = Request(
+            "GET",
+            path=f"/{TEST_API_STAGE}/foo/bar/ed",
+            raw_path=f"/{TEST_API_STAGE}//foo%2Fbar/ed",
+        )
+
+        context = get_invocation_context(request)
         context.deployment = dummy_deployment
 
         parse_handler_chain.handle(context, Response())
@@ -108,15 +132,17 @@ class TestParsingHandler:
         assert context.invocation_request["path"] == "/foo%2Fbar/ed"
         assert context.invocation_request["raw_path"] == "//foo%2Fbar/ed"
 
-    def test_parse_user_request_path(self, dummy_deployment, parse_handler_chain):
+    def test_parse_user_request_path(
+        self, dummy_deployment, parse_handler_chain, get_invocation_context
+    ):
         # simulate a path request
         request = Request(
             "GET",
-            path=f"/restapis/{TEST_API_ID}/_user_request_/foo/bar/ed",
-            raw_path=f"/restapis/{TEST_API_ID}/_user_request_//foo%2Fbar/ed",
+            path=f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}/foo/bar/ed",
+            raw_path=f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}//foo%2Fbar/ed",
         )
 
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = dummy_deployment
 
         parse_handler_chain.handle(context, Response())
@@ -142,32 +168,33 @@ class TestRoutingHandler:
         Note: we have the base `/proxy` route to not have greedy matching on the base route, and the other child routes
         are to assert the `{proxy+} has less priority than hardcoded routes
         """
+        moto_backend: APIGatewayBackend = apigateway_backends[TEST_AWS_ACCOUNT_ID][
+            TEST_AWS_REGION_NAME
+        ]
+        moto_rest_api = moto_backend.apis[TEST_API_ID]
+
         # path: /
-        root_resource = dummy_deployment.moto_rest_api.default
+        root_resource = moto_rest_api.default
         # path: /foo
-        hard_coded_resource = dummy_deployment.moto_rest_api.add_child(
-            path="foo", parent_id=root_resource.id
-        )
+        hard_coded_resource = moto_rest_api.add_child(path="foo", parent_id=root_resource.id)
         # path: /foo/{param}
-        param_resource = dummy_deployment.moto_rest_api.add_child(
+        param_resource = moto_rest_api.add_child(
             path="{param}",
             parent_id=hard_coded_resource.id,
         )
         # path: /proxy
-        hard_coded_resource_2 = dummy_deployment.moto_rest_api.add_child(
-            path="proxy", parent_id=root_resource.id
-        )
+        hard_coded_resource_2 = moto_rest_api.add_child(path="proxy", parent_id=root_resource.id)
         # path: /proxy/bar
-        hard_coded_resource_3 = dummy_deployment.moto_rest_api.add_child(
+        hard_coded_resource_3 = moto_rest_api.add_child(
             path="bar", parent_id=hard_coded_resource_2.id
         )
         # path: /proxy/bar/{param}
-        param_resource_2 = dummy_deployment.moto_rest_api.add_child(
+        param_resource_2 = moto_rest_api.add_child(
             path="{param}",
             parent_id=hard_coded_resource_3.id,
         )
         # path: /proxy/{proxy+}
-        proxy_resource = dummy_deployment.moto_rest_api.add_child(
+        proxy_resource = moto_rest_api.add_child(
             path="{proxy+}",
             parent_id=hard_coded_resource_2.id,
         )
@@ -192,23 +219,87 @@ class TestRoutingHandler:
             api_key_required=False,
         )
 
-        return dummy_deployment
+        return freeze_rest_api(
+            account_id=dummy_deployment.account_id,
+            region=dummy_deployment.region,
+            moto_rest_api=moto_rest_api,
+            localstack_rest_api=dummy_deployment.rest_api,
+        )
+
+    @pytest.fixture
+    def deployment_with_any_routes(self, dummy_deployment):
+        """
+        This can be represented by the following routes:
+        - (No method) - /
+        - GET         - /foo
+        - ANY         - /foo
+        - PUT         - /foo/{param}
+        - ANY         - /foo/{param}
+        """
+        moto_backend: APIGatewayBackend = apigateway_backends[TEST_AWS_ACCOUNT_ID][
+            TEST_AWS_REGION_NAME
+        ]
+        moto_rest_api = moto_backend.apis[TEST_API_ID]
+
+        # path: /
+        root_resource = moto_rest_api.default
+        # path: /foo
+        hard_coded_resource = moto_rest_api.add_child(path="foo", parent_id=root_resource.id)
+        # path: /foo/{param}
+        param_resource = moto_rest_api.add_child(
+            path="{param}",
+            parent_id=hard_coded_resource.id,
+        )
+
+        hard_coded_resource.add_method(
+            method_type="GET",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        hard_coded_resource.add_method(
+            method_type="ANY",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        # we test different order of setting the Method, to make sure ANY is always matched last
+        # because this will influence the original order of the Werkzeug Rules in the Map
+        # Because we only return the `Resource` as the endpoint, we always fetch manually the right
+        # `resourceMethod` from the request method.
+        param_resource.add_method(
+            method_type="ANY",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        param_resource.add_method(
+            method_type="PUT",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+
+        return freeze_rest_api(
+            account_id=dummy_deployment.account_id,
+            region=dummy_deployment.region,
+            moto_rest_api=moto_rest_api,
+            localstack_rest_api=dummy_deployment.rest_api,
+        )
 
     @staticmethod
     def get_path_from_addressing(path: str, addressing: str) -> str:
         if addressing == "host":
-            return path
+            return f"/{TEST_API_STAGE}{path}"
         else:
-            return f"/restapis/{TEST_API_ID}/_user_request_{path}"
+            return f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}{path}"
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
-    def test_route_request_no_param(self, deployment_with_routes, parse_handler_chain, addressing):
+    def test_route_request_no_param(
+        self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
+    ):
         request = Request(
             "GET",
             path=self.get_path_from_addressing("/foo", addressing),
         )
 
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
@@ -222,17 +313,18 @@ class TestRoutingHandler:
 
         assert context.resource_method == context.resource["resourceMethods"]["GET"]
         assert context.invocation_request["path_parameters"] == {}
+        assert context.stage_variables == {"foo": "bar"}
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_with_path_parameter(
-        self, deployment_with_routes, parse_handler_chain, addressing
+        self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
         request = Request(
             "PUT",
             path=self.get_path_from_addressing("/foo/random-value", addressing),
         )
 
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
@@ -245,10 +337,12 @@ class TestRoutingHandler:
         assert context.resource_method == context.resource["resourceMethods"]["PUT"]
 
         assert context.invocation_request["path_parameters"] == {"param": "random-value"}
+        assert context.context_variables["resourcePath"] == "/foo/{param}"
+        assert context.context_variables["resourceId"] == context.resource["id"]
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_with_greedy_parameter(
-        self, deployment_with_routes, parse_handler_chain, addressing
+        self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
         # assert that a path which does not contain `/proxy/bar` will be routed to {proxy+}
         request = Request(
@@ -257,7 +351,7 @@ class TestRoutingHandler:
         )
         router_handler = InvocationRequestRouter()
 
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
@@ -278,7 +372,7 @@ class TestRoutingHandler:
             "DELETE",
             path=self.get_path_from_addressing("/proxy/bar/foobar", addressing),
         )
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
@@ -294,7 +388,7 @@ class TestRoutingHandler:
             "DELETE",
             path=self.get_path_from_addressing("/proxy/test2/is/a/proxy/req2%Fuest", addressing),
         )
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
@@ -307,14 +401,14 @@ class TestRoutingHandler:
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_no_match_on_path(
-        self, deployment_with_routes, parse_handler_chain, addressing
+        self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
         request = Request(
             "GET",
             path=self.get_path_from_addressing("/wrong-test", addressing),
         )
 
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
@@ -325,14 +419,14 @@ class TestRoutingHandler:
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_no_match_on_method(
-        self, deployment_with_routes, parse_handler_chain, addressing
+        self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
         request = Request(
             "POST",
             path=self.get_path_from_addressing("/test", addressing),
         )
 
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
@@ -343,7 +437,7 @@ class TestRoutingHandler:
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_with_double_slash_and_trailing_and_encoded(
-        self, deployment_with_routes, parse_handler_chain, addressing
+        self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
         request = Request(
             "PUT",
@@ -351,7 +445,7 @@ class TestRoutingHandler:
             raw_path=self.get_path_from_addressing("//foo/foo%2Fbar/", addressing),
         )
 
-        context = RestApiInvocationContext(request)
+        context = get_invocation_context(request)
         context.deployment = deployment_with_routes
 
         parse_handler_chain.handle(context, Response())
@@ -360,3 +454,54 @@ class TestRoutingHandler:
 
         assert context.resource["path"] == "/foo/{param}"
         assert context.invocation_request["path_parameters"] == {"param": "foo%2Fbar"}
+
+    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    def test_route_request_any_is_last(
+        self, deployment_with_any_routes, parse_handler_chain, get_invocation_context, addressing
+    ):
+        handler = InvocationRequestRouter()
+
+        def handle(_request: Request) -> RestApiInvocationContext:
+            _context = get_invocation_context(_request)
+            _context.deployment = deployment_with_any_routes
+            parse_handler_chain.handle(_context, Response())
+            handler(parse_handler_chain, _context, Response())
+            return _context
+
+        request = Request(
+            "GET",
+            path=self.get_path_from_addressing("/foo", addressing),
+        )
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo"
+        assert context.resource["resourceMethods"]["GET"]
+
+        request = Request(
+            "DELETE",
+            path=self.get_path_from_addressing("/foo", addressing),
+        )
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo"
+        assert context.resource["resourceMethods"]["ANY"]
+
+        request = Request(
+            "PUT",
+            path=self.get_path_from_addressing("/foo/random-value", addressing),
+        )
+
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo/{param}"
+        assert context.resource_method == context.resource["resourceMethods"]["PUT"]
+
+        request = Request(
+            "GET",
+            path=self.get_path_from_addressing("/foo/random-value", addressing),
+        )
+
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo/{param}"
+        assert context.resource_method == context.resource["resourceMethods"]["ANY"]

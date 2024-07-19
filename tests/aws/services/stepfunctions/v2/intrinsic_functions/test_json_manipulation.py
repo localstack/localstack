@@ -1,6 +1,7 @@
 import json
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import create_and_record_execution
 from tests.aws.services.stepfunctions.templates.intrinsicfunctions.intrinsic_functions_templates import (
     IntrinsicFunctionTemplate as IFT,
 )
@@ -77,4 +78,25 @@ class TestJsonManipulation:
             sfn_snapshot,
             IFT.JSON_MERGE,
             input_values,
+        )
+
+    @markers.aws.validated
+    def test_json_merge_escaped_argument(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = IFT.load_sfn_template(IFT.JSON_MERGE_ESCAPED_ARGUMENT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"input_field": {"constant_input_field": "constant_value"}})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
         )

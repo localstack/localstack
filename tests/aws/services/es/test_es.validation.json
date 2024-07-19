@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/es/test_es.py::TestElasticsearchProvider::test_list_versions": {
+    "last_validated_date": "2024-07-15T10:16:46+00:00"
+  }
+}

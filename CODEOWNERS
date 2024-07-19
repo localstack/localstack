@@ -80,7 +80,6 @@
 # Snapshot testing
 /localstack-core/localstack/testing/snapshots/ @dominikschubert @steffyP
 /localstack-core/localstack/testing/pytest/ @dominikschubert
-/tests/unit/utils/testing/ @dominikschubert @steffyP
 
 # Scenario testing
 /localstack-core/localstack/testing/scenario/ @dominikschubert @steffyP
@@ -107,6 +106,7 @@
 /localstack-core/localstack/services/apigateway/ @bentsku @cloutierMat
 /tests/aws/services/apigateway/ @bentsku @cloutierMat
 /tests/unit/test_apigateway.py @bentsku @cloutierMat
+/tests/unit/services/apigateway/ @bentsku @cloutierMat
 
 # cloudformation
 /localstack-core/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
@@ -179,6 +179,9 @@
 /tests/aws/services/opensearch/ @alexrashed @silv-io
 /tests/unit/services/opensearch/ @alexrashed @silv-io
 
+# pipes (shared with lambda for Event Source Mapping)
+/localstack-core/localstack/aws/api/pipes/ @joe4dev
+
 # route53
 /localstack-core/localstack/aws/api/route53/ @giograno
 /localstack-core/localstack/services/route53/ @giograno
@@ -234,9 +237,9 @@
 /tests/aws/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert
 
 # sts
-/localstack-core/localstack/aws/api/sts/ @pinzon
-/localstack-core/localstack/services/sts/ @pinzon
-/tests/aws/services/sts/ @pinzon
+/localstack-core/localstack/aws/api/sts/ @pinzon @dfangl
+/localstack-core/localstack/services/sts/ @pinzon @dfangl
+/tests/aws/services/sts/ @pinzon @dfangl
 
 # transcribe
 /localstack-core/localstack/aws/api/transcribe/ @sannya-singal @ackdav

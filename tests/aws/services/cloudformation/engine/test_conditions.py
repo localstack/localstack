@@ -447,3 +447,37 @@ class TestCloudFormationConditions:
         assert "TestBucket" not in stack.outputs
         assert stack.outputs["ProdBucket"] == f"{nested_bucket_name}-prod"
         assert aws_client.s3.head_bucket(Bucket=stack.outputs["ProdBucket"])
+
+    @markers.aws.validated
+    def test_update_conditions(self, deploy_cfn_template, aws_client):
+        original_bucket_name = f"test-bucket-{short_uid()}"
+        stack_name = f"test-update-conditions-{short_uid()}"
+        deploy_cfn_template(
+            stack_name=stack_name,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/cfn_condition_update_1.yml"
+            ),
+            parameters={"OriginalBucketName": original_bucket_name},
+        )
+        assert aws_client.s3.head_bucket(Bucket=original_bucket_name)
+
+        bucket_1 = f"test-bucket-1-{short_uid()}"
+        bucket_2 = f"test-bucket-2-{short_uid()}"
+
+        deploy_cfn_template(
+            stack_name=stack_name,
+            is_update=True,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/cfn_condition_update_2.yml"
+            ),
+            parameters={
+                "OriginalBucketName": original_bucket_name,
+                "FirstBucket": bucket_1,
+                "SecondBucket": bucket_2,
+            },
+        )
+
+        assert aws_client.s3.head_bucket(Bucket=original_bucket_name)
+        assert aws_client.s3.head_bucket(Bucket=bucket_1)
+        with pytest.raises(aws_client.s3.exceptions.ClientError):
+            aws_client.s3.head_bucket(Bucket=bucket_2)

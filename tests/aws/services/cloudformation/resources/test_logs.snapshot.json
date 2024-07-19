@@ -15,5 +15,28 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_logs.py::test_cfn_handle_log_group_resource": {
+    "recorded-date": "20-06-2024, 16:15:47",
+    "recorded-content": {
+      "describe_log_groups": {
+        "logGroups": [
+          {
+            "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:1>",
+            "metricFilterCount": 0,
+            "retentionInDays": 731,
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

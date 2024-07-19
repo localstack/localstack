@@ -6,96 +6,7 @@ from localstack.aws.api.apigateway import (
     MapOfStringToString,
     StatusCode,
 )
-
-
-class BaseGatewayException(Exception):
-    """
-    Base class for all Gateway exceptions
-    Do not raise from this class directly. Instead, raise the specific Exception
-    """
-
-    message: str = "Unimplemented Response"
-    type: GatewayResponseType
-
-    def __init__(self, message: str = None):
-        if message is not None:
-            self.message = message
-
-
-class AccessDeniedError(BaseGatewayException):
-    type = GatewayResponseType.ACCESS_DENIED
-
-
-class ApiConfigurationError(BaseGatewayException):
-    type = GatewayResponseType.API_CONFIGURATION_ERROR
-
-
-class AuthorizerConfigurationError(BaseGatewayException):
-    type = GatewayResponseType.AUTHORIZER_CONFIGURATION_ERROR
-
-
-class AuthorizerFailureError(BaseGatewayException):
-    type = GatewayResponseType.AUTHORIZER_FAILURE
-
-
-class BadRequestParametersError(BaseGatewayException):
-    type = GatewayResponseType.BAD_REQUEST_PARAMETERS
-
-
-class BadRequestBodyError(BaseGatewayException):
-    type = GatewayResponseType.BAD_REQUEST_BODY
-
-
-class ExpiredTokenError(BaseGatewayException):
-    type = GatewayResponseType.EXPIRED_TOKEN
-
-
-class IntegrationFailureError(BaseGatewayException):
-    type = GatewayResponseType.INTEGRATION_FAILURE
-
-
-class IntegrationTimeoutError(BaseGatewayException):
-    type = GatewayResponseType.INTEGRATION_TIMEOUT
-
-
-class InvalidAPIKeyError(BaseGatewayException):
-    type = GatewayResponseType.INVALID_API_KEY
-
-
-class InvalidSignatureError(BaseGatewayException):
-    type = GatewayResponseType.INVALID_SIGNATURE
-
-
-class MissingAuthTokenError(BaseGatewayException):
-    type = GatewayResponseType.MISSING_AUTHENTICATION_TOKEN
-
-
-class QuotaExceededError(BaseGatewayException):
-    type = GatewayResponseType.QUOTA_EXCEEDED
-
-
-class RequestTooLargeError(BaseGatewayException):
-    type = GatewayResponseType.REQUEST_TOO_LARGE
-
-
-class ResourceNotFoundError(BaseGatewayException):
-    type = GatewayResponseType.RESOURCE_NOT_FOUND
-
-
-class ThrottledError(BaseGatewayException):
-    type = GatewayResponseType.THROTTLED
-
-
-class UnauthorizedError(BaseGatewayException):
-    type = GatewayResponseType.UNAUTHORIZED
-
-
-class UnsupportedMediaTypeError(BaseGatewayException):
-    type = GatewayResponseType.UNSUPPORTED_MEDIA_TYPE
-
-
-class WafFilteredError(BaseGatewayException):
-    type = GatewayResponseType.WAF_FILTERED
+from localstack.constants import APPLICATION_JSON
 
 
 class GatewayResponseCode(StatusCode, Enum):
@@ -122,6 +33,163 @@ class GatewayResponseCode(StatusCode, Enum):
     EXPIRED_TOKEN = "403"
 
 
+class BaseGatewayException(Exception):
+    """
+    Base class for all Gateway exceptions
+    Do not raise from this class directly. Instead, raise the specific Exception
+    """
+
+    message: str = "Unimplemented Response"
+    type: GatewayResponseType = None
+    status_code: int | str = None
+    code: str = ""
+
+    def __init__(self, message: str = None, status_code: int | str = None):
+        if message is not None:
+            self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        elif self.status_code is None and self.type:
+            # Fallback to the default value
+            self.status_code = GatewayResponseCode[self.type]
+
+
+class Default4xxError(BaseGatewayException):
+    """Do not raise from this class directly.
+    Use one of the subclasses instead, as they contain the appropriate header
+    """
+
+    type = GatewayResponseType.DEFAULT_4XX
+    status_code = 400
+
+
+class Default5xxError(BaseGatewayException):
+    """Do not raise from this class directly.
+    Use one of the subclasses instead, as they contain the appropriate header
+    """
+
+    type = GatewayResponseType.DEFAULT_5XX
+    status_code = 500
+
+
+class BadRequestException(Default4xxError):
+    code = "BadRequestException"
+
+
+class InternalFailureException(Default5xxError):
+    code = "InternalFailureException"
+
+
+class InternalServerError(Default5xxError):
+    code = "InternalServerErrorException"
+
+
+class AccessDeniedError(BaseGatewayException):
+    type = GatewayResponseType.ACCESS_DENIED
+    # TODO validate this header with aws validated tests
+    code = "AccessDeniedException"
+
+
+class ApiConfigurationError(BaseGatewayException):
+    type = GatewayResponseType.API_CONFIGURATION_ERROR
+    # TODO validate this header with aws validated tests
+    code = "ApiConfigurationException"
+
+
+class AuthorizerConfigurationError(BaseGatewayException):
+    type = GatewayResponseType.AUTHORIZER_CONFIGURATION_ERROR
+    # TODO validate this header with aws validated tests
+    code = "AuthorizerConfigurationException"
+
+
+class AuthorizerFailureError(BaseGatewayException):
+    type = GatewayResponseType.AUTHORIZER_FAILURE
+    # TODO validate this header with aws validated tests
+    code = "AuthorizerFailureException"
+
+
+class BadRequestParametersError(BaseGatewayException):
+    type = GatewayResponseType.BAD_REQUEST_PARAMETERS
+    code = "BadRequestException"
+
+
+class BadRequestBodyError(BaseGatewayException):
+    type = GatewayResponseType.BAD_REQUEST_BODY
+    code = "BadRequestException"
+
+
+class ExpiredTokenError(BaseGatewayException):
+    type = GatewayResponseType.EXPIRED_TOKEN
+    # TODO validate this header with aws validated tests
+    code = "ExpiredTokenException"
+
+
+class IntegrationFailureError(BaseGatewayException):
+    type = GatewayResponseType.INTEGRATION_FAILURE
+    # TODO: tested manually for now
+    code = "InternalServerErrorException"
+    status_code = 500
+
+
+class IntegrationTimeoutError(BaseGatewayException):
+    type = GatewayResponseType.INTEGRATION_TIMEOUT
+    code = "InternalServerErrorException"
+
+
+class InvalidAPIKeyError(BaseGatewayException):
+    type = GatewayResponseType.INVALID_API_KEY
+    code = "ForbiddenException"
+
+
+class InvalidSignatureError(BaseGatewayException):
+    type = GatewayResponseType.INVALID_SIGNATURE
+    # TODO validate this header with aws validated tests
+    code = "InvalidSignatureException"
+
+
+class MissingAuthTokenError(BaseGatewayException):
+    type = GatewayResponseType.MISSING_AUTHENTICATION_TOKEN
+    code = "MissingAuthenticationTokenException"
+
+
+class QuotaExceededError(BaseGatewayException):
+    type = GatewayResponseType.QUOTA_EXCEEDED
+    code = "LimitExceededException"
+
+
+class RequestTooLargeError(BaseGatewayException):
+    type = GatewayResponseType.REQUEST_TOO_LARGE
+    # TODO validate this header with aws validated tests
+    code = "RequestTooLargeException"
+
+
+class ResourceNotFoundError(BaseGatewayException):
+    type = GatewayResponseType.RESOURCE_NOT_FOUND
+    # TODO validate this header with aws validated tests
+    code = "ResourceNotFoundException"
+
+
+class ThrottledError(BaseGatewayException):
+    type = GatewayResponseType.THROTTLED
+    code = "TooManyRequestsException"
+
+
+class UnauthorizedError(BaseGatewayException):
+    type = GatewayResponseType.UNAUTHORIZED
+    code = "UnauthorizedException"
+
+
+class UnsupportedMediaTypeError(BaseGatewayException):
+    type = GatewayResponseType.UNSUPPORTED_MEDIA_TYPE
+    code = "BadRequestException"
+
+
+class WafFilteredError(BaseGatewayException):
+    type = GatewayResponseType.WAF_FILTERED
+    # TODO validate this header with aws validated tests
+    code = "WafFilteredException"
+
+
 def build_gateway_response(
     response_type: GatewayResponseType,
     status_code: StatusCode = None,
@@ -133,13 +201,12 @@ def build_gateway_response(
     response = GatewayResponse(
         responseParameters=response_parameters or {},
         responseTemplates=response_templates
-        or {"application/json": '{"message":$context.error.messageString}'},
+        or {APPLICATION_JSON: '{"message":$context.error.messageString}'},
         responseType=response_type,
         defaultResponse=default_response,
+        statusCode=status_code,
     )
-    if status_code or (status_code := GatewayResponseCode[response_type]):
-        # DEFAULT_4XX and DEFAULT_5XX do not have `statusCode` present in the response
-        response["statusCode"] = status_code
+
     return response
 
 

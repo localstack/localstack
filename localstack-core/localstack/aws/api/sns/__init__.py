@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -35,7 +36,7 @@ topicARN = str
 topicName = str
 
 
-class LanguageCodeString(str):
+class LanguageCodeString(StrEnum):
     en_US = "en-US"
     en_GB = "en-GB"
     es_419 = "es-419"
@@ -51,19 +52,19 @@ class LanguageCodeString(str):
     zh_TW = "zh-TW"
 
 
-class NumberCapability(str):
+class NumberCapability(StrEnum):
     SMS = "SMS"
     MMS = "MMS"
     VOICE = "VOICE"
 
 
-class RouteType(str):
+class RouteType(StrEnum):
     Transactional = "Transactional"
     Promotional = "Promotional"
     Premium = "Premium"
 
 
-class SMSSandboxPhoneNumberVerificationStatus(str):
+class SMSSandboxPhoneNumberVerificationStatus(StrEnum):
     Pending = "Pending"
     Verified = "Verified"
 

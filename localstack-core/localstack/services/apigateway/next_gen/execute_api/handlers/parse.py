@@ -1,14 +1,22 @@
+import datetime
 import logging
 from collections import defaultdict
+from typing import Optional
 from urllib.parse import urlparse
 
 from rolo.request import Request, restore_payload
 from werkzeug.datastructures import Headers, MultiDict
 
 from localstack.http import Response
+from localstack.services.apigateway.helpers import REQUEST_TIME_DATE_FORMAT
+from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.time import timestamp
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import InvocationRequest, RestApiInvocationContext
+from ..header_utils import should_drop_header_from_invocation
+from ..moto_helpers import get_stage_variables
+from ..variables import ContextVariables, ContextVarsIdentity
 
 LOG = logging.getLogger(__name__)
 
@@ -26,29 +34,36 @@ class InvocationRequestParser(RestApiGatewayHandler):
 
     def parse_and_enrich(self, context: RestApiInvocationContext):
         # first, create the InvocationRequest with the incoming request
-        context.invocation_request = self.create_invocation_request(context.request)
+        context.invocation_request = self.create_invocation_request(context)
+        # then we can create the ContextVariables, used throughout the invocation as payload and to render authorizer
+        # payload, mapping templates and such.
+        context.context_variables = self.create_context_variables(context)
+        # TODO: maybe adjust the logging
+        LOG.debug("Initializing $context='%s'", context.context_variables)
+        # then populate the stage variables
+        context.stage_variables = self.fetch_stage_variables(context)
+        LOG.debug("Initializing $stageVariables='%s'", context.stage_variables)
 
-    def create_invocation_request(self, request: Request) -> InvocationRequest:
+    def create_invocation_request(self, context: RestApiInvocationContext) -> InvocationRequest:
+        request = context.request
         params, multi_value_params = self._get_single_and_multi_values_from_multidict(request.args)
-        headers, multi_value_headers = self._get_single_and_multi_values_from_headers(
-            request.headers
-        )
+        headers = self._get_invocation_headers(request.headers)
         invocation_request = InvocationRequest(
             http_method=request.method,
             query_string_parameters=params,
             multi_value_query_string_parameters=multi_value_params,
-            raw_headers=request.headers,
             headers=headers,
-            multi_value_headers=multi_value_headers,
             body=restore_payload(request),
         )
 
-        self._enrich_with_raw_path(request, invocation_request)
+        self._enrich_with_raw_path(request, invocation_request, stage_name=context.stage)
 
         return invocation_request
 
     @staticmethod
-    def _enrich_with_raw_path(request: Request, invocation_request: InvocationRequest):
+    def _enrich_with_raw_path(
+        request: Request, invocation_request: InvocationRequest, stage_name: str
+    ):
         # Base path is not URL-decoded, so we need to get the `RAW_URI` from the request
         raw_uri = request.environ.get("RAW_URI") or request.path
 
@@ -57,7 +72,11 @@ class InvocationRequestParser(RestApiGatewayHandler):
         if "_user_request_" in raw_uri:
             raw_uri = raw_uri.partition("_user_request_")[2]
 
+        # remove the stage from the path, only replace the first occurrence
+        raw_uri = raw_uri.replace(f"/{stage_name}", "", 1)
+
         if raw_uri.startswith("//"):
+            # TODO: AWS validate this assumption
             # if the RAW_URI starts with double slashes, `urlparse` will fail to decode it as path only
             # it also means that we already only have the path, so we just need to remove the query string
             raw_uri = raw_uri.split("?")[0]
@@ -85,17 +104,65 @@ class InvocationRequestParser(RestApiGatewayHandler):
         return single_values, dict(multi_values)
 
     @staticmethod
-    def _get_single_and_multi_values_from_headers(
-        headers: Headers,
-    ) -> tuple[dict[str, str], dict[str, list[str]]]:
-        single_values = {}
-        multi_values = {}
+    def _get_invocation_headers(headers: Headers) -> Headers:
+        invocation_headers = Headers()
+        for key, value in headers:
+            if should_drop_header_from_invocation(key):
+                LOG.debug("Dropping header from invocation request: '%s'", key)
+                continue
+            invocation_headers.add(key, value)
+        return invocation_headers
 
-        for key in dict(headers).keys():
-            # TODO: AWS verify multi value headers to see which one AWS keeps (first or last)
-            if key not in single_values:
-                single_values[key] = headers[key]
+    @staticmethod
+    def create_context_variables(context: RestApiInvocationContext) -> ContextVariables:
+        invocation_request: InvocationRequest = context.invocation_request
+        domain_name = invocation_request["headers"].get("Host", "")
+        domain_prefix = domain_name.split(".")[0]
+        now = datetime.datetime.now()
 
-            multi_values[key] = headers.getlist(key)
+        # TODO: verify which values needs to explicitly have None set
+        context_variables = ContextVariables(
+            accountId=context.account_id,
+            apiId=context.api_id,
+            deploymentId=context.deployment_id,
+            domainName=domain_name,
+            domainPrefix=domain_prefix,
+            extendedRequestId=short_uid(),  # TODO: use snapshot tests to verify format
+            httpMethod=invocation_request["http_method"],
+            identity=ContextVarsIdentity(
+                accountId=None,
+                accessKey=None,
+                caller=None,
+                cognitoAuthenticationProvider=None,
+                cognitoAuthenticationType=None,
+                cognitoIdentityId=None,
+                cognitoIdentityPoolId=None,
+                principalOrgId=None,
+                sourceIp="127.0.0.1",  # TODO: get the sourceIp from the Request
+                user=None,
+                userAgent=invocation_request["headers"].get("User-Agent"),
+                userArn=None,
+            ),
+            # TODO: check if we need the raw path? with forward slashes
+            path=f"/{context.stage}{invocation_request['path']}",
+            protocol="HTTP/1.1",
+            requestId=long_uid(),
+            requestTime=timestamp(time=now, format=REQUEST_TIME_DATE_FORMAT),
+            requestTimeEpoch=int(now.timestamp() * 1000),
+            stage=context.stage,
+        )
+        return context_variables
 
-        return single_values, multi_values
+    @staticmethod
+    def fetch_stage_variables(context: RestApiInvocationContext) -> Optional[dict[str, str]]:
+        stage_variables = get_stage_variables(
+            account_id=context.account_id,
+            region=context.region,
+            api_id=context.api_id,
+            stage_name=context.stage,
+        )
+        if not stage_variables:
+            # we need to set the stage variables to None in the context if we don't have at least one
+            return None
+
+        return stage_variables

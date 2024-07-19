@@ -82,6 +82,7 @@ from localstack.services.cloudwatch.models import (
 )
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_account_id_from_arn, lambda_function_name
 from localstack.utils.collections import PaginatedList
@@ -148,6 +149,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(account_id: str, region: str) -> CloudWatchStore:
         return cloudwatch_stores[account_id][region]
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(cloudwatch_stores)
+        visitor.visit(AssetDirectory(self.service, CloudwatchDatabase.CLOUDWATCH_DATA_ROOT))
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
@@ -437,11 +442,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
         composite_to_metric_alarm = {
             "AlarmName": request.get("AlarmName"),
-            "Description": request.get("AlarmDescription"),
+            "AlarmDescription": request.get("AlarmDescription"),
             "AlarmActions": request.get("AlarmActions", []),
             "OKActions": request.get("OKActions", []),
             "InsufficientDataActions": request.get("InsufficientDataActions", []),
-            "ActionsEnabled": request.get("ActionsEnabled"),
+            "ActionsEnabled": request.get("ActionsEnabled", True),
             "AlarmRule": request.get("AlarmRule"),
             "Tags": request.get("Tags", []),
         }

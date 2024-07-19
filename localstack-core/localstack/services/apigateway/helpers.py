@@ -46,11 +46,9 @@ from localstack.services.apigateway.models import (
     apigateway_stores,
 )
 from localstack.utils import common
-from localstack.utils.aws import queries
 from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
-from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.json import try_json
 from localstack.utils.numbers import is_number
 from localstack.utils.strings import canonicalize_bool_to_str, long_uid, short_uid, to_bytes, to_str
@@ -328,6 +326,11 @@ class ModelResolver:
                 def_resolved, was_resolved = self._get_resolved_submodel(model_name=ref_model_name)
 
                 if not def_resolved:
+                    LOG.debug(
+                        "Failed to resolve submodel %s for model %s",
+                        ref_model_name,
+                        self._current_resolving_name,
+                    )
                     return
                 # if the ref was already resolved, we copy the result to not alter the already resolved schema
                 if was_resolved:
@@ -726,6 +729,31 @@ def get_cors_response(headers):
     return response
 
 
+def get_apigateway_path_for_resource(
+    api_id, resource_id, path_suffix="", resources=None, region_name=None
+):
+    if resources is None:
+        apigateway = connect_to(region_name=region_name).apigateway
+        resources = apigateway.get_resources(restApiId=api_id, limit=100)["items"]
+    target_resource = list(filter(lambda res: res["id"] == resource_id, resources))[0]
+    path_part = target_resource.get("pathPart", "")
+    if path_suffix:
+        if path_part:
+            path_suffix = "%s/%s" % (path_part, path_suffix)
+    else:
+        path_suffix = path_part
+    parent_id = target_resource.get("parentId")
+    if not parent_id:
+        return "/%s" % path_suffix
+    return get_apigateway_path_for_resource(
+        api_id,
+        parent_id,
+        path_suffix=path_suffix,
+        resources=resources,
+        region_name=region_name,
+    )
+
+
 def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
     apigateway = connect_to(aws_access_key_id=account_id, region_name=region_name).apigateway
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
@@ -734,7 +762,7 @@ def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
         path = resource.get("path")
         # TODO: check if this is still required in the general case (can we rely on "path" being
         #  present?)
-        path = path or queries.get_apigateway_path_for_resource(
+        path = path or get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
         resource_map[path] = resource
@@ -846,6 +874,9 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
                     % (sqs_region, sqs_account, queue_name),
                     "requestTemplates": {"application/json": template},
+                    "requestParameters": {
+                        "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
+                    },
                 }
             ],
         }
@@ -1554,12 +1585,6 @@ def set_api_id_stage_invocation_path(
         raise Exception(
             f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
         )
-    if api_id:
-        # set current region in request thread local, to ensure aws_stack.get_region() works properly
-        # TODO: replace with RequestContextManager
-        if getattr(THREAD_LOCAL, "request_context", None) is not None:
-            _, api_region = get_api_account_id_and_region(api_id)
-            THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = api_region
 
     # set details in invocation context
     invocation_context.api_id = api_id

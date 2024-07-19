@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import (
@@ -345,7 +346,7 @@ totalGpuMemory = int
 totalInferenceMemory = int
 
 
-class AcceleratorManufacturer(str):
+class AcceleratorManufacturer(StrEnum):
     amazon_web_services = "amazon-web-services"
     amd = "amd"
     nvidia = "nvidia"
@@ -353,7 +354,7 @@ class AcceleratorManufacturer(str):
     habana = "habana"
 
 
-class AcceleratorName(str):
+class AcceleratorName(StrEnum):
     a100 = "a100"
     inferentia = "inferentia"
     k520 = "k520"
@@ -368,45 +369,45 @@ class AcceleratorName(str):
     t4g = "t4g"
 
 
-class AcceleratorType(str):
+class AcceleratorType(StrEnum):
     gpu = "gpu"
     fpga = "fpga"
     inference = "inference"
 
 
-class AccountAttributeName(str):
+class AccountAttributeName(StrEnum):
     supported_platforms = "supported-platforms"
     default_vpc = "default-vpc"
 
 
-class ActivityStatus(str):
+class ActivityStatus(StrEnum):
     error = "error"
     pending_fulfillment = "pending_fulfillment"
     pending_termination = "pending_termination"
     fulfilled = "fulfilled"
 
 
-class AddressAttributeName(str):
+class AddressAttributeName(StrEnum):
     domain_name = "domain-name"
 
 
-class AddressFamily(str):
+class AddressFamily(StrEnum):
     ipv4 = "ipv4"
     ipv6 = "ipv6"
 
 
-class AddressTransferStatus(str):
+class AddressTransferStatus(StrEnum):
     pending = "pending"
     disabled = "disabled"
     accepted = "accepted"
 
 
-class Affinity(str):
+class Affinity(StrEnum):
     default = "default"
     host = "host"
 
 
-class AllocationState(str):
+class AllocationState(StrEnum):
     available = "available"
     under_assessment = "under-assessment"
     permanent_failure = "permanent-failure"
@@ -415,7 +416,7 @@ class AllocationState(str):
     pending = "pending"
 
 
-class AllocationStrategy(str):
+class AllocationStrategy(StrEnum):
     lowestPrice = "lowestPrice"
     diversified = "diversified"
     capacityOptimized = "capacityOptimized"
@@ -423,32 +424,32 @@ class AllocationStrategy(str):
     priceCapacityOptimized = "priceCapacityOptimized"
 
 
-class AllocationType(str):
+class AllocationType(StrEnum):
     used = "used"
 
 
-class AllowsMultipleInstanceTypes(str):
+class AllowsMultipleInstanceTypes(StrEnum):
     on = "on"
     off = "off"
 
 
-class AmdSevSnpSpecification(str):
+class AmdSevSnpSpecification(StrEnum):
     enabled = "enabled"
     disabled = "disabled"
 
 
-class AnalysisStatus(str):
+class AnalysisStatus(StrEnum):
     running = "running"
     succeeded = "succeeded"
     failed = "failed"
 
 
-class ApplianceModeSupportValue(str):
+class ApplianceModeSupportValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class ArchitectureType(str):
+class ArchitectureType(StrEnum):
     i386 = "i386"
     x86_64 = "x86_64"
     arm64 = "arm64"
@@ -456,7 +457,7 @@ class ArchitectureType(str):
     arm64_mac = "arm64_mac"
 
 
-class ArchitectureValues(str):
+class ArchitectureValues(StrEnum):
     i386 = "i386"
     x86_64 = "x86_64"
     arm64 = "arm64"
@@ -464,7 +465,7 @@ class ArchitectureValues(str):
     arm64_mac = "arm64_mac"
 
 
-class AsnAssociationState(str):
+class AsnAssociationState(StrEnum):
     disassociated = "disassociated"
     failed_disassociation = "failed-disassociation"
     failed_association = "failed-association"
@@ -473,7 +474,7 @@ class AsnAssociationState(str):
     associated = "associated"
 
 
-class AsnState(str):
+class AsnState(StrEnum):
     deprovisioned = "deprovisioned"
     failed_deprovision = "failed-deprovision"
     failed_provision = "failed-provision"
@@ -482,11 +483,11 @@ class AsnState(str):
     provisioned = "provisioned"
 
 
-class AssociatedNetworkType(str):
+class AssociatedNetworkType(StrEnum):
     vpc = "vpc"
 
 
-class AssociationStatusCode(str):
+class AssociationStatusCode(StrEnum):
     associating = "associating"
     associated = "associated"
     association_failed = "association-failed"
@@ -494,35 +495,35 @@ class AssociationStatusCode(str):
     disassociated = "disassociated"
 
 
-class AttachmentStatus(str):
+class AttachmentStatus(StrEnum):
     attaching = "attaching"
     attached = "attached"
     detaching = "detaching"
     detached = "detached"
 
 
-class AutoAcceptSharedAssociationsValue(str):
+class AutoAcceptSharedAssociationsValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class AutoAcceptSharedAttachmentsValue(str):
+class AutoAcceptSharedAttachmentsValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class AutoPlacement(str):
+class AutoPlacement(StrEnum):
     on = "on"
     off = "off"
 
 
-class AvailabilityZoneOptInStatus(str):
+class AvailabilityZoneOptInStatus(StrEnum):
     opt_in_not_required = "opt-in-not-required"
     opted_in = "opted-in"
     not_opted_in = "not-opted-in"
 
 
-class AvailabilityZoneState(str):
+class AvailabilityZoneState(StrEnum):
     available = "available"
     information = "information"
     impaired = "impaired"
@@ -530,13 +531,13 @@ class AvailabilityZoneState(str):
     constrained = "constrained"
 
 
-class BareMetal(str):
+class BareMetal(StrEnum):
     included = "included"
     required = "required"
     excluded = "excluded"
 
 
-class BatchState(str):
+class BatchState(StrEnum):
     submitted = "submitted"
     active = "active"
     cancelled = "cancelled"
@@ -546,23 +547,23 @@ class BatchState(str):
     modifying = "modifying"
 
 
-class BgpStatus(str):
+class BgpStatus(StrEnum):
     up = "up"
     down = "down"
 
 
-class BootModeType(str):
+class BootModeType(StrEnum):
     legacy_bios = "legacy-bios"
     uefi = "uefi"
 
 
-class BootModeValues(str):
+class BootModeValues(StrEnum):
     legacy_bios = "legacy-bios"
     uefi = "uefi"
     uefi_preferred = "uefi-preferred"
 
 
-class BundleTaskState(str):
+class BundleTaskState(StrEnum):
     pending = "pending"
     waiting_for_shutdown = "waiting-for-shutdown"
     bundling = "bundling"
@@ -572,13 +573,13 @@ class BundleTaskState(str):
     failed = "failed"
 
 
-class BurstablePerformance(str):
+class BurstablePerformance(StrEnum):
     included = "included"
     required = "required"
     excluded = "excluded"
 
 
-class ByoipCidrState(str):
+class ByoipCidrState(StrEnum):
     advertised = "advertised"
     deprovisioned = "deprovisioned"
     failed_deprovision = "failed-deprovision"
@@ -589,14 +590,14 @@ class ByoipCidrState(str):
     provisioned_not_publicly_advertisable = "provisioned-not-publicly-advertisable"
 
 
-class CancelBatchErrorCode(str):
+class CancelBatchErrorCode(StrEnum):
     fleetRequestIdDoesNotExist = "fleetRequestIdDoesNotExist"
     fleetRequestIdMalformed = "fleetRequestIdMalformed"
     fleetRequestNotInCancellableState = "fleetRequestNotInCancellableState"
     unexpectedError = "unexpectedError"
 
 
-class CancelSpotInstanceRequestState(str):
+class CancelSpotInstanceRequestState(StrEnum):
     active = "active"
     open = "open"
     closed = "closed"
@@ -604,7 +605,7 @@ class CancelSpotInstanceRequestState(str):
     completed = "completed"
 
 
-class CapacityReservationFleetState(str):
+class CapacityReservationFleetState(StrEnum):
     submitted = "submitted"
     modifying = "modifying"
     active = "active"
@@ -616,7 +617,7 @@ class CapacityReservationFleetState(str):
     failed = "failed"
 
 
-class CapacityReservationInstancePlatform(str):
+class CapacityReservationInstancePlatform(StrEnum):
     Linux_UNIX = "Linux/UNIX"
     Red_Hat_Enterprise_Linux = "Red Hat Enterprise Linux"
     SUSE_Linux = "SUSE Linux"
@@ -637,12 +638,12 @@ class CapacityReservationInstancePlatform(str):
     Ubuntu_Pro = "Ubuntu Pro"
 
 
-class CapacityReservationPreference(str):
+class CapacityReservationPreference(StrEnum):
     open = "open"
     none = "none"
 
 
-class CapacityReservationState(str):
+class CapacityReservationState(StrEnum):
     active = "active"
     expired = "expired"
     cancelled = "cancelled"
@@ -653,225 +654,225 @@ class CapacityReservationState(str):
     payment_failed = "payment-failed"
 
 
-class CapacityReservationTenancy(str):
+class CapacityReservationTenancy(StrEnum):
     default = "default"
     dedicated = "dedicated"
 
 
-class CapacityReservationType(str):
+class CapacityReservationType(StrEnum):
     default = "default"
     capacity_block = "capacity-block"
 
 
-class CarrierGatewayState(str):
+class CarrierGatewayState(StrEnum):
     pending = "pending"
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
 
 
-class ClientCertificateRevocationListStatusCode(str):
+class ClientCertificateRevocationListStatusCode(StrEnum):
     pending = "pending"
     active = "active"
 
 
-class ClientVpnAuthenticationType(str):
+class ClientVpnAuthenticationType(StrEnum):
     certificate_authentication = "certificate-authentication"
     directory_service_authentication = "directory-service-authentication"
     federated_authentication = "federated-authentication"
 
 
-class ClientVpnAuthorizationRuleStatusCode(str):
+class ClientVpnAuthorizationRuleStatusCode(StrEnum):
     authorizing = "authorizing"
     active = "active"
     failed = "failed"
     revoking = "revoking"
 
 
-class ClientVpnConnectionStatusCode(str):
+class ClientVpnConnectionStatusCode(StrEnum):
     active = "active"
     failed_to_terminate = "failed-to-terminate"
     terminating = "terminating"
     terminated = "terminated"
 
 
-class ClientVpnEndpointAttributeStatusCode(str):
+class ClientVpnEndpointAttributeStatusCode(StrEnum):
     applying = "applying"
     applied = "applied"
 
 
-class ClientVpnEndpointStatusCode(str):
+class ClientVpnEndpointStatusCode(StrEnum):
     pending_associate = "pending-associate"
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
 
 
-class ClientVpnRouteStatusCode(str):
+class ClientVpnRouteStatusCode(StrEnum):
     creating = "creating"
     active = "active"
     failed = "failed"
     deleting = "deleting"
 
 
-class ConnectionNotificationState(str):
+class ConnectionNotificationState(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ConnectionNotificationType(str):
+class ConnectionNotificationType(StrEnum):
     Topic = "Topic"
 
 
-class ConnectivityType(str):
+class ConnectivityType(StrEnum):
     private = "private"
     public = "public"
 
 
-class ContainerFormat(str):
+class ContainerFormat(StrEnum):
     ova = "ova"
 
 
-class ConversionTaskState(str):
+class ConversionTaskState(StrEnum):
     active = "active"
     cancelling = "cancelling"
     cancelled = "cancelled"
     completed = "completed"
 
 
-class CopyTagsFromSource(str):
+class CopyTagsFromSource(StrEnum):
     volume = "volume"
 
 
-class CpuManufacturer(str):
+class CpuManufacturer(StrEnum):
     intel = "intel"
     amd = "amd"
     amazon_web_services = "amazon-web-services"
 
 
-class CurrencyCodeValues(str):
+class CurrencyCodeValues(StrEnum):
     USD = "USD"
 
 
-class DatafeedSubscriptionState(str):
+class DatafeedSubscriptionState(StrEnum):
     Active = "Active"
     Inactive = "Inactive"
 
 
-class DefaultInstanceMetadataEndpointState(str):
+class DefaultInstanceMetadataEndpointState(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
     no_preference = "no-preference"
 
 
-class DefaultInstanceMetadataTagsState(str):
+class DefaultInstanceMetadataTagsState(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
     no_preference = "no-preference"
 
 
-class DefaultRouteTableAssociationValue(str):
+class DefaultRouteTableAssociationValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class DefaultRouteTablePropagationValue(str):
+class DefaultRouteTablePropagationValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class DefaultTargetCapacityType(str):
+class DefaultTargetCapacityType(StrEnum):
     spot = "spot"
     on_demand = "on-demand"
     capacity_block = "capacity-block"
 
 
-class DeleteFleetErrorCode(str):
+class DeleteFleetErrorCode(StrEnum):
     fleetIdDoesNotExist = "fleetIdDoesNotExist"
     fleetIdMalformed = "fleetIdMalformed"
     fleetNotInDeletableState = "fleetNotInDeletableState"
     unexpectedError = "unexpectedError"
 
 
-class DeleteQueuedReservedInstancesErrorCode(str):
+class DeleteQueuedReservedInstancesErrorCode(StrEnum):
     reserved_instances_id_invalid = "reserved-instances-id-invalid"
     reserved_instances_not_in_queued_state = "reserved-instances-not-in-queued-state"
     unexpected_error = "unexpected-error"
 
 
-class DestinationFileFormat(str):
+class DestinationFileFormat(StrEnum):
     plain_text = "plain-text"
     parquet = "parquet"
 
 
-class DeviceTrustProviderType(str):
+class DeviceTrustProviderType(StrEnum):
     jamf = "jamf"
     crowdstrike = "crowdstrike"
     jumpcloud = "jumpcloud"
 
 
-class DeviceType(str):
+class DeviceType(StrEnum):
     ebs = "ebs"
     instance_store = "instance-store"
 
 
-class DiskImageFormat(str):
+class DiskImageFormat(StrEnum):
     VMDK = "VMDK"
     RAW = "RAW"
     VHD = "VHD"
 
 
-class DiskType(str):
+class DiskType(StrEnum):
     hdd = "hdd"
     ssd = "ssd"
 
 
-class DnsNameState(str):
+class DnsNameState(StrEnum):
     pendingVerification = "pendingVerification"
     verified = "verified"
     failed = "failed"
 
 
-class DnsRecordIpType(str):
+class DnsRecordIpType(StrEnum):
     ipv4 = "ipv4"
     dualstack = "dualstack"
     ipv6 = "ipv6"
     service_defined = "service-defined"
 
 
-class DnsSupportValue(str):
+class DnsSupportValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class DomainType(str):
+class DomainType(StrEnum):
     vpc = "vpc"
     standard = "standard"
 
 
-class DynamicRoutingValue(str):
+class DynamicRoutingValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class EbsEncryptionSupport(str):
+class EbsEncryptionSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
 
 
-class EbsNvmeSupport(str):
+class EbsNvmeSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
     required = "required"
 
 
-class EbsOptimizedSupport(str):
+class EbsOptimizedSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
     default = "default"
 
 
-class Ec2InstanceConnectEndpointState(str):
+class Ec2InstanceConnectEndpointState(StrEnum):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
     create_failed = "create-failed"
@@ -880,43 +881,43 @@ class Ec2InstanceConnectEndpointState(str):
     delete_failed = "delete-failed"
 
 
-class EkPubKeyFormat(str):
+class EkPubKeyFormat(StrEnum):
     der = "der"
     tpmt = "tpmt"
 
 
-class EkPubKeyType(str):
+class EkPubKeyType(StrEnum):
     rsa_2048 = "rsa-2048"
     ecc_sec_p384 = "ecc-sec-p384"
 
 
-class ElasticGpuState(str):
+class ElasticGpuState(StrEnum):
     ATTACHED = "ATTACHED"
 
 
-class ElasticGpuStatus(str):
+class ElasticGpuStatus(StrEnum):
     OK = "OK"
     IMPAIRED = "IMPAIRED"
 
 
-class EnaSupport(str):
+class EnaSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
     required = "required"
 
 
-class EndDateType(str):
+class EndDateType(StrEnum):
     unlimited = "unlimited"
     limited = "limited"
 
 
-class EphemeralNvmeSupport(str):
+class EphemeralNvmeSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
     required = "required"
 
 
-class EventCode(str):
+class EventCode(StrEnum):
     instance_reboot = "instance-reboot"
     system_reboot = "system-reboot"
     system_maintenance = "system-maintenance"
@@ -924,36 +925,36 @@ class EventCode(str):
     instance_stop = "instance-stop"
 
 
-class EventType(str):
+class EventType(StrEnum):
     instanceChange = "instanceChange"
     fleetRequestChange = "fleetRequestChange"
     error = "error"
     information = "information"
 
 
-class ExcessCapacityTerminationPolicy(str):
+class ExcessCapacityTerminationPolicy(StrEnum):
     noTermination = "noTermination"
     default = "default"
 
 
-class ExportEnvironment(str):
+class ExportEnvironment(StrEnum):
     citrix = "citrix"
     vmware = "vmware"
     microsoft = "microsoft"
 
 
-class ExportTaskState(str):
+class ExportTaskState(StrEnum):
     active = "active"
     cancelling = "cancelling"
     cancelled = "cancelled"
     completed = "completed"
 
 
-class FastLaunchResourceType(str):
+class FastLaunchResourceType(StrEnum):
     snapshot = "snapshot"
 
 
-class FastLaunchStateCode(str):
+class FastLaunchStateCode(StrEnum):
     enabling = "enabling"
     enabling_failed = "enabling-failed"
     enabled = "enabled"
@@ -962,7 +963,7 @@ class FastLaunchStateCode(str):
     disabling_failed = "disabling-failed"
 
 
-class FastSnapshotRestoreStateCode(str):
+class FastSnapshotRestoreStateCode(StrEnum):
     enabling = "enabling"
     optimizing = "optimizing"
     enabled = "enabled"
@@ -970,53 +971,53 @@ class FastSnapshotRestoreStateCode(str):
     disabled = "disabled"
 
 
-class FindingsFound(str):
+class FindingsFound(StrEnum):
     true = "true"
     false = "false"
     unknown = "unknown"
 
 
-class FleetActivityStatus(str):
+class FleetActivityStatus(StrEnum):
     error = "error"
     pending_fulfillment = "pending_fulfillment"
     pending_termination = "pending_termination"
     fulfilled = "fulfilled"
 
 
-class FleetCapacityReservationTenancy(str):
+class FleetCapacityReservationTenancy(StrEnum):
     default = "default"
 
 
-class FleetCapacityReservationUsageStrategy(str):
+class FleetCapacityReservationUsageStrategy(StrEnum):
     use_capacity_reservations_first = "use-capacity-reservations-first"
 
 
-class FleetEventType(str):
+class FleetEventType(StrEnum):
     instance_change = "instance-change"
     fleet_change = "fleet-change"
     service_error = "service-error"
 
 
-class FleetExcessCapacityTerminationPolicy(str):
+class FleetExcessCapacityTerminationPolicy(StrEnum):
     no_termination = "no-termination"
     termination = "termination"
 
 
-class FleetInstanceMatchCriteria(str):
+class FleetInstanceMatchCriteria(StrEnum):
     open = "open"
 
 
-class FleetOnDemandAllocationStrategy(str):
+class FleetOnDemandAllocationStrategy(StrEnum):
     lowest_price = "lowest-price"
     prioritized = "prioritized"
 
 
-class FleetReplacementStrategy(str):
+class FleetReplacementStrategy(StrEnum):
     launch = "launch"
     launch_before_terminate = "launch-before-terminate"
 
 
-class FleetStateCode(str):
+class FleetStateCode(StrEnum):
     submitted = "submitted"
     active = "active"
     deleted = "deleted"
@@ -1026,13 +1027,13 @@ class FleetStateCode(str):
     modifying = "modifying"
 
 
-class FleetType(str):
+class FleetType(StrEnum):
     request = "request"
     maintain = "maintain"
     instant = "instant"
 
 
-class FlowLogsResourceType(str):
+class FlowLogsResourceType(StrEnum):
     VPC = "VPC"
     Subnet = "Subnet"
     NetworkInterface = "NetworkInterface"
@@ -1040,74 +1041,75 @@ class FlowLogsResourceType(str):
     TransitGatewayAttachment = "TransitGatewayAttachment"
 
 
-class FpgaImageAttributeName(str):
+class FpgaImageAttributeName(StrEnum):
     description = "description"
     name = "name"
     loadPermission = "loadPermission"
     productCodes = "productCodes"
 
 
-class FpgaImageStateCode(str):
+class FpgaImageStateCode(StrEnum):
     pending = "pending"
     failed = "failed"
     available = "available"
     unavailable = "unavailable"
 
 
-class GatewayAssociationState(str):
+class GatewayAssociationState(StrEnum):
     associated = "associated"
     not_associated = "not-associated"
     associating = "associating"
     disassociating = "disassociating"
 
 
-class GatewayType(str):
+class GatewayType(StrEnum):
     ipsec_1 = "ipsec.1"
 
 
-class HostMaintenance(str):
+class HostMaintenance(StrEnum):
     on = "on"
     off = "off"
 
 
-class HostRecovery(str):
+class HostRecovery(StrEnum):
     on = "on"
     off = "off"
 
 
-class HostTenancy(str):
+class HostTenancy(StrEnum):
+    default = "default"
     dedicated = "dedicated"
     host = "host"
 
 
-class HostnameType(str):
+class HostnameType(StrEnum):
     ip_name = "ip-name"
     resource_name = "resource-name"
 
 
-class HttpTokensState(str):
+class HttpTokensState(StrEnum):
     optional = "optional"
     required = "required"
 
 
-class HypervisorType(str):
+class HypervisorType(StrEnum):
     ovm = "ovm"
     xen = "xen"
 
 
-class IamInstanceProfileAssociationState(str):
+class IamInstanceProfileAssociationState(StrEnum):
     associating = "associating"
     associated = "associated"
     disassociating = "disassociating"
     disassociated = "disassociated"
 
 
-class Igmpv2SupportValue(str):
+class Igmpv2SupportValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class ImageAttributeName(str):
+class ImageAttributeName(StrEnum):
     description = "description"
     kernel = "kernel"
     ramdisk = "ramdisk"
@@ -1123,15 +1125,15 @@ class ImageAttributeName(str):
     deregistrationProtection = "deregistrationProtection"
 
 
-class ImageBlockPublicAccessDisabledState(str):
+class ImageBlockPublicAccessDisabledState(StrEnum):
     unblocked = "unblocked"
 
 
-class ImageBlockPublicAccessEnabledState(str):
+class ImageBlockPublicAccessEnabledState(StrEnum):
     block_new_sharing = "block-new-sharing"
 
 
-class ImageState(str):
+class ImageState(StrEnum):
     pending = "pending"
     available = "available"
     invalid = "invalid"
@@ -1142,17 +1144,17 @@ class ImageState(str):
     disabled = "disabled"
 
 
-class ImageTypeValues(str):
+class ImageTypeValues(StrEnum):
     machine = "machine"
     kernel = "kernel"
     ramdisk = "ramdisk"
 
 
-class ImdsSupportValues(str):
+class ImdsSupportValues(StrEnum):
     v2_0 = "v2.0"
 
 
-class InstanceAttributeName(str):
+class InstanceAttributeName(StrEnum):
     instanceType = "instanceType"
     kernel = "kernel"
     ramdisk = "ramdisk"
@@ -1171,76 +1173,76 @@ class InstanceAttributeName(str):
     disableApiStop = "disableApiStop"
 
 
-class InstanceAutoRecoveryState(str):
+class InstanceAutoRecoveryState(StrEnum):
     disabled = "disabled"
     default = "default"
 
 
-class InstanceBootModeValues(str):
+class InstanceBootModeValues(StrEnum):
     legacy_bios = "legacy-bios"
     uefi = "uefi"
 
 
-class InstanceEventWindowState(str):
+class InstanceEventWindowState(StrEnum):
     creating = "creating"
     deleting = "deleting"
     active = "active"
     deleted = "deleted"
 
 
-class InstanceGeneration(str):
+class InstanceGeneration(StrEnum):
     current = "current"
     previous = "previous"
 
 
-class InstanceHealthStatus(str):
+class InstanceHealthStatus(StrEnum):
     healthy = "healthy"
     unhealthy = "unhealthy"
 
 
-class InstanceInterruptionBehavior(str):
+class InstanceInterruptionBehavior(StrEnum):
     hibernate = "hibernate"
     stop = "stop"
     terminate = "terminate"
 
 
-class InstanceLifecycle(str):
+class InstanceLifecycle(StrEnum):
     spot = "spot"
     on_demand = "on-demand"
 
 
-class InstanceLifecycleType(str):
+class InstanceLifecycleType(StrEnum):
     spot = "spot"
     scheduled = "scheduled"
     capacity_block = "capacity-block"
 
 
-class InstanceMatchCriteria(str):
+class InstanceMatchCriteria(StrEnum):
     open = "open"
     targeted = "targeted"
 
 
-class InstanceMetadataEndpointState(str):
+class InstanceMetadataEndpointState(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
 
 
-class InstanceMetadataOptionsState(str):
+class InstanceMetadataOptionsState(StrEnum):
     pending = "pending"
     applied = "applied"
 
 
-class InstanceMetadataProtocolState(str):
+class InstanceMetadataProtocolState(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
 
 
-class InstanceMetadataTagsState(str):
+class InstanceMetadataTagsState(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
 
 
-class InstanceStateName(str):
+class InstanceStateName(StrEnum):
     pending = "pending"
     running = "running"
     shutting_down = "shutting-down"
@@ -1249,12 +1251,12 @@ class InstanceStateName(str):
     stopped = "stopped"
 
 
-class InstanceStorageEncryptionSupport(str):
+class InstanceStorageEncryptionSupport(StrEnum):
     unsupported = "unsupported"
     required = "required"
 
 
-class InstanceType(str):
+class InstanceType(StrEnum):
     a1_medium = "a1.medium"
     a1_large = "a1.large"
     a1_xlarge = "a1.xlarge"
@@ -2060,30 +2062,45 @@ class InstanceType(str):
     u7in_16tb_224xlarge = "u7in-16tb.224xlarge"
     u7in_24tb_224xlarge = "u7in-24tb.224xlarge"
     u7in_32tb_224xlarge = "u7in-32tb.224xlarge"
+    u7ib_12tb_224xlarge = "u7ib-12tb.224xlarge"
+    c7gn_metal = "c7gn.metal"
+    r8g_medium = "r8g.medium"
+    r8g_large = "r8g.large"
+    r8g_xlarge = "r8g.xlarge"
+    r8g_2xlarge = "r8g.2xlarge"
+    r8g_4xlarge = "r8g.4xlarge"
+    r8g_8xlarge = "r8g.8xlarge"
+    r8g_12xlarge = "r8g.12xlarge"
+    r8g_16xlarge = "r8g.16xlarge"
+    r8g_24xlarge = "r8g.24xlarge"
+    r8g_48xlarge = "r8g.48xlarge"
+    r8g_metal_24xl = "r8g.metal-24xl"
+    r8g_metal_48xl = "r8g.metal-48xl"
+    mac2_m1ultra_metal = "mac2-m1ultra.metal"
 
 
-class InstanceTypeHypervisor(str):
+class InstanceTypeHypervisor(StrEnum):
     nitro = "nitro"
     xen = "xen"
 
 
-class InterfacePermissionType(str):
+class InterfacePermissionType(StrEnum):
     INSTANCE_ATTACH = "INSTANCE-ATTACH"
     EIP_ASSOCIATE = "EIP-ASSOCIATE"
 
 
-class InterfaceProtocolType(str):
+class InterfaceProtocolType(StrEnum):
     VLAN = "VLAN"
     GRE = "GRE"
 
 
-class IpAddressType(str):
+class IpAddressType(StrEnum):
     ipv4 = "ipv4"
     dualstack = "dualstack"
     ipv6 = "ipv6"
 
 
-class IpamAddressHistoryResourceType(str):
+class IpamAddressHistoryResourceType(StrEnum):
     eip = "eip"
     vpc = "vpc"
     subnet = "subnet"
@@ -2091,37 +2108,42 @@ class IpamAddressHistoryResourceType(str):
     instance = "instance"
 
 
-class IpamAssociatedResourceDiscoveryStatus(str):
+class IpamAssociatedResourceDiscoveryStatus(StrEnum):
     active = "active"
     not_found = "not-found"
 
 
-class IpamComplianceStatus(str):
+class IpamComplianceStatus(StrEnum):
     compliant = "compliant"
     noncompliant = "noncompliant"
     unmanaged = "unmanaged"
     ignored = "ignored"
 
 
-class IpamDiscoveryFailureCode(str):
+class IpamDiscoveryFailureCode(StrEnum):
     assume_role_failure = "assume-role-failure"
     throttling_failure = "throttling-failure"
     unauthorized_failure = "unauthorized-failure"
 
 
-class IpamManagementState(str):
+class IpamManagementState(StrEnum):
     managed = "managed"
     unmanaged = "unmanaged"
     ignored = "ignored"
 
 
-class IpamOverlapStatus(str):
+class IpamNetworkInterfaceAttachmentStatus(StrEnum):
+    available = "available"
+    in_use = "in-use"
+
+
+class IpamOverlapStatus(StrEnum):
     overlapping = "overlapping"
     nonoverlapping = "nonoverlapping"
     ignored = "ignored"
 
 
-class IpamPoolAllocationResourceType(str):
+class IpamPoolAllocationResourceType(StrEnum):
     ipam_pool = "ipam-pool"
     vpc = "vpc"
     ec2_public_ipv4_pool = "ec2-public-ipv4-pool"
@@ -2129,16 +2151,16 @@ class IpamPoolAllocationResourceType(str):
     subnet = "subnet"
 
 
-class IpamPoolAwsService(str):
+class IpamPoolAwsService(StrEnum):
     ec2 = "ec2"
 
 
-class IpamPoolCidrFailureCode(str):
+class IpamPoolCidrFailureCode(StrEnum):
     cidr_not_available = "cidr-not-available"
     limit_exceeded = "limit-exceeded"
 
 
-class IpamPoolCidrState(str):
+class IpamPoolCidrState(StrEnum):
     pending_provision = "pending-provision"
     provisioned = "provisioned"
     failed_provision = "failed-provision"
@@ -2149,16 +2171,16 @@ class IpamPoolCidrState(str):
     failed_import = "failed-import"
 
 
-class IpamPoolPublicIpSource(str):
+class IpamPoolPublicIpSource(StrEnum):
     amazon = "amazon"
     byoip = "byoip"
 
 
-class IpamPoolSourceResourceType(str):
+class IpamPoolSourceResourceType(StrEnum):
     vpc = "vpc"
 
 
-class IpamPoolState(str):
+class IpamPoolState(StrEnum):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
     create_failed = "create-failed"
@@ -2173,12 +2195,12 @@ class IpamPoolState(str):
     restore_in_progress = "restore-in-progress"
 
 
-class IpamPublicAddressAssociationStatus(str):
+class IpamPublicAddressAssociationStatus(StrEnum):
     associated = "associated"
     disassociated = "disassociated"
 
 
-class IpamPublicAddressAwsService(str):
+class IpamPublicAddressAwsService(StrEnum):
     nat_gateway = "nat-gateway"
     database_migration_service = "database-migration-service"
     redshift = "redshift"
@@ -2190,7 +2212,7 @@ class IpamPublicAddressAwsService(str):
     other = "other"
 
 
-class IpamPublicAddressType(str):
+class IpamPublicAddressType(StrEnum):
     service_managed_ip = "service-managed-ip"
     service_managed_byoip = "service-managed-byoip"
     amazon_owned_eip = "amazon-owned-eip"
@@ -2198,7 +2220,7 @@ class IpamPublicAddressType(str):
     ec2_public_ip = "ec2-public-ip"
 
 
-class IpamResourceDiscoveryAssociationState(str):
+class IpamResourceDiscoveryAssociationState(StrEnum):
     associate_in_progress = "associate-in-progress"
     associate_complete = "associate-complete"
     associate_failed = "associate-failed"
@@ -2210,7 +2232,7 @@ class IpamResourceDiscoveryAssociationState(str):
     restore_in_progress = "restore-in-progress"
 
 
-class IpamResourceDiscoveryState(str):
+class IpamResourceDiscoveryState(StrEnum):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
     create_failed = "create-failed"
@@ -2225,7 +2247,7 @@ class IpamResourceDiscoveryState(str):
     restore_in_progress = "restore-in-progress"
 
 
-class IpamResourceType(str):
+class IpamResourceType(StrEnum):
     vpc = "vpc"
     subnet = "subnet"
     eip = "eip"
@@ -2234,7 +2256,7 @@ class IpamResourceType(str):
     eni = "eni"
 
 
-class IpamScopeState(str):
+class IpamScopeState(StrEnum):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
     create_failed = "create-failed"
@@ -2249,12 +2271,12 @@ class IpamScopeState(str):
     restore_in_progress = "restore-in-progress"
 
 
-class IpamScopeType(str):
+class IpamScopeType(StrEnum):
     public = "public"
     private = "private"
 
 
-class IpamState(str):
+class IpamState(StrEnum):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
     create_failed = "create-failed"
@@ -2269,32 +2291,32 @@ class IpamState(str):
     restore_in_progress = "restore-in-progress"
 
 
-class IpamTier(str):
+class IpamTier(StrEnum):
     free = "free"
     advanced = "advanced"
 
 
-class Ipv6SupportValue(str):
+class Ipv6SupportValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class KeyFormat(str):
+class KeyFormat(StrEnum):
     pem = "pem"
     ppk = "ppk"
 
 
-class KeyType(str):
+class KeyType(StrEnum):
     rsa = "rsa"
     ed25519 = "ed25519"
 
 
-class LaunchTemplateAutoRecoveryState(str):
+class LaunchTemplateAutoRecoveryState(StrEnum):
     default = "default"
     disabled = "disabled"
 
 
-class LaunchTemplateErrorCode(str):
+class LaunchTemplateErrorCode(StrEnum):
     launchTemplateIdDoesNotExist = "launchTemplateIdDoesNotExist"
     launchTemplateIdMalformed = "launchTemplateIdMalformed"
     launchTemplateNameDoesNotExist = "launchTemplateNameDoesNotExist"
@@ -2303,46 +2325,46 @@ class LaunchTemplateErrorCode(str):
     unexpectedError = "unexpectedError"
 
 
-class LaunchTemplateHttpTokensState(str):
+class LaunchTemplateHttpTokensState(StrEnum):
     optional = "optional"
     required = "required"
 
 
-class LaunchTemplateInstanceMetadataEndpointState(str):
+class LaunchTemplateInstanceMetadataEndpointState(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
 
 
-class LaunchTemplateInstanceMetadataOptionsState(str):
+class LaunchTemplateInstanceMetadataOptionsState(StrEnum):
     pending = "pending"
     applied = "applied"
 
 
-class LaunchTemplateInstanceMetadataProtocolIpv6(str):
+class LaunchTemplateInstanceMetadataProtocolIpv6(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
 
 
-class LaunchTemplateInstanceMetadataTagsState(str):
+class LaunchTemplateInstanceMetadataTagsState(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
 
 
-class ListingState(str):
+class ListingState(StrEnum):
     available = "available"
     sold = "sold"
     cancelled = "cancelled"
     pending = "pending"
 
 
-class ListingStatus(str):
+class ListingStatus(StrEnum):
     active = "active"
     pending = "pending"
     cancelled = "cancelled"
     closed = "closed"
 
 
-class LocalGatewayRouteState(str):
+class LocalGatewayRouteState(StrEnum):
     pending = "pending"
     active = "active"
     blackhole = "blackhole"
@@ -2350,95 +2372,95 @@ class LocalGatewayRouteState(str):
     deleted = "deleted"
 
 
-class LocalGatewayRouteTableMode(str):
+class LocalGatewayRouteTableMode(StrEnum):
     direct_vpc_routing = "direct-vpc-routing"
     coip = "coip"
 
 
-class LocalGatewayRouteType(str):
+class LocalGatewayRouteType(StrEnum):
     static = "static"
     propagated = "propagated"
 
 
-class LocalStorage(str):
+class LocalStorage(StrEnum):
     included = "included"
     required = "required"
     excluded = "excluded"
 
 
-class LocalStorageType(str):
+class LocalStorageType(StrEnum):
     hdd = "hdd"
     ssd = "ssd"
 
 
-class LocationType(str):
+class LocationType(StrEnum):
     region = "region"
     availability_zone = "availability-zone"
     availability_zone_id = "availability-zone-id"
     outpost = "outpost"
 
 
-class LockMode(str):
+class LockMode(StrEnum):
     compliance = "compliance"
     governance = "governance"
 
 
-class LockState(str):
+class LockState(StrEnum):
     compliance = "compliance"
     governance = "governance"
     compliance_cooloff = "compliance-cooloff"
     expired = "expired"
 
 
-class LogDestinationType(str):
+class LogDestinationType(StrEnum):
     cloud_watch_logs = "cloud-watch-logs"
     s3 = "s3"
     kinesis_data_firehose = "kinesis-data-firehose"
 
 
-class MarketType(str):
+class MarketType(StrEnum):
     spot = "spot"
     capacity_block = "capacity-block"
 
 
-class MembershipType(str):
+class MembershipType(StrEnum):
     static = "static"
     igmp = "igmp"
 
 
-class MetadataDefaultHttpTokensState(str):
+class MetadataDefaultHttpTokensState(StrEnum):
     optional = "optional"
     required = "required"
     no_preference = "no-preference"
 
 
-class MetricType(str):
+class MetricType(StrEnum):
     aggregate_latency = "aggregate-latency"
 
 
-class ModifyAvailabilityZoneOptInStatus(str):
+class ModifyAvailabilityZoneOptInStatus(StrEnum):
     opted_in = "opted-in"
     not_opted_in = "not-opted-in"
 
 
-class MonitoringState(str):
+class MonitoringState(StrEnum):
     disabled = "disabled"
     disabling = "disabling"
     enabled = "enabled"
     pending = "pending"
 
 
-class MoveStatus(str):
+class MoveStatus(StrEnum):
     movingToVpc = "movingToVpc"
     restoringToClassic = "restoringToClassic"
 
 
-class MulticastSupportValue(str):
+class MulticastSupportValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class NatGatewayAddressStatus(str):
+class NatGatewayAddressStatus(StrEnum):
     assigning = "assigning"
     unassigning = "unassigning"
     associating = "associating"
@@ -2447,7 +2469,7 @@ class NatGatewayAddressStatus(str):
     failed = "failed"
 
 
-class NatGatewayState(str):
+class NatGatewayState(StrEnum):
     pending = "pending"
     failed = "failed"
     available = "available"
@@ -2455,7 +2477,7 @@ class NatGatewayState(str):
     deleted = "deleted"
 
 
-class NetworkInterfaceAttribute(str):
+class NetworkInterfaceAttribute(StrEnum):
     description = "description"
     groupSet = "groupSet"
     sourceDestCheck = "sourceDestCheck"
@@ -2463,20 +2485,20 @@ class NetworkInterfaceAttribute(str):
     associatePublicIpAddress = "associatePublicIpAddress"
 
 
-class NetworkInterfaceCreationType(str):
+class NetworkInterfaceCreationType(StrEnum):
     efa = "efa"
     branch = "branch"
     trunk = "trunk"
 
 
-class NetworkInterfacePermissionStateCode(str):
+class NetworkInterfacePermissionStateCode(StrEnum):
     pending = "pending"
     granted = "granted"
     revoking = "revoking"
     revoked = "revoked"
 
 
-class NetworkInterfaceStatus(str):
+class NetworkInterfaceStatus(StrEnum):
     available = "available"
     associated = "associated"
     attaching = "attaching"
@@ -2484,7 +2506,7 @@ class NetworkInterfaceStatus(str):
     detaching = "detaching"
 
 
-class NetworkInterfaceType(str):
+class NetworkInterfaceType(StrEnum):
     interface = "interface"
     natGateway = "natGateway"
     efa = "efa"
@@ -2504,22 +2526,22 @@ class NetworkInterfaceType(str):
     aws_codestar_connections_managed = "aws_codestar_connections_managed"
 
 
-class NitroEnclavesSupport(str):
+class NitroEnclavesSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
 
 
-class NitroTpmSupport(str):
+class NitroTpmSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
 
 
-class OfferingClassType(str):
+class OfferingClassType(StrEnum):
     standard = "standard"
     convertible = "convertible"
 
 
-class OfferingTypeValues(str):
+class OfferingTypeValues(StrEnum):
     Heavy_Utilization = "Heavy Utilization"
     Medium_Utilization = "Medium Utilization"
     Light_Utilization = "Light Utilization"
@@ -2528,34 +2550,34 @@ class OfferingTypeValues(str):
     All_Upfront = "All Upfront"
 
 
-class OnDemandAllocationStrategy(str):
+class OnDemandAllocationStrategy(StrEnum):
     lowestPrice = "lowestPrice"
     prioritized = "prioritized"
 
 
-class OperationType(str):
+class OperationType(StrEnum):
     add = "add"
     remove = "remove"
 
 
-class PartitionLoadFrequency(str):
+class PartitionLoadFrequency(StrEnum):
     none = "none"
     daily = "daily"
     weekly = "weekly"
     monthly = "monthly"
 
 
-class PayerResponsibility(str):
+class PayerResponsibility(StrEnum):
     ServiceOwner = "ServiceOwner"
 
 
-class PaymentOption(str):
+class PaymentOption(StrEnum):
     AllUpfront = "AllUpfront"
     PartialUpfront = "PartialUpfront"
     NoUpfront = "NoUpfront"
 
 
-class PeriodType(str):
+class PeriodType(StrEnum):
     five_minutes = "five-minutes"
     fifteen_minutes = "fifteen-minutes"
     one_hour = "one-hour"
@@ -2564,39 +2586,39 @@ class PeriodType(str):
     one_week = "one-week"
 
 
-class PermissionGroup(str):
+class PermissionGroup(StrEnum):
     all = "all"
 
 
-class PhcSupport(str):
+class PhcSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
 
 
-class PlacementGroupState(str):
+class PlacementGroupState(StrEnum):
     pending = "pending"
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
 
 
-class PlacementGroupStrategy(str):
+class PlacementGroupStrategy(StrEnum):
     cluster = "cluster"
     partition = "partition"
     spread = "spread"
 
 
-class PlacementStrategy(str):
+class PlacementStrategy(StrEnum):
     cluster = "cluster"
     spread = "spread"
     partition = "partition"
 
 
-class PlatformValues(str):
+class PlatformValues(StrEnum):
     Windows = "Windows"
 
 
-class PrefixListState(str):
+class PrefixListState(StrEnum):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
     create_failed = "create-failed"
@@ -2611,7 +2633,7 @@ class PrefixListState(str):
     delete_failed = "delete-failed"
 
 
-class PrincipalType(str):
+class PrincipalType(StrEnum):
     All = "All"
     Service = "Service"
     OrganizationUnit = "OrganizationUnit"
@@ -2620,32 +2642,32 @@ class PrincipalType(str):
     Role = "Role"
 
 
-class ProductCodeValues(str):
+class ProductCodeValues(StrEnum):
     devpay = "devpay"
     marketplace = "marketplace"
 
 
-class Protocol(str):
+class Protocol(StrEnum):
     tcp = "tcp"
     udp = "udp"
 
 
-class ProtocolValue(str):
+class ProtocolValue(StrEnum):
     gre = "gre"
 
 
-class RIProductDescription(str):
+class RIProductDescription(StrEnum):
     Linux_UNIX = "Linux/UNIX"
     Linux_UNIX_Amazon_VPC_ = "Linux/UNIX (Amazon VPC)"
     Windows = "Windows"
     Windows_Amazon_VPC_ = "Windows (Amazon VPC)"
 
 
-class RecurringChargeFrequency(str):
+class RecurringChargeFrequency(StrEnum):
     Hourly = "Hourly"
 
 
-class ReplaceRootVolumeTaskState(str):
+class ReplaceRootVolumeTaskState(StrEnum):
     pending = "pending"
     in_progress = "in-progress"
     failing = "failing"
@@ -2654,12 +2676,12 @@ class ReplaceRootVolumeTaskState(str):
     failed_detached = "failed-detached"
 
 
-class ReplacementStrategy(str):
+class ReplacementStrategy(StrEnum):
     launch = "launch"
     launch_before_terminate = "launch-before-terminate"
 
 
-class ReportInstanceReasonCodes(str):
+class ReportInstanceReasonCodes(StrEnum):
     instance_stuck_in_state = "instance-stuck-in-state"
     unresponsive = "unresponsive"
     not_accepting_credentials = "not-accepting-credentials"
@@ -2671,19 +2693,19 @@ class ReportInstanceReasonCodes(str):
     other = "other"
 
 
-class ReportStatusType(str):
+class ReportStatusType(StrEnum):
     ok = "ok"
     impaired = "impaired"
 
 
-class ReservationState(str):
+class ReservationState(StrEnum):
     payment_pending = "payment-pending"
     payment_failed = "payment-failed"
     active = "active"
     retired = "retired"
 
 
-class ReservedInstanceState(str):
+class ReservedInstanceState(StrEnum):
     payment_pending = "payment-pending"
     active = "active"
     payment_failed = "payment-failed"
@@ -2692,15 +2714,15 @@ class ReservedInstanceState(str):
     queued_deleted = "queued-deleted"
 
 
-class ResetFpgaImageAttributeName(str):
+class ResetFpgaImageAttributeName(StrEnum):
     loadPermission = "loadPermission"
 
 
-class ResetImageAttributeName(str):
+class ResetImageAttributeName(StrEnum):
     launchPermission = "launchPermission"
 
 
-class ResourceType(str):
+class ResourceType(StrEnum):
     capacity_reservation = "capacity-reservation"
     client_vpn_endpoint = "client-vpn-endpoint"
     customer_gateway = "customer-gateway"
@@ -2792,23 +2814,23 @@ class ResourceType(str):
     instance_connect_endpoint = "instance-connect-endpoint"
 
 
-class RootDeviceType(str):
+class RootDeviceType(StrEnum):
     ebs = "ebs"
     instance_store = "instance-store"
 
 
-class RouteOrigin(str):
+class RouteOrigin(StrEnum):
     CreateRouteTable = "CreateRouteTable"
     CreateRoute = "CreateRoute"
     EnableVgwRoutePropagation = "EnableVgwRoutePropagation"
 
 
-class RouteState(str):
+class RouteState(StrEnum):
     active = "active"
     blackhole = "blackhole"
 
 
-class RouteTableAssociationStateCode(str):
+class RouteTableAssociationStateCode(StrEnum):
     associating = "associating"
     associated = "associated"
     disassociating = "disassociating"
@@ -2816,33 +2838,33 @@ class RouteTableAssociationStateCode(str):
     failed = "failed"
 
 
-class RuleAction(str):
+class RuleAction(StrEnum):
     allow = "allow"
     deny = "deny"
 
 
-class SSEType(str):
+class SSEType(StrEnum):
     sse_ebs = "sse-ebs"
     sse_kms = "sse-kms"
     none = "none"
 
 
-class SecurityGroupReferencingSupportValue(str):
+class SecurityGroupReferencingSupportValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class SelfServicePortal(str):
+class SelfServicePortal(StrEnum):
     enabled = "enabled"
     disabled = "disabled"
 
 
-class ServiceConnectivityType(str):
+class ServiceConnectivityType(StrEnum):
     ipv4 = "ipv4"
     ipv6 = "ipv6"
 
 
-class ServiceState(str):
+class ServiceState(StrEnum):
     Pending = "Pending"
     Available = "Available"
     Deleting = "Deleting"
@@ -2850,29 +2872,29 @@ class ServiceState(str):
     Failed = "Failed"
 
 
-class ServiceType(str):
+class ServiceType(StrEnum):
     Interface = "Interface"
     Gateway = "Gateway"
     GatewayLoadBalancer = "GatewayLoadBalancer"
 
 
-class ShutdownBehavior(str):
+class ShutdownBehavior(StrEnum):
     stop = "stop"
     terminate = "terminate"
 
 
-class SnapshotAttributeName(str):
+class SnapshotAttributeName(StrEnum):
     productCodes = "productCodes"
     createVolumePermission = "createVolumePermission"
 
 
-class SnapshotBlockPublicAccessState(str):
+class SnapshotBlockPublicAccessState(StrEnum):
     block_all_sharing = "block-all-sharing"
     block_new_sharing = "block-new-sharing"
     unblocked = "unblocked"
 
 
-class SnapshotState(str):
+class SnapshotState(StrEnum):
     pending = "pending"
     completed = "completed"
     error = "error"
@@ -2880,7 +2902,7 @@ class SnapshotState(str):
     recovering = "recovering"
 
 
-class SpotAllocationStrategy(str):
+class SpotAllocationStrategy(StrEnum):
     lowest_price = "lowest-price"
     diversified = "diversified"
     capacity_optimized = "capacity-optimized"
@@ -2888,13 +2910,13 @@ class SpotAllocationStrategy(str):
     price_capacity_optimized = "price-capacity-optimized"
 
 
-class SpotInstanceInterruptionBehavior(str):
+class SpotInstanceInterruptionBehavior(StrEnum):
     hibernate = "hibernate"
     stop = "stop"
     terminate = "terminate"
 
 
-class SpotInstanceState(str):
+class SpotInstanceState(StrEnum):
     open = "open"
     active = "active"
     closed = "closed"
@@ -2903,17 +2925,17 @@ class SpotInstanceState(str):
     disabled = "disabled"
 
 
-class SpotInstanceType(str):
+class SpotInstanceType(StrEnum):
     one_time = "one-time"
     persistent = "persistent"
 
 
-class SpreadLevel(str):
+class SpreadLevel(StrEnum):
     host = "host"
     rack = "rack"
 
 
-class State(str):
+class State(StrEnum):
     PendingAcceptance = "PendingAcceptance"
     Pending = "Pending"
     Available = "Available"
@@ -2924,38 +2946,38 @@ class State(str):
     Expired = "Expired"
 
 
-class StaticSourcesSupportValue(str):
+class StaticSourcesSupportValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class StatisticType(str):
+class StatisticType(StrEnum):
     p50 = "p50"
 
 
-class Status(str):
+class Status(StrEnum):
     MoveInProgress = "MoveInProgress"
     InVpc = "InVpc"
     InClassic = "InClassic"
 
 
-class StatusName(str):
+class StatusName(StrEnum):
     reachability = "reachability"
 
 
-class StatusType(str):
+class StatusType(StrEnum):
     passed = "passed"
     failed = "failed"
     insufficient_data = "insufficient-data"
     initializing = "initializing"
 
 
-class StorageTier(str):
+class StorageTier(StrEnum):
     archive = "archive"
     standard = "standard"
 
 
-class SubnetCidrBlockStateCode(str):
+class SubnetCidrBlockStateCode(StrEnum):
     associating = "associating"
     associated = "associated"
     disassociating = "disassociating"
@@ -2964,18 +2986,18 @@ class SubnetCidrBlockStateCode(str):
     failed = "failed"
 
 
-class SubnetCidrReservationType(str):
+class SubnetCidrReservationType(StrEnum):
     prefix = "prefix"
     explicit = "explicit"
 
 
-class SubnetState(str):
+class SubnetState(StrEnum):
     pending = "pending"
     available = "available"
     unavailable = "unavailable"
 
 
-class SummaryStatus(str):
+class SummaryStatus(StrEnum):
     ok = "ok"
     impaired = "impaired"
     insufficient_data = "insufficient-data"
@@ -2983,32 +3005,32 @@ class SummaryStatus(str):
     initializing = "initializing"
 
 
-class SupportedAdditionalProcessorFeature(str):
+class SupportedAdditionalProcessorFeature(StrEnum):
     amd_sev_snp = "amd-sev-snp"
 
 
-class TargetCapacityUnitType(str):
+class TargetCapacityUnitType(StrEnum):
     vcpu = "vcpu"
     memory_mib = "memory-mib"
     units = "units"
 
 
-class TargetStorageTier(str):
+class TargetStorageTier(StrEnum):
     archive = "archive"
 
 
-class TelemetryStatus(str):
+class TelemetryStatus(StrEnum):
     UP = "UP"
     DOWN = "DOWN"
 
 
-class Tenancy(str):
+class Tenancy(StrEnum):
     default = "default"
     dedicated = "dedicated"
     host = "host"
 
 
-class TieringOperationStatus(str):
+class TieringOperationStatus(StrEnum):
     archival_in_progress = "archival-in-progress"
     archival_completed = "archival-completed"
     archival_failed = "archival-failed"
@@ -3020,57 +3042,57 @@ class TieringOperationStatus(str):
     permanent_restore_failed = "permanent-restore-failed"
 
 
-class TpmSupportValues(str):
+class TpmSupportValues(StrEnum):
     v2_0 = "v2.0"
 
 
-class TrafficDirection(str):
+class TrafficDirection(StrEnum):
     ingress = "ingress"
     egress = "egress"
 
 
-class TrafficMirrorFilterRuleField(str):
+class TrafficMirrorFilterRuleField(StrEnum):
     destination_port_range = "destination-port-range"
     source_port_range = "source-port-range"
     protocol = "protocol"
     description = "description"
 
 
-class TrafficMirrorNetworkService(str):
+class TrafficMirrorNetworkService(StrEnum):
     amazon_dns = "amazon-dns"
 
 
-class TrafficMirrorRuleAction(str):
+class TrafficMirrorRuleAction(StrEnum):
     accept = "accept"
     reject = "reject"
 
 
-class TrafficMirrorSessionField(str):
+class TrafficMirrorSessionField(StrEnum):
     packet_length = "packet-length"
     description = "description"
     virtual_network_id = "virtual-network-id"
 
 
-class TrafficMirrorTargetType(str):
+class TrafficMirrorTargetType(StrEnum):
     network_interface = "network-interface"
     network_load_balancer = "network-load-balancer"
     gateway_load_balancer_endpoint = "gateway-load-balancer-endpoint"
 
 
-class TrafficType(str):
+class TrafficType(StrEnum):
     ACCEPT = "ACCEPT"
     REJECT = "REJECT"
     ALL = "ALL"
 
 
-class TransitGatewayAssociationState(str):
+class TransitGatewayAssociationState(StrEnum):
     associating = "associating"
     associated = "associated"
     disassociating = "disassociating"
     disassociated = "disassociated"
 
 
-class TransitGatewayAttachmentResourceType(str):
+class TransitGatewayAttachmentResourceType(StrEnum):
     vpc = "vpc"
     vpn = "vpn"
     direct_connect_gateway = "direct-connect-gateway"
@@ -3079,7 +3101,7 @@ class TransitGatewayAttachmentResourceType(str):
     tgw_peering = "tgw-peering"
 
 
-class TransitGatewayAttachmentState(str):
+class TransitGatewayAttachmentState(StrEnum):
     initiating = "initiating"
     initiatingRequest = "initiatingRequest"
     pendingAcceptance = "pendingAcceptance"
@@ -3095,14 +3117,14 @@ class TransitGatewayAttachmentState(str):
     failing = "failing"
 
 
-class TransitGatewayConnectPeerState(str):
+class TransitGatewayConnectPeerState(StrEnum):
     pending = "pending"
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
 
 
-class TransitGatewayMulitcastDomainAssociationState(str):
+class TransitGatewayMulitcastDomainAssociationState(StrEnum):
     pendingAcceptance = "pendingAcceptance"
     associating = "associating"
     associated = "associated"
@@ -3112,35 +3134,35 @@ class TransitGatewayMulitcastDomainAssociationState(str):
     failed = "failed"
 
 
-class TransitGatewayMulticastDomainState(str):
+class TransitGatewayMulticastDomainState(StrEnum):
     pending = "pending"
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
 
 
-class TransitGatewayPolicyTableState(str):
+class TransitGatewayPolicyTableState(StrEnum):
     pending = "pending"
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
 
 
-class TransitGatewayPrefixListReferenceState(str):
+class TransitGatewayPrefixListReferenceState(StrEnum):
     pending = "pending"
     available = "available"
     modifying = "modifying"
     deleting = "deleting"
 
 
-class TransitGatewayPropagationState(str):
+class TransitGatewayPropagationState(StrEnum):
     enabling = "enabling"
     enabled = "enabled"
     disabling = "disabling"
     disabled = "disabled"
 
 
-class TransitGatewayRouteState(str):
+class TransitGatewayRouteState(StrEnum):
     pending = "pending"
     active = "active"
     blackhole = "blackhole"
@@ -3148,12 +3170,12 @@ class TransitGatewayRouteState(str):
     deleted = "deleted"
 
 
-class TransitGatewayRouteTableAnnouncementDirection(str):
+class TransitGatewayRouteTableAnnouncementDirection(StrEnum):
     outgoing = "outgoing"
     incoming = "incoming"
 
 
-class TransitGatewayRouteTableAnnouncementState(str):
+class TransitGatewayRouteTableAnnouncementState(StrEnum):
     available = "available"
     pending = "pending"
     failing = "failing"
@@ -3162,19 +3184,19 @@ class TransitGatewayRouteTableAnnouncementState(str):
     deleted = "deleted"
 
 
-class TransitGatewayRouteTableState(str):
+class TransitGatewayRouteTableState(StrEnum):
     pending = "pending"
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
 
 
-class TransitGatewayRouteType(str):
+class TransitGatewayRouteType(StrEnum):
     static = "static"
     propagated = "propagated"
 
 
-class TransitGatewayState(str):
+class TransitGatewayState(StrEnum):
     pending = "pending"
     available = "available"
     modifying = "modifying"
@@ -3182,56 +3204,56 @@ class TransitGatewayState(str):
     deleted = "deleted"
 
 
-class TransportProtocol(str):
+class TransportProtocol(StrEnum):
     tcp = "tcp"
     udp = "udp"
 
 
-class TrustProviderType(str):
+class TrustProviderType(StrEnum):
     user = "user"
     device = "device"
 
 
-class TunnelInsideIpVersion(str):
+class TunnelInsideIpVersion(StrEnum):
     ipv4 = "ipv4"
     ipv6 = "ipv6"
 
 
-class UnlimitedSupportedInstanceFamily(str):
+class UnlimitedSupportedInstanceFamily(StrEnum):
     t2 = "t2"
     t3 = "t3"
     t3a = "t3a"
     t4g = "t4g"
 
 
-class UnsuccessfulInstanceCreditSpecificationErrorCode(str):
+class UnsuccessfulInstanceCreditSpecificationErrorCode(StrEnum):
     InvalidInstanceID_Malformed = "InvalidInstanceID.Malformed"
     InvalidInstanceID_NotFound = "InvalidInstanceID.NotFound"
     IncorrectInstanceState = "IncorrectInstanceState"
     InstanceCreditSpecification_NotSupported = "InstanceCreditSpecification.NotSupported"
 
 
-class UsageClassType(str):
+class UsageClassType(StrEnum):
     spot = "spot"
     on_demand = "on-demand"
     capacity_block = "capacity-block"
 
 
-class UserTrustProviderType(str):
+class UserTrustProviderType(StrEnum):
     iam_identity_center = "iam-identity-center"
     oidc = "oidc"
 
 
-class VerifiedAccessEndpointAttachmentType(str):
+class VerifiedAccessEndpointAttachmentType(StrEnum):
     vpc = "vpc"
 
 
-class VerifiedAccessEndpointProtocol(str):
+class VerifiedAccessEndpointProtocol(StrEnum):
     http = "http"
     https = "https"
 
 
-class VerifiedAccessEndpointStatusCode(str):
+class VerifiedAccessEndpointStatusCode(StrEnum):
     pending = "pending"
     active = "active"
     updating = "updating"
@@ -3239,22 +3261,22 @@ class VerifiedAccessEndpointStatusCode(str):
     deleted = "deleted"
 
 
-class VerifiedAccessEndpointType(str):
+class VerifiedAccessEndpointType(StrEnum):
     load_balancer = "load-balancer"
     network_interface = "network-interface"
 
 
-class VerifiedAccessLogDeliveryStatusCode(str):
+class VerifiedAccessLogDeliveryStatusCode(StrEnum):
     success = "success"
     failed = "failed"
 
 
-class VirtualizationType(str):
+class VirtualizationType(StrEnum):
     hvm = "hvm"
     paravirtual = "paravirtual"
 
 
-class VolumeAttachmentState(str):
+class VolumeAttachmentState(StrEnum):
     attaching = "attaching"
     attached = "attached"
     detaching = "detaching"
@@ -3262,19 +3284,19 @@ class VolumeAttachmentState(str):
     busy = "busy"
 
 
-class VolumeAttributeName(str):
+class VolumeAttributeName(StrEnum):
     autoEnableIO = "autoEnableIO"
     productCodes = "productCodes"
 
 
-class VolumeModificationState(str):
+class VolumeModificationState(StrEnum):
     modifying = "modifying"
     optimizing = "optimizing"
     completed = "completed"
     failed = "failed"
 
 
-class VolumeState(str):
+class VolumeState(StrEnum):
     creating = "creating"
     available = "available"
     in_use = "in-use"
@@ -3283,18 +3305,18 @@ class VolumeState(str):
     error = "error"
 
 
-class VolumeStatusInfoStatus(str):
+class VolumeStatusInfoStatus(StrEnum):
     ok = "ok"
     impaired = "impaired"
     insufficient_data = "insufficient-data"
 
 
-class VolumeStatusName(str):
+class VolumeStatusName(StrEnum):
     io_enabled = "io-enabled"
     io_performance = "io-performance"
 
 
-class VolumeType(str):
+class VolumeType(StrEnum):
     standard = "standard"
     io1 = "io1"
     io2 = "io2"
@@ -3304,13 +3326,13 @@ class VolumeType(str):
     gp3 = "gp3"
 
 
-class VpcAttributeName(str):
+class VpcAttributeName(StrEnum):
     enableDnsSupport = "enableDnsSupport"
     enableDnsHostnames = "enableDnsHostnames"
     enableNetworkAddressUsageMetrics = "enableNetworkAddressUsageMetrics"
 
 
-class VpcCidrBlockStateCode(str):
+class VpcCidrBlockStateCode(StrEnum):
     associating = "associating"
     associated = "associated"
     disassociating = "disassociating"
@@ -3319,13 +3341,13 @@ class VpcCidrBlockStateCode(str):
     failed = "failed"
 
 
-class VpcEndpointType(str):
+class VpcEndpointType(StrEnum):
     Interface = "Interface"
     Gateway = "Gateway"
     GatewayLoadBalancer = "GatewayLoadBalancer"
 
 
-class VpcPeeringConnectionStateReasonCode(str):
+class VpcPeeringConnectionStateReasonCode(StrEnum):
     initiating_request = "initiating-request"
     pending_acceptance = "pending-acceptance"
     active = "active"
@@ -3337,36 +3359,36 @@ class VpcPeeringConnectionStateReasonCode(str):
     deleting = "deleting"
 
 
-class VpcState(str):
+class VpcState(StrEnum):
     pending = "pending"
     available = "available"
 
 
-class VpcTenancy(str):
+class VpcTenancy(StrEnum):
     default = "default"
 
 
-class VpnEcmpSupportValue(str):
+class VpnEcmpSupportValue(StrEnum):
     enable = "enable"
     disable = "disable"
 
 
-class VpnProtocol(str):
+class VpnProtocol(StrEnum):
     openvpn = "openvpn"
 
 
-class VpnState(str):
+class VpnState(StrEnum):
     pending = "pending"
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
 
 
-class VpnStaticRouteSource(str):
+class VpnStaticRouteSource(StrEnum):
     Static = "Static"
 
 
-class WeekDay(str):
+class WeekDay(StrEnum):
     sunday = "sunday"
     monday = "monday"
     tuesday = "tuesday"
@@ -3376,7 +3398,7 @@ class WeekDay(str):
     saturday = "saturday"
 
 
-class scope(str):
+class scope(StrEnum):
     Availability_Zone = "Availability Zone"
     Region = "Region"
 
@@ -7724,6 +7746,7 @@ class CreatePlacementGroupResult(TypedDict, total=False):
 class CreatePublicIpv4PoolRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
+    NetworkBorderGroup: Optional[String]
 
 
 class CreatePublicIpv4PoolResult(TypedDict, total=False):
@@ -9549,6 +9572,7 @@ class DeletePlacementGroupRequest(ServiceRequest):
 class DeletePublicIpv4PoolRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     PoolId: Ipv4PoolEc2Id
+    NetworkBorderGroup: Optional[String]
 
 
 class DeletePublicIpv4PoolResult(TypedDict, total=False):
@@ -15451,7 +15475,9 @@ class IpamDiscoveredResourceCidr(TypedDict, total=False):
     ResourceTags: Optional[IpamResourceTagList]
     IpUsage: Optional[BoxedDouble]
     VpcId: Optional[String]
+    NetworkInterfaceAttachmentStatus: Optional[IpamNetworkInterfaceAttachmentStatus]
     SampleTime: Optional[MillisecondDateTime]
+    AvailabilityZoneId: Optional[String]
 
 
 IpamDiscoveredResourceCidrSet = List[IpamDiscoveredResourceCidr]
@@ -15524,6 +15550,7 @@ class IpamResourceCidr(TypedDict, total=False):
     ManagementState: Optional[IpamManagementState]
     OverlapStatus: Optional[IpamOverlapStatus]
     VpcId: Optional[String]
+    AvailabilityZoneId: Optional[String]
 
 
 IpamResourceCidrSet = List[IpamResourceCidr]
@@ -17457,6 +17484,7 @@ class ProvisionPublicIpv4PoolCidrRequest(ServiceRequest):
     IpamPoolId: IpamPoolId
     PoolId: Ipv4PoolEc2Id
     NetmaskLength: Integer
+    NetworkBorderGroup: Optional[String]
 
 
 class ProvisionPublicIpv4PoolCidrResult(TypedDict, total=False):
@@ -19621,6 +19649,7 @@ class Ec2Api:
         context: RequestContext,
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        network_border_group: String = None,
         **kwargs,
     ) -> CreatePublicIpv4PoolResult:
         raise NotImplementedError
@@ -20585,7 +20614,12 @@ class Ec2Api:
 
     @handler("DeletePublicIpv4Pool")
     def delete_public_ipv4_pool(
-        self, context: RequestContext, pool_id: Ipv4PoolEc2Id, dry_run: Boolean = None, **kwargs
+        self,
+        context: RequestContext,
+        pool_id: Ipv4PoolEc2Id,
+        dry_run: Boolean = None,
+        network_border_group: String = None,
+        **kwargs,
     ) -> DeletePublicIpv4PoolResult:
         raise NotImplementedError
 
@@ -25140,6 +25174,7 @@ class Ec2Api:
         pool_id: Ipv4PoolEc2Id,
         netmask_length: Integer,
         dry_run: Boolean = None,
+        network_border_group: String = None,
         **kwargs,
     ) -> ProvisionPublicIpv4PoolCidrResult:
         raise NotImplementedError

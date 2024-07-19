@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from localstack.aws.api.events import (
     ArchiveName,
@@ -36,6 +36,10 @@ class EventJSONEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return event_time_to_time_string(obj)
         return super().default(obj)
+
+
+def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str:
+    return json.dumps(obj, cls=EventJSONEncoder, separators=separators)
 
 
 def extract_event_bus_name(

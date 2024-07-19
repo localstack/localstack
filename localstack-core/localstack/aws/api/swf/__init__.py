@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -44,30 +45,30 @@ WorkflowRunId = str
 WorkflowRunIdOptional = str
 
 
-class ActivityTaskTimeoutType(str):
+class ActivityTaskTimeoutType(StrEnum):
     START_TO_CLOSE = "START_TO_CLOSE"
     SCHEDULE_TO_START = "SCHEDULE_TO_START"
     SCHEDULE_TO_CLOSE = "SCHEDULE_TO_CLOSE"
     HEARTBEAT = "HEARTBEAT"
 
 
-class CancelTimerFailedCause(str):
+class CancelTimerFailedCause(StrEnum):
     TIMER_ID_UNKNOWN = "TIMER_ID_UNKNOWN"
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class CancelWorkflowExecutionFailedCause(str):
+class CancelWorkflowExecutionFailedCause(StrEnum):
     UNHANDLED_DECISION = "UNHANDLED_DECISION"
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class ChildPolicy(str):
+class ChildPolicy(StrEnum):
     TERMINATE = "TERMINATE"
     REQUEST_CANCEL = "REQUEST_CANCEL"
     ABANDON = "ABANDON"
 
 
-class CloseStatus(str):
+class CloseStatus(StrEnum):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     CANCELED = "CANCELED"
@@ -76,12 +77,12 @@ class CloseStatus(str):
     TIMED_OUT = "TIMED_OUT"
 
 
-class CompleteWorkflowExecutionFailedCause(str):
+class CompleteWorkflowExecutionFailedCause(StrEnum):
     UNHANDLED_DECISION = "UNHANDLED_DECISION"
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class ContinueAsNewWorkflowExecutionFailedCause(str):
+class ContinueAsNewWorkflowExecutionFailedCause(StrEnum):
     UNHANDLED_DECISION = "UNHANDLED_DECISION"
     WORKFLOW_TYPE_DEPRECATED = "WORKFLOW_TYPE_DEPRECATED"
     WORKFLOW_TYPE_DOES_NOT_EXIST = "WORKFLOW_TYPE_DOES_NOT_EXIST"
@@ -97,12 +98,12 @@ class ContinueAsNewWorkflowExecutionFailedCause(str):
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class DecisionTaskTimeoutType(str):
+class DecisionTaskTimeoutType(StrEnum):
     START_TO_CLOSE = "START_TO_CLOSE"
     SCHEDULE_TO_START = "SCHEDULE_TO_START"
 
 
-class DecisionType(str):
+class DecisionType(StrEnum):
     ScheduleActivityTask = "ScheduleActivityTask"
     RequestCancelActivityTask = "RequestCancelActivityTask"
     CompleteWorkflowExecution = "CompleteWorkflowExecution"
@@ -118,7 +119,7 @@ class DecisionType(str):
     ScheduleLambdaFunction = "ScheduleLambdaFunction"
 
 
-class EventType(str):
+class EventType(StrEnum):
     WorkflowExecutionStarted = "WorkflowExecutionStarted"
     WorkflowExecutionCancelRequested = "WorkflowExecutionCancelRequested"
     WorkflowExecutionCompleted = "WorkflowExecutionCompleted"
@@ -177,35 +178,35 @@ class EventType(str):
     StartLambdaFunctionFailed = "StartLambdaFunctionFailed"
 
 
-class ExecutionStatus(str):
+class ExecutionStatus(StrEnum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
 
 
-class FailWorkflowExecutionFailedCause(str):
+class FailWorkflowExecutionFailedCause(StrEnum):
     UNHANDLED_DECISION = "UNHANDLED_DECISION"
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class LambdaFunctionTimeoutType(str):
+class LambdaFunctionTimeoutType(StrEnum):
     START_TO_CLOSE = "START_TO_CLOSE"
 
 
-class RecordMarkerFailedCause(str):
+class RecordMarkerFailedCause(StrEnum):
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class RegistrationStatus(str):
+class RegistrationStatus(StrEnum):
     REGISTERED = "REGISTERED"
     DEPRECATED = "DEPRECATED"
 
 
-class RequestCancelActivityTaskFailedCause(str):
+class RequestCancelActivityTaskFailedCause(StrEnum):
     ACTIVITY_ID_UNKNOWN = "ACTIVITY_ID_UNKNOWN"
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class RequestCancelExternalWorkflowExecutionFailedCause(str):
+class RequestCancelExternalWorkflowExecutionFailedCause(StrEnum):
     UNKNOWN_EXTERNAL_WORKFLOW_EXECUTION = "UNKNOWN_EXTERNAL_WORKFLOW_EXECUTION"
     REQUEST_CANCEL_EXTERNAL_WORKFLOW_EXECUTION_RATE_EXCEEDED = (
         "REQUEST_CANCEL_EXTERNAL_WORKFLOW_EXECUTION_RATE_EXCEEDED"
@@ -213,7 +214,7 @@ class RequestCancelExternalWorkflowExecutionFailedCause(str):
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class ScheduleActivityTaskFailedCause(str):
+class ScheduleActivityTaskFailedCause(StrEnum):
     ACTIVITY_TYPE_DEPRECATED = "ACTIVITY_TYPE_DEPRECATED"
     ACTIVITY_TYPE_DOES_NOT_EXIST = "ACTIVITY_TYPE_DOES_NOT_EXIST"
     ACTIVITY_ID_ALREADY_IN_USE = "ACTIVITY_ID_ALREADY_IN_USE"
@@ -227,14 +228,14 @@ class ScheduleActivityTaskFailedCause(str):
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class ScheduleLambdaFunctionFailedCause(str):
+class ScheduleLambdaFunctionFailedCause(StrEnum):
     ID_ALREADY_IN_USE = "ID_ALREADY_IN_USE"
     OPEN_LAMBDA_FUNCTIONS_LIMIT_EXCEEDED = "OPEN_LAMBDA_FUNCTIONS_LIMIT_EXCEEDED"
     LAMBDA_FUNCTION_CREATION_RATE_EXCEEDED = "LAMBDA_FUNCTION_CREATION_RATE_EXCEEDED"
     LAMBDA_SERVICE_NOT_AVAILABLE_IN_REGION = "LAMBDA_SERVICE_NOT_AVAILABLE_IN_REGION"
 
 
-class SignalExternalWorkflowExecutionFailedCause(str):
+class SignalExternalWorkflowExecutionFailedCause(StrEnum):
     UNKNOWN_EXTERNAL_WORKFLOW_EXECUTION = "UNKNOWN_EXTERNAL_WORKFLOW_EXECUTION"
     SIGNAL_EXTERNAL_WORKFLOW_EXECUTION_RATE_EXCEEDED = (
         "SIGNAL_EXTERNAL_WORKFLOW_EXECUTION_RATE_EXCEEDED"
@@ -242,7 +243,7 @@ class SignalExternalWorkflowExecutionFailedCause(str):
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class StartChildWorkflowExecutionFailedCause(str):
+class StartChildWorkflowExecutionFailedCause(StrEnum):
     WORKFLOW_TYPE_DOES_NOT_EXIST = "WORKFLOW_TYPE_DOES_NOT_EXIST"
     WORKFLOW_TYPE_DEPRECATED = "WORKFLOW_TYPE_DEPRECATED"
     OPEN_CHILDREN_LIMIT_EXCEEDED = "OPEN_CHILDREN_LIMIT_EXCEEDED"
@@ -258,28 +259,28 @@ class StartChildWorkflowExecutionFailedCause(str):
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class StartLambdaFunctionFailedCause(str):
+class StartLambdaFunctionFailedCause(StrEnum):
     ASSUME_ROLE_FAILED = "ASSUME_ROLE_FAILED"
 
 
-class StartTimerFailedCause(str):
+class StartTimerFailedCause(StrEnum):
     TIMER_ID_ALREADY_IN_USE = "TIMER_ID_ALREADY_IN_USE"
     OPEN_TIMERS_LIMIT_EXCEEDED = "OPEN_TIMERS_LIMIT_EXCEEDED"
     TIMER_CREATION_RATE_EXCEEDED = "TIMER_CREATION_RATE_EXCEEDED"
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
 
-class WorkflowExecutionCancelRequestedCause(str):
+class WorkflowExecutionCancelRequestedCause(StrEnum):
     CHILD_POLICY_APPLIED = "CHILD_POLICY_APPLIED"
 
 
-class WorkflowExecutionTerminatedCause(str):
+class WorkflowExecutionTerminatedCause(StrEnum):
     CHILD_POLICY_APPLIED = "CHILD_POLICY_APPLIED"
     EVENT_LIMIT_EXCEEDED = "EVENT_LIMIT_EXCEEDED"
     OPERATOR_INITIATED = "OPERATOR_INITIATED"
 
 
-class WorkflowExecutionTimeoutType(str):
+class WorkflowExecutionTimeoutType(StrEnum):
     START_TO_CLOSE = "START_TO_CLOSE"
 
 

@@ -2,18 +2,58 @@
 
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Iterable, Optional
+from urllib.parse import urlsplit
 
+from botocore import awsrequest
+from botocore.endpoint import Endpoint
 from botocore.model import OperationModel
 from botocore.parsers import ResponseParser, ResponseParserFactory
-from werkzeug import Response
+from werkzeug.datastructures import Headers
 
-from localstack.aws.api import CommonServiceException, ServiceException, ServiceResponse
+from localstack import config
+from localstack.http import Request, Response
 from localstack.runtime import hooks
-from localstack.utils.patch import patch
+from localstack.utils.patch import Patch, patch
+from localstack.utils.strings import to_str
+
+from .api import CommonServiceException, RequestContext, ServiceException, ServiceResponse
+from .connect import get_service_endpoint
+from .gateway import Gateway
 
 LOG = logging.getLogger(__name__)
+
+
+def create_http_request(aws_request: awsrequest.AWSPreparedRequest) -> Request:
+    """
+    Create an ASF HTTP Request from a botocore AWSPreparedRequest.
+
+    :param aws_request: the botocore prepared request
+    :return: a new Request
+    """
+    split_url = urlsplit(aws_request.url)
+    host = split_url.netloc.split(":")
+    if len(host) == 1:
+        server = (to_str(host[0]), None)
+    elif len(host) == 2:
+        server = (to_str(host[0]), int(host[1]))
+    else:
+        raise ValueError
+
+    # prepare the RequestContext
+    headers = Headers()
+    for k, v in aws_request.headers.items():
+        headers[k] = to_str(v)
+
+    return Request(
+        method=aws_request.method,
+        path=split_url.path,
+        query_string=split_url.query,
+        headers=headers,
+        body=aws_request.body,
+        server=server,
+    )
 
 
 class _ResponseStream(io.RawIOBase):
@@ -29,6 +69,10 @@ class _ResponseStream(io.RawIOBase):
         self.iterator = response.iter_encoded()
         self._buf = None
 
+    def stream(self) -> Iterable[bytes]:
+        # adds compatibility for botocore's client-side AWSResponse.raw attribute.
+        return self.iterator
+
     def readable(self):
         return True
 
@@ -42,6 +86,14 @@ class _ResponseStream(io.RawIOBase):
             return len(output)
         except StopIteration:
             return 0  # indicate EOF
+
+    def read(self, amt=None) -> bytes | None:
+        # see https://github.com/python/cpython/blob/main/Lib/_pyio.py
+        # adds compatibility for botocore's client-side AWSResponse.raw attribute.
+        # it seems the default implementation of RawIOBase.read to not handle well some cases
+        if amt is None:
+            amt = -1
+        return super().read(amt)
 
     def close(self) -> None:
         return self.response.close()
@@ -121,14 +173,112 @@ def _patch_botocore_json_parser():
         try:
             return fn(self, body_contents)
         except UnicodeDecodeError as json_exception:
-            import cbor2
+            # cbor2: explicitly load from private _decoder module to avoid using the (non-patched) C-version
+            from cbor2._decoder import loads
 
             try:
                 LOG.debug("botocore failed decoding JSON. Trying to decode as CBOR.")
-                return cbor2.loads(body_contents)
+                return loads(body_contents)
             except Exception as cbor_exception:
                 LOG.debug("CBOR fallback decoding failed.")
                 raise cbor_exception from json_exception
+
+
+@hooks.on_infra_start()
+def _patch_cbor2():
+    """
+    Patch fixing the AWS CBOR en-/decoding of datetime fields.
+
+    Unfortunately, Kinesis (the only known service using CBOR) does not use the number of seconds (with floating-point
+    milliseconds - according to RFC8949), but uses milliseconds.
+    Python cbor2 is highly optimized by using a C-implementation by default, which cannot be patched.
+    Instead of `from cbor2 import loads`, directly import the python-native loads implementation to avoid loading the
+    unpatched C implementation:
+    ```
+    from cbor2._decoder import loads
+    from cbor2._decoder import dumps
+    ```
+
+    See https://github.com/aws/aws-sdk-java-v2/issues/4661
+    """
+    from cbor2._decoder import CBORDecodeValueError, semantic_decoders
+    from cbor2._encoder import CBOREncodeValueError, default_encoders
+    from cbor2._types import CBORTag
+
+    def _patched_decode_epoch_datetime(self) -> datetime:
+        """
+        Replaces `cbor2._decoder.CBORDecoder.decode_epoch_datetime` as default datetime semantic_decoder.
+        """
+        # Semantic tag 1
+        value = self._decode()
+
+        try:
+            # The next line is the only change in this patch compared to the original function.
+            # AWS breaks the CBOR spec by using the millis instead of seconds (with floating point support for millis)
+            # https://github.com/aws/aws-sdk-java-v2/issues/4661
+            value = value / 1000
+            tmp = datetime.fromtimestamp(value, timezone.utc)
+        except (OverflowError, OSError, ValueError) as exc:
+            raise CBORDecodeValueError("error decoding datetime from epoch") from exc
+
+        return self.set_shareable(tmp)
+
+    def _patched_encode_datetime(self, value: datetime) -> None:
+        """
+        Replaces `cbor2._encoder.CBOREncoder.encode_datetime` as default datetime default_encoder.
+        """
+        if not value.tzinfo:
+            if self._timezone:
+                value = value.replace(tzinfo=self._timezone)
+            else:
+                raise CBOREncodeValueError(
+                    f"naive datetime {value!r} encountered and no default timezone " "has been set"
+                )
+
+        if self.datetime_as_timestamp:
+            from calendar import timegm
+
+            if not value.microsecond:
+                timestamp: float = timegm(value.utctimetuple())
+            else:
+                timestamp = timegm(value.utctimetuple()) + value.microsecond / 1000000
+            # The next line is the only change in this patch compared to the original function.
+            # AWS breaks the CBOR spec by using the millis instead of seconds (with floating point support for millis)
+            # https://github.com/aws/aws-sdk-java-v2/issues/4661
+            timestamp = timestamp * 1000
+            self.encode_semantic(CBORTag(1, timestamp))
+        else:
+            datestring = value.isoformat().replace("+00:00", "Z")
+            self.encode_semantic(CBORTag(0, datestring))
+
+    # overwrite the default epoch datetime en-/decoder with patched versions
+    default_encoders[datetime] = _patched_encode_datetime
+    semantic_decoders[1] = _patched_decode_epoch_datetime
+
+
+def _create_and_enrich_aws_request(
+    fn, self: Endpoint, params: dict, operation_model: OperationModel = None
+):
+    """
+    Patch that adds the botocore operation model and request parameters to a newly created AWSPreparedRequest,
+    which normally only holds low-level HTTP request information.
+    """
+    request: awsrequest.AWSPreparedRequest = fn(self, params, operation_model)
+
+    request.params = params
+    request.operation_model = operation_model
+
+    return request
+
+
+botocore_in_memory_endpoint_patch = Patch.function(
+    Endpoint.create_request, _create_and_enrich_aws_request
+)
+
+
+@hooks.on_infra_start(should_load=config.IN_MEMORY_CLIENT)
+def _patch_botocore_endpoint_in_memory():
+    botocore_in_memory_endpoint_patch.apply()
 
 
 def parse_response(
@@ -221,3 +371,59 @@ def raise_service_exception(response: Response, parsed_response: Dict) -> None:
     """
     if service_exception := parse_service_exception(response, parsed_response):
         raise service_exception
+
+
+class GatewayShortCircuit:
+    gateway: Gateway
+
+    def __init__(self, gateway: Gateway):
+        self.gateway = gateway
+        self._internal_url = get_service_endpoint()
+
+    def __call__(
+        self, event_name: str, request: awsrequest.AWSPreparedRequest, **kwargs
+    ) -> awsrequest.AWSResponse | None:
+        # TODO: we sometimes overrides the endpoint_url to direct it to DynamoDBLocal directly
+        # if the default endpoint_url is not in the request, just skips the in-memory forwarding
+        if self._internal_url not in request.url:
+            return
+
+        # extract extra data from enriched AWSPreparedRequest
+        params = request.params
+        operation: OperationModel = request.operation_model
+
+        # create request
+        context = RequestContext()
+        context.request = create_http_request(request)
+
+        # TODO: just a hacky thing to unblock the service model being set to `sqs-query` blocking for now
+        # this is using the same services as `localstack.aws.protocol.service_router.resolve_conflicts`, maybe
+        # consolidate. `docdb` and `neptune` uses the RDS API and service.
+        if operation.service_model.service_name not in {
+            "sqs-query",
+            "docdb",
+            "neptune",
+            "timestream-write",
+        }:
+            context.service = operation.service_model
+
+        context.operation = operation
+        context.service_request = params["body"]
+
+        # perform request
+        response = Response()
+        self.gateway.handle(context, response)
+
+        # transform Werkzeug response to client-side botocore response
+        aws_response = awsrequest.AWSResponse(
+            url=context.request.url,
+            status_code=response.status_code,
+            headers=response.headers,
+            raw=_ResponseStream(response),
+        )
+
+        return aws_response
+
+    @staticmethod
+    def modify_client(client, gateway):
+        client.meta.events.register_first("before-send.*.*", GatewayShortCircuit(gateway))

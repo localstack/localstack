@@ -1,5 +1,6 @@
 import datetime
 import ipaddress
+import json
 import logging
 import os
 import re
@@ -21,6 +22,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerException,
     DockerContainerStatus,
     DockerNotAvailable,
+    LogConfig,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
@@ -41,6 +43,7 @@ from localstack.utils.docker_utils import (
 )
 from localstack.utils.net import Port, PortNotAvailableException, get_free_tcp_port
 from localstack.utils.strings import to_bytes
+from localstack.utils.sync import retry
 from localstack.utils.threads import FuncThread
 from tests.integration.docker_utils.conftest import is_podman_test, skip_for_podman
 
@@ -504,12 +507,12 @@ class TestDockerClient:
         condition=in_docker(), reason="cannot test volume mounts from host when in docker"
     )
     def test_create_with_volume(self, tmpdir, docker_client: ContainerClient, create_container):
-        mount_volumes = [(tmpdir.realpath(), "/tmp/mypath")]
+        volumes = [(tmpdir.realpath(), "/tmp/mypath")]
 
         c = create_container(
             "alpine",
             command=["sh", "-c", "echo 'foobar' > /tmp/mypath/foo.log"],
-            mount_volumes=mount_volumes,
+            volumes=volumes,
         )
         docker_client.start_container(c.container_id)
         assert tmpdir.join("foo.log").isfile(), "foo.log was not created in mounted dir"
@@ -521,7 +524,7 @@ class TestDockerClient:
     def test_inspect_container_volumes(
         self, tmpdir, docker_client: ContainerClient, create_container
     ):
-        mount_volumes = [
+        volumes = [
             (tmpdir.realpath() / "foo", "/tmp/mypath/foo"),
             ("some_named_volume", "/tmp/mypath/volume"),
         ]
@@ -529,7 +532,7 @@ class TestDockerClient:
         c = create_container(
             "alpine",
             command=["sh", "-c", "while true; do sleep 1; done"],
-            mount_volumes=mount_volumes,
+            volumes=volumes,
         )
         docker_client.start_container(c.container_id)
 
@@ -1740,6 +1743,54 @@ class TestDockerNetworking:
         init_thread.join()
         # verify that the client is available
         assert sdk_client.docker_client is not None
+
+
+class TestDockerLogging:
+    def test_docker_logging_none_disables_logs(
+        self, docker_client: ContainerClient, create_container
+    ):
+        container = create_container(
+            "alpine", command=["sh", "-c", "echo test"], log_config=LogConfig("none")
+        )
+        docker_client.start_container(container.container_id, attach=True)
+        with pytest.raises(ContainerException):
+            docker_client.get_container_logs(container_name_or_id=container.container_id)
+
+    def test_docker_logging_fluentbit(self, docker_client: ContainerClient, create_container):
+        ports = PortMappings(bind_host="0.0.0.0")
+        ports.add(24224, 24224)
+        fluentd_container = create_container(
+            "fluent/fluent-bit",
+            command=["-i", "forward", "-o", "stdout", "-p", "format=json_lines", "-f", "1", "-q"],
+            ports=ports,
+        )
+        docker_client.start_container(fluentd_container.container_id)
+
+        container = create_container(
+            "alpine",
+            command=["sh", "-c", "echo test"],
+            log_config=LogConfig(
+                "fluentd", config={"fluentd-address": "127.0.0.1:24224", "fluentd-async": "true"}
+            ),
+        )
+        docker_client.start_container(container.container_id, attach=True)
+
+        def _get_logs():
+            logs = docker_client.get_container_logs(
+                container_name_or_id=fluentd_container.container_id
+            )
+            message = None
+            for log in logs.splitlines():
+                if log.strip():
+                    message = json.loads(log.strip())
+            assert message
+            return message
+
+        log = retry(_get_logs, retries=10, sleep=1)
+        assert log["log"] == "test"
+        assert log["source"] == "stdout"
+        assert log["container_id"] == container.container_id
+        assert log["container_name"] == f"/{container.container_name}"
 
 
 class TestDockerPermissions:

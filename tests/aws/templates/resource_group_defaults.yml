@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: testgroup
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+
+Outputs:
+  ResourceGroup:
+    Value: !Ref ApplicationResourceGroup

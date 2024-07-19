@@ -546,7 +546,7 @@ class TestSecretsManager:
         function_arn = create_lambda_function(
             handler_file=TEST_LAMBDA_ROTATE_SECRET,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )["CreateFunctionResponse"]["FunctionArn"]
 
         aws_client.lambda_.add_permission(

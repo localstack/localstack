@@ -38,7 +38,12 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
-from localstack.utils.aws.arns import events_archive_arn, events_replay_arn
+from localstack.utils.aws.arns import (
+    event_bus_arn,
+    events_archive_arn,
+    events_replay_arn,
+    events_rule_arn,
+)
 from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
@@ -121,13 +126,8 @@ class Rule:
     targets: TargetDict = field(default_factory=dict)
     managed_by: Optional[ManagedBy] = None  # can only be set by AWS services
     created_by: CreatedBy = field(init=False)
-    arn: Arn = field(init=False)
 
     def __post_init__(self):
-        if self.event_bus_name == "default":
-            self.arn = f"arn:aws:events:{self.region}:{self.account_id}:rule/{self.name}"
-        else:
-            self.arn = f"arn:aws:events:{self.region}:{self.account_id}:rule/{self.event_bus_name}/{self.name}"
         self.created_by = self.account_id
         if self.tags is None:
             self.tags = []
@@ -135,6 +135,10 @@ class Rule:
             self.targets = {}
         if self.state is None:
             self.state = RuleState.ENABLED
+
+    @property
+    def arn(self) -> Arn:
+        return events_rule_arn(self.name, self.account_id, self.region, self.event_bus_name)
 
 
 RuleDict = dict[RuleName, Rule]
@@ -199,18 +203,20 @@ class EventBus:
     tags: TagList = field(default_factory=list)
     policy: Optional[ResourcePolicy] = None
     rules: RuleDict = field(default_factory=dict)
-    arn: Arn = field(init=False)
     creation_time: Timestamp = field(init=False)
     last_modified_time: Timestamp = field(init=False)
 
     def __post_init__(self):
-        self.arn = f"arn:aws:events:{self.region}:{self.account_id}:event-bus/{self.name}"
         self.creation_time = datetime.now(timezone.utc)
         self.last_modified_time = datetime.now(timezone.utc)
         if self.rules is None:
             self.rules = {}
         if self.tags is None:
             self.tags = []
+
+    @property
+    def arn(self) -> Arn:
+        return event_bus_arn(self.name, self.account_id, self.region)
 
 
 EventBusDict = dict[EventBusName, EventBus]

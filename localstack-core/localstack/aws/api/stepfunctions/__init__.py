@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -53,18 +54,18 @@ includedDetails = bool
 truncated = bool
 
 
-class ExecutionRedriveFilter(str):
+class ExecutionRedriveFilter(StrEnum):
     REDRIVEN = "REDRIVEN"
     NOT_REDRIVEN = "NOT_REDRIVEN"
 
 
-class ExecutionRedriveStatus(str):
+class ExecutionRedriveStatus(StrEnum):
     REDRIVABLE = "REDRIVABLE"
     NOT_REDRIVABLE = "NOT_REDRIVABLE"
     REDRIVABLE_BY_MAP_RUN = "REDRIVABLE_BY_MAP_RUN"
 
 
-class ExecutionStatus(str):
+class ExecutionStatus(StrEnum):
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
@@ -73,7 +74,7 @@ class ExecutionStatus(str):
     PENDING_REDRIVE = "PENDING_REDRIVE"
 
 
-class HistoryEventType(str):
+class HistoryEventType(StrEnum):
     ActivityFailed = "ActivityFailed"
     ActivityScheduled = "ActivityScheduled"
     ActivityScheduleFailed = "ActivityScheduleFailed"
@@ -137,59 +138,59 @@ class HistoryEventType(str):
     MapRunRedriven = "MapRunRedriven"
 
 
-class InspectionLevel(str):
+class InspectionLevel(StrEnum):
     INFO = "INFO"
     DEBUG = "DEBUG"
     TRACE = "TRACE"
 
 
-class LogLevel(str):
+class LogLevel(StrEnum):
     ALL = "ALL"
     ERROR = "ERROR"
     FATAL = "FATAL"
     OFF = "OFF"
 
 
-class MapRunStatus(str):
+class MapRunStatus(StrEnum):
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     ABORTED = "ABORTED"
 
 
-class StateMachineStatus(str):
+class StateMachineStatus(StrEnum):
     ACTIVE = "ACTIVE"
     DELETING = "DELETING"
 
 
-class StateMachineType(str):
+class StateMachineType(StrEnum):
     STANDARD = "STANDARD"
     EXPRESS = "EXPRESS"
 
 
-class SyncExecutionStatus(str):
+class SyncExecutionStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     TIMED_OUT = "TIMED_OUT"
 
 
-class TestExecutionStatus(str):
+class TestExecutionStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     RETRIABLE = "RETRIABLE"
     CAUGHT_ERROR = "CAUGHT_ERROR"
 
 
-class ValidateStateMachineDefinitionResultCode(str):
+class ValidateStateMachineDefinitionResultCode(StrEnum):
     OK = "OK"
     FAIL = "FAIL"
 
 
-class ValidateStateMachineDefinitionSeverity(str):
+class ValidateStateMachineDefinitionSeverity(StrEnum):
     ERROR = "ERROR"
 
 
-class ValidationExceptionReason(str):
+class ValidationExceptionReason(StrEnum):
     API_DOES_NOT_SUPPORT_LABELED_ARNS = "API_DOES_NOT_SUPPORT_LABELED_ARNS"
     MISSING_REQUIRED_PARAMETER = "MISSING_REQUIRED_PARAMETER"
     CANNOT_UPDATE_COMPLETED_MAP_RUN = "CANNOT_UPDATE_COMPLETED_MAP_RUN"

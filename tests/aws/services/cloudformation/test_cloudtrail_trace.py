@@ -8,7 +8,7 @@ from localstack.testing.pytest import markers
 
 
 @pytest.mark.skipif(not is_aws_cloud(), reason="Test only works on AWS")
-@markers.aws.unknown
+@markers.aws.validated
 def test_cloudtrail_trace_example(
     cfn_store_events_role_arn, aws_client: ServiceLevelClientFactory, deploy_cfn_template
 ):

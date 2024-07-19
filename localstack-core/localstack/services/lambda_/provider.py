@@ -1,9 +1,11 @@
 import base64
 import dataclasses
 import datetime
+import itertools
 import json
 import logging
 import os
+import re
 import threading
 import time
 from typing import IO, Optional, Tuple
@@ -187,10 +189,13 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
+from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
+    DEPRECATED_RUNTIMES_UPGRADES,
+    RUNTIMES_AGGREGATED,
     SNAP_START_SUPPORTED_RUNTIMES,
     VALID_RUNTIMES,
 )
@@ -212,6 +217,11 @@ LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
+
+TAG_KEY_CUSTOM_URL = "_custom_id_"
+# Requirements (from RFC3986 & co): not longer than 63, first char must be
+# alpha, then alphanumeric or hyphen, except cannot start or end with hyphen
+TAG_KEY_CUSTOM_URL_VALIDATOR = re.compile(r"^[A-Za-z]([A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$")
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
@@ -763,11 +773,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
-        if package_type == PackageType.Zip and runtime not in ALL_RUNTIMES:
-            raise InvalidParameterValueException(
-                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
-                Type="User",
-            )
+        self._validate_runtime(package_type, runtime)
+
         request_function_name = request["FunctionName"]
         # Validate FunctionName:
         # a) Function name: just function name (max 64 chars)
@@ -971,6 +978,36 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             version, return_qualified_arn=False, return_update_status=False
         )
 
+    def _validate_runtime(self, package_type, runtime):
+        runtimes = ALL_RUNTIMES
+        if config.LAMBDA_RUNTIME_VALIDATION:
+            runtimes = list(itertools.chain(RUNTIMES_AGGREGATED.values()))
+
+        if package_type == PackageType.Zip and runtime not in runtimes:
+            # deprecated runtimes have different error
+            if runtime in DEPRECATED_RUNTIMES:
+                HINT_LOG.info(
+                    "Set env variable LAMBDA_RUNTIME_VALIDATION to 0"
+                    " in order to allow usage of deprecated runtimes"
+                )
+                self._check_for_recomended_migration_target(runtime)
+
+            raise InvalidParameterValueException(
+                f"Value {runtime} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
+                Type="User",
+            )
+
+    def _check_for_recomended_migration_target(self, deprecated_runtime):
+        # AWS offers recommended runtime for migration for "newly" deprecated runtimes
+        # in order to preserve parity with error messages we need the code bellow
+        latest_runtime = DEPRECATED_RUNTIMES_UPGRADES.get(deprecated_runtime)
+
+        if latest_runtime is not None:
+            raise InvalidParameterValueException(
+                f"The runtime parameter of {deprecated_runtime} is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime ({latest_runtime}) while creating or updating functions.",
+                Type="User",
+            )
+
     @handler(operation="UpdateFunctionConfiguration", expand=False)
     def update_function_configuration(
         self, context: RequestContext, request: UpdateFunctionConfigurationRequest
@@ -1037,6 +1074,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if "Runtime" in request:
             runtime = request["Runtime"]
+
             if runtime not in ALL_RUNTIMES:
                 raise InvalidParameterValueException(
                     f"Value {runtime} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
@@ -1276,7 +1314,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # delete a version of the function
             version = function.versions.pop(qualifier, None)
             if version:
-                self.lambda_service.stop_version(version.qualified_arn())
+                self.lambda_service.stop_version(version.id.qualified_arn())
                 destroy_code_if_not_used(code=version.config.code, function=function)
         else:
             # delete the whole function
@@ -1451,7 +1489,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 lambda_client = connect_to().lambda_
                 lambda_client.create_function(
                     FunctionName="localstack-internal-awssdk",
-                    Runtime=Runtime.nodejs16_x,
+                    Runtime=Runtime.nodejs20_x,
                     Handler="index.handler",
                     Code={"ZipFile": code},
                     Role="arn:aws:iam::{account_id}:role/lambda-test-role".format(
@@ -2069,8 +2107,46 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             else api_utils.unqualified_lambda_arn(function_name, account_id, region)
         )
 
-        # create function URL config
-        url_id = api_utils.generate_random_url_id()
+        custom_id: str | None = None
+        # Note: currently this only works with $LATEST. However, it would
+        # be nice if we could specify a custom URL for any alias being
+        # passed via the qualifier parameter. Once a strategy for that has
+        # been decided on, it can go here.
+        if (
+            fn.tags is not None
+            and TAG_KEY_CUSTOM_URL in fn.tags
+            and normalized_qualifier == "$LATEST"
+        ):
+            # Note: I really wanted to add verification here that the
+            # url_id is unique, so we could surface that to the user ASAP.
+            # However, it seems like that information isn't available yet,
+            # since (as far as I can tell) we call
+            # self.router.register_routes() once, in a single shot, for all
+            # of the routes -- and we need to verify that it's unique not
+            # just for this particular lambda function, but for the entire
+            # lambda provider. Therefore... that idea proved non-trivial!
+            custom_id_tag_value = fn.tags[TAG_KEY_CUSTOM_URL]
+            if TAG_KEY_CUSTOM_URL_VALIDATOR.match(custom_id_tag_value):
+                custom_id = custom_id_tag_value
+
+            else:
+                # Note: we're logging here instead of raising to prioritize
+                # strict parity with AWS over the localstack-only custom_id
+                LOG.warning(
+                    "Invalid custom ID tag value for lambda URL (%s=%s). "
+                    + "Replaced with default (random id)",
+                    TAG_KEY_CUSTOM_URL,
+                    custom_id_tag_value,
+                )
+
+        # The url_id is the subdomain used for the URL we're creating. This
+        # is either created randomly (as in AWS), or can be passed as a tag
+        # to the lambda itself (localstack-only).
+        url_id: str
+        if custom_id is None:
+            url_id = api_utils.generate_random_url_id()
+        else:
+            url_id = custom_id
 
         host_definition = localstack_host(custom_port=config.GATEWAY_LISTEN[0].port)
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(

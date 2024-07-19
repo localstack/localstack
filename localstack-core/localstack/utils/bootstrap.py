@@ -360,9 +360,9 @@ def should_eager_load_api(api: str) -> bool:
 
 
 def start_infra_locally():
-    from localstack.services import infra
+    from localstack.runtime.main import main
 
-    return infra.start_infra()
+    return main()
 
 
 def validate_localstack_config(name: str):

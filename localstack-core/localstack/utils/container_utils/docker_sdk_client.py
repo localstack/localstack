@@ -15,6 +15,7 @@ import docker
 from docker import DockerClient
 from docker.errors import APIError, ContainerError, DockerException, ImageNotFound, NotFound
 from docker.models.containers import Container
+from docker.types import LogConfig as DockerLogConfig
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
 from localstack.config import LS_LOG
@@ -28,6 +29,7 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
     DockerNotAvailable,
     DockerPlatform,
+    LogConfig,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
@@ -609,7 +611,7 @@ class SdkDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
+        volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
@@ -626,6 +628,7 @@ class SdkDockerClient(ContainerClient):
         platform: Optional[DockerPlatform] = None,
         ulimits: Optional[List[Ulimit]] = None,
         init: Optional[bool] = None,
+        log_config: Optional[LogConfig] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -633,7 +636,7 @@ class SdkDockerClient(ContainerClient):
             parsed_flags = Util.parse_additional_flags(
                 additional_flags,
                 env_vars=env_vars,
-                mounts=mount_volumes,
+                volumes=volumes,
                 network=network,
                 platform=platform,
                 privileged=privileged,
@@ -644,7 +647,7 @@ class SdkDockerClient(ContainerClient):
             )
             env_vars = parsed_flags.env_vars
             extra_hosts = parsed_flags.extra_hosts
-            mount_volumes = parsed_flags.mounts
+            volumes = parsed_flags.volumes
             labels = parsed_flags.labels
             network = parsed_flags.network
             platform = parsed_flags.platform
@@ -679,6 +682,10 @@ class SdkDockerClient(ContainerClient):
                 kwargs["init"] = True
             if labels:
                 kwargs["labels"] = labels
+            if log_config:
+                kwargs["log_config"] = DockerLogConfig(
+                    type=log_config.type, config=log_config.config
+                )
             if ulimits:
                 kwargs["ulimits"] = [
                     docker.types.Ulimit(
@@ -687,8 +694,8 @@ class SdkDockerClient(ContainerClient):
                     for ulimit in ulimits
                 ]
             mounts = None
-            if mount_volumes:
-                mounts = Util.convert_mount_list_to_dict(mount_volumes)
+            if volumes:
+                mounts = Util.convert_mount_list_to_dict(volumes)
 
             def create_container():
                 return self.client().containers.create(
@@ -733,7 +740,7 @@ class SdkDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
+        volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
@@ -750,6 +757,7 @@ class SdkDockerClient(ContainerClient):
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
         init: Optional[bool] = None,
+        log_config: Optional[LogConfig] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -763,7 +771,7 @@ class SdkDockerClient(ContainerClient):
                 detach=detach,
                 remove=remove and detach,
                 command=command,
-                mount_volumes=mount_volumes,
+                volumes=volumes,
                 ports=ports,
                 exposed_ports=exposed_ports,
                 env_vars=env_vars,
@@ -780,6 +788,7 @@ class SdkDockerClient(ContainerClient):
                 init=init,
                 labels=labels,
                 ulimits=ulimits,
+                log_config=log_config,
             )
             result = self.start_container(
                 container_name_or_id=container,

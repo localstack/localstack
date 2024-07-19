@@ -2,13 +2,28 @@ import pytest
 from rolo import Response
 
 from localstack.aws.api.apigateway import GatewayResponse, GatewayResponseType
-from localstack.services.apigateway.models import RestApiContainer, RestApiDeployment
+from localstack.services.apigateway.models import MergedRestApi, RestApiDeployment
+from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     AccessDeniedError,
+    BaseGatewayException,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import GatewayExceptionHandler
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+
+
+class TestGatewayResponse:
+    def test_base_response(self):
+        with pytest.raises(BaseGatewayException) as e:
+            raise BaseGatewayException()
+        assert e.value.message == "Unimplemented Response"
+
+    def test_subclassed_response(self):
+        with pytest.raises(BaseGatewayException) as e:
+            raise AccessDeniedError("Access Denied")
+        assert e.value.message == "Access Denied"
+        assert e.value.type == GatewayResponseType.ACCESS_DENIED
 
 
 class TestGatewayResponseHandler:
@@ -19,11 +34,10 @@ class TestGatewayResponseHandler:
             context.deployment = RestApiDeployment(
                 account_id=TEST_AWS_ACCOUNT_ID,
                 region=TEST_AWS_REGION_NAME,
-                localstack_rest_api=RestApiContainer(None),
-                moto_rest_api=None,
+                rest_api=MergedRestApi(None),
             )
             if gateway_responses:
-                context.deployment.localstack_rest_api.gateway_responses = gateway_responses
+                context.deployment.rest_api.gateway_responses = gateway_responses
             return context
 
         return _create_context_with_deployment
@@ -35,7 +49,12 @@ class TestGatewayResponseHandler:
         exception = Exception("Unhandled exception")
 
         response = Response()
-        exception_handler(chain=None, exception=exception, context=get_context(), response=response)
+        exception_handler(
+            chain=RestApiGatewayHandlerChain(),
+            exception=exception,
+            context=get_context(),
+            response=response,
+        )
 
         assert response.status_code == 500
         assert response.data == b"Error in apigateway invocation: Unhandled exception"
@@ -46,10 +65,16 @@ class TestGatewayResponseHandler:
         # Create an Access Denied exception with no Gateway Response configured
         exception = AccessDeniedError("Access Denied")
         response = Response()
-        exception_handler(chain=None, exception=exception, context=get_context(), response=response)
+        exception_handler(
+            chain=RestApiGatewayHandlerChain(),
+            exception=exception,
+            context=get_context(),
+            response=response,
+        )
 
         assert response.status_code == 403
         assert response.json == {"message": "Access Denied"}
+        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"
 
     def test_gateway_exception_with_default_4xx(self, get_context):
         exception_handler = GatewayExceptionHandler()
@@ -61,7 +86,7 @@ class TestGatewayResponseHandler:
         exception = AccessDeniedError("Access Denied")
         response = Response()
         exception_handler(
-            chain=None,
+            chain=RestApiGatewayHandlerChain(),
             exception=exception,
             context=get_context(gateway_responses),
             response=response,
@@ -69,6 +94,7 @@ class TestGatewayResponseHandler:
 
         assert response.status_code == 400
         assert response.json == {"message": "Access Denied"}
+        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"
 
     def test_gateway_exception_with_gateway_response(self, get_context):
         exception_handler = GatewayExceptionHandler()
@@ -80,7 +106,7 @@ class TestGatewayResponseHandler:
         exception = AccessDeniedError("Access Denied")
         response = Response()
         exception_handler(
-            chain=None,
+            chain=RestApiGatewayHandlerChain(),
             exception=exception,
             context=get_context(gateway_responses),
             response=response,
@@ -88,3 +114,4 @@ class TestGatewayResponseHandler:
 
         assert response.status_code == 400
         assert response.json == {"message": "Access Denied"}
+        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"

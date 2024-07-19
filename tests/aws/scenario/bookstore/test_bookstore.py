@@ -45,7 +45,7 @@ SEARCH_KEY = "search.zip"
 SEARCH_UPDATE_KEY = "search_update.zip"
 
 
-@markers.acceptance_test_beta
+@markers.acceptance_test
 class TestBookstoreApplication:
     @pytest.fixture(scope="class")
     def patch_opensearch_strategy(self):
@@ -288,6 +288,8 @@ class TestBookstoreApplication:
             "$..ClusterConfig.Options.DedicatedMasterType",  # added in LS
             "$..DomainStatusList..EBSOptions.Iops",  # added in LS
             "$..DomainStatusList..IPAddressType",  # missing
+            "$..DomainStatusList..DomainProcessingStatus",  # missing
+            "$..DomainStatusList..ModifyingProperties",  # missing
             "$..SoftwareUpdateOptions",  # missing
             "$..OffPeakWindowOptions",  # missing
             "$..ChangeProgressDetails",  # missing
@@ -298,6 +300,7 @@ class TestBookstoreApplication:
             "$..AdvancedSecurityOptions.Options.AnonymousAuthEnabled",  # missing
             "$..DomainConfig.ClusterConfig.Options.WarmEnabled",  # missing
             "$..DomainConfig.IPAddressType",  # missing
+            "$..DomainConfig.ModifyingProperties",  # missing
             "$..ClusterConfig.Options.ColdStorageOptions",  # missing
             "$..ClusterConfig.Options.MultiAZWithStandbyEnabled",  # missing
             # TODO different values:
@@ -427,8 +430,9 @@ class BooksApi(Construct):
         self.lambda_role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
         )
-
-        # lambda for pre-filling the dynamodb
+        # TODO before updating to Node 20 we need to update function code
+        #  since aws-sdk which comes with it is newer version than one bundled with Node 16
+        #  lambda for pre-filling the dynamodb
         self.load_books_helper_fn = awslambda.Function(
             stack,
             "LoadBooksLambda",
@@ -479,7 +483,7 @@ class BooksApi(Construct):
             "SearchBookLambda",
             handler="index.handler",
             code=awslambda.S3Code(bucket=bucket, key=search_key),
-            runtime=awslambda.Runtime.PYTHON_3_10,
+            runtime=awslambda.Runtime.PYTHON_3_12,
             environment={
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
             },
@@ -492,7 +496,7 @@ class BooksApi(Construct):
             "UpdateSearchLambda",
             handler="index.handler",
             code=awslambda.S3Code(bucket=bucket, key=search_update_key),
-            runtime=awslambda.Runtime.PYTHON_3_10,
+            runtime=awslambda.Runtime.PYTHON_3_12,
             environment={
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
             },

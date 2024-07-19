@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -70,6 +71,7 @@ Region = str
 RequestId = str
 ReservationToken = str
 RoleArn = str
+RolesKey = str
 S3BucketName = str
 S3Key = str
 SAMLEntityId = str
@@ -79,6 +81,7 @@ ServiceUrl = str
 StorageSubTypeName = str
 StorageTypeName = str
 String = str
+SubjectKey = str
 TagKey = str
 TagValue = str
 TotalNumberOfStages = int
@@ -91,13 +94,13 @@ VolumeSize = str
 VpcEndpointId = str
 
 
-class ActionSeverity(str):
+class ActionSeverity(StrEnum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
 
 
-class ActionStatus(str):
+class ActionStatus(StrEnum):
     PENDING_UPDATE = "PENDING_UPDATE"
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
@@ -106,18 +109,18 @@ class ActionStatus(str):
     ELIGIBLE = "ELIGIBLE"
 
 
-class ActionType(str):
+class ActionType(StrEnum):
     SERVICE_SOFTWARE_UPDATE = "SERVICE_SOFTWARE_UPDATE"
     JVM_HEAP_SIZE_TUNING = "JVM_HEAP_SIZE_TUNING"
     JVM_YOUNG_GEN_TUNING = "JVM_YOUNG_GEN_TUNING"
 
 
-class AutoTuneDesiredState(str):
+class AutoTuneDesiredState(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class AutoTuneState(str):
+class AutoTuneState(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
     ENABLE_IN_PROGRESS = "ENABLE_IN_PROGRESS"
@@ -129,11 +132,11 @@ class AutoTuneState(str):
     ERROR = "ERROR"
 
 
-class AutoTuneType(str):
+class AutoTuneType(StrEnum):
     SCHEDULED_ACTION = "SCHEDULED_ACTION"
 
 
-class ConfigChangeStatus(str):
+class ConfigChangeStatus(StrEnum):
     Pending = "Pending"
     Initializing = "Initializing"
     Validating = "Validating"
@@ -144,17 +147,17 @@ class ConfigChangeStatus(str):
     Cancelled = "Cancelled"
 
 
-class ConnectionMode(str):
+class ConnectionMode(StrEnum):
     DIRECT = "DIRECT"
     VPC_ENDPOINT = "VPC_ENDPOINT"
 
 
-class DataSourceStatus(str):
+class DataSourceStatus(StrEnum):
     ACTIVE = "ACTIVE"
     DISABLED = "DISABLED"
 
 
-class DeploymentStatus(str):
+class DeploymentStatus(StrEnum):
     PENDING_UPDATE = "PENDING_UPDATE"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -162,7 +165,7 @@ class DeploymentStatus(str):
     ELIGIBLE = "ELIGIBLE"
 
 
-class DescribePackagesFilterName(str):
+class DescribePackagesFilterName(StrEnum):
     PackageID = "PackageID"
     PackageName = "PackageName"
     PackageStatus = "PackageStatus"
@@ -170,14 +173,14 @@ class DescribePackagesFilterName(str):
     EngineVersion = "EngineVersion"
 
 
-class DomainHealth(str):
+class DomainHealth(StrEnum):
     Red = "Red"
     Yellow = "Yellow"
     Green = "Green"
     NotAvailable = "NotAvailable"
 
 
-class DomainPackageStatus(str):
+class DomainPackageStatus(StrEnum):
     ASSOCIATING = "ASSOCIATING"
     ASSOCIATION_FAILED = "ASSOCIATION_FAILED"
     ACTIVE = "ACTIVE"
@@ -185,7 +188,7 @@ class DomainPackageStatus(str):
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
 
 
-class DomainProcessingStatusType(str):
+class DomainProcessingStatusType(StrEnum):
     Creating = "Creating"
     Active = "Active"
     Modifying = "Modifying"
@@ -195,28 +198,28 @@ class DomainProcessingStatusType(str):
     Deleting = "Deleting"
 
 
-class DomainState(str):
+class DomainState(StrEnum):
     Active = "Active"
     Processing = "Processing"
     NotAvailable = "NotAvailable"
 
 
-class DryRunMode(str):
+class DryRunMode(StrEnum):
     Basic = "Basic"
     Verbose = "Verbose"
 
 
-class EngineType(str):
+class EngineType(StrEnum):
     OpenSearch = "OpenSearch"
     Elasticsearch = "Elasticsearch"
 
 
-class IPAddressType(str):
+class IPAddressType(StrEnum):
     ipv4 = "ipv4"
     dualstack = "dualstack"
 
 
-class InboundConnectionStatusCode(str):
+class InboundConnectionStatusCode(StrEnum):
     PENDING_ACCEPTANCE = "PENDING_ACCEPTANCE"
     APPROVED = "APPROVED"
     PROVISIONING = "PROVISIONING"
@@ -227,19 +230,19 @@ class InboundConnectionStatusCode(str):
     DELETED = "DELETED"
 
 
-class InitiatedBy(str):
+class InitiatedBy(StrEnum):
     CUSTOMER = "CUSTOMER"
     SERVICE = "SERVICE"
 
 
-class LogType(str):
+class LogType(StrEnum):
     INDEX_SLOW_LOGS = "INDEX_SLOW_LOGS"
     SEARCH_SLOW_LOGS = "SEARCH_SLOW_LOGS"
     ES_APPLICATION_LOGS = "ES_APPLICATION_LOGS"
     AUDIT_LOGS = "AUDIT_LOGS"
 
 
-class MaintenanceStatus(str):
+class MaintenanceStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -247,30 +250,45 @@ class MaintenanceStatus(str):
     TIMED_OUT = "TIMED_OUT"
 
 
-class MaintenanceType(str):
+class MaintenanceType(StrEnum):
     REBOOT_NODE = "REBOOT_NODE"
     RESTART_SEARCH_PROCESS = "RESTART_SEARCH_PROCESS"
     RESTART_DASHBOARD = "RESTART_DASHBOARD"
 
 
-class MasterNodeStatus(str):
+class MasterNodeStatus(StrEnum):
     Available = "Available"
     UnAvailable = "UnAvailable"
 
 
-class NodeStatus(str):
+class NaturalLanguageQueryGenerationCurrentState(StrEnum):
+    NOT_ENABLED = "NOT_ENABLED"
+    ENABLE_COMPLETE = "ENABLE_COMPLETE"
+    ENABLE_IN_PROGRESS = "ENABLE_IN_PROGRESS"
+    ENABLE_FAILED = "ENABLE_FAILED"
+    DISABLE_COMPLETE = "DISABLE_COMPLETE"
+    DISABLE_IN_PROGRESS = "DISABLE_IN_PROGRESS"
+    DISABLE_FAILED = "DISABLE_FAILED"
+
+
+class NaturalLanguageQueryGenerationDesiredState(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+
+
+class NodeStatus(StrEnum):
     Active = "Active"
     StandBy = "StandBy"
     NotAvailable = "NotAvailable"
 
 
-class NodeType(str):
+class NodeType(StrEnum):
     Data = "Data"
     Ultrawarm = "Ultrawarm"
     Master = "Master"
 
 
-class OpenSearchPartitionInstanceType(str):
+class OpenSearchPartitionInstanceType(StrEnum):
     m3_medium_search = "m3.medium.search"
     m3_large_search = "m3.large.search"
     m3_xlarge_search = "m3.xlarge.search"
@@ -376,19 +394,19 @@ class OpenSearchPartitionInstanceType(str):
     t4g_medium_search = "t4g.medium.search"
 
 
-class OpenSearchWarmPartitionInstanceType(str):
+class OpenSearchWarmPartitionInstanceType(StrEnum):
     ultrawarm1_medium_search = "ultrawarm1.medium.search"
     ultrawarm1_large_search = "ultrawarm1.large.search"
     ultrawarm1_xlarge_search = "ultrawarm1.xlarge.search"
 
 
-class OptionState(str):
+class OptionState(StrEnum):
     RequiresIndexDocuments = "RequiresIndexDocuments"
     Processing = "Processing"
     Active = "Active"
 
 
-class OutboundConnectionStatusCode(str):
+class OutboundConnectionStatusCode(StrEnum):
     VALIDATING = "VALIDATING"
     VALIDATION_FAILED = "VALIDATION_FAILED"
     PENDING_ACCEPTANCE = "PENDING_ACCEPTANCE"
@@ -401,14 +419,14 @@ class OutboundConnectionStatusCode(str):
     DELETED = "DELETED"
 
 
-class OverallChangeStatus(str):
+class OverallChangeStatus(StrEnum):
     PENDING = "PENDING"
     PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
 
-class PackageStatus(str):
+class PackageStatus(StrEnum):
     COPYING = "COPYING"
     COPY_FAILED = "COPY_FAILED"
     VALIDATING = "VALIDATING"
@@ -419,95 +437,95 @@ class PackageStatus(str):
     DELETE_FAILED = "DELETE_FAILED"
 
 
-class PackageType(str):
+class PackageType(StrEnum):
     TXT_DICTIONARY = "TXT-DICTIONARY"
     ZIP_PLUGIN = "ZIP-PLUGIN"
 
 
-class PrincipalType(str):
+class PrincipalType(StrEnum):
     AWS_ACCOUNT = "AWS_ACCOUNT"
     AWS_SERVICE = "AWS_SERVICE"
 
 
-class PropertyValueType(str):
+class PropertyValueType(StrEnum):
     PLAIN_TEXT = "PLAIN_TEXT"
     STRINGIFIED_JSON = "STRINGIFIED_JSON"
 
 
-class ReservedInstancePaymentOption(str):
+class ReservedInstancePaymentOption(StrEnum):
     ALL_UPFRONT = "ALL_UPFRONT"
     PARTIAL_UPFRONT = "PARTIAL_UPFRONT"
     NO_UPFRONT = "NO_UPFRONT"
 
 
-class RollbackOnDisable(str):
+class RollbackOnDisable(StrEnum):
     NO_ROLLBACK = "NO_ROLLBACK"
     DEFAULT_ROLLBACK = "DEFAULT_ROLLBACK"
 
 
-class ScheduleAt(str):
+class ScheduleAt(StrEnum):
     NOW = "NOW"
     TIMESTAMP = "TIMESTAMP"
     OFF_PEAK_WINDOW = "OFF_PEAK_WINDOW"
 
 
-class ScheduledAutoTuneActionType(str):
+class ScheduledAutoTuneActionType(StrEnum):
     JVM_HEAP_SIZE_TUNING = "JVM_HEAP_SIZE_TUNING"
     JVM_YOUNG_GEN_TUNING = "JVM_YOUNG_GEN_TUNING"
 
 
-class ScheduledAutoTuneSeverityType(str):
+class ScheduledAutoTuneSeverityType(StrEnum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
 
 
-class ScheduledBy(str):
+class ScheduledBy(StrEnum):
     CUSTOMER = "CUSTOMER"
     SYSTEM = "SYSTEM"
 
 
-class SkipUnavailableStatus(str):
+class SkipUnavailableStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class TLSSecurityPolicy(str):
+class TLSSecurityPolicy(StrEnum):
     Policy_Min_TLS_1_0_2019_07 = "Policy-Min-TLS-1-0-2019-07"
     Policy_Min_TLS_1_2_2019_07 = "Policy-Min-TLS-1-2-2019-07"
     Policy_Min_TLS_1_2_PFS_2023_10 = "Policy-Min-TLS-1-2-PFS-2023-10"
 
 
-class TimeUnit(str):
+class TimeUnit(StrEnum):
     HOURS = "HOURS"
 
 
-class UpgradeStatus(str):
+class UpgradeStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     SUCCEEDED = "SUCCEEDED"
     SUCCEEDED_WITH_ISSUES = "SUCCEEDED_WITH_ISSUES"
     FAILED = "FAILED"
 
 
-class UpgradeStep(str):
+class UpgradeStep(StrEnum):
     PRE_UPGRADE_CHECK = "PRE_UPGRADE_CHECK"
     SNAPSHOT = "SNAPSHOT"
     UPGRADE = "UPGRADE"
 
 
-class VolumeType(str):
+class VolumeType(StrEnum):
     standard = "standard"
     gp2 = "gp2"
     io1 = "io1"
     gp3 = "gp3"
 
 
-class VpcEndpointErrorCode(str):
+class VpcEndpointErrorCode(StrEnum):
     ENDPOINT_NOT_FOUND = "ENDPOINT_NOT_FOUND"
     SERVER_ERROR = "SERVER_ERROR"
 
 
-class VpcEndpointStatus(str):
+class VpcEndpointStatus(StrEnum):
     CREATING = "CREATING"
     CREATE_FAILED = "CREATE_FAILED"
     ACTIVE = "ACTIVE"
@@ -517,7 +535,7 @@ class VpcEndpointStatus(str):
     DELETE_FAILED = "DELETE_FAILED"
 
 
-class ZoneStatus(str):
+class ZoneStatus(StrEnum):
     Active = "Active"
     StandBy = "StandBy"
     NotAvailable = "NotAvailable"
@@ -606,6 +624,39 @@ class ValidationException(ServiceException):
     status_code: int = 400
 
 
+class NaturalLanguageQueryGenerationOptionsInput(TypedDict, total=False):
+    DesiredState: Optional[NaturalLanguageQueryGenerationDesiredState]
+
+
+class AIMLOptionsInput(TypedDict, total=False):
+    NaturalLanguageQueryGenerationOptions: Optional[NaturalLanguageQueryGenerationOptionsInput]
+
+
+class NaturalLanguageQueryGenerationOptionsOutput(TypedDict, total=False):
+    DesiredState: Optional[NaturalLanguageQueryGenerationDesiredState]
+    CurrentState: Optional[NaturalLanguageQueryGenerationCurrentState]
+
+
+class AIMLOptionsOutput(TypedDict, total=False):
+    NaturalLanguageQueryGenerationOptions: Optional[NaturalLanguageQueryGenerationOptionsOutput]
+
+
+UpdateTimestamp = datetime
+
+
+class OptionStatus(TypedDict, total=False):
+    CreationDate: UpdateTimestamp
+    UpdateDate: UpdateTimestamp
+    UpdateVersion: Optional[UIntValue]
+    State: OptionState
+    PendingDeletion: Optional[Boolean]
+
+
+class AIMLOptionsStatus(TypedDict, total=False):
+    Options: Optional[AIMLOptionsOutput]
+    Status: Optional[OptionStatus]
+
+
 class AWSDomainInformation(TypedDict, total=False):
     OwnerId: Optional[OwnerId]
     DomainName: DomainName
@@ -635,17 +686,6 @@ class InboundConnection(TypedDict, total=False):
 
 class AcceptInboundConnectionResponse(TypedDict, total=False):
     Connection: Optional[InboundConnection]
-
-
-UpdateTimestamp = datetime
-
-
-class OptionStatus(TypedDict, total=False):
-    CreationDate: UpdateTimestamp
-    UpdateDate: UpdateTimestamp
-    UpdateVersion: Optional[UIntValue]
-    State: OptionState
-    PendingDeletion: Optional[Boolean]
 
 
 class AccessPoliciesStatus(TypedDict, total=False):
@@ -705,6 +745,13 @@ class AdvancedOptionsStatus(TypedDict, total=False):
 DisableTimestamp = datetime
 
 
+class JWTOptionsOutput(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    SubjectKey: Optional[String]
+    RolesKey: Optional[String]
+    PublicKey: Optional[String]
+
+
 class SAMLIdp(TypedDict, total=False):
     MetadataContent: SAMLMetadata
     EntityId: SAMLEntityId
@@ -722,8 +769,16 @@ class AdvancedSecurityOptions(TypedDict, total=False):
     Enabled: Optional[Boolean]
     InternalUserDatabaseEnabled: Optional[Boolean]
     SAMLOptions: Optional[SAMLOptionsOutput]
+    JWTOptions: Optional[JWTOptionsOutput]
     AnonymousAuthDisableDate: Optional[DisableTimestamp]
     AnonymousAuthEnabled: Optional[Boolean]
+
+
+class JWTOptionsInput(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    SubjectKey: Optional[SubjectKey]
+    RolesKey: Optional[RolesKey]
+    PublicKey: Optional[String]
 
 
 class SAMLOptionsInput(TypedDict, total=False):
@@ -747,6 +802,7 @@ class AdvancedSecurityOptionsInput(TypedDict, total=False):
     InternalUserDatabaseEnabled: Optional[Boolean]
     MasterUserOptions: Optional[MasterUserOptions]
     SAMLOptions: Optional[SAMLOptionsInput]
+    JWTOptions: Optional[JWTOptionsInput]
     AnonymousAuthEnabled: Optional[Boolean]
 
 
@@ -1105,6 +1161,7 @@ class CreateDomainRequest(ServiceRequest):
     AutoTuneOptions: Optional[AutoTuneOptionsInput]
     OffPeakWindowOptions: Optional[OffPeakWindowOptions]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
+    AIMLOptions: Optional[AIMLOptionsInput]
 
 
 class ModifyingProperties(TypedDict, total=False):
@@ -1160,6 +1217,7 @@ class DomainStatus(TypedDict, total=False):
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
     DomainProcessingStatus: Optional[DomainProcessingStatusType]
     ModifyingProperties: Optional[ModifyingPropertiesList]
+    AIMLOptions: Optional[AIMLOptionsOutput]
 
 
 class CreateDomainResponse(TypedDict, total=False):
@@ -1427,6 +1485,7 @@ class DomainConfig(TypedDict, total=False):
     OffPeakWindowOptions: Optional[OffPeakWindowOptionsStatus]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptionsStatus]
     ModifyingProperties: Optional[ModifyingPropertiesList]
+    AIMLOptions: Optional[AIMLOptionsStatus]
 
 
 class DescribeDomainConfigResponse(TypedDict, total=False):
@@ -2108,6 +2167,7 @@ class UpdateDomainConfigRequest(ServiceRequest):
     DryRunMode: Optional[DryRunMode]
     OffPeakWindowOptions: Optional[OffPeakWindowOptions]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
+    AIMLOptions: Optional[AIMLOptionsInput]
 
 
 class UpdateDomainConfigResponse(TypedDict, total=False):
@@ -2237,6 +2297,7 @@ class OpensearchApi:
         auto_tune_options: AutoTuneOptionsInput = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
+        aiml_options: AIMLOptionsInput = None,
         **kwargs,
     ) -> CreateDomainResponse:
         raise NotImplementedError
@@ -2694,6 +2755,7 @@ class OpensearchApi:
         dry_run_mode: DryRunMode = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
+        aiml_options: AIMLOptionsInput = None,
         **kwargs,
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError

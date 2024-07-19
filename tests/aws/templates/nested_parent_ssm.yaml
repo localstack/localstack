@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  ChildStackURL:
+    Type: String
+  KeyValue:
+    Type: String
+Resources:
+  ChildParam:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref ChildStackURL
+      Parameters:
+        KeyValue: !Ref KeyValue
+  Param:
+    DependsOn: ChildParam
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: test-param
+      Type: String
+      Value: !GetAtt ChildParam.Outputs.Value
+Outputs:
+  Name:
+    Value: !Ref Param
+  Value:
+    Value: !GetAtt Param.Value

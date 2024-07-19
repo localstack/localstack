@@ -3,14 +3,14 @@ import logging
 from localstack.http import Response
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
-from ..context import RestApiInvocationContext
+from ..context import EndpointResponse, RestApiInvocationContext
+from ..integrations import REST_API_INTEGRATIONS
 
 LOG = logging.getLogger(__name__)
 
 
 # TODO: this will need to use ApiGatewayIntegration class, using Plugin for discoverability and a PluginManager,
 #  in order to automatically have access to defined Integrations that we can extend
-# this might be a bit closer to our AWS Skeleton in a way
 class IntegrationHandler(RestApiGatewayHandler):
     def __call__(
         self,
@@ -18,4 +18,18 @@ class IntegrationHandler(RestApiGatewayHandler):
         context: RestApiInvocationContext,
         response: Response,
     ):
-        return
+        integration_type = context.resource_method["methodIntegration"]["type"]
+        is_proxy = "PROXY" in integration_type
+
+        integration = REST_API_INTEGRATIONS.get(integration_type)
+
+        if not integration:
+            # TODO: raise proper exception?
+            raise NotImplementedError(
+                f"This integration type is not yet supported: {integration_type}"
+            )
+
+        endpoint_response: EndpointResponse = integration.invoke(context)
+        context.endpoint_response = endpoint_response
+        if is_proxy:
+            context.invocation_response = endpoint_response

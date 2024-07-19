@@ -1,6 +1,7 @@
 import typing as t
 
 from rolo.gateway import Gateway as RoloGateway
+from rolo.response import Response
 
 from .chain import ExceptionHandler, Handler, RequestContext
 
@@ -25,3 +26,7 @@ class Gateway(RoloGateway):
             exception_handlers,
             context_class or RequestContext,
         )
+
+    def handle(self, context: RequestContext, response: Response) -> None:
+        """Exposes the same interface as ``HandlerChain.handle``."""
+        return self.new_chain().handle(context, response)

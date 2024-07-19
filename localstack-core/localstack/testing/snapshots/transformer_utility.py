@@ -16,7 +16,12 @@ from localstack_snapshot.snapshots.transformer import (
 )
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
-from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
+from localstack.aws.api.stepfunctions import (
+    CreateStateMachineOutput,
+    LongArn,
+    StartExecutionOutput,
+    StartSyncExecutionOutput,
+)
 from localstack.utils.net import IP_REGEX
 
 LOG = logging.getLogger(__name__)
@@ -632,6 +637,22 @@ class TransformerUtility:
         arn_part_repl = f"<ExecArnPart_{index}idx>"
         arn_part: str = "".join(start_exec["executionArn"].rpartition(":")[-1])
         return RegexTransformer(arn_part, arn_part_repl)
+
+    @staticmethod
+    def sfn_sm_express_exec_arn(start_exec: StartExecutionOutput, index: int):
+        arn_parts = start_exec["executionArn"].split(":")
+        return [
+            RegexTransformer(arn_parts[-2], f"<ExpressExecArn_Part1_{index}idx>"),
+            RegexTransformer(arn_parts[-1], f"<ExpressExecArn_Part2_{index}idx>"),
+        ]
+
+    @staticmethod
+    def sfn_sm_sync_exec_arn(start_exec: StartSyncExecutionOutput, index: int):
+        arn_parts = start_exec["executionArn"].split(":")
+        return [
+            RegexTransformer(arn_parts[-2], f"<SyncExecArn_Part1_{index}idx>"),
+            RegexTransformer(arn_parts[-1], f"<SyncExecArn_Part2_{index}idx>"),
+        ]
 
     @staticmethod
     def sfn_map_run_arn(map_run_arn: LongArn, index: int) -> list[RegexTransformer]:

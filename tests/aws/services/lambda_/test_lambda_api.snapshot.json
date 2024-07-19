@@ -1806,7 +1806,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "10-04-2024, 09:12:12",
+    "recorded-date": "12-07-2024, 11:43:40",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2340,7 +2340,7 @@
           "HTTPStatusCode": 201
         }
       },
-      "list_versions_result_end": {
+      "list_versions_result_after_third_publish": {
         "Versions": [
           {
             "Architectures": [
@@ -2407,6 +2407,80 @@
               "Mode": "PassThrough"
             },
             "Version": "1"
+          },
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "Second version :))",
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+            "FunctionName": "<function-name:1>",
+            "Handler": "index.handler",
+            "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:7>",
+            "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+            "Runtime": "python3.12",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_versions_result_after_deletion_of_first_version": {
+        "Versions": [
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "Second version :))",
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+            "FunctionName": "<function-name:1>",
+            "Handler": "index.handler",
+            "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:8>",
+            "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+            "Runtime": "python3.12",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "$LATEST"
           },
           {
             "Architectures": [
@@ -16188,6 +16262,159 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_update_function_configuration_full_arn": {
     "recorded-date": "05-06-2024, 11:49:05",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled": {
+    "recorded-date": "12-06-2024, 14:19:11",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of python3.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (python3.12) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of python3.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (python3.12) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[java8]": {
+    "recorded-date": "13-06-2024, 08:52:04",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of java8 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (java21) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of java8 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (java21) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[go1.x]": {
+    "recorded-date": "13-06-2024, 08:52:21",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of go1.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (provided.al2023) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of go1.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (provided.al2023) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[provided]": {
+    "recorded-date": "13-06-2024, 08:52:38",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of provided is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (provided.al2023) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of provided is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (provided.al2023) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[ruby2.7]": {
+    "recorded-date": "13-06-2024, 08:52:55",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of ruby2.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (ruby3.2) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of ruby2.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (ruby3.2) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs14.x]": {
+    "recorded-date": "13-06-2024, 08:53:12",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of nodejs14.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (nodejs20.x) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of nodejs14.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (nodejs20.x) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[python3.7]": {
+    "recorded-date": "13-06-2024, 08:53:29",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of python3.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (python3.12) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of python3.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (python3.12) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[dotnetcore3.1]": {
+    "recorded-date": "13-06-2024, 08:53:45",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of dotnetcore3.1 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (dotnet6) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of dotnetcore3.1 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (dotnet6) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs12.x]": {
+    "recorded-date": "13-06-2024, 08:54:02",
+    "recorded-content": {
+      "deprecation_error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The runtime parameter of nodejs12.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (nodejs18.x) while creating or updating functions."
+        },
+        "Type": "User",
+        "message": "The runtime parameter of nodejs12.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (nodejs18.x) while creating or updating functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_cross_region_arn_function_access": {
     "recorded-date": "11-06-2024, 13:06:45",

@@ -173,7 +173,7 @@ class Directories:
             tmp=tmp_dir,
             mounted_tmp=tmp_dir,
             functions=None,
-            data=os.path.join(tmp_dir, "state"),  # used by localstack_ext config TODO: remove
+            data=os.path.join(tmp_dir, "state"),  # used by localstack-pro config TODO: remove
             logs=os.path.join(tmp_dir, "logs"),  # used for container logs
             config=None,  # in the context of the CLI, config.CONFIG_DIR should be used
             init=None,
@@ -660,9 +660,6 @@ GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
 # the gateway server that should be used (supported: hypercorn, twisted dev: werkzeug)
 GATEWAY_SERVER = os.environ.get("GATEWAY_SERVER", "").strip() or "twisted"
 
-# whether to use the legacy runtime (``localstack.service.infra``)
-LEGACY_RUNTIME = is_env_true("LEGACY_RUNTIME")
-
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
@@ -905,6 +902,10 @@ LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONM
 # b) json dict mapping the <runtime> to an image, e.g. {"python3.9": "custom-repo/lambda-py:thon3.9"}
 LAMBDA_RUNTIME_IMAGE_MAPPING = os.environ.get("LAMBDA_RUNTIME_IMAGE_MAPPING", "").strip()
 
+# PUBLIC: 0 (default)
+# Whether to disable usage of deprecated runtimes
+LAMBDA_RUNTIME_VALIDATION = int(os.environ.get("LAMBDA_RUNTIME_VALIDATION") or 0)
+
 # PUBLIC: 1 (default)
 # Whether to remove any Lambda Docker containers.
 LAMBDA_REMOVE_CONTAINERS = (
@@ -1037,6 +1038,15 @@ LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
 # Whether the Next Gen APIGW invocation logic is enabled (handler chain)
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") == "next_gen"
+if APIGW_NEXT_GEN_PROVIDER:
+    # in order to not have conflicts with different implementation registering their own router, we need to have all of
+    # them use the same new implementation
+    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYV2"):
+        os.environ["PROVIDER_OVERRIDE_APIGATEWAYV2"] = "next_gen"
+
+    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"):
+        os.environ["PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"] = "next_gen"
+
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
@@ -1107,6 +1117,9 @@ DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
 DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
 
+# This flag enables `connect_to` to be in-memory only and not do networking calls
+IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
+
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
 # https://docs.localstack.cloud/references/configuration/
@@ -1164,6 +1177,7 @@ CONFIG_ENV_VARS = [
     "GATEWAY_WORKER_THREAD_COUNT",
     "HOSTNAME",
     "HOSTNAME_FROM_LAMBDA",
+    "IN_MEMORY_CLIENT",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
@@ -1188,6 +1202,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
+    "LAMBDA_RUNTIME_VALIDATION",
     "LAMBDA_TRUNCATE_STDOUT",
     "LAMBDA_RETRY_BASE_DELAY_SECONDS",
     "LAMBDA_SYNCHRONOUS_CREATE",
@@ -1202,7 +1217,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_SNS_GCM_PUBLISHING",
-    "LEGACY_RUNTIME",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",

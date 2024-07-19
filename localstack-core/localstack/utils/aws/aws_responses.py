@@ -3,16 +3,13 @@ import datetime
 import json
 import re
 from binascii import crc32
-from struct import pack
 from typing import Any, Dict, Optional, Union
 from urllib.parse import parse_qs
 
 import xmltodict
-from flask import Response as FlaskResponse
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
-from localstack.config import DEFAULT_ENCODING
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.utils.json import json_safe
 from localstack.utils.strings import short_uid, str_startswith_ignore_case, to_bytes, to_str
@@ -27,23 +24,14 @@ class ErrorResponse(Exception):
         self.response = response
 
 
-def flask_error_response_json(
-    msg: str, code: Optional[int] = 500, error_type: Optional[str] = "InternalFailure"
-):
+def requests_error_response_json(message, code=500, error_type="InternalFailure"):
     result = {
         "Type": "User" if code < 500 else "Server",
-        "message": msg,
+        "message": message,
         "__type": error_type,
     }
     headers = {"x-amzn-errortype": error_type}
-    # Note: don't use flask's make_response(..) or jsonify(..) here as they
-    # can lead to "RuntimeError: working outside of application context".
-    return FlaskResponse(json.dumps(result), status=code, headers=headers)
-
-
-def requests_error_response_json(message, code=500, error_type="InternalFailure"):
-    response = flask_error_response_json(message, code=code, error_type=error_type)
-    return flask_to_requests_response(response)
+    return requests_response(json.dumps(result), status_code=code, headers=headers)
 
 
 def requests_error_response_xml(
@@ -117,19 +105,6 @@ def requests_error_response_xml_signature_calculation(
         return response
 
 
-def flask_error_response_xml(
-    message: str,
-    code: Optional[int] = 500,
-    code_string: Optional[str] = "InternalFailure",
-    service: Optional[str] = None,
-    xmlns: Optional[str] = None,
-):
-    response = requests_error_response_xml(
-        message, code=code, code_string=code_string, service=service, xmlns=xmlns
-    )
-    return requests_to_flask_response(response)
-
-
 def requests_error_response(
     req_headers: Dict,
     message: Union[str, bytes],
@@ -158,20 +133,14 @@ def is_invalid_html_response(headers, content) -> bool:
 
 
 def is_response_obj(result, include_lambda_response=False):
-    types = (RequestsResponse, FlaskResponse)
+    types = (RequestsResponse,)
     if include_lambda_response:
         types += (LambdaResponse,)
     return isinstance(result, types)
 
 
 def get_response_payload(response, as_json=False):
-    result = (
-        response.content
-        if isinstance(response, RequestsResponse)
-        else response.data
-        if isinstance(response, FlaskResponse)
-        else None
-    )
+    result = response.content if isinstance(response, RequestsResponse) else None
     result = "" if result is None else result
     if as_json:
         result = result or "{}"
@@ -204,14 +173,6 @@ def request_response_stream(stream, status_code=200, headers=None):
     # Note: update headers (instead of assigning directly), to ensure we're using a case-insensitive dict
     resp.headers.update(headers or {})
     return resp
-
-
-def flask_to_requests_response(r):
-    return requests_response(r.data, status_code=r.status_code, headers=r.headers)
-
-
-def requests_to_flask_response(r):
-    return FlaskResponse(r.content, status=r.status_code, headers=dict(r.headers))
 
 
 def set_response_content(response, content, headers=None):
@@ -249,55 +210,6 @@ def parse_query_string(url_or_qs: str, multi_values=False) -> Dict[str, str]:
 
 def calculate_crc32(content: Union[str, bytes]) -> int:
     return crc32(to_bytes(content)) & 0xFFFFFFFF
-
-
-# TODO Remove this constant with the function below
-AWS_BINARY_DATA_TYPE_STRING = 7
-
-
-def convert_to_binary_event_payload(result, event_type=None, message_type=None):
-    # TODO This encoding has been migrated to the ASF Serializer.
-    #  Remove this function after S3 and Kinesis have been migrated to ASF.
-    # e.g.: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html
-    # e.g.: https://docs.aws.amazon.com/transcribe/latest/dg/event-stream.html
-
-    header_descriptors = {
-        ":event-type": event_type or "Records",
-        ":message-type": message_type or "event",
-    }
-
-    # construct headers
-    headers = b""
-    for key, value in header_descriptors.items():
-        header_name = key.encode(DEFAULT_ENCODING)
-        header_value = to_bytes(value)
-        headers += pack("!B", len(header_name))
-        headers += header_name
-        headers += pack("!B", AWS_BINARY_DATA_TYPE_STRING)
-        headers += pack("!H", len(header_value))
-        headers += header_value
-
-    # construct body
-    if isinstance(result, str):
-        body = bytes(result, DEFAULT_ENCODING)
-    else:
-        body = result
-
-    # calculate lengths
-    headers_length = len(headers)
-    body_length = len(body)
-
-    # construct message
-    result = pack("!I", body_length + headers_length + 16)
-    result += pack("!I", headers_length)
-    prelude_crc = binascii.crc32(result)
-    result += pack("!I", prelude_crc)
-    result += headers
-    result += body
-    payload_crc = binascii.crc32(result)
-    result += pack("!I", payload_crc)
-
-    return result
 
 
 class LambdaResponse:

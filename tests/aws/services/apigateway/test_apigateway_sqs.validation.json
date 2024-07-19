@@ -9,6 +9,6 @@
     "last_validated_date": "2024-06-06T00:38:34+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_request_and_response_xml_templates_integration": {
-    "last_validated_date": "2023-09-10T08:13:06+00:00"
+    "last_validated_date": "2024-07-12T16:27:03+00:00"
   }
 }

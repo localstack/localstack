@@ -1,0 +1,673 @@
+{
+  "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_lambda_list_entry": {
+    "recorded-date": "08-04-2024, 17:32:58",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "payload": {
+              "userId": 10,
+              "businessId": 3,
+              "channelId": 6,
+              "card": {
+                "foo": "bar"
+              },
+              "targetEntity": true,
+              "entityAuditTrailEvent": {
+                "foo": "bar"
+              },
+              "automations": [
+                {
+                  "id": "123",
+                  "actions": [
+                    {
+                      "id": "321",
+                      "type": "SEND_NOTIFICATION",
+                      "settings": {
+                        "message": "",
+                        "recipientEmails": [],
+                        "subject": "",
+                        "type": "SEND_NOTIFICATION"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_lambda_list_entries_partial_match": {
+    "recorded-date": "03-04-2024, 20:00:13",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "payload": {
+              "userId": 10,
+              "businessId": 3,
+              "channelId": 6,
+              "card": {
+                "foo": "bar"
+              },
+              "targetEntity": true,
+              "entityAuditTrailEvent": {
+                "foo": "bar"
+              },
+              "automations": [
+                {
+                  "foo": "bar"
+                },
+                {
+                  "id": "123",
+                  "actions": [
+                    {
+                      "id": "321",
+                      "type": "SEND_NOTIFICATION",
+                      "settings": {
+                        "message": "",
+                        "recipientEmails": [],
+                        "subject": "",
+                        "type": "SEND_NOTIFICATION"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "bar": "foo"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_sqs": {
+    "recorded-date": "26-04-2024, 08:43:27",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_sqs_event_detail_match": {
+    "recorded-date": "07-05-2024, 10:40:38",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "EventType": "1"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetEvents::test_put_events_with_target_events[bus_combination0]": {
+    "recorded-date": "11-07-2024, 08:59:28",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetEvents::test_put_events_with_target_events[bus_combination1]": {
+    "recorded-date": "11-07-2024, 08:59:42",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetEvents::test_put_events_with_target_events[bus_combination2]": {
+    "recorded-date": "11-07-2024, 08:59:57",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetFirehose::test_put_events_with_target_firehose": {
+    "recorded-date": "11-07-2024, 09:03:40",
+    "recorded-content": {
+      "s3": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:2>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:3>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:4>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:5>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:6>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:7>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:8>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:9>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:10>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetKinesis::test_put_events_with_target_kinesis": {
+    "recorded-date": "11-07-2024, 09:04:25",
+    "recorded-content": {
+      "response": {
+        "version": "0",
+        "id": "<uuid:1>",
+        "detail-type": "core.update-account-command",
+        "source": "core.update-account-command",
+        "account": "111111111111",
+        "time": "date",
+        "region": "<region>",
+        "resources": [],
+        "detail": {
+          "command": "update-account",
+          "payload": {
+            "acc_id": "0a787ecb-4015",
+            "sf_id": "baz"
+          }
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetLambda::test_put_events_with_target_lambda": {
+    "recorded-date": "11-07-2024, 09:04:48",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetLambda::test_put_events_with_target_lambda_list_entry": {
+    "recorded-date": "11-07-2024, 09:05:04",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "payload": {
+              "userId": 10,
+              "businessId": 3,
+              "channelId": 6,
+              "card": {
+                "foo": "bar"
+              },
+              "targetEntity": true,
+              "entityAuditTrailEvent": {
+                "foo": "bar"
+              },
+              "automations": [
+                {
+                  "id": "123",
+                  "actions": [
+                    {
+                      "id": "321",
+                      "type": "SEND_NOTIFICATION",
+                      "settings": {
+                        "message": "",
+                        "recipientEmails": [],
+                        "subject": "",
+                        "type": "SEND_NOTIFICATION"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetLambda::test_put_events_with_target_lambda_list_entries_partial_match": {
+    "recorded-date": "11-07-2024, 09:19:35",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "payload": {
+              "userId": 10,
+              "businessId": 3,
+              "channelId": 6,
+              "card": {
+                "foo": "bar"
+              },
+              "targetEntity": true,
+              "entityAuditTrailEvent": {
+                "foo": "bar"
+              },
+              "automations": [
+                {
+                  "foo": "bar"
+                },
+                {
+                  "id": "123",
+                  "actions": [
+                    {
+                      "id": "321",
+                      "type": "SEND_NOTIFICATION",
+                      "settings": {
+                        "message": "",
+                        "recipientEmails": [],
+                        "subject": "",
+                        "type": "SEND_NOTIFICATION"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "bar": "foo"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSns::test_put_events_with_target_sns[standard]": {
+    "recorded-date": "11-07-2024, 09:55:26",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "Type": "Notification",
+            "MessageId": "<uuid:2>",
+            "TopicArn": "topic-arn",
+            "Message": "{\"version\":\"0\",\"id\":\"message-id\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
+            "Timestamp": "date",
+            "SignatureVersion": "1",
+            "Signature": "signature",
+            "SigningCertURL": "signing-cert-u-r-l",
+            "UnsubscribeURL": "unsubscribe-u-r-l"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSns::test_put_events_with_target_sns[domain]": {
+    "recorded-date": "11-07-2024, 09:55:31",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "Type": "Notification",
+            "MessageId": "<uuid:2>",
+            "TopicArn": "topic-arn",
+            "Message": "{\"version\":\"0\",\"id\":\"message-id\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
+            "Timestamp": "date",
+            "SignatureVersion": "1",
+            "Signature": "signature",
+            "SigningCertURL": "signing-cert-u-r-l",
+            "UnsubscribeURL": "unsubscribe-u-r-l"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSns::test_put_events_with_target_sns[path]": {
+    "recorded-date": "11-07-2024, 09:55:34",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "Type": "Notification",
+            "MessageId": "<uuid:2>",
+            "TopicArn": "topic-arn",
+            "Message": "{\"version\":\"0\",\"id\":\"message-id\",\"detail-type\":\"core.update-account-command\",\"source\":\"core.update-account-command\",\"account\":\"111111111111\",\"time\":\"date\",\"region\":\"<region>\",\"resources\":[],\"detail\":{\"command\":\"update-account\",\"payload\":{\"acc_id\":\"0a787ecb-4015\",\"sf_id\":\"baz\"}}}",
+            "Timestamp": "date",
+            "SignatureVersion": "1",
+            "Signature": "signature",
+            "SigningCertURL": "signing-cert-u-r-l",
+            "UnsubscribeURL": "unsubscribe-u-r-l"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSqs::test_put_events_with_target_sqs": {
+    "recorded-date": "11-07-2024, 09:05:35",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetSqs::test_put_events_with_target_sqs_event_detail_match": {
+    "recorded-date": "11-07-2024, 09:05:43",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "EventType": "1"
+          }
+        }
+      ]
+    }
+  }
+}

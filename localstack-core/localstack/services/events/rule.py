@@ -29,6 +29,19 @@ RULE_SCHEDULE_RATE_REGEX = re.compile(r"^rate\(\d*\s(minute|minutes|hour|hours|d
 
 
 class RuleService:
+    name: RuleName
+    region: str
+    account_id: str
+    schedule_expression: ScheduleExpression | None
+    event_pattern: EventPattern | None
+    description: RuleDescription | None
+    role_arn: Arn | None
+    tags: TagList | None
+    event_bus_name: EventBusName | None
+    targets: TargetDict | None
+    managed_by: ManagedBy
+    rule: Rule
+
     def __init__(
         self,
         name: RuleName,

@@ -47,9 +47,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.34.127",
+    "boto3==1.34.144",
     # pinned / updated by ASF update action
-    "botocore==1.34.127",
+    "botocore==1.34.144",
     "awscrt>=0.13.14",
     "cbor2>=5.2.0",
     "dnspython>=1.16.0",
@@ -65,8 +65,6 @@ base-runtime = [
     "Werkzeug>=3.0.0",
     "xmltodict>=0.13.0",
     "rolo>=0.4",
-    # TODO: to be removed when the last usages of Flask in API GW have been removed
-    "flask>=3.0.0",
 ]
 
 # required to actually run localstack on the host
@@ -87,7 +85,7 @@ runtime = [
     "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
-    "moto-ext[all]==5.0.9.post3",
+    "moto-ext[all]==5.0.10.post1",
     "opensearch-py>=2.4.1",
     "pymongo>=4.2.0",
     "pyopenssl>=23.0.0",
@@ -130,7 +128,7 @@ typehint = [
     # typehint is an optional extension of the dev dependencies
     "localstack-core[dev]",
     # pinned / updated by ASF update action
-    "boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.127",
+    "boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.144",
 ]
 
 [tool.setuptools]
@@ -209,14 +207,19 @@ select = ["B", "C", "E", "F", "I", "W", "T", "B9"]
 [tool.coverage.run]
 relative_files = true
 source = [
-    "localstack-core/localstack"
+    "localstack",
 ]
 omit = [
-    "localstack-core/localstack/aws/api/*",
-    "localstack-core/localstack/extensions/api/*",
-    "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime/*"
+    "*/aws/api/*",
+    "*/extensions/api/*",
+    "*/services/stepfunctions/asl/antlr/runtime/*"
 ]
 dynamic_context = "test_function"
+
+[tool.coverage.paths]
+source = [
+    "localstack-core"
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -227,7 +230,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-log_cli = true
+log_cli = false
 log_level = "DEBUG"
 log_cli_format = "%(asctime)s.%(msecs)03d %(levelname)5s --- [%(threadName)12s] %(name)-26s : %(message)s"
 log_cli_date_format = "%Y-%m-%dT%H:%M:%S"

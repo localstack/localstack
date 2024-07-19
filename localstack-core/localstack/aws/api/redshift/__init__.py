@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -24,30 +25,30 @@ SensitiveString = str
 String = str
 
 
-class ActionType(str):
+class ActionType(StrEnum):
     restore_cluster = "restore-cluster"
     recommend_node_config = "recommend-node-config"
     resize_cluster = "resize-cluster"
 
 
-class AquaConfigurationStatus(str):
+class AquaConfigurationStatus(StrEnum):
     enabled = "enabled"
     disabled = "disabled"
     auto = "auto"
 
 
-class AquaStatus(str):
+class AquaStatus(StrEnum):
     enabled = "enabled"
     disabled = "disabled"
     applying = "applying"
 
 
-class AuthorizationStatus(str):
+class AuthorizationStatus(StrEnum):
     Authorized = "Authorized"
     Revoking = "Revoking"
 
 
-class DataShareStatus(str):
+class DataShareStatus(StrEnum):
     ACTIVE = "ACTIVE"
     PENDING_AUTHORIZATION = "PENDING_AUTHORIZATION"
     AUTHORIZED = "AUTHORIZED"
@@ -56,12 +57,12 @@ class DataShareStatus(str):
     AVAILABLE = "AVAILABLE"
 
 
-class DataShareStatusForConsumer(str):
+class DataShareStatusForConsumer(StrEnum):
     ACTIVE = "ACTIVE"
     AVAILABLE = "AVAILABLE"
 
 
-class DataShareStatusForProducer(str):
+class DataShareStatusForProducer(StrEnum):
     ACTIVE = "ACTIVE"
     AUTHORIZED = "AUTHORIZED"
     PENDING_AUTHORIZATION = "PENDING_AUTHORIZATION"
@@ -69,30 +70,30 @@ class DataShareStatusForProducer(str):
     REJECTED = "REJECTED"
 
 
-class ImpactRankingType(str):
+class ImpactRankingType(StrEnum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
 
 
-class LogDestinationType(str):
+class LogDestinationType(StrEnum):
     s3 = "s3"
     cloudwatch = "cloudwatch"
 
 
-class Mode(str):
+class Mode(StrEnum):
     standard = "standard"
     high_performance = "high-performance"
 
 
-class NodeConfigurationOptionsFilterName(str):
+class NodeConfigurationOptionsFilterName(StrEnum):
     NodeType = "NodeType"
     NumberOfNodes = "NumberOfNodes"
     EstimatedDiskUtilizationPercent = "EstimatedDiskUtilizationPercent"
     Mode = "Mode"
 
 
-class OperatorType(str):
+class OperatorType(StrEnum):
     eq = "eq"
     lt = "lt"
     gt = "gt"
@@ -102,29 +103,29 @@ class OperatorType(str):
     between = "between"
 
 
-class ParameterApplyType(str):
+class ParameterApplyType(StrEnum):
     static = "static"
     dynamic = "dynamic"
 
 
-class PartnerIntegrationStatus(str):
+class PartnerIntegrationStatus(StrEnum):
     Active = "Active"
     Inactive = "Inactive"
     RuntimeFailure = "RuntimeFailure"
     ConnectionFailure = "ConnectionFailure"
 
 
-class RecommendedActionType(str):
+class RecommendedActionType(StrEnum):
     SQL = "SQL"
     CLI = "CLI"
 
 
-class ReservedNodeExchangeActionType(str):
+class ReservedNodeExchangeActionType(StrEnum):
     restore_cluster = "restore-cluster"
     resize_cluster = "resize-cluster"
 
 
-class ReservedNodeExchangeStatusType(str):
+class ReservedNodeExchangeStatusType(StrEnum):
     REQUESTED = "REQUESTED"
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
@@ -133,50 +134,50 @@ class ReservedNodeExchangeStatusType(str):
     FAILED = "FAILED"
 
 
-class ReservedNodeOfferingType(str):
+class ReservedNodeOfferingType(StrEnum):
     Regular = "Regular"
     Upgradable = "Upgradable"
 
 
-class ScheduleState(str):
+class ScheduleState(StrEnum):
     MODIFYING = "MODIFYING"
     ACTIVE = "ACTIVE"
     FAILED = "FAILED"
 
 
-class ScheduledActionFilterName(str):
+class ScheduledActionFilterName(StrEnum):
     cluster_identifier = "cluster-identifier"
     iam_role = "iam-role"
 
 
-class ScheduledActionState(str):
+class ScheduledActionState(StrEnum):
     ACTIVE = "ACTIVE"
     DISABLED = "DISABLED"
 
 
-class ScheduledActionTypeValues(str):
+class ScheduledActionTypeValues(StrEnum):
     ResizeCluster = "ResizeCluster"
     PauseCluster = "PauseCluster"
     ResumeCluster = "ResumeCluster"
 
 
-class ServiceAuthorization(str):
+class ServiceAuthorization(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class SnapshotAttributeToSortBy(str):
+class SnapshotAttributeToSortBy(StrEnum):
     SOURCE_TYPE = "SOURCE_TYPE"
     TOTAL_SIZE = "TOTAL_SIZE"
     CREATE_TIME = "CREATE_TIME"
 
 
-class SortByOrder(str):
+class SortByOrder(StrEnum):
     ASC = "ASC"
     DESC = "DESC"
 
 
-class SourceType(str):
+class SourceType(StrEnum):
     cluster = "cluster"
     cluster_parameter_group = "cluster-parameter-group"
     cluster_security_group = "cluster-security-group"
@@ -184,7 +185,7 @@ class SourceType(str):
     scheduled_action = "scheduled-action"
 
 
-class TableRestoreStatusType(str):
+class TableRestoreStatusType(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     SUCCEEDED = "SUCCEEDED"
@@ -192,30 +193,30 @@ class TableRestoreStatusType(str):
     CANCELED = "CANCELED"
 
 
-class UsageLimitBreachAction(str):
+class UsageLimitBreachAction(StrEnum):
     log = "log"
     emit_metric = "emit-metric"
     disable = "disable"
 
 
-class UsageLimitFeatureType(str):
+class UsageLimitFeatureType(StrEnum):
     spectrum = "spectrum"
     concurrency_scaling = "concurrency-scaling"
     cross_region_datasharing = "cross-region-datasharing"
 
 
-class UsageLimitLimitType(str):
+class UsageLimitLimitType(StrEnum):
     time = "time"
     data_scanned = "data-scanned"
 
 
-class UsageLimitPeriod(str):
+class UsageLimitPeriod(StrEnum):
     daily = "daily"
     weekly = "weekly"
     monthly = "monthly"
 
 
-class ZeroETLIntegrationStatus(str):
+class ZeroETLIntegrationStatus(StrEnum):
     creating = "creating"
     active = "active"
     modifying = "modifying"

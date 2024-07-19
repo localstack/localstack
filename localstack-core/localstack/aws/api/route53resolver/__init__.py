@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -50,33 +51,33 @@ TagValue = str
 Unsigned = int
 
 
-class Action(str):
+class Action(StrEnum):
     ALLOW = "ALLOW"
     BLOCK = "BLOCK"
     ALERT = "ALERT"
 
 
-class AutodefinedReverseFlag(str):
+class AutodefinedReverseFlag(StrEnum):
     ENABLE = "ENABLE"
     DISABLE = "DISABLE"
     USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
-class BlockOverrideDnsType(str):
+class BlockOverrideDnsType(StrEnum):
     CNAME = "CNAME"
 
 
-class BlockResponse(str):
+class BlockResponse(StrEnum):
     NODATA = "NODATA"
     NXDOMAIN = "NXDOMAIN"
     OVERRIDE = "OVERRIDE"
 
 
-class FirewallDomainImportOperation(str):
+class FirewallDomainImportOperation(StrEnum):
     REPLACE = "REPLACE"
 
 
-class FirewallDomainListStatus(str):
+class FirewallDomainListStatus(StrEnum):
     COMPLETE = "COMPLETE"
     COMPLETE_IMPORT_FAILED = "COMPLETE_IMPORT_FAILED"
     IMPORTING = "IMPORTING"
@@ -84,36 +85,36 @@ class FirewallDomainListStatus(str):
     UPDATING = "UPDATING"
 
 
-class FirewallDomainRedirectionAction(str):
+class FirewallDomainRedirectionAction(StrEnum):
     INSPECT_REDIRECTION_DOMAIN = "INSPECT_REDIRECTION_DOMAIN"
     TRUST_REDIRECTION_DOMAIN = "TRUST_REDIRECTION_DOMAIN"
 
 
-class FirewallDomainUpdateOperation(str):
+class FirewallDomainUpdateOperation(StrEnum):
     ADD = "ADD"
     REMOVE = "REMOVE"
     REPLACE = "REPLACE"
 
 
-class FirewallFailOpenStatus(str):
+class FirewallFailOpenStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
     USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
-class FirewallRuleGroupAssociationStatus(str):
+class FirewallRuleGroupAssociationStatus(StrEnum):
     COMPLETE = "COMPLETE"
     DELETING = "DELETING"
     UPDATING = "UPDATING"
 
 
-class FirewallRuleGroupStatus(str):
+class FirewallRuleGroupStatus(StrEnum):
     COMPLETE = "COMPLETE"
     DELETING = "DELETING"
     UPDATING = "UPDATING"
 
 
-class IpAddressStatus(str):
+class IpAddressStatus(StrEnum):
     CREATING = "CREATING"
     FAILED_CREATION = "FAILED_CREATION"
     ATTACHING = "ATTACHING"
@@ -128,12 +129,12 @@ class IpAddressStatus(str):
     UPDATE_FAILED = "UPDATE_FAILED"
 
 
-class MutationProtectionStatus(str):
+class MutationProtectionStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
 
 
-class OutpostResolverStatus(str):
+class OutpostResolverStatus(StrEnum):
     CREATING = "CREATING"
     OPERATIONAL = "OPERATIONAL"
     UPDATING = "UPDATING"
@@ -143,13 +144,13 @@ class OutpostResolverStatus(str):
     FAILED_DELETION = "FAILED_DELETION"
 
 
-class Protocol(str):
+class Protocol(StrEnum):
     DoH = "DoH"
     Do53 = "Do53"
     DoH_FIPS = "DoH-FIPS"
 
 
-class ResolverAutodefinedReverseStatus(str):
+class ResolverAutodefinedReverseStatus(StrEnum):
     ENABLING = "ENABLING"
     ENABLED = "ENABLED"
     DISABLING = "DISABLING"
@@ -158,7 +159,7 @@ class ResolverAutodefinedReverseStatus(str):
     USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
-class ResolverDNSSECValidationStatus(str):
+class ResolverDNSSECValidationStatus(StrEnum):
     ENABLING = "ENABLING"
     ENABLED = "ENABLED"
     DISABLING = "DISABLING"
@@ -167,12 +168,12 @@ class ResolverDNSSECValidationStatus(str):
     USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
-class ResolverEndpointDirection(str):
+class ResolverEndpointDirection(StrEnum):
     INBOUND = "INBOUND"
     OUTBOUND = "OUTBOUND"
 
 
-class ResolverEndpointStatus(str):
+class ResolverEndpointStatus(StrEnum):
     CREATING = "CREATING"
     OPERATIONAL = "OPERATIONAL"
     UPDATING = "UPDATING"
@@ -181,20 +182,20 @@ class ResolverEndpointStatus(str):
     DELETING = "DELETING"
 
 
-class ResolverEndpointType(str):
+class ResolverEndpointType(StrEnum):
     IPV6 = "IPV6"
     IPV4 = "IPV4"
     DUALSTACK = "DUALSTACK"
 
 
-class ResolverQueryLogConfigAssociationError(str):
+class ResolverQueryLogConfigAssociationError(StrEnum):
     NONE = "NONE"
     DESTINATION_NOT_FOUND = "DESTINATION_NOT_FOUND"
     ACCESS_DENIED = "ACCESS_DENIED"
     INTERNAL_SERVICE_ERROR = "INTERNAL_SERVICE_ERROR"
 
 
-class ResolverQueryLogConfigAssociationStatus(str):
+class ResolverQueryLogConfigAssociationStatus(StrEnum):
     CREATING = "CREATING"
     ACTIVE = "ACTIVE"
     ACTION_NEEDED = "ACTION_NEEDED"
@@ -202,14 +203,14 @@ class ResolverQueryLogConfigAssociationStatus(str):
     FAILED = "FAILED"
 
 
-class ResolverQueryLogConfigStatus(str):
+class ResolverQueryLogConfigStatus(StrEnum):
     CREATING = "CREATING"
     CREATED = "CREATED"
     DELETING = "DELETING"
     FAILED = "FAILED"
 
 
-class ResolverRuleAssociationStatus(str):
+class ResolverRuleAssociationStatus(StrEnum):
     CREATING = "CREATING"
     COMPLETE = "COMPLETE"
     DELETING = "DELETING"
@@ -217,31 +218,31 @@ class ResolverRuleAssociationStatus(str):
     OVERRIDDEN = "OVERRIDDEN"
 
 
-class ResolverRuleStatus(str):
+class ResolverRuleStatus(StrEnum):
     COMPLETE = "COMPLETE"
     DELETING = "DELETING"
     UPDATING = "UPDATING"
     FAILED = "FAILED"
 
 
-class RuleTypeOption(str):
+class RuleTypeOption(StrEnum):
     FORWARD = "FORWARD"
     SYSTEM = "SYSTEM"
     RECURSIVE = "RECURSIVE"
 
 
-class ShareStatus(str):
+class ShareStatus(StrEnum):
     NOT_SHARED = "NOT_SHARED"
     SHARED_WITH_ME = "SHARED_WITH_ME"
     SHARED_BY_ME = "SHARED_BY_ME"
 
 
-class SortOrder(str):
+class SortOrder(StrEnum):
     ASCENDING = "ASCENDING"
     DESCENDING = "DESCENDING"
 
 
-class Validation(str):
+class Validation(StrEnum):
     ENABLE = "ENABLE"
     DISABLE = "DISABLE"
     USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
