@@ -1,0 +1,35 @@
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/24
+
+  SecurityGroupWithoutVpc:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Group without assigned VPC
+
+  SecurityGroupWithVpc:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Group with assigned VPC
+      VpcId:
+        Ref: Vpc
+
+Outputs:
+  SGWithoutVpcIdRef:
+    Value:
+      Ref: SecurityGroupWithoutVpc
+  SGWithVpcIdRef:
+    Value:
+      Ref: SecurityGroupWithVpc
+  SGWithoutVpcIdGroupId:
+    Value:
+      Fn::GetAtt:
+        - SecurityGroupWithoutVpc
+        - GroupId
+  SGWithVpcIdGroupId:
+    Value:
+      Fn::GetAtt:
+        - SecurityGroupWithVpc
+        - GroupId

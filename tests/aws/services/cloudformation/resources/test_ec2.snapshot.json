@@ -276,5 +276,16 @@
         "VpcId": "<vpc-id:1>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_ec2_security_group_id_with_vpc": {
+    "recorded-date": "19-07-2024, 15:53:16",
+    "recorded-content": {
+      "references": {
+        "SGWithVpcIdGroupId": "<with-vpcid-group-id>",
+        "SGWithVpcIdRef": "<with-vpcid-group-id>",
+        "SGWithoutVpcIdGroupId": "<without-vpcid-group-id>",
+        "SGWithoutVpcIdRef": "<without-vpcid-group-name>"
+      }
+    }
   }
 }
