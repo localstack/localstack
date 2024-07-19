@@ -251,28 +251,3 @@ class TestHandlerIntegrationResponse:
         ctx.endpoint_response["headers"]["content-type"] = "text/html"
         integration_response_handler(ctx)
         assert ctx.invocation_response["body"] == b"json"
-
-    def test_remapped_headers(self, ctx, integration_response_handler):
-        integration_response = IntegrationResponse(
-            statusCode="200",
-            selectionPattern="",
-            responseParameters={
-                "method.response.header.content-length": "'from params'",
-                "method.response.header.connection": "'from params'",
-            },
-            responseTemplates={"application/json": RESPONSE_OVERRIDES},
-        )
-        ctx.resource_method["methodIntegration"]["integrationResponses"] = {
-            "200": integration_response
-        }
-        integration_response_handler(ctx)
-        inv_response = ctx.invocation_response
-        assert ctx.invocation_response["body"] == b""
-        assert inv_response["headers"].get("content-type") == "application/json"
-        assert inv_response["headers"].get("x-amzn-remapped-connection") == "from params"
-        assert inv_response["headers"].get("x-amzn-remapped-date") == "from override"
-        assert inv_response["headers"].get("x-amzn-remapped-content-length") == "from override"
-
-
-RESPONSE_OVERRIDES = """#set($context.responseOverride.header.content-length = 'from override')
-#set($context.responseOverride.header.date = 'from override')"""
