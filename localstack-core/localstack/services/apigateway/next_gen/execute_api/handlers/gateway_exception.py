@@ -43,11 +43,7 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
             )
             return
 
-        LOG.info(
-            "Error raised during invocation: %s",
-            exception.type,
-            exc_info=LOG.isEnabledFor(logging.DEBUG),
-        )
+        LOG.info("Error raised during invocation: %s", exception.type)
         error = self.create_exception_response(exception, context)
         if error:
             response.update_from(error)
