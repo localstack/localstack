@@ -289,7 +289,6 @@ def test_cfn_update_ec2_instance_type(deploy_cfn_template, aws_client, cleanups)
 
 
 @markers.aws.validated
-@pytest.mark.skip(reason="WIP")
 def test_ec2_security_group_id_with_vpc(deploy_cfn_template, snapshot, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(

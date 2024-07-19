@@ -107,7 +107,16 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
 
         response = ec2.create_security_group(**params)
         model["GroupId"] = response["GroupId"]
-        model["Id"] = response["GroupId"]
+
+        # When you pass the logical ID of this resource to the intrinsic Ref function,
+        # Ref returns the ID of the security group if you specified the VpcId property.
+        # Otherwise, it returns the name of the security group.
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-securitygroup.html#aws-resource-ec2-securitygroup-return-values-ref
+        if "VpcId" in model:
+            model["Id"] = response["GroupId"]
+        else:
+            model["Id"] = params["GroupName"]
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
