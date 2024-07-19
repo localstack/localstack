@@ -286,3 +286,43 @@ def test_cfn_update_ec2_instance_type(deploy_cfn_template, aws_client, cleanups)
         "Instances"
     ][0]
     assert instance["InstanceType"] == "t2.medium"
+
+
+@markers.aws.validated
+def test_ec2_security_group_id_with_vpc(deploy_cfn_template, snapshot, aws_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/ec2_vpc_securitygroup.yml"
+        ),
+    )
+
+    ec2_client = aws_client.ec2
+    with_vpcid_sg_group_id = ec2_client.describe_security_groups(
+        Filters=[
+            {
+                "Name": "group-id",
+                "Values": [stack.outputs["SGWithVpcIdGroupId"]],
+            },
+        ]
+    )["SecurityGroups"][0]
+    without_vpcid_sg_group_id = ec2_client.describe_security_groups(
+        Filters=[
+            {
+                "Name": "group-id",
+                "Values": [stack.outputs["SGWithoutVpcIdGroupId"]],
+            },
+        ]
+    )["SecurityGroups"][0]
+
+    snapshot.add_transformer(
+        snapshot.transform.regex(with_vpcid_sg_group_id["GroupId"], "<with-vpcid-group-id>")
+    )
+    snapshot.add_transformer(
+        snapshot.transform.regex(without_vpcid_sg_group_id["GroupId"], "<without-vpcid-group-id>")
+    )
+    snapshot.add_transformer(
+        snapshot.transform.regex(
+            without_vpcid_sg_group_id["GroupName"], "<without-vpcid-group-name>"
+        )
+    )
+    snapshot.match("references", stack.outputs)
