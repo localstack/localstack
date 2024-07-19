@@ -1,5 +1,6 @@
 import pytest
 from rolo import Response
+from werkzeug import Request
 
 from localstack.aws.api.apigateway import GatewayResponse, GatewayResponseType
 from localstack.services.apigateway.models import MergedRestApi, RestApiDeployment
@@ -31,7 +32,7 @@ class TestGatewayResponseHandler:
     @pytest.fixture
     def get_context(self):
         def _create_context_with_deployment(gateway_responses=None) -> RestApiInvocationContext:
-            context = RestApiInvocationContext(None)
+            context = RestApiInvocationContext(Request(environ={}))
             context.deployment = RestApiDeployment(
                 account_id=TEST_AWS_ACCOUNT_ID,
                 region=TEST_AWS_REGION_NAME,
