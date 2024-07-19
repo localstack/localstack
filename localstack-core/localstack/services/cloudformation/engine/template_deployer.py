@@ -404,6 +404,7 @@ def _resolve_refs_recursively(
                     parameters,
                     val,
                 )
+
                 if not isinstance(resolved_val, str):
                     # We don't have access to the resource that's a dependency in this case,
                     # so do the best we can with the resource ids
@@ -770,6 +771,8 @@ def resolve_placeholders_in_string(
 
                 if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith("List<"):
                     return [p.strip() for p in parameter_value.split(",")]
+                elif parameter_type == "Number":
+                    return str(parameter_value)
                 else:
                     return parameter_value
             else:
@@ -782,7 +785,7 @@ def resolve_placeholders_in_string(
 
     regex = r"\$\{([^\}]+)\}"
     result = re.sub(regex, _replace, result)
-    return result
+    return int(result) if result.isdigit() else result
 
 
 def evaluate_resource_condition(conditions: dict[str, bool], resource: dict) -> bool:
