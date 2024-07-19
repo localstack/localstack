@@ -179,7 +179,7 @@
 /tests/aws/services/opensearch/ @alexrashed @silv-io
 /tests/unit/services/opensearch/ @alexrashed @silv-io
 
-# pipes (shared with lambda for Event Source Mapping)
+# pipes
 /localstack-core/localstack/aws/api/pipes/ @joe4dev
 
 # route53
