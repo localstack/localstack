@@ -19553,16 +19553,13 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_label": {
-    "recorded-date": "12-01-2024, 06:22:03",
+    "recorded-date": "20-07-2024, 08:30:22",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json"
-              },
+              "input": "[\"Hello\", \"World\"]",
               "inputDetails": {
                 "truncated": false
               },
@@ -19577,10 +19574,7 @@
             "id": 2,
             "previousEventId": 0,
             "stateEnteredEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.json"
-              },
+              "input": "[\"Hello\",\"World\"]",
               "inputDetails": {
                 "truncated": false
               },
@@ -19592,7 +19586,7 @@
           {
             "id": 3,
             "mapStateStartedEventDetails": {
-              "length": 0
+              "length": 2
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -19624,7 +19618,7 @@
             "previousEventId": 5,
             "stateExitedEventDetails": {
               "name": "MapState",
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[\"Hello\",\"World\"]",
               "outputDetails": {
                 "truncated": false
               }
@@ -19634,7 +19628,7 @@
           },
           {
             "executionSucceededEventDetails": {
-              "output": "[{\"key1\":\"value1\",\"key2\":\"value2\"}]",
+              "output": "[\"Hello\",\"World\"]",
               "outputDetails": {
                 "truncated": false
               }

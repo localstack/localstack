@@ -4,24 +4,14 @@
   "States": {
     "MapState": {
       "Type": "Map",
-      "ItemReader": {
-        "ReaderConfig": {
-          "InputType": "JSON",
-        },
-        "Resource": "arn:aws:states:::s3:getObject",
-        "Parameters": {
-          "Bucket.$": "$.Bucket",
-          "Key.$": "$.Key"
-        }
-      },
       "ItemProcessor": {
         "ProcessorConfig": {
           "Mode": "DISTRIBUTED",
           "ExecutionType": "STANDARD"
         },
-        "StartAt": "PassItem",
+        "StartAt": "IteratorInner",
         "States": {
-          "PassItem": {
+          "IteratorInner": {
             "Type": "Pass",
             "End": true
           }
