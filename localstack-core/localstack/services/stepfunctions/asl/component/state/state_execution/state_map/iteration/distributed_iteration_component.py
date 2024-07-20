@@ -54,6 +54,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_manager import (
 
 class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
     item_reader: Final[Optional[ItemReader]]
+    label: Final[Optional[str]]
 
     def __init__(
         self,
@@ -65,7 +66,7 @@ class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
         item_reader: Optional[ItemReader],
         tolerated_failure_count: int,
         tolerated_failure_percentage: float,
-        label: str,
+        label: Optional[str],
     ):
         super().__init__(
             state_name=state_name,
