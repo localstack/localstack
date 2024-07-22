@@ -41,6 +41,7 @@ ErrorCode = str
 ErrorMessage = str
 ErrorOutputPrefix = str
 FileExtension = str
+GlueDataCatalogARN = str
 HECAcknowledgmentTimeoutInSeconds = int
 HECEndpoint = str
 HECToken = str
@@ -76,6 +77,8 @@ RoleARN = str
 SecretARN = str
 SizeInMBs = int
 SnowflakeAccountUrl = str
+SnowflakeBufferingIntervalInSeconds = int
+SnowflakeBufferingSizeInMBs = int
 SnowflakeContentColumnName = str
 SnowflakeDatabase = str
 SnowflakeKeyPassphrase = str
@@ -197,6 +200,11 @@ class HECEndpointType(StrEnum):
 
 
 class HttpEndpointS3BackupMode(StrEnum):
+    FailedDataOnly = "FailedDataOnly"
+    AllData = "AllData"
+
+
+class IcebergS3BackupMode(StrEnum):
     FailedDataOnly = "FailedDataOnly"
     AllData = "AllData"
 
@@ -533,6 +541,10 @@ class AuthenticationConfiguration(TypedDict, total=False):
     Connectivity: Connectivity
 
 
+class CatalogConfiguration(TypedDict, total=False):
+    CatalogARN: Optional[GlueDataCatalogARN]
+
+
 ColumnToJsonKeyMappings = Dict[NonEmptyStringWithoutWhitespace, NonEmptyString]
 
 
@@ -540,6 +552,40 @@ class CopyCommand(TypedDict, total=False):
     DataTableName: DataTableName
     DataTableColumns: Optional[DataTableColumns]
     CopyOptions: Optional[CopyOptions]
+
+
+class RetryOptions(TypedDict, total=False):
+    DurationInSeconds: Optional[RetryDurationInSeconds]
+
+
+ListOfNonEmptyStringsWithoutWhitespace = List[NonEmptyStringWithoutWhitespace]
+
+
+class DestinationTableConfiguration(TypedDict, total=False):
+    DestinationTableName: NonEmptyStringWithoutWhitespace
+    DestinationDatabaseName: NonEmptyStringWithoutWhitespace
+    UniqueKeys: Optional[ListOfNonEmptyStringsWithoutWhitespace]
+    S3ErrorOutputPrefix: Optional[ErrorOutputPrefix]
+
+
+DestinationTableConfigurationList = List[DestinationTableConfiguration]
+
+
+class IcebergDestinationConfiguration(TypedDict, total=False):
+    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    BufferingHints: Optional[BufferingHints]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    S3BackupMode: Optional[IcebergS3BackupMode]
+    RetryOptions: Optional[RetryOptions]
+    RoleARN: RoleARN
+    CatalogConfiguration: CatalogConfiguration
+    S3Configuration: S3DestinationConfiguration
+
+
+class SnowflakeBufferingHints(TypedDict, total=False):
+    SizeInMBs: Optional[SnowflakeBufferingSizeInMBs]
+    IntervalInSeconds: Optional[SnowflakeBufferingIntervalInSeconds]
 
 
 class SecretsManagerConfiguration(TypedDict, total=False):
@@ -581,12 +627,17 @@ class SnowflakeDestinationConfiguration(TypedDict, total=False):
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3Configuration: S3DestinationConfiguration
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    BufferingHints: Optional[SnowflakeBufferingHints]
+
+
+ReadFromTimestamp = datetime
 
 
 class MSKSourceConfiguration(TypedDict, total=False):
     MSKClusterARN: MSKClusterARN
     TopicName: TopicName
     AuthenticationConfiguration: AuthenticationConfiguration
+    ReadFromTimestamp: Optional[ReadFromTimestamp]
 
 
 class Tag(TypedDict, total=False):
@@ -706,16 +757,9 @@ class RedshiftDestinationConfiguration(TypedDict, total=False):
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
-class RetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[RetryDurationInSeconds]
-
-
 class DynamicPartitioningConfiguration(TypedDict, total=False):
     RetryOptions: Optional[RetryOptions]
     Enabled: Optional[BooleanObject]
-
-
-ListOfNonEmptyStringsWithoutWhitespace = List[NonEmptyStringWithoutWhitespace]
 
 
 class OrcSerDe(TypedDict, total=False):
@@ -835,6 +879,7 @@ class CreateDeliveryStreamInput(ServiceRequest):
     ]
     MSKSourceConfiguration: Optional[MSKSourceConfiguration]
     SnowflakeDestinationConfiguration: Optional[SnowflakeDestinationConfiguration]
+    IcebergDestinationConfiguration: Optional[IcebergDestinationConfiguration]
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
@@ -856,6 +901,18 @@ class DeleteDeliveryStreamOutput(TypedDict, total=False):
 DeliveryStartTimestamp = datetime
 
 
+class IcebergDestinationDescription(TypedDict, total=False):
+    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    BufferingHints: Optional[BufferingHints]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    S3BackupMode: Optional[IcebergS3BackupMode]
+    RetryOptions: Optional[RetryOptions]
+    RoleARN: Optional[RoleARN]
+    CatalogConfiguration: Optional[CatalogConfiguration]
+    S3DestinationDescription: Optional[S3DestinationDescription]
+
+
 class SnowflakeDestinationDescription(TypedDict, total=False):
     AccountUrl: Optional[SnowflakeAccountUrl]
     User: Optional[SnowflakeUser]
@@ -874,6 +931,7 @@ class SnowflakeDestinationDescription(TypedDict, total=False):
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3DestinationDescription: Optional[S3DestinationDescription]
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    BufferingHints: Optional[SnowflakeBufferingHints]
 
 
 class HttpEndpointDescription(TypedDict, total=False):
@@ -972,6 +1030,7 @@ class DestinationDescription(TypedDict, total=False):
     AmazonOpenSearchServerlessDestinationDescription: Optional[
         AmazonOpenSearchServerlessDestinationDescription
     ]
+    IcebergDestinationDescription: Optional[IcebergDestinationDescription]
 
 
 DestinationDescriptionList = List[DestinationDescription]
@@ -982,6 +1041,7 @@ class MSKSourceDescription(TypedDict, total=False):
     TopicName: Optional[TopicName]
     AuthenticationConfiguration: Optional[AuthenticationConfiguration]
     DeliveryStartTimestamp: Optional[DeliveryStartTimestamp]
+    ReadFromTimestamp: Optional[ReadFromTimestamp]
 
 
 class KinesisStreamSourceDescription(TypedDict, total=False):
@@ -1084,6 +1144,18 @@ class HttpEndpointDestinationUpdate(TypedDict, total=False):
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
+class IcebergDestinationUpdate(TypedDict, total=False):
+    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    BufferingHints: Optional[BufferingHints]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    S3BackupMode: Optional[IcebergS3BackupMode]
+    RetryOptions: Optional[RetryOptions]
+    RoleARN: Optional[RoleARN]
+    CatalogConfiguration: Optional[CatalogConfiguration]
+    S3Configuration: Optional[S3DestinationConfiguration]
+
+
 class ListDeliveryStreamsInput(ServiceRequest):
     Limit: Optional[ListDeliveryStreamsInputLimit]
     DeliveryStreamType: Optional[DeliveryStreamType]
@@ -1180,6 +1252,7 @@ class SnowflakeDestinationUpdate(TypedDict, total=False):
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3Update: Optional[S3DestinationUpdate]
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    BufferingHints: Optional[SnowflakeBufferingHints]
 
 
 class SplunkDestinationUpdate(TypedDict, total=False):
@@ -1249,6 +1322,7 @@ class UpdateDestinationInput(ServiceRequest):
         AmazonOpenSearchServerlessDestinationUpdate
     ]
     SnowflakeDestinationUpdate: Optional[SnowflakeDestinationUpdate]
+    IcebergDestinationUpdate: Optional[IcebergDestinationUpdate]
 
 
 class UpdateDestinationOutput(TypedDict, total=False):
@@ -1278,6 +1352,7 @@ class FirehoseApi:
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
         snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
+        iceberg_destination_configuration: IcebergDestinationConfiguration = None,
         **kwargs,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
@@ -1397,6 +1472,7 @@ class FirehoseApi:
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
         snowflake_destination_update: SnowflakeDestinationUpdate = None,
+        iceberg_destination_update: IcebergDestinationUpdate = None,
         **kwargs,
     ) -> UpdateDestinationOutput:
         raise NotImplementedError

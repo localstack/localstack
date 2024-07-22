@@ -180,6 +180,7 @@ IntegerWithConstraints = int
 InternetGatewayId = str
 IpAddress = str
 IpamAddressHistoryMaxResults = int
+IpamExternalResourceVerificationTokenId = str
 IpamId = str
 IpamMaxResults = int
 IpamNetmaskLength = int
@@ -2126,6 +2127,15 @@ class IpamDiscoveryFailureCode(StrEnum):
     unauthorized_failure = "unauthorized-failure"
 
 
+class IpamExternalResourceVerificationTokenState(StrEnum):
+    create_in_progress = "create-in-progress"
+    create_complete = "create-complete"
+    create_failed = "create-failed"
+    delete_in_progress = "delete-in-progress"
+    delete_complete = "delete-complete"
+    delete_failed = "delete-failed"
+
+
 class IpamManagementState(StrEnum):
     managed = "managed"
     unmanaged = "unmanaged"
@@ -2812,6 +2822,7 @@ class ResourceType(StrEnum):
     ipam_resource_discovery = "ipam-resource-discovery"
     ipam_resource_discovery_association = "ipam-resource-discovery-association"
     instance_connect_endpoint = "instance-connect-endpoint"
+    ipam_external_resource_verification_token = "ipam-external-resource-verification-token"
 
 
 class RootDeviceType(StrEnum):
@@ -3042,6 +3053,11 @@ class TieringOperationStatus(StrEnum):
     permanent_restore_failed = "permanent-restore-failed"
 
 
+class TokenState(StrEnum):
+    valid = "valid"
+    expired = "expired"
+
+
 class TpmSupportValues(StrEnum):
     v2_0 = "v2.0"
 
@@ -3242,6 +3258,11 @@ class UsageClassType(StrEnum):
 class UserTrustProviderType(StrEnum):
     iam_identity_center = "iam-identity-center"
     oidc = "oidc"
+
+
+class VerificationMethod(StrEnum):
+    remarks_x509 = "remarks-x509"
+    dns_token = "dns-token"
 
 
 class VerifiedAccessEndpointAttachmentType(StrEnum):
@@ -6569,6 +6590,31 @@ class CreateInternetGatewayResult(TypedDict, total=False):
     InternetGateway: Optional[InternetGateway]
 
 
+class CreateIpamExternalResourceVerificationTokenRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamId: IpamId
+    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
+
+
+class IpamExternalResourceVerificationToken(TypedDict, total=False):
+    IpamExternalResourceVerificationTokenId: Optional[IpamExternalResourceVerificationTokenId]
+    IpamExternalResourceVerificationTokenArn: Optional[ResourceArn]
+    IpamId: Optional[IpamId]
+    IpamArn: Optional[ResourceArn]
+    IpamRegion: Optional[String]
+    TokenValue: Optional[String]
+    TokenName: Optional[String]
+    NotAfter: Optional[MillisecondDateTime]
+    Status: Optional[TokenState]
+    Tags: Optional[TagList]
+    State: Optional[IpamExternalResourceVerificationTokenState]
+
+
+class CreateIpamExternalResourceVerificationTokenResult(TypedDict, total=False):
+    IpamExternalResourceVerificationToken: Optional[IpamExternalResourceVerificationToken]
+
+
 class IpamPoolSourceResourceRequest(TypedDict, total=False):
     ResourceId: Optional[String]
     ResourceType: Optional[IpamPoolSourceResourceType]
@@ -9337,6 +9383,15 @@ class DeleteInternetGatewayRequest(ServiceRequest):
     InternetGatewayId: InternetGatewayId
 
 
+class DeleteIpamExternalResourceVerificationTokenRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamExternalResourceVerificationTokenId: IpamExternalResourceVerificationTokenId
+
+
+class DeleteIpamExternalResourceVerificationTokenResult(TypedDict, total=False):
+    IpamExternalResourceVerificationToken: Optional[IpamExternalResourceVerificationToken]
+
+
 class DeleteIpamPoolRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     IpamPoolId: IpamPoolId
@@ -11861,6 +11916,22 @@ class DescribeIpamByoasnRequest(ServiceRequest):
 class DescribeIpamByoasnResult(TypedDict, total=False):
     Byoasns: Optional[ByoasnSet]
     NextToken: Optional[String]
+
+
+class DescribeIpamExternalResourceVerificationTokensRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    Filters: Optional[FilterList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+    IpamExternalResourceVerificationTokenIds: Optional[ValueStringList]
+
+
+IpamExternalResourceVerificationTokenSet = List[IpamExternalResourceVerificationToken]
+
+
+class DescribeIpamExternalResourceVerificationTokensResult(TypedDict, total=False):
+    NextToken: Optional[NextToken]
+    IpamExternalResourceVerificationTokens: Optional[IpamExternalResourceVerificationTokenSet]
 
 
 class DescribeIpamPoolsRequest(ServiceRequest):
@@ -17473,6 +17544,8 @@ class ProvisionIpamPoolCidrRequest(ServiceRequest):
     CidrAuthorizationContext: Optional[IpamCidrAuthorizationContext]
     NetmaskLength: Optional[Integer]
     ClientToken: Optional[String]
+    VerificationMethod: Optional[VerificationMethod]
+    IpamExternalResourceVerificationTokenId: Optional[IpamExternalResourceVerificationTokenId]
 
 
 class ProvisionIpamPoolCidrResult(TypedDict, total=False):
@@ -19351,6 +19424,18 @@ class Ec2Api:
     ) -> CreateIpamResult:
         raise NotImplementedError
 
+    @handler("CreateIpamExternalResourceVerificationToken")
+    def create_ipam_external_resource_verification_token(
+        self,
+        context: RequestContext,
+        ipam_id: IpamId,
+        dry_run: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
+        client_token: String = None,
+        **kwargs,
+    ) -> CreateIpamExternalResourceVerificationTokenResult:
+        raise NotImplementedError
+
     @handler("CreateIpamPool")
     def create_ipam_pool(
         self,
@@ -20394,6 +20479,16 @@ class Ec2Api:
         cascade: Boolean = None,
         **kwargs,
     ) -> DeleteIpamResult:
+        raise NotImplementedError
+
+    @handler("DeleteIpamExternalResourceVerificationToken")
+    def delete_ipam_external_resource_verification_token(
+        self,
+        context: RequestContext,
+        ipam_external_resource_verification_token_id: IpamExternalResourceVerificationTokenId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DeleteIpamExternalResourceVerificationTokenResult:
         raise NotImplementedError
 
     @handler("DeleteIpamPool")
@@ -21757,6 +21852,19 @@ class Ec2Api:
         next_token: NextToken = None,
         **kwargs,
     ) -> DescribeIpamByoasnResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamExternalResourceVerificationTokens")
+    def describe_ipam_external_resource_verification_tokens(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        filters: FilterList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+        ipam_external_resource_verification_token_ids: ValueStringList = None,
+        **kwargs,
+    ) -> DescribeIpamExternalResourceVerificationTokensResult:
         raise NotImplementedError
 
     @handler("DescribeIpamPools")
@@ -25162,6 +25270,8 @@ class Ec2Api:
         cidr_authorization_context: IpamCidrAuthorizationContext = None,
         netmask_length: Integer = None,
         client_token: String = None,
+        verification_method: VerificationMethod = None,
+        ipam_external_resource_verification_token_id: IpamExternalResourceVerificationTokenId = None,
         **kwargs,
     ) -> ProvisionIpamPoolCidrResult:
         raise NotImplementedError
