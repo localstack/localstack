@@ -1,7 +1,7 @@
 import pytest
 from werkzeug.datastructures import Headers
 
-from localstack.aws.api.apigateway import Integration, IntegrationResponse, IntegrationType, Method
+from localstack.aws.api.apigateway import Integration, IntegrationResponse, IntegrationType
 from localstack.http import Request, Response
 from localstack.services.apigateway.models import MergedRestApi, RestApiDeployment
 from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
@@ -136,9 +136,7 @@ def ctx():
     request = InvocationRequestParser().create_invocation_request(context)
     context.invocation_request = request
 
-    context.resource_method = Method(
-        methodIntegration=Integration(type=IntegrationType.HTTP), methodResponses={}
-    )
+    context.integration = Integration(type=IntegrationType.HTTP)
     context.context_variables = ContextVariables()
     context.endpoint_response = EndpointResponse(
         body=b'{"foo":"bar"}',
@@ -166,9 +164,7 @@ class TestHandlerIntegrationResponse:
             responseParameters=None,
             responseTemplates=None,
         )
-        ctx.resource_method["methodIntegration"]["integrationResponses"] = {
-            "200": integration_response
-        }
+        ctx.integration["integrationResponses"] = {"200": integration_response}
         # take the status code from the integration response
         integration_response_handler(ctx)
         assert ctx.invocation_response["status_code"] == 300
@@ -201,9 +197,7 @@ class TestHandlerIntegrationResponse:
             responseParameters={"method.response.header.header": "'from params'"},
             responseTemplates=None,
         )
-        ctx.resource_method["methodIntegration"]["integrationResponses"] = {
-            "200": integration_response
-        }
+        ctx.integration["integrationResponses"] = {"200": integration_response}
 
         # set constant
         integration_response_handler(ctx)
@@ -230,9 +224,7 @@ class TestHandlerIntegrationResponse:
             responseParameters=None,
             responseTemplates={},
         )
-        ctx.resource_method["methodIntegration"]["integrationResponses"] = {
-            "200": integration_response
-        }
+        ctx.integration["integrationResponses"] = {"200": integration_response}
         # if none are set return the original body
         integration_response_handler(ctx)
         assert ctx.invocation_response["body"] == b'{"foo":"bar"}'

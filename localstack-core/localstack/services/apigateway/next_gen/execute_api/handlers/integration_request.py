@@ -54,7 +54,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         context: RestApiInvocationContext,
         response: Response,
     ):
-        integration: Integration = context.resource_method["methodIntegration"]
+        integration: Integration = context.integration
         integration_type = integration["type"]
 
         integration_request_parameters = integration["requestParameters"] or {}
@@ -85,9 +85,10 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             else:
                 headers.set("X-Forwarded-For", context.request.remote_addr)
                 headers.set("X-Forwarded-Port", context.request.environ.get("SERVER_PORT"))
-                # TODO X-Forwarded-Proto breaks Lambda RUST
-                #  tests.aws.services.apigateway.test_apigateway_lambda.test_lambda_rust_proxy_integration
-                # headers.set("X-Forwarded-Proto", context.request.environ.get("SERVER_PROTOCOL"))
+                headers.set(
+                    "X-Forwarded-Proto",
+                    context.request.environ.get("SERVER_PROTOCOL", "").split("/")[0],
+                )
                 # AWS_PROXY does not allow URI path rendering
                 # TODO: verify this
                 path_parameters = {}

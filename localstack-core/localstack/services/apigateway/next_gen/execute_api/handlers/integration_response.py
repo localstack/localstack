@@ -47,7 +47,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
     ):
         # TODO: we should log the response coming in from the Integration, either in Integration or here.
         #  before modification / after?
-        integration: Integration = context.resource_method["methodIntegration"]
+        integration: Integration = context.integration
         integration_type = integration["type"]
 
         if integration_type in (IntegrationType.AWS_PROXY, IntegrationType.HTTP_PROXY):

@@ -63,7 +63,11 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         if not status_code:
             status_code = exception.status_code or 500
 
-        return Response(response=content, headers=headers, status=status_code)
+        response = Response(response=content, headers=headers, status=status_code)
+        # Response sets a content-type by default. This will always be ignored.
+        # TODO use the response template response type when implementing the response template
+        response.headers.remove("content-type")
+        return response
 
     @staticmethod
     def _build_response_content(exception: BaseGatewayException) -> str:

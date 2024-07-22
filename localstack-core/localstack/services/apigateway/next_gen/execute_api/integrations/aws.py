@@ -11,7 +11,6 @@ from botocore.exceptions import ClientError
 from werkzeug.datastructures import Headers
 
 from localstack import config
-from localstack.aws.api.apigateway import Integration
 from localstack.aws.connect import (
     INTERNAL_REQUEST_PARAMS_HEADER,
     InternalRequestParameters,
@@ -177,14 +176,13 @@ class RestApiAwsIntegration(RestApiIntegration):
         self._base_host = ""
 
     def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
-        integration: Integration = context.resource_method["methodIntegration"]
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
         parsed_uri = self.parse_aws_integration_uri(integration_req["uri"])
         service_name = parsed_uri["service_name"]
         integration_region = parsed_uri["region_name"]
 
-        if credentials := integration.get("credentials"):
+        if credentials := context.integration.get("credentials"):
             credentials = render_uri_with_stage_variables(credentials, context.stage_variables)
 
         headers = integration_req["headers"]
@@ -334,8 +332,6 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
     name = "AWS_PROXY"
 
     def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
-        integration: Integration = context.resource_method["methodIntegration"]
-
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
 
@@ -354,7 +350,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         is_invocation_asynchronous = headers.get("X-Amz-Invocation-Type") == "'Event'"
 
         # TODO: write test for credentials rendering
-        if credentials := integration.get("credentials"):
+        if credentials := context.integration.get("credentials"):
             credentials = render_uri_with_stage_variables(credentials, context.stage_variables)
 
         try:

@@ -25,7 +25,7 @@ class MethodResponseHandler(RestApiGatewayHandler):
         response: Response,
     ):
         invocation_response = context.invocation_response
-        integration_type = context.resource_method["methodIntegration"]["type"]
+        integration_type = context.integration["type"]
         headers = invocation_response["headers"]
 
         remap_response_headers(headers, integration_type)
@@ -37,8 +37,13 @@ class MethodResponseHandler(RestApiGatewayHandler):
 
     @staticmethod
     def serialize_invocation_response(invocation_response: InvocationResponse) -> Response:
-        return Response(
+        is_content_type_set = invocation_response["headers"].get("content-type") is not None
+        response = Response(
             response=invocation_response["body"],
             headers=invocation_response["headers"],
             status=invocation_response["status_code"],
         )
+        if not is_content_type_set:
+            # Response sets a content-type by default. This will always be ignored.
+            response.headers.remove("content-type")
+        return response
