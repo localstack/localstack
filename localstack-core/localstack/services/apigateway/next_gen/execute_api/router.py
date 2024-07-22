@@ -64,7 +64,6 @@ class ApiGatewayEndpoint:
             return
 
         context.deployment = frozen_deployment
-        context.integration = context.resource_method["methodIntegration"]
         context.api_id = api_id
         context.stage = stage
         context.deployment_id = deployment_id
