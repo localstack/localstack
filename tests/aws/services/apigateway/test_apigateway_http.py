@@ -60,7 +60,7 @@ def add_http_integration_transformers(snapshot):
         # TODO: for HTTP integration only: requests (urllib3) automatically adds `Accept-Encoding` when sending the
         #  request, seems like we cannot remove it
         "$..headers.accept-encoding",
-        # # TODO: only missing for HTTP_PROXY, Must be coming from the lambda url
+        # TODO: only missing for HTTP_PROXY, Must be coming from the lambda url
         "$..headers.x-amzn-remapped-x-amzn-requestid",
         #  TODO AWS doesn't seems to add Server to lambda invocation for lambda url
         "$..headers.x-amzn-remapped-server",

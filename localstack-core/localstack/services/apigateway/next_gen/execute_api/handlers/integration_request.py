@@ -75,7 +75,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             # HTTP_PROXY still make uses of the request data mappings, and merges it with the invocation request
             # this is undocumented but validated behavior
             if integration_type == IntegrationType.HTTP_PROXY:
-                drop_invocation_headers(headers, integration_type)
+                drop_invocation_headers(headers)
                 headers.update(request_data_mapping["header"])
 
                 query_string_parameters = self._merge_http_proxy_query_string(

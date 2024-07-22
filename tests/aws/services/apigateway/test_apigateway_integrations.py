@@ -179,7 +179,6 @@ def apigw_echo_http_server_post(apigw_echo_http_server):
     if is_aws_cloud():
         return f"{PUBLIC_HTTP_ECHO_SERVER_URL}/post"
 
-    # return f"{PUBLIC_HTTP_ECHO_SERVER_URL}/post"
     return f"{apigw_echo_http_server}/post"
 
 
@@ -737,7 +736,9 @@ def test_create_execute_api_vpc_endpoint(
     retry(_invoke_api, retries=15, sleep=poll_sleep)
 
 
-@pytest.mark.skipif(condition=not is_next_gen_api(), reason="Not implemented in legacy")
+@pytest.mark.skipif(
+    condition=not is_next_gen_api() and not is_aws_cloud(), reason="Not implemented in legacy"
+)
 class TestApiGatewayHeaderRemapping:
     @pytest.fixture
     def create_apigateway_with_header_remapping(self, aws_client, create_rest_apigw):

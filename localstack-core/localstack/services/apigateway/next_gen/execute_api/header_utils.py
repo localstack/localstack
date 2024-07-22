@@ -111,7 +111,7 @@ def _drop_headers(headers: Headers, to_drop: Iterable[str]):
             headers.pop(header)
 
 
-def drop_invocation_headers(headers: Headers, integration_type: IntegrationType):
+def drop_invocation_headers(headers: Headers):
     """Will modify the provided headers in-place. Dropping matching headers from the provided integration type"""
     _drop_headers(headers, DROPPED_FROM_REQUEST_PROXY_COMMON)
 
