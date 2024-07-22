@@ -43,6 +43,8 @@ from localstack.aws.api.firehose import (
     FirehoseApi,
     HttpEndpointDestinationConfiguration,
     HttpEndpointDestinationUpdate,
+    IcebergDestinationConfiguration,
+    IcebergDestinationUpdate,
     InvalidArgumentException,
     KinesisStreamSourceConfiguration,
     ListDeliveryStreamsInputLimit,
@@ -198,7 +200,9 @@ def get_search_db_connection(endpoint: str, region_name: str):
     return OpenSearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
 
 
-def _drop_keys_in_destination_descriptions_not_in_output_types(destinations: list) -> list[dict]:
+def _drop_keys_in_destination_descriptions_not_in_output_types(
+    destinations: list,
+) -> list[dict]:
     """For supported destinations, drops the keys in the description not defined in the respective destination description return type"""
     for destination in destinations:
         if amazon_open_search_service_destination_description := destination.get(
@@ -227,7 +231,9 @@ def _drop_keys_in_destination_descriptions_not_in_output_types(destinations: lis
             )
         if redshift_destination_description := destination.get("RedshiftDestinationDescription"):
             destination["RedshiftDestinationDescription"] = select_from_typed_dict(
-                RedshiftDestinationDescription, redshift_destination_description, filter=True
+                RedshiftDestinationDescription,
+                redshift_destination_description,
+                filter=True,
             )
         if s3_destination_description := destination.get("S3DestinationDescription"):
             destination["S3DestinationDescription"] = select_from_typed_dict(
@@ -267,6 +273,7 @@ class FirehoseProvider(FirehoseApi):
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
         snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
+        iceberg_destination_configuration: IcebergDestinationConfiguration = None,
         **kwargs,
     ) -> CreateDeliveryStreamOutput:
         store = self.get_store(context.account_id, context.region)
@@ -377,7 +384,9 @@ class FirehoseProvider(FirehoseApi):
                     stream["DeliveryStreamStatus"] = DeliveryStreamStatus.ACTIVE
                 except Exception as e:
                     LOG.warning(
-                        "Unable to create Firehose delivery stream %s: %s", delivery_stream_name, e
+                        "Unable to create Firehose delivery stream %s: %s",
+                        delivery_stream_name,
+                        e,
                     )
                     stream["DeliveryStreamStatus"] = DeliveryStreamStatus.CREATING_FAILED
 
@@ -534,6 +543,7 @@ class FirehoseProvider(FirehoseApi):
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
         snowflake_destination_update: SnowflakeDestinationUpdate = None,
+        iceberg_destination_update: IcebergDestinationUpdate = None,
         **kwargs,
     ) -> UpdateDestinationOutput:
         delivery_stream_description = _get_description_or_raise_not_found(
@@ -597,7 +607,11 @@ class FirehoseProvider(FirehoseApi):
         return self._put_records(account_id, region_name, fh_d_stream, records)
 
     def _put_record(
-        self, account_id: str, region_name: str, delivery_stream_name: str, record: Record
+        self,
+        account_id: str,
+        region_name: str,
+        delivery_stream_name: str,
+        record: Record,
     ) -> PutRecordOutput:
         """Put a record to the firehose stream from a PutRecord API call"""
         result = self._put_records(account_id, region_name, delivery_stream_name, [record])
@@ -878,7 +892,9 @@ class FirehoseProvider(FirehoseApi):
         for row_to_insert in rows_to_insert:  # redsift_data only allows single row inserts
             try:
                 LOG.debug(
-                    "Publishing to Redshift destination: %s. Data: %s", jdbcurl, row_to_insert
+                    "Publishing to Redshift destination: %s. Data: %s",
+                    jdbcurl,
+                    row_to_insert,
                 )
                 redshift_data.execute_statement(Parameters=row_to_insert, **execute_statement)
             except Exception as e:
