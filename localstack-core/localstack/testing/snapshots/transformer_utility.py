@@ -170,16 +170,6 @@ class TransformerUtility:
             TransformerUtility.key_value("extendedRequestId"),
             TransformerUtility.key_value("resourceId"),
             TransformerUtility.key_value("sourceIp"),
-            TransformerUtility.key_value(
-                "X-Forwarded-For",
-                value_replacement="<X-Forwarded-For>",
-                reference_replacement=False,
-            ),
-            TransformerUtility.key_value(
-                "X-Forwarded-Port",
-                value_replacement="<X-Forwarded-Port>",
-                reference_replacement=False,
-            ),
             TransformerUtility.jsonpath("$..headers.X-Amz-Cf-Id", value_replacement="cf-id"),
             TransformerUtility.jsonpath(
                 "$..headers.CloudFront-Viewer-ASN", value_replacement="cloudfront-asn"
@@ -228,6 +218,11 @@ class TransformerUtility:
             TransformerUtility.key_value("X-Amzn-Apigateway-Api-Id"),
             TransformerUtility.key_value("X-Forwarded-For"),
             TransformerUtility.key_value("X-Forwarded-Port"),
+            TransformerUtility.key_value(
+                "X-Forwarded-Proto",
+                value_replacement="<X-Forwarded-Proto>",
+                reference_replacement=False,
+            ),
         ]
 
     @staticmethod

@@ -44,7 +44,7 @@ CLOUDFRONT_SKIP_HEADERS = [
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(paths=[*CLOUDFRONT_SKIP_HEADERS, "$..X-Forwarded-Proto"])
+@markers.snapshot.skip_snapshot_verify(paths=CLOUDFRONT_SKIP_HEADERS)
 @markers.snapshot.skip_snapshot_verify(
     condition=lambda: not is_next_gen_api(),
     paths=[
@@ -75,6 +75,7 @@ CLOUDFRONT_SKIP_HEADERS = [
         "$..X-Amzn-Trace-Id",
         "$..X-Forwarded-For",
         "$..X-Forwarded-Port",
+        "$..X-Forwarded-Proto",
     ],
 )
 def test_lambda_aws_proxy_integration(
@@ -90,6 +91,21 @@ def test_lambda_aws_proxy_integration(
             snapshot.transform.key_value("deploymentId"),
             snapshot.transform.jsonpath("$..headers.Host", value_replacement="host"),
             snapshot.transform.jsonpath("$..multiValueHeaders.Host[0]", value_replacement="host"),
+            snapshot.transform.key_value(
+                "X-Forwarded-For",
+                value_replacement="<X-Forwarded-For>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Port",
+                value_replacement="<X-Forwarded-Port>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Proto",
+                value_replacement="<X-Forwarded-Proto>",
+                reference_replacement=False,
+            ),
         ],
         priority=-1,
     )
@@ -896,7 +912,7 @@ def test_lambda_rust_proxy_integration(
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(paths=[*CLOUDFRONT_SKIP_HEADERS, "$..X-Forwarded-Proto"])
+@markers.snapshot.skip_snapshot_verify(paths=CLOUDFRONT_SKIP_HEADERS)
 @markers.snapshot.skip_snapshot_verify(
     condition=lambda: not is_next_gen_api(),
     paths=[
@@ -929,6 +945,7 @@ def test_lambda_rust_proxy_integration(
         "$..X-Amzn-Trace-Id",
         "$..X-Forwarded-For",
         "$..X-Forwarded-Port",
+        "$..X-Forwarded-Proto",
     ],
 )
 def test_lambda_aws_proxy_integration_request_data_mapping(
@@ -950,6 +967,21 @@ def test_lambda_aws_proxy_integration_request_data_mapping(
             snapshot.transform.key_value("deploymentId"),
             snapshot.transform.jsonpath("$..headers.Host", value_replacement="host"),
             snapshot.transform.jsonpath("$..multiValueHeaders.Host[0]", value_replacement="host"),
+            snapshot.transform.key_value(
+                "X-Forwarded-For",
+                value_replacement="<X-Forwarded-For>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Port",
+                value_replacement="<X-Forwarded-Port>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Proto",
+                value_replacement="<X-Forwarded-Proto>",
+                reference_replacement=False,
+            ),
         ],
         priority=-1,
     )

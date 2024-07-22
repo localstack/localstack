@@ -987,11 +987,7 @@ class TestApiGatewayHeaderRemapping:
         )
 
     @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..response-headers.Server",
-            "$..response-headers.Content-Length",
-            "$..headers.X-Forwarded-Proto",
-        ]
+        paths=["$..response-headers.Server", "$..response-headers.Content-Length"]
     )
     @pytest.mark.parametrize("integration", [IntegrationType.AWS, IntegrationType.AWS_PROXY])
     @markers.aws.validated
