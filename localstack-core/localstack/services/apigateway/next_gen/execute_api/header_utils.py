@@ -178,11 +178,6 @@ def set_default_response_headers(
     integration_type: IntegrationType = None,
 ):
     """Utils to set the default apigw headers. Trace id isn't applied to HTTP_PROXY and Gateway Responses"""
-    default_headers = {}
-    if (connection := context.request.headers.get("Connection")) and connection != "close":
-        default_headers["Connection"] = connection
-
-    set_default_headers(headers, {**DEFAULT_RESPONSE_HEADERS, **default_headers})
     headers.set("x-amzn-RequestId", context.context_variables["requestId"])
     # Todo, as we go into monitoring, we might want to have these values come from the context?
     headers.set("x-amz-apigw-id", short_uid() + "=")
