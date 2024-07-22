@@ -1,14 +1,11 @@
 import logging
 from collections import defaultdict
-from http import HTTPMethod
 from typing import Iterable
 
 from werkzeug.datastructures.headers import Headers
 
 from localstack.aws.api.apigateway import IntegrationType
-from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
-from localstack.services.apigateway.next_gen.execute_api.gateway_response import InternalServerError
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
@@ -31,15 +28,6 @@ DROPPED_FROM_REQUEST_COMMON = [
 ]
 DROPPED_FROM_REQUEST_COMMON_LOWER = [header.lower() for header in DROPPED_FROM_REQUEST_COMMON]
 
-# These headers are part of the invocation request. However, they will not be part of the endpoint request.
-# However, it happens before applying mapping templates, as overriding these will affect the requests.
-DROPPED_FROM_REQUEST_PROXY_COMMON = ["Host", "Content-Encoding"]
-
-# These are dropped after the templates override were applied. they will never make it to the requests.
-DROPPED_FROM_INTEGRATION_REQUESTS_COMMON = ["Expect", "Proxy-Authenticate", "TE"]
-DROPPED_FROM_INTEGRATION_REQUESTS_AWS = [*DROPPED_FROM_INTEGRATION_REQUESTS_COMMON, "Referer"]
-DROPPED_FROM_INTEGRATION_REQUESTS_HTTP = [*DROPPED_FROM_INTEGRATION_REQUESTS_COMMON, "Via"]
-
 # These are dropped after the templates override were applied. they will never make it to the requests.
 DROPPED_FROM_INTEGRATION_RESPONSES_COMMON = ["Transfer-Encoding"]
 
@@ -49,21 +37,6 @@ DROPPED_FROM_INTEGRATION_RESPONSES_HTTP_PROXY = [
     "Via",
 ]
 
-# Illegal headers to attempt and remap.
-ILLEGAL_INTEGRATION_REQUESTS_COMMON = [
-    "content-length",
-    "transfer-encoding",
-    "x-amzn-trace-id",
-    "X-Amzn-Apigateway-Api-Id",
-]
-ILLEGAL_INTEGRATION_REQUESTS_AWS = [
-    *ILLEGAL_INTEGRATION_REQUESTS_COMMON,
-    "authorization",
-    "connection",
-    "expect",
-    "proxy-authenticate",
-    "te",
-]
 
 # Headers that will receive a remap
 REMAPPED_FROM_INTEGRATION_RESPONSE_COMMON = [
@@ -85,9 +58,6 @@ REMAPPED_FROM_INTEGRATION_RESPONSE_NON_PROXY = [
     "User-Agent",
     "WWW-Authenticate",
 ]
-# Default headers
-DEFAULT_REQUEST_HEADERS = {"Accept": APPLICATION_JSON, "Connection": "keep-alive"}
-DEFAULT_RESPONSE_HEADERS = {"Content-Type": APPLICATION_JSON}
 
 
 def should_drop_header_from_invocation(header: str) -> bool:
@@ -103,37 +73,21 @@ def build_multi_value_headers(headers: Headers) -> dict[str, list[str]]:
     return multi_value_headers
 
 
-def _drop_headers(headers: Headers, to_drop: Iterable[str]):
+def drop_headers(headers: Headers, to_drop: Iterable[str]):
     """Will modify the provided headers in-place. Dropping matching headers from the provided list"""
     for header in to_drop:
         if headers.get(header):
             LOG.debug("Dropping header: %s", header)
-            headers.pop(header)
-
-
-def drop_invocation_headers(headers: Headers):
-    """Will modify the provided headers in-place. Dropping matching headers from the provided integration type"""
-    _drop_headers(headers, DROPPED_FROM_REQUEST_PROXY_COMMON)
-
-
-def drop_request_headers(headers: Headers, integration_type: IntegrationType):
-    """Will modify the provided headers in-place. Dropping matching headers for the provided integration type"""
-    match integration_type:
-        case IntegrationType.AWS:
-            _drop_headers(headers, DROPPED_FROM_INTEGRATION_REQUESTS_AWS)
-        case IntegrationType.HTTP | IntegrationType.HTTP_PROXY:
-            _drop_headers(headers, DROPPED_FROM_INTEGRATION_REQUESTS_HTTP)
-        case _:
-            _drop_headers(headers, DROPPED_FROM_INTEGRATION_REQUESTS_COMMON)
+            headers.remove(header)
 
 
 def drop_response_headers(headers: Headers, integration_type: IntegrationType):
     """Will modify the provided headers in-place. Dropping matching headers for the provided integration type"""
     match integration_type:
         case IntegrationType.HTTP_PROXY:
-            _drop_headers(headers, DROPPED_FROM_INTEGRATION_RESPONSES_HTTP_PROXY)
+            drop_headers(headers, DROPPED_FROM_INTEGRATION_RESPONSES_HTTP_PROXY)
         case _:
-            _drop_headers(headers, DROPPED_FROM_INTEGRATION_RESPONSES_COMMON)
+            drop_headers(headers, DROPPED_FROM_INTEGRATION_RESPONSES_COMMON)
 
 
 def remap_response_headers(headers: Headers, integration_type: IntegrationType):
@@ -149,21 +103,6 @@ def remap_response_headers(headers: Headers, integration_type: IntegrationType):
             LOG.debug("Remapping header: %s", header)
             remapped = headers.pop(header)
             headers[f"x-amzn-Remapped-{header}"] = remapped
-
-
-def validate_request_headers(headers: dict[str, str], integration_type: IntegrationType):
-    """Validates and raises an error when attempting to set an illegal header"""
-    to_validate = ILLEGAL_INTEGRATION_REQUESTS_COMMON
-    match integration_type:
-        case IntegrationType.AWS | IntegrationType.AWS_PROXY:
-            to_validate = ILLEGAL_INTEGRATION_REQUESTS_AWS
-
-    for header in headers.keys():
-        if header.lower() in to_validate:
-            LOG.debug(
-                "Execution failed due to configuration error: %s header already present", header
-            )
-            raise InternalServerError("Internal server error")
 
 
 def set_default_headers(headers: Headers, default_headers: dict[str, str]):
@@ -183,21 +122,3 @@ def set_default_response_headers(
     headers.set("x-amz-apigw-id", short_uid() + "=")
     if integration_type and integration_type != IntegrationType.HTTP_PROXY:
         headers.set("X-Amzn-Trace-Id", short_uid())  # TODO
-
-
-def set_default_request_headers(
-    headers: Headers, integration_type: IntegrationType, context: RestApiInvocationContext
-):
-    default_headers = {
-        **DEFAULT_REQUEST_HEADERS,
-        "User-Agent": f"AmazonAPIGateway_{context.api_id}",
-    }
-    if (
-        content_type := context.request.headers.get("Content-Type")
-    ) and context.request.method not in {HTTPMethod.OPTIONS, HTTPMethod.GET, HTTPMethod.HEAD}:
-        default_headers["Content-Type"] = content_type
-
-    set_default_headers(headers, default_headers)
-    headers.set("X-Amzn-Trace-Id", short_uid())  # TODO
-    if integration_type not in (IntegrationType.AWS_PROXY, IntegrationType.AWS):
-        headers.set("X-Amzn-Apigateway-Api-Id", context.api_id)

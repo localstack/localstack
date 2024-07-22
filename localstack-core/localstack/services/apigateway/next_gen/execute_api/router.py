@@ -71,13 +71,12 @@ class ApiGatewayEndpoint:
     @staticmethod
     def create_response(request: Request) -> Response:
         # Creates a default apigw response.
-        connection = request.headers.get("Connection")
-        return Response(
-            headers={
-                "Content-Type": APPLICATION_JSON,
-                "Connection": connection if connection == "close" else "keep-alive",
-            }
-        )
+        response = Response(headers={"Content-Type": APPLICATION_JSON})
+        if (connection := request.headers.get("Connection")) and connection == "keep-alive":
+            # We only set the connection if it is keep-alive.
+            # There appears to be in issue in Localstack, where setting "close" will result in "close, close"
+            response.headers.set("Connection", "keep-alive")
+        return response
 
 
 class ApiGatewayRouter:

@@ -1,22 +1,18 @@
 import logging
+from http import HTTPMethod
 
 from werkzeug.datastructures import Headers
 
 from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.constants import APPLICATION_JSON
-from localstack.http import Response
+from localstack.http import Request, Response
 from localstack.utils.collections import merge_recursive
-from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
-from ..gateway_response import UnsupportedMediaTypeError
-from ..header_utils import (
-    drop_invocation_headers,
-    drop_request_headers,
-    set_default_request_headers,
-    validate_request_headers,
-)
+from ..gateway_response import InternalServerError, UnsupportedMediaTypeError
+from ..header_utils import drop_headers, set_default_headers
 from ..helpers import render_integration_uri
 from ..parameters_mapping import ParametersMapper, RequestDataMapping
 from ..template_mapping import (
@@ -28,6 +24,30 @@ from ..template_mapping import (
 from ..variables import ContextVarsRequestOverride
 
 LOG = logging.getLogger(__name__)
+
+# Illegal headers to include in transformation
+ILLEGAL_INTEGRATION_REQUESTS_COMMON = [
+    "content-length",
+    "transfer-encoding",
+    "x-amzn-trace-id",
+    "X-Amzn-Apigateway-Api-Id",
+]
+ILLEGAL_INTEGRATION_REQUESTS_AWS = [
+    *ILLEGAL_INTEGRATION_REQUESTS_COMMON,
+    "authorization",
+    "connection",
+    "expect",
+    "proxy-authenticate",
+    "te",
+]
+
+# These are dropped after the templates override were applied. they will never make it to the requests.
+DROPPED_FROM_INTEGRATION_REQUESTS_COMMON = ["Expect", "Proxy-Authenticate", "TE"]
+DROPPED_FROM_INTEGRATION_REQUESTS_AWS = [*DROPPED_FROM_INTEGRATION_REQUESTS_COMMON, "Referer"]
+DROPPED_FROM_INTEGRATION_REQUESTS_HTTP = [*DROPPED_FROM_INTEGRATION_REQUESTS_COMMON, "Via"]
+
+# Default headers
+DEFAULT_REQUEST_HEADERS = {"Accept": APPLICATION_JSON, "Connection": "keep-alive"}
 
 
 class PassthroughBehavior(str):
@@ -75,7 +95,9 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             # HTTP_PROXY still make uses of the request data mappings, and merges it with the invocation request
             # this is undocumented but validated behavior
             if integration_type == IntegrationType.HTTP_PROXY:
-                drop_invocation_headers(headers)
+                # These headers won't be passed through by default from the invocation.
+                # They can however be added through request mappings.
+                drop_headers(headers, ["Host", "Content-Encoding"])
                 headers.update(request_data_mapping["header"])
 
                 query_string_parameters = self._merge_http_proxy_query_string(
@@ -83,12 +105,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 )
 
             else:
-                headers.set("X-Forwarded-For", context.request.remote_addr)
-                headers.set("X-Forwarded-Port", context.request.environ.get("SERVER_PORT"))
-                headers.set(
-                    "X-Forwarded-Proto",
-                    context.request.environ.get("SERVER_PROTOCOL", "").split("/")[0],
-                )
+                self._set_proxy_headers(headers, context.request)
                 # AWS_PROXY does not allow URI path rendering
                 # TODO: verify this
                 path_parameters = {}
@@ -110,9 +127,10 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
         # Some headers can't be modified by parameter mappings or mapping templates.
         # Aws will raise in those were present. Even for AWS_PROXY, where it is not applying them.
-        validate_request_headers(request_data_mapping["header"], integration_type)
-        drop_request_headers(headers, integration_type)
-        set_default_request_headers(headers, integration_type, context)
+        if header_mappings := request_data_mapping["header"]:
+            self._validate_headers_mapping(header_mappings, integration_type)
+
+        self._apply_header_transforms(headers, integration_type, context)
 
         # looks like the stageVariables rendering part is done in the Integration part in AWS
         # but we can avoid duplication by doing it here for now
@@ -230,3 +248,54 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 new_query_string_parameters[param] = value
 
         return new_query_string_parameters
+
+    @staticmethod
+    def _set_proxy_headers(headers: Headers, request: Request):
+        headers.set("X-Forwarded-For", request.remote_addr)
+        headers.set("X-Forwarded-Port", request.environ.get("SERVER_PORT"))
+        headers.set(
+            "X-Forwarded-Proto",
+            request.environ.get("SERVER_PROTOCOL", "").split("/")[0],
+        )
+
+    @staticmethod
+    def _apply_header_transforms(
+        headers: Headers, integration_type: IntegrationType, context: RestApiInvocationContext
+    ):
+        # Dropping matching headers for the provided integration type
+        match integration_type:
+            case IntegrationType.AWS:
+                drop_headers(headers, DROPPED_FROM_INTEGRATION_REQUESTS_AWS)
+            case IntegrationType.HTTP | IntegrationType.HTTP_PROXY:
+                drop_headers(headers, DROPPED_FROM_INTEGRATION_REQUESTS_HTTP)
+            case _:
+                drop_headers(headers, DROPPED_FROM_INTEGRATION_REQUESTS_COMMON)
+
+        # Adding default headers to the requests headers
+        default_headers = {
+            **DEFAULT_REQUEST_HEADERS,
+            "User-Agent": f"AmazonAPIGateway_{context.api_id}",
+        }
+        if (
+            content_type := context.request.headers.get("Content-Type")
+        ) and context.request.method not in {HTTPMethod.OPTIONS, HTTPMethod.GET, HTTPMethod.HEAD}:
+            default_headers["Content-Type"] = content_type
+
+        set_default_headers(headers, default_headers)
+        headers.set("X-Amzn-Trace-Id", short_uid())  # TODO
+        if integration_type not in (IntegrationType.AWS_PROXY, IntegrationType.AWS):
+            headers.set("X-Amzn-Apigateway-Api-Id", context.api_id)
+
+    @staticmethod
+    def _validate_headers_mapping(headers: dict[str, str], integration_type: IntegrationType):
+        """Validates and raises an error when attempting to set an illegal header"""
+        to_validate = ILLEGAL_INTEGRATION_REQUESTS_COMMON
+        if integration_type in {IntegrationType.AWS, IntegrationType.AWS_PROXY}:
+            to_validate = ILLEGAL_INTEGRATION_REQUESTS_AWS
+
+        for header in headers.keys():
+            if header.lower() in to_validate:
+                LOG.debug(
+                    "Execution failed due to configuration error: %s header already present", header
+                )
+                raise InternalServerError("Internal server error")
