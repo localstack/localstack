@@ -1,6 +1,5 @@
 import json
 import math
-import os
 import time
 
 import pytest
@@ -19,15 +18,11 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
-from tests.aws.services.lambda_.functions import lambda_integration
+from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
-TEST_LAMBDA_PARALLEL_FILE = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "functions/lambda_parallel.py"
-)
-TEST_LAMBDA_KINESIS_LOG = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "functions/kinesis_log.py"
-)
+TEST_LAMBDA_PARALLEL_FILE = FUNCTIONS_PATH / "lambda_parallel.py"
+TEST_LAMBDA_KINESIS_LOG = FUNCTIONS_PATH / "kinesis_log.py"
 
 
 @pytest.fixture(autouse=True)
