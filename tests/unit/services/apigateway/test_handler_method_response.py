@@ -57,9 +57,6 @@ class TestHandlerMethodResponse:
         assert apigw_response.data == b""
         assert apigw_response.status_code == 200
         assert apigw_response.headers["Content-Type"] == "application/json"
-        assert apigw_response.headers["x-amzn-RequestId"] == "request-id"
-        assert apigw_response.headers.get("X-Amzn-Trace-Id")
-        assert apigw_response.headers.get("x-amz-apigw-id")
 
     def test_json_body(self, method_response_handler, ctx, apigw_response):
         ctx.invocation_response["body"] = b"{}"

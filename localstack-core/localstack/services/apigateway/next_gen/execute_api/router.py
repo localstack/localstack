@@ -72,8 +72,8 @@ class ApiGatewayEndpoint:
     def create_response(request: Request) -> Response:
         # Creates a default apigw response.
         response = Response(headers={"Content-Type": APPLICATION_JSON})
-        if (connection := request.headers.get("Connection")) and connection == "keep-alive":
-            # We only set the connection if it is keep-alive.
+        if not (connection := request.headers.get("Connection")) or connection != "close":
+            # We only set the connection if it isn't close.
             # There appears to be in issue in Localstack, where setting "close" will result in "close, close"
             response.headers.set("Connection", "keep-alive")
         return response

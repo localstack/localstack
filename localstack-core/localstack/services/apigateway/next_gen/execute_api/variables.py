@@ -75,6 +75,15 @@ class ContextVarsResponseOverride(TypedDict):
     status: int
 
 
+class GatewayResponseContextVarsError(TypedDict, total=False):
+    # This variable can only be used for simple variable substitution in a GatewayResponse body-mapping template,
+    # which is not processed by the Velocity Template Language engine, and in access logging.
+    message: str
+    messageString: str
+    responseType: str
+    validationErrorString: str
+
+
 class ContextVariables(TypedDict, total=False):
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference
     accountId: str
@@ -91,6 +100,8 @@ class ContextVariables(TypedDict, total=False):
     """The full domain name used to invoke the API. This should be the same as the incoming Host header."""
     domainPrefix: str
     """The first label of the $context.domainName."""
+    error: GatewayResponseContextVarsError
+    """The error context variables."""
     extendedRequestId: str
     """The extended ID that API Gateway generates and assigns to the API request. """
     httpMethod: str
@@ -122,15 +133,6 @@ class ContextVariables(TypedDict, total=False):
     """The response received from AWS WAF: WAF_ALLOW or WAF_BLOCK. Will not be set if the stage is not associated with a web ACL"""
     webaclArn: Optional[str]
     """The complete ARN of the web ACL that is used to decide whether to allow or block the request. Will not be set if the stage is not associated with a web ACL."""
-
-
-class GatewayResponseContextVarsError(TypedDict, total=False):
-    # This variable can only be used for simple variable substitution in a GatewayResponse body-mapping template,
-    # which is not processed by the Velocity Template Language engine, and in access logging.
-    message: str
-    messageString: str
-    responseType: str
-    validationErrorString: str
 
 
 class LoggingContextVarsAuthorize(TypedDict, total=False):

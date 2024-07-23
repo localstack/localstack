@@ -33,6 +33,7 @@ class RestApiGateway(Gateway):
         )
         self.response_handlers.extend(
             [
+                handlers.enrich_response
                 # add composite response handlers?
             ]
         )

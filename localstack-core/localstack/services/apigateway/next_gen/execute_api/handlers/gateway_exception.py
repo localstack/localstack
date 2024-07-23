@@ -13,8 +13,8 @@ from localstack.services.apigateway.next_gen.execute_api.gateway_response import
     BaseGatewayException,
     get_gateway_response_or_default,
 )
-from localstack.services.apigateway.next_gen.execute_api.header_utils import (
-    set_default_response_headers,
+from localstack.services.apigateway.next_gen.execute_api.variables import (
+    GatewayResponseContextVarsError,
 )
 
 LOG = logging.getLogger(__name__)
@@ -44,9 +44,19 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
             return
 
         LOG.info("Error raised during invocation: %s", exception.type)
+        self.set_error_context(exception, context)
         error = self.create_exception_response(exception, context)
         if error:
             response.update_from(error)
+
+    @staticmethod
+    def set_error_context(exception: BaseGatewayException, context: RestApiInvocationContext):
+        context.context_variables["error"] = GatewayResponseContextVarsError(
+            message=exception.message,
+            messageString=exception.message,
+            responseType=exception.type,
+            validationErrorString="",  # TODO
+        )
 
     def create_exception_response(
         self, exception: BaseGatewayException, context: RestApiInvocationContext
@@ -81,5 +91,4 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
     ) -> dict:
         # TODO apply responseParameters to the headers and get content-type from the gateway_response
         headers = Headers({"x-amzn-ErrorType": exception.code})
-        set_default_response_headers(headers, context)
         return headers
