@@ -64,7 +64,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.6.1
+cfn-lint==1.8.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -78,7 +78,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.8
+cryptography==43.0.0
     # via
     #   joserfc
     #   localstack-core
@@ -145,7 +145,7 @@ jpype1==1.5.0
     # via localstack-core (pyproject.toml)
 json5==0.9.25
     # via localstack-core (pyproject.toml)
-jsondiff==2.1.2
+jsondiff==2.2.0
     # via moto-ext
 jsonpatch==1.33
     # via
@@ -233,7 +233,7 @@ pygments==2.18.0
     # via rich
 pymongo==4.8.0
     # via localstack-core (pyproject.toml)
-pyopenssl==24.1.0
+pyopenssl==24.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -281,7 +281,7 @@ requests==2.32.3
     #   requests-aws4auth
     #   responses
     #   rolo
-requests-aws4auth==1.2.3
+requests-aws4auth==1.3.1
     # via localstack-core
 responses==0.25.3
     # via moto-ext
@@ -291,7 +291,7 @@ rich==13.7.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.5.1
+rolo==0.6.1
     # via localstack-core
 rpds-py==0.19.0
     # via
@@ -313,9 +313,8 @@ six==1.16.0
     #   jsonpath-rw
     #   opensearch-py
     #   python-dateutil
-    #   requests-aws4auth
     #   rfc3339-validator
-sympy==1.13.0
+sympy==1.13.1
     # via cfn-lint
 tailer==0.4.1
     # via

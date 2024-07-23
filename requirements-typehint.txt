@@ -33,7 +33,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.149.0
+aws-cdk-lib==2.150.0
     # via localstack-core
 aws-sam-translator==1.89.0
     # via
@@ -62,7 +62,7 @@ botocore==1.34.145
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.34.144
+botocore-stubs==1.34.146
     # via boto3-stubs
 build==1.2.1
     # via
@@ -87,7 +87,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.6.1
+cfn-lint==1.8.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -109,7 +109,7 @@ coveralls==4.0.1
     # via localstack-core
 crontab==1.0.1
     # via localstack-core
-cryptography==42.0.8
+cryptography==43.0.0
     # via
     #   joserfc
     #   localstack-core
@@ -209,7 +209,7 @@ jsii==1.101.0
     #   constructs
 json5==0.9.25
     # via localstack-core
-jsondiff==2.1.2
+jsondiff==2.2.0
     # via moto-ext
 jsonpatch==1.33
     # via
@@ -257,7 +257,7 @@ multipart==0.2.5
     # via moto-ext
 mypy-boto3-acm==1.34.140
     # via boto3-stubs
-mypy-boto3-acm-pca==1.34.144
+mypy-boto3-acm-pca==1.34.145
     # via boto3-stubs
 mypy-boto3-amplify==1.34.118
     # via boto3-stubs
@@ -307,7 +307,7 @@ mypy-boto3-dynamodb==1.34.131
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.34.0
     # via boto3-stubs
-mypy-boto3-ec2==1.34.143
+mypy-boto3-ec2==1.34.145
     # via boto3-stubs
 mypy-boto3-ecr==1.34.140
     # via boto3-stubs
@@ -331,7 +331,7 @@ mypy-boto3-es==1.34.141
     # via boto3-stubs
 mypy-boto3-events==1.34.104
     # via boto3-stubs
-mypy-boto3-firehose==1.34.141
+mypy-boto3-firehose==1.34.145
     # via boto3-stubs
 mypy-boto3-fis==1.34.63
     # via boto3-stubs
@@ -391,7 +391,7 @@ mypy-boto3-qldb==1.34.49
     # via boto3-stubs
 mypy-boto3-qldb-session==1.34.0
     # via boto3-stubs
-mypy-boto3-rds==1.34.135
+mypy-boto3-rds==1.34.145
     # via boto3-stubs
 mypy-boto3-rds-data==1.34.6
     # via boto3-stubs
@@ -411,11 +411,11 @@ mypy-boto3-s3==1.34.138
     # via boto3-stubs
 mypy-boto3-s3control==1.34.83
     # via boto3-stubs
-mypy-boto3-sagemaker==1.34.142
+mypy-boto3-sagemaker==1.34.145
     # via boto3-stubs
 mypy-boto3-sagemaker-runtime==1.34.0
     # via boto3-stubs
-mypy-boto3-secretsmanager==1.34.128
+mypy-boto3-secretsmanager==1.34.145
     # via boto3-stubs
 mypy-boto3-serverlessrepo==1.34.0
     # via boto3-stubs
@@ -437,7 +437,7 @@ mypy-boto3-stepfunctions==1.34.137
     # via boto3-stubs
 mypy-boto3-sts==1.34.0
     # via boto3-stubs
-mypy-boto3-timestream-query==1.34.94
+mypy-boto3-timestream-query==1.34.145
     # via boto3-stubs
 mypy-boto3-timestream-write==1.34.0
     # via boto3-stubs
@@ -521,7 +521,7 @@ pygments==2.18.0
     # via rich
 pymongo==4.8.0
     # via localstack-core
-pyopenssl==24.1.0
+pyopenssl==24.2.1
     # via
     #   localstack-core
     #   localstack-twisted
@@ -531,13 +531,13 @@ pyparsing==3.1.2
     # via moto-ext
 pyproject-hooks==1.1.0
     # via build
-pytest==8.2.2
+pytest==8.3.1
     # via
     #   localstack-core
     #   pytest-rerunfailures
     #   pytest-split
     #   pytest-tinybird
-pytest-httpserver==1.0.10
+pytest-httpserver==1.0.12
     # via localstack-core
 pytest-rerunfailures==14.0
     # via localstack-core
@@ -588,7 +588,7 @@ requests==2.32.3
     #   requests-aws4auth
     #   responses
     #   rolo
-requests-aws4auth==1.2.3
+requests-aws4auth==1.3.1
     # via localstack-core
 responses==0.25.3
     # via moto-ext
@@ -598,7 +598,7 @@ rich==13.7.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.5.1
+rolo==0.6.1
     # via localstack-core
 rpds-py==0.19.0
     # via
@@ -608,7 +608,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.5.2
+ruff==0.5.4
     # via localstack-core
 s3transfer==0.10.2
     # via
@@ -624,13 +624,12 @@ six==1.16.0
     #   jsonpath-rw
     #   opensearch-py
     #   python-dateutil
-    #   requests-aws4auth
     #   rfc3339-validator
 sniffio==1.3.1
     # via
     #   anyio
     #   httpx
-sympy==1.13.0
+sympy==1.13.1
     # via cfn-lint
 tailer==0.4.1
     # via
