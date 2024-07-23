@@ -782,6 +782,15 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#label_decl.
+    def enterLabel_decl(self, ctx:ASLParser.Label_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#label_decl.
+    def exitLabel_decl(self, ctx:ASLParser.Label_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#retry_decl.
     def enterRetry_decl(self, ctx:ASLParser.Retry_declContext):
         pass

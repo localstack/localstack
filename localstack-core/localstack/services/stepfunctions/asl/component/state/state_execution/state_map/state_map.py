@@ -53,6 +53,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator_factory import (
     from_iterator_decl,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.label import (
+    Label,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
     MaxConcurrencyDecl,
@@ -81,6 +84,7 @@ class StateMap(ExecutionState):
     result_selector: ResultSelector
     retry: Optional[RetryDecl]
     catch: Optional[CatchDecl]
+    label: Optional[Label]
 
     def __init__(self):
         super(StateMap, self).__init__(
@@ -107,6 +111,7 @@ class StateMap(ExecutionState):
         self.result_selector = state_props.get(ResultSelector)
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
+        self.label = state_props.get(Label)
 
         iterator_decl = state_props.get(typ=IteratorDecl)
         item_processor_decl = state_props.get(typ=ItemProcessorDecl)
@@ -128,6 +133,7 @@ class StateMap(ExecutionState):
     def _eval_execution(self, env: Environment) -> None:
         self.max_concurrency_decl.eval(env=env)
         max_concurrency_num = env.stack.pop()
+        label = self.label.label if self.label else None
 
         # Despite MaxConcurrency and Tolerance fields being state level fields, AWS StepFunctions evaluates only
         # MaxConcurrency as a state level field. In contrast, Tolerance is evaluated only after the state start
@@ -185,6 +191,7 @@ class StateMap(ExecutionState):
                 item_reader=self.item_reader,
                 tolerated_failure_count=tolerated_failure_count,
                 tolerated_failure_percentage=tolerated_failure_percentage,
+                label=label,
             )
         elif isinstance(self.iteration_component, InlineItemProcessor):
             eval_input = InlineItemProcessorEvalInput(
@@ -204,6 +211,7 @@ class StateMap(ExecutionState):
                 parameters=self.parameters,
                 tolerated_failure_count=tolerated_failure_count,
                 tolerated_failure_percentage=tolerated_failure_percentage,
+                label=label,
             )
         else:
             raise RuntimeError(

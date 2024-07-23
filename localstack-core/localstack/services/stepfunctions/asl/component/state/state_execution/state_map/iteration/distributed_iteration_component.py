@@ -54,6 +54,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_manager import (
 
 class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
     item_reader: Final[Optional[ItemReader]]
+    label: Final[Optional[str]]
 
     def __init__(
         self,
@@ -65,6 +66,7 @@ class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
         item_reader: Optional[ItemReader],
         tolerated_failure_count: int,
         tolerated_failure_percentage: float,
+        label: Optional[str],
     ):
         super().__init__(
             state_name=state_name,
@@ -76,6 +78,7 @@ class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
         self.item_reader = item_reader
         self.tolerated_failure_count = tolerated_failure_count
         self.tolerated_failure_percentage = tolerated_failure_percentage
+        self.label = label
 
 
 class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
@@ -155,6 +158,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             max_concurrency=self._eval_input.max_concurrency,
             tolerated_failure_count=self._eval_input.tolerated_failure_count,
             tolerated_failure_percentage=self._eval_input.tolerated_failure_percentage,
+            label=self._eval_input.label,
         )
         env.map_run_record_pool_manager.add(self._map_run_record)
 

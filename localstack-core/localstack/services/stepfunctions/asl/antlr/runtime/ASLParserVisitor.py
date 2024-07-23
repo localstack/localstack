@@ -439,6 +439,11 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#label_decl.
+    def visitLabel_decl(self, ctx:ASLParser.Label_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#retry_decl.
     def visitRetry_decl(self, ctx:ASLParser.Retry_declContext):
         return self.visitChildren(ctx)
