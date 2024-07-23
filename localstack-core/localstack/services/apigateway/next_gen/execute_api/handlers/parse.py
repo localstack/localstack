@@ -70,10 +70,11 @@ class InvocationRequestParser(RestApiGatewayHandler):
         # if the request comes from the LocalStack only `_user_request_` route, we need to remove this prefix from the
         # path, in order to properly route the request
         if "_user_request_" in raw_uri:
+            # in this format, the stage is before `_user_request_`, so we don't need to remove it
             raw_uri = raw_uri.partition("_user_request_")[2]
-
-        # remove the stage from the path, only replace the first occurrence
-        raw_uri = raw_uri.replace(f"/{stage_name}", "", 1)
+        else:
+            # remove the stage from the path, only replace the first occurrence
+            raw_uri = raw_uri.replace(f"/{stage_name}", "", 1)
 
         if raw_uri.startswith("//"):
             # TODO: AWS validate this assumption

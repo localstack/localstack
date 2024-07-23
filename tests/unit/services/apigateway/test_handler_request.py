@@ -138,8 +138,8 @@ class TestParsingHandler:
         # simulate a path request
         request = Request(
             "GET",
-            path=f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}/foo/bar/ed",
-            raw_path=f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}//foo%2Fbar/ed",
+            path=f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/foo/bar/ed",
+            raw_path=f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_//foo%2Fbar/ed",
         )
 
         context = get_invocation_context(request)
@@ -150,6 +150,28 @@ class TestParsingHandler:
         # assert that the user request prefix has been stripped off
         assert context.invocation_request["path"] == "/foo%2Fbar/ed"
         assert context.invocation_request["raw_path"] == "//foo%2Fbar/ed"
+
+    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    def test_parse_path_same_as_stage(
+        self, dummy_deployment, parse_handler_chain, get_invocation_context, addressing
+    ):
+        path = TEST_API_STAGE
+        if addressing == "host":
+            full_path = f"/{TEST_API_STAGE}/{path}"
+        else:
+            full_path = f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/{path}"
+
+        # simulate a path request
+        request = Request("GET", path=full_path)
+
+        context = get_invocation_context(request)
+        context.deployment = dummy_deployment
+
+        parse_handler_chain.handle(context, Response())
+
+        # assert that the user request prefix has been stripped off
+        assert context.invocation_request["path"] == f"/{TEST_API_STAGE}"
+        assert context.invocation_request["raw_path"] == f"/{TEST_API_STAGE}"
 
 
 class TestRoutingHandler:
@@ -288,7 +310,7 @@ class TestRoutingHandler:
         if addressing == "host":
             return f"/{TEST_API_STAGE}{path}"
         else:
-            return f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}{path}"
+            return f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/{path}"
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_no_param(
