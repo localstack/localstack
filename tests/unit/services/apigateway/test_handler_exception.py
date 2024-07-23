@@ -1,7 +1,7 @@
 import pytest
-from rolo import Response
 
 from localstack.aws.api.apigateway import GatewayResponse, GatewayResponseType
+from localstack.http import Request
 from localstack.services.apigateway.models import MergedRestApi, RestApiDeployment
 from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
@@ -10,6 +10,8 @@ from localstack.services.apigateway.next_gen.execute_api.gateway_response import
     BaseGatewayException,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import GatewayExceptionHandler
+from localstack.services.apigateway.next_gen.execute_api.router import ApiGatewayEndpoint
+from localstack.services.apigateway.next_gen.execute_api.variables import ContextVariables
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 
@@ -26,57 +28,61 @@ class TestGatewayResponse:
         assert e.value.type == GatewayResponseType.ACCESS_DENIED
 
 
+@pytest.fixture
+def apigw_response():
+    return ApiGatewayEndpoint.create_response(Request())
+
+
 class TestGatewayResponseHandler:
     @pytest.fixture
     def get_context(self):
         def _create_context_with_deployment(gateway_responses=None) -> RestApiInvocationContext:
-            context = RestApiInvocationContext(None)
+            context = RestApiInvocationContext(Request())
             context.deployment = RestApiDeployment(
                 account_id=TEST_AWS_ACCOUNT_ID,
                 region=TEST_AWS_REGION_NAME,
                 rest_api=MergedRestApi(None),
             )
+            context.context_variables = ContextVariables(requestId="REQUEST_ID")
             if gateway_responses:
                 context.deployment.rest_api.gateway_responses = gateway_responses
             return context
 
         return _create_context_with_deployment
 
-    def test_non_gateway_exception(self, get_context):
+    def test_non_gateway_exception(self, get_context, apigw_response):
         exception_handler = GatewayExceptionHandler()
 
         # create a default Exception that should not be handled by the handler
         exception = Exception("Unhandled exception")
 
-        response = Response()
         exception_handler(
             chain=RestApiGatewayHandlerChain(),
             exception=exception,
             context=get_context(),
-            response=response,
+            response=apigw_response,
         )
 
-        assert response.status_code == 500
-        assert response.data == b"Error in apigateway invocation: Unhandled exception"
+        assert apigw_response.status_code == 500
+        assert apigw_response.data == b"Error in apigateway invocation: Unhandled exception"
 
-    def test_gateway_exception(self, get_context):
+    def test_gateway_exception(self, get_context, apigw_response):
         exception_handler = GatewayExceptionHandler()
 
         # Create an Access Denied exception with no Gateway Response configured
         exception = AccessDeniedError("Access Denied")
-        response = Response()
         exception_handler(
             chain=RestApiGatewayHandlerChain(),
             exception=exception,
             context=get_context(),
-            response=response,
+            response=apigw_response,
         )
 
-        assert response.status_code == 403
-        assert response.json == {"message": "Access Denied"}
-        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"
+        assert apigw_response.status_code == 403
+        assert apigw_response.json == {"message": "Access Denied"}
+        assert apigw_response.headers.get("x-amzn-errortype") == "AccessDeniedException"
 
-    def test_gateway_exception_with_default_4xx(self, get_context):
+    def test_gateway_exception_with_default_4xx(self, get_context, apigw_response):
         exception_handler = GatewayExceptionHandler()
 
         # Configure DEFAULT_4XX response
@@ -84,19 +90,18 @@ class TestGatewayResponseHandler:
 
         # Create an Access Denied exception with DEFAULT_4xx configured
         exception = AccessDeniedError("Access Denied")
-        response = Response()
         exception_handler(
             chain=RestApiGatewayHandlerChain(),
             exception=exception,
             context=get_context(gateway_responses),
-            response=response,
+            response=apigw_response,
         )
 
-        assert response.status_code == 400
-        assert response.json == {"message": "Access Denied"}
-        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"
+        assert apigw_response.status_code == 400
+        assert apigw_response.json == {"message": "Access Denied"}
+        assert apigw_response.headers.get("x-amzn-errortype") == "AccessDeniedException"
 
-    def test_gateway_exception_with_gateway_response(self, get_context):
+    def test_gateway_exception_with_gateway_response(self, get_context, apigw_response):
         exception_handler = GatewayExceptionHandler()
 
         # Configure Access Denied response
@@ -104,14 +109,13 @@ class TestGatewayResponseHandler:
 
         # Create an Access Denied exception with ACCESS_DENIED configured
         exception = AccessDeniedError("Access Denied")
-        response = Response()
         exception_handler(
             chain=RestApiGatewayHandlerChain(),
             exception=exception,
             context=get_context(gateway_responses),
-            response=response,
+            response=apigw_response,
         )
 
-        assert response.status_code == 400
-        assert response.json == {"message": "Access Denied"}
-        assert response.headers.get("x-amzn-errortype") == "AccessDeniedException"
+        assert apigw_response.status_code == 400
+        assert apigw_response.json == {"message": "Access Denied"}
+        assert apigw_response.headers.get("x-amzn-errortype") == "AccessDeniedException"

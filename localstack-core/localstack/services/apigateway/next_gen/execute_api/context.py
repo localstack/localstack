@@ -5,7 +5,7 @@ from rolo import Request
 from rolo.gateway import RequestContext
 from werkzeug.datastructures import Headers
 
-from localstack.aws.api.apigateway import Method, Resource
+from localstack.aws.api.apigateway import Integration, Method, Resource
 from localstack.services.apigateway.models import RestApiDeployment
 
 from .variables import ContextVariables, LoggingContextVariables
@@ -72,10 +72,10 @@ class RestApiInvocationContext(RequestContext):
     This context is going to be used to pass relevant information across an API Gateway invocation.
     """
 
-    invocation_request: Optional[InvocationRequest]
-    """Contains the data relative to the invocation request"""
     deployment: Optional[RestApiDeployment]
     """Contains the invoked REST API Resources"""
+    integration: Optional[Integration]
+    """The Method Integration for the invoked request"""
     api_id: Optional[str]
     """The REST API identifier of the invoked API"""
     stage: Optional[str]
@@ -87,7 +87,7 @@ class RestApiInvocationContext(RequestContext):
     account_id: Optional[str]
     """The account the REST API is living in."""
     resource: Optional[Resource]
-    """The resource the invocation matched"""  # TODO: verify if needed through the invocation
+    """The resource the invocation matched"""
     resource_method: Optional[Method]
     """The method of the resource the invocation matched"""
     stage_variables: Optional[dict[str, str]]
@@ -96,6 +96,8 @@ class RestApiInvocationContext(RequestContext):
     """The $context used in data models, authorizers, mapping templates, and CloudWatch access logging"""
     logging_context_variables: Optional[LoggingContextVariables]
     """Additional $context variables available only for access logging, not yet implemented"""
+    invocation_request: Optional[InvocationRequest]
+    """Contains the data relative to the invocation request"""
     integration_request: Optional[IntegrationRequest]
     """Contains the data needed to construct an HTTP request to an Integration"""
     endpoint_response: Optional[EndpointResponse]

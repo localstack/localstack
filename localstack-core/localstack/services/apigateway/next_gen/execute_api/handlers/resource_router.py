@@ -124,6 +124,7 @@ class InvocationRequestRouter(RestApiGatewayHandler):
             or resource["resourceMethods"]["ANY"]
         )
         context.resource_method = method
+        context.integration = method["methodIntegration"]
 
         self.update_context_variables_with_resource(context.context_variables, resource)
 

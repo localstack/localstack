@@ -18,7 +18,7 @@ class IntegrationHandler(RestApiGatewayHandler):
         context: RestApiInvocationContext,
         response: Response,
     ):
-        integration_type = context.resource_method["methodIntegration"]["type"]
+        integration_type = context.integration["type"]
         is_proxy = "PROXY" in integration_type
 
         integration = REST_API_INTEGRATIONS.get(integration_type)

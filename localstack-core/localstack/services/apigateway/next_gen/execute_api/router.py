@@ -4,7 +4,7 @@ from rolo import Request, Router
 from rolo.dispatcher import Handler
 from werkzeug.routing import Rule
 
-from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Response
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.services.edge import ROUTER
@@ -41,7 +41,7 @@ class ApiGatewayEndpoint:
 
     def process_rest_api_invocation(self, request: Request, api_id: str, stage: str) -> Response:
         LOG.debug("APIGW v1 Endpoint called")
-        response = Response()
+        response = self.create_response(request)
         context = RestApiInvocationContext(request)
         self.populate_rest_api_invocation_context(context, api_id, stage)
 
@@ -67,6 +67,16 @@ class ApiGatewayEndpoint:
         context.api_id = api_id
         context.stage = stage
         context.deployment_id = deployment_id
+
+    @staticmethod
+    def create_response(request: Request) -> Response:
+        # Creates a default apigw response.
+        response = Response(headers={"Content-Type": APPLICATION_JSON})
+        if not (connection := request.headers.get("Connection")) or connection != "close":
+            # We only set the connection if it isn't close.
+            # There appears to be in issue in Localstack, where setting "close" will result in "close, close"
+            response.headers.set("Connection", "keep-alive")
+        return response
 
 
 class ApiGatewayRouter:

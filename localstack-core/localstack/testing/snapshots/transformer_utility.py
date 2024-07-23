@@ -193,6 +193,39 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def apigateway_invocation_headers():
+        return [
+            TransformerUtility.key_value("apigw-id"),
+            TransformerUtility.key_value("Via"),
+            TransformerUtility.key_value(
+                "Date", value_replacement="<Date>", reference_replacement=False
+            ),
+            TransformerUtility.key_value(
+                "x-amz-apigw-id",
+                value_replacement="<x-amz-apigw-id>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.key_value(
+                "x-amzn-Remapped-Date",
+                value_replacement="<x-amzn-Remapped-Date>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.key_value(
+                "X-Amzn-Trace-Id",
+                value_replacement="<X-Amzn-Trace-Id>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.key_value("X-Amzn-Apigateway-Api-Id"),
+            TransformerUtility.key_value("X-Forwarded-For"),
+            TransformerUtility.key_value("X-Forwarded-Port"),
+            TransformerUtility.key_value(
+                "X-Forwarded-Proto",
+                value_replacement="<X-Forwarded-Proto>",
+                reference_replacement=False,
+            ),
+        ]
+
+    @staticmethod
     def apigatewayv2_jwt_authorizer_event():
         return [
             TransformerUtility.jsonpath("$..claims.auth_time", "claims-auth-time"),

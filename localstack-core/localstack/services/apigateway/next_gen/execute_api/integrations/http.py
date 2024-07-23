@@ -6,19 +6,11 @@ from werkzeug.datastructures import Headers
 
 from localstack.aws.api.apigateway import Integration
 
-from ..context import (
-    EndpointResponse,
-    IntegrationRequest,
-    RestApiInvocationContext,
-)
+from ..context import EndpointResponse, IntegrationRequest, RestApiInvocationContext
 from ..header_utils import build_multi_value_headers
 from .core import RestApiIntegration
 
-NO_BODY_METHODS = {
-    HTTPMethod.OPTIONS,
-    HTTPMethod.GET,
-    HTTPMethod.HEAD,
-}
+NO_BODY_METHODS = {HTTPMethod.OPTIONS, HTTPMethod.GET, HTTPMethod.HEAD}
 
 
 class SimpleHttpRequest(TypedDict, total=False):
@@ -38,16 +30,6 @@ class SimpleHttpRequest(TypedDict, total=False):
 
 class BaseRestApiHttpIntegration(RestApiIntegration):
     @staticmethod
-    def _get_default_headers(context: RestApiInvocationContext) -> dict[str, str]:
-        # passing full context as the trace-id will probably also come from it
-        # TODO: get right casing in case we can override them with mappings/override?
-        return {
-            "x-amzn-apigateway-api-id": context.api_id,
-            "x-amzn-trace-id": "",  # TODO
-            "user-agent": f"AmazonAPIGateway_{context.api_id}",
-        }
-
-    @staticmethod
     def _get_integration_timeout(integration: Integration) -> float:
         return int(integration.get("timeoutInMillis", 29000)) / 1000
 
@@ -64,14 +46,11 @@ class RestApiHttpIntegration(BaseRestApiHttpIntegration):
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
 
-        default_apigw_headers = self._get_default_headers(context)
-        default_apigw_headers.update(integration_req["headers"])
-
         request_parameters: SimpleHttpRequest = {
             "method": method,
             "url": integration_req["uri"],
             "params": integration_req["query_string_parameters"],
-            "headers": default_apigw_headers,
+            "headers": integration_req["headers"],
         }
 
         if method not in NO_BODY_METHODS:
@@ -105,19 +84,14 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
 
-        default_apigw_headers = self._get_default_headers(context)
-
         multi_value_headers = build_multi_value_headers(integration_req["headers"])
         request_headers = {key: ",".join(value) for key, value in multi_value_headers.items()}
-        # TODO: check which headers to pop
-        request_headers.pop("Host", None)
-        default_apigw_headers.update(request_headers)
 
         request_parameters: SimpleHttpRequest = {
             "method": method,
             "url": integration_req["uri"],
             "params": integration_req["query_string_parameters"],
-            "headers": default_apigw_headers,
+            "headers": request_headers,
         }
 
         # TODO: validate this for HTTP_PROXY
@@ -129,12 +103,7 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
         # request_parameters["timeout"] = self._get_integration_timeout(integration)
 
         request_response = requests.request(**request_parameters)
-
         response_headers = Headers(dict(request_response.headers))
-        remapped = ["connection", "content-length", "date", "x-amzn-requestid"]
-        for header in remapped:
-            if value := request_response.headers.get(header):
-                response_headers[f"x-amzn-remapped-{header}"] = value
 
         return EndpointResponse(
             body=request_response.content,

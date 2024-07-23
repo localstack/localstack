@@ -54,24 +54,25 @@ def add_http_integration_transformers(snapshot):
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: shared between HTTP & HTTP_PROXY
-        "$..content.headers.x-amzn-trace-id",
         "$..content.headers.x-forwarded-for",
-        "$..headers.x-amz-apigw-id",
-        "$..headers.x-amzn-trace-id",
         "$..content.origin",
         "$..headers.server",
-        # TODO: only missing for HTTP
-        "$..headers.x-amzn-requestid",
         # TODO: for HTTP integration only: requests (urllib3) automatically adds `Accept-Encoding` when sending the
         #  request, seems like we cannot remove it
         "$..headers.accept-encoding",
-        # TODO: only missing for HTTP_PROXY
+        # TODO: only missing for HTTP_PROXY, Must be coming from the lambda url
         "$..headers.x-amzn-remapped-x-amzn-requestid",
+        #  TODO AWS doesn't seems to add Server to lambda invocation for lambda url
+        "$..headers.x-amzn-remapped-server",
     ]
 )
 @markers.snapshot.skip_snapshot_verify(
     condition=lambda: not is_next_gen_api(),
     paths=[
+        "$..content.headers.x-amzn-trace-id",
+        "$..headers.x-amz-apigw-id",
+        "$..headers.x-amzn-trace-id",
+        "$..headers.x-amzn-requestid",
         "$..content.headers.user-agent",  # TODO: We have to properly set that header on non proxied requests.
         "$..content.headers.accept",  # legacy does not properly manage accept header
         # TODO: x-forwarded-for header is actually set when the request is sent to `requests.request`.
@@ -238,10 +239,11 @@ def test_http_integration_method(
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..headers.x-amz-apigw-id",
         "$..content.origin",
         "$..headers.server",
         "$..headers.x-amzn-remapped-x-amzn-requestid",
+        #  TODO AWS doesn't seems to add Server to lambda invocation for lambda url
+        "$..headers.x-amzn-remapped-server",
     ]
 )
 @pytest.mark.skipif(
