@@ -544,5 +544,10 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#unknown_binding_decl.
+    def visitUnknown_binding_decl(self, ctx:ASLParser.Unknown_binding_declContext):
+        return self.visitChildren(ctx)
+
+
 
 del ASLParser
