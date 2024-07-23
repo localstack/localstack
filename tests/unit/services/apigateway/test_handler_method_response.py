@@ -10,10 +10,6 @@ from localstack.services.apigateway.next_gen.execute_api.context import (
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import MethodResponseHandler
 from localstack.services.apigateway.next_gen.execute_api.router import ApiGatewayEndpoint
-from localstack.services.apigateway.next_gen.execute_api.variables import ContextVariables
-
-TEST_API_ID = "test-api"
-TEST_REQUEST_ID = "request-id"
 
 
 @pytest.fixture
@@ -24,8 +20,6 @@ def ctx():
     """
 
     context = RestApiInvocationContext(Request())
-    context.context_variables = ContextVariables(requestId=TEST_REQUEST_ID)
-    context.api_id = TEST_API_ID
     context.integration = Integration(type=IntegrationType.HTTP)
     context.invocation_response = InvocationResponse(
         body=b"",
