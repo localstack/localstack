@@ -1,7 +1,7 @@
 import logging
 
 from rolo import Request, Router
-from rolo.dispatcher import Handler
+from rolo.routing.handler import Handler
 from werkzeug.routing import Rule
 
 from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID

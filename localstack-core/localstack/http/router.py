@@ -4,17 +4,16 @@ from typing import (
     TypeVar,
 )
 
-from rolo.router import (
-    Dispatcher,
+from rolo.routing import (
     PortConverter,
     RegexConverter,
     Router,
     RuleAdapter,
     RuleGroup,
     WithHost,
-    call_endpoint,
     route,
 )
+from rolo.routing.router import Dispatcher, call_endpoint
 
 HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE")
 
