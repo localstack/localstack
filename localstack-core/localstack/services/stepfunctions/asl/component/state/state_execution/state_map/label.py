@@ -20,6 +20,5 @@ class Label(Component):
             chr(i) for i in chain(range(0x00, 0x20), range(0x7F, 0xA0))
         ]:
             if invalid_char in self.label:
-                raise ValueError(
-                    f"Label contains invalid character: '{invalid_char.encode("unicode-escape").decode()}'"
-                )
+                escaped_char = invalid_char.encode("unicode-escape").decode()
+                raise ValueError(f"Label contains invalid character: '{escaped_char}'")
