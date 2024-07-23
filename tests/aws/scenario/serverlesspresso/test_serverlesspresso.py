@@ -10,6 +10,7 @@ It's originally written via SAM but has been adapted here into a Python-based CD
 import base64
 import json
 import os
+import random
 import time
 
 import aws_cdk as cdk
@@ -145,14 +146,12 @@ class TestServerlesspressoScenario:
         )["events"]
         return log_events
 
-    @markers.aws.unknown
-    def test_deployed_infra_state(self, aws_client, infrastructure, snapshot):
+    def _get_order_state(self, aws_client, infrastructure, order_id: str):
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
-        snapshot.match("outputs", outputs)
-        describe_stack = aws_client.cloudformation.describe_stacks(StackName=STACK_NAME)["Stacks"][
-            0
-        ]
-        snapshot.match("describe_stack", describe_stack)
+        order_table_name = outputs["OrderTableName"]
+        return aws_client.dynamodb.get_item(
+            TableName=order_table_name, Key={"PK": {"S": "orders"}, "SK": {"S": order_id}}
+        ).get("Item")
 
     @markers.aws.validated
     def test_populate_data(self, aws_client, infrastructure: "InfraProvisioner"):
@@ -262,15 +261,13 @@ class TestServerlesspressoScenario:
             ]
         )
 
-        # there should now be an execution with the message id
-        # executions = aws_client.stepfunctions.list_executions(stateMachineArn=sm_arn)
-        executions = (
-            aws_client.stepfunctions.get_paginator("list_executions")
-            .paginate(stateMachineArn=sm_arn)
-            .build_full_result()
-        )
-
         def _check_execution():
+            executions = (
+                aws_client.stepfunctions.get_paginator("list_executions")
+                .paginate(stateMachineArn=sm_arn)
+                .build_full_result()
+            )
+
             matched_executions = [
                 e
                 for e in executions["executions"]
@@ -280,28 +277,42 @@ class TestServerlesspressoScenario:
             execution_arn = matched_executions[0]["executionArn"]
             await_execution_terminated(aws_client.stepfunctions, execution_arn)
 
-        retry(_check_execution, sleep=2, retries=10, sleep_before=5)
+        retry(_check_execution, sleep=2, retries=10, sleep_before=10 if is_aws_cloud() else 2)
 
     @markers.aws.validated
-    def test_workflow_start(self, aws_client, infrastructure):
+    def test_order_completion_workflow(self, aws_client, infrastructure):
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
         order_manager_sm_arn = outputs["OrderManagerStateMachineArn"]
         event_bus_name = outputs["EventBusName"]
         self._open_store(aws_client, infrastructure)
+        # use random id to avoid cache responses from dynamodb
+        order_id = str(random.randint(1, 100))
 
-        # mock validator service (scan of QR code => new order)
-        put_events = aws_client.events.put_events(
+        #############################
+        # Phase 1: Initiate New Order
+        #############################
+        aws_client.events.put_events(
             Entries=[
                 {
                     "Source": SERVERLESSPRESSO_SOURCE,
                     "DetailType": "Validator.NewOrder",
-                    "Detail": json.dumps({"userId": "1", "orderId": "3"}),
+                    "Detail": json.dumps({"userId": "1", "orderId": order_id}),
                     "EventBusName": event_bus_name,
                 }
             ]
         )
-        time.sleep(10)  # TODO: wait for order to arrive in dynamodb
 
+        retry_config = {
+            "sleep": 5 if is_aws_cloud() else 2,
+            "retries": 10,
+            "sleep_before": 10,
+        }
+
+        retry((lambda: self._get_order_state(aws_client, infrastructure, order_id=order_id)), **retry_config)
+
+        ################################
+        # Phase 2: Customer Selects Drink
+        ################################
         payload = {
             "action": "",
             "body": {
@@ -310,40 +321,47 @@ class TestServerlesspressoScenario:
                 "modifiers": [],
                 "icon": "barista-icons_cappuccino-alternative",
             },
-            "orderId": "3",
-            "baristaUserId": "3",
+            "orderId": order_id,
         }
         aws_client.stepfunctions.start_execution(
             stateMachineArn=order_manager_sm_arn, input=json.dumps(payload)
         )
 
-        # TODO: wait for order to arrive for barista to confirm
+        def _order_has_drink():
+            order_state = self._get_order_state(aws_client, infrastructure, order_id=order_id)
+            assert json.loads(order_state["drinkOrder"]["S"])["drink"] == "Cappuccino"
+        retry(_order_has_drink, **retry_config)
 
-        # # claim
-        # payload_barista_make = {"action": "make", "body": {}, "orderId": "2", "baristaUserId": "3"}
-        # aws_client.stepfunctions.start_execution(
-        #     stateMachineArn=order_manager_sm_arn, input=json.dumps(payload_barista_make)
-        # )
-        #
-        # # complete
-        # payload_barista_complete = {
-        #     "action": "complete",
-        #     "body": {
-        #         "userId": "1",
-        #         "drink": "Cappuccino",
-        #         "modifiers": [],
-        #         "icon": "barista-icons_cappuccino-alternative",
-        #     },
-        #     "orderId": "2",
-        #     "baristaUserId": "3",
-        # }
-        # aws_client.stepfunctions.start_execution(
-        #     stateMachineArn=order_manager_sm_arn, input=json.dumps(payload_barista_complete)
-        # )
-        #
-        # # check order state in dynamodb
-        # order_state = _get_order_state(aws_client, infrastructure, order_id="2")
-        # assert order_state["state"] == "COMPLETED"
+        #####################################
+        # Phase 3: Barista Starts Making Drink
+        #####################################
+        payload_barista_make = {"action": "make", "body": {}, "orderId": order_id, "baristaUserId": "3"}
+        aws_client.stepfunctions.start_execution(
+            stateMachineArn=order_manager_sm_arn, input=json.dumps(payload_barista_make)
+        )
+
+        def _order_has_barista():
+            order_state = self._get_order_state(aws_client, infrastructure, order_id=order_id)
+            assert order_state["baristaUserId"]["S"] == "3"
+        retry(_order_has_barista,**retry_config)
+
+        #################################
+        # Phase 4: Barista Completes Order
+        #################################
+        payload_barista_complete = {
+            "action": "complete",
+            "body": {},
+            "orderId": order_id,
+            "baristaUserId": "3",
+        }
+        aws_client.stepfunctions.start_execution(
+            stateMachineArn=order_manager_sm_arn, input=json.dumps(payload_barista_complete)
+        )
+
+        def _order_is_complete():
+            order_state = self._get_order_state(aws_client, infrastructure, order_id=order_id)
+            assert order_state["ORDERSTATE"]["S"] == "Completed"
+        retry(_order_is_complete,**retry_config)
 
     @markers.aws.validated
     def test_concurrent_order_limit(self, aws_client, infrastructure):
