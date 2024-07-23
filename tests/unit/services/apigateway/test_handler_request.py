@@ -138,8 +138,8 @@ class TestParsingHandler:
         # simulate a path request
         request = Request(
             "GET",
-            path=f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}/foo/bar/ed",
-            raw_path=f"/restapis/{TEST_API_ID}/_user_request_/{TEST_API_STAGE}//foo%2Fbar/ed",
+            path=f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/foo/bar/ed",
+            raw_path=f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_//foo%2Fbar/ed",
         )
 
         context = get_invocation_context(request)
