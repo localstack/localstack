@@ -120,7 +120,7 @@ requests-aws4auth==1.3.1
     # via localstack-core (pyproject.toml)
 rich==13.7.1
     # via localstack-core (pyproject.toml)
-rolo==0.6.1
+rolo==0.5.1
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.2
     # via boto3
