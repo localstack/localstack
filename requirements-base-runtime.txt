@@ -31,7 +31,7 @@ click==8.1.7
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==42.0.8
+cryptography==43.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -96,7 +96,7 @@ pycparser==2.22
     # via cffi
 pygments==2.18.0
     # via rich
-pyopenssl==24.1.0
+pyopenssl==24.2.1
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
@@ -116,7 +116,7 @@ requests==2.32.3
     #   localstack-core (pyproject.toml)
     #   requests-aws4auth
     #   rolo
-requests-aws4auth==1.2.3
+requests-aws4auth==1.3.1
     # via localstack-core (pyproject.toml)
 rich==13.7.1
     # via localstack-core (pyproject.toml)
@@ -127,9 +127,7 @@ s3transfer==0.10.2
 semver==3.0.2
     # via localstack-core (pyproject.toml)
 six==1.16.0
-    # via
-    #   python-dateutil
-    #   requests-aws4auth
+    # via python-dateutil
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
 typing-extensions==4.12.2
