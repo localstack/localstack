@@ -64,8 +64,7 @@ base-runtime = [
     "urllib3>=2.0.7",
     "Werkzeug>=3.0.0",
     "xmltodict>=0.13.0",
-    # TODO remove upper limit once https://github.com/localstack/rolo/issues/19 is resolved
-    "rolo>=0.4,<0.6",
+    "rolo>=0.7",
 ]
 
 # required to actually run localstack on the host
