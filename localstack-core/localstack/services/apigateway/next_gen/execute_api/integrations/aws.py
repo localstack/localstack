@@ -340,6 +340,9 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         method = integration_req["http_method"]
 
         if method != HTTPMethod.POST:
+            LOG.warning(
+                "The 'AWS_PROXY' integration can only be used with the POST integration method.",
+            )
             raise IntegrationFailureError("Internal server error")
 
         input_event = self.create_lambda_input_event(context)
@@ -424,6 +427,13 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         try:
             lambda_response = json.loads(payload)
         except json.JSONDecodeError:
+            LOG.warning(
+                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."} but was: %s',
+                payload,
+            )
+            LOG.debug(
+                "Execution failed due to configuration error: Malformed Lambda proxy response"
+            )
             raise InternalServerError("Internal server error", status_code=502)
 
         # none of the lambda response fields are mandatory, but you cannot return any other fields

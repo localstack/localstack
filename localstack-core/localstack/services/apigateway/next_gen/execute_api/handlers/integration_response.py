@@ -149,6 +149,11 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         selection_value: str, integration_responses: dict[str, IntegrationResponse]
     ) -> IntegrationResponse:
         if not integration_responses:
+            LOG.warning(
+                "Configuration error: No match for output mapping and no default output mapping configured. "
+                "Endpoint Response Status Code: %s",
+                selection_value,
+            )
             raise ApiConfigurationError("Internal server error")
 
         if select_by_pattern := [
