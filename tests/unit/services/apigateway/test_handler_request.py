@@ -7,6 +7,9 @@ from localstack.http import Request, Response
 from localstack.services.apigateway.models import RestApiContainer
 from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
+from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
+    MissingAuthTokenError,
+)
 from localstack.services.apigateway.next_gen.execute_api.handlers.parse import (
     InvocationRequestParser,
 )
@@ -436,7 +439,7 @@ class TestRoutingHandler:
         parse_handler_chain.handle(context, Response())
         # manually invoking the handler here as exceptions would be swallowed by the chain
         handler = InvocationRequestRouter()
-        with pytest.raises(Exception, match="Not found"):
+        with pytest.raises(MissingAuthTokenError):
             handler(parse_handler_chain, context, Response())
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
@@ -454,7 +457,7 @@ class TestRoutingHandler:
         parse_handler_chain.handle(context, Response())
         # manually invoking the handler here as exceptions would be swallowed by the chain
         handler = InvocationRequestRouter()
-        with pytest.raises(Exception, match="Not found"):
+        with pytest.raises(MissingAuthTokenError):
             handler(parse_handler_chain, context, Response())
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])

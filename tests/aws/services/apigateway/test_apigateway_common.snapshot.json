@@ -1109,5 +1109,26 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApigatewayRouting::test_routing_not_found": {
+    "recorded-date": "23-07-2024, 17:41:58",
+    "recorded-content": {
+      "working-route": {
+        "message": "exists",
+        "statusCode": 200
+      },
+      "not-found": {
+        "content": {
+          "message": "Missing Authentication Token"
+        },
+        "errorType": "MissingAuthenticationTokenException"
+      },
+      "wrong-method": {
+        "content": {
+          "message": "Missing Authentication Token"
+        },
+        "errorType": "MissingAuthenticationTokenException"
+      }
+    }
   }
 }

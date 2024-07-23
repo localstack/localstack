@@ -18,6 +18,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource_method,
 )
+from tests.aws.services.apigateway.conftest import is_next_gen_api
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY
 
 
@@ -948,12 +949,7 @@ class TestApigatewayRouting:
         )
 
     @markers.aws.validated
-    def test_proxy_routing_with_hardcoded_resource_sibling(
-        self,
-        aws_client,
-        create_rest_apigw,
-        apigw_redeploy_api,
-    ):
+    def test_proxy_routing_with_hardcoded_resource_sibling(self, aws_client, create_rest_apigw):
         api_id, _, root_id = create_rest_apigw(name="test proxy routing")
 
         resource = aws_client.apigateway.create_resource(
@@ -1032,12 +1028,7 @@ class TestApigatewayRouting:
         )
 
     @markers.aws.validated
-    def test_routing_with_hardcoded_resource_sibling_order(
-        self,
-        aws_client,
-        create_rest_apigw,
-        apigw_redeploy_api,
-    ):
+    def test_routing_with_hardcoded_resource_sibling_order(self, aws_client, create_rest_apigw):
         api_id, _, root_id = create_rest_apigw(name="test parameter routing")
 
         resource = aws_client.apigateway.create_resource(
@@ -1103,3 +1094,50 @@ class TestApigatewayRouting:
             path="/part1/random-value",
             expected_response="proxy",
         )
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_next_gen_api() and not is_aws_cloud(),
+        reason="Wrong behavior in legacy implementation",
+    )
+    def test_routing_not_found(self, aws_client, create_rest_apigw, snapshot):
+        api_id, _, root_id = create_rest_apigw(name=f"test-notfound-{short_uid()}")
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="existing"
+        )
+        hardcoded_resource_id = resource["id"]
+
+        response_template_get = {"statusCode": 200, "message": "exists"}
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, hardcoded_resource_id, "GET", response_template_get
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        def _invoke_api(path: str, method: str, works: bool):
+            url = api_invoke_url(api_id=api_id, stage=stage_name, path=path)
+            _response = requests.request(method, url)
+            assert _response.ok == works
+            return _response
+
+        retry_args = {"retries": 10 if is_aws_cloud() else 3, "sleep": 3 if is_aws_cloud() else 1}
+        response = retry(_invoke_api, method="GET", path="/existing", works=True, **retry_args)
+        snapshot.match("working-route", response.json())
+
+        response = retry(
+            _invoke_api, method="GET", path="/random-non-existing", works=False, **retry_args
+        )
+        resp = {
+            "content": response.json(),
+            "errorType": response.headers.get("x-amzn-ErrorType"),
+        }
+        snapshot.match("not-found", resp)
+
+        response = retry(_invoke_api, method="POST", path="/existing", works=False, **retry_args)
+        resp = {
+            "content": response.json(),
+            "errorType": response.headers.get("x-amzn-ErrorType"),
+        }
+        snapshot.match("wrong-method", resp)

@@ -107,6 +107,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
         tracing_enabled: NullableBoolean = None,
         **kwargs,
     ) -> Deployment:
+        # TODO: if the REST API does not contain any method, we should raise an exception
         deployment: Deployment = call_moto(context)
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/updating-api.html
         # TODO: the deployment is not accessible until it is linked to a stage

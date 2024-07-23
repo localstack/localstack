@@ -18,6 +18,7 @@ from localstack.services.apigateway.models import RestApiDeployment
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import RestApiInvocationContext
+from ..gateway_response import MissingAuthTokenError
 from ..variables import ContextVariables
 
 LOG = logging.getLogger(__name__)
@@ -78,16 +79,20 @@ class RestAPIResourceRouter:
         matcher: MapAdapter = self._map.bind(context.request.host)
 
         # perform the matching
+        # trailing slashes are ignored in APIGW
+        path = context.invocation_request["path"].rstrip("/")
         try:
-            # trailing slashes are ignored in APIGW
-            path = context.invocation_request["path"].rstrip("/")
-
             rule, args = matcher.match(path, method=request.method, return_rule=True)
         except (MethodNotAllowed, NotFound) as e:
             # MethodNotAllowed (405) exception is raised if a path is matching, but the method does not.
             # Our router might handle this as a 404, validate with AWS.
-            # TODO: raise proper Gateway exception
-            raise Exception("Not found") from e
+            LOG.warning(
+                "API Gateway: No resource or method was found for: %s %s",
+                request.method,
+                path,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise MissingAuthTokenError("Missing Authentication Token") from e
 
         # post process the arg keys and values
         # - the path param keys need to be "un-sanitized", i.e. sanitized rule variable names need to be reverted
