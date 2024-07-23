@@ -7,7 +7,7 @@ from localstack.services.apigateway.next_gen.execute_api.context import (
     RestApiInvocationContext,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import (
-    ResponseContextHandler,
+    InvocationResponseEnricher,
 )
 from localstack.services.apigateway.next_gen.execute_api.router import ApiGatewayEndpoint
 from localstack.services.apigateway.next_gen.execute_api.variables import (
@@ -34,11 +34,11 @@ def ctx():
 
 
 @pytest.fixture
-def response_context_handler():
+def response_enricher_handler():
     """Returns a dummy integration response handler invoker for testing."""
 
     def _handler_invoker(context: RestApiInvocationContext, response):
-        return ResponseContextHandler()(RestApiGatewayHandlerChain(), context, response)
+        return InvocationResponseEnricher()(RestApiGatewayHandlerChain(), context, response)
 
     return _handler_invoker
 
@@ -48,27 +48,27 @@ def apigw_response():
     return ApiGatewayEndpoint.create_response(Request())
 
 
-class TestResponseContextHandler:
-    def test_empty_response(self, ctx, response_context_handler, apigw_response):
-        response_context_handler(ctx, apigw_response)
+class TestResponseEnricherHandler:
+    def test_empty_response(self, ctx, response_enricher_handler, apigw_response):
+        response_enricher_handler(ctx, apigw_response)
         assert apigw_response.headers.get("Content-Type") == "application/json"
         assert apigw_response.headers.get("Connection") == "keep-alive"
         assert apigw_response.headers.get("x-amzn-RequestId") == TEST_REQUEST_ID
         assert apigw_response.headers.get("x-amz-apigw-id") is not None
         assert apigw_response.headers.get("X-Amzn-Trace-Id") is not None
 
-    def test_http_proxy_no_trace_id(self, ctx, response_context_handler, apigw_response):
+    def test_http_proxy_no_trace_id(self, ctx, response_enricher_handler, apigw_response):
         ctx.integration["type"] = IntegrationType.HTTP_PROXY
-        response_context_handler(ctx, apigw_response)
+        response_enricher_handler(ctx, apigw_response)
         assert apigw_response.headers.get("Content-Type") == "application/json"
         assert apigw_response.headers.get("Connection") == "keep-alive"
         assert apigw_response.headers.get("x-amzn-RequestId") == TEST_REQUEST_ID
         assert apigw_response.headers.get("x-amz-apigw-id") is not None
         assert apigw_response.headers.get("X-Amzn-Trace-Id") is None
 
-    def test_error_no_trace_id(self, ctx, response_context_handler, apigw_response):
+    def test_error_no_trace_id(self, ctx, response_enricher_handler, apigw_response):
         ctx.context_variables["error"] = GatewayResponseContextVarsError(message="error")
-        response_context_handler(ctx, apigw_response)
+        response_enricher_handler(ctx, apigw_response)
         assert apigw_response.headers.get("Content-Type") == "application/json"
         assert apigw_response.headers.get("Connection") == "keep-alive"
         assert apigw_response.headers.get("x-amzn-RequestId") == TEST_REQUEST_ID

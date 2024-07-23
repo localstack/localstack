@@ -40,10 +40,14 @@ def build_multi_value_headers(headers: Headers) -> dict[str, list[str]]:
 
 def drop_headers(headers: Headers, to_drop: Iterable[str]):
     """Will modify the provided headers in-place. Dropping matching headers from the provided list"""
+    dropped_headers = []
+
     for header in to_drop:
         if headers.get(header):
-            LOG.debug("Dropping header: %s", header)
             headers.remove(header)
+            dropped_headers.append(header)
+
+    LOG.debug("Dropping headers: %s", dropped_headers)
 
 
 def set_default_headers(headers: Headers, default_headers: dict[str, str]):

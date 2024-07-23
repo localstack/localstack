@@ -8,7 +8,7 @@ from localstack.services.apigateway.next_gen.execute_api.context import RestApiI
 from localstack.utils.strings import short_uid
 
 
-class ResponseContextHandler(RestApiGatewayHandler):
+class InvocationResponseEnricher(RestApiGatewayHandler):
     def __call__(
         self,
         chain: RestApiGatewayHandlerChain,

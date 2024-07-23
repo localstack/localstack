@@ -4,6 +4,7 @@ import logging
 from rolo import Response
 from werkzeug.datastructures import Headers
 
+from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.next_gen.execute_api.api import (
     RestApiGatewayExceptionHandler,
     RestApiGatewayHandlerChain,
@@ -74,9 +75,6 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
             status_code = exception.status_code or 500
 
         response = Response(response=content, headers=headers, status=status_code)
-        # Response sets a content-type by default. This will always be ignored.
-        # TODO use the response template response type when implementing the response template
-        response.headers.remove("content-type")
         return response
 
     @staticmethod
@@ -88,5 +86,5 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
     @staticmethod
     def _build_response_headers(exception: BaseGatewayException) -> dict:
         # TODO apply responseParameters to the headers and get content-type from the gateway_response
-        headers = Headers({"x-amzn-ErrorType": exception.code})
+        headers = Headers({"Content-Type": APPLICATION_JSON, "x-amzn-ErrorType": exception.code})
         return headers
