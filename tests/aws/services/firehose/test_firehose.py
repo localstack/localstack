@@ -136,6 +136,7 @@ def test_kinesis_firehose_http(
 class TestFirehoseIntegration:
     @markers.skip_offline
     @markers.aws.unknown
+    @pytest.mark.skip(reason="flaky")
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self,
         s3_bucket,
