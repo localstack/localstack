@@ -54,7 +54,11 @@ class FunctionUrlRouter:
         )
 
     def handle_lambda_url_invocation(
-        self, request: Request, api_id: str, region: str, **url_params: dict[str, str]
+        self,
+        request: Request,
+        api_id: str,
+        region: str,
+        **url_params: str,
     ) -> Response:
         response = Response()
         response.mimetype = "application/json"
