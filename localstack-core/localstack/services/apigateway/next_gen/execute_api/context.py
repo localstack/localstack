@@ -116,6 +116,7 @@ class RestApiInvocationContext(RequestContext):
         self.invocation_request = None
         self.resource = None
         self.resource_method = None
+        self.integration = None
         self.stage_variables = None
         self.context_variables = None
         self.logging_context_variables = None
