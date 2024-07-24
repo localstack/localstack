@@ -97,6 +97,8 @@ class TestDynamoDB:
     @markers.aws.only_localstack
     def test_time_to_live_deletion(self, aws_client, ddb_test_table, cleanups):
         table_name = ddb_test_table
+        # Note: we use a reserved keyboard (ttl) as an attribute name for the time to live specification to make sure
+        #   that the deletion logic works also in this case.
         aws_client.dynamodb.update_time_to_live(
             TableName=table_name,
             TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
