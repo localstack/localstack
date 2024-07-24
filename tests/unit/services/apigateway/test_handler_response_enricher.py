@@ -74,3 +74,13 @@ class TestResponseEnricherHandler:
         assert apigw_response.headers.get("x-amzn-RequestId") == TEST_REQUEST_ID
         assert apigw_response.headers.get("x-amz-apigw-id") is not None
         assert apigw_response.headers.get("X-Amzn-Trace-Id") is None
+
+    def test_error_at_routing(self, ctx, response_enricher_handler, apigw_response):
+        # in the case where we fail early, in routing for example, we do not have the integration in the context yet
+        ctx.integration = None
+        response_enricher_handler(ctx, apigw_response)
+        assert apigw_response.headers.get("Content-Type") == "application/json"
+        assert apigw_response.headers.get("Connection") == "keep-alive"
+        assert apigw_response.headers.get("x-amzn-RequestId") == TEST_REQUEST_ID
+        assert apigw_response.headers.get("x-amz-apigw-id") is not None
+        assert apigw_response.headers.get("X-Amzn-Trace-Id") is None
