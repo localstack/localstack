@@ -14,6 +14,7 @@ from .response_enricher import InvocationResponseEnricher
 
 legacy_handler = LegacyHandler()
 parse_request = InvocationRequestParser()
+modify_request = CompositeHandler()
 route_request = InvocationRequestRouter()
 preprocess_request = CompositeHandler()
 method_request_handler = MethodRequestHandler()

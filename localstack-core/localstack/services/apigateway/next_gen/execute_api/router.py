@@ -33,21 +33,22 @@ class ApiGatewayEndpoint:
         # api_id can be cased because of custom-tag id
         api_id, stage = kwargs.get("api_id", "").lower(), kwargs.get("stage")
         if self.is_rest_api(api_id, stage):
-            return self.process_rest_api_invocation(request, api_id, stage)
-
+            context, response = self.prepare_rest_api_invocation(request, api_id, stage)
+            self.rest_gateway.process_with_context(context, response)
+            return response
         else:
             # TODO: return right response
             return Response("Not authorized", status=403)
 
-    def process_rest_api_invocation(self, request: Request, api_id: str, stage: str) -> Response:
+    def prepare_rest_api_invocation(
+        self, request: Request, api_id: str, stage: str
+    ) -> tuple[RestApiInvocationContext, Response]:
         LOG.debug("APIGW v1 Endpoint called")
         response = self.create_response(request)
         context = RestApiInvocationContext(request)
         self.populate_rest_api_invocation_context(context, api_id, stage)
 
-        self.rest_gateway.process_with_context(context, response)
-
-        return response
+        return context, response
 
     def is_rest_api(self, api_id: str, stage: str):
         return (api_id, stage) in self._global_store.active_deployments
