@@ -73,7 +73,7 @@ def save_file(file, content, append=False, permissions=None):
     def _opener(path, flags):
         return os.open(path, flags, permissions)
 
-    # make sure that the parent dir exsits
+    # make sure that the parent dir exists
     mkdir(os.path.dirname(file))
     # store file contents
     with open(file, mode, opener=_opener if permissions else None) as f:
