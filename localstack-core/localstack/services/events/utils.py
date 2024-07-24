@@ -4,6 +4,9 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from botocore.utils import ArnParser
+
+from localstack.aws.api import RequestContext
 from localstack.aws.api.events import (
     ArchiveName,
     Arn,
@@ -14,7 +17,12 @@ from localstack.aws.api.events import (
     RuleArn,
     Timestamp,
 )
-from localstack.services.events.models import FormattedEvent, ResourceType, ValidationException
+from localstack.services.events.models import (
+    FormattedEvent,
+    ResourceType,
+    TransformedEvent,
+    ValidationException,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import long_uid
 
@@ -40,6 +48,23 @@ class EventJSONEncoder(json.JSONEncoder):
 
 def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str:
     return json.dumps(obj, cls=EventJSONEncoder, separators=separators)
+
+
+def extract_region_and_account_id(
+    name_or_arn: EventBusNameOrArn, context: RequestContext
+) -> tuple[str, str]:
+    """Returns the region and account id from the arn,
+    or falls back on the region and account id of the context"""
+    account_id = None
+    region = None
+    if ArnParser.is_arn(name_or_arn):
+        parsed_arn = parse_arn(name_or_arn)
+        region = parsed_arn.get("region")
+        account_id = parsed_arn.get("account")
+    if not account_id or not region:
+        region = context.get("region")
+        account_id = context.get("account_id")
+    return region, account_id
 
 
 def extract_event_bus_name(
@@ -183,3 +208,31 @@ def re_format_event(event: FormattedEvent, event_bus_name: EventBusName) -> PutE
     if event.get("replay-name"):
         re_formatted_event["ReplayName"] = event["replay_name"]
     return re_formatted_event
+
+
+def get_trace_header_encoded_region_account(
+    event: PutEventsRequestEntry | FormattedEvent | TransformedEvent,
+    source_region: str,
+    source_account_id: str,
+    target_region: str,
+    target_account_id: str,
+) -> str | None:
+    """Encode the original region and account_id for cross-region and cross-account
+    event bus communication in the trace header. For event bus to event bus communication
+    in a different account the event id is preserved. This is not the case if the region differs."""
+    if event.get("TraceHeader"):
+        return None
+    if source_region != target_region and source_account_id != target_account_id:
+        return json.dumps(
+            {
+                "original_region": source_region,
+                "original_account": source_account_id,
+            }
+        )
+    if source_region != target_region:
+        return json.dumps({"original_region": source_region})
+    if source_account_id != target_account_id:
+        if original_id := event.get("id"):
+            return json.dumps({"original_id": original_id, "original_account": source_account_id})
+        else:
+            return json.dumps({"original_account": source_account_id})
