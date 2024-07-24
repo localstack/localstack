@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_parameter_by_arn": {
+    "last_validated_date": "2024-07-16T17:17:40+00:00"
+  }
+}
