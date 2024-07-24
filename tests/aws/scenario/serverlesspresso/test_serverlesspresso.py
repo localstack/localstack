@@ -32,7 +32,7 @@ from tests.aws.scenario.serverlesspresso.constructs.serverlesspresso_core_stack 
 STACK_NAME = "ServerlesspressoStack"
 
 
-@pytest.mark.skipif(condition=not is_aws_cloud(), reason="not working in too many places")
+# @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not working in too many places")
 class TestServerlesspressoScenario:
     """
 
@@ -86,7 +86,7 @@ class TestServerlesspressoScenario:
         provisioner.add_custom_setup(_create_bucket_and_upload_files)
         provisioner.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
         provisioner.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
-        with provisioner.provisioner(skip_teardown=True, skip_deployment=True) as prov:
+        with provisioner.provisioner(skip_teardown=True, skip_deployment=False) as prov:
             yield prov
 
     def _change_store_state(self, aws_client, infrastructure, new_state: bool):

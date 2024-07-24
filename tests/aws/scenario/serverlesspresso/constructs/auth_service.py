@@ -33,6 +33,13 @@ class AuthService(constructs.Construct):
                 )
             ),
             removal_policy=cdk.RemovalPolicy.DESTROY,
+            self_sign_up_enabled=True,
+        )
+        cdk.aws_cognito.CfnUserPoolGroup(
+            self,
+            "AdminGroup",
+            user_pool_id=user_pool.user_pool_id,
+            group_name="admin"
         )
         user_pool.node.default_child.override_logical_id("UserPool")
         self.user_pool_client = user_pool_client = user_pool.add_client(
@@ -51,7 +58,7 @@ class AuthService(constructs.Construct):
             string_value=user_pool_client.user_pool_client_id,
         )  # TODO Ref?
 
-        identity_pool = identitypool.IdentityPool(
+        self.identity_pool = identitypool.IdentityPool(
             self,
             "IdentityPool",
             identity_pool_name="ServerlesspressoIdentityPool",
@@ -74,7 +81,7 @@ class AuthService(constructs.Construct):
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
                 conditions={
                     "StringEquals": {
-                        "cognito-identity.amazonaws.com:aud": identity_pool.identity_pool_id  # TODO
+                        "cognito-identity.amazonaws.com:aud": self.identity_pool.identity_pool_id  # TODO
                     },
                     "ForAnyValue:StringLike": {
                         "cognito-identity.amazonaws.com:amr": "unauthenticated"
@@ -88,7 +95,7 @@ class AuthService(constructs.Construct):
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["cognito-sync:*"],
                             resources=[
-                                identity_pool.identity_pool_arn
+                                self.identity_pool.identity_pool_arn
                             ],  # TODO: check arn format (should be arn:aws:cognito-sync)
                         ),
                         cdk.aws_iam.PolicyStatement(
@@ -118,7 +125,7 @@ class AuthService(constructs.Construct):
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
                 conditions={
                     "StringEquals": {
-                        "cognito-identity.amazonaws.com:aud": identity_pool.identity_pool_id
+                        "cognito-identity.amazonaws.com:aud": self.identity_pool.identity_pool_id
                     },
                     "ForAnyValue:StringLike": {
                         "cognito-identity.amazonaws.com:amr": "authenticated"
@@ -132,7 +139,7 @@ class AuthService(constructs.Construct):
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["cognito-sync:*"],
                             resources=[
-                                identity_pool.identity_pool_arn
+                                self.identity_pool.identity_pool_arn
                             ],  # TODO: check arn format (should be arn:aws:cognito-sync)
                         ),
                         cdk.aws_iam.PolicyStatement(

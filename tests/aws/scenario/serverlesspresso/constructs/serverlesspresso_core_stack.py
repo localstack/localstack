@@ -258,44 +258,63 @@ class ServerlesspressoCoreStack(cdk.Stack):
         )
         cdk.CfnOutput(self, "LogAllLogGroupName", value=debug_log_group.log_group_name)
 
-        cdk.CfnOutput(
-            self,
-            "DisplayAppURI",
-            value=cdk.Fn.sub(
-                body="https://workshop-display.serverlesscoffee.com/?region=${AWS::Region}&userPoolId=${UserPoolID}&userPoolWebClientId=${UserPoolWebClientId}&orderManagerEndpoint=${OrderManagerEndpoint}&APIGWEndpointValidatorService=${APIGWEndpointValidatorService}&APIGWEndpointConfigService=${APIGWEndpointConfigService}",
-                variables={
-                    "UserPoolID": auth_service.user_pool.user_pool_id,
-                    "UserPoolWebClientId": auth_service.user_pool_client.user_pool_client_id,
-                    "OrderManagerEndpoint": cdk.Fn.join(
-                        "",
-                        [
-                            "https://",
-                             order_manager_service.order_manager_api.attr_rest_api_id,
-                            ".execute-api.",
-                            self.region,
-                            ".amazonaws.com/Prod/",
-                        ],
-                    ),
-                    "APIGWEndpointValidatorService": cdk.Fn.join(
-                        "",
-                        [
-                            "https://",
-                            validator_service.rest_api_validator_service.rest_api_id,
-                            ".execute-api.",
-                            self.region,
-                            ".amazonaws.com/Prod/",
-                        ],
-                    ),
-                    "APIGWEndpointConfigService": cdk.Fn.join(
-                        "",
-                        [
-                            "https://",
-                            config_service.rest_api_config_service.attr_rest_api_id,
-                            ".execute-api.",
-                            self.region,
-                            ".amazonaws.com/Prod/",
-                        ],
-                    ),
-                },
-            ),
-        )
+        frontends = {
+            "DisplayApp": "display",
+            "BaristaApp": "barista",
+            "OrderApp": "order",
+        }
+
+        for frontend, service in frontends.items():
+
+            body = (f"https://workshop-{service}.serverlesscoffee.com/?region=${{AWS::Region}}"
+                    f"&userPoolId=${{UserPoolID}}"
+                    f"&userPoolWebClientId=${{UserPoolWebClientId}}"
+                    f"&orderManagerEndpoint=${{OrderManagerEndpoint}}"
+                    f"&APIGWEndpointValidatorService=${{APIGWEndpointValidatorService}}"
+                    f"&APIGWEndpointConfigService=${{APIGWEndpointConfigService}}"
+                    f"&host=${{HostEndpoint}}"
+                    f"&poolId=${{IdentityPoolId}}")
+
+            cdk.CfnOutput(
+                self,
+                f"{frontend}URI",
+                value= cdk.Fn.sub(
+                    body=body,
+                    variables={
+                        "UserPoolID": auth_service.user_pool.user_pool_id,
+                        "UserPoolWebClientId": auth_service.user_pool_client.user_pool_client_id,
+                        "OrderManagerEndpoint": cdk.Fn.join(
+                            "",
+                            [
+                                "https://",
+                                 order_manager_service.order_manager_api.attr_rest_api_id,
+                                ".execute-api.",
+                                self.region,
+                                ".amazonaws.com/Prod/",
+                            ],
+                        ),
+                        "APIGWEndpointValidatorService": cdk.Fn.join(
+                            "",
+                            [
+                                "https://",
+                                validator_service.rest_api_validator_service.rest_api_id,
+                                ".execute-api.",
+                                self.region,
+                                ".amazonaws.com/Prod/",
+                            ],
+                        ),
+                        "APIGWEndpointConfigService": cdk.Fn.join(
+                            "",
+                            [
+                                "https://",
+                                config_service.rest_api_config_service.attr_rest_api_id,
+                                ".execute-api.",
+                                self.region,
+                                ".amazonaws.com/Prod/",
+                            ],
+                        ),
+                        "HostEndpoint": iot_endpoint.get_att(attribute_name="IotEndpointAddress").to_string(),
+                        "IdentityPoolId": auth_service.identity_pool.identity_pool_id,
+                    },
+                ),
+            )

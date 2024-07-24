@@ -685,7 +685,7 @@
           ]
         },
         "AdminCreateUserConfig": {
-          "AllowAdminCreateUserOnly": true
+          "AllowAdminCreateUserOnly": false
         },
         "AutoVerifiedAttributes": [
           "email"
@@ -742,6 +742,15 @@
         "SupportedIdentityProviders": [
           "COGNITO"
         ],
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      }
+    },
+    "AuthServiceAdminGroupE490548D": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "GroupName": "admin",
         "UserPoolId": {
           "Ref": "UserPool"
         }
@@ -1110,7 +1119,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-4db781ec/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-c2eb3190/api/config_service_api.yaml"
             }
           }
         }
@@ -2528,7 +2537,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-4db781ec/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-c2eb3190/api/order_manager_api.yaml"
             }
           }
         }
@@ -3301,7 +3310,7 @@
     "DisplayAppURI": {
       "Value": {
         "Fn::Sub": [
-          "https://workshop-display.serverlesscoffee.com/?region=${AWS::Region}&userPoolId=${UserPoolID}&userPoolWebClientId=${UserPoolWebClientId}&orderManagerEndpoint=${OrderManagerEndpoint}&APIGWEndpointValidatorService=${APIGWEndpointValidatorService}&APIGWEndpointConfigService=${APIGWEndpointConfigService}",
+          "https://workshop-display.serverlesscoffee.com/?region=${AWS::Region}&userPoolId=${UserPoolID}&userPoolWebClientId=${UserPoolWebClientId}&orderManagerEndpoint=${OrderManagerEndpoint}&APIGWEndpointValidatorService=${APIGWEndpointValidatorService}&APIGWEndpointConfigService=${APIGWEndpointConfigService}&host=${HostEndpoint}&poolId=${IdentityPoolId}",
           {
             "UserPoolID": {
               "Ref": "UserPool"
@@ -3362,6 +3371,171 @@
                   ".amazonaws.com/Prod/"
                 ]
               ]
+            },
+            "HostEndpoint": {
+              "Fn::GetAtt": [
+                "IotEndpoint",
+                "IotEndpointAddress"
+              ]
+            },
+            "IdentityPoolId": {
+              "Ref": "AuthServiceIdentityPool0DD75433"
+            }
+          }
+        ]
+      }
+    },
+    "BaristaAppURI": {
+      "Value": {
+        "Fn::Sub": [
+          "https://workshop-barista.serverlesscoffee.com/?region=${AWS::Region}&userPoolId=${UserPoolID}&userPoolWebClientId=${UserPoolWebClientId}&orderManagerEndpoint=${OrderManagerEndpoint}&APIGWEndpointValidatorService=${APIGWEndpointValidatorService}&APIGWEndpointConfigService=${APIGWEndpointConfigService}&host=${HostEndpoint}&poolId=${IdentityPoolId}",
+          {
+            "UserPoolID": {
+              "Ref": "UserPool"
+            },
+            "UserPoolWebClientId": {
+              "Ref": "AuthServiceUserPoolUserPoolClient16DCF8BB"
+            },
+            "OrderManagerEndpoint": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Fn::GetAtt": [
+                      "OrderManagerServiceRESTApiForOrderManager03927D4C",
+                      "RestApiId"
+                    ]
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".amazonaws.com/Prod/"
+                ]
+              ]
+            },
+            "APIGWEndpointValidatorService": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".amazonaws.com/Prod/"
+                ]
+              ]
+            },
+            "APIGWEndpointConfigService": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Fn::GetAtt": [
+                      "ConfigServiceRESTApConfigServiceE52F9E36",
+                      "RestApiId"
+                    ]
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".amazonaws.com/Prod/"
+                ]
+              ]
+            },
+            "HostEndpoint": {
+              "Fn::GetAtt": [
+                "IotEndpoint",
+                "IotEndpointAddress"
+              ]
+            },
+            "IdentityPoolId": {
+              "Ref": "AuthServiceIdentityPool0DD75433"
+            }
+          }
+        ]
+      }
+    },
+    "OrderAppURI": {
+      "Value": {
+        "Fn::Sub": [
+          "https://workshop-order.serverlesscoffee.com/?region=${AWS::Region}&userPoolId=${UserPoolID}&userPoolWebClientId=${UserPoolWebClientId}&orderManagerEndpoint=${OrderManagerEndpoint}&APIGWEndpointValidatorService=${APIGWEndpointValidatorService}&APIGWEndpointConfigService=${APIGWEndpointConfigService}&host=${HostEndpoint}&poolId=${IdentityPoolId}",
+          {
+            "UserPoolID": {
+              "Ref": "UserPool"
+            },
+            "UserPoolWebClientId": {
+              "Ref": "AuthServiceUserPoolUserPoolClient16DCF8BB"
+            },
+            "OrderManagerEndpoint": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Fn::GetAtt": [
+                      "OrderManagerServiceRESTApiForOrderManager03927D4C",
+                      "RestApiId"
+                    ]
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".amazonaws.com/Prod/"
+                ]
+              ]
+            },
+            "APIGWEndpointValidatorService": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".amazonaws.com/Prod/"
+                ]
+              ]
+            },
+            "APIGWEndpointConfigService": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Fn::GetAtt": [
+                      "ConfigServiceRESTApConfigServiceE52F9E36",
+                      "RestApiId"
+                    ]
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".amazonaws.com/Prod/"
+                ]
+              ]
+            },
+            "HostEndpoint": {
+              "Fn::GetAtt": [
+                "IotEndpoint",
+                "IotEndpointAddress"
+              ]
+            },
+            "IdentityPoolId": {
+              "Ref": "AuthServiceIdentityPool0DD75433"
             }
           }
         ]

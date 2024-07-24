@@ -27,15 +27,6 @@ class ConfigService(constructs.Construct):
             ),
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
-        api_def = load_file(
-            os.path.join(os.path.dirname(__file__), "../artifacts/api/config-service-api.yaml")
-        )
-        # rest_api_config_service = cdk.aws_apigateway.SpecRestApi(
-        #     self,
-        #     "RESTApConfigService",
-        #     deploy_options=cdk.aws_apigateway.StageOptions(stage_name="Prod"),
-        #     # api_definition=cdk.aws_apigateway.ApiDefinition.from_inline(api_def)  # TODO: definition includes CFn so we might have to unwrap it and define it completely in CDK
-        # )
 
         self.rest_api_config_service = cdk.aws_apigateway.CfnRestApi(
             self,
