@@ -1,9 +1,9 @@
 from json import JSONEncoder
 from typing import Type
 
-from rolo.dispatcher import Handler, ResultValue
-from rolo.dispatcher import handler_dispatcher as _handler_dispatcher
-from rolo.router import Dispatcher
+from rolo.routing.handler import Handler, ResultValue
+from rolo.routing.handler import handler_dispatcher as _handler_dispatcher
+from rolo.routing.router import Dispatcher
 
 from localstack.utils.json import CustomEncoder
 
