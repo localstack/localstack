@@ -403,13 +403,13 @@ class TestEventsCrossAccountRegion:
         )
 
         # Create target in secondary region / account
-        target_id_sqs_primary = f"test-target-primary-sqs-{short_uid()}"
+        target_id_sqs_secondary = f"test-target-primary-sqs-{short_uid()}"
         secondary_aws_client.events.put_targets(
             Rule=rule_name,
             EventBusName=event_bus_name,
             Targets=[
                 {
-                    "Id": target_id_sqs_primary,
+                    "Id": target_id_sqs_secondary,
                     "Arn": queue_arn,
                 }
             ],
@@ -447,7 +447,7 @@ class TestEventsCrossAccountRegion:
 
         # Cleanup
         secondary_aws_client.events.remove_targets(
-            Rule=rule_name, EventBusName=event_bus_name, Ids=[target_id_sqs_primary]
+            Rule=rule_name, EventBusName=event_bus_name, Ids=[target_id_sqs_secondary]
         )
         secondary_aws_client.events.delete_rule(EventBusName=event_bus_name, Name=rule_name)
         if event_bus_type == "custom":
