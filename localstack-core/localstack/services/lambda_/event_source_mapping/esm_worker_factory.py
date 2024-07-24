@@ -2,6 +2,8 @@ from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
 from localstack.aws.api.pipes import (
+    KinesisStreamStartPosition,
+    PipeSourceKinesisStreamParameters,
     PipeSourceParameters,
     PipeSourceSqsQueueParameters,
     PipeTargetInvocationType,
@@ -16,6 +18,7 @@ from localstack.services.lambda_.event_source_mapping.pipe_loggers.noops_pipe_lo
     NoOpsPipeLogger,
 )
 from localstack.services.lambda_.event_source_mapping.pipe_utils import get_internal_client
+from localstack.services.lambda_.event_source_mapping.pollers.kinesis_poller import KinesisPoller
 from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import SqsPoller
 from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
 from localstack.utils.aws.arns import parse_arn
@@ -82,6 +85,24 @@ class EsmWorkerFactory:
                 source_parameters=source_parameters,
                 source_client=source_client,
                 processor=esm_processor,
+            )
+        elif source_service == "kinesis":
+            # TODO: map all supported ESM to Pipe parameters
+            source_parameters = PipeSourceParameters(
+                KinesisStreamParameters=PipeSourceKinesisStreamParameters(
+                    StartingPosition=KinesisStreamStartPosition[
+                        self.event_source_mapping_config["StartingPosition"]
+                    ],
+                    BatchSize=self.event_source_mapping_config["BatchSize"],
+                ),
+            )
+            poller = KinesisPoller(
+                source_arn=source_arn,
+                source_parameters=source_parameters,
+                source_client=source_client,
+                processor=esm_processor,
+                invoke_identity_arn=self.function_role_arn,
+                kinesis_namespace=True,
             )
         else:
             raise Exception(

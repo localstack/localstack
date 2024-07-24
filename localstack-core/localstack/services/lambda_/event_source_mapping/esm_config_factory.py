@@ -3,6 +3,7 @@ import datetime
 from localstack.aws.api.lambda_ import (
     CreateEventSourceMappingRequest,
     EventSourceMappingConfiguration,
+    EventSourcePosition,
 )
 from localstack.services.lambda_.event_source_mapping.esm_worker import EsmState, EsmStateReason
 from localstack.utils.aws.arns import parse_arn
@@ -33,6 +34,16 @@ class EsmConfigFactory:
         if service == "sqs":
             default_source_parameters["BatchSize"] = 10
             default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
+        elif service == "kinesis":
+            # TODO: test these defaults
+            default_source_parameters["BatchSize"] = 100
+            default_source_parameters["BisectBatchOnFunctionError"] = False
+            default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
+            default_source_parameters["MaximumRecordAgeInSeconds"] = -1
+            default_source_parameters["MaximumRetryAttempts"] = -1
+            default_source_parameters["ParallelizationFactor"] = 1
+            default_source_parameters["StartingPosition"] = EventSourcePosition.TRIM_HORIZON
+            default_source_parameters["TumblingWindowInSeconds"] = 0
         else:
             raise Exception(
                 f"Default Lambda Event Source Mapping parameters not implemented for service {service}."
@@ -55,7 +66,7 @@ class EsmConfigFactory:
             # TODO: last modified => does state transition affect this?
             LastModified=datetime.datetime.now(),
             State=EsmState.CREATING,
-            StateTransitionReason=EsmStateReason.USER_INITIATED,
+            StateTransitionReason=EsmStateReason.USER_ACTION,
             # TODO: complete missing fields (hardcoding for SQS test case now)
         )
         return esm_config

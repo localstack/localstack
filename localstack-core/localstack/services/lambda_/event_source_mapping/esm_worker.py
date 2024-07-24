@@ -24,7 +24,7 @@ class EsmState(str):
 
 
 class EsmStateReason(str):
-    USER_INITIATED = "USER_INITIATED"
+    USER_ACTION = "User action"
     NO_RECORDS_PROCESSED = "No records processed"
     # TODO: add others
 
