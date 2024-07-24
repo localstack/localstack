@@ -446,6 +446,9 @@ def get_primary_secondary_client(
         elif cross_scenario == "region_account":
             secondary_client = secondary_aws_client_factory(region_name=secondary_region)
 
+        else:
+            raise ValueError(f"cross_scenario {cross_scenario} not supported")
+
         return {
             "primary_aws_client": primary_client,
             "secondary_aws_client": secondary_client,
