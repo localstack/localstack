@@ -1119,10 +1119,22 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-c2eb3190/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-f8fe6716/api/config_service_api.yaml"
             }
           }
         }
+      }
+    },
+    "ConfigServiceDeploymentEEF844BE": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {
+          "Fn::GetAtt": [
+            "ConfigServiceRESTApConfigServiceE52F9E36",
+            "RestApiId"
+          ]
+        },
+        "StageName": "Prod"
       }
     },
     "ConfigServiceConfigChangedFunctionServiceRoleEFB145B1": {
@@ -2537,10 +2549,22 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-c2eb3190/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-f8fe6716/api/order_manager_api.yaml"
             }
           }
         }
+      }
+    },
+    "OrderManagerServiceDeployment2B67FE78": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {
+          "Fn::GetAtt": [
+            "OrderManagerServiceRESTApiForOrderManager03927D4C",
+            "RestApiId"
+          ]
+        },
+        "StageName": "Prod"
       }
     },
     "OrderManagerServiceOrderManagerStateMachineRoleB05D4222": {

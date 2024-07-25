@@ -35,12 +35,13 @@ class AuthService(constructs.Construct):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             self_sign_up_enabled=True,
         )
-        cdk.aws_cognito.CfnUserPoolGroup(
+        admin_group = cdk.aws_cognito.CfnUserPoolGroup(
             self,
             "AdminGroup",
             user_pool_id=user_pool.user_pool_id,
             group_name="admin"
         )
+
         user_pool.node.default_child.override_logical_id("UserPool")
         self.user_pool_client = user_pool_client = user_pool.add_client(
             "UserPoolClient", generate_secret=False

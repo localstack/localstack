@@ -269,7 +269,7 @@ paths:
               method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
               method.response.header.Access-Control-Allow-Origin: "'*'"
             responseTemplates:
-              application/json: "#set($Items = $input.path('$.Items'))\n$Items\n"
+              application/json: "#set($Items = $input.path('$.Items'))\n#if($Items && $Items.size() > 0)\n$Items\n#else\n{}\n#end"
         requestTemplates:
           application/json: "#set($sub = $input.params('sub'))\n#set($subFromJWT =\
             \ $context.authorizer.claims.sub)\n\n{\n    \"TableName\": \"serverlesspresso-order-table\"\

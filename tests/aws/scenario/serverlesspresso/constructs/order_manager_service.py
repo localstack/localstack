@@ -153,6 +153,13 @@ class OrderManagerService(constructs.Construct):
             ),
         )
 
+        deployment = cdk.aws_apigateway.CfnDeployment(self, "Deployment",
+                                                      rest_api_id=self.order_manager_api.attr_rest_api_id
+                                                      ,stage_name="Prod"
+                                                      )
+
+        # cdk.aws_apigateway.CfnStage(self, "Stage", stage_name="Prod", deployment_id=deployment.attr_deployment_id, rest_api_id=self.order_manager_api.attr_rest_api_id)
+
         # 02OrderManagerStateMachine
         order_state_machine_definition = load_file(
             os.path.join(

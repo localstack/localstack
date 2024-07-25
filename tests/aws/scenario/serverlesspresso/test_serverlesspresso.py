@@ -305,7 +305,7 @@ class TestServerlesspressoScenario:
         retry_config = {
             "sleep": 5 if is_aws_cloud() else 2,
             "retries": 10,
-            "sleep_before": 10,
+            "sleep_before": 10 if is_aws_cloud() else 2,
         }
 
         retry((lambda: self._get_order_state(aws_client, infrastructure, order_id=order_id)), **retry_config)
@@ -428,16 +428,6 @@ class TestServerlesspressoScenario:
             )
 
         retry(_check_event_exists, sleep=2, retries=10, sleep_before=2)
-
-    @markers.aws.validated
-    def test_customer_timeout(self):
-        # TODO
-        ...
-
-    @markers.aws.validated
-    def test_barista_timeout(self):
-        # TODO
-        ...
 
     @markers.aws.validated
     def test_full_e2e(self):

@@ -162,10 +162,10 @@ class ServerlesspressoCoreStack(cdk.Stack):
         # ================================================================================================
         # Services
         # ================================================================================================
-
         publisher_service = PublisherService(
             self, "PublisherService", source=source, event_bus=event_bus, iot_endpoint=iot_endpoint
         )
+
         auth_service = AuthService(self, "AuthService", app_name=app_name, service=service)
         config_service = ConfigService(
             self, "ConfigService", source=source, bucket_name=bucket_name, event_bus=event_bus
