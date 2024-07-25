@@ -5,6 +5,8 @@ import subprocess
 import sys
 from typing import List, Optional, TypeVar
 
+from werkzeug.routing import PathConverter
+
 from localstack import config, constants
 from localstack.config import HostAndPort
 from localstack.constants import (
@@ -23,7 +25,23 @@ T = TypeVar("T")
 LOG = logging.getLogger(__name__)
 
 
-ROUTER: Router[Handler] = Router(dispatcher=handler_dispatcher())
+class GreedyPathConverter(PathConverter):
+    """
+    This converter makes sure that the path ``/mybucket//mykey`` can be matched to the pattern
+    ``<Bucket>/<path:Key>`` and will result in `Key` being `/mykey`.
+    """
+
+    regex = ".*?"
+
+    part_isolating = False
+    """From the werkzeug docs: If a custom converter can match a forward slash, /, it should have the
+    attribute part_isolating set to False. This will ensure that rules using the custom converter are
+    correctly matched."""
+
+
+ROUTER: Router[Handler] = Router(
+    dispatcher=handler_dispatcher(), converters={"greedy_path": GreedyPathConverter}
+)
 """This special Router is part of the edge proxy. Use the router to inject custom handlers that are handled before
 the actual AWS service call is made."""
 

@@ -8,7 +8,6 @@ from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import Map, MapAdapter
 
 from localstack.aws.protocol.routing import (
-    GreedyPathConverter,
     StrictMethodRule,
     path_param_regex,
     post_process_arg_name,
@@ -16,6 +15,7 @@ from localstack.aws.protocol.routing import (
 )
 from localstack.http import Request
 from localstack.http.request import get_raw_path
+from localstack.services.edge import GreedyPathConverter
 
 
 class _HttpOperation(NamedTuple):

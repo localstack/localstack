@@ -2,9 +2,10 @@ import pytest
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, Rule
 
-from localstack.aws.protocol.op_router import GreedyPathConverter, RestServiceOperationRouter
+from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.spec import list_services, load_service
 from localstack.http import Request
+from localstack.services.edge import GreedyPathConverter
 
 
 def _collect_services():
