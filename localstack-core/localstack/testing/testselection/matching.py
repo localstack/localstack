@@ -64,7 +64,7 @@ def get_test_dir_for_service(svc: str) -> str:
     return f"tests/aws/services/{svc}"
 
 
-def get_folder(t: str) -> str:
+def get_directory(t: str) -> str:
     # we take the parent of the match file, and we split it in parts
     parent_parts = pathlib.PurePath(t).parent.parts
     # we remove any parts that can be present in front of the first `tests` folder, could be caused by namespacing
@@ -93,8 +93,8 @@ class Matcher:
     def passthrough(self):
         return lambda t: [t] if self.matching_func(t) else []
 
-    def folder(self):
-        return lambda t: [get_folder(t)] if self.matching_func(t) else []
+    def directory(self):
+        return lambda t: [get_directory(t)] if self.matching_func(t) else []
 
 
 class Matchers:
@@ -192,7 +192,7 @@ MATCHING_RULES: list[MatchingRule] = [
     Matchers.glob("localstack/utils/**").full_suite(),
     # testing
     Matchers.glob("localstack/testing/**").full_suite(),
-    Matchers.glob("**/conftest.py").folder(),
+    Matchers.glob("**/conftest.py").directory(),
     Matchers.glob("**/fixtures.py").full_suite(),
     # ignore
     Matchers.glob("**/*.md").ignore(),
