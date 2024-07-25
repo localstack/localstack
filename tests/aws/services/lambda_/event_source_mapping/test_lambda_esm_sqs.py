@@ -6,10 +6,12 @@ import pytest
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_sqs as sqs
 
+from aws.services.lambda_.event_source_mapping.test_lambda_integration_sqs import (
+    LAMBDA_SQS_INTEGRATION_FILE,
+)
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
-from tests.aws.services.lambda_.test_lambda_integration_sqs import LAMBDA_SQS_INTEGRATION_FILE
 
 STACK_NAME = "LambdaEventSourceMappingSqsStack"
 
