@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 from urllib.parse import urlparse
 
 import pytest
@@ -7,14 +8,44 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.transcribe import BadRequestException, ConflictException, NotFoundException
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.packages.ffmpeg import ffmpeg_package
+from localstack.services.transcribe.packages import vosk_package
 from localstack.testing.pytest import markers
 from localstack.utils.files import new_tmp_file
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
+from localstack.utils.threads import start_worker_thread
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
 LOG = logging.getLogger(__name__)
+
+# Lock and event to ensure that the installation is executed before the tests
+INIT_LOCK = threading.Lock()
+installed = threading.Event()
+
+
+def install_async():
+    """
+    Installs the default opensearch version in a worker thread. Used by conftest.py to make
+    sure Vosk and ffmpeg are downloaded once the tests arrive here.
+    """
+    if installed.is_set():
+        return
+
+    def run_install(*args):
+        with INIT_LOCK:
+            if installed.is_set():
+                return
+            LOG.info("installing Vosk default version")
+            vosk_package.install()
+            LOG.info("done installing Vosk default version")
+            LOG.info("installing ffmpeg default version")
+            ffmpeg_package.install()
+            LOG.info("done ffmpeg default version")
+            installed.set()
+
+    start_worker_thread(run_install)
 
 
 @pytest.fixture(autouse=True)
@@ -23,6 +54,14 @@ def transcribe_snapshot_transformer(snapshot):
 
 
 class TestTranscribe:
+    @pytest.fixture(scope="class", autouse=True)
+    def pre_install_vosk(self):
+        if not installed.is_set():
+            install_async()
+
+        assert installed.wait(timeout=3 * 60), "gave up waiting for Vosk to install"
+        yield
+
     @staticmethod
     def _wait_transcription_job(
         transcribe_client: ServiceLevelClientFactory, transcribe_job_name: str
@@ -49,7 +88,6 @@ class TestTranscribe:
             "$..Error..Code",
         ]
     )
-    @pytest.mark.skip(reason="flaky")
     def test_transcribe_happy_path(self, transcribe_create_job, snapshot, aws_client):
         file_path = os.path.join(BASEDIR, "../../files/en-gb.wav")
         job_name = transcribe_create_job(audio_file=file_path)
