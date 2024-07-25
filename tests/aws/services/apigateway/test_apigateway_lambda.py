@@ -181,6 +181,19 @@ def test_lambda_aws_proxy_integration(
     response_trailing_slash = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/")
     snapshot.match("invocation-payload-with-trailing-slash", response_trailing_slash.json())
 
+    # invoke rest api with double slash in proxy param
+    response_double_slash = retry(
+        invoke_api, sleep=2, retries=10, url=f"{invocation_url}//test-path"
+    )
+    snapshot.match("invocation-payload-with-double-slash", response_double_slash.json())
+
+    # invoke rest api with prepended slash
+    slash_between_stage_and_path = invocation_url.replace("/test-path", "//test-path")
+    response_prepend_slash = retry(
+        invoke_api, sleep=2, retries=10, url=slash_between_stage_and_path
+    )
+    snapshot.match("invocation-payload-with-prepended-slash", response_prepend_slash.json())
+
     response_no_trailing_slash = retry(
         invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test"
     )
