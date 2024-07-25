@@ -68,12 +68,12 @@ class EsmConfigFactory:
         # a) What happens if only one of the parameters for DocumentDBEventSourceConfig change?
         # b) Does a change of AmazonManagedKafkaEventSourceConfig.ConsumerGroupId affect flat parameters such as BatchSize and MaximumBatchingWindowInSeconds)?
         # c) Are FilterCriteria.Filters merged or replaced upon update?
+        # TODO: can we ignore extra parameters from the request (e.g., Kinesis params for SQS source)?
         derived_source_parameters = merge_recursive(default_source_parameters, self.request)
         derived_source_parameters["FunctionResponseTypes"] = derived_source_parameters.get(
             "FunctionResponseTypes", []
         )
 
-        # TODO: check that only selected parameters from the request are used here and set defaults accordingly
         esm_config = EventSourceMappingConfiguration(
             **derived_source_parameters,
             UUID=long_uid(),

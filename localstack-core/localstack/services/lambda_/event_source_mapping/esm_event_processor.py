@@ -53,7 +53,6 @@ class EsmEventProcessor(EventProcessor):
             self.logger.log(
                 messageType="ExecutionFailed",
                 logLevel=LogLevel.ERROR,
-                # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                 error=e.error,
             )
             # TODO: check whether partial batch item failures is enabled by default or need to be explicitly enabled
@@ -64,7 +63,6 @@ class EsmEventProcessor(EventProcessor):
             self.logger.log(
                 messageType="ExecutionFailed",
                 logLevel=LogLevel.ERROR,
-                # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                 error=e.error,
             )
             raise BatchFailureError from e
@@ -99,13 +97,11 @@ class EsmEventProcessor(EventProcessor):
                 self.logger.log(
                     messageType="TargetInvocationSucceeded",
                     logLevel=LogLevel.TRACE,
-                    # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                 )
             except PartialFailureSenderError as e:
                 self.logger.log(
                     messageType="TargetInvocationPartiallyFailed",
                     logLevel=LogLevel.ERROR,
-                    # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                     error=e.error,
                 )
                 raise e
@@ -113,7 +109,6 @@ class EsmEventProcessor(EventProcessor):
                 self.logger.log(
                     messageType="TargetInvocationFailed",
                     logLevel=LogLevel.ERROR,
-                    # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                     error=e.error,
                 )
                 raise e
@@ -126,7 +121,6 @@ class EsmEventProcessor(EventProcessor):
             self.logger.log(
                 messageType="TargetStagePartiallyFailed",
                 logLevel=LogLevel.ERROR,
-                # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                 error=e.error,
             )
             raise e
@@ -134,7 +128,6 @@ class EsmEventProcessor(EventProcessor):
             self.logger.log(
                 messageType="TargetStageFailed",
                 logLevel=LogLevel.ERROR,
-                # TODO: add awsRequest and awsResponse if `IncludeExecutionData` is enabled
                 error=e.error,
             )
             raise e
