@@ -46,17 +46,10 @@ def pytest_runtestloop(session):
 
             test_init_functions.add(opensearch_install_async)
 
-        if any(es_test in parent_name for es_test in ["elasticsearch", "firehose"]):
+        if any(opensearch_test in parent_name for opensearch_test in ["test_es", "firehose"]):
             from tests.aws.services.es.test_es import install_async as es_install_async
 
             test_init_functions.add(es_install_async)
-
-        if "transcribe" in parent_name:
-            from tests.aws.services.transcribe.test_transcribe import (
-                install_async as transcribe_install_async,
-            )
-
-            test_init_functions.add(transcribe_install_async)
 
     # add init functions for certain tests that download/install things
     for test_class in test_classes:
