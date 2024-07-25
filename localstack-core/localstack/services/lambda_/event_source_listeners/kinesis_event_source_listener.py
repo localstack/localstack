@@ -147,6 +147,7 @@ class KinesisEventSourceListener(StreamEventSourceListener):
             record_payload = {}
             for key, val in record.items():
                 record_payload[first_char_to_lower(key)] = val
+            # TODO: look into CBOR parsing issues (we had demos by Alex and Simon)
             # convert datetime obj to timestamp
             # AWS requires millisecond precision, but the timestamp has to be in seconds with the milliseconds
             # represented by the fraction part of the float

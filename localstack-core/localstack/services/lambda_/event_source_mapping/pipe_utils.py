@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 import botocore
@@ -5,6 +6,7 @@ from botocore.client import BaseClient
 
 from localstack.aws.connect import connect_to
 from localstack.utils.aws.arns import parse_arn
+from localstack.utils.json import BytesEncoder
 
 
 def get_internal_client(
@@ -66,3 +68,14 @@ def get_datetime_from_timestamp(timestamp: float) -> datetime:
 
 def format_time_iso_8601_z(time: datetime) -> str:
     return f"{time.isoformat()[:-3]}Z"
+
+
+def to_json_str(obj: any) -> str:
+    """Custom JSON encoding for events with potentially unserializable fields (e.g., byte string).
+    JSON encoders in LocalStack:
+    * localstack.utils.json.CustomEncoder
+    * localstack.utils.json.BytesEncoder
+    * localstack.services.events.utils.EventJSONEncoder
+    * localstack.services.stepfunctions.asl.utils.encoding._DateTimeEncoder
+    """
+    return json.dumps(obj, cls=BytesEncoder)

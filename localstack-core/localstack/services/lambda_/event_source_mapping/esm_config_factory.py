@@ -2,10 +2,14 @@ import datetime
 
 from localstack.aws.api.lambda_ import (
     CreateEventSourceMappingRequest,
+    DestinationConfig,
     EventSourceMappingConfiguration,
     EventSourcePosition,
 )
 from localstack.services.lambda_.event_source_mapping.esm_worker import EsmState, EsmStateReason
+from localstack.services.lambda_.event_source_mapping.pipe_utils import (
+    get_standardized_service_name,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.collections import merge_recursive
 from localstack.utils.strings import long_uid
@@ -28,19 +32,28 @@ class EsmConfigFactory:
         # TODO: handle special case where the "EventSourceArn" is optional (e.g., Apache Kafka: https://aws.amazon.com/blogs/compute/using-self-hosted-apache-kafka-as-an-event-source-for-aws-lambda/)
         source_arn = self.request["EventSourceArn"]
         parsed_arn = parse_arn(source_arn)
-        service = parsed_arn["service"]
+        service = get_standardized_service_name(parsed_arn["service"])
 
         default_source_parameters = {}
         if service == "sqs":
             default_source_parameters["BatchSize"] = 10
             default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
         elif service == "kinesis":
-            # TODO: test these defaults
+            # TODO: test all defaults
             default_source_parameters["BatchSize"] = 100
             default_source_parameters["BisectBatchOnFunctionError"] = False
             default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
             default_source_parameters["MaximumRecordAgeInSeconds"] = -1
             default_source_parameters["MaximumRetryAttempts"] = -1
+            default_source_parameters["ParallelizationFactor"] = 1
+            default_source_parameters["StartingPosition"] = EventSourcePosition.TRIM_HORIZON
+            default_source_parameters["TumblingWindowInSeconds"] = 0
+        elif service == "dynamodbstreams":
+            # TODO: test all defaults
+            default_source_parameters["BatchSize"] = 10
+            default_source_parameters["DestinationConfig"] = DestinationConfig(OnFailure={})
+            default_source_parameters["BisectBatchOnFunctionError"] = False
+            default_source_parameters["MaximumRecordAgeInSeconds"] = -1
             default_source_parameters["ParallelizationFactor"] = 1
             default_source_parameters["StartingPosition"] = EventSourcePosition.TRIM_HORIZON
             default_source_parameters["TumblingWindowInSeconds"] = 0

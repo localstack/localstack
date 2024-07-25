@@ -9,6 +9,7 @@ from localstack.services.lambda_.event_source_mapping.event_processor import (
     PartialBatchFailureError,
 )
 from localstack.services.lambda_.event_source_mapping.pipe_loggers.pipe_logger import PipeLogger
+from localstack.services.lambda_.event_source_mapping.pipe_utils import to_json_str
 from localstack.services.lambda_.event_source_mapping.senders.sender import (
     PartialFailureSenderError,
     Sender,
@@ -35,7 +36,7 @@ class EsmEventProcessor(EventProcessor):
             self.logger.log(
                 messageType="ExecutionStarted",
                 logLevel=LogLevel.INFO,
-                payload=json.dumps(events),
+                payload=to_json_str(events),
             )
             # An execution is only triggered upon successful polling. Therefore, `PollingStageStarted` never occurs.
             self.logger.log(
@@ -91,6 +92,7 @@ class EsmEventProcessor(EventProcessor):
                 # TODO: handle and log target invocation + stage skipped (when no records present)
                 payload = self.sender.send_events(events)
                 if payload:
+                    # TODO: test unserializable content (e.g., byte strings)
                     payload = json.dumps(payload)
                 else:
                     payload = ""

@@ -6,6 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
+from aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
@@ -54,6 +55,13 @@ def get_lambda_logs_event(aws_client):
     return _get_lambda_logs_event
 
 
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_v2_esm,
+    paths=[
+        # Lifecycle updates not yet implemented
+        "$..LastProcessingResult",
+    ],
+)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # dynamodb issues, not related to lambda
