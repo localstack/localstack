@@ -74,7 +74,8 @@ class DynamoDBPoller(StreamPoller):
             dynamodb = record["dynamodb"]
 
             if creation_time := dynamodb.get("ApproximateCreationDateTime"):
-                dynamodb["ApproximateCreationDateTime"] = int(creation_time.timestamp())
+                # validated by TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
+                dynamodb["ApproximateCreationDateTime"] = float(creation_time.timestamp())
             event = {
                 # TODO: add this metadata after filtering (these are based on the original record!)
                 "eventID": record["eventID"],
