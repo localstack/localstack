@@ -10,6 +10,7 @@ from localstack.aws.api.transcribe import BadRequestException, ConflictException
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.transcribe.packages import vosk_package
+from localstack.services.transcribe.provider import TranscribeProvider
 from localstack.testing.pytest import markers
 from localstack.utils.files import new_tmp_file
 from localstack.utils.strings import short_uid, to_str
@@ -23,6 +24,8 @@ LOG = logging.getLogger(__name__)
 # Lock and event to ensure that the installation is executed before the tests
 INIT_LOCK = threading.Lock()
 installed = threading.Event()
+
+PRE_DOWNLOAD_LANGUAGE_CODE_MODELS = ["en-GB"]
 
 
 def install_async():
@@ -43,6 +46,10 @@ def install_async():
             LOG.info("installing ffmpeg default version")
             ffmpeg_package.install()
             LOG.info("done ffmpeg default version")
+            for language_code in PRE_DOWNLOAD_LANGUAGE_CODE_MODELS:
+                LOG.info("installing Vosk models used in test")
+                TranscribeProvider.download_model(language_code)
+                LOG.info("done installing Vosk models used in test")
             installed.set()
 
     start_worker_thread(run_install)
