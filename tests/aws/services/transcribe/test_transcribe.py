@@ -10,7 +10,7 @@ from localstack.aws.api.transcribe import BadRequestException, ConflictException
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.transcribe.packages import vosk_package
-from localstack.services.transcribe.provider import TranscribeProvider
+from localstack.services.transcribe.provider import LANGUAGE_MODELS, TranscribeProvider
 from localstack.testing.pytest import markers
 from localstack.utils.files import new_tmp_file
 from localstack.utils.strings import short_uid, to_str
@@ -52,8 +52,13 @@ def install_async():
                     "downloading Vosk models used in test: %s", PRE_DOWNLOAD_LANGUAGE_CODE_MODELS
                 )
                 for language_code in PRE_DOWNLOAD_LANGUAGE_CODE_MODELS:
-                    TranscribeProvider.download_model(language_code)
-                    LOG.info("done downloading Vosk model '%s'", language_code)
+                    model_name = LANGUAGE_MODELS[language_code]
+                    TranscribeProvider.download_model(model_name)
+                    LOG.info(
+                        "done downloading Vosk model '%s' for language code '%s'",
+                        model_name,
+                        language_code,
+                    )
                 LOG.info("done downloading all Vosk models used in test")
             except Exception:
                 LOG.exception("Error during installation of Transcribe dependencies")
