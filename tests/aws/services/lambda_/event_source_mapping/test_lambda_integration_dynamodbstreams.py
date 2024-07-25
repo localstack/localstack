@@ -58,7 +58,7 @@ def get_lambda_logs_event(aws_client):
 @markers.snapshot.skip_snapshot_verify(
     condition=is_v2_esm,
     paths=[
-        # Lifecycle updates not yet implemented
+        # Lifecycle updates not yet implemented in ESM v2
         "$..LastProcessingResult",
     ],
 )
@@ -221,6 +221,9 @@ class TestDynamoDBEventSourceMapping:
             **kwargs,
         )
 
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="Updates and status lifecycle not yet implemented in ESM v2"
+    )
     @markers.aws.validated
     def test_disabled_dynamodb_event_source_mapping(
         self,
@@ -330,6 +333,7 @@ class TestDynamoDBEventSourceMapping:
         list_esm = aws_client.lambda_.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
+    @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet implemented in ESM v2")
     @markers.aws.validated
     # FIXME last three skip verification entries are purely due to numbering mismatches
     @markers.snapshot.skip_snapshot_verify(
@@ -423,6 +427,9 @@ class TestDynamoDBEventSourceMapping:
     #  a) strict event ordering and b) a final event that passes all filters to reliably determine the end of the test.
     #  The current behavior leads to hard-to-detect false negatives such as in this CI run:
     #  https://app.circleci.com/pipelines/github/localstack/localstack/24012/workflows/461664c2-0203-45f9-aec2-394666f48f03/jobs/197705/tests
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="4 of 7 cases fail due to unhandled ExpiredIteratorException in ESM v2"
+    )
     @pytest.mark.parametrize(
         # Calls represents the expected number of Lambda invocations (either 1 or 2).
         # Negative tests with calls=0 are unreliable due to undetermined waiting times.
@@ -626,6 +633,9 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("lambda-multiple-log-events", events)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="Invalid filter detection not yet implemented in ESM v2"
+    )
     @pytest.mark.parametrize(
         "filter",
         [

@@ -366,7 +366,9 @@ class TestKinesisSource:
         )
         snapshot.match("invocation_events", invocation_events)
 
-    @pytest.mark.skipif(is_v2_esm(), reason="Iterator expiration and disabling ESM not yet handled")
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="Iterator expiration and disabling ESM not yet handled in ESM v2"
+    )
     @markers.aws.validated
     def test_disable_kinesis_event_source_mapping(
         self,
@@ -440,7 +442,7 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
-    @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet supported")
+    @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet supported in ESM v2")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
@@ -534,7 +536,7 @@ class TestKinesisSource:
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
     @pytest.mark.skipif(
-        is_v2_esm(), reason="DestinationConfig and LastProcessing result snapshot diff"
+        is_v2_esm(), reason="DestinationConfig and LastProcessing result snapshot diff in ESM v2"
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[

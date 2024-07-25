@@ -50,10 +50,12 @@ class EsmConfigFactory:
             default_source_parameters["TumblingWindowInSeconds"] = 0
         elif service == "dynamodbstreams":
             # TODO: test all defaults
-            default_source_parameters["BatchSize"] = 10
+            default_source_parameters["BatchSize"] = 100
             default_source_parameters["DestinationConfig"] = DestinationConfig(OnFailure={})
             default_source_parameters["BisectBatchOnFunctionError"] = False
+            default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
             default_source_parameters["MaximumRecordAgeInSeconds"] = -1
+            default_source_parameters["MaximumRetryAttempts"] = -1
             default_source_parameters["ParallelizationFactor"] = 1
             default_source_parameters["StartingPosition"] = EventSourcePosition.TRIM_HORIZON
             default_source_parameters["TumblingWindowInSeconds"] = 0
