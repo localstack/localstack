@@ -8,13 +8,13 @@ from werkzeug.routing import Map, MapAdapter, Rule
 
 from localstack.aws.api.apigateway import Resource
 from localstack.aws.protocol.routing import (
-    GreedyPathConverter,
     path_param_regex,
     post_process_arg_name,
     transform_path_params_to_rule_vars,
 )
 from localstack.http import Response
 from localstack.services.apigateway.models import RestApiDeployment
+from localstack.services.edge import GreedyPathConverter
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import RestApiInvocationContext

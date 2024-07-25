@@ -187,6 +187,13 @@ def test_lambda_aws_proxy_integration(
     )
     snapshot.match("invocation-payload-with-double-slash", response_double_slash.json())
 
+    # invoke rest api with prepended slash to the stage (//<stage>/<path>)
+    double_slash_before_stage = invocation_url.replace(f"/{stage_name}/", f"//{stage_name}/")
+    response_prepend_slash = retry(invoke_api, sleep=2, retries=10, url=double_slash_before_stage)
+    snapshot.match(
+        "invocation-payload-with-prepended-slash-to-stage", response_prepend_slash.json()
+    )
+
     # invoke rest api with prepended slash
     slash_between_stage_and_path = invocation_url.replace("/test-path", "//test-path")
     response_prepend_slash = retry(

@@ -144,8 +144,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
                 userAgent=invocation_request["headers"].get("User-Agent"),
                 userArn=None,
             ),
-            # TODO: check if we need the raw path? with forward slashes
-            path=f"/{context.stage}{invocation_request['path']}",
+            path=f"/{context.stage}{invocation_request['raw_path']}",
             protocol="HTTP/1.1",
             requestId=long_uid(),
             requestTime=timestamp(time=now, format=REQUEST_TIME_DATE_FORMAT),
