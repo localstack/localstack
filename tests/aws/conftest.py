@@ -45,7 +45,6 @@ def pytest_runtestloop(session):
             )
 
             test_init_functions.add(opensearch_install_async)
-
         if any(opensearch_test in parent_name for opensearch_test in ["test_es", "firehose"]):
             from tests.aws.services.es.test_es import install_async as es_install_async
 

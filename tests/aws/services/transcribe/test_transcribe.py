@@ -24,6 +24,7 @@ LOG = logging.getLogger(__name__)
 # Lock and event to ensure that the installation is executed before the tests
 INIT_LOCK = threading.Lock()
 installed = threading.Event()
+installation_errored = threading.Event()
 
 PRE_DOWNLOAD_LANGUAGE_CODE_MODELS = ["en-GB"]
 
@@ -40,19 +41,27 @@ def install_async():
         with INIT_LOCK:
             if installed.is_set():
                 return
-            LOG.info("installing Vosk default version")
-            vosk_package.install()
-            LOG.info("done installing Vosk default version")
-            LOG.info("installing ffmpeg default version")
-            ffmpeg_package.install()
-            LOG.info("done ffmpeg default version")
-            for language_code in PRE_DOWNLOAD_LANGUAGE_CODE_MODELS:
-                LOG.info("installing Vosk models used in test")
-                TranscribeProvider.download_model(language_code)
-                LOG.info("done installing Vosk models used in test")
-            installed.set()
+            try:
+                LOG.info("installing Vosk default version")
+                vosk_package.install()
+                LOG.info("done installing Vosk default version")
+                LOG.info("installing ffmpeg default version")
+                ffmpeg_package.install()
+                LOG.info("done ffmpeg default version")
+                LOG.info(
+                    "downloading Vosk models used in test: %s", PRE_DOWNLOAD_LANGUAGE_CODE_MODELS
+                )
+                for language_code in PRE_DOWNLOAD_LANGUAGE_CODE_MODELS:
+                    TranscribeProvider.download_model(language_code)
+                    LOG.info("done downloading Vosk model '%s'", language_code)
+                LOG.info("done downloading all Vosk models used in test")
+            except Exception:
+                LOG.exception("Error during installation of Transcribe dependencies")
+                installation_errored.set()
+            finally:
+                installed.set()
 
-    start_worker_thread(run_install)
+    start_worker_thread(run_install, name="transcribe-install-async")
 
 
 @pytest.fixture(autouse=True)
@@ -62,11 +71,13 @@ def transcribe_snapshot_transformer(snapshot):
 
 class TestTranscribe:
     @pytest.fixture(scope="class", autouse=True)
-    def pre_install_vosk(self):
+    def pre_install_dependencies(self):
         if not installed.is_set():
             install_async()
 
-        assert installed.wait(timeout=3 * 60), "gave up waiting for Vosk to install"
+        assert installed.wait(timeout=3 * 60), "gave up waiting for Vosk/ffmpeg to install"
+
+        assert not installation_errored.is_set(), "installation of transcribe dependencies failed"
         yield
 
     @staticmethod
