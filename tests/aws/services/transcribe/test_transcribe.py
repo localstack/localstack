@@ -53,6 +53,7 @@ def install_async():
                 )
                 for language_code in PRE_DOWNLOAD_LANGUAGE_CODE_MODELS:
                     model_name = LANGUAGE_MODELS[language_code]
+                    # downloading the model takes quite a while sometimes
                     TranscribeProvider.download_model(model_name)
                     LOG.info(
                         "done downloading Vosk model '%s' for language code '%s'",
@@ -80,7 +81,7 @@ class TestTranscribe:
         if not installed.is_set():
             install_async()
 
-        assert installed.wait(timeout=3 * 60), "gave up waiting for Vosk/ffmpeg to install"
+        assert installed.wait(timeout=5 * 60), "gave up waiting for Vosk/ffmpeg to install"
 
         assert not installation_errored.is_set(), "installation of transcribe dependencies failed"
         yield
