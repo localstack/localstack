@@ -29,7 +29,7 @@ vosk_installed = threading.Event()
 ffmpeg_installed = threading.Event()
 installation_errored = threading.Event()
 
-INSTALLATION_TIMEOUT = 4 * 60
+INSTALLATION_TIMEOUT = 5 * 60
 PRE_DOWNLOAD_LANGUAGE_CODE_MODELS = ["en-GB"]
 
 
@@ -99,7 +99,7 @@ def transcribe_snapshot_transformer(snapshot):
 class TestTranscribe:
     @pytest.fixture(scope="class", autouse=True)
     def pre_install_dependencies(self):
-        if not ffmpeg_installed.is_set() or vosk_installed.is_set():
+        if not ffmpeg_installed.is_set() or not vosk_installed.is_set():
             install_async()
 
         start = int(time.time())
