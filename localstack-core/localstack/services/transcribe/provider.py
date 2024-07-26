@@ -226,7 +226,7 @@ class TranscribeProvider(TranscribeApi):
         model_path = LANGUAGE_MODEL_DIR / name
 
         with _DL_LOCK:
-            if (model_path).exists():
+            if model_path.exists():
                 return
             else:
                 model_path.mkdir(parents=True)
