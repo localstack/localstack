@@ -1,6 +1,7 @@
 import logging
 import os
 import threading
+import time
 from urllib.parse import urlparse
 
 import pytest
@@ -22,32 +23,31 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 LOG = logging.getLogger(__name__)
 
 # Lock and event to ensure that the installation is executed before the tests
-INIT_LOCK = threading.Lock()
-installed = threading.Event()
+INIT_VOSK_LOCK = threading.Lock()
+INIT_FFMPEG_LOCK = threading.Lock()
+vosk_installed = threading.Event()
+ffmpeg_installed = threading.Event()
 installation_errored = threading.Event()
 
+INSTALLATION_TIMEOUT = 4 * 60
 PRE_DOWNLOAD_LANGUAGE_CODE_MODELS = ["en-GB"]
 
 
 def install_async():
     """
-    Installs the default opensearch version in a worker thread. Used by conftest.py to make
-    sure Vosk and ffmpeg are downloaded once the tests arrive here.
+    Installs the default ffmpeg and vosk versions in a worker thread.
     """
-    if installed.is_set():
+    if vosk_installed.is_set() and ffmpeg_installed.is_set():
         return
 
-    def run_install(*args):
-        with INIT_LOCK:
-            if installed.is_set():
+    def install_vosk(*args):
+        with INIT_VOSK_LOCK:
+            if vosk_installed.is_set():
                 return
             try:
                 LOG.info("installing Vosk default version")
                 vosk_package.install()
                 LOG.info("done installing Vosk default version")
-                LOG.info("installing ffmpeg default version")
-                ffmpeg_package.install()
-                LOG.info("done ffmpeg default version")
                 LOG.info(
                     "downloading Vosk models used in test: %s", PRE_DOWNLOAD_LANGUAGE_CODE_MODELS
                 )
@@ -62,12 +62,33 @@ def install_async():
                     )
                 LOG.info("done downloading all Vosk models used in test")
             except Exception:
-                LOG.exception("Error during installation of Transcribe dependencies")
+                LOG.exception("Error during installation of Vosk dependencies")
                 installation_errored.set()
+                # we also set the other event to quickly stop the polling
+                ffmpeg_installed.set()
             finally:
-                installed.set()
+                vosk_installed.set()
 
-    start_worker_thread(run_install, name="transcribe-install-async")
+    def install_ffmpeg(*args):
+        with INIT_FFMPEG_LOCK:
+            if ffmpeg_installed.is_set():
+                return
+            try:
+                LOG.info("installing ffmpeg default version")
+                ffmpeg_package.install()
+                LOG.info("done ffmpeg default version")
+            except Exception:
+                LOG.exception("Error during installation of Vosk dependencies")
+                installation_errored.set()
+                # we also set the other event to quickly stop the polling
+                vosk_installed.set()
+            finally:
+                ffmpeg_installed.set()
+
+    # we parallelize the installation of the dependencies
+    # TODO: we could maybe use a ThreadPoolExecutor to use Future instead of manually checking
+    start_worker_thread(install_vosk, name="vosk-install-async")
+    start_worker_thread(install_ffmpeg, name="ffmpeg-install-async")
 
 
 @pytest.fixture(autouse=True)
@@ -78,10 +99,18 @@ def transcribe_snapshot_transformer(snapshot):
 class TestTranscribe:
     @pytest.fixture(scope="class", autouse=True)
     def pre_install_dependencies(self):
-        if not installed.is_set():
+        if not ffmpeg_installed.is_set() or vosk_installed.is_set():
             install_async()
 
-        assert installed.wait(timeout=5 * 60), "gave up waiting for Vosk/ffmpeg to install"
+        start = int(time.time())
+        assert vosk_installed.wait(
+            timeout=INSTALLATION_TIMEOUT
+        ), "gave up waiting for Vosk to install"
+        elapsed = int(time.time() - start)
+        assert ffmpeg_installed.wait(
+            timeout=INSTALLATION_TIMEOUT - elapsed
+        ), "gave up waiting for ffmpeg to install"
+        LOG.info("Spent %s seconds downloading transcribe dependencies", int(time.time() - start))
 
         assert not installation_errored.is_set(), "installation of transcribe dependencies failed"
         yield
