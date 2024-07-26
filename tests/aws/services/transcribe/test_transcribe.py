@@ -23,8 +23,6 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 LOG = logging.getLogger(__name__)
 
 # Lock and event to ensure that the installation is executed before the tests
-INIT_VOSK_LOCK = threading.Lock()
-INIT_FFMPEG_LOCK = threading.Lock()
 vosk_installed = threading.Event()
 ffmpeg_installed = threading.Event()
 installation_errored = threading.Event()
@@ -41,49 +39,45 @@ def install_async():
         return
 
     def install_vosk(*args):
-        with INIT_VOSK_LOCK:
-            if vosk_installed.is_set():
-                return
-            try:
-                LOG.info("installing Vosk default version")
-                vosk_package.install()
-                LOG.info("done installing Vosk default version")
+        if vosk_installed.is_set():
+            return
+        try:
+            LOG.info("installing Vosk default version")
+            vosk_package.install()
+            LOG.info("done installing Vosk default version")
+            LOG.info("downloading Vosk models used in test: %s", PRE_DOWNLOAD_LANGUAGE_CODE_MODELS)
+            for language_code in PRE_DOWNLOAD_LANGUAGE_CODE_MODELS:
+                model_name = LANGUAGE_MODELS[language_code]
+                # downloading the model takes quite a while sometimes
+                TranscribeProvider.download_model(model_name)
                 LOG.info(
-                    "downloading Vosk models used in test: %s", PRE_DOWNLOAD_LANGUAGE_CODE_MODELS
+                    "done downloading Vosk model '%s' for language code '%s'",
+                    model_name,
+                    language_code,
                 )
-                for language_code in PRE_DOWNLOAD_LANGUAGE_CODE_MODELS:
-                    model_name = LANGUAGE_MODELS[language_code]
-                    # downloading the model takes quite a while sometimes
-                    TranscribeProvider.download_model(model_name)
-                    LOG.info(
-                        "done downloading Vosk model '%s' for language code '%s'",
-                        model_name,
-                        language_code,
-                    )
-                LOG.info("done downloading all Vosk models used in test")
-            except Exception:
-                LOG.exception("Error during installation of Vosk dependencies")
-                installation_errored.set()
-                # we also set the other event to quickly stop the polling
-                ffmpeg_installed.set()
-            finally:
-                vosk_installed.set()
+            LOG.info("done downloading all Vosk models used in test")
+        except Exception:
+            LOG.exception("Error during installation of Vosk dependencies")
+            installation_errored.set()
+            # we also set the other event to quickly stop the polling
+            ffmpeg_installed.set()
+        finally:
+            vosk_installed.set()
 
     def install_ffmpeg(*args):
-        with INIT_FFMPEG_LOCK:
-            if ffmpeg_installed.is_set():
-                return
-            try:
-                LOG.info("installing ffmpeg default version")
-                ffmpeg_package.install()
-                LOG.info("done ffmpeg default version")
-            except Exception:
-                LOG.exception("Error during installation of Vosk dependencies")
-                installation_errored.set()
-                # we also set the other event to quickly stop the polling
-                vosk_installed.set()
-            finally:
-                ffmpeg_installed.set()
+        if ffmpeg_installed.is_set():
+            return
+        try:
+            LOG.info("installing ffmpeg default version")
+            ffmpeg_package.install()
+            LOG.info("done ffmpeg default version")
+        except Exception:
+            LOG.exception("Error during installation of Vosk dependencies")
+            installation_errored.set()
+            # we also set the other event to quickly stop the polling
+            vosk_installed.set()
+        finally:
+            ffmpeg_installed.set()
 
     # we parallelize the installation of the dependencies
     # TODO: we could maybe use a ThreadPoolExecutor to use Future instead of manually checking
