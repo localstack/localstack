@@ -242,13 +242,9 @@ class CloudwatchDatabase:
             metric.get("MetricName"),
         )
 
-        dimension_filter = ""
-        for dimension in dimensions:
-            dimension_filter += "AND dimensions LIKE ? "
-            data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
-
-        if not dimensions:
-            dimension_filter = "AND dimensions is null "
+        dimension_filter = "AND dimensions is null " if not dimensions else "AND dimensions LIKE ? "
+        if dimensions:
+            data = data + (self._get_ordered_dimensions_with_separator(dimensions),)
 
         unit_filter = ""
         if unit:
@@ -261,7 +257,8 @@ class CloudwatchDatabase:
         sql_query = f"""
         SELECT
             {STAT_TO_SQLITE_AGGREGATION_FUNC[stat]},
-            SUM(count)
+            SUM(count),
+            dimensions
         FROM (
             SELECT
             value, 1 as count,
@@ -275,8 +272,8 @@ class CloudwatchDatabase:
         ) AS combined
         WHERE account_id = ? AND region = ?
         AND namespace = ? AND metric_name = ?
-        {unit_filter}
         {dimension_filter}
+        {unit_filter}
         AND timestamp >= ? AND timestamp < ?
         ORDER BY timestamp ASC
         """
@@ -326,18 +323,17 @@ class CloudwatchDatabase:
 
         namespace_filter = ""
         if namespace:
-            namespace_filter = "AND namespace = ?"
+            namespace_filter = " AND namespace = ?"
             data = data + (namespace,)
 
         metric_name_filter = ""
         if metric_name:
-            metric_name_filter = "AND metric_name = ?"
+            metric_name_filter = " AND metric_name = ?"
             data = data + (metric_name,)
 
-        dimension_filter = ""
-        for dimension in dimensions:
-            dimension_filter += "AND dimensions LIKE ? "
-            data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
+        dimension_filter = "" if not dimensions else " AND dimensions LIKE ? "
+        if dimensions:
+            data = data + (self._get_ordered_dimensions_with_separator(dimensions),)
 
         query = f"""
             SELECT DISTINCT metric_name, namespace, dimensions
