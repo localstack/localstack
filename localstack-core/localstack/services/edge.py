@@ -5,8 +5,6 @@ import subprocess
 import sys
 from typing import List, Optional, TypeVar
 
-from werkzeug.routing import PathConverter
-
 from localstack import config, constants
 from localstack.config import HostAndPort
 from localstack.constants import (
@@ -14,6 +12,7 @@ from localstack.constants import (
 )
 from localstack.http import Router
 from localstack.http.dispatcher import Handler, handler_dispatcher
+from localstack.http.router import GreedyPathConverter
 from localstack.utils.collections import split_list_by
 from localstack.utils.net import get_free_tcp_port
 from localstack.utils.run import is_root, run
@@ -23,20 +22,6 @@ from localstack.utils.threads import start_thread
 T = TypeVar("T")
 
 LOG = logging.getLogger(__name__)
-
-
-class GreedyPathConverter(PathConverter):
-    """
-    This converter makes sure that the path ``/mybucket//mykey`` can be matched to the pattern
-    ``<Bucket>/<path:Key>`` and will result in `Key` being `/mykey`.
-    """
-
-    regex = ".*?"
-
-    part_isolating = False
-    """From the werkzeug docs: If a custom converter can match a forward slash, /, it should have the
-    attribute part_isolating set to False. This will ensure that rules using the custom converter are
-    correctly matched."""
 
 
 ROUTER: Router[Handler] = Router(

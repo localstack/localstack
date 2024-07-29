@@ -8,8 +8,14 @@ from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import RequestRedirect, Submount
 
 from localstack.http import Request, Response, Router
-from localstack.http.router import E, RequestArguments, RuleAdapter, WithHost, route
-from localstack.services.edge import GreedyPathConverter
+from localstack.http.router import (
+    E,
+    GreedyPathConverter,
+    RequestArguments,
+    RuleAdapter,
+    WithHost,
+    route,
+)
 from localstack.utils.common import get_free_tcp_port
 
 

@@ -15,7 +15,7 @@ from localstack.aws.protocol.routing import (
 )
 from localstack.http import Request
 from localstack.http.request import get_raw_path
-from localstack.services.edge import GreedyPathConverter
+from localstack.http.router import GreedyPathConverter
 
 
 class _HttpOperation(NamedTuple):
