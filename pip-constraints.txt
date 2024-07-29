@@ -1,0 +1,4 @@
+# TODO remove this complete file again!
+# - https://github.com/pypa/setuptools/issues/4519
+# - https://github.com/jpype-project/jpype/issues/1205
+setuptools==71.1.0

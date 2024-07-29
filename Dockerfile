@@ -151,10 +151,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
-    (virtualenv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
+    (virtualenv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools==71.1.0)
 
 # add files necessary to install runtime dependencies
-ADD Makefile pyproject.toml requirements-runtime.txt ./
+ADD Makefile pyproject.toml requirements-runtime.txt pip-constraints.txt ./
 # add the VERSION file to invalidate docker layers with version bumps
 ADD VERSION ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
