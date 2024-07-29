@@ -107,7 +107,7 @@ class ApiGatewayRouter:
                 strict_slashes=False,
             ),
             self.router.add(
-                path="/<stage>/<path:path>",
+                path="/<stage>/<greedy_path:path>",
                 host=host_pattern,
                 endpoint=self.handler,
                 strict_slashes=True,
@@ -119,7 +119,7 @@ class ApiGatewayRouter:
                 defaults={"path": ""},
             ),
             self.router.add(
-                path="/restapis/<api_id>/<stage>/_user_request_/<path:path>",
+                path="/restapis/<api_id>/<stage>/_user_request_/<greedy_path:path>",
                 endpoint=self.handler,
                 strict_slashes=True,
             ),

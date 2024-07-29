@@ -1,7 +1,7 @@
 import re
 from typing import AnyStr
 
-from werkzeug.routing import PathConverter, Rule
+from werkzeug.routing import Rule
 
 # Regex to find path parameters in requestUris of AWS service specs (f.e. /{param1}/{param2+})
 path_param_regex = re.compile(r"({.+?})")
@@ -10,20 +10,6 @@ path_param_regex = re.compile(r"({.+?})")
 _rule_replacements = {"-": "_0_"}
 # String translation table for #_rule_replacements for str#translate
 _rule_replacement_table = str.maketrans(_rule_replacements)
-
-
-class GreedyPathConverter(PathConverter):
-    """
-    This converter makes sure that the path ``/mybucket//mykey`` can be matched to the pattern
-    ``<Bucket>/<path:Key>`` and will result in `Key` being `/mykey`.
-    """
-
-    regex = ".*?"
-
-    part_isolating = False
-    """From the werkzeug docs: If a custom converter can match a forward slash, /, it should have the
-    attribute part_isolating set to False. This will ensure that rules using the custom converter are
-    correctly matched."""
 
 
 class StrictMethodRule(Rule):

@@ -8,7 +8,14 @@ from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import RequestRedirect, Submount
 
 from localstack.http import Request, Response, Router
-from localstack.http.router import E, RequestArguments, RuleAdapter, WithHost, route
+from localstack.http.router import (
+    E,
+    GreedyPathConverter,
+    RequestArguments,
+    RuleAdapter,
+    WithHost,
+    route,
+)
 from localstack.utils.common import get_free_tcp_port
 
 
@@ -286,6 +293,56 @@ class TestRouter:
             "path": "_cluster/health",
             "host": "localhost.localstack.cloud:4566",
             "port": None,
+        }
+
+    def test_greedy_path_converter(self):
+        router = Router(converters={"greedy_path": GreedyPathConverter})
+        router.add(path="/<greedy_path:path>", endpoint=echo_params_json)
+
+        assert router.dispatch(Request(path="/my")).json == {"path": "my"}
+        assert router.dispatch(Request(path="/my/")).json == {"path": "my/"}
+        assert router.dispatch(Request(path="/my//path")).json == {"path": "my//path"}
+        assert router.dispatch(Request(path="/my//path/")).json == {"path": "my//path/"}
+        assert router.dispatch(Request(path="/my/path foobar")).json == {"path": "my/path foobar"}
+        assert router.dispatch(Request(path="//foobar")).json == {"path": "foobar"}
+        assert router.dispatch(Request(path="//foobar/")).json == {"path": "foobar/"}
+
+    def test_greedy_path_converter_with_args(self):
+        router = Router(converters={"greedy_path": GreedyPathConverter})
+        router.add(path="/with-args/<some_id>/<greedy_path:path>", endpoint=echo_params_json)
+
+        assert router.dispatch(Request(path="/with-args/123456/my")).json == {
+            "some_id": "123456",
+            "path": "my",
+        }
+
+        # werkzeug no longer removes trailing slashes in matches
+        assert router.dispatch(Request(path="/with-args/123456/my/")).json == {
+            "some_id": "123456",
+            "path": "my/",
+        }
+
+        # works with sub paths
+        assert router.dispatch(Request(path="/with-args/123456/my/path")).json == {
+            "some_id": "123456",
+            "path": "my/path",
+        }
+
+        # no sub path with no trailing slash raises 404
+        with pytest.raises(NotFound):
+            router.dispatch(Request(path="/with-args/123456"))
+
+        # greedy path accepts empty sub path if there's a trailing slash
+        assert router.dispatch(Request(path="/with-args/123456/")).json == {
+            "some_id": "123456",
+            "path": "",
+        }
+
+        # with the GreedyPath converter, we no longer redirect and accept the request
+        # in order the retrieve the double slash between parameter, we might need to use the RAW_URI
+        assert router.dispatch(Request(path="/with-args/123456//my/test//")).json == {
+            "some_id": "123456",
+            "path": "/my/test//",
         }
 
     def test_remove_rule(self):
