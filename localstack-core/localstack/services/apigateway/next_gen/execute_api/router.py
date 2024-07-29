@@ -1,4 +1,5 @@
 import logging
+from typing import TypedDict, Unpack
 
 from rolo import Request, Router
 from rolo.routing.handler import Handler
@@ -15,6 +16,20 @@ from .gateway import RestApiGateway
 LOG = logging.getLogger(__name__)
 
 
+class RouteHostPathParameters(TypedDict, total=False):
+    """
+    Represents the kwargs typing for calling APIGatewayEndpoint.
+    Each field might be populated from the route host and path parameters, defined when registering a route.
+    """
+
+    api_id: str
+    path: str
+    port: int | None
+    server: str | None
+    stage: str | None
+    vpce_suffix: str | None
+
+
 class ApiGatewayEndpoint:
     """
     This class is the endpoint for API Gateway invocations of the `execute-api` route. It will take the incoming
@@ -29,25 +44,32 @@ class ApiGatewayEndpoint:
             store or apigateway_stores[DEFAULT_AWS_ACCOUNT_ID][AWS_REGION_US_EAST_1]
         )
 
-    def __call__(self, request: Request, **kwargs) -> Response:
+    def __call__(self, request: Request, **kwargs: Unpack[RouteHostPathParameters]) -> Response:
+        """
+        :param request: the incoming Request object
+        :param kwargs: can contain all the field of RouteHostPathParameters. Those values are defined on the registered
+        routes in ApiGatewayRouter, through host and path parameters in the shape <type:name> or <name> only.
+        :return: the Response object to return to the client
+        """
         # api_id can be cased because of custom-tag id
         api_id, stage = kwargs.get("api_id", "").lower(), kwargs.get("stage")
         if self.is_rest_api(api_id, stage):
-            return self.process_rest_api_invocation(request, api_id, stage)
-
+            context, response = self.prepare_rest_api_invocation(request, api_id, stage)
+            self.rest_gateway.process_with_context(context, response)
+            return response
         else:
             # TODO: return right response
             return Response("Not authorized", status=403)
 
-    def process_rest_api_invocation(self, request: Request, api_id: str, stage: str) -> Response:
+    def prepare_rest_api_invocation(
+        self, request: Request, api_id: str, stage: str
+    ) -> tuple[RestApiInvocationContext, Response]:
         LOG.debug("APIGW v1 Endpoint called")
         response = self.create_response(request)
         context = RestApiInvocationContext(request)
         self.populate_rest_api_invocation_context(context, api_id, stage)
 
-        self.rest_gateway.process_with_context(context, response)
-
-        return response
+        return context, response
 
     def is_rest_api(self, api_id: str, stage: str):
         return (api_id, stage) in self._global_store.active_deployments
