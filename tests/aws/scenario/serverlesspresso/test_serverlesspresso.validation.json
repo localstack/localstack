@@ -21,7 +21,7 @@
     "last_validated_date": "2024-07-27T18:50:57+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_open_store": {
-    "last_validated_date": "2024-07-27T19:52:24+00:00"
+    "last_validated_date": "2024-07-29T17:52:00+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_order_completion_workflow": {
     "last_validated_date": "2024-07-27T18:51:40+00:00"

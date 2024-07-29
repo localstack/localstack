@@ -86,11 +86,14 @@ class ValidatorService(constructs.Construct):
             default_cors_preflight_options=cdk.aws_apigateway.CorsOptions(
                 allow_origins=["*"], allow_headers=["*"], allow_methods=["GET", "POST", "OPTIONS"]
             ),
-
+            deploy_options=cdk.aws_apigateway.StageOptions(
+                stage_name="Prod",
+            )
         )
 
         cognito_authorizer = cdk.aws_apigateway.CognitoUserPoolsAuthorizer(
             self, "MyCognitoAuthorizor", cognito_user_pools=[user_pool]
+
         )
 
         qr_code_resource = self.rest_api_validator_service.root.add_resource("qr-code")
@@ -109,7 +112,3 @@ class ValidatorService(constructs.Construct):
             integration=cdk.aws_apigateway.LambdaIntegration(verify_qr_code_fn),
         )
 
-        cdk.aws_apigateway.CfnDeployment(self, "Deployment",
-                                         rest_api_id=self.rest_api_validator_service.rest_api_id
-                                         ,stage_name="Prod"
-                                         ).node.add_dependency(get_qr_code)

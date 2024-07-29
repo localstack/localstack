@@ -1119,7 +1119,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-64e9bbfc/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-69a4a40f/api/config_service_api.yaml"
             }
           }
         }
@@ -1418,7 +1418,7 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\nconst TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)\nconst NANO_ID_CODE_LENGTH = process.env.CodeLength\nconst AVAILABLE_TOKENS = process.env.TokensPerBucket\n\n// inlined partial nanoid library\nconst urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict'\nconst POOL_SIZE_MULTIPLIER = 128\nlet pool, poolOffset\n\nfunction fillPool(bytes) {\n  if (!pool || pool.length < bytes) {\n    pool = Buffer.allocUnsafe(bytes * POOL_SIZE_MULTIPLIER)\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  } else if (poolOffset + bytes > pool.length) {\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  }\n  poolOffset += bytes\n}\n\nfunction nanoid(size = 21) {\n  fillPool((size -= 0))\n  let id = ''\n  for (let i = poolOffset - size; i < poolOffset; i++) {\n    id += urlAlphabet[pool[i] & 63]\n  }\n  return id\n}\n\nconst getItem = async (id) => {\n    const params = {\n        TableName: process.env.TableName,\n        KeyConditionExpression: \"#pk = :pk\",\n        ExpressionAttributeNames: {\n            \"#pk\": \"PK\"\n        },\n        ExpressionAttributeValues: {\n            \":pk\": id\n        }\n    }\n    console.log('getItem params: ', params)\n\n    try {\n        const result = await documentClient.query(params)\n        console.log('getItem result: ', result)\n        return result\n    } catch (err) {\n        console.error('getItem error: ', err)\n    }\n}\n\nconst saveItem = async (record) => {\n    const Item = {\n        PK: record.last_id,\n        ...record\n    }\n    console.log(Item)\n    const result = await documentClient.put({\n        TableName: process.env.TableName,\n        Item\n    })\n    console.log('saveItem: ', result)\n}\n\nconst decrementToken = async (record) => {\n    const params = {\n        TableName: process.env.TableName,\n        Key: {\n            PK: record.last_id\n        },\n        UpdateExpression: \"set availableTokens = availableTokens - :val\",\n        ExpressionAttributeValues:{\n            \":val\": 1\n        },\n        ReturnValues:\"UPDATED_NEW\"\n    }\n    console.log(params)\n    const result = await documentClient.update(params)\n    console.log('decrementToken: ', result)\n}\n\n\nconst isAdmin = (requestContext) => {\n    try {\n        const groups = requestContext.authorizer.claims['cognito:groups'].replace('[','').replace(']','').split(',')\n        return groups.includes('admin')\n    } catch (err) {\n        return false\n    }\n}\n\n// Returns details of a Place ID where the app has user-generated content.\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 0))\n\n    // If not an admin user, exit\n    if (!isAdmin(event.requestContext)) {\n        return {\n            \"statusCode\": 403\n        }\n    }\n\n    let bucket = {}\n    const CURRENT_TIME_BUCKET_ID = parseInt(Date.now() / TIME_INTERVAL)\n    console.log('Bucket:', CURRENT_TIME_BUCKET_ID, )\n\n    // Load bucket from DynamoDB, if available\n    const result = await getItem(CURRENT_TIME_BUCKET_ID)\n    if ( result.Items.length != 0 ) {\n        bucket = result.Items[0]\n        console.log('Bucket loaded: ', bucket)\n    } else {\n\n        // No bucket info available - create new\n        bucket.last_id = CURRENT_TIME_BUCKET_ID\n        bucket.last_code = nanoid(NANO_ID_CODE_LENGTH)\n        bucket.start_ts = ( TIME_INTERVAL * CURRENT_TIME_BUCKET_ID )\n        bucket.start_full = new Date(bucket.start_ts).toString()\n        bucket.end_ts = ( TIME_INTERVAL * CURRENT_TIME_BUCKET_ID ) + ( TIME_INTERVAL - 1 )\n        bucket.end_full = new Date(bucket.end_ts).toString()\n        bucket.availableTokens = parseInt(AVAILABLE_TOKENS)\n\n        // Save to DDB\n        console.log('New code: ', { bucket })\n        await saveItem(bucket)\n    }\n\n    // Return the code\n    return {\n        statusCode: 200,\n        body: JSON.stringify({bucket}),\n        headers: {\n            \"Access-Control-Allow-Headers\" : \"*\",\n            \"Access-Control-Allow-Origin\": \"*\",\n            \"Access-Control-Allow-Methods\": \"OPTIONS,POST,GET\"\n        },\n    }\n}\n"
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\nconst TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)\nconst NANO_ID_CODE_LENGTH = process.env.CodeLength\nconst AVAILABLE_TOKENS = process.env.TokensPerBucket\n\n// inlined partial nanoid library\nconst urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict'\nconst POOL_SIZE_MULTIPLIER = 128\nlet pool, poolOffset\n\nconst crypto = require('crypto');\nfunction fillPool(bytes) {\n  if (!pool || pool.length < bytes) {\n    pool = Buffer.allocUnsafe(bytes * POOL_SIZE_MULTIPLIER)\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  } else if (poolOffset + bytes > pool.length) {\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  }\n  poolOffset += bytes\n}\n\nfunction nanoid(size = 21) {\n  fillPool((size -= 0))\n  let id = ''\n  for (let i = poolOffset - size; i < poolOffset; i++) {\n    id += urlAlphabet[pool[i] & 63]\n  }\n  return id\n}\n\nconst getItem = async (id) => {\n    const params = {\n        TableName: process.env.TableName,\n        KeyConditionExpression: \"#pk = :pk\",\n        ExpressionAttributeNames: {\n            \"#pk\": \"PK\"\n        },\n        ExpressionAttributeValues: {\n            \":pk\": id\n        }\n    }\n    console.log('getItem params: ', params)\n\n    try {\n        const result = await documentClient.query(params)\n        console.log('getItem result: ', result)\n        return result\n    } catch (err) {\n        console.error('getItem error: ', err)\n    }\n}\n\nconst saveItem = async (record) => {\n    const Item = {\n        PK: record.last_id,\n        ...record\n    }\n    console.log(Item)\n    const result = await documentClient.put({\n        TableName: process.env.TableName,\n        Item\n    })\n    console.log('saveItem: ', result)\n}\n\nconst decrementToken = async (record) => {\n    const params = {\n        TableName: process.env.TableName,\n        Key: {\n            PK: record.last_id\n        },\n        UpdateExpression: \"set availableTokens = availableTokens - :val\",\n        ExpressionAttributeValues:{\n            \":val\": 1\n        },\n        ReturnValues:\"UPDATED_NEW\"\n    }\n    console.log(params)\n    const result = await documentClient.update(params)\n    console.log('decrementToken: ', result)\n}\n\n\nconst isAdmin = (requestContext) => {\n    try {\n        const groups = requestContext.authorizer.claims['cognito:groups'].replace('[','').replace(']','').split(',')\n        return groups.includes('admin')\n    } catch (err) {\n        return false\n    }\n}\n\n// Returns details of a Place ID where the app has user-generated content.\nexports.handler = async (event) => {\n    console.log(JSON.stringify(event, null, 0))\n\n    // If not an admin user, exit\n    if (!isAdmin(event.requestContext)) {\n        return {\n            \"statusCode\": 403\n        }\n    }\n\n    let bucket = {}\n    const CURRENT_TIME_BUCKET_ID = parseInt(Date.now() / TIME_INTERVAL)\n    console.log('Bucket:', CURRENT_TIME_BUCKET_ID, )\n\n    // Load bucket from DynamoDB, if available\n    const result = await getItem(CURRENT_TIME_BUCKET_ID)\n    if ( result.Items.length != 0 ) {\n        bucket = result.Items[0]\n        console.log('Bucket loaded: ', bucket)\n    } else {\n\n        // No bucket info available - create new\n        bucket.last_id = CURRENT_TIME_BUCKET_ID\n        bucket.last_code = nanoid(NANO_ID_CODE_LENGTH)\n        bucket.start_ts = ( TIME_INTERVAL * CURRENT_TIME_BUCKET_ID )\n        bucket.start_full = new Date(bucket.start_ts).toString()\n        bucket.end_ts = ( TIME_INTERVAL * CURRENT_TIME_BUCKET_ID ) + ( TIME_INTERVAL - 1 )\n        bucket.end_full = new Date(bucket.end_ts).toString()\n        bucket.availableTokens = parseInt(AVAILABLE_TOKENS)\n\n        // Save to DDB\n        console.log('New code: ', { bucket })\n        await saveItem(bucket)\n    }\n\n    // Return the code\n    return {\n        statusCode: 200,\n        body: JSON.stringify({bucket}),\n        headers: {\n            \"Access-Control-Allow-Headers\" : \"*\",\n            \"Access-Control-Allow-Origin\": \"*\",\n            \"Access-Control-Allow-Methods\": \"OPTIONS,POST,GET\"\n        },\n    }\n}\n"
         },
         "Environment": {
           "Variables": {
@@ -1629,7 +1629,7 @@
         "ValidatorServiceRESTApiValidatorServiceqrcodeF4927AB9"
       ]
     },
-    "ValidatorServiceRESTApiValidatorServiceDeploymentStageprod0D251F60": {
+    "ValidatorServiceRESTApiValidatorServiceDeploymentStageProd6C33B699": {
       "Type": "AWS::ApiGateway::Stage",
       "Properties": {
         "DeploymentId": {
@@ -1638,7 +1638,7 @@
         "RestApiId": {
           "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
         },
-        "StageName": "prod"
+        "StageName": "Prod"
       },
       "DependsOn": [
         "ValidatorServiceRESTApiValidatorServiceAccount37CF6408"
@@ -1775,7 +1775,7 @@
               },
               "/",
               {
-                "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageprod0D251F60"
+                "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageProd6C33B699"
               },
               "/GET/qr-code"
             ]
@@ -1899,7 +1899,7 @@
               },
               "/",
               {
-                "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageprod0D251F60"
+                "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageProd6C33B699"
               },
               "/POST/qr-code"
             ]
@@ -2008,20 +2008,6 @@
         },
         "Type": "COGNITO_USER_POOLS"
       }
-    },
-    "ValidatorServiceDeployment3E2DF518": {
-      "Type": "AWS::ApiGateway::Deployment",
-      "Properties": {
-        "RestApiId": {
-          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
-        },
-        "StageName": "Prod"
-      },
-      "DependsOn": [
-        "ValidatorServiceRESTApiValidatorServiceqrcodeGETApiPermissionServerlesspressoStackValidatorServiceRESTApiValidatorServiceA4AB4D15GETqrcode499175C1",
-        "ValidatorServiceRESTApiValidatorServiceqrcodeGETApiPermissionTestServerlesspressoStackValidatorServiceRESTApiValidatorServiceA4AB4D15GETqrcode714F7094",
-        "ValidatorServiceRESTApiValidatorServiceqrcodeGET0B5A6E5E"
-      ]
     },
     "OrderManagerServiceOrderTableBBA598CB": {
       "Type": "AWS::DynamoDB::Table",
@@ -2563,7 +2549,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-64e9bbfc/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-69a4a40f/api/order_manager_api.yaml"
             }
           }
         }
@@ -3268,7 +3254,7 @@
             },
             "/",
             {
-              "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageprod0D251F60"
+              "Ref": "ValidatorServiceRESTApiValidatorServiceDeploymentStageProd6C33B699"
             },
             "/"
           ]
