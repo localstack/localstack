@@ -157,7 +157,7 @@ class TestNoteTakingScenario:
         with infra.provisioner() as prov:
             yield prov
 
-    @markers.aws.validated
+    @markers.acceptance_test
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Tags",
@@ -233,7 +233,7 @@ class TestNoteTakingScenario:
         resources["items"].sort(key=itemgetter("path"))
         snapshot.match("get_resources", resources)
 
-    @markers.aws.validated
+    @markers.acceptance_test
     def test_notes_rest_api(self, infrastructure):
         outputs = infrastructure.get_stack_outputs(self.STACK_NAME)
         gateway_url = outputs["GatewayUrl"]
