@@ -2818,7 +2818,6 @@ class ResourceType(StrEnum):
     verified_access_trust_provider = "verified-access-trust-provider"
     vpn_connection_device_type = "vpn-connection-device-type"
     vpc_block_public_access_exclusion = "vpc-block-public-access-exclusion"
-    vpc_encryption_control = "vpc-encryption-control"
     ipam_resource_discovery = "ipam-resource-discovery"
     ipam_resource_discovery_association = "ipam-resource-discovery-association"
     instance_connect_endpoint = "instance-connect-endpoint"
