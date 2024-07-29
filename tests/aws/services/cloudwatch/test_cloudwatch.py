@@ -2507,6 +2507,101 @@ class TestCloudwatch:
         describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("describe-after-delete", describe_alarm)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..list-metrics..Metrics",
+        ],
+    )
+    def test_multiple_dimensions_statistics(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+
+        utc_now = datetime.now(tz=timezone.utc)
+        namespace = f"test/{short_uid()}"
+        metric_name = "http.server.requests.count"
+        dimensions = [
+            {"Name": "error", "Value": "none"},
+            {"Name": "exception", "Value": "none"},
+            {"Name": "method", "Value": "GET"},
+            {"Name": "outcome", "Value": "SUCCESS"},
+            {"Name": "uri", "Value": "/greetings"},
+            {"Name": "status", "Value": "200"},
+        ]
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Value": 0.0,
+                    "Unit": "Count",
+                    "StorageResolution": 1,
+                    "Dimensions": dimensions,
+                    "Timestamp": datetime.now(tz=timezone.utc),
+                }
+            ],
+        )
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Value": 5.0,
+                    "Unit": "Count",
+                    "StorageResolution": 1,
+                    "Dimensions": dimensions,
+                    "Timestamp": datetime.now(tz=timezone.utc),
+                }
+            ],
+        )
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "result1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                                "Dimensions": dimensions,
+                            },
+                            "Period": 10,
+                            "Stat": "Maximum",
+                            "Unit": "Count",
+                        },
+                    }
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
+
+            assert len(response["MetricDataResults"][0]["Values"]) > 0
+            snapshot.match("get-metric-stats-max", response)
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0
+        retry(assert_results, retries=retries, sleep_before=sleep_before)
+
+        def list_metrics():
+            res = aws_client.cloudwatch.list_metrics(
+                Namespace=namespace, MetricName=metric_name, Dimensions=dimensions
+            )
+            assert len(res["Metrics"]) > 0
+            return res
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0
+        list_metrics_res = retry(list_metrics, retries=retries, sleep_before=sleep_before)
+
+        # Function to sort the dimensions by "Name"
+        def sort_dimensions(data: dict):
+            for metric in data["Metrics"]:
+                metric["Dimensions"] = sorted(metric["Dimensions"], key=lambda x: x["Name"])
+
+        sort_dimensions(list_metrics_res)
+        snapshot.match("list-metrics", list_metrics_res)
+
 
 def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
     log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")["events"]
