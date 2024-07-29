@@ -237,6 +237,8 @@ def run(
         if pro is None:
             if os.getcwd().endswith("localstack-ext"):
                 pro = True
+            elif "localstack-pro-" in os.getcwd().split(os.pathsep)[-1]:
+                pro = True
             else:
                 pro = False
 
