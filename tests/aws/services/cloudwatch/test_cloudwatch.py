@@ -2541,7 +2541,6 @@ class TestCloudwatch:
                 }
             ],
         )
-        time.sleep(2)
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
             MetricData=[
@@ -2584,9 +2583,16 @@ class TestCloudwatch:
         sleep_before = 2 if is_aws_cloud() else 0
         retry(assert_results, retries=retries, sleep_before=sleep_before)
 
-        list_metrics_res = aws_client.cloudwatch.list_metrics(
-            Namespace=namespace, MetricName=metric_name, Dimensions=dimensions
-        )
+        def list_metrics():
+            res = aws_client.cloudwatch.list_metrics(
+                Namespace=namespace, MetricName=metric_name, Dimensions=dimensions
+            )
+            assert len(res["Metrics"]) > 0
+            return res
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0
+        list_metrics_res = retry(list_metrics, retries=retries, sleep_before=sleep_before)
 
         # Function to sort the dimensions by "Name"
         def sort_dimensions(data: dict):

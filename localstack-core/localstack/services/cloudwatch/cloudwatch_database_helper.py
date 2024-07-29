@@ -259,8 +259,7 @@ class CloudwatchDatabase:
         sql_query = f"""
         SELECT
             {STAT_TO_SQLITE_AGGREGATION_FUNC[stat]},
-            SUM(count),
-            dimensions
+            SUM(count)
         FROM (
             SELECT
             value, 1 as count,
