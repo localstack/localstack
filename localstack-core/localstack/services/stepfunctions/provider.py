@@ -23,12 +23,14 @@ from localstack.aws.api.stepfunctions import (
     DescribeMapRunOutput,
     DescribeStateMachineForExecutionOutput,
     DescribeStateMachineOutput,
+    EncryptionConfiguration,
     ExecutionDoesNotExist,
     ExecutionList,
     ExecutionRedriveFilter,
     ExecutionStatus,
     GetActivityTaskOutput,
     GetExecutionHistoryOutput,
+    IncludedData,
     IncludeExecutionDataGetExecutionHistory,
     InspectionLevel,
     InvalidArn,
@@ -111,7 +113,9 @@ from localstack.services.stepfunctions.asl.parse.asl_parser import (
 from localstack.services.stepfunctions.asl.static_analyser.express_static_analyser import (
     ExpressStaticAnalyser,
 )
-from localstack.services.stepfunctions.asl.static_analyser.static_analyser import StaticAnalyser
+from localstack.services.stepfunctions.asl.static_analyser.static_analyser import (
+    StaticAnalyser,
+)
 from localstack.services.stepfunctions.asl.static_analyser.test_state.test_state_analyser import (
     TestStateStaticAnalyser,
 )
@@ -124,7 +128,9 @@ from localstack.services.stepfunctions.backend.state_machine import (
     TestStateMachine,
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
-from localstack.services.stepfunctions.backend.test_state.execution import TestStateExecution
+from localstack.services.stepfunctions.backend.test_state.execution import (
+    TestStateExecution,
+)
 from localstack.services.stepfunctions.stepfunctions_utils import (
     assert_pagination_parameters_valid,
     get_next_page_token_from_arn,
@@ -222,13 +228,18 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return execution
 
     def _get_executions(
-        self, context: RequestContext, execution_status: Optional[ExecutionStatus] = None
+        self,
+        context: RequestContext,
+        execution_status: Optional[ExecutionStatus] = None,
     ):
         store = self.get_store(context)
         execution: list[Execution] = list(store.executions.values())
         if execution_status:
             execution = list(
-                filter(lambda e: e.exec_status == execution_status, store.executions.values())
+                filter(
+                    lambda e: e.exec_status == execution_status,
+                    store.executions.values(),
+                )
             )
         return execution
 
@@ -302,7 +313,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             raise invalid_definition
 
     @staticmethod
-    def _sanitise_logging_configuration(logging_configuration: LoggingConfiguration) -> None:
+    def _sanitise_logging_configuration(
+        logging_configuration: LoggingConfiguration,
+    ) -> None:
         level = logging_configuration.get("level")
         destinations = logging_configuration.get("destinations")
 
@@ -359,7 +372,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
         if idem_state_machine is not None:
             return CreateStateMachineOutput(
-                stateMachineArn=idem_state_machine.arn, creationDate=idem_state_machine.create_date
+                stateMachineArn=idem_state_machine.arn,
+                creationDate=idem_state_machine.create_date,
             )
 
         # Assert this state machine name is unique.
@@ -373,7 +387,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         # Compute the state machine's Arn.
         state_machine_arn = stepfunctions_state_machine_arn(
-            name=state_machine_name, account_id=context.account_id, region_name=context.region
+            name=state_machine_name,
+            account_id=context.account_id,
+            region_name=context.region,
         )
         state_machines = self.get_store(context).state_machines
 
@@ -391,7 +407,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # Run static analysers on the definition given.
         if state_machine_type == StateMachineType.EXPRESS:
             StepFunctionsProvider._validate_definition(
-                definition=state_machine_definition, static_analysers=[ExpressStaticAnalyser()]
+                definition=state_machine_definition,
+                static_analysers=[ExpressStaticAnalyser()],
             )
         else:
             StepFunctionsProvider._validate_definition(
@@ -428,7 +445,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return create_output
 
     def describe_state_machine(
-        self, context: RequestContext, state_machine_arn: Arn, **kwargs
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        included_data: IncludedData = None,
+        **kwargs,
     ) -> DescribeStateMachineOutput:
         self._validate_state_machine_arn(state_machine_arn)
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
@@ -437,7 +458,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return state_machine.describe()
 
     def describe_state_machine_for_execution(
-        self, context: RequestContext, execution_arn: Arn, **kwargs
+        self,
+        context: RequestContext,
+        execution_arn: Arn,
+        included_data: IncludedData = None,
+        **kwargs,
     ) -> DescribeStateMachineForExecutionOutput:
         self._validate_state_machine_execution_arn(execution_arn)
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
@@ -461,7 +486,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise InvalidToken()
 
     def send_task_success(
-        self, context: RequestContext, task_token: TaskToken, output: SensitiveData, **kwargs
+        self,
+        context: RequestContext,
+        task_token: TaskToken,
+        output: SensitiveData,
+        **kwargs,
     ) -> SendTaskSuccessOutput:
         outcome = CallbackOutcomeSuccess(callback_id=task_token, output=output)
         running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
@@ -577,6 +606,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         name: Name = None,
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
+        included_data: IncludedData = None,
         **kwargs,
     ) -> StartSyncExecutionOutput:
         self._validate_state_machine_arn(state_machine_arn)
@@ -639,7 +669,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return execution.to_start_sync_execution_output()
 
     def describe_execution(
-        self, context: RequestContext, execution_arn: Arn, **kwargs
+        self,
+        context: RequestContext,
+        execution_arn: Arn,
+        included_data: IncludedData = None,
+        **kwargs,
     ) -> DescribeExecutionOutput:
         self._validate_state_machine_execution_arn(execution_arn)
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
@@ -717,7 +751,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             execution.to_execution_list_item()
             for execution in self.get_store(context).executions.values()
             if self._list_execution_filter(
-                execution, state_machine_arn=state_machine_arn, status_filter=status_filter
+                execution,
+                state_machine_arn=state_machine_arn,
+                status_filter=status_filter,
             )
         ]
 
@@ -879,6 +915,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         tracing_configuration: TracingConfiguration = None,
         publish: Publish = None,
         version_description: VersionDescription = None,
+        encryption_configuration: EncryptionConfiguration = None,
         **kwargs,
     ) -> UpdateStateMachineOutput:
         self._validate_state_machine_arn(state_machine_arn)
@@ -901,7 +938,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             self._sanitise_logging_configuration(logging_configuration=logging_configuration)
 
         revision_id = state_machine.create_revision(
-            definition=definition, role_arn=role_arn, logging_configuration=logging_configuration
+            definition=definition,
+            role_arn=role_arn,
+            logging_configuration=logging_configuration,
         )
 
         version_arn = None
@@ -1100,7 +1139,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return test_state_output
 
     def create_activity(
-        self, context: RequestContext, name: Name, tags: TagList = None, **kwargs
+        self,
+        context: RequestContext,
+        name: Name,
+        tags: TagList = None,
+        encryption_configuration: EncryptionConfiguration = None,
+        **kwargs,
     ) -> CreateActivityOutput:
         self._validate_activity_name(name=name)
 
@@ -1143,7 +1187,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
 
     def _send_activity_task_started(
-        self, context: RequestContext, task_token: TaskToken, worker_name: Optional[Name]
+        self,
+        context: RequestContext,
+        task_token: TaskToken,
+        worker_name: Optional[Name],
     ) -> None:
         executions: list[Execution] = self._get_executions(context)
         for execution in executions:
@@ -1167,7 +1214,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return None
 
     def get_activity_task(
-        self, context: RequestContext, activity_arn: Arn, worker_name: Name = None, **kwargs
+        self,
+        context: RequestContext,
+        activity_arn: Arn,
+        worker_name: Name = None,
+        **kwargs,
     ) -> GetActivityTaskOutput:
         self._validate_activity_arn(activity_arn)
 
