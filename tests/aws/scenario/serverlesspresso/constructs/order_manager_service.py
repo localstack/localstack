@@ -153,7 +153,7 @@ class OrderManagerService(constructs.Construct):
             ),
         )
 
-        deployment = cdk.aws_apigateway.CfnDeployment(self, "Deployment",
+        cdk.aws_apigateway.CfnDeployment(self, "Deployment",
                                                       rest_api_id=self.order_manager_api.attr_rest_api_id
                                                       ,stage_name="Prod"
                                                       )

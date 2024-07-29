@@ -162,6 +162,8 @@ class AuthService(constructs.Construct):
                 )
             },
         )
+
+        cdk.custom_resources.AwsCustomResource
         # TODO for some reason this currently fails
         # role_mapping = identitypool.IdentityPoolRoleAttachment(
         #     self,

@@ -14,6 +14,7 @@ const urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwy
 const POOL_SIZE_MULTIPLIER = 128
 let pool, poolOffset
 
+const crypto = require('crypto');
 function fillPool(bytes) {
   if (!pool || pool.length < bytes) {
     pool = Buffer.allocUnsafe(bytes * POOL_SIZE_MULTIPLIER)

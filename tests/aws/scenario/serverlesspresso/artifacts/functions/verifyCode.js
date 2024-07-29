@@ -6,6 +6,7 @@ const eventbridge = new EventBridge()
 const { DynamoDBDocument } = require("@aws-sdk/lib-dynamodb");
 const { DynamoDB } = require("@aws-sdk/client-dynamodb");
 
+const crypto = require('crypto');
 const documentClient = DynamoDBDocument.from(new DynamoDB())
 
 const TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)

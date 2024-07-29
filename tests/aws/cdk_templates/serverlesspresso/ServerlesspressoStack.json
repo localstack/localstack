@@ -1119,7 +1119,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-f8fe6716/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-64e9bbfc/api/config_service_api.yaml"
             }
           }
         }
@@ -1526,7 +1526,7 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { EventBridge } = require('@aws-sdk/client-eventbridge');\nconst eventbridge = new EventBridge()\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\n\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\nconst TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)\n\n// inlined partial nanoid library\nconst urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict'\nconst POOL_SIZE_MULTIPLIER = 128\nlet pool, poolOffset\n\nfunction fillPool(bytes) {\n  if (!pool || pool.length < bytes) {\n    pool = Buffer.allocUnsafe(bytes * POOL_SIZE_MULTIPLIER)\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  } else if (poolOffset + bytes > pool.length) {\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  }\n  poolOffset += bytes\n}\n\nfunction nanoid(size = 21) {\n  fillPool((size -= 0))\n  let id = ''\n  for (let i = poolOffset - size; i < poolOffset; i++) {\n    id += urlAlphabet[pool[i] & 63]\n  }\n  return id\n}\n\nconst getItem = async (id) => {\n    const params = {\n        TableName: process.env.TableName,\n        KeyConditionExpression: \"#pk = :pk\",\n        ExpressionAttributeNames: {\n            \"#pk\": \"PK\"\n        },\n        ExpressionAttributeValues: {\n            \":pk\": id\n        }\n    }\n    console.log('getItem params: ', params)\n\n    try {\n        const result = await documentClient.query(params).promise()\n        console.log('getItem result: ', result)\n        return result\n    } catch (err) {\n        console.error('getItem error: ', err)\n    }\n}\n\nconst saveItem = async (record) => {\n    const Item = {\n        PK: record.last_id,\n        ...record\n    }\n    console.log(Item)\n    const result = await documentClient.put({\n        TableName: process.env.TableName,\n        Item\n    }).promise()\n    console.log('saveItem: ', result)\n}\n\nconst decrementToken = async (record) => {\n    const params = {\n        TableName: process.env.TableName,\n        Key: {\n            PK: record.last_id\n        },\n        UpdateExpression: \"set availableTokens = availableTokens - :val\",\n        ExpressionAttributeValues:{\n            \":val\": 1\n        },\n        ReturnValues:\"UPDATED_NEW\"\n    }\n    console.log(params)\n    const result = await documentClient.update(params).promise()\n    console.log('decrementToken: ', result)\n}\n\n\n\n// Verifies a QR code\nexports.handler = async (event,context) => {\n    console.log(JSON.stringify(event, null, 2))\n    let bucket = {}\n\n    // Missing parameters\n    if (!event.queryStringParameters) {\n        return {\n            statusCode: 422,\n            body: JSON.stringify({ error: \"Missing parameter\" })\n        }\n    }\n\n    // Load bucket from DynamoDB, if available\n    const CURRENT_TIME_BUCKET_ID = parseInt(Date.now() / TIME_INTERVAL)\n    console.log('Bucket:', CURRENT_TIME_BUCKET_ID)\n\n    const result = await getItem(CURRENT_TIME_BUCKET_ID)\n    if ( result.Items.length != 0 ) {\n        bucket = result.Items[0]\n        console.log('Bucket loaded: ', bucket)\n    } else {\n        return {\n            statusCode: 400,\n            body: JSON.stringify({\n                error: 'Invalid code'\n            })\n        }\n    }\n\n    // Validate token\n    if (event.queryStringParameters.token != bucket.last_code) {\n        return {\n            statusCode: 400,\n            body: JSON.stringify({\n                error: 'Invalid code'\n            })\n        }\n    }\n\n    // Check if enough tokens\n    if (bucket.availableTokens < 1) {\n        return {\n            statusCode: 200,\n            body: JSON.stringify({\n                error: 'No tokens remaining'\n            })\n        }\n    }\n\n    // Decrement token count\n    const orderId = nanoid()\n    const userId = event.requestContext.authorizer.claims.sub\n\n    bucket.availableTokens--\n    await decrementToken(bucket)\n\n    // Publish to EventBridge with new order ID\n    const response = await eventbridge.putEvents({\n        Entries: [\n            {\n                Detail: JSON.stringify({\n                    orderId,\n                    userId,\n                    Message:\"A Lambda function is invoked by a POST request to Amazon API Gateway. The Lambda function, Takes the token ID from the QR code scan and checks it against the valid token ID's stored in a DynamoDB database. If Valid, a new Step Functions Workflow is started, this workflow ochestrates various AWS services to move the order along to completion.\",\n                    bucket\n                }),\n                DetailType: 'Validator.NewOrder',\n                EventBusName: process.env.BusName,\n\n                Source: process.env.Source,\n                Resources: [context.invokedFunctionArn],\n                Time: new Date\n            }\n        ]\n    })\n    console.log('EventBridge putEvents:', response)\n\n    // Return the code\n    return {\n        statusCode: 200,\n        body: JSON.stringify({ orderId }),\n        headers: {\n            \"Access-Control-Allow-Headers\" : \"Content-Type\",\n            \"Access-Control-Allow-Origin\": \"*\",\n            \"Access-Control-Allow-Methods\": \"OPTIONS,POST,GET\"\n        },\n    }\n}\n"
+          "ZipFile": "// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop\n\nconst { EventBridge } = require('@aws-sdk/client-eventbridge');\nconst eventbridge = new EventBridge()\n\nconst { DynamoDBDocument } = require(\"@aws-sdk/lib-dynamodb\");\nconst { DynamoDB } = require(\"@aws-sdk/client-dynamodb\");\n\nconst crypto = require('crypto');\nconst documentClient = DynamoDBDocument.from(new DynamoDB())\n\nconst TIME_INTERVAL = (process.env.TimeInterval * 60 * 1000)\n\n// inlined partial nanoid library\nconst urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict'\nconst POOL_SIZE_MULTIPLIER = 128\nlet pool, poolOffset\n\nfunction fillPool(bytes) {\n  if (!pool || pool.length < bytes) {\n    pool = Buffer.allocUnsafe(bytes * POOL_SIZE_MULTIPLIER)\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  } else if (poolOffset + bytes > pool.length) {\n    crypto.getRandomValues(pool)\n    poolOffset = 0\n  }\n  poolOffset += bytes\n}\n\nfunction nanoid(size = 21) {\n  fillPool((size -= 0))\n  let id = ''\n  for (let i = poolOffset - size; i < poolOffset; i++) {\n    id += urlAlphabet[pool[i] & 63]\n  }\n  return id\n}\n\nconst getItem = async (id) => {\n    const params = {\n        TableName: process.env.TableName,\n        KeyConditionExpression: \"#pk = :pk\",\n        ExpressionAttributeNames: {\n            \"#pk\": \"PK\"\n        },\n        ExpressionAttributeValues: {\n            \":pk\": id\n        }\n    }\n    console.log('getItem params: ', params)\n\n    try {\n        const result = await documentClient.query(params).promise()\n        console.log('getItem result: ', result)\n        return result\n    } catch (err) {\n        console.error('getItem error: ', err)\n    }\n}\n\nconst saveItem = async (record) => {\n    const Item = {\n        PK: record.last_id,\n        ...record\n    }\n    console.log(Item)\n    const result = await documentClient.put({\n        TableName: process.env.TableName,\n        Item\n    }).promise()\n    console.log('saveItem: ', result)\n}\n\nconst decrementToken = async (record) => {\n    const params = {\n        TableName: process.env.TableName,\n        Key: {\n            PK: record.last_id\n        },\n        UpdateExpression: \"set availableTokens = availableTokens - :val\",\n        ExpressionAttributeValues:{\n            \":val\": 1\n        },\n        ReturnValues:\"UPDATED_NEW\"\n    }\n    console.log(params)\n    const result = await documentClient.update(params).promise()\n    console.log('decrementToken: ', result)\n}\n\n\n\n// Verifies a QR code\nexports.handler = async (event,context) => {\n    console.log(JSON.stringify(event, null, 2))\n    let bucket = {}\n\n    // Missing parameters\n    if (!event.queryStringParameters) {\n        return {\n            statusCode: 422,\n            body: JSON.stringify({ error: \"Missing parameter\" })\n        }\n    }\n\n    // Load bucket from DynamoDB, if available\n    const CURRENT_TIME_BUCKET_ID = parseInt(Date.now() / TIME_INTERVAL)\n    console.log('Bucket:', CURRENT_TIME_BUCKET_ID)\n\n    const result = await getItem(CURRENT_TIME_BUCKET_ID)\n    if ( result.Items.length != 0 ) {\n        bucket = result.Items[0]\n        console.log('Bucket loaded: ', bucket)\n    } else {\n        return {\n            statusCode: 400,\n            body: JSON.stringify({\n                error: 'Invalid code'\n            })\n        }\n    }\n\n    // Validate token\n    if (event.queryStringParameters.token != bucket.last_code) {\n        return {\n            statusCode: 400,\n            body: JSON.stringify({\n                error: 'Invalid code'\n            })\n        }\n    }\n\n    // Check if enough tokens\n    if (bucket.availableTokens < 1) {\n        return {\n            statusCode: 200,\n            body: JSON.stringify({\n                error: 'No tokens remaining'\n            })\n        }\n    }\n\n    // Decrement token count\n    const orderId = nanoid()\n    const userId = event.requestContext.authorizer.claims.sub\n\n    bucket.availableTokens--\n    await decrementToken(bucket)\n\n    // Publish to EventBridge with new order ID\n    const response = await eventbridge.putEvents({\n        Entries: [\n            {\n                Detail: JSON.stringify({\n                    orderId,\n                    userId,\n                    Message:\"A Lambda function is invoked by a POST request to Amazon API Gateway. The Lambda function, Takes the token ID from the QR code scan and checks it against the valid token ID's stored in a DynamoDB database. If Valid, a new Step Functions Workflow is started, this workflow ochestrates various AWS services to move the order along to completion.\",\n                    bucket\n                }),\n                DetailType: 'Validator.NewOrder',\n                EventBusName: process.env.BusName,\n\n                Source: process.env.Source,\n                Resources: [context.invokedFunctionArn],\n                Time: new Date\n            }\n        ]\n    })\n    console.log('EventBridge putEvents:', response)\n\n    // Return the code\n    return {\n        statusCode: 200,\n        body: JSON.stringify({ orderId }),\n        headers: {\n            \"Access-Control-Allow-Headers\" : \"Content-Type\",\n            \"Access-Control-Allow-Origin\": \"*\",\n            \"Access-Control-Allow-Methods\": \"OPTIONS,POST,GET\"\n        },\n    }\n}\n"
         },
         "Environment": {
           "Variables": {
@@ -2008,6 +2008,20 @@
         },
         "Type": "COGNITO_USER_POOLS"
       }
+    },
+    "ValidatorServiceDeployment3E2DF518": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+        },
+        "StageName": "Prod"
+      },
+      "DependsOn": [
+        "ValidatorServiceRESTApiValidatorServiceqrcodeGETApiPermissionServerlesspressoStackValidatorServiceRESTApiValidatorServiceA4AB4D15GETqrcode499175C1",
+        "ValidatorServiceRESTApiValidatorServiceqrcodeGETApiPermissionTestServerlesspressoStackValidatorServiceRESTApiValidatorServiceA4AB4D15GETqrcode714F7094",
+        "ValidatorServiceRESTApiValidatorServiceqrcodeGET0B5A6E5E"
+      ]
     },
     "OrderManagerServiceOrderTableBBA598CB": {
       "Type": "AWS::DynamoDB::Table",
@@ -2549,7 +2563,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-f8fe6716/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-64e9bbfc/api/order_manager_api.yaml"
             }
           }
         }
@@ -3357,7 +3371,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },
@@ -3373,7 +3387,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },
@@ -3392,7 +3406,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },
@@ -3435,7 +3449,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },
@@ -3451,7 +3465,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },
@@ -3470,7 +3484,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },
@@ -3513,7 +3527,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },
@@ -3529,7 +3543,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },
@@ -3548,7 +3562,7 @@
                   {
                     "Ref": "AWS::Region"
                   },
-                  ".amazonaws.com/Prod/"
+                  ".amazonaws.com/Prod"
                 ]
               ]
             },

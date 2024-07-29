@@ -290,7 +290,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
                                  order_manager_service.order_manager_api.attr_rest_api_id,
                                 ".execute-api.",
                                 self.region,
-                                ".amazonaws.com/Prod/",
+                                ".amazonaws.com/Prod",
                             ],
                         ),
                         "APIGWEndpointValidatorService": cdk.Fn.join(
@@ -300,7 +300,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
                                 validator_service.rest_api_validator_service.rest_api_id,
                                 ".execute-api.",
                                 self.region,
-                                ".amazonaws.com/Prod/",
+                                ".amazonaws.com/Prod",
                             ],
                         ),
                         "APIGWEndpointConfigService": cdk.Fn.join(
@@ -310,7 +310,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
                                 config_service.rest_api_config_service.attr_rest_api_id,
                                 ".execute-api.",
                                 self.region,
-                                ".amazonaws.com/Prod/",
+                                ".amazonaws.com/Prod",
                             ],
                         ),
                         "HostEndpoint": iot_endpoint.get_att(attribute_name="IotEndpointAddress").to_string(),
