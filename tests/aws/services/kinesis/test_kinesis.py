@@ -12,6 +12,7 @@ from botocore.exceptions import ClientError
 # cbor2: explicitly load from private _encoder/_decoder module to avoid using the (non-patched) C-version
 from cbor2._decoder import loads as cbor2_loads
 from cbor2._encoder import dumps as cbor2_dumps
+from requests import Response
 
 from localstack import config, constants
 from localstack.aws.client import _patch_cbor2
@@ -47,20 +48,31 @@ class KinesisHTTPClient:
         self.region_name = region_name
         self._client = client_factory("kinesis", region=self.region_name, signer_factory=SigV4Auth)
 
-    def post(self, operation: str, payload: dict, datetime_as_timestamp: bool = True) -> Any:
+    def post_raw(
+        self, operation: str, payload: dict, datetime_as_timestamp: bool = True, **kwargs
+    ) -> Response:
         """
-        Perform a kinesis operation, encoding the request payload with CBOR and decoding the
-        response with CBOR.
+        Perform a kinesis operation, encoding the request payload with CBOR and returning the raw
+        response without any processing or checks.
         """
         response = self._client.post(
             self.endpoint,
             data=cbor2_dumps(payload, datetime_as_timestamp=datetime_as_timestamp),
             headers=self._build_headers(operation),
+            **kwargs,
         )
-        response_body = cbor2_loads(response.content)
+        return response
+
+    def post(self, operation: str, payload: dict, datetime_as_timestamp: bool = True) -> Any:
+        """
+        Perform a kinesis operation, encoding the request payload with CBOR, checking the response status code
+         and decoding the response with CBOR.
+        """
+        response = self.post_raw(operation, payload, datetime_as_timestamp)
+        response_content = response.content
+        response_body = cbor2_loads(response_content)
         if response.status_code != 200:
             raise ValueError(f"Bad status: {response.status_code}, response body: {response_body}")
-
         return response_body
 
     def _build_headers(self, operation: str) -> dict:
@@ -268,7 +280,7 @@ class TestKinesis:
         wait_for_stream_ready,
         aws_client,
         kinesis_register_consumer,
-        aws_http_client_factory,
+        kinesis_http_client,
         account_id,
         region_name,
         wait_for_kinesis_consumer_ready,
@@ -289,11 +301,10 @@ class TestKinesis:
         consumer_arn = response["Consumer"]["ConsumerARN"]
         wait_for_kinesis_consumer_ready(consumer_arn=consumer_arn)
 
-        kinesis_http_client = aws_http_client_factory("kinesis", signer_factory=SigV4Auth)
-        endpoint = self._get_endpoint(account_id, region_name)
         found_record = False
-        data = cbor2_dumps(
-            {
+        with kinesis_http_client.post_raw(
+            operation="SubscribeToShard",
+            payload={
                 "ConsumerARN": consumer_arn,
                 "ShardId": shard_id,
                 "StartingPosition": {
@@ -301,14 +312,8 @@ class TestKinesis:
                     "Timestamp": datetime.now().astimezone(),
                 },
             },
-            datetime_as_timestamp=True,
-        )
-        headers = {
-            "Content-Type": constants.APPLICATION_AMZ_CBOR_1_1,
-            "X-Amz-Target": "Kinesis_20131202.SubscribeToShard",
-            "Host": endpoint,
-        }
-        with kinesis_http_client.post(endpoint, data=data, headers=headers, stream=True) as result:
+            stream=True,
+        ) as result:
             assert 200 == result.status_code
 
             # put records
@@ -395,12 +400,14 @@ class TestKinesis:
         kinesis_create_stream,
         wait_for_stream_ready,
         aws_client,
-        aws_http_client_factory,
+        kinesis_http_client,
         account_id,
         region_name,
         kinesis_register_consumer,
         snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.key_value("StreamName"))
+
         # create stream
         stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
@@ -419,24 +426,9 @@ class TestKinesis:
 
         # get records with CBOR encoding
         iterator = get_shard_iterator(stream_name, aws_client.kinesis)
-
-        kinesis_http_client = aws_http_client_factory("kinesis", signer_factory=SigV4Auth)
-        endpoint = (
-            f"https://{account_id}.control-kinesis.{region_name}.amazonaws.com"
-            if is_aws_cloud()
-            else config.internal_service_url()
-        )
         result = kinesis_http_client.post(
-            endpoint,
-            data=cbor2_dumps({"ShardIterator": iterator}, datetime_as_timestamp=True),
-            headers={
-                "content-type": constants.APPLICATION_AMZ_CBOR_1_1,
-                "x-amz-target": "Kinesis_20131202.GetRecords",
-                "host": endpoint,
-            },
+            operation="GetRecords", payload={"ShardIterator": iterator}
         )
-        assert 200 == result.status_code
-        result = cbor2_loads(result.content)
         attrs = ("Data", "EncryptionType", "PartitionKey", "SequenceNumber")
         assert select_attributes(json_records[0], attrs) == select_attributes(
             result["Records"][0], attrs
@@ -453,7 +445,7 @@ class TestKinesis:
         kinesis_create_stream,
         wait_for_stream_ready,
         aws_client,
-        aws_http_client_factory,
+        kinesis_http_client,
         account_id,
         region_name,
     ):
@@ -467,23 +459,9 @@ class TestKinesis:
         assert 0 == len(json_records)
 
         # empty get records with CBOR encoding
-        kinesis_http_client = aws_http_client_factory("kinesis", signer_factory=SigV4Auth)
-        endpoint = (
-            f"https://{account_id}.control-kinesis.{region_name}.amazonaws.com"
-            if is_aws_cloud()
-            else config.internal_service_url()
+        cbor_records_content = kinesis_http_client.post(
+            operation="GetRecords", payload={"ShardIterator": iterator}
         )
-        cbor_response = kinesis_http_client.post(
-            endpoint,
-            data=cbor2_dumps({"ShardIterator": iterator}, datetime_as_timestamp=True),
-            headers={
-                "content-type": constants.APPLICATION_AMZ_CBOR_1_1,
-                "x-amz-target": "Kinesis_20131202.GetRecords",
-                "host": endpoint,
-            },
-        )
-        assert 200 == cbor_response.status_code
-        cbor_records_content = cbor2_loads(cbor_response.content)
         cbor_records = cbor_records_content.get("Records")
         assert 0 == len(cbor_records)
 
@@ -645,10 +623,23 @@ class TestKinesis:
         post_create_timestamp = (datetime.now() + timedelta(hours=0, minutes=1)).astimezone()
 
         # perform a raw DescribeStream request to test the datetime serialization by LocalStack
-        describe_response_data = kinesis_http_client.post(
+        describe_response_raw = kinesis_http_client.post_raw(
             operation="DescribeStream",
             payload={"StreamARN": stream_arn},
         )
+        assert 200 == describe_response_raw.status_code
+        cbor_content = describe_response_raw.content
+
+        # Ensure that the timestamp is in an integer and not a floating point (AWS SDKs can't handle that)
+        # Assert via testing the binary stream for the CBOR tag types according to RFC 7049:
+        # - Byte 1: 0xc1 -> 11000001
+        #   - first 3 bit (110) are major type -> 6 -> "Semantic Tag"
+        #   - the next 5 bit (00001) are the tag type -> 1 -> "numerical representation of seconds relative to epoch"
+        # - Byte 2: 0xfb -> 11111011
+        #   - declares for deterministic encoding that the floating point is encoded as binary 64 (section 4.2.2)
+
+        assert b"StreamCreationTimestamp\xc1\xfb" not in cbor_content
+        describe_response_data = cbor2_loads(cbor_content)
 
         # verify that the request can be properly parsed, and that the timestamp is within the
         # boundaries
@@ -711,6 +702,13 @@ class TestKinesis:
 
         record = retry(_get_record, sleep=1, retries=5)
         assert record["Data"].decode("utf-8") == test_data
+
+
+# TODO
+# - Create a Lambda -> Kinesis Test
+#   -> /home/localstack/Repos/localstack/tests/aws/services/lambda_/functions/common/endpointinjection/java/src/src/main/java/echo/Handler.java
+#   -> Create a Lambda which uses the SDK v2
+#   -> These tests are usually parameterized though!
 
 
 class TestKinesisPythonClient:

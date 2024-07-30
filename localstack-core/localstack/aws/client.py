@@ -243,9 +243,11 @@ def _patch_cbor2():
             else:
                 timestamp = timegm(value.utctimetuple()) + value.microsecond / 1000000
             # The next line is the only change in this patch compared to the original function.
-            # AWS breaks the CBOR spec by using the millis instead of seconds (with floating point support for millis)
-            # https://github.com/aws/aws-sdk-java-v2/issues/4661
-            timestamp = timestamp * 1000
+            # - AWS breaks the CBOR spec by using the millis instead of seconds (with floating point support for millis)
+            #   https://github.com/aws/aws-sdk-java-v2/issues/4661
+            # - AWS SDKs in addition have very tight assumptions on the type.
+            #   This needs to be an integer, and must not be a floating point number (CBOR is typed)!
+            timestamp = int(timestamp * 1000)
             self.encode_semantic(CBORTag(1, timestamp))
         else:
             datestring = value.isoformat().replace("+00:00", "Z")
