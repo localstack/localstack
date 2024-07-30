@@ -38,6 +38,16 @@ class HostPaths:
             or os.path.join(os.getcwd(), ".venv")
         )
 
+    @property
+    def aws_community_package_dir(self) -> Path:
+        return self.localstack_project_dir / "localstack-core" / "localstack"
+
+    @property
+    def aws_pro_package_dir(self) -> Path:
+        return (
+            self.localstack_pro_project_dir / "localstack-pro-core" / "localstack" / "pro" / "core"
+        )
+
 
 class ContainerPaths:
     """Important paths in the container"""
