@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_kinesis.py::test_apigateway_to_kinesis": {
-    "recorded-date": "26-01-2023, 09:45:49",
+    "recorded-date": "12-07-2024, 20:32:13",
     "recorded-content": {
       "apigateway_response": {
         "SequenceNumber": "<sequence_number:1>",

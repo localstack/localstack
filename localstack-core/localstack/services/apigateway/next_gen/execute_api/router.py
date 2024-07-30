@@ -1,10 +1,11 @@
 import logging
+from typing import TypedDict, Unpack
 
 from rolo import Request, Router
-from rolo.dispatcher import Handler
+from rolo.routing.handler import Handler
 from werkzeug.routing import Rule
 
-from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Response
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.services.edge import ROUTER
@@ -15,7 +16,20 @@ from .gateway import RestApiGateway
 LOG = logging.getLogger(__name__)
 
 
-# TODO: subclass from -ext, and this handler will do the dispatching between v1 and v2 Gateways
+class RouteHostPathParameters(TypedDict, total=False):
+    """
+    Represents the kwargs typing for calling APIGatewayEndpoint.
+    Each field might be populated from the route host and path parameters, defined when registering a route.
+    """
+
+    api_id: str
+    path: str
+    port: int | None
+    server: str | None
+    stage: str | None
+    vpce_suffix: str | None
+
+
 class ApiGatewayEndpoint:
     """
     This class is the endpoint for API Gateway invocations of the `execute-api` route. It will take the incoming
@@ -30,22 +44,32 @@ class ApiGatewayEndpoint:
             store or apigateway_stores[DEFAULT_AWS_ACCOUNT_ID][AWS_REGION_US_EAST_1]
         )
 
-    def __call__(self, request: Request, **kwargs) -> Response:
+    def __call__(self, request: Request, **kwargs: Unpack[RouteHostPathParameters]) -> Response:
+        """
+        :param request: the incoming Request object
+        :param kwargs: can contain all the field of RouteHostPathParameters. Those values are defined on the registered
+        routes in ApiGatewayRouter, through host and path parameters in the shape <type:name> or <name> only.
+        :return: the Response object to return to the client
+        """
         # api_id can be cased because of custom-tag id
         api_id, stage = kwargs.get("api_id", "").lower(), kwargs.get("stage")
         if self.is_rest_api(api_id, stage):
-            LOG.debug("APIGW v1 Endpoint called")
-            response = Response()
-            context = RestApiInvocationContext(request)
-            self.populate_rest_api_invocation_context(context, api_id, stage)
-
+            context, response = self.prepare_rest_api_invocation(request, api_id, stage)
             self.rest_gateway.process_with_context(context, response)
-
             return response
-
         else:
             # TODO: return right response
             return Response("Not authorized", status=403)
+
+    def prepare_rest_api_invocation(
+        self, request: Request, api_id: str, stage: str
+    ) -> tuple[RestApiInvocationContext, Response]:
+        LOG.debug("APIGW v1 Endpoint called")
+        response = self.create_response(request)
+        context = RestApiInvocationContext(request)
+        self.populate_rest_api_invocation_context(context, api_id, stage)
+
+        return context, response
 
     def is_rest_api(self, api_id: str, stage: str):
         return (api_id, stage) in self._global_store.active_deployments
@@ -65,6 +89,16 @@ class ApiGatewayEndpoint:
         context.api_id = api_id
         context.stage = stage
         context.deployment_id = deployment_id
+
+    @staticmethod
+    def create_response(request: Request) -> Response:
+        # Creates a default apigw response.
+        response = Response(headers={"Content-Type": APPLICATION_JSON})
+        if not (connection := request.headers.get("Connection")) or connection != "close":
+            # We only set the connection if it isn't close.
+            # There appears to be in issue in Localstack, where setting "close" will result in "close, close"
+            response.headers.set("Connection", "keep-alive")
+        return response
 
 
 class ApiGatewayRouter:
@@ -95,7 +129,7 @@ class ApiGatewayRouter:
                 strict_slashes=False,
             ),
             self.router.add(
-                path="/<stage>/<path:path>",
+                path="/<stage>/<greedy_path:path>",
                 host=host_pattern,
                 endpoint=self.handler,
                 strict_slashes=True,
@@ -107,7 +141,7 @@ class ApiGatewayRouter:
                 defaults={"path": ""},
             ),
             self.router.add(
-                path="/restapis/<api_id>/<stage>/_user_request_/<path:path>",
+                path="/restapis/<api_id>/<stage>/_user_request_/<greedy_path:path>",
                 endpoint=self.handler,
                 strict_slashes=True,
             ),

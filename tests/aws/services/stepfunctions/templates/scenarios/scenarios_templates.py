@@ -147,6 +147,16 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_TOLERATED_FAILURE_PERCENTAGE_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_tolerated_failure_percentage_path.json5"
     )
+    MAP_STATE_LABEL: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state_label.json5")
+    MAP_STATE_LABEL_EMPTY_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_label_empty_fail.json5"
+    )
+    MAP_STATE_LABEL_INVALID_CHAR_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_label_invalid_char_fail.json5"
+    )
+    MAP_STATE_LABEL_TOO_LONG_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_label_too_long_fail.json5"
+    )
     CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_unsorted_choice_parameters.json5"
     )
@@ -180,4 +190,7 @@ class ScenariosTemplate(TemplateLoader):
     WAIT_TIMESTAMP: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_timestamp.json5")
     WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"
+    )
+    DIRECT_ACCESS_CONTEXT_OBJECT_CHILD_FIELD: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/direct_access_context_object_child_field.json5"
     )

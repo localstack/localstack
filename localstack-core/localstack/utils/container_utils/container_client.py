@@ -499,7 +499,7 @@ class DockerRunFlags:
     env_vars: Optional[Dict[str, str]]
     extra_hosts: Optional[Dict[str, str]]
     labels: Optional[Dict[str, str]]
-    mounts: Optional[List[SimpleVolumeBind]]
+    volumes: Optional[List[SimpleVolumeBind]]
     network: Optional[str]
     platform: Optional[DockerPlatform]
     privileged: Optional[bool]
@@ -835,7 +835,7 @@ class ContainerClient(metaclass=ABCMeta):
             interactive=container_config.interactive,
             tty=container_config.tty,
             command=container_config.command,
-            mount_volumes=container_config.volumes,
+            volumes=container_config.volumes,
             ports=container_config.ports,
             exposed_ports=container_config.exposed_ports,
             env_vars=container_config.env_vars,
@@ -852,6 +852,7 @@ class ContainerClient(metaclass=ABCMeta):
             labels=container_config.labels,
             ulimits=container_config.ulimits,
             init=container_config.init,
+            log_config=container_config.log_config,
         )
 
     @abstractmethod
@@ -866,7 +867,7 @@ class ContainerClient(metaclass=ABCMeta):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[Union[VolumeMappings, List[SimpleVolumeBind]]] = None,
+        volumes: Optional[Union[VolumeMappings, List[SimpleVolumeBind]]] = None,
         ports: Optional[PortMappings] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
@@ -903,7 +904,7 @@ class ContainerClient(metaclass=ABCMeta):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[Union[VolumeMappings, List[SimpleVolumeBind]]] = None,
+        volumes: Optional[Union[VolumeMappings, List[SimpleVolumeBind]]] = None,
         ports: Optional[PortMappings] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
@@ -942,7 +943,7 @@ class ContainerClient(metaclass=ABCMeta):
             tty=container_config.tty,
             detach=container_config.detach,
             command=container_config.command,
-            mount_volumes=container_config.volumes,
+            volumes=container_config.volumes,
             ports=container_config.ports,
             exposed_ports=container_config.exposed_ports,
             env_vars=container_config.env_vars,
@@ -1154,7 +1155,7 @@ class Util:
         additional_flags: str,
         env_vars: Optional[Dict[str, str]] = None,
         labels: Optional[Dict[str, str]] = None,
-        mounts: Optional[List[SimpleVolumeBind]] = None,
+        volumes: Optional[List[SimpleVolumeBind]] = None,
         network: Optional[str] = None,
         platform: Optional[DockerPlatform] = None,
         ports: Optional[PortMappings] = None,
@@ -1168,7 +1169,7 @@ class Util:
                                  https://docs.docker.com/engine/reference/commandline/run/
         :param env_vars: Dict with env vars. Will be modified in place.
         :param labels: Dict with labels. Will be modified in place.
-        :param mounts: List of mount tuples (host_path, container_path). Will be modified in place.
+        :param volumes: List of mount tuples (host_path, container_path). Will be modified in place.
         :param network: Existing network name (optional). Warning will be printed if network is overwritten in flags.
         :param platform: Platform to execute container. Warning will be printed if platform is overwritten in flags.
         :param ports: PortMapping object. Will be modified in place.
@@ -1343,7 +1344,7 @@ class Util:
             user = args.user
 
         if args.volumes:
-            mounts = mounts if mounts is not None else []
+            volumes = volumes if volumes is not None else []
             for volume in args.volumes:
                 match = re.match(
                     r"(?P<host>[\w\s\\\/:\-.]+?):(?P<container>[\w\s\/\-.]+)(?::(?P<arg>ro|rw|z|Z))?",
@@ -1357,7 +1358,7 @@ class Util:
                 rw_args = match.group("arg")
                 if rw_args:
                     LOG.info("Volume options like :ro or :rw are currently ignored.")
-                mounts.append((host_path, container_path))
+                volumes.append((host_path, container_path))
 
         dns = ensure_list(dns or [])
         if args.dns:
@@ -1370,7 +1371,7 @@ class Util:
             env_vars=env_vars,
             extra_hosts=extra_hosts,
             labels=labels,
-            mounts=mounts,
+            volumes=volumes,
             ports=ports,
             network=network,
             platform=platform,
@@ -1382,7 +1383,7 @@ class Util:
 
     @staticmethod
     def convert_mount_list_to_dict(
-        mount_volumes: Union[List[SimpleVolumeBind], VolumeMappings],
+        volumes: Union[List[SimpleVolumeBind], VolumeMappings],
     ) -> Dict[str, Dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
 
@@ -1398,7 +1399,7 @@ class Util:
         return dict(
             map(
                 _map_to_dict,
-                mount_volumes,
+                volumes,
             )
         )
 

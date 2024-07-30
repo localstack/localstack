@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -41,7 +42,7 @@ TagKeyType = str
 TagValueType = str
 
 
-class FilterNameStringType(str):
+class FilterNameStringType(StrEnum):
     description = "description"
     name = "name"
     tag_key = "tag-key"
@@ -51,12 +52,12 @@ class FilterNameStringType(str):
     all = "all"
 
 
-class SortOrderType(str):
+class SortOrderType(StrEnum):
     asc = "asc"
     desc = "desc"
 
 
-class StatusType(str):
+class StatusType(StrEnum):
     InSync = "InSync"
     Failed = "Failed"
     InProgress = "InProgress"

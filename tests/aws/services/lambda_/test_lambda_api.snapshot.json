@@ -1806,7 +1806,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "10-04-2024, 09:12:12",
+    "recorded-date": "12-07-2024, 11:43:40",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2340,7 +2340,7 @@
           "HTTPStatusCode": 201
         }
       },
-      "list_versions_result_end": {
+      "list_versions_result_after_third_publish": {
         "Versions": [
           {
             "Architectures": [
@@ -2407,6 +2407,80 @@
               "Mode": "PassThrough"
             },
             "Version": "1"
+          },
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "Second version :))",
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+            "FunctionName": "<function-name:1>",
+            "Handler": "index.handler",
+            "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:7>",
+            "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+            "Runtime": "python3.12",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_versions_result_after_deletion_of_first_version": {
+        "Versions": [
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "Second version :))",
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+            "FunctionName": "<function-name:1>",
+            "Handler": "index.handler",
+            "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:8>",
+            "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+            "Runtime": "python3.12",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "$LATEST"
           },
           {
             "Architectures": [

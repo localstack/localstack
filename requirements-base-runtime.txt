@@ -6,22 +6,22 @@
 #
 attrs==23.2.0
     # via localstack-twisted
-awscrt==0.20.12
+awscrt==0.21.2
     # via localstack-core (pyproject.toml)
-boto3==1.34.136
+boto3==1.34.149
     # via localstack-core (pyproject.toml)
-botocore==1.34.136
+botocore==1.34.149
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
     #   s3transfer
 build==1.2.1
     # via localstack-core (pyproject.toml)
-cachetools==5.3.3
+cachetools==5.4.0
     # via localstack-core (pyproject.toml)
 cbor2==5.6.4
     # via localstack-core (pyproject.toml)
-certifi==2024.6.2
+certifi==2024.7.4
     # via requests
 cffi==1.16.0
     # via cryptography
@@ -31,13 +31,13 @@ click==8.1.7
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==42.0.8
+cryptography==43.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
 dill==0.3.6
     # via localstack-core (pyproject.toml)
-dnslib==0.9.24
+dnslib==0.9.25
     # via localstack-core (pyproject.toml)
 dnspython==2.6.1
     # via localstack-core (pyproject.toml)
@@ -64,7 +64,7 @@ idna==3.7
     #   hyperlink
     #   localstack-twisted
     #   requests
-incremental==22.10.0
+incremental==24.7.2
     # via localstack-twisted
 jmespath==1.0.1
     # via
@@ -84,7 +84,7 @@ mdurl==0.1.2
     # via markdown-it-py
 packaging==24.1
     # via build
-plux==1.11.0
+plux==1.11.1
     # via localstack-core (pyproject.toml)
 priority==1.3.0
     # via
@@ -96,7 +96,7 @@ pycparser==2.22
     # via cffi
 pygments==2.18.0
     # via rich
-pyopenssl==24.1.0
+pyopenssl==24.2.1
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
@@ -116,20 +116,18 @@ requests==2.32.3
     #   localstack-core (pyproject.toml)
     #   requests-aws4auth
     #   rolo
-requests-aws4auth==1.2.3
+requests-aws4auth==1.3.1
     # via localstack-core (pyproject.toml)
 rich==13.7.1
     # via localstack-core (pyproject.toml)
-rolo==0.5.1
+rolo==0.7.0
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.2
     # via boto3
 semver==3.0.2
     # via localstack-core (pyproject.toml)
 six==1.16.0
-    # via
-    #   python-dateutil
-    #   requests-aws4auth
+    # via python-dateutil
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
 typing-extensions==4.12.2

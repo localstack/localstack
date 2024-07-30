@@ -293,7 +293,7 @@ class LambdaProxyIntegration(BackendIntegration):
         headers = canonicalize_headers(headers)
 
         return {
-            "path": path,
+            "path": "/" + path.lstrip("/"),
             "headers": headers,
             "multiValueHeaders": multi_value_dict_for_list(headers),
             "body": data,

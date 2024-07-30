@@ -97,16 +97,18 @@ class TestDynamoDB:
     @markers.aws.only_localstack
     def test_time_to_live_deletion(self, aws_client, ddb_test_table, cleanups):
         table_name = ddb_test_table
+        # Note: we use a reserved keyboard (ttl) as an attribute name for the time to live specification to make sure
+        #   that the deletion logic works also in this case.
         aws_client.dynamodb.update_time_to_live(
             TableName=table_name,
-            TimeToLiveSpecification={"Enabled": True, "AttributeName": "expiringAt"},
+            TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
         )
         aws_client.dynamodb.describe_time_to_live(TableName=table_name)
 
         exp = int(time.time()) - 10  # expired
         items = [
-            {PARTITION_KEY: {"S": "expired"}, "expiringAt": {"N": str(exp)}},
-            {PARTITION_KEY: {"S": "not-expired"}, "expiringAt": {"N": str(exp + 120)}},
+            {PARTITION_KEY: {"S": "expired"}, "ttl": {"N": str(exp)}},
+            {PARTITION_KEY: {"S": "not-expired"}, "ttl": {"N": str(exp + 120)}},
         ]
         for item in items:
             aws_client.dynamodb.put_item(TableName=table_name, Item=item)
@@ -142,19 +144,19 @@ class TestDynamoDB:
         cleanups.append(lambda: aws_client.dynamodb.delete_table(TableName=table_with_range_key))
         aws_client.dynamodb.update_time_to_live(
             TableName=table_with_range_key,
-            TimeToLiveSpecification={"Enabled": True, "AttributeName": "expiringAt"},
+            TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
         )
         exp = int(time.time()) - 10  # expired
         items = [
             {
                 PARTITION_KEY: {"S": "expired"},
                 "range": {"S": "range_one"},
-                "expiringAt": {"N": str(exp)},
+                "ttl": {"N": str(exp)},
             },
             {
                 PARTITION_KEY: {"S": "not-expired"},
                 "range": {"S": "range_two"},
-                "expiringAt": {"N": str(exp + 120)},
+                "ttl": {"N": str(exp + 120)},
             },
         ]
         for item in items:

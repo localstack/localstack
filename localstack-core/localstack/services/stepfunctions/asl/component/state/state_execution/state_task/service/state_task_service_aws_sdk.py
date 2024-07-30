@@ -1,4 +1,5 @@
 import logging
+from typing import Final
 
 from botocore.exceptions import ClientError, UnknownServiceError
 
@@ -14,6 +15,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
     StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceCondition,
     ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
@@ -26,10 +28,17 @@ from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_
 
 LOG = logging.getLogger(__name__)
 
+_SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
+    ResourceCondition.WaitForTaskToken,
+}
+
+# Defines bindings of lower-cased service names to the StepFunctions service name included in error messages.
+_SERVICE_ERROR_NAMES = {"dynamodb": "DynamoDb", "sfn": "Sfn"}
+
 
 class StateTaskServiceAwsSdk(StateTaskServiceCallback):
-    # Defines bindings of lower-cased service names to the StepFunctions service name included in error messages.
-    _SERVICE_ERROR_NAMES = {"dynamodb": "DynamoDb", "sfn": "Sfn"}
+    def __init__(self):
+        super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
     def from_state_props(self, state_props: StateProps) -> None:
         super().from_state_props(state_props=state_props)
@@ -43,8 +52,8 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
 
         # Return the explicit binding if one exists.
         service_name_lower = service_name.lower()
-        if service_name_lower in StateTaskServiceAwsSdk._SERVICE_ERROR_NAMES:
-            return StateTaskServiceAwsSdk._SERVICE_ERROR_NAMES[service_name_lower]
+        if service_name_lower in _SERVICE_ERROR_NAMES:
+            return _SERVICE_ERROR_NAMES[service_name_lower]
 
         # Attempt to retrieve the service name from the catalog.
         try:

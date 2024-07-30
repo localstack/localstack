@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.9-slim-bookworm@sha256:3d33ec4632482203e7bc71ad50dc76d6cbf63359a4f1ef92769d2617d371b241 as base
+FROM python:3.11.9-slim-bookworm@sha256:3f3c35617e79276c5f6a2e6a13cdbabdd10257332df963c90c986858b26fad5e AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -95,7 +95,7 @@ RUN { \
 ENV JAVA_HOME /usr/lib/jvm/java-21
 COPY --from=java-builder /usr/lib/jvm/java-21 $JAVA_HOME
 RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
-ENV PATH "${PATH}:${JAVA_HOME}/bin"
+ENV PATH="${PATH}:${JAVA_HOME}/bin"
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
@@ -139,7 +139,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 
 # builder: Stage which installs the dependencies of LocalStack Community
-FROM base as builder
+FROM base AS builder
 ARG TARGETARCH
 
 # Install build dependencies to base
@@ -172,7 +172,7 @@ FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 
 # add project files necessary to install all dependencies
-ADD Makefile pyproject.toml VERSION ./
+ADD Makefile pyproject.toml VERSION setup.py ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 

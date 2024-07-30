@@ -16,7 +16,12 @@ from localstack_snapshot.snapshots.transformer import (
 )
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
-from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
+from localstack.aws.api.stepfunctions import (
+    CreateStateMachineOutput,
+    LongArn,
+    StartExecutionOutput,
+    StartSyncExecutionOutput,
+)
 from localstack.utils.net import IP_REGEX
 
 LOG = logging.getLogger(__name__)
@@ -185,6 +190,39 @@ class TransformerUtility:
                 replace_reference=False,
             ),
             TransformerUtility.regex(IP_REGEX.strip("^$"), "<ip>"),
+        ]
+
+    @staticmethod
+    def apigateway_invocation_headers():
+        return [
+            TransformerUtility.key_value("apigw-id"),
+            TransformerUtility.key_value("Via"),
+            TransformerUtility.key_value(
+                "Date", value_replacement="<Date>", reference_replacement=False
+            ),
+            TransformerUtility.key_value(
+                "x-amz-apigw-id",
+                value_replacement="<x-amz-apigw-id>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.key_value(
+                "x-amzn-Remapped-Date",
+                value_replacement="<x-amzn-Remapped-Date>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.key_value(
+                "X-Amzn-Trace-Id",
+                value_replacement="<X-Amzn-Trace-Id>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.key_value("X-Amzn-Apigateway-Api-Id"),
+            TransformerUtility.key_value("X-Forwarded-For"),
+            TransformerUtility.key_value("X-Forwarded-Port"),
+            TransformerUtility.key_value(
+                "X-Forwarded-Proto",
+                value_replacement="<X-Forwarded-Proto>",
+                reference_replacement=False,
+            ),
         ]
 
     @staticmethod
@@ -634,13 +672,31 @@ class TransformerUtility:
         return RegexTransformer(arn_part, arn_part_repl)
 
     @staticmethod
+    def sfn_sm_express_exec_arn(start_exec: StartExecutionOutput, index: int):
+        arn_parts = start_exec["executionArn"].split(":")
+        return [
+            RegexTransformer(arn_parts[-2], f"<ExpressExecArn_Part1_{index}idx>"),
+            RegexTransformer(arn_parts[-1], f"<ExpressExecArn_Part2_{index}idx>"),
+        ]
+
+    @staticmethod
+    def sfn_sm_sync_exec_arn(start_exec: StartSyncExecutionOutput, index: int):
+        arn_parts = start_exec["executionArn"].split(":")
+        return [
+            RegexTransformer(arn_parts[-2], f"<SyncExecArn_Part1_{index}idx>"),
+            RegexTransformer(arn_parts[-1], f"<SyncExecArn_Part2_{index}idx>"),
+        ]
+
+    @staticmethod
     def sfn_map_run_arn(map_run_arn: LongArn, index: int) -> list[RegexTransformer]:
         map_run_arn_part = map_run_arn.split("/")[-1]
         arn_parts = map_run_arn_part.split(":")
-        return [
-            RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"),
+        transformers = [
             RegexTransformer(arn_parts[1], f"<MapRunArnPart1_{index}idx>"),
         ]
+        if re.match(PATTERN_UUID, arn_parts[0]):
+            transformers.append(RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"))
+        return transformers
 
     @staticmethod
     def sfn_sqs_integration():

@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from werkzeug.datastructures import Headers
 
 from localstack.aws.api.apigateway import Method, Model, RequestValidator, RestApi
 from localstack.http import Request, Response
@@ -85,7 +86,7 @@ class TestMethodRequestHandler:
 
         # Invocation with no valid element
         dummy_context.invocation_request = InvocationRequest(
-            headers={}, query_string_parameters={}, path=""
+            headers=Headers(), query_string_parameters={}, path=""
         )
         with pytest.raises(BadRequestParametersError) as e:
             method_request_handler(dummy_context)
@@ -104,7 +105,7 @@ class TestMethodRequestHandler:
         assert e.value.message == "Missing required request parameters: [proxy]"
 
         # invocation with valid request
-        dummy_context.invocation_request["path"] = "/proxy/path"
+        dummy_context.invocation_request["path_parameters"] = {"proxy": "path"}
         method_request_handler(dummy_context)
 
     def test_validator_request_body_empty_model(self, method_request_handler, dummy_context):

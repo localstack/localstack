@@ -1,17 +1,24 @@
 import json
 
 import pytest
+import xmltodict
+from botocore.auth import SigV4Auth
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.http import safe_requests as requests
+from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
-from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
+from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY, is_next_gen_api
 
 
 @markers.aws.validated
-@pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not yet implemented in LocalStack")
+@pytest.mark.skipif(condition=not is_next_gen_api(), reason="Not implemented in default APIGW")
+@markers.snapshot.skip_snapshot_verify(
+    # seems like LocalStack is not returning the field
+    path=["$..Tier"],
+)
 def test_ssm_aws_integration(
     aws_client,
     create_parameter,
@@ -97,3 +104,55 @@ def test_ssm_aws_integration(
     body = response.json()["GetParameterResponse"]
     body["ResponseMetadata"]["HTTPHeaders"] = response.headers
     snapshot.match("ssm-aws-integration", body)
+
+
+@markers.aws.validated
+@pytest.mark.skipif(
+    condition=not is_aws_cloud(),
+    reason="Legacy protocol, just to confirm AWS behavior",
+)
+def test_get_parameter_query_protocol(
+    create_parameter, aws_client, aws_http_client_factory, region_name, snapshot
+):
+    """
+    This test is written to confirm the behavior from AWS. It seems that by default, AWS will target the legacy
+    Query protocol version of SSM.
+    """
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("Name"),
+            snapshot.transform.key_value(
+                "LastModifiedDate", reference_replacement=False, value_replacement="<timestamp>"
+            ),
+        ]
+    )
+    param_name = f"param-{short_uid()}"
+    create_parameter(
+        Name=param_name,
+        Description="test",
+        Value="123",
+        Type="String",
+    )
+
+    ssm_http_client = aws_http_client_factory("ssm", signer_factory=SigV4Auth)
+
+    endpoint_url = f"https://ssm.{region_name}.amazonaws.com"
+    parameters = {
+        "Action": "GetParameter",
+        "Name": param_name,
+    }
+
+    resp = ssm_http_client.post(
+        url=endpoint_url,
+        params=parameters,
+    )
+    response_json = xmltodict.parse(resp.content)["GetParameterResponse"]
+    response_json["ResponseMetadata"]["HTTPHeaders"] = resp.headers
+    snapshot.match("get-parameter-query-default", response_json)
+
+    resp = ssm_http_client.post(
+        url=endpoint_url, params=parameters, headers={"Accept": "application/json"}
+    )
+    response_json = resp.json()["GetParameterResponse"]
+    response_json["ResponseMetadata"]["HTTPHeaders"] = resp.headers
+    snapshot.match("get-parameter-query-json", response_json)

@@ -9,6 +9,7 @@ from localstack_snapshot.snapshots.transformer import (
     RegexTransformer,
 )
 
+from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.stepfunctions.utils import await_execution_success
 from localstack.utils.strings import short_uid
@@ -20,6 +21,52 @@ LOG = logging.getLogger(__name__)
 def sfn_snapshot(snapshot):
     snapshot.add_transformers_list(snapshot.transform.stepfunctions_api())
     return snapshot
+
+
+@pytest.fixture
+def sfn_batch_snapshot(sfn_snapshot):
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..JobDefinition", replacement="job-definition")
+    )
+    sfn_snapshot.add_transformer(JsonpathTransformer(jsonpath="$..JobName", replacement="job-name"))
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..JobQueue", replacement="job-queue")
+    )
+    sfn_snapshot.add_transformer(JsonpathTransformer(jsonpath="$..roleArn", replacement="role-arn"))
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..x-amz-apigw-id", replacement="x-amz-apigw-id", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..X-Amzn-Trace-Id", replacement="X-Amzn-Trace-Id", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(JsonpathTransformer(jsonpath="$..TaskArn", replacement="task-arn"))
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..ExecutionRoleArn", replacement="execution-role-arn")
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..LogStreamName", replacement="log-stream-name")
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..StartedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..StoppedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..CreatedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..PrivateIpv4Address",
+            replacement="private-ipv4-address",
+            replace_reference=False,
+        )
+    )
+    return sfn_snapshot
 
 
 @pytest.fixture
@@ -95,6 +142,13 @@ def stepfunctions_client_test_state(aws_client_factory):
     # For TestState calls, boto will prepend "sync-" to the endpoint string. As we operate on localhost,
     # this function creates a new stepfunctions client with that functionality disabled.
     # Using this client only for test_state calls forces future occurrences to handle this issue explicitly.
+    return aws_client_factory(config=Config(inject_host_prefix=is_aws_cloud())).stepfunctions
+
+
+@pytest.fixture
+def stepfunctions_client_sync_executions(aws_client_factory):
+    # For StartSyncExecution calls, boto will prepend "sync-" to the endpoint string. As we operate on localhost,
+    # this function creates a new stepfunctions client with that functionality disabled.
     return aws_client_factory(config=Config(inject_host_prefix=is_aws_cloud())).stepfunctions
 
 
@@ -194,22 +248,32 @@ def create_iam_role_for_sfn(aws_client, cleanups, create_state_machine):
 
 @pytest.fixture
 def create_state_machine(aws_client):
-    _state_machine_arns: Final[list[str]] = list()
+    # The following stores the ARNs of create state machines and whether these are STANDARD or not.
+    _state_machine_arn_and_standard_flag: Final[list[tuple[str, bool]]] = list()
 
     def _create_state_machine(**kwargs):
         create_output = aws_client.stepfunctions.create_state_machine(**kwargs)
         create_output_arn = create_output["stateMachineArn"]
-        _state_machine_arns.append(create_output_arn)
+
+        is_standard_flag = (
+            kwargs.get("type", StateMachineType.STANDARD) == StateMachineType.STANDARD
+        )
+        _state_machine_arn_and_standard_flag.append((create_output_arn, is_standard_flag))
+
         return create_output
 
     yield _create_state_machine
 
-    for state_machine_arn in _state_machine_arns:
+    # Delete all state machine, attempting to stop all running executions of STANDARD state machines,
+    # as other types, such as EXPRESS, cannot be manually stopped.
+    for state_machine_arn, is_standard in _state_machine_arn_and_standard_flag:
         try:
-            executions = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
-            for execution in executions["executions"]:
-                aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
-
+            if is_standard:
+                executions = aws_client.stepfunctions.list_executions(
+                    stateMachineArn=state_machine_arn
+                )
+                for execution in executions["executions"]:
+                    aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
             aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
             LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")

@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import IO, Dict, Iterable, Iterator, List, Optional, TypedDict, Union
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -185,21 +186,21 @@ MissingHeaderName = str
 KeyLength = str
 
 
-class AnalyticsS3ExportFileFormat(str):
+class AnalyticsS3ExportFileFormat(StrEnum):
     CSV = "CSV"
 
 
-class ArchiveStatus(str):
+class ArchiveStatus(StrEnum):
     ARCHIVE_ACCESS = "ARCHIVE_ACCESS"
     DEEP_ARCHIVE_ACCESS = "DEEP_ARCHIVE_ACCESS"
 
 
-class BucketAccelerateStatus(str):
+class BucketAccelerateStatus(StrEnum):
     Enabled = "Enabled"
     Suspended = "Suspended"
 
 
-class BucketCannedACL(str):
+class BucketCannedACL(StrEnum):
     private = "private"
     public_read = "public-read"
     public_read_write = "public-read-write"
@@ -207,7 +208,7 @@ class BucketCannedACL(str):
     log_delivery_write = "log-delivery-write"
 
 
-class BucketLocationConstraint(str):
+class BucketLocationConstraint(StrEnum):
     af_south_1 = "af-south-1"
     ap_east_1 = "ap-east-1"
     ap_northeast_1 = "ap-northeast-1"
@@ -238,52 +239,52 @@ class BucketLocationConstraint(str):
     us_west_2 = "us-west-2"
 
 
-class BucketLogsPermission(str):
+class BucketLogsPermission(StrEnum):
     FULL_CONTROL = "FULL_CONTROL"
     READ = "READ"
     WRITE = "WRITE"
 
 
-class BucketType(str):
+class BucketType(StrEnum):
     Directory = "Directory"
 
 
-class BucketVersioningStatus(str):
+class BucketVersioningStatus(StrEnum):
     Enabled = "Enabled"
     Suspended = "Suspended"
 
 
-class ChecksumAlgorithm(str):
+class ChecksumAlgorithm(StrEnum):
     CRC32 = "CRC32"
     CRC32C = "CRC32C"
     SHA1 = "SHA1"
     SHA256 = "SHA256"
 
 
-class ChecksumMode(str):
+class ChecksumMode(StrEnum):
     ENABLED = "ENABLED"
 
 
-class CompressionType(str):
+class CompressionType(StrEnum):
     NONE = "NONE"
     GZIP = "GZIP"
     BZIP2 = "BZIP2"
 
 
-class DataRedundancy(str):
+class DataRedundancy(StrEnum):
     SingleAvailabilityZone = "SingleAvailabilityZone"
 
 
-class DeleteMarkerReplicationStatus(str):
+class DeleteMarkerReplicationStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class EncodingType(str):
+class EncodingType(StrEnum):
     url = "url"
 
 
-class Event(str):
+class Event(StrEnum):
     s3_ReducedRedundancyLostObject = "s3:ReducedRedundancyLostObject"
     s3_ObjectCreated_ = "s3:ObjectCreated:*"
     s3_ObjectCreated_Put = "s3:ObjectCreated:Put"
@@ -315,58 +316,58 @@ class Event(str):
     s3_ObjectTagging_Delete = "s3:ObjectTagging:Delete"
 
 
-class ExistingObjectReplicationStatus(str):
+class ExistingObjectReplicationStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ExpirationStatus(str):
+class ExpirationStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ExpressionType(str):
+class ExpressionType(StrEnum):
     SQL = "SQL"
 
 
-class FileHeaderInfo(str):
+class FileHeaderInfo(StrEnum):
     USE = "USE"
     IGNORE = "IGNORE"
     NONE = "NONE"
 
 
-class FilterRuleName(str):
+class FilterRuleName(StrEnum):
     prefix = "prefix"
     suffix = "suffix"
 
 
-class IntelligentTieringAccessTier(str):
+class IntelligentTieringAccessTier(StrEnum):
     ARCHIVE_ACCESS = "ARCHIVE_ACCESS"
     DEEP_ARCHIVE_ACCESS = "DEEP_ARCHIVE_ACCESS"
 
 
-class IntelligentTieringStatus(str):
+class IntelligentTieringStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class InventoryFormat(str):
+class InventoryFormat(StrEnum):
     CSV = "CSV"
     ORC = "ORC"
     Parquet = "Parquet"
 
 
-class InventoryFrequency(str):
+class InventoryFrequency(StrEnum):
     Daily = "Daily"
     Weekly = "Weekly"
 
 
-class InventoryIncludedObjectVersions(str):
+class InventoryIncludedObjectVersions(StrEnum):
     All = "All"
     Current = "Current"
 
 
-class InventoryOptionalField(str):
+class InventoryOptionalField(StrEnum):
     Size = "Size"
     LastModifiedDate = "LastModifiedDate"
     StorageClass = "StorageClass"
@@ -384,36 +385,36 @@ class InventoryOptionalField(str):
     ObjectOwner = "ObjectOwner"
 
 
-class JSONType(str):
+class JSONType(StrEnum):
     DOCUMENT = "DOCUMENT"
     LINES = "LINES"
 
 
-class LocationType(str):
+class LocationType(StrEnum):
     AvailabilityZone = "AvailabilityZone"
 
 
-class MFADelete(str):
+class MFADelete(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class MFADeleteStatus(str):
+class MFADeleteStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class MetadataDirective(str):
+class MetadataDirective(StrEnum):
     COPY = "COPY"
     REPLACE = "REPLACE"
 
 
-class MetricsStatus(str):
+class MetricsStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ObjectAttributes(str):
+class ObjectAttributes(StrEnum):
     ETag = "ETag"
     Checksum = "Checksum"
     ObjectParts = "ObjectParts"
@@ -421,7 +422,7 @@ class ObjectAttributes(str):
     ObjectSize = "ObjectSize"
 
 
-class ObjectCannedACL(str):
+class ObjectCannedACL(StrEnum):
     private = "private"
     public_read = "public-read"
     public_read_write = "public-read-write"
@@ -431,32 +432,32 @@ class ObjectCannedACL(str):
     bucket_owner_full_control = "bucket-owner-full-control"
 
 
-class ObjectLockEnabled(str):
+class ObjectLockEnabled(StrEnum):
     Enabled = "Enabled"
 
 
-class ObjectLockLegalHoldStatus(str):
+class ObjectLockLegalHoldStatus(StrEnum):
     ON = "ON"
     OFF = "OFF"
 
 
-class ObjectLockMode(str):
+class ObjectLockMode(StrEnum):
     GOVERNANCE = "GOVERNANCE"
     COMPLIANCE = "COMPLIANCE"
 
 
-class ObjectLockRetentionMode(str):
+class ObjectLockRetentionMode(StrEnum):
     GOVERNANCE = "GOVERNANCE"
     COMPLIANCE = "COMPLIANCE"
 
 
-class ObjectOwnership(str):
+class ObjectOwnership(StrEnum):
     BucketOwnerPreferred = "BucketOwnerPreferred"
     ObjectWriter = "ObjectWriter"
     BucketOwnerEnforced = "BucketOwnerEnforced"
 
 
-class ObjectStorageClass(str):
+class ObjectStorageClass(StrEnum):
     STANDARD = "STANDARD"
     REDUCED_REDUNDANCY = "REDUCED_REDUNDANCY"
     GLACIER = "GLACIER"
@@ -470,29 +471,29 @@ class ObjectStorageClass(str):
     EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
 
 
-class ObjectVersionStorageClass(str):
+class ObjectVersionStorageClass(StrEnum):
     STANDARD = "STANDARD"
 
 
-class OptionalObjectAttributes(str):
+class OptionalObjectAttributes(StrEnum):
     RestoreStatus = "RestoreStatus"
 
 
-class OwnerOverride(str):
+class OwnerOverride(StrEnum):
     Destination = "Destination"
 
 
-class PartitionDateSource(str):
+class PartitionDateSource(StrEnum):
     EventTime = "EventTime"
     DeliveryTime = "DeliveryTime"
 
 
-class Payer(str):
+class Payer(StrEnum):
     Requester = "Requester"
     BucketOwner = "BucketOwner"
 
 
-class Permission(str):
+class Permission(StrEnum):
     FULL_CONTROL = "FULL_CONTROL"
     WRITE = "WRITE"
     WRITE_ACP = "WRITE_ACP"
@@ -500,27 +501,27 @@ class Permission(str):
     READ_ACP = "READ_ACP"
 
 
-class Protocol(str):
+class Protocol(StrEnum):
     http = "http"
     https = "https"
 
 
-class QuoteFields(str):
+class QuoteFields(StrEnum):
     ALWAYS = "ALWAYS"
     ASNEEDED = "ASNEEDED"
 
 
-class ReplicaModificationsStatus(str):
+class ReplicaModificationsStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ReplicationRuleStatus(str):
+class ReplicationRuleStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class ReplicationStatus(str):
+class ReplicationStatus(StrEnum):
     COMPLETE = "COMPLETE"
     PENDING = "PENDING"
     FAILED = "FAILED"
@@ -528,40 +529,40 @@ class ReplicationStatus(str):
     COMPLETED = "COMPLETED"
 
 
-class ReplicationTimeStatus(str):
+class ReplicationTimeStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class RequestCharged(str):
+class RequestCharged(StrEnum):
     requester = "requester"
 
 
-class RequestPayer(str):
+class RequestPayer(StrEnum):
     requester = "requester"
 
 
-class RestoreRequestType(str):
+class RestoreRequestType(StrEnum):
     SELECT = "SELECT"
 
 
-class ServerSideEncryption(str):
+class ServerSideEncryption(StrEnum):
     AES256 = "AES256"
     aws_kms = "aws:kms"
     aws_kms_dsse = "aws:kms:dsse"
 
 
-class SessionMode(str):
+class SessionMode(StrEnum):
     ReadOnly = "ReadOnly"
     ReadWrite = "ReadWrite"
 
 
-class SseKmsEncryptedObjectsStatus(str):
+class SseKmsEncryptedObjectsStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
 
 
-class StorageClass(str):
+class StorageClass(StrEnum):
     STANDARD = "STANDARD"
     REDUCED_REDUNDANCY = "REDUCED_REDUNDANCY"
     STANDARD_IA = "STANDARD_IA"
@@ -575,22 +576,22 @@ class StorageClass(str):
     EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
 
 
-class StorageClassAnalysisSchemaVersion(str):
+class StorageClassAnalysisSchemaVersion(StrEnum):
     V_1 = "V_1"
 
 
-class TaggingDirective(str):
+class TaggingDirective(StrEnum):
     COPY = "COPY"
     REPLACE = "REPLACE"
 
 
-class Tier(str):
+class Tier(StrEnum):
     Standard = "Standard"
     Bulk = "Bulk"
     Expedited = "Expedited"
 
 
-class TransitionStorageClass(str):
+class TransitionStorageClass(StrEnum):
     GLACIER = "GLACIER"
     STANDARD_IA = "STANDARD_IA"
     ONEZONE_IA = "ONEZONE_IA"
@@ -599,7 +600,7 @@ class TransitionStorageClass(str):
     GLACIER_IR = "GLACIER_IR"
 
 
-class Type(str):
+class Type(StrEnum):
     CanonicalUser = "CanonicalUser"
     AmazonCustomerByEmail = "AmazonCustomerByEmail"
     Group = "Group"
@@ -2385,6 +2386,12 @@ class HeadObjectRequest(ServiceRequest):
     IfUnmodifiedSince: Optional[IfUnmodifiedSince]
     Key: ObjectKey
     Range: Optional[Range]
+    ResponseCacheControl: Optional[ResponseCacheControl]
+    ResponseContentDisposition: Optional[ResponseContentDisposition]
+    ResponseContentEncoding: Optional[ResponseContentEncoding]
+    ResponseContentLanguage: Optional[ResponseContentLanguage]
+    ResponseContentType: Optional[ResponseContentType]
+    ResponseExpires: Optional[ResponseExpires]
     VersionId: Optional[ObjectVersionId]
     SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
     SSECustomerKey: Optional[SSECustomerKey]
@@ -4074,6 +4081,12 @@ class S3Api:
         if_none_match: IfNoneMatch = None,
         if_unmodified_since: IfUnmodifiedSince = None,
         range: Range = None,
+        response_cache_control: ResponseCacheControl = None,
+        response_content_disposition: ResponseContentDisposition = None,
+        response_content_encoding: ResponseContentEncoding = None,
+        response_content_language: ResponseContentLanguage = None,
+        response_content_type: ResponseContentType = None,
+        response_expires: ResponseExpires = None,
         version_id: ObjectVersionId = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,

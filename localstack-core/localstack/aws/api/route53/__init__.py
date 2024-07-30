@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -97,7 +98,7 @@ UUID = str
 VPCId = str
 
 
-class AccountLimitType(str):
+class AccountLimitType(StrEnum):
     MAX_HEALTH_CHECKS_BY_OWNER = "MAX_HEALTH_CHECKS_BY_OWNER"
     MAX_HOSTED_ZONES_BY_OWNER = "MAX_HOSTED_ZONES_BY_OWNER"
     MAX_TRAFFIC_POLICY_INSTANCES_BY_OWNER = "MAX_TRAFFIC_POLICY_INSTANCES_BY_OWNER"
@@ -105,23 +106,23 @@ class AccountLimitType(str):
     MAX_TRAFFIC_POLICIES_BY_OWNER = "MAX_TRAFFIC_POLICIES_BY_OWNER"
 
 
-class ChangeAction(str):
+class ChangeAction(StrEnum):
     CREATE = "CREATE"
     DELETE = "DELETE"
     UPSERT = "UPSERT"
 
 
-class ChangeStatus(str):
+class ChangeStatus(StrEnum):
     PENDING = "PENDING"
     INSYNC = "INSYNC"
 
 
-class CidrCollectionChangeAction(str):
+class CidrCollectionChangeAction(StrEnum):
     PUT = "PUT"
     DELETE_IF_EXISTS = "DELETE_IF_EXISTS"
 
 
-class CloudWatchRegion(str):
+class CloudWatchRegion(StrEnum):
     us_east_1 = "us-east-1"
     us_east_2 = "us-east-2"
     us_west_1 = "us-west-1"
@@ -160,14 +161,14 @@ class CloudWatchRegion(str):
     ca_west_1 = "ca-west-1"
 
 
-class ComparisonOperator(str):
+class ComparisonOperator(StrEnum):
     GreaterThanOrEqualToThreshold = "GreaterThanOrEqualToThreshold"
     GreaterThanThreshold = "GreaterThanThreshold"
     LessThanThreshold = "LessThanThreshold"
     LessThanOrEqualToThreshold = "LessThanOrEqualToThreshold"
 
 
-class HealthCheckRegion(str):
+class HealthCheckRegion(StrEnum):
     us_east_1 = "us-east-1"
     us_west_1 = "us-west-1"
     us_west_2 = "us-west-2"
@@ -178,7 +179,7 @@ class HealthCheckRegion(str):
     sa_east_1 = "sa-east-1"
 
 
-class HealthCheckType(str):
+class HealthCheckType(StrEnum):
     HTTP = "HTTP"
     HTTPS = "HTTPS"
     HTTP_STR_MATCH = "HTTP_STR_MATCH"
@@ -189,22 +190,22 @@ class HealthCheckType(str):
     RECOVERY_CONTROL = "RECOVERY_CONTROL"
 
 
-class HostedZoneLimitType(str):
+class HostedZoneLimitType(StrEnum):
     MAX_RRSETS_BY_ZONE = "MAX_RRSETS_BY_ZONE"
     MAX_VPCS_ASSOCIATED_BY_ZONE = "MAX_VPCS_ASSOCIATED_BY_ZONE"
 
 
-class HostedZoneType(str):
+class HostedZoneType(StrEnum):
     PrivateHostedZone = "PrivateHostedZone"
 
 
-class InsufficientDataHealthStatus(str):
+class InsufficientDataHealthStatus(StrEnum):
     Healthy = "Healthy"
     Unhealthy = "Unhealthy"
     LastKnownStatus = "LastKnownStatus"
 
 
-class RRType(str):
+class RRType(StrEnum):
     SOA = "SOA"
     A = "A"
     TXT = "TXT"
@@ -220,19 +221,19 @@ class RRType(str):
     DS = "DS"
 
 
-class ResettableElementName(str):
+class ResettableElementName(StrEnum):
     FullyQualifiedDomainName = "FullyQualifiedDomainName"
     Regions = "Regions"
     ResourcePath = "ResourcePath"
     ChildHealthChecks = "ChildHealthChecks"
 
 
-class ResourceRecordSetFailover(str):
+class ResourceRecordSetFailover(StrEnum):
     PRIMARY = "PRIMARY"
     SECONDARY = "SECONDARY"
 
 
-class ResourceRecordSetRegion(str):
+class ResourceRecordSetRegion(StrEnum):
     us_east_1 = "us-east-1"
     us_east_2 = "us-east-2"
     us_west_1 = "us-west-1"
@@ -266,11 +267,11 @@ class ResourceRecordSetRegion(str):
     ca_west_1 = "ca-west-1"
 
 
-class ReusableDelegationSetLimitType(str):
+class ReusableDelegationSetLimitType(StrEnum):
     MAX_ZONES_BY_REUSABLE_DELEGATION_SET = "MAX_ZONES_BY_REUSABLE_DELEGATION_SET"
 
 
-class Statistic(str):
+class Statistic(StrEnum):
     Average = "Average"
     Sum = "Sum"
     SampleCount = "SampleCount"
@@ -278,12 +279,12 @@ class Statistic(str):
     Minimum = "Minimum"
 
 
-class TagResourceType(str):
+class TagResourceType(StrEnum):
     healthcheck = "healthcheck"
     hostedzone = "hostedzone"
 
 
-class VPCRegion(str):
+class VPCRegion(StrEnum):
     us_east_1 = "us-east-1"
     us_east_2 = "us-east-2"
     us_west_1 = "us-west-1"

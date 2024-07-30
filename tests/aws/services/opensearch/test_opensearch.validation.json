@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_get_compatible_versions": {
+    "last_validated_date": "2024-07-16T13:05:15+00:00"
+  },
+  "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_list_versions": {
+    "last_validated_date": "2024-07-16T13:18:18+00:00"
+  }
+}

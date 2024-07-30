@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -40,6 +41,7 @@ ErrorCode = str
 ErrorMessage = str
 ErrorOutputPrefix = str
 FileExtension = str
+GlueDataCatalogARN = str
 HECAcknowledgmentTimeoutInSeconds = int
 HECEndpoint = str
 HECToken = str
@@ -75,6 +77,8 @@ RoleARN = str
 SecretARN = str
 SizeInMBs = int
 SnowflakeAccountUrl = str
+SnowflakeBufferingIntervalInSeconds = int
+SnowflakeBufferingSizeInMBs = int
 SnowflakeContentColumnName = str
 SnowflakeDatabase = str
 SnowflakeKeyPassphrase = str
@@ -95,12 +99,12 @@ TopicName = str
 Username = str
 
 
-class AmazonOpenSearchServerlessS3BackupMode(str):
+class AmazonOpenSearchServerlessS3BackupMode(StrEnum):
     FailedDocumentsOnly = "FailedDocumentsOnly"
     AllDocuments = "AllDocuments"
 
 
-class AmazonopensearchserviceIndexRotationPeriod(str):
+class AmazonopensearchserviceIndexRotationPeriod(StrEnum):
     NoRotation = "NoRotation"
     OneHour = "OneHour"
     OneDay = "OneDay"
@@ -108,12 +112,12 @@ class AmazonopensearchserviceIndexRotationPeriod(str):
     OneMonth = "OneMonth"
 
 
-class AmazonopensearchserviceS3BackupMode(str):
+class AmazonopensearchserviceS3BackupMode(StrEnum):
     FailedDocumentsOnly = "FailedDocumentsOnly"
     AllDocuments = "AllDocuments"
 
 
-class CompressionFormat(str):
+class CompressionFormat(StrEnum):
     UNCOMPRESSED = "UNCOMPRESSED"
     GZIP = "GZIP"
     ZIP = "ZIP"
@@ -121,22 +125,22 @@ class CompressionFormat(str):
     HADOOP_SNAPPY = "HADOOP_SNAPPY"
 
 
-class Connectivity(str):
+class Connectivity(StrEnum):
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
 
 
-class ContentEncoding(str):
+class ContentEncoding(StrEnum):
     NONE = "NONE"
     GZIP = "GZIP"
 
 
-class DefaultDocumentIdFormat(str):
+class DefaultDocumentIdFormat(StrEnum):
     FIREHOSE_DEFAULT = "FIREHOSE_DEFAULT"
     NO_DOCUMENT_ID = "NO_DOCUMENT_ID"
 
 
-class DeliveryStreamEncryptionStatus(str):
+class DeliveryStreamEncryptionStatus(StrEnum):
     ENABLED = "ENABLED"
     ENABLING = "ENABLING"
     ENABLING_FAILED = "ENABLING_FAILED"
@@ -145,7 +149,7 @@ class DeliveryStreamEncryptionStatus(str):
     DISABLING_FAILED = "DISABLING_FAILED"
 
 
-class DeliveryStreamFailureType(str):
+class DeliveryStreamFailureType(StrEnum):
     RETIRE_KMS_GRANT_FAILED = "RETIRE_KMS_GRANT_FAILED"
     CREATE_KMS_GRANT_FAILED = "CREATE_KMS_GRANT_FAILED"
     KMS_ACCESS_DENIED = "KMS_ACCESS_DENIED"
@@ -163,7 +167,7 @@ class DeliveryStreamFailureType(str):
     UNKNOWN_ERROR = "UNKNOWN_ERROR"
 
 
-class DeliveryStreamStatus(str):
+class DeliveryStreamStatus(StrEnum):
     CREATING = "CREATING"
     CREATING_FAILED = "CREATING_FAILED"
     DELETING = "DELETING"
@@ -171,13 +175,13 @@ class DeliveryStreamStatus(str):
     ACTIVE = "ACTIVE"
 
 
-class DeliveryStreamType(str):
+class DeliveryStreamType(StrEnum):
     DirectPut = "DirectPut"
     KinesisStreamAsSource = "KinesisStreamAsSource"
     MSKAsSource = "MSKAsSource"
 
 
-class ElasticsearchIndexRotationPeriod(str):
+class ElasticsearchIndexRotationPeriod(StrEnum):
     NoRotation = "NoRotation"
     OneHour = "OneHour"
     OneDay = "OneDay"
@@ -185,53 +189,58 @@ class ElasticsearchIndexRotationPeriod(str):
     OneMonth = "OneMonth"
 
 
-class ElasticsearchS3BackupMode(str):
+class ElasticsearchS3BackupMode(StrEnum):
     FailedDocumentsOnly = "FailedDocumentsOnly"
     AllDocuments = "AllDocuments"
 
 
-class HECEndpointType(str):
+class HECEndpointType(StrEnum):
     Raw = "Raw"
     Event = "Event"
 
 
-class HttpEndpointS3BackupMode(str):
+class HttpEndpointS3BackupMode(StrEnum):
     FailedDataOnly = "FailedDataOnly"
     AllData = "AllData"
 
 
-class KeyType(str):
+class IcebergS3BackupMode(StrEnum):
+    FailedDataOnly = "FailedDataOnly"
+    AllData = "AllData"
+
+
+class KeyType(StrEnum):
     AWS_OWNED_CMK = "AWS_OWNED_CMK"
     CUSTOMER_MANAGED_CMK = "CUSTOMER_MANAGED_CMK"
 
 
-class NoEncryptionConfig(str):
+class NoEncryptionConfig(StrEnum):
     NoEncryption = "NoEncryption"
 
 
-class OrcCompression(str):
+class OrcCompression(StrEnum):
     NONE = "NONE"
     ZLIB = "ZLIB"
     SNAPPY = "SNAPPY"
 
 
-class OrcFormatVersion(str):
+class OrcFormatVersion(StrEnum):
     V0_11 = "V0_11"
     V0_12 = "V0_12"
 
 
-class ParquetCompression(str):
+class ParquetCompression(StrEnum):
     UNCOMPRESSED = "UNCOMPRESSED"
     GZIP = "GZIP"
     SNAPPY = "SNAPPY"
 
 
-class ParquetWriterVersion(str):
+class ParquetWriterVersion(StrEnum):
     V1 = "V1"
     V2 = "V2"
 
 
-class ProcessorParameterName(str):
+class ProcessorParameterName(StrEnum):
     LambdaArn = "LambdaArn"
     NumberOfRetries = "NumberOfRetries"
     MetadataExtractionQuery = "MetadataExtractionQuery"
@@ -245,7 +254,7 @@ class ProcessorParameterName(str):
     DataMessageExtraction = "DataMessageExtraction"
 
 
-class ProcessorType(str):
+class ProcessorType(StrEnum):
     RecordDeAggregation = "RecordDeAggregation"
     Decompression = "Decompression"
     CloudWatchLogProcessing = "CloudWatchLogProcessing"
@@ -254,28 +263,28 @@ class ProcessorType(str):
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
 
 
-class RedshiftS3BackupMode(str):
+class RedshiftS3BackupMode(StrEnum):
     Disabled = "Disabled"
     Enabled = "Enabled"
 
 
-class S3BackupMode(str):
+class S3BackupMode(StrEnum):
     Disabled = "Disabled"
     Enabled = "Enabled"
 
 
-class SnowflakeDataLoadingOption(str):
+class SnowflakeDataLoadingOption(StrEnum):
     JSON_MAPPING = "JSON_MAPPING"
     VARIANT_CONTENT_MAPPING = "VARIANT_CONTENT_MAPPING"
     VARIANT_CONTENT_AND_METADATA_MAPPING = "VARIANT_CONTENT_AND_METADATA_MAPPING"
 
 
-class SnowflakeS3BackupMode(str):
+class SnowflakeS3BackupMode(StrEnum):
     FailedDataOnly = "FailedDataOnly"
     AllData = "AllData"
 
 
-class SplunkS3BackupMode(str):
+class SplunkS3BackupMode(StrEnum):
     FailedEventsOnly = "FailedEventsOnly"
     AllEvents = "AllEvents"
 
@@ -532,6 +541,10 @@ class AuthenticationConfiguration(TypedDict, total=False):
     Connectivity: Connectivity
 
 
+class CatalogConfiguration(TypedDict, total=False):
+    CatalogARN: Optional[GlueDataCatalogARN]
+
+
 ColumnToJsonKeyMappings = Dict[NonEmptyStringWithoutWhitespace, NonEmptyString]
 
 
@@ -539,6 +552,40 @@ class CopyCommand(TypedDict, total=False):
     DataTableName: DataTableName
     DataTableColumns: Optional[DataTableColumns]
     CopyOptions: Optional[CopyOptions]
+
+
+class RetryOptions(TypedDict, total=False):
+    DurationInSeconds: Optional[RetryDurationInSeconds]
+
+
+ListOfNonEmptyStringsWithoutWhitespace = List[NonEmptyStringWithoutWhitespace]
+
+
+class DestinationTableConfiguration(TypedDict, total=False):
+    DestinationTableName: NonEmptyStringWithoutWhitespace
+    DestinationDatabaseName: NonEmptyStringWithoutWhitespace
+    UniqueKeys: Optional[ListOfNonEmptyStringsWithoutWhitespace]
+    S3ErrorOutputPrefix: Optional[ErrorOutputPrefix]
+
+
+DestinationTableConfigurationList = List[DestinationTableConfiguration]
+
+
+class IcebergDestinationConfiguration(TypedDict, total=False):
+    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    BufferingHints: Optional[BufferingHints]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    S3BackupMode: Optional[IcebergS3BackupMode]
+    RetryOptions: Optional[RetryOptions]
+    RoleARN: RoleARN
+    CatalogConfiguration: CatalogConfiguration
+    S3Configuration: S3DestinationConfiguration
+
+
+class SnowflakeBufferingHints(TypedDict, total=False):
+    SizeInMBs: Optional[SnowflakeBufferingSizeInMBs]
+    IntervalInSeconds: Optional[SnowflakeBufferingIntervalInSeconds]
 
 
 class SecretsManagerConfiguration(TypedDict, total=False):
@@ -580,12 +627,17 @@ class SnowflakeDestinationConfiguration(TypedDict, total=False):
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3Configuration: S3DestinationConfiguration
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    BufferingHints: Optional[SnowflakeBufferingHints]
+
+
+ReadFromTimestamp = datetime
 
 
 class MSKSourceConfiguration(TypedDict, total=False):
     MSKClusterARN: MSKClusterARN
     TopicName: TopicName
     AuthenticationConfiguration: AuthenticationConfiguration
+    ReadFromTimestamp: Optional[ReadFromTimestamp]
 
 
 class Tag(TypedDict, total=False):
@@ -705,16 +757,9 @@ class RedshiftDestinationConfiguration(TypedDict, total=False):
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
-class RetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[RetryDurationInSeconds]
-
-
 class DynamicPartitioningConfiguration(TypedDict, total=False):
     RetryOptions: Optional[RetryOptions]
     Enabled: Optional[BooleanObject]
-
-
-ListOfNonEmptyStringsWithoutWhitespace = List[NonEmptyStringWithoutWhitespace]
 
 
 class OrcSerDe(TypedDict, total=False):
@@ -834,6 +879,7 @@ class CreateDeliveryStreamInput(ServiceRequest):
     ]
     MSKSourceConfiguration: Optional[MSKSourceConfiguration]
     SnowflakeDestinationConfiguration: Optional[SnowflakeDestinationConfiguration]
+    IcebergDestinationConfiguration: Optional[IcebergDestinationConfiguration]
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
@@ -855,6 +901,18 @@ class DeleteDeliveryStreamOutput(TypedDict, total=False):
 DeliveryStartTimestamp = datetime
 
 
+class IcebergDestinationDescription(TypedDict, total=False):
+    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    BufferingHints: Optional[BufferingHints]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    S3BackupMode: Optional[IcebergS3BackupMode]
+    RetryOptions: Optional[RetryOptions]
+    RoleARN: Optional[RoleARN]
+    CatalogConfiguration: Optional[CatalogConfiguration]
+    S3DestinationDescription: Optional[S3DestinationDescription]
+
+
 class SnowflakeDestinationDescription(TypedDict, total=False):
     AccountUrl: Optional[SnowflakeAccountUrl]
     User: Optional[SnowflakeUser]
@@ -873,6 +931,7 @@ class SnowflakeDestinationDescription(TypedDict, total=False):
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3DestinationDescription: Optional[S3DestinationDescription]
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    BufferingHints: Optional[SnowflakeBufferingHints]
 
 
 class HttpEndpointDescription(TypedDict, total=False):
@@ -971,6 +1030,7 @@ class DestinationDescription(TypedDict, total=False):
     AmazonOpenSearchServerlessDestinationDescription: Optional[
         AmazonOpenSearchServerlessDestinationDescription
     ]
+    IcebergDestinationDescription: Optional[IcebergDestinationDescription]
 
 
 DestinationDescriptionList = List[DestinationDescription]
@@ -981,6 +1041,7 @@ class MSKSourceDescription(TypedDict, total=False):
     TopicName: Optional[TopicName]
     AuthenticationConfiguration: Optional[AuthenticationConfiguration]
     DeliveryStartTimestamp: Optional[DeliveryStartTimestamp]
+    ReadFromTimestamp: Optional[ReadFromTimestamp]
 
 
 class KinesisStreamSourceDescription(TypedDict, total=False):
@@ -1083,6 +1144,18 @@ class HttpEndpointDestinationUpdate(TypedDict, total=False):
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
+class IcebergDestinationUpdate(TypedDict, total=False):
+    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    BufferingHints: Optional[BufferingHints]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    S3BackupMode: Optional[IcebergS3BackupMode]
+    RetryOptions: Optional[RetryOptions]
+    RoleARN: Optional[RoleARN]
+    CatalogConfiguration: Optional[CatalogConfiguration]
+    S3Configuration: Optional[S3DestinationConfiguration]
+
+
 class ListDeliveryStreamsInput(ServiceRequest):
     Limit: Optional[ListDeliveryStreamsInputLimit]
     DeliveryStreamType: Optional[DeliveryStreamType]
@@ -1179,6 +1252,7 @@ class SnowflakeDestinationUpdate(TypedDict, total=False):
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3Update: Optional[S3DestinationUpdate]
     SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    BufferingHints: Optional[SnowflakeBufferingHints]
 
 
 class SplunkDestinationUpdate(TypedDict, total=False):
@@ -1248,6 +1322,7 @@ class UpdateDestinationInput(ServiceRequest):
         AmazonOpenSearchServerlessDestinationUpdate
     ]
     SnowflakeDestinationUpdate: Optional[SnowflakeDestinationUpdate]
+    IcebergDestinationUpdate: Optional[IcebergDestinationUpdate]
 
 
 class UpdateDestinationOutput(TypedDict, total=False):
@@ -1277,6 +1352,7 @@ class FirehoseApi:
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
         snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
+        iceberg_destination_configuration: IcebergDestinationConfiguration = None,
         **kwargs,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
@@ -1396,6 +1472,7 @@ class FirehoseApi:
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
         snowflake_destination_update: SnowflakeDestinationUpdate = None,
+        iceberg_destination_update: IcebergDestinationUpdate = None,
         **kwargs,
     ) -> UpdateDestinationOutput:
         raise NotImplementedError

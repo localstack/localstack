@@ -1,5 +1,6 @@
 import os.path
 
+import botocore.exceptions
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
@@ -7,8 +8,9 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
-@markers.aws.unknown
-def test_parameter_defaults(deploy_cfn_template, aws_client):
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+def test_parameter_defaults(deploy_cfn_template, aws_client, snapshot):
     ssm_parameter_value = f"custom-{short_uid()}"
 
     stack = deploy_cfn_template(
@@ -19,27 +21,16 @@ def test_parameter_defaults(deploy_cfn_template, aws_client):
     )
 
     parameter_name = stack.outputs["CustomParameterOutput"]
-
-    assert "CustomParameter" in parameter_name
     param = aws_client.ssm.get_parameter(Name=parameter_name)
-    assert param["Parameter"]["Value"] == ssm_parameter_value
+    snapshot.match("ssm_parameter", param)
+    snapshot.add_transformer(snapshot.transform.key_value("Name"))
+    snapshot.add_transformer(snapshot.transform.key_value("Value"))
 
-    stack_resources = aws_client.cloudformation.describe_stack_resources(StackName=stack.stack_name)
-    results = [
-        res
-        for res in stack_resources["StackResources"]
-        if res["ResourceType"] == "AWS::SSM::Parameter"
-    ]
-
-    assert results[0]
-    assert results[0]["PhysicalResourceId"]
-
-    # make sure parameter is deleted
     stack.destroy()
 
-    with pytest.raises(Exception) as ctx:
+    with pytest.raises(botocore.exceptions.ClientError) as ctx:
         aws_client.ssm.get_parameter(Name=parameter_name)
-    ctx.match("ParameterNotFound")
+    snapshot.match("ssm_parameter_not_found", ctx.value.response)
 
 
 @markers.aws.validated

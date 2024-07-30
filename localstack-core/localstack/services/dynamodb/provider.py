@@ -427,8 +427,9 @@ def delete_expired_items() -> int:
                 try:
                     result = client.scan(
                         TableName=table_name,
-                        FilterExpression=f"{attribute_name} <= :threshold",
+                        FilterExpression="#ttl <= :threshold",
                         ExpressionAttributeValues={":threshold": {"N": str(current_time)}},
+                        ExpressionAttributeNames={"#ttl": attribute_name},
                     )
                     items_to_delete = result.get("Items", [])
                     no_expired_items += len(items_to_delete)

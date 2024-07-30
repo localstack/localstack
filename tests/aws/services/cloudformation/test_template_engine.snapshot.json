@@ -640,5 +640,11 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestPseudoParameters::test_stack_id": {
+    "recorded-date": "18-07-2024, 08:56:47",
+    "recorded-content": {
+      "StackId": "<stack-id>"
+    }
   }
 }

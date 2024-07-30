@@ -2,12 +2,11 @@ from http import HTTPMethod
 
 import pytest
 
-from localstack.aws.api.apigateway import Integration, IntegrationType, Method
+from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.http import Request, Response
 from localstack.services.apigateway.models import MergedRestApi, RestApiDeployment
 from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import (
-    InvocationRequest,
     RestApiInvocationContext,
 )
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
@@ -22,7 +21,6 @@ from localstack.services.apigateway.next_gen.execute_api.handlers.integration_re
 )
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
-    ContextVarsRequestOverride,
 )
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
@@ -31,59 +29,13 @@ TEST_API_STAGE = "stage"
 
 
 @pytest.fixture
-def create_context():
+def default_context():
     """
     Create a context populated with what we would expect to receive from the chain at runtime.
     We assume that the parser and other handler have successfully populated the context to this point.
     """
 
-    def _create_context(
-        method: Method = None,
-        request: InvocationRequest = None,
-    ):
-        context = RestApiInvocationContext(Request())
-
-        # The api key validator only relies on the raw headers from the invocation requests
-        context.invocation_request = request or InvocationRequest()
-
-        # Frozen deployment populated by the router
-        context.deployment = RestApiDeployment(
-            account_id=TEST_AWS_ACCOUNT_ID,
-            region=TEST_AWS_REGION_NAME,
-            rest_api=MergedRestApi(rest_api={}),
-        )
-
-        # Context populated by parser handler
-        context.region = TEST_AWS_REGION_NAME
-        context.account_id = TEST_AWS_ACCOUNT_ID
-        context.stage = TEST_API_STAGE
-        context.api_id = TEST_API_ID
-        context.resource_method = method or Method(
-            methodIntegration=Integration(
-                type=IntegrationType.HTTP,
-                requestParameters=None,
-                uri="https://example.com",
-                httpMethod="POST",
-            )
-        )
-        context.context_variables = ContextVariables(
-            resourceId="resource-id",
-            apiId=TEST_API_ID,
-            httpMethod="POST",
-            path=f"{TEST_API_STAGE}/resource/{{proxy}}",
-            requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
-            resourcePath="/resource/{proxy}",
-            stage=TEST_API_STAGE,
-        )
-
-        return context
-
-    return _create_context
-
-
-@pytest.fixture
-def default_invocation_request() -> InvocationRequest:
-    request = InvocationRequestParser().create_invocation_request(
+    context = RestApiInvocationContext(
         Request(
             method=HTTPMethod.POST,
             headers={"header": ["header1", "header2"]},
@@ -91,8 +43,42 @@ def default_invocation_request() -> InvocationRequest:
             query_string="qs=qs1&qs=qs2",
         )
     )
+
+    # Frozen deployment populated by the router
+    context.deployment = RestApiDeployment(
+        account_id=TEST_AWS_ACCOUNT_ID,
+        region=TEST_AWS_REGION_NAME,
+        rest_api=MergedRestApi(rest_api={}),
+    )
+
+    # Context populated by parser handler before creating the invocation request
+    context.region = TEST_AWS_REGION_NAME
+    context.account_id = TEST_AWS_ACCOUNT_ID
+    context.stage = TEST_API_STAGE
+    context.api_id = TEST_API_ID
+
+    request = InvocationRequestParser().create_invocation_request(context)
+    context.invocation_request = request
+
+    # add path_parameters from the router parser
     request["path_parameters"] = {"proxy": "path"}
-    return request
+
+    context.integration = Integration(
+        type=IntegrationType.HTTP,
+        requestParameters=None,
+        uri="https://example.com",
+        httpMethod="POST",
+    )
+    context.context_variables = ContextVariables(
+        resourceId="resource-id",
+        apiId=TEST_API_ID,
+        httpMethod="POST",
+        path=f"{TEST_API_STAGE}/resource/{{proxy}}",
+        resourcePath="/resource/{proxy}",
+        stage=TEST_API_STAGE,
+    )
+
+    return context
 
 
 @pytest.fixture
@@ -106,165 +92,160 @@ def integration_request_handler():
 
 
 class TestHandlerIntegrationRequest:
-    def test_noop(self, integration_request_handler, default_invocation_request, create_context):
-        context = create_context(request=default_invocation_request)
-        integration_request_handler(context)
-        assert context.integration_request == {
-            "body": b"",
-            "headers": {},
-            "http_method": "POST",
-            "query_string_parameters": {},
-            "uri": "https://example.com",
-        }
+    def test_noop(self, integration_request_handler, default_context):
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b""
+        assert default_context.integration_request["headers"]["Accept"] == "application/json"
+        assert default_context.integration_request["http_method"] == "POST"
+        assert default_context.integration_request["query_string_parameters"] == {}
+        assert default_context.integration_request["uri"] == "https://example.com"
 
-    def test_passthrough_never(
-        self, integration_request_handler, default_invocation_request, create_context
-    ):
-        context = create_context(request=default_invocation_request)
-        context.resource_method["methodIntegration"]["passthroughBehavior"] = (
-            PassthroughBehavior.NEVER
-        )
+    def test_passthrough_never(self, integration_request_handler, default_context):
+        default_context.integration["passthroughBehavior"] = PassthroughBehavior.NEVER
 
         # With no template, it is expected to raise
         with pytest.raises(UnsupportedMediaTypeError) as e:
-            integration_request_handler(context)
+            integration_request_handler(default_context)
         assert e.match("Unsupported Media Type")
 
         # With a non-matching template it should raise
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
-            "application/xml": "#Empty"
-        }
+        default_context.integration["requestTemplates"] = {"application/xml": "#Empty"}
         with pytest.raises(UnsupportedMediaTypeError) as e:
-            integration_request_handler(context)
+            integration_request_handler(default_context)
         assert e.match("Unsupported Media Type")
 
         # With a matching template it should use it
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
-            "application/json": '{"foo":"bar"}'
-        }
-        integration_request_handler(context)
-        assert context.integration_request["body"] == b'{"foo":"bar"}'
+        default_context.integration["requestTemplates"] = {"application/json": '{"foo":"bar"}'}
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b'{"foo":"bar"}'
 
-    def test_passthrough_when_no_match(
-        self, integration_request_handler, default_invocation_request, create_context
-    ):
-        context = create_context(request=default_invocation_request)
-        context.resource_method["methodIntegration"]["passthroughBehavior"] = (
-            PassthroughBehavior.WHEN_NO_MATCH
-        )
+    def test_passthrough_when_no_match(self, integration_request_handler, default_context):
+        default_context.integration["passthroughBehavior"] = PassthroughBehavior.WHEN_NO_MATCH
         # When no template are created it should passthrough
-        integration_request_handler(context)
-        assert context.integration_request["body"] == b""
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b""
 
         # when a non matching template is found it should passthrough
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
-            "application/xml": '{"foo":"bar"}'
-        }
-        integration_request_handler(context)
-        assert context.integration_request["body"] == b""
+        default_context.integration["requestTemplates"] = {"application/xml": '{"foo":"bar"}'}
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b""
 
         # when a matching template is found, it should use it
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
-            "application/json": '{"foo":"bar"}'
-        }
-        integration_request_handler(context)
-        assert context.integration_request["body"] == b'{"foo":"bar"}'
+        default_context.integration["requestTemplates"] = {"application/json": '{"foo":"bar"}'}
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b'{"foo":"bar"}'
 
-    def test_passthrough_when_no_templates(
-        self, integration_request_handler, default_invocation_request, create_context
-    ):
-        context = create_context(request=default_invocation_request)
-        context.resource_method["methodIntegration"]["passthroughBehavior"] = (
-            PassthroughBehavior.WHEN_NO_TEMPLATES
-        )
+    def test_passthrough_when_no_templates(self, integration_request_handler, default_context):
+        default_context.integration["passthroughBehavior"] = PassthroughBehavior.WHEN_NO_TEMPLATES
         # If a non matching template is found, it should raise
-        context.resource_method["methodIntegration"]["requestTemplates"] = {"application/xml": ""}
+        default_context.integration["requestTemplates"] = {"application/xml": ""}
         with pytest.raises(UnsupportedMediaTypeError) as e:
-            integration_request_handler(context)
+            integration_request_handler(default_context)
         assert e.match("Unsupported Media Type")
 
         # If a matching template is found, it should use it
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
-            "application/json": '{"foo":"bar"}'
-        }
-        integration_request_handler(context)
-        assert context.integration_request["body"] == b'{"foo":"bar"}'
+        default_context.integration["requestTemplates"] = {"application/json": '{"foo":"bar"}'}
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b'{"foo":"bar"}'
 
         # If no template were created, it should passthrough
-        context.resource_method["methodIntegration"]["requestTemplates"] = {}
-        integration_request_handler(context)
-        assert context.integration_request["body"] == b""
+        default_context.integration["requestTemplates"] = {}
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b""
 
-    def test_default_template(
-        self, integration_request_handler, default_invocation_request, create_context
-    ):
-        request = default_invocation_request
-        context = create_context(request=request)
-
+    def test_default_template(self, integration_request_handler, default_context):
         # if no matching template, use the default
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
-            "$default": '{"foo":"bar"}'
-        }
-        integration_request_handler(context)
-        assert context.integration_request["body"] == b'{"foo":"bar"}'
+        default_context.integration["requestTemplates"] = {"$default": '{"foo":"bar"}'}
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b'{"foo":"bar"}'
 
         # If there is a matching template, use it instead
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
+        default_context.integration["requestTemplates"] = {
             "$default": '{"foo":"bar"}',
             "application/json": "Matching Template",
         }
-        integration_request_handler(context)
-        assert context.integration_request["body"] == b"Matching Template"
+        integration_request_handler(default_context)
+        assert default_context.integration_request["body"] == b"Matching Template"
 
-    def test_request_parameters(
-        self, integration_request_handler, default_invocation_request, create_context
-    ):
-        context = create_context(request=default_invocation_request)
-        context.resource_method["methodIntegration"]["requestParameters"] = {
-            "integration.request.path.path": "method.request.path.path",
+    def test_request_parameters(self, integration_request_handler, default_context):
+        default_context.integration["requestParameters"] = {
+            "integration.request.path.path": "method.request.path.proxy",
             "integration.request.querystring.qs": "method.request.querystring.qs",
             "integration.request.header.header": "method.request.header.header",
         }
-        context.resource_method["methodIntegration"]["uri"] = "https://example.com/{path}"
-        integration_request_handler(context)
+        default_context.integration["uri"] = "https://example.com/{path}"
+        integration_request_handler(default_context)
         # TODO this test will fail when we implement uri mapping
-        assert context.integration_request["uri"] == "https://example.com/{path}"
-        assert context.integration_request["query_string_parameters"] == {"qs": "qs2"}
-        assert context.integration_request["headers"] == {"header": "header2"}
+        assert default_context.integration_request["uri"] == "https://example.com/path"
+        assert default_context.integration_request["query_string_parameters"] == {"qs": "qs2"}
+        headers = default_context.integration_request["headers"]
+        assert headers.get("Accept") == "application/json"
+        assert headers.get("header") == "header2"
 
-    def test_request_override(
-        self, integration_request_handler, default_invocation_request, create_context
-    ):
-        context = create_context(request=default_invocation_request)
-        context.resource_method["methodIntegration"]["requestParameters"] = {
+    def test_request_override(self, integration_request_handler, default_context):
+        default_context.integration["requestParameters"] = {
             "integration.request.path.path": "method.request.path.path",
             "integration.request.querystring.qs": "method.request.multivaluequerystring.qs",
             "integration.request.header.header": "method.request.header.header",
         }
-        context.resource_method["methodIntegration"]["uri"] = "https://example.com/{path}"
-        context.resource_method["methodIntegration"]["requestTemplates"] = {
-            "application/json": REQUEST_OVERRIDE
+        default_context.integration["uri"] = "https://example.com/{path}"
+        default_context.integration["requestTemplates"] = {"application/json": REQUEST_OVERRIDE}
+        integration_request_handler(default_context)
+        assert default_context.integration_request["uri"] == "https://example.com/pathOverride"
+        assert default_context.integration_request["query_string_parameters"] == {
+            "qs": "queryOverride"
         }
-        integration_request_handler(context)
-        # TODO this test will fail when we implement uri mapping
-        assert context.integration_request["uri"] == "https://example.com/{path}"
-        assert context.integration_request["query_string_parameters"] == {"qs": "queryOverride"}
-        assert context.integration_request["headers"] == {
-            "header": "headerOverride",
-            "multivalue": ["1header", "2header"],
-        }
+        headers = default_context.integration_request["headers"]
+        assert headers.get("Accept") == "application/json"
+        assert headers.get("header") == "headerOverride"
+        assert headers.getlist("multivalue") == ["1header", "2header"]
 
-    def test_multivalue_mapping(
-        self, integration_request_handler, default_invocation_request, create_context
-    ):
-        context = create_context(request=default_invocation_request)
-        context.resource_method["methodIntegration"]["requestParameters"] = {
+    def test_request_override_casing(self, integration_request_handler, default_context):
+        default_context.integration["requestParameters"] = {
+            "integration.request.header.myHeader": "method.request.header.header",
+        }
+        default_context.integration["requestTemplates"] = {
+            "application/json": '#set($context.requestOverride.header.myheader = "headerOverride")'
+        }
+        integration_request_handler(default_context)
+        # TODO: for now, it's up to the integration to properly merge headers (`requests` does it automatically)
+        headers = default_context.integration_request["headers"]
+        assert headers.get("Accept") == "application/json"
+        assert headers.getlist("myHeader") == ["header2", "headerOverride"]
+        assert headers.getlist("myheader") == ["header2", "headerOverride"]
+
+    def test_multivalue_mapping(self, integration_request_handler, default_context):
+        default_context.integration["requestParameters"] = {
             "integration.request.header.multi": "method.request.multivalueheader.header",
             "integration.request.querystring.multi": "method.request.multivaluequerystring.qs",
         }
-        integration_request_handler(context)
-        assert context.integration_request["headers"]["multi"] == "header1,header2"
-        assert context.integration_request["query_string_parameters"]["multi"] == ["qs1", "qs2"]
+        integration_request_handler(default_context)
+        assert default_context.integration_request["headers"]["multi"] == "header1,header2"
+        assert default_context.integration_request["query_string_parameters"]["multi"] == [
+            "qs1",
+            "qs2",
+        ]
+
+    def test_integration_uri_path_params_undefined(
+        self, integration_request_handler, default_context
+    ):
+        default_context.integration["requestParameters"] = {
+            "integration.request.path.path": "method.request.path.wrongvalue",
+        }
+        default_context.integration["uri"] = "https://example.com/{path}"
+        integration_request_handler(default_context)
+        assert default_context.integration_request["uri"] == "https://example.com/{path}"
+
+    def test_integration_uri_stage_variables(self, integration_request_handler, default_context):
+        default_context.stage_variables = {
+            "stageVar": "stageValue",
+        }
+        default_context.integration["requestParameters"] = {
+            "integration.request.path.path": "method.request.path.proxy",
+        }
+        default_context.integration["uri"] = "https://example.com/{path}/${stageVariables.stageVar}"
+        integration_request_handler(default_context)
+        assert default_context.integration_request["uri"] == "https://example.com/path/stageValue"
 
 
 REQUEST_OVERRIDE = """

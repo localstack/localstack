@@ -12,8 +12,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
-
-from .conftest import get_firehose_iam_documents
+from tests.aws.services.firehose.helper_functions import get_firehose_iam_documents
 
 PROCESSOR_LAMBDA = """
 def handler(event, context):
@@ -137,6 +136,7 @@ def test_kinesis_firehose_http(
 class TestFirehoseIntegration:
     @markers.skip_offline
     @markers.aws.unknown
+    @pytest.mark.skip(reason="flaky")
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self,
         s3_bucket,

@@ -9,21 +9,21 @@ Once the snapshot is recorded, the test can be executed against LocalStack. Duri
 
 In theory, every integration test can be converted to a parity conform snapshot test.
 
-This guide assumes you are already familiar with writing [integration tests](integration-tests.md) for LocalStack in general. 
+This guide assumes you are already familiar with writing [integration tests](../integration-tests/README.md) for LocalStack in general.
 
 ## How to write Parity tests
 
 In a nutshell, the necessary steps include:
 
-1.  Make sure that the test works against AWS. 
+1.  Make sure that the test works against AWS.
     * Check out our [Integration Test Guide](integration-tests.md#running-integration-tests-against-aws) for tips on how run integration tests against AWS.
-2.  Add the `snapshot` fixture to your test and identify which responses you want to collect and compare against LocalStack. 
+2.  Add the `snapshot` fixture to your test and identify which responses you want to collect and compare against LocalStack.
     * Use `snapshot.match(”identifier”, result)` to mark the result of interest. It will be recorded and stored in a file with the name `<testfile-name>.snapshot.json`
     *  The **identifier** can be freely selected, but ideally it gives a hint on what is recorded - so typically the name of the function. The **result** is expected to be a `dict`.
     * Run the test against AWS: use the parameter `--snapshot-update` (or the environment variable `SNAPSHOT_UPDATE=1`) and set the environment variable as `TEST_TARGET=AWS_CLOUD`.
     * Check the recorded result in `<testfile-name>.snapshot.json` and consider [using transformers](#using-transformers) to make the result comparable.
-3.  Run the test against LocalStack. 
-    * Hint: Ensure that the `AWS_CLOUD` is not set as a test target and that the parameter `--snapshot-update` is removed. 
+3.  Run the test against LocalStack.
+    * Hint: Ensure that the `AWS_CLOUD` is not set as a test target and that the parameter `--snapshot-update` is removed.
     * If you used the environment variable make sure to delete it or reset the value, e.g. `SNAPSHOT_UPDATE=0`
 
 Here is an example of a parity test:
@@ -43,15 +43,15 @@ def test_invocation(self, lambda_client, snapshot):
 
 ## The Snapshot
 
-When an integration test is executed against AWS with the `snapshot-update` flag, the response will automatically be updated in the snapshot-file. 
+When an integration test is executed against AWS with the `snapshot-update` flag, the response will automatically be updated in the snapshot-file.
 
 **The file is automatically created if it doesn't exist yet.** The naming pattern is `<filename>.snapshot.json` where `<filename>` is the name of the file where the test is located.
 One file can contain several snapshot recordings, e.g. the result from several tests.
 
 The snapshot file is a json-file, and each json-object on the root-level represents one test.
-E.g., imagine the test file name is `test_lambda_api.py` (example is outlined in ['Reference Replacement'](#reference-replacement)), with the class `TestLambda`. 
+E.g., imagine the test file name is `test_lambda_api.py` (example is outlined in ['Reference Replacement'](#reference-replacement)), with the class `TestLambda`.
 
-When running the test `test_basic_invoke` it will create a json-object `test_lambda_api.py::TestLambda::test_basic_invoke`. 
+When running the test `test_basic_invoke` it will create a json-object `test_lambda_api.py::TestLambda::test_basic_invoke`.
 
 Each recorded snapshot contains:
  * `recorded-date` the timestamp when this test was last updated
@@ -59,11 +59,11 @@ Each recorded snapshot contains:
 
 Note that all json-strings of a response will automatically be parsed to json. This makes the comparison, transformation, and exclusion of certain keys easier (string vs json-object).
 
-**Snapshot files should never be modified manually.** If one or more snapshots need to be updated, simply execute the test against AWS, and [use transformers](#using-transformers) to make the recorded responses comparable. 
+**Snapshot files should never be modified manually.** If one or more snapshots need to be updated, simply execute the test against AWS, and [use transformers](#using-transformers) to make the recorded responses comparable.
 
 ## Using Transformers
 
-In order to make results comparable, some parts response might need to be adapted before storing the record as a snapshot. 
+In order to make results comparable, some parts response might need to be adapted before storing the record as a snapshot.
 For example, AWS responses could contain special IDs, usernames, timestamps, etc.
 
 Transformers should bring AWS response in a comparable form by replacing any request-specific parameters. Replacements require thoughtful handling so that important information is not lost in translation.
@@ -80,10 +80,10 @@ The `snapshot` fixture uses some basic transformations by default, including:
 
 ## API Transformer
 
-APIs for one service often require similar transformations. Therefore, we introduced some utilities that collect common transformations grouped by service. 
+APIs for one service often require similar transformations. Therefore, we introduced some utilities that collect common transformations grouped by service.
 
-Ideally, the service-transformation already includes every transformation that is required. 
-The [TransformerUtility](https://github.com/localstack/localstack/blob/master/localstack/testing/snapshots/transformer_utility.py) already provides some collections of transformers for specific service APIs. 
+Ideally, the service-transformation already includes every transformation that is required.
+The [TransformerUtility](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/testing/snapshots/transformer_utility.py) already provides some collections of transformers for specific service APIs.
 
 For example, to add common transformers for lambda, you can use: `snapshot.add_transformer(snapshot.transform.lambda_api()`.
 
@@ -95,7 +95,7 @@ The Parity testing framework currently includes some basic transformer types:
 -   `JsonPathTransformer` replaces the JSON path value directly, or by reference. [jsonpath-ng](https://pypi.org/project/jsonpath-ng/) is used for the JSON path evaluation.
 -   `RegexTransformer` replaces the regex pattern globally. Please be aware that this will be applied on the json-string. The JSON will be transformed into a string, and the replacement happens globally - use it with care.
 
-Hint: There are also some simplified transformers in [TransformerUtility](https://github.com/localstack/localstack/blob/master/localstack/testing/snapshots/transformer_utility.py).
+Hint: There are also some simplified transformers in [TransformerUtility](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/testing/snapshots/transformer_utility.py).
 
 ### Examples
 
@@ -155,7 +155,7 @@ The information that the function-name of the first recording (`lambda_create_fn
 
 Using reference replacement, this information is preserved in the `snapshot.json`. The reference replacement automatically adds an ascending number, to ensure that different values can be differentiated.
 
-```json 
+```json
 {
   "test_lambda_api.py::TestLambda::test_basic_invoke": {
     "recorded-date": ...,
@@ -202,13 +202,13 @@ Using reference replacement, this information is preserved in the `snapshot.json
 
 ## Tips and Tricks for Transformers
 
-Getting the transformations right can be a tricky task and we appreciate the time you spend on writing parity snapshot tests for LocalStack! We are aware that it might be challenging to implement transformers that work for AWS and LocalStack responses. 
+Getting the transformations right can be a tricky task and we appreciate the time you spend on writing parity snapshot tests for LocalStack! We are aware that it might be challenging to implement transformers that work for AWS and LocalStack responses.
 
-In general, we are interested in transformers that work for AWS. Therefore, we recommend also running the tests and testing the transformers against AWS itself. 
+In general, we are interested in transformers that work for AWS. Therefore, we recommend also running the tests and testing the transformers against AWS itself.
 
-Meaning, after you have executed the test with the `snapshot-update` flag and recorded the snapshot, you can run the test without the update flag against the `AWS_CLOUD` test target. If the test passes, we can be quite certain that the transformers work in general. Any deviations with LocalStack might be due to missing parity. 
+Meaning, after you have executed the test with the `snapshot-update` flag and recorded the snapshot, you can run the test without the update flag against the `AWS_CLOUD` test target. If the test passes, we can be quite certain that the transformers work in general. Any deviations with LocalStack might be due to missing parity.
 
-You do not have to fix any deviations right away, even though we would appreciate this very much! It is also possible to exclude the snapshot verification of single test cases, or specific json-pathes of the snapshot. 
+You do not have to fix any deviations right away, even though we would appreciate this very much! It is also possible to exclude the snapshot verification of single test cases, or specific json-pathes of the snapshot.
 
 ### Skipping verification of snapshot test
 
@@ -219,7 +219,7 @@ If you want to skip verification for or a single test case, you can set the pyte
 Additionally, you can exclude certain paths from the verification only.
 Simply include a list of json-paths. Those paths will then be excluded from the comparison:
 
-```python 
+```python
 @pytest.mark.skip_snapshot_verify(
         paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
     )
@@ -230,14 +230,14 @@ Simply include a list of json-paths. Those paths will then be excluded from the 
 ```
 
 > [!NOTE]  
-> Generally, [transformers](#using-transformers) should be used wherever possible to make responses comparable. 
+> Generally, [transformers](#using-transformers) should be used wherever possible to make responses comparable.
 > If specific paths are skipped from the verification, it means LocalStack does not have parity yet.
 
 ### Debugging the Transformers
 
 Sometimes different transformers might interfere, especially regex transformers and reference transformations can be tricky We added debug logs so that each replacement step should be visible in the output to help locate any unexpected behavior. You can enable the debug logs by setting the env `DEBUG_SNAPSHOT=1`.
 
-```bash 
+```bash
 localstack.testing.snapshots.transformer: Registering regex pattern '000000000000' in snapshot with '111111111111'
 localstack.testing.snapshots.transformer: Registering regex pattern 'us-east-1' in snapshot with '<region>'localstack.testing.snapshots.transformer: Replacing JsonPath '$.json_encoded_delivery..Body.Signature' in snapshot with '<signature>'
 localstack.testing.snapshots.transformer: Registering reference replacement for value: '1ad533b5-ac54-4354-a273-3ea885f0d59d' -> '<uuid:1>'

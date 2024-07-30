@@ -2,14 +2,19 @@ import json
 from http import HTTPMethod
 
 import pytest
+from rolo import Request
 from werkzeug.datastructures import Headers
 
-from localstack.http import Response
-from localstack.services.apigateway.next_gen.execute_api.context import InvocationRequest
+from localstack.services.apigateway.next_gen.execute_api.context import (
+    EndpointResponse,
+    InvocationRequest,
+    RestApiInvocationContext,
+)
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     Default4xxError,
     Default5xxError,
 )
+from localstack.services.apigateway.next_gen.execute_api.handlers import InvocationRequestParser
 from localstack.services.apigateway.next_gen.execute_api.parameters_mapping import ParametersMapper
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
@@ -18,6 +23,7 @@ from localstack.services.apigateway.next_gen.execute_api.variables import (
 from localstack.utils.strings import to_bytes
 
 TEST_API_ID = "test-api"
+TEST_API_STAGE = "stage"
 TEST_IDENTITY_API_KEY = "random-api-key"
 TEST_USER_AGENT = "test/user-agent"
 
@@ -36,18 +42,29 @@ def default_context_variables() -> ContextVariables:
 
 @pytest.fixture
 def default_invocation_request() -> InvocationRequest:
-    headers = {"header_value": "test-header-value"}
-    return InvocationRequest(
-        http_method=HTTPMethod.POST,
-        raw_path="/test/test-path-value",
-        path="/test/test-path-value",
-        path_parameters={"path_value": "test-path-value"},
-        query_string_parameters={"qs_value": "test-qs-value"},
-        raw_headers=Headers(headers),
-        headers=headers,
-        multi_value_query_string_parameters={"qs_value": ["test-qs-value"]},
-        multi_value_headers={"header_value": ["test-header-value"]},
+    context = RestApiInvocationContext(
+        Request(
+            method=HTTPMethod.POST,
+            headers=Headers({"header_value": "test-header-value"}),
+            path=f"{TEST_API_STAGE}/test/test-path-value",
+            query_string="qs_value=test-qs-value",
+        )
+    )
+    # Context populated by parser handler before creating the invocation request
+    context.stage = TEST_API_STAGE
+    context.api_id = TEST_API_ID
+
+    invocation_request = InvocationRequestParser().create_invocation_request(context)
+    invocation_request["path_parameters"] = {"path_value": "test-path-value"}
+    return invocation_request
+
+
+@pytest.fixture
+def default_endpoint_response() -> EndpointResponse:
+    return EndpointResponse(
         body=b"",
+        headers=Headers(),
+        status_code=200,
     )
 
 
@@ -68,7 +85,9 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"test": "test-qs-value"},
+            "header": {
+                "test": "test-qs-value",
+            },
             "path": {"test": "test-header-value"},
             "querystring": {"test": "test-path-value"},
         }
@@ -87,7 +106,9 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"api_id": TEST_API_ID},
+            "header": {
+                "api_id": TEST_API_ID,
+            },
             "path": {},
             "querystring": {},
         }
@@ -107,7 +128,9 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"my_api_key": TEST_IDENTITY_API_KEY},
+            "header": {
+                "my_api_key": TEST_IDENTITY_API_KEY,
+            },
             "path": {},
             "querystring": {"userAgent": TEST_USER_AGENT},
         }
@@ -126,7 +149,9 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"my_stage_var": "a stage variable"},
+            "header": {
+                "my_stage_var": "a stage variable",
+            },
             "path": {},
             "querystring": {},
         }
@@ -146,7 +171,9 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"body_value": "<This is a body value>"},
+            "header": {
+                "body_value": "<This is a body value>",
+            },
             "path": {},
             "querystring": {},
         }
@@ -168,7 +195,9 @@ class TestApigatewayRequestParametersMapping:
         # it does not forward the body even with passthrough, but the content of `method.request.body` is `{}`
         # if the body is empty
         assert mapping == {
-            "header": {"body_value": "{}"},
+            "header": {
+                "body_value": "{}",
+            },
             "path": {},
             "querystring": {},
         }
@@ -200,7 +229,9 @@ class TestApigatewayRequestParametersMapping:
         )
 
         assert mapping == {
-            "header": {"body_value": "nested pet name value"},
+            "header": {
+                "body_value": "nested pet name value",
+            },
             "path": {},
             "querystring": {},
         }
@@ -288,14 +319,8 @@ class TestApigatewayRequestParametersMapping:
 
         headers = {"testMultiHeader": ["value1", "value2"], "testHeader": "value"}
 
-        default_invocation_request["raw_headers"] = Headers(headers)
+        default_invocation_request["headers"] = Headers(headers)
         # this is how AWS maps to the variables passed to proxy integration, it only picks the first of the multi values
-        default_invocation_request["headers"] = {"testMultiHeader": "value1", "testHeader": "value"}
-
-        default_invocation_request["multi_value_headers"] = {
-            "testMultiHeader": ["value1", "value2"],
-            "testHeader": ["value"],
-        }
 
         mapping = mapper.map_integration_request(
             request_parameters=request_parameters,
@@ -307,7 +332,11 @@ class TestApigatewayRequestParametersMapping:
         # it seems the mapping picks the last value of the multivalues, but the `headers` part of the context picks the
         # first one
         assert mapping == {
-            "header": {"test": "value2", "test_multi": "value1,value2", "test_multi_solo": "value"},
+            "header": {
+                "test": "value2",
+                "test_multi": "value1,value2",
+                "test_multi_solo": "value",
+            },
             "path": {},
             "querystring": {},
         }
@@ -358,9 +387,7 @@ class TestApigatewayRequestParametersMapping:
         }
 
         request = InvocationRequest(
-            raw_headers=Headers(),
-            headers={},
-            multi_value_headers={},
+            headers=Headers(),
             query_string_parameters={},
             multi_value_query_string_parameters={},
             path_parameters={},
@@ -400,6 +427,32 @@ class TestApigatewayRequestParametersMapping:
             "querystring": {},
         }
 
+    def test_default_values_headers_request_mapping_override(
+        self, default_invocation_request, default_context_variables
+    ):
+        mapper = ParametersMapper()
+        request_parameters = {
+            "integration.request.header.Content-Type": "method.request.header.header_value",
+            "integration.request.header.accept": "method.request.header.header_value",
+        }
+        default_invocation_request["headers"].add("Content-Type", "application/json")
+        default_invocation_request["headers"].add("Accept", "application/json")
+
+        mapping = mapper.map_integration_request(
+            request_parameters=request_parameters,
+            invocation_request=default_invocation_request,
+            context_variables=default_context_variables,
+            stage_variables={},
+        )
+        assert mapping == {
+            "header": {
+                "Content-Type": "test-header-value",
+                "accept": "test-header-value",
+            },
+            "path": {},
+            "querystring": {},
+        }
+
 
 class TestApigatewayResponseParametersMapping:
     """
@@ -407,7 +460,9 @@ class TestApigatewayResponseParametersMapping:
     https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
     """
 
-    def test_default_request_mapping(self, default_invocation_request, default_context_variables):
+    def test_default_request_mapping(
+        self, default_invocation_request, default_endpoint_response, default_context_variables
+    ):
         # as the scope is more limited for ResponseParameters, we test header fetching, context variables and
         # stage variables in the same test, as it re-uses the same logic as the TestApigatewayRequestParametersMapping
         mapper = ParametersMapper()
@@ -420,11 +475,11 @@ class TestApigatewayResponseParametersMapping:
             "method.response.header.missing_test": "integration.response.header.missingtest",
         }
 
-        integration_response = Response(headers={"test": "value"})
+        default_endpoint_response["headers"] = Headers({"test": "value"})
 
         mapping = mapper.map_integration_response(
             response_parameters=response_parameters,
-            integration_response=integration_response,
+            integration_response=default_endpoint_response,
             context_variables=default_context_variables,
             stage_variables={"test_var": "a stage variable"},
         )
@@ -438,16 +493,19 @@ class TestApigatewayResponseParametersMapping:
             },
         }
 
-    def test_body_mapping(self, default_invocation_request, default_context_variables):
+    def test_body_mapping(
+        self, default_invocation_request, default_endpoint_response, default_context_variables
+    ):
         mapper = ParametersMapper()
         response_parameters = {
             "method.response.header.body_value": "integration.response.body",
         }
-        integration_response = Response(b"<This is a body value>")
+
+        default_endpoint_response["body"] = b"<This is a body value>"
 
         mapping = mapper.map_integration_response(
             response_parameters=response_parameters,
-            integration_response=integration_response,
+            integration_response=default_endpoint_response,
             context_variables=default_context_variables,
             stage_variables={},
         )
@@ -456,16 +514,17 @@ class TestApigatewayResponseParametersMapping:
             "header": {"body_value": "<This is a body value>"},
         }
 
-    def test_body_mapping_empty(self, default_invocation_request, default_context_variables):
+    def test_body_mapping_empty(
+        self, default_invocation_request, default_endpoint_response, default_context_variables
+    ):
         mapper = ParametersMapper()
         response_parameters = {
             "method.response.header.body_value": "integration.response.body",
         }
-        integration_response = Response(b"")
 
         mapping = mapper.map_integration_response(
             response_parameters=response_parameters,
-            integration_response=integration_response,
+            integration_response=default_endpoint_response,
             context_variables=default_context_variables,
             stage_variables={},
         )
@@ -475,29 +534,30 @@ class TestApigatewayResponseParametersMapping:
             "header": {"body_value": "{}"},
         }
 
-    def test_json_body_mapping(self, default_invocation_request, default_context_variables):
+    def test_json_body_mapping(
+        self, default_invocation_request, default_endpoint_response, default_context_variables
+    ):
         mapper = ParametersMapper()
         response_parameters = {
             "method.response.header.body_value": "integration.response.body.petstore.pets[0].name",
         }
-        integration_response = Response(
-            to_bytes(
-                json.dumps(
-                    {
-                        "petstore": {
-                            "pets": [
-                                {"name": "nested pet name value", "type": "Dog"},
-                                {"name": "second nested value", "type": "Cat"},
-                            ]
-                        }
+
+        default_endpoint_response["body"] = to_bytes(
+            json.dumps(
+                {
+                    "petstore": {
+                        "pets": [
+                            {"name": "nested pet name value", "type": "Dog"},
+                            {"name": "second nested value", "type": "Cat"},
+                        ]
                     }
-                )
+                }
             )
         )
 
         mapping = mapper.map_integration_response(
             response_parameters=response_parameters,
-            integration_response=integration_response,
+            integration_response=default_endpoint_response,
             context_variables=default_context_variables,
             stage_variables={},
         )
@@ -507,30 +567,29 @@ class TestApigatewayResponseParametersMapping:
         }
 
     def test_json_body_mapping_not_found(
-        self, default_invocation_request, default_context_variables
+        self, default_invocation_request, default_context_variables, default_endpoint_response
     ):
         mapper = ParametersMapper()
         response_parameters = {
             "method.response.header.body_value": "integration.response.body.petstore.pets[0].name",
         }
-        integration_response = Response(
-            to_bytes(
-                json.dumps(
-                    {
-                        "petstore": {
-                            "pets": {
-                                "name": "nested pet name value",
-                                "type": "Dog",
-                            }
+
+        default_endpoint_response["body"] = to_bytes(
+            json.dumps(
+                {
+                    "petstore": {
+                        "pets": {
+                            "name": "nested pet name value",
+                            "type": "Dog",
                         }
                     }
-                )
+                }
             )
         )
 
         mapping = mapper.map_integration_response(
             response_parameters=response_parameters,
-            integration_response=integration_response,
+            integration_response=default_endpoint_response,
             context_variables=default_context_variables,
             stage_variables={},
         )
@@ -539,10 +598,12 @@ class TestApigatewayResponseParametersMapping:
             "header": {},
         }
 
-    def test_invalid_json_body_mapping(self, default_invocation_request, default_context_variables):
+    def test_invalid_json_body_mapping(
+        self, default_invocation_request, default_endpoint_response, default_context_variables
+    ):
         mapper = ParametersMapper()
         # the only way AWS raises wrong JSON is if the body starts with `{`
-        integration_response = Response(b"\n{wrongjson")
+        default_endpoint_response["body"] = b"\n{wrongjson"
 
         response_parameters = {
             "method.response.header.body_value": "integration.response.body.petstore.pets[0].name",
@@ -551,7 +612,7 @@ class TestApigatewayResponseParametersMapping:
         with pytest.raises(Default5xxError) as e:
             mapper.map_integration_response(
                 response_parameters=response_parameters,
-                integration_response=integration_response,
+                integration_response=default_endpoint_response,
                 context_variables=default_context_variables,
                 stage_variables={},
             )
@@ -565,7 +626,7 @@ class TestApigatewayResponseParametersMapping:
         with pytest.raises(Default5xxError) as e:
             mapper.map_integration_response(
                 response_parameters=response_parameters,
-                integration_response=integration_response,
+                integration_response=default_endpoint_response,
                 context_variables=default_context_variables,
                 stage_variables={},
             )
@@ -573,15 +634,17 @@ class TestApigatewayResponseParametersMapping:
         assert e.value.status_code == 500
         assert e.value.message == "Internal server error"
 
-    def test_multi_headers_mapping(self, default_invocation_request, default_context_variables):
+    def test_multi_headers_mapping(
+        self, default_invocation_request, default_endpoint_response, default_context_variables
+    ):
         mapper = ParametersMapper()
         response_parameters = {
             "method.response.header.test": "integration.response.header.testMultiHeader",
             "method.response.header.test_multi": "integration.response.multivalueheader.testMultiHeader",
             "method.response.header.test_multi_solo": "integration.response.multivalueheader.testHeader",
         }
-        integration_response = Response(
-            headers={
+        default_endpoint_response["headers"] = Headers(
+            {
                 "testMultiHeader": ["value1", "value2"],
                 "testHeader": "value",
             }
@@ -589,7 +652,7 @@ class TestApigatewayResponseParametersMapping:
 
         mapping = mapper.map_integration_response(
             response_parameters=response_parameters,
-            integration_response=integration_response,
+            integration_response=default_endpoint_response,
             context_variables=default_context_variables,
             stage_variables={},
         )
@@ -600,23 +663,26 @@ class TestApigatewayResponseParametersMapping:
             "header": {"test": "value2", "test_multi": "value1,value2", "test_multi_solo": "value"},
         }
 
-    def test_response_mapping_casing(self, default_invocation_request, default_context_variables):
+    def test_response_mapping_casing(
+        self, default_invocation_request, default_endpoint_response, default_context_variables
+    ):
         mapper = ParametersMapper()
         response_parameters = {
             "method.response.header.test": "integration.response.header.test",
             "method.response.header.test2": "integration.response.header.TEST2",
             "method.response.header.testmulti": "integration.response.multivalueheader.testmulti",
         }
-        integration_response = Response(
-            headers={
+        default_endpoint_response["headers"] = Headers(
+            {
                 "Test": "test",
                 "test2": "test",
                 "TestMulti": ["test", "test2"],
             }
         )
+
         mapping = mapper.map_integration_response(
             response_parameters=response_parameters,
-            integration_response=integration_response,
+            integration_response=default_endpoint_response,
             context_variables=default_context_variables,
             stage_variables={},
         )

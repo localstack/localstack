@@ -24,7 +24,7 @@ from .paths import CommunityContainerPaths, ContainerPaths, HostPaths, ProContai
 
 
 class ConfigEnvironmentConfigurator:
-    """Configures the environment variables from the localstack and localstack_ext config."""
+    """Configures the environment variables from the localstack and localstack-pro config."""
 
     def __init__(self, pro: bool):
         self.pro = pro
@@ -34,8 +34,8 @@ class ConfigEnvironmentConfigurator:
             cfg.env_vars = {}
 
         if self.pro:
-            # import localstack_ext config extends the list of config vars
-            from localstack_ext import config as config_ext  # noqa
+            # import localstack.pro.core.config extends the list of config vars
+            from localstack.pro.core import config as config_pro  # noqa
 
         ContainerConfigurators.config_env_vars(cfg)
 
@@ -127,20 +127,24 @@ class SourceVolumeMountConfigurator:
         source = self.host_paths.localstack_project_dir / "localstack-core" / "localstack"
         if source.exists():
             cfg.volumes.add(
-                VolumeBind(str(source), self.container_paths.localstack_source_dir, read_only=True)
+                # read_only=False is a temporary workaround to make the mounting of the pro source work
+                # this can be reverted once we don't need the nested mounting anymore
+                VolumeBind(str(source), self.container_paths.localstack_source_dir, read_only=False)
             )
 
         # ext source code if available
         if self.pro:
             source = (
-                self.host_paths.localstack_ext_project_dir
+                self.host_paths.localstack_pro_project_dir
                 / "localstack-pro-core"
-                / "localstack_ext"
+                / "localstack"
+                / "pro"
+                / "core"
             )
             if source.exists():
                 cfg.volumes.add(
                     VolumeBind(
-                        str(source), self.container_paths.localstack_ext_source_dir, read_only=True
+                        str(source), self.container_paths.localstack_pro_source_dir, read_only=True
                     )
                 )
 
@@ -158,7 +162,7 @@ class SourceVolumeMountConfigurator:
 
         # docker entrypoint
         if self.pro:
-            source = self.host_paths.localstack_ext_project_dir / "bin" / "docker-entrypoint.sh"
+            source = self.host_paths.localstack_pro_project_dir / "bin" / "docker-entrypoint.sh"
         else:
             source = self.host_paths.localstack_project_dir / "bin" / "docker-entrypoint.sh"
         if source.exists():
@@ -185,35 +189,12 @@ class SourceVolumeMountConfigurator:
             )
 
 
-class CoverageRunScriptConfigurator:
-    """
-    Adds the coverage-run.py script as read-only volume mount into /opt/code/localstack/bin/coverage-run.py
-    """
-
-    def __init__(self, *, host_paths: HostPaths = None):
-        self.host_paths = host_paths or HostPaths()
-        self.container_paths = ProContainerPaths()
-
-    def __call__(self, cfg: ContainerConfiguration):
-        # coverage script
-        source = self.host_paths.localstack_ext_project_dir / "bin" / "coverage-run.py"
-        target = f"{self.container_paths.project_dir}/bin/coverage-run.py"
-        if source.exists():
-            cfg.volumes.add(VolumeBind(str(source), target, read_only=True))
-
-        # and add the pyproject toml since it contains the coverage config
-        source = self.host_paths.localstack_ext_project_dir / "pyproject.toml"
-        target = f"{self.container_paths.project_dir}/pyproject.toml"
-        if source.exists():
-            cfg.volumes.add(VolumeBind(str(source), target, read_only=True))
-
-
 class EntryPointMountConfigurator:
     """
     Mounts ``entry_points.txt`` files of localstack and dependencies into the venv in the container.
 
     For example, when starting the pro container, the entrypoints of localstack-ext on the host would be in
-    ``~/workspace/localstack-ext/localstack_ext.egg-info/entry_points.txt``
+    ``~/workspace/localstack-ext/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
     which needs to be mounted into the distribution info of the installed dependency within the container:
     ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-2.1.0.dev0.dist-info/entry_points.txt``.
     """

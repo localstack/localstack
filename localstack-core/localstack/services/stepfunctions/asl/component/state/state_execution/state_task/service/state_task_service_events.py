@@ -10,6 +10,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceCondition,
     ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
@@ -19,6 +20,13 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+
+_SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
+    ResourceCondition.WaitForTaskToken,
+}
+_FAILED_ENTRY_ERROR_NAME: Final[ErrorName] = CustomErrorName(error_name="EventBridge.FailedEntry")
+
+_SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {"putevents": {"Entries"}}
 
 
 class SfnFailedEntryCountException(RuntimeError):
@@ -30,24 +38,21 @@ class SfnFailedEntryCountException(RuntimeError):
 
 
 class StateTaskServiceEvents(StateTaskServiceCallback):
-    _FAILED_ENTRY_ERROR_NAME: Final[ErrorName] = CustomErrorName(
-        error_name="EventBridge.FailedEntry"
-    )
-
-    _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {"putevents": {"Entries"}}
+    def __init__(self):
+        super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+        return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, SfnFailedEntryCountException):
             return FailureEvent(
                 env=env,
-                error_name=self._FAILED_ENTRY_ERROR_NAME,
+                error_name=_FAILED_ENTRY_ERROR_NAME,
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
                     taskFailedEventDetails=TaskFailedEventDetails(
-                        error=self._FAILED_ENTRY_ERROR_NAME.error_name,
+                        error=_FAILED_ENTRY_ERROR_NAME.error_name,
                         cause=ex.cause,
                         resource=self._get_sfn_resource(),
                         resourceType=self._get_sfn_resource_type(),

@@ -1,13 +1,30 @@
+import json
 import logging
 import re
 
+from werkzeug.datastructures import Headers
+
 from localstack.aws.api.apigateway import Integration, IntegrationResponse, IntegrationType
+from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
+from localstack.utils.strings import to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
-from ..context import RestApiInvocationContext
+from ..context import (
+    EndpointResponse,
+    InvocationRequest,
+    InvocationResponse,
+    RestApiInvocationContext,
+)
 from ..gateway_response import ApiConfigurationError
 from ..parameters_mapping import ParametersMapper, ResponseDataMapping
+from ..template_mapping import (
+    ApiGatewayVtlTemplate,
+    MappingTemplateInput,
+    MappingTemplateParams,
+    MappingTemplateVariables,
+)
+from ..variables import ContextVarsResponseOverride
 
 LOG = logging.getLogger(__name__)
 
@@ -20,6 +37,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
 
     def __init__(self):
         self._param_mapper = ParametersMapper()
+        self._vtl_template = ApiGatewayVtlTemplate()
 
     def __call__(
         self,
@@ -29,7 +47,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
     ):
         # TODO: we should log the response coming in from the Integration, either in Integration or here.
         #  before modification / after?
-        integration: Integration = context.resource_method["methodIntegration"]
+        integration: Integration = context.integration
         integration_type = integration["type"]
 
         if integration_type in (IntegrationType.AWS_PROXY, IntegrationType.HTTP_PROXY):
@@ -37,16 +55,16 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
             # TODO: verify assumptions against AWS
             return
 
+        endpoint_response: EndpointResponse = context.endpoint_response
+        status_code = endpoint_response["status_code"]
+        body = endpoint_response["body"]
+
         # we first need to find the right IntegrationResponse based on their selection template, linked to the status
         # code of the Response
-        # TODO: create util to get the AWS integration type from the URI
-        #  maybe we could cache the result in the context? in an IntegrationDetails field?
-        is_lambda = False
-        if integration_type == IntegrationType.AWS and is_lambda:
-            # TODO: fetch errorMessage
-            selection_value = ""
+        if integration_type == IntegrationType.AWS and "lambda:path/" in integration["uri"]:
+            selection_value = self.parse_error_message_from_lambda(body) or str(status_code)
         else:
-            selection_value = str(response.status_code)
+            selection_value = str(status_code)
 
         integration_response: IntegrationResponse = self.select_integration_response(
             selection_value,
@@ -54,30 +72,48 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         )
 
         # we then need to apply Integration Response parameters mapping, to only return select headers
-        response_parameters = integration_response["responseParameters"] or {}
+        response_parameters = integration_response.get("responseParameters") or {}
         response_data_mapping = self.get_method_response_data(
             context=context,
-            response=response,
+            response=endpoint_response,
             response_parameters=response_parameters,
         )
 
-        # we can also apply the Response Templates, they will depend on status code + accept header?
+        # We then fetch a response templates and apply the template mapping
+        response_template = self.get_response_template(
+            integration_response=integration_response, request=context.invocation_request
+        )
+        body, response_override = self.render_response_template_mapping(
+            context=context, template=response_template, body=body
+        )
 
-        # then responseOverride
-
-        # here we update the `Response`. We basically need to remove all headers and replace them with the mapping, then
+        # We basically need to remove all headers and replace them with the mapping, then
         # override them if there are overrides.
-        # for the body, it will maybe depend on configuration?
+        # The status code is pretty straight forward. By default, it would be set by the integration response,
+        # unless there was an override
+        response_status_code = int(integration_response["statusCode"])
+        if response_status_override := response_override["status"]:
+            # maybe make a better error message format, same for the overrides for request too
+            LOG.debug("Overriding response status code: '%s'", response_status_override)
+            response_status_code = response_status_override
 
-        response.headers.clear()
-        # there must be some default headers set, snapshot those?
-        if mapped_headers := response_data_mapping.get("header"):
-            response.headers.update(mapped_headers)
+        # Create a new headers object that we can manipulate before overriding the original response headers
+        response_headers = Headers(response_data_mapping.get("header"))
+        if header_override := response_override["header"]:
+            LOG.debug("Response header overrides: %s", header_override)
+            response_headers.update(header_override)
+
+        LOG.debug("Method response body after transformations: %s", body)
+        context.invocation_response = InvocationResponse(
+            body=body,
+            headers=response_headers,
+            status_code=response_status_code,
+        )
 
     def get_method_response_data(
         self,
         context: RestApiInvocationContext,
-        response: Response,
+        response: EndpointResponse,
         response_parameters: dict[str, str],
     ) -> ResponseDataMapping:
         return self._param_mapper.map_integration_response(
@@ -91,6 +127,14 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
     def select_integration_response(
         selection_value: str, integration_responses: dict[str, IntegrationResponse]
     ) -> IntegrationResponse:
+        if not integration_responses:
+            LOG.warning(
+                "Configuration error: No match for output mapping and no default output mapping configured. "
+                "Endpoint Response Status Code: %s",
+                selection_value,
+            )
+            raise ApiConfigurationError("Internal server error")
+
         if select_by_pattern := [
             response
             for response in integration_responses.values()
@@ -128,3 +172,67 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
                     selected_response["statusCode"],
                 )
         return selected_response
+
+    @staticmethod
+    def get_response_template(
+        integration_response: IntegrationResponse, request: InvocationRequest
+    ) -> str:
+        """The Response Template is selected from the response templates.
+        If there are no templates defined, the body will pass through.
+        Apigateway looks at the integration request `Accept` header and defaults to `application/json`.
+        If no template is matched, Apigateway will use the "first" existing template and use it as default.
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#transforming-request-response-body
+        """
+        if not (response_templates := integration_response["responseTemplates"]):
+            return ""
+
+        # The invocation request header is used to find the right response templated
+        accepts = request["headers"].getlist("accept")
+        if accepts and (template := response_templates.get(accepts[-1])):
+            return template
+        # TODO aws seemed to favor application/json as default when unmatched regardless of "first"
+        if template := response_templates.get(APPLICATION_JSON):
+            return template
+        # TODO What is first? do we need to keep an order as to when they were added/modified?
+        template = next(iter(response_templates.values()))
+        LOG.warning("No templates were matched, Using template: %s", template)
+        return template
+
+    def render_response_template_mapping(
+        self, context: RestApiInvocationContext, template: str, body: bytes | str
+    ) -> tuple[bytes, ContextVarsResponseOverride]:
+        if not template:
+            return body, ContextVarsResponseOverride(status=0, header={})
+
+        body, response_override = self._vtl_template.render_response(
+            template=template,
+            variables=MappingTemplateVariables(
+                context=context.context_variables,
+                stageVariables=context.stage_variables or {},
+                input=MappingTemplateInput(
+                    body=to_str(body),
+                    params=MappingTemplateParams(
+                        path=context.invocation_request.get("path_parameters"),
+                        querystring=context.invocation_request.get("query_string_parameters", {}),
+                        header=context.invocation_request.get("headers", {}),
+                    ),
+                ),
+            ),
+        )
+
+        # AWS ignores the status if the override isn't an integer between 100 and 599
+        if (status := response_override["status"]) and not (
+            isinstance(status, int) and 100 <= status < 600
+        ):
+            response_override["status"] = 0
+        return to_bytes(body), response_override
+
+    @staticmethod
+    def parse_error_message_from_lambda(payload: str) -> str:
+        try:
+            lambda_response = json.loads(payload)
+            if not isinstance(lambda_response, dict):
+                return ""
+            return lambda_response.get("errorMessage", "")
+        except json.JSONDecodeError:
+            return ""

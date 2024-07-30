@@ -44,6 +44,9 @@
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_insight_rule": {
     "last_validated_date": "2023-10-26T08:07:59+00:00"
   },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_multiple_dimensions_statistics": {
+    "last_validated_date": "2024-07-29T07:56:05+00:00"
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
     "last_validated_date": "2024-01-19T14:26:26+00:00"
   },

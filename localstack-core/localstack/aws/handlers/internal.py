@@ -45,6 +45,10 @@ class RuntimeShutdownHandler(Handler):
         if events.infra_stopped.is_set():
             chain.respond(503)
         elif events.infra_stopping.is_set():
-            # if we're in the process of shutting down the infrastructure, only accept internal calls
-            if not context.is_internal_call:
-                chain.respond(503)
+            # if we're in the process of shutting down the infrastructure, only accept internal calls, or calls to
+            # internal APIs
+            if context.is_internal_call:
+                return
+            if context.request.path.startswith("/_localstack"):
+                return
+            chain.respond(503)

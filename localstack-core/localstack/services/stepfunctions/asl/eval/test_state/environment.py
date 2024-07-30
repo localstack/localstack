@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Final, Optional
 
-from localstack.aws.api.stepfunctions import Arn, InspectionData
+from localstack.aws.api.stepfunctions import Arn, InspectionData, StateMachineType
 from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObjectInitData,
@@ -27,6 +27,7 @@ class TestStateEnvironment(Environment):
     def __init__(
         self,
         aws_execution_details: AWSExecutionDetails,
+        execution_type: StateMachineType,
         context_object_init: ContextObjectInitData,
         event_history_context: EventHistoryContext,
         activity_store: dict[Arn, Activity],
@@ -34,6 +35,7 @@ class TestStateEnvironment(Environment):
     ):
         super().__init__(
             aws_execution_details=aws_execution_details,
+            execution_type=execution_type,
             context_object_init=context_object_init,
             event_history_context=event_history_context,
             cloud_watch_logging_session=cloud_watch_logging_session,

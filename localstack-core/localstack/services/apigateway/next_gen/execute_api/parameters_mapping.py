@@ -10,12 +10,12 @@ import json
 import logging
 from typing import TypedDict
 
-from localstack.http import Response
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
 
-from .context import InvocationRequest
-from .gateway_response import Default4xxError, Default5xxError
+from .context import EndpointResponse, InvocationRequest
+from .gateway_response import BadRequestException, InternalFailureException
+from .header_utils import build_multi_value_headers
 from .variables import ContextVariables
 
 LOG = logging.getLogger(__name__)
@@ -48,6 +48,8 @@ class ParametersMapper:
             path={},
             querystring={},
         )
+        # storing the case-sensitive headers once, the mapping is strict
+        case_sensitive_headers = build_multi_value_headers(invocation_request["headers"])
 
         for integration_mapping, request_mapping in request_parameters.items():
             integration_param_location, param_name = integration_mapping.removeprefix(
@@ -57,7 +59,7 @@ class ParametersMapper:
             if request_mapping.startswith("method.request."):
                 method_req_expr = request_mapping.removeprefix("method.request.")
                 value = self._retrieve_parameter_from_invocation_request(
-                    method_req_expr, invocation_request
+                    method_req_expr, invocation_request, case_sensitive_headers
                 )
 
             else:
@@ -75,14 +77,14 @@ class ParametersMapper:
     def map_integration_response(
         self,
         response_parameters: dict[str, str],
-        integration_response: Response,
+        integration_response: EndpointResponse,
         context_variables: ContextVariables,
         stage_variables: dict[str, str],
     ) -> ResponseDataMapping:
         response_data_mapping = ResponseDataMapping(header={})
 
         # storing the case-sensitive headers once, the mapping is strict
-        case_sensitive_headers = dict(integration_response.headers.items())
+        case_sensitive_headers = build_multi_value_headers(integration_response["headers"])
 
         for response_mapping, integration_mapping in response_parameters.items():
             header_name = response_mapping.removeprefix("method.response.header.")
@@ -133,8 +135,8 @@ class ParametersMapper:
     def _retrieve_parameter_from_integration_response(
         self,
         expr: str,
-        integration_response: Response,
-        case_sensitive_headers: dict[str, str],
+        integration_response: EndpointResponse,
+        case_sensitive_headers: dict[str, list[str]],
     ) -> str | None:
         """
         See https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
@@ -145,13 +147,12 @@ class ParametersMapper:
         :return: the value to map in the ResponseDataMapping
         """
         if expr.startswith("body"):
-            body = integration_response.get_data() or b"{}"
+            body = integration_response.get("body") or b"{}"
             body = body.strip()
             try:
                 decoded_body = self._json_load(body)
             except ValueError:
-                # x-amzn-errortype: InternalFailureException
-                raise Default5xxError(message="Internal server error")
+                raise InternalFailureException(message="Internal server error")
 
             if expr == "body":
                 return to_str(body)
@@ -169,17 +170,12 @@ class ParametersMapper:
         param_type, param_name = expr.split(".")
 
         if param_type == "header":
-            # casing is strict: if you don't specify the exact casing the server is returning, it does not map it to
-            # the response
-            return case_sensitive_headers.get(param_name)
+            if header := case_sensitive_headers.get(param_name):
+                return header[-1]
 
         elif param_type == "multivalueheader":
-            # validate casing first
-            if param_name not in case_sensitive_headers:
-                return
-
-            multi_headers = integration_response.headers.getlist(param_name)
-            return ",".join(multi_headers)
+            if header := case_sensitive_headers.get(param_name):
+                return ",".join(header)
 
         else:
             LOG.warning(
@@ -188,7 +184,10 @@ class ParametersMapper:
             )
 
     def _retrieve_parameter_from_invocation_request(
-        self, expr: str, invocation_request: InvocationRequest
+        self,
+        expr: str,
+        invocation_request: InvocationRequest,
+        case_sensitive_headers: dict[str, list[str]],
     ) -> str | list[str] | None:
         """
         See https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#mapping-response-parameters
@@ -205,7 +204,7 @@ class ParametersMapper:
             try:
                 decoded_body = self._json_load(body)
             except ValueError:
-                raise Default4xxError(message="Invalid JSON in request body")
+                raise BadRequestException(message="Invalid JSON in request body")
 
             if expr == "body":
                 return to_str(body)
@@ -240,13 +239,12 @@ class ParametersMapper:
             return multi_qs_params
 
         elif param_type == "header":
-            multi_headers = invocation_request["multi_value_headers"].get(param_name)
-            if multi_headers:
-                return multi_headers[-1]
+            if header := case_sensitive_headers.get(param_name):
+                return header[-1]
 
         elif param_type == "multivalueheader":
-            multi_headers = invocation_request["multi_value_headers"].get(param_name, [])
-            return ",".join(multi_headers)
+            if header := case_sensitive_headers.get(param_name):
+                return ",".join(header)
 
         else:
             LOG.warning(

@@ -129,7 +129,7 @@ class ApigatewayRouter:
             strict_slashes=False,
         )
         self.router.add(
-            "/<stage>/<path:path>",
+            "/<stage>/<greedy_path:path>",
             host=host_pattern,
             endpoint=self.invoke_rest_api,
             strict_slashes=True,
@@ -142,7 +142,7 @@ class ApigatewayRouter:
             defaults={"path": ""},
         )
         self.router.add(
-            "/restapis/<api_id>/<stage>/_user_request_/<path:path>",
+            "/restapis/<api_id>/<stage>/_user_request_/<greedy_path:path>",
             endpoint=self.invoke_rest_api,
             strict_slashes=True,
         )

@@ -9,7 +9,7 @@ import boto3
 import pytest
 import xmltodict
 
-from localstack.aws.api.apigateway import GatewayResponseType, Model
+from localstack.aws.api.apigateway import Model
 from localstack.constants import (
     APPLICATION_JSON,
     APPLICATION_XML,
@@ -35,10 +35,6 @@ from localstack.services.apigateway.invocations import (
     RequestValidator,
 )
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
-from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
-    AccessDeniedError,
-    BaseGatewayException,
-)
 from localstack.services.apigateway.templates import (
     RequestTemplates,
     ResponseTemplates,
@@ -863,17 +859,18 @@ def test_create_invocation_headers():
 
 
 class TestApigatewayEvents:
+    # TODO: remove this tests, assertion are wrong
     def test_construct_invocation_event(self):
         tt = [
             {
                 "method": "GET",
-                "path": "http://localhost.localstack.cloud",
+                "path": "/test/path",
                 "headers": {},
                 "data": None,
                 "query_string_params": None,
                 "is_base64_encoded": False,
                 "expected": {
-                    "path": "http://localhost.localstack.cloud",
+                    "path": "/test/path",
                     "headers": {},
                     "multiValueHeaders": {},
                     "body": None,
@@ -885,13 +882,13 @@ class TestApigatewayEvents:
             },
             {
                 "method": "GET",
-                "path": "http://localhost.localstack.cloud",
+                "path": "/test/path",
                 "headers": {},
                 "data": None,
                 "query_string_params": {},
                 "is_base64_encoded": False,
                 "expected": {
-                    "path": "http://localhost.localstack.cloud",
+                    "path": "/test/path",
                     "headers": {},
                     "multiValueHeaders": {},
                     "body": None,
@@ -903,13 +900,13 @@ class TestApigatewayEvents:
             },
             {
                 "method": "GET",
-                "path": "http://localhost.localstack.cloud",
+                "path": "/test/path",
                 "headers": {},
                 "data": None,
                 "query_string_params": {"foo": "bar"},
                 "is_base64_encoded": False,
                 "expected": {
-                    "path": "http://localhost.localstack.cloud",
+                    "path": "/test/path",
                     "headers": {},
                     "multiValueHeaders": {},
                     "body": None,
@@ -921,13 +918,13 @@ class TestApigatewayEvents:
             },
             {
                 "method": "GET",
-                "path": "http://localhost.localstack.cloud?baz=qux",
+                "path": "/test/path?baz=qux",
                 "headers": {},
                 "data": None,
                 "query_string_params": {"foo": "bar"},
                 "is_base64_encoded": False,
                 "expected": {
-                    "path": "http://localhost.localstack.cloud?baz=qux",
+                    "path": "/test/path?baz=qux",
                     "headers": {},
                     "multiValueHeaders": {},
                     "body": None,
@@ -1296,16 +1293,3 @@ class TestModelResolver:
             resolved_model["$defs"]["House"]["properties"]["houses"]["items"]["$ref"]
             == "#/$defs/House"
         )
-
-
-class TestGatewayResponse:
-    def test_base_response(self):
-        with pytest.raises(BaseGatewayException) as e:
-            raise BaseGatewayException()
-        assert e.value.message == "Unimplemented Response"
-
-    def test_subclassed_response(self):
-        with pytest.raises(BaseGatewayException) as e:
-            raise AccessDeniedError("Access Denied")
-        assert e.value.message == "Access Denied"
-        assert e.value.type == GatewayResponseType.ACCESS_DENIED

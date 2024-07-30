@@ -179,6 +179,9 @@
 /tests/aws/services/opensearch/ @alexrashed @silv-io
 /tests/unit/services/opensearch/ @alexrashed @silv-io
 
+# pipes
+/localstack-core/localstack/aws/api/pipes/ @joe4dev
+
 # route53
 /localstack-core/localstack/aws/api/route53/ @giograno
 /localstack-core/localstack/services/route53/ @giograno

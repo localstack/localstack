@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -179,44 +180,44 @@ Value = str
 Version = str
 
 
-class AccountFilterType(str):
+class AccountFilterType(StrEnum):
     NONE = "NONE"
     INTERSECTION = "INTERSECTION"
     DIFFERENCE = "DIFFERENCE"
     UNION = "UNION"
 
 
-class AccountGateStatus(str):
+class AccountGateStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
 
 
-class AttributeChangeType(str):
+class AttributeChangeType(StrEnum):
     Add = "Add"
     Remove = "Remove"
     Modify = "Modify"
 
 
-class CallAs(str):
+class CallAs(StrEnum):
     SELF = "SELF"
     DELEGATED_ADMIN = "DELEGATED_ADMIN"
 
 
-class Capability(str):
+class Capability(StrEnum):
     CAPABILITY_IAM = "CAPABILITY_IAM"
     CAPABILITY_NAMED_IAM = "CAPABILITY_NAMED_IAM"
     CAPABILITY_AUTO_EXPAND = "CAPABILITY_AUTO_EXPAND"
 
 
-class Category(str):
+class Category(StrEnum):
     REGISTERED = "REGISTERED"
     ACTIVATED = "ACTIVATED"
     THIRD_PARTY = "THIRD_PARTY"
     AWS_TYPES = "AWS_TYPES"
 
 
-class ChangeAction(str):
+class ChangeAction(StrEnum):
     Add = "Add"
     Modify = "Modify"
     Remove = "Remove"
@@ -224,13 +225,13 @@ class ChangeAction(str):
     Dynamic = "Dynamic"
 
 
-class ChangeSetHooksStatus(str):
+class ChangeSetHooksStatus(StrEnum):
     PLANNING = "PLANNING"
     PLANNED = "PLANNED"
     UNAVAILABLE = "UNAVAILABLE"
 
 
-class ChangeSetStatus(str):
+class ChangeSetStatus(StrEnum):
     CREATE_PENDING = "CREATE_PENDING"
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     CREATE_COMPLETE = "CREATE_COMPLETE"
@@ -241,13 +242,13 @@ class ChangeSetStatus(str):
     FAILED = "FAILED"
 
 
-class ChangeSetType(str):
+class ChangeSetType(StrEnum):
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     IMPORT = "IMPORT"
 
 
-class ChangeSource(str):
+class ChangeSource(StrEnum):
     ResourceReference = "ResourceReference"
     ParameterReference = "ParameterReference"
     ResourceAttribute = "ResourceAttribute"
@@ -255,42 +256,42 @@ class ChangeSource(str):
     Automatic = "Automatic"
 
 
-class ChangeType(str):
+class ChangeType(StrEnum):
     Resource = "Resource"
 
 
-class ConcurrencyMode(str):
+class ConcurrencyMode(StrEnum):
     STRICT_FAILURE_TOLERANCE = "STRICT_FAILURE_TOLERANCE"
     SOFT_FAILURE_TOLERANCE = "SOFT_FAILURE_TOLERANCE"
 
 
-class DeletionMode(str):
+class DeletionMode(StrEnum):
     STANDARD = "STANDARD"
     FORCE_DELETE_STACK = "FORCE_DELETE_STACK"
 
 
-class DeprecatedStatus(str):
+class DeprecatedStatus(StrEnum):
     LIVE = "LIVE"
     DEPRECATED = "DEPRECATED"
 
 
-class DetailedStatus(str):
+class DetailedStatus(StrEnum):
     CONFIGURATION_COMPLETE = "CONFIGURATION_COMPLETE"
     VALIDATION_FAILED = "VALIDATION_FAILED"
 
 
-class DifferenceType(str):
+class DifferenceType(StrEnum):
     ADD = "ADD"
     REMOVE = "REMOVE"
     NOT_EQUAL = "NOT_EQUAL"
 
 
-class EvaluationType(str):
+class EvaluationType(StrEnum):
     Static = "Static"
     Dynamic = "Dynamic"
 
 
-class ExecutionStatus(str):
+class ExecutionStatus(StrEnum):
     UNAVAILABLE = "UNAVAILABLE"
     AVAILABLE = "AVAILABLE"
     EXECUTE_IN_PROGRESS = "EXECUTE_IN_PROGRESS"
@@ -299,19 +300,19 @@ class ExecutionStatus(str):
     OBSOLETE = "OBSOLETE"
 
 
-class GeneratedTemplateDeletionPolicy(str):
+class GeneratedTemplateDeletionPolicy(StrEnum):
     DELETE = "DELETE"
     RETAIN = "RETAIN"
 
 
-class GeneratedTemplateResourceStatus(str):
+class GeneratedTemplateResourceStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETE = "COMPLETE"
 
 
-class GeneratedTemplateStatus(str):
+class GeneratedTemplateStatus(StrEnum):
     CREATE_PENDING = "CREATE_PENDING"
     UPDATE_PENDING = "UPDATE_PENDING"
     DELETE_PENDING = "DELETE_PENDING"
@@ -322,12 +323,12 @@ class GeneratedTemplateStatus(str):
     COMPLETE = "COMPLETE"
 
 
-class GeneratedTemplateUpdateReplacePolicy(str):
+class GeneratedTemplateUpdateReplacePolicy(StrEnum):
     DELETE = "DELETE"
     RETAIN = "RETAIN"
 
 
-class HandlerErrorCode(str):
+class HandlerErrorCode(StrEnum):
     NotUpdatable = "NotUpdatable"
     InvalidRequest = "InvalidRequest"
     AccessDenied = "AccessDenied"
@@ -349,67 +350,67 @@ class HandlerErrorCode(str):
     UnsupportedTarget = "UnsupportedTarget"
 
 
-class HookFailureMode(str):
+class HookFailureMode(StrEnum):
     FAIL = "FAIL"
     WARN = "WARN"
 
 
-class HookInvocationPoint(str):
+class HookInvocationPoint(StrEnum):
     PRE_PROVISION = "PRE_PROVISION"
 
 
-class HookStatus(str):
+class HookStatus(StrEnum):
     HOOK_IN_PROGRESS = "HOOK_IN_PROGRESS"
     HOOK_COMPLETE_SUCCEEDED = "HOOK_COMPLETE_SUCCEEDED"
     HOOK_COMPLETE_FAILED = "HOOK_COMPLETE_FAILED"
     HOOK_FAILED = "HOOK_FAILED"
 
 
-class HookTargetType(str):
+class HookTargetType(StrEnum):
     RESOURCE = "RESOURCE"
 
 
-class IdentityProvider(str):
+class IdentityProvider(StrEnum):
     AWS_Marketplace = "AWS_Marketplace"
     GitHub = "GitHub"
     Bitbucket = "Bitbucket"
 
 
-class OnFailure(str):
+class OnFailure(StrEnum):
     DO_NOTHING = "DO_NOTHING"
     ROLLBACK = "ROLLBACK"
     DELETE = "DELETE"
 
 
-class OnStackFailure(str):
+class OnStackFailure(StrEnum):
     DO_NOTHING = "DO_NOTHING"
     ROLLBACK = "ROLLBACK"
     DELETE = "DELETE"
 
 
-class OperationResultFilterName(str):
+class OperationResultFilterName(StrEnum):
     OPERATION_RESULT_STATUS = "OPERATION_RESULT_STATUS"
 
 
-class OperationStatus(str):
+class OperationStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
 
 
-class OrganizationStatus(str):
+class OrganizationStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
     DISABLED_PERMANENTLY = "DISABLED_PERMANENTLY"
 
 
-class PermissionModels(str):
+class PermissionModels(StrEnum):
     SERVICE_MANAGED = "SERVICE_MANAGED"
     SELF_MANAGED = "SELF_MANAGED"
 
 
-class PolicyAction(str):
+class PolicyAction(StrEnum):
     Delete = "Delete"
     Retain = "Retain"
     Snapshot = "Snapshot"
@@ -418,47 +419,47 @@ class PolicyAction(str):
     ReplaceAndSnapshot = "ReplaceAndSnapshot"
 
 
-class ProvisioningType(str):
+class ProvisioningType(StrEnum):
     NON_PROVISIONABLE = "NON_PROVISIONABLE"
     IMMUTABLE = "IMMUTABLE"
     FULLY_MUTABLE = "FULLY_MUTABLE"
 
 
-class PublisherStatus(str):
+class PublisherStatus(StrEnum):
     VERIFIED = "VERIFIED"
     UNVERIFIED = "UNVERIFIED"
 
 
-class RegionConcurrencyType(str):
+class RegionConcurrencyType(StrEnum):
     SEQUENTIAL = "SEQUENTIAL"
     PARALLEL = "PARALLEL"
 
 
-class RegistrationStatus(str):
+class RegistrationStatus(StrEnum):
     COMPLETE = "COMPLETE"
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
 
 
-class RegistryType(str):
+class RegistryType(StrEnum):
     RESOURCE = "RESOURCE"
     MODULE = "MODULE"
     HOOK = "HOOK"
 
 
-class Replacement(str):
+class Replacement(StrEnum):
     True_ = "True"
     False_ = "False"
     Conditional = "Conditional"
 
 
-class RequiresRecreation(str):
+class RequiresRecreation(StrEnum):
     Never = "Never"
     Conditionally = "Conditionally"
     Always = "Always"
 
 
-class ResourceAttribute(str):
+class ResourceAttribute(StrEnum):
     Properties = "Properties"
     Metadata = "Metadata"
     CreationPolicy = "CreationPolicy"
@@ -468,19 +469,19 @@ class ResourceAttribute(str):
     Tags = "Tags"
 
 
-class ResourceScanStatus(str):
+class ResourceScanStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETE = "COMPLETE"
     EXPIRED = "EXPIRED"
 
 
-class ResourceSignalStatus(str):
+class ResourceSignalStatus(StrEnum):
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
 
 
-class ResourceStatus(str):
+class ResourceStatus(StrEnum):
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     CREATE_FAILED = "CREATE_FAILED"
     CREATE_COMPLETE = "CREATE_COMPLETE"
@@ -505,20 +506,20 @@ class ResourceStatus(str):
     ROLLBACK_FAILED = "ROLLBACK_FAILED"
 
 
-class StackDriftDetectionStatus(str):
+class StackDriftDetectionStatus(StrEnum):
     DETECTION_IN_PROGRESS = "DETECTION_IN_PROGRESS"
     DETECTION_FAILED = "DETECTION_FAILED"
     DETECTION_COMPLETE = "DETECTION_COMPLETE"
 
 
-class StackDriftStatus(str):
+class StackDriftStatus(StrEnum):
     DRIFTED = "DRIFTED"
     IN_SYNC = "IN_SYNC"
     UNKNOWN = "UNKNOWN"
     NOT_CHECKED = "NOT_CHECKED"
 
 
-class StackInstanceDetailedStatus(str):
+class StackInstanceDetailedStatus(StrEnum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
@@ -529,26 +530,26 @@ class StackInstanceDetailedStatus(str):
     FAILED_IMPORT = "FAILED_IMPORT"
 
 
-class StackInstanceFilterName(str):
+class StackInstanceFilterName(StrEnum):
     DETAILED_STATUS = "DETAILED_STATUS"
     LAST_OPERATION_ID = "LAST_OPERATION_ID"
     DRIFT_STATUS = "DRIFT_STATUS"
 
 
-class StackInstanceStatus(str):
+class StackInstanceStatus(StrEnum):
     CURRENT = "CURRENT"
     OUTDATED = "OUTDATED"
     INOPERABLE = "INOPERABLE"
 
 
-class StackResourceDriftStatus(str):
+class StackResourceDriftStatus(StrEnum):
     IN_SYNC = "IN_SYNC"
     MODIFIED = "MODIFIED"
     DELETED = "DELETED"
     NOT_CHECKED = "NOT_CHECKED"
 
 
-class StackSetDriftDetectionStatus(str):
+class StackSetDriftDetectionStatus(StrEnum):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     PARTIAL_SUCCESS = "PARTIAL_SUCCESS"
@@ -556,20 +557,20 @@ class StackSetDriftDetectionStatus(str):
     STOPPED = "STOPPED"
 
 
-class StackSetDriftStatus(str):
+class StackSetDriftStatus(StrEnum):
     DRIFTED = "DRIFTED"
     IN_SYNC = "IN_SYNC"
     NOT_CHECKED = "NOT_CHECKED"
 
 
-class StackSetOperationAction(str):
+class StackSetOperationAction(StrEnum):
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
     DETECT_DRIFT = "DETECT_DRIFT"
 
 
-class StackSetOperationResultStatus(str):
+class StackSetOperationResultStatus(StrEnum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
@@ -577,7 +578,7 @@ class StackSetOperationResultStatus(str):
     CANCELLED = "CANCELLED"
 
 
-class StackSetOperationStatus(str):
+class StackSetOperationStatus(StrEnum):
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
@@ -586,12 +587,12 @@ class StackSetOperationStatus(str):
     QUEUED = "QUEUED"
 
 
-class StackSetStatus(str):
+class StackSetStatus(StrEnum):
     ACTIVE = "ACTIVE"
     DELETED = "DELETED"
 
 
-class StackStatus(str):
+class StackStatus(StrEnum):
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     CREATE_FAILED = "CREATE_FAILED"
     CREATE_COMPLETE = "CREATE_COMPLETE"
@@ -617,40 +618,40 @@ class StackStatus(str):
     IMPORT_ROLLBACK_COMPLETE = "IMPORT_ROLLBACK_COMPLETE"
 
 
-class TemplateFormat(str):
+class TemplateFormat(StrEnum):
     JSON = "JSON"
     YAML = "YAML"
 
 
-class TemplateStage(str):
+class TemplateStage(StrEnum):
     Original = "Original"
     Processed = "Processed"
 
 
-class ThirdPartyType(str):
+class ThirdPartyType(StrEnum):
     RESOURCE = "RESOURCE"
     MODULE = "MODULE"
     HOOK = "HOOK"
 
 
-class TypeTestsStatus(str):
+class TypeTestsStatus(StrEnum):
     PASSED = "PASSED"
     FAILED = "FAILED"
     IN_PROGRESS = "IN_PROGRESS"
     NOT_TESTED = "NOT_TESTED"
 
 
-class VersionBump(str):
+class VersionBump(StrEnum):
     MAJOR = "MAJOR"
     MINOR = "MINOR"
 
 
-class Visibility(str):
+class Visibility(StrEnum):
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
 
 
-class WarningType(str):
+class WarningType(StrEnum):
     MUTUALLY_EXCLUSIVE_PROPERTIES = "MUTUALLY_EXCLUSIVE_PROPERTIES"
     UNSUPPORTED_PROPERTIES = "UNSUPPORTED_PROPERTIES"
     MUTUALLY_EXCLUSIVE_TYPES = "MUTUALLY_EXCLUSIVE_TYPES"

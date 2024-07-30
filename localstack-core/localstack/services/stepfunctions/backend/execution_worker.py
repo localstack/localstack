@@ -9,6 +9,7 @@ from localstack.aws.api.stepfunctions import (
     ExecutionStartedEventDetails,
     HistoryEventExecutionDataDetails,
     HistoryEventType,
+    StateMachineType,
 )
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
@@ -33,6 +34,7 @@ from localstack.services.stepfunctions.backend.execution_worker_comm import (
 
 class ExecutionWorker:
     env: Optional[Environment]
+    _execution_type: Final[StateMachineType]
     _definition: Definition
     _input_data: Optional[dict]
     _exec_comm: Final[ExecutionWorkerCommunication]
@@ -43,6 +45,7 @@ class ExecutionWorker:
 
     def __init__(
         self,
+        execution_type: StateMachineType,
         definition: Definition,
         input_data: Optional[dict],
         context_object_init: ContextObjectInitData,
@@ -51,6 +54,7 @@ class ExecutionWorker:
         cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
         activity_store: dict[Arn, Activity],
     ):
+        self._execution_type = execution_type
         self._definition = definition
         self._input_data = input_data
         self._exec_comm = exec_comm
@@ -66,6 +70,7 @@ class ExecutionWorker:
     def _get_evaluation_environment(self) -> Environment:
         return Environment(
             aws_execution_details=self._aws_execution_details,
+            execution_type=self._execution_type,
             context_object_init=self._context_object_init,
             event_history_context=EventHistoryContext.of_program_start(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
@@ -103,3 +108,9 @@ class ExecutionWorker:
 
     def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
         self.env.set_stop(stop_date=stop_date, cause=cause, error=error)
+
+
+class SyncExecutionWorker(ExecutionWorker):
+    def start(self):
+        # bypass the native async execution of ASL programs.
+        self._execution_logic()

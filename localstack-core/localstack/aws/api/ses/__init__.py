@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -63,12 +64,12 @@ TextPart = str
 VerificationToken = str
 
 
-class BehaviorOnMXFailure(str):
+class BehaviorOnMXFailure(StrEnum):
     UseDefaultValue = "UseDefaultValue"
     RejectMessage = "RejectMessage"
 
 
-class BounceType(str):
+class BounceType(StrEnum):
     DoesNotExist = "DoesNotExist"
     MessageTooLarge = "MessageTooLarge"
     ExceededQuota = "ExceededQuota"
@@ -77,7 +78,7 @@ class BounceType(str):
     TemporaryFailure = "TemporaryFailure"
 
 
-class BulkEmailStatus(str):
+class BulkEmailStatus(StrEnum):
     Success = "Success"
     MessageRejected = "MessageRejected"
     MailFromDomainNotVerified = "MailFromDomainNotVerified"
@@ -94,27 +95,27 @@ class BulkEmailStatus(str):
     Failed = "Failed"
 
 
-class ConfigurationSetAttribute(str):
+class ConfigurationSetAttribute(StrEnum):
     eventDestinations = "eventDestinations"
     trackingOptions = "trackingOptions"
     deliveryOptions = "deliveryOptions"
     reputationOptions = "reputationOptions"
 
 
-class CustomMailFromStatus(str):
+class CustomMailFromStatus(StrEnum):
     Pending = "Pending"
     Success = "Success"
     Failed = "Failed"
     TemporaryFailure = "TemporaryFailure"
 
 
-class DimensionValueSource(str):
+class DimensionValueSource(StrEnum):
     messageTag = "messageTag"
     emailHeader = "emailHeader"
     linkTag = "linkTag"
 
 
-class DsnAction(str):
+class DsnAction(StrEnum):
     failed = "failed"
     delayed = "delayed"
     delivered = "delivered"
@@ -122,7 +123,7 @@ class DsnAction(str):
     expanded = "expanded"
 
 
-class EventType(str):
+class EventType(StrEnum):
     send = "send"
     reject = "reject"
     bounce = "bounce"
@@ -133,42 +134,42 @@ class EventType(str):
     renderingFailure = "renderingFailure"
 
 
-class IdentityType(str):
+class IdentityType(StrEnum):
     EmailAddress = "EmailAddress"
     Domain = "Domain"
 
 
-class InvocationType(str):
+class InvocationType(StrEnum):
     Event = "Event"
     RequestResponse = "RequestResponse"
 
 
-class NotificationType(str):
+class NotificationType(StrEnum):
     Bounce = "Bounce"
     Complaint = "Complaint"
     Delivery = "Delivery"
 
 
-class ReceiptFilterPolicy(str):
+class ReceiptFilterPolicy(StrEnum):
     Block = "Block"
     Allow = "Allow"
 
 
-class SNSActionEncoding(str):
+class SNSActionEncoding(StrEnum):
     UTF_8 = "UTF-8"
     Base64 = "Base64"
 
 
-class StopScope(str):
+class StopScope(StrEnum):
     RuleSet = "RuleSet"
 
 
-class TlsPolicy(str):
+class TlsPolicy(StrEnum):
     Require = "Require"
     Optional_ = "Optional"
 
 
-class VerificationStatus(str):
+class VerificationStatus(StrEnum):
     Pending = "Pending"
     Success = "Success"
     Failed = "Failed"

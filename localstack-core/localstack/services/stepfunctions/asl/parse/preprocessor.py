@@ -174,6 +174,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator_decl import (
     IteratorDecl,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.label import (
+    Label,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
     MaxConcurrencyPath,
@@ -739,6 +742,10 @@ class Preprocessor(ASLParserVisitor):
         )
         path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
         return ToleratedFailurePercentagePath(tolerate_failure_percentage_path=path)
+
+    def visitLabel_decl(self, ctx: ASLParser.Label_declContext) -> Label:
+        label = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        return Label(label=label)
 
     def visitRetry_decl(self, ctx: ASLParser.Retry_declContext) -> RetryDecl:
         retriers: list[RetrierDecl] = list()

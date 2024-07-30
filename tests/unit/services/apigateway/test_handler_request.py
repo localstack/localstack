@@ -7,6 +7,9 @@ from localstack.http import Request, Response
 from localstack.services.apigateway.models import RestApiContainer
 from localstack.services.apigateway.next_gen.execute_api.api import RestApiGatewayHandlerChain
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
+from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
+    MissingAuthTokenError,
+)
 from localstack.services.apigateway.next_gen.execute_api.handlers.parse import (
     InvocationRequestParser,
 )
@@ -84,7 +87,7 @@ class TestParsingHandler:
             body=body,
             headers=headers,
             query_string="test-param=1&test-param-2=2&test-multi=val1&test-multi=val2",
-            path="/normal-path",
+            path=f"/{TEST_API_STAGE}/normal-path",
         )
         context = get_invocation_context(request)
         context.deployment = dummy_deployment
@@ -96,26 +99,13 @@ class TestParsingHandler:
         assert context.region == TEST_AWS_REGION_NAME
 
         assert context.invocation_request["http_method"] == "GET"
-        assert context.invocation_request["raw_headers"] == Headers(
+        assert context.invocation_request["headers"] == Headers(
             {
                 "host": host_header,
                 "test-header": "value1",
                 "test-header-multi": ["value2", "value3"],
-                "content-length": len(body),
             }
         )
-        assert context.invocation_request["headers"] == {
-            "host": host_header,
-            "test-header": "value1",
-            "test-header-multi": "value2",
-            "content-length": "11",
-        }
-        assert context.invocation_request["multi_value_headers"] == {
-            "host": [host_header],
-            "test-header": ["value1"],
-            "test-header-multi": ["value2", "value3"],
-            "content-length": ["11"],
-        }
         assert context.invocation_request["body"] == body
         assert (
             context.invocation_request["path"]
@@ -125,9 +115,14 @@ class TestParsingHandler:
 
         assert context.context_variables["domainName"] == host_header
         assert context.context_variables["domainPrefix"] == TEST_API_ID
+        assert context.context_variables["path"] == f"/{TEST_API_STAGE}/normal-path"
 
     def test_parse_raw_path(self, dummy_deployment, parse_handler_chain, get_invocation_context):
-        request = Request("GET", "/foo/bar/ed", raw_path="//foo%2Fbar/ed")
+        request = Request(
+            "GET",
+            path=f"/{TEST_API_STAGE}/foo/bar/ed",
+            raw_path=f"/{TEST_API_STAGE}//foo%2Fbar/ed",
+        )
 
         context = get_invocation_context(request)
         context.deployment = dummy_deployment
@@ -146,8 +141,8 @@ class TestParsingHandler:
         # simulate a path request
         request = Request(
             "GET",
-            path=f"/restapis/{TEST_API_ID}/_user_request_/foo/bar/ed",
-            raw_path=f"/restapis/{TEST_API_ID}/_user_request_//foo%2Fbar/ed",
+            path=f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/foo/bar/ed",
+            raw_path=f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_//foo%2Fbar/ed",
         )
 
         context = get_invocation_context(request)
@@ -158,6 +153,28 @@ class TestParsingHandler:
         # assert that the user request prefix has been stripped off
         assert context.invocation_request["path"] == "/foo%2Fbar/ed"
         assert context.invocation_request["raw_path"] == "//foo%2Fbar/ed"
+
+    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    def test_parse_path_same_as_stage(
+        self, dummy_deployment, parse_handler_chain, get_invocation_context, addressing
+    ):
+        path = TEST_API_STAGE
+        if addressing == "host":
+            full_path = f"/{TEST_API_STAGE}/{path}"
+        else:
+            full_path = f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/{path}"
+
+        # simulate a path request
+        request = Request("GET", path=full_path)
+
+        context = get_invocation_context(request)
+        context.deployment = dummy_deployment
+
+        parse_handler_chain.handle(context, Response())
+
+        # assert that the user request prefix has been stripped off
+        assert context.invocation_request["path"] == f"/{TEST_API_STAGE}"
+        assert context.invocation_request["raw_path"] == f"/{TEST_API_STAGE}"
 
 
 class TestRoutingHandler:
@@ -234,12 +251,69 @@ class TestRoutingHandler:
             localstack_rest_api=dummy_deployment.rest_api,
         )
 
+    @pytest.fixture
+    def deployment_with_any_routes(self, dummy_deployment):
+        """
+        This can be represented by the following routes:
+        - (No method) - /
+        - GET         - /foo
+        - ANY         - /foo
+        - PUT         - /foo/{param}
+        - ANY         - /foo/{param}
+        """
+        moto_backend: APIGatewayBackend = apigateway_backends[TEST_AWS_ACCOUNT_ID][
+            TEST_AWS_REGION_NAME
+        ]
+        moto_rest_api = moto_backend.apis[TEST_API_ID]
+
+        # path: /
+        root_resource = moto_rest_api.default
+        # path: /foo
+        hard_coded_resource = moto_rest_api.add_child(path="foo", parent_id=root_resource.id)
+        # path: /foo/{param}
+        param_resource = moto_rest_api.add_child(
+            path="{param}",
+            parent_id=hard_coded_resource.id,
+        )
+
+        hard_coded_resource.add_method(
+            method_type="GET",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        hard_coded_resource.add_method(
+            method_type="ANY",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        # we test different order of setting the Method, to make sure ANY is always matched last
+        # because this will influence the original order of the Werkzeug Rules in the Map
+        # Because we only return the `Resource` as the endpoint, we always fetch manually the right
+        # `resourceMethod` from the request method.
+        param_resource.add_method(
+            method_type="ANY",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+        param_resource.add_method(
+            method_type="PUT",
+            authorization_type="NONE",
+            api_key_required=False,
+        )
+
+        return freeze_rest_api(
+            account_id=dummy_deployment.account_id,
+            region=dummy_deployment.region,
+            moto_rest_api=moto_rest_api,
+            localstack_rest_api=dummy_deployment.rest_api,
+        )
+
     @staticmethod
     def get_path_from_addressing(path: str, addressing: str) -> str:
         if addressing == "host":
-            return path
+            return f"/{TEST_API_STAGE}{path}"
         else:
-            return f"/restapis/{TEST_API_ID}/_user_request_{path}"
+            return f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/{path}"
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
     def test_route_request_no_param(
@@ -365,7 +439,7 @@ class TestRoutingHandler:
         parse_handler_chain.handle(context, Response())
         # manually invoking the handler here as exceptions would be swallowed by the chain
         handler = InvocationRequestRouter()
-        with pytest.raises(Exception, match="Not found"):
+        with pytest.raises(MissingAuthTokenError):
             handler(parse_handler_chain, context, Response())
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
@@ -383,7 +457,7 @@ class TestRoutingHandler:
         parse_handler_chain.handle(context, Response())
         # manually invoking the handler here as exceptions would be swallowed by the chain
         handler = InvocationRequestRouter()
-        with pytest.raises(Exception, match="Not found"):
+        with pytest.raises(MissingAuthTokenError):
             handler(parse_handler_chain, context, Response())
 
     @pytest.mark.parametrize("addressing", ["host", "user_request"])
@@ -405,3 +479,54 @@ class TestRoutingHandler:
 
         assert context.resource["path"] == "/foo/{param}"
         assert context.invocation_request["path_parameters"] == {"param": "foo%2Fbar"}
+
+    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    def test_route_request_any_is_last(
+        self, deployment_with_any_routes, parse_handler_chain, get_invocation_context, addressing
+    ):
+        handler = InvocationRequestRouter()
+
+        def handle(_request: Request) -> RestApiInvocationContext:
+            _context = get_invocation_context(_request)
+            _context.deployment = deployment_with_any_routes
+            parse_handler_chain.handle(_context, Response())
+            handler(parse_handler_chain, _context, Response())
+            return _context
+
+        request = Request(
+            "GET",
+            path=self.get_path_from_addressing("/foo", addressing),
+        )
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo"
+        assert context.resource["resourceMethods"]["GET"]
+
+        request = Request(
+            "DELETE",
+            path=self.get_path_from_addressing("/foo", addressing),
+        )
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo"
+        assert context.resource["resourceMethods"]["ANY"]
+
+        request = Request(
+            "PUT",
+            path=self.get_path_from_addressing("/foo/random-value", addressing),
+        )
+
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo/{param}"
+        assert context.resource_method == context.resource["resourceMethods"]["PUT"]
+
+        request = Request(
+            "GET",
+            path=self.get_path_from_addressing("/foo/random-value", addressing),
+        )
+
+        context = handle(request)
+
+        assert context.resource["path"] == "/foo/{param}"
+        assert context.resource_method == context.resource["resourceMethods"]["ANY"]

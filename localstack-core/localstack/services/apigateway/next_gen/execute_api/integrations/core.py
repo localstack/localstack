@@ -1,8 +1,7 @@
 from abc import abstractmethod
 
-from localstack.http import Response
-
 from ..api import RestApiInvocationContext
+from ..context import EndpointResponse
 
 
 class RestApiIntegration:
@@ -16,5 +15,5 @@ class RestApiIntegration:
     name: str
 
     @abstractmethod
-    def invoke(self, context: RestApiInvocationContext) -> Response:
+    def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         pass

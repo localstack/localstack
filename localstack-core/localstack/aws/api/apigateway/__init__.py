@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import IO, Dict, Iterable, List, Optional, TypedDict, Union
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -14,22 +15,22 @@ StatusCode = str
 String = str
 
 
-class ApiKeySourceType(str):
+class ApiKeySourceType(StrEnum):
     HEADER = "HEADER"
     AUTHORIZER = "AUTHORIZER"
 
 
-class ApiKeysFormat(str):
+class ApiKeysFormat(StrEnum):
     csv = "csv"
 
 
-class AuthorizerType(str):
+class AuthorizerType(StrEnum):
     TOKEN = "TOKEN"
     REQUEST = "REQUEST"
     COGNITO_USER_POOLS = "COGNITO_USER_POOLS"
 
 
-class CacheClusterSize(str):
+class CacheClusterSize(StrEnum):
     i_0_5 = "0.5"
     i_1_6 = "1.6"
     i_6_1 = "6.1"
@@ -40,7 +41,7 @@ class CacheClusterSize(str):
     i_237 = "237"
 
 
-class CacheClusterStatus(str):
+class CacheClusterStatus(StrEnum):
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
     AVAILABLE = "AVAILABLE"
     DELETE_IN_PROGRESS = "DELETE_IN_PROGRESS"
@@ -48,17 +49,17 @@ class CacheClusterStatus(str):
     FLUSH_IN_PROGRESS = "FLUSH_IN_PROGRESS"
 
 
-class ConnectionType(str):
+class ConnectionType(StrEnum):
     INTERNET = "INTERNET"
     VPC_LINK = "VPC_LINK"
 
 
-class ContentHandlingStrategy(str):
+class ContentHandlingStrategy(StrEnum):
     CONVERT_TO_BINARY = "CONVERT_TO_BINARY"
     CONVERT_TO_TEXT = "CONVERT_TO_TEXT"
 
 
-class DocumentationPartType(str):
+class DocumentationPartType(StrEnum):
     API = "API"
     AUTHORIZER = "AUTHORIZER"
     MODEL = "MODEL"
@@ -73,7 +74,7 @@ class DocumentationPartType(str):
     RESPONSE_BODY = "RESPONSE_BODY"
 
 
-class DomainNameStatus(str):
+class DomainNameStatus(StrEnum):
     AVAILABLE = "AVAILABLE"
     UPDATING = "UPDATING"
     PENDING = "PENDING"
@@ -81,13 +82,13 @@ class DomainNameStatus(str):
     PENDING_OWNERSHIP_VERIFICATION = "PENDING_OWNERSHIP_VERIFICATION"
 
 
-class EndpointType(str):
+class EndpointType(StrEnum):
     REGIONAL = "REGIONAL"
     EDGE = "EDGE"
     PRIVATE = "PRIVATE"
 
 
-class GatewayResponseType(str):
+class GatewayResponseType(StrEnum):
     DEFAULT_4XX = "DEFAULT_4XX"
     DEFAULT_5XX = "DEFAULT_5XX"
     RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
@@ -111,7 +112,7 @@ class GatewayResponseType(str):
     WAF_FILTERED = "WAF_FILTERED"
 
 
-class IntegrationType(str):
+class IntegrationType(StrEnum):
     HTTP = "HTTP"
     AWS = "AWS"
     MOCK = "MOCK"
@@ -119,12 +120,12 @@ class IntegrationType(str):
     AWS_PROXY = "AWS_PROXY"
 
 
-class LocationStatusType(str):
+class LocationStatusType(StrEnum):
     DOCUMENTED = "DOCUMENTED"
     UNDOCUMENTED = "UNDOCUMENTED"
 
 
-class Op(str):
+class Op(StrEnum):
     add = "add"
     remove = "remove"
     replace = "replace"
@@ -133,29 +134,29 @@ class Op(str):
     test = "test"
 
 
-class PutMode(str):
+class PutMode(StrEnum):
     merge = "merge"
     overwrite = "overwrite"
 
 
-class QuotaPeriodType(str):
+class QuotaPeriodType(StrEnum):
     DAY = "DAY"
     WEEK = "WEEK"
     MONTH = "MONTH"
 
 
-class SecurityPolicy(str):
+class SecurityPolicy(StrEnum):
     TLS_1_0 = "TLS_1_0"
     TLS_1_2 = "TLS_1_2"
 
 
-class UnauthorizedCacheControlHeaderStrategy(str):
+class UnauthorizedCacheControlHeaderStrategy(StrEnum):
     FAIL_WITH_403 = "FAIL_WITH_403"
     SUCCEED_WITH_RESPONSE_HEADER = "SUCCEED_WITH_RESPONSE_HEADER"
     SUCCEED_WITHOUT_RESPONSE_HEADER = "SUCCEED_WITHOUT_RESPONSE_HEADER"
 
 
-class VpcLinkStatus(str):
+class VpcLinkStatus(StrEnum):
     AVAILABLE = "AVAILABLE"
     PENDING = "PENDING"
     DELETING = "DELETING"

@@ -35,7 +35,7 @@ def get_stage_variables(
     account_id: str, region: str, api_id: str, stage_name: str
 ) -> dict[str, str]:
     apigateway_backend: APIGatewayBackend = apigateway_backends[account_id][region]
-    moto_rest_api = apigateway_backend.apis[api_id]
+    moto_rest_api = apigateway_backend.get_rest_api(api_id)
     stage = moto_rest_api.stages[stage_name]
     return stage.variables
 

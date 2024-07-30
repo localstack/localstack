@@ -19,6 +19,9 @@ from localstack.aws.api.stepfunctions import (
     SensitiveCause,
     SensitiveError,
     StartExecutionOutput,
+    StartSyncExecutionOutput,
+    StateMachineType,
+    SyncExecutionStatus,
     Timestamp,
     TraceHeader,
 )
@@ -45,7 +48,10 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
-from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
+from localstack.services.stepfunctions.backend.execution_worker import (
+    ExecutionWorker,
+    SyncExecutionWorker,
+)
 from localstack.services.stepfunctions.backend.execution_worker_comm import (
     ExecutionWorkerCommunication,
 )
@@ -58,8 +64,10 @@ LOG = logging.getLogger(__name__)
 
 
 class BaseExecutionWorkerCommunication(ExecutionWorkerCommunication):
+    execution: Final[Execution]
+
     def __init__(self, execution: Execution):
-        self.execution: Execution = execution
+        self.execution = execution
 
     def _reflect_execution_status(self):
         exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
@@ -87,6 +95,7 @@ class BaseExecutionWorkerCommunication(ExecutionWorkerCommunication):
 
 class Execution:
     name: Final[str]
+    sm_type: Final[StateMachineType]
     role_arn: Final[Arn]
     exec_arn: Final[Arn]
 
@@ -116,6 +125,7 @@ class Execution:
     def __init__(
         self,
         name: str,
+        sm_type: StateMachineType,
         role_arn: Arn,
         exec_arn: Arn,
         account_id: str,
@@ -128,6 +138,7 @@ class Execution:
         trace_header: Optional[TraceHeader] = None,
     ):
         self.name = name
+        self.sm_type = sm_type
         self.role_arn = role_arn
         self.exec_arn = exec_arn
         self.account_id = account_id
@@ -257,6 +268,7 @@ class Execution:
 
     def _get_start_execution_worker(self) -> ExecutionWorker:
         return ExecutionWorker(
+            execution_type=self.sm_type,
             definition=self.state_machine.definition,
             input_data=self.input_data,
             exec_comm=self._get_start_execution_worker_comm(),
@@ -318,3 +330,58 @@ class Execution:
             LOG.exception(
                 f"Unable to send notification of Entry='{entry}' for Step Function execution with Arn='{self.exec_arn}' to EventBridge."
             )
+
+
+class SyncExecutionWorkerCommunication(BaseExecutionWorkerCommunication):
+    execution: Final[SyncExecution]
+
+    def _reflect_execution_status(self) -> None:
+        super()._reflect_execution_status()
+        exit_status: ExecutionStatus = self.execution.exec_status
+        if exit_status == ExecutionStatus.SUCCEEDED:
+            self.execution.sync_execution_status = SyncExecutionStatus.SUCCEEDED
+        elif exit_status == ExecutionStatus.TIMED_OUT:
+            self.execution.sync_execution_status = SyncExecutionStatus.TIMED_OUT
+        else:
+            self.execution.sync_execution_status = SyncExecutionStatus.FAILED
+
+
+class SyncExecution(Execution):
+    sync_execution_status: Optional[SyncExecutionStatus] = None
+
+    def _get_start_execution_worker(self) -> SyncExecutionWorker:
+        return SyncExecutionWorker(
+            execution_type=self.sm_type,
+            definition=self.state_machine.definition,
+            input_data=self.input_data,
+            exec_comm=self._get_start_execution_worker_comm(),
+            context_object_init=self._get_start_context_object_init_data(),
+            aws_execution_details=self._get_start_aws_execution_details(),
+            cloud_watch_logging_session=self._cloud_watch_logging_session,
+            activity_store=self._activity_store,
+        )
+
+    def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
+        return SyncExecutionWorkerCommunication(self)
+
+    def to_start_sync_execution_output(self) -> StartSyncExecutionOutput:
+        start_output = StartSyncExecutionOutput(
+            executionArn=self.exec_arn,
+            stateMachineArn=self.state_machine.arn,
+            name=self.name,
+            status=self.sync_execution_status,
+            startDate=self.start_date,
+            stopDate=self.stop_date,
+            input=to_json_str(self.input_data, separators=(",", ":")),
+            inputDetails=self.input_details,
+            traceHeader=self.trace_header,
+        )
+        if self.sync_execution_status == SyncExecutionStatus.SUCCEEDED:
+            start_output["output"] = to_json_str(self.output, separators=(",", ":"))
+        if self.output_details:
+            start_output["outputDetails"] = self.output_details
+        if self.error is not None:
+            start_output["error"] = self.error
+        if self.cause is not None:
+            start_output["cause"] = self.cause
+        return start_output

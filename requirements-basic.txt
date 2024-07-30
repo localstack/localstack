@@ -6,9 +6,9 @@
 #
 build==1.2.1
     # via localstack-core (pyproject.toml)
-cachetools==5.3.3
+cachetools==5.4.0
     # via localstack-core (pyproject.toml)
-certifi==2024.6.2
+certifi==2024.7.4
     # via requests
 cffi==1.16.0
     # via cryptography
@@ -16,11 +16,11 @@ charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via localstack-core (pyproject.toml)
-cryptography==42.0.8
+cryptography==43.0.0
     # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via localstack-core (pyproject.toml)
-dnslib==0.9.24
+dnslib==0.9.25
     # via localstack-core (pyproject.toml)
 dnspython==2.6.1
     # via localstack-core (pyproject.toml)
@@ -32,7 +32,7 @@ mdurl==0.1.2
     # via markdown-it-py
 packaging==24.1
     # via build
-plux==1.11.0
+plux==1.11.1
     # via localstack-core (pyproject.toml)
 psutil==6.0.0
     # via localstack-core (pyproject.toml)

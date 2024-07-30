@@ -173,7 +173,7 @@ class Directories:
             tmp=tmp_dir,
             mounted_tmp=tmp_dir,
             functions=None,
-            data=os.path.join(tmp_dir, "state"),  # used by localstack_ext config TODO: remove
+            data=os.path.join(tmp_dir, "state"),  # used by localstack-pro config TODO: remove
             logs=os.path.join(tmp_dir, "logs"),  # used for container logs
             config=None,  # in the context of the CLI, config.CONFIG_DIR should be used
             init=None,
@@ -660,9 +660,6 @@ GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
 # the gateway server that should be used (supported: hypercorn, twisted dev: werkzeug)
 GATEWAY_SERVER = os.environ.get("GATEWAY_SERVER", "").strip() or "twisted"
 
-# whether to use the legacy runtime (``localstack.service.infra``)
-LEGACY_RUNTIME = is_env_true("LEGACY_RUNTIME")
-
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
@@ -1041,6 +1038,15 @@ LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
 # Whether the Next Gen APIGW invocation logic is enabled (handler chain)
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") == "next_gen"
+if APIGW_NEXT_GEN_PROVIDER:
+    # in order to not have conflicts with different implementation registering their own router, we need to have all of
+    # them use the same new implementation
+    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYV2"):
+        os.environ["PROVIDER_OVERRIDE_APIGATEWAYV2"] = "next_gen"
+
+    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"):
+        os.environ["PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"] = "next_gen"
+
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
@@ -1211,7 +1217,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_SNS_GCM_PUBLISHING",
-    "LEGACY_RUNTIME",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",

@@ -29,6 +29,7 @@ def test_edge_tcp_proxy(httpserver):
         target_address=gateway_listen[0],
         asynchronous=True,
     )
+    proxy_server.wait_is_up()
 
     # Check that the forwarding works correctly
     try:
@@ -51,6 +52,7 @@ def test_edge_tcp_proxy_does_not_terminate_on_connection_error():
         asynchronous=True,
     )
     try:
+        proxy_server.wait_is_up()
         # Start the proxy server and send a request (which is proxied towards a non-bound port)
         with pytest.raises(requests.exceptions.ConnectionError):
             requests.get(f"http://localhost:{port}")

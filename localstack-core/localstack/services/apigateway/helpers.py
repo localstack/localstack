@@ -702,7 +702,8 @@ def extract_path_params(path: str, extracted_path: str) -> Dict[str, str]:
 
 def extract_query_string_params(path: str) -> Tuple[str, Dict[str, str]]:
     parsed_path = urlparse.urlparse(path)
-    path = parsed_path.path
+    if not path.startswith("//"):
+        path = parsed_path.path
     parsed_query_string_params = urlparse.parse_qs(parsed_path.query)
 
     query_string_params = {}
@@ -874,6 +875,9 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
                     % (sqs_region, sqs_account, queue_name),
                     "requestTemplates": {"application/json": template},
+                    "requestParameters": {
+                        "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
+                    },
                 }
             ],
         }

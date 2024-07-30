@@ -6,7 +6,7 @@ from plux import PluginManager
 
 from localstack import config, constants
 from localstack.runtime import events, hooks
-from localstack.utils import files, net, sync, threads
+from localstack.utils import files, functions, net, sync, threads
 
 from .components import Components
 
@@ -40,6 +40,8 @@ class LocalstackRuntime:
         self.ready = events.infra_ready
         self.stopping = events.infra_stopping
         self.stopped = events.infra_stopped
+        self.exit_code = 0
+        self._lifecycle_lock = threading.RLock()
 
     def run(self):
         """
@@ -62,8 +64,6 @@ class LocalstackRuntime:
         # TODO: ideally we pass down a `shutdown` event that can be waited on so we can cancel the thread
         #  if the runtime shuts down beforehand
         threading.Thread(target=self._run_ready_monitor, daemon=True).start()
-        # FIXME: legacy compatibility code
-        threading.Thread(target=self._run_shutdown_monitor, daemon=True).start()
 
         # run the main control loop of the server and block execution
         try:
@@ -88,9 +88,17 @@ class LocalstackRuntime:
         ``RuntimeServer``. The shutdown hooks are actually called by the main control loop (in the main
         thread) after it returns.
         """
-        if self.stopping.is_set():
-            return
-        self.stopping.set()
+        with self._lifecycle_lock:
+            if self.stopping.is_set():
+                return
+            self.stopping.set()
+
+        LOG.debug("[shutdown] Running shutdown hooks ...")
+        functions.call_safe(
+            hooks.on_runtime_shutdown.run,
+            exception_message="[shutdown] error calling shutdown hook",
+        )
+        LOG.debug("[shutdown] Shutting down runtime server ...")
         self.components.runtime_server.shutdown()
 
     def is_ready(self) -> bool:
@@ -122,8 +130,6 @@ class LocalstackRuntime:
         self.ready.set()
 
     def _on_return(self):
-        LOG.debug("[shutdown] Running shutdown hooks ...")
-        hooks.on_runtime_shutdown.run()
         LOG.debug("[shutdown] Cleaning up resources ...")
         self._cleanup_resources()
         self.stopped.set()
@@ -160,29 +166,6 @@ class LocalstackRuntime:
     def _cleanup_resources(self):
         threads.cleanup_threads_and_processes()
         self._clear_tmp_directory()
-
-    # more legacy compatibility code
-    @property
-    def exit_code(self):
-        # FIXME: legacy compatibility code
-        from localstack.runtime import legacy
-
-        return legacy.EXIT_CODE.get()
-
-    @exit_code.setter
-    def exit_code(self, value):
-        # FIXME: legacy compatibility code
-        from localstack.runtime import legacy
-
-        legacy.EXIT_CODE.set(value)
-
-    def _run_shutdown_monitor(self):
-        # FIXME: legacy compatibility code. this can be removed once we replace access to the
-        #  ``SHUTDOWN_INFRA`` event with ``get_current_runtime().shutdown()``.
-        from localstack.runtime import legacy
-
-        legacy.SHUTDOWN_INFRA.wait()
-        self.shutdown()
 
 
 def create_from_environment() -> LocalstackRuntime:

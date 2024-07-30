@@ -29,17 +29,17 @@ aws-sam-translator==1.89.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.33.18
+awscli==1.33.31
     # via localstack-core (pyproject.toml)
-awscrt==0.20.12
+awscrt==0.21.2
     # via localstack-core
-boto3==1.34.136
+boto3==1.34.149
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.34.136
+botocore==1.34.149
     # via
     #   aws-xray-sdk
     #   awscli
@@ -51,20 +51,20 @@ build==1.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.3.3
+cachetools==5.4.0
     # via
     #   airspeed-ext
     #   localstack-core
     #   localstack-core (pyproject.toml)
 cbor2==5.6.4
     # via localstack-core
-certifi==2024.6.2
+certifi==2024.7.4
     # via
     #   opensearch-py
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.4.2
+cfn-lint==1.9.0
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -91,7 +91,7 @@ dill==0.3.6
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-dnslib==0.9.24
+dnslib==0.9.25
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -131,7 +131,7 @@ idna==3.7
     #   hyperlink
     #   localstack-twisted
     #   requests
-incremental==22.10.0
+incremental==24.7.2
     # via localstack-twisted
 jinja2==3.1.4
     # via moto-ext
@@ -139,13 +139,13 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==0.12.0
+joserfc==1.0.0
     # via moto-ext
 jpype1==1.5.0
     # via localstack-core (pyproject.toml)
 json5==0.9.25
     # via localstack-core (pyproject.toml)
-jsondiff==2.1.1
+jsondiff==2.2.0
     # via moto-ext
 jsonpatch==1.33
     # via
@@ -159,7 +159,7 @@ jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.22.0
+jsonschema==4.23.0
     # via
     #   aws-sam-translator
     #   openapi-schema-validator
@@ -182,7 +182,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.10.post1
+moto-ext==5.0.11.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -203,7 +203,7 @@ packaging==24.1
     #   jpype1
 pathable==0.4.3
     # via jsonschema-path
-plux==1.11.0
+plux==1.11.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -225,15 +225,15 @@ pyasn1==0.6.0
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.8.0
+pydantic==2.8.2
     # via aws-sam-translator
-pydantic-core==2.20.0
+pydantic-core==2.20.1
     # via pydantic
 pygments==2.18.0
     # via rich
 pymongo==4.8.0
     # via localstack-core (pyproject.toml)
-pyopenssl==24.1.0
+pyopenssl==24.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -268,7 +268,7 @@ referencing==0.35.1
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2024.5.15
+regex==2024.7.24
     # via cfn-lint
 requests==2.32.3
     # via
@@ -281,7 +281,7 @@ requests==2.32.3
     #   requests-aws4auth
     #   responses
     #   rolo
-requests-aws4auth==1.2.3
+requests-aws4auth==1.3.1
     # via localstack-core
 responses==0.25.3
     # via moto-ext
@@ -291,9 +291,9 @@ rich==13.7.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.5.1
+rolo==0.7.0
     # via localstack-core
-rpds-py==0.18.1
+rpds-py==0.19.1
     # via
     #   jsonschema
     #   referencing
@@ -313,9 +313,8 @@ six==1.16.0
     #   jsonpath-rw
     #   opensearch-py
     #   python-dateutil
-    #   requests-aws4auth
     #   rfc3339-validator
-sympy==1.12.1
+sympy==1.13.1
     # via cfn-lint
 tailer==0.4.1
     # via

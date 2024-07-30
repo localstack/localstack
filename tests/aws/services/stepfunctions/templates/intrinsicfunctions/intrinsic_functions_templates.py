@@ -37,6 +37,9 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     JSON_MERGE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/json_manipulation/json_merge.json5"
     )
+    JSON_MERGE_ESCAPED_ARGUMENT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/json_manipulation/json_merge_escaped_argument.json5"
+    )
 
     # String Operations.
     STRING_SPLIT: Final[str] = os.path.join(

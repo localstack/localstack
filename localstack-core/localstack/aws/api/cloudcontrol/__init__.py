@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -18,7 +19,7 @@ TypeName = str
 TypeVersionId = str
 
 
-class HandlerErrorCode(str):
+class HandlerErrorCode(StrEnum):
     NotUpdatable = "NotUpdatable"
     InvalidRequest = "InvalidRequest"
     AccessDenied = "AccessDenied"
@@ -36,13 +37,13 @@ class HandlerErrorCode(str):
     InternalFailure = "InternalFailure"
 
 
-class Operation(str):
+class Operation(StrEnum):
     CREATE = "CREATE"
     DELETE = "DELETE"
     UPDATE = "UPDATE"
 
 
-class OperationStatus(str):
+class OperationStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     SUCCESS = "SUCCESS"

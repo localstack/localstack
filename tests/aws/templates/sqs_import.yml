@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  QueueName:
+    Type: String
+    Default: test-queue
+    Description: The name of the SQS queue
+Resources:
+  MessageQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: !Ref QueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !ImportValue TestQueueArn26
+        maxReceiveCount: 3
+Outputs:
+  MessageQueueArn1:
+    Value: !ImportValue TestQueueArn26
+  MessageQueueArn2:
+    Value: !GetAtt MessageQueue.Arn

@@ -21,8 +21,6 @@ import logging
 from typing import Any, TypedDict
 from urllib.parse import quote_plus, unquote_plus
 
-import xmltodict
-
 from localstack import config
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
@@ -188,48 +186,19 @@ class ApiGatewayVtlTemplate(VtlTemplate):
     def render_request(
         self, template: str, variables: MappingTemplateVariables
     ) -> tuple[str, ContextVarsRequestOverride]:
-        vars: MappingTemplateVariables = copy.deepcopy(variables)
-        vars["context"]["requestOverride"] = ContextVarsRequestOverride(
+        variables_copy: MappingTemplateVariables = copy.deepcopy(variables)
+        variables_copy["context"]["requestOverride"] = ContextVarsRequestOverride(
             querystring={}, header={}, path={}
         )
-        result = self.render_vtl(template=template.strip(), variables=vars)
-        return result, vars["context"]["requestOverride"]
+        result = self.render_vtl(template=template.strip(), variables=variables_copy)
+        return result, variables_copy["context"]["requestOverride"]
 
     def render_response(
         self, template: str, variables: MappingTemplateVariables
     ) -> tuple[str, ContextVarsResponseOverride]:
-        pass
-
-    # TODO Maybe we don't need those methods and they should belong on the integration response handler?
-    #  And we should raise the appropriate exception from the gateway responses.
-    def _render_as_text(self, template: str, variables: dict[str, Any]) -> str:
-        """
-        Render the given Velocity template string + variables into a plain string.
-        :return: the template rendering result as a string
-        """
-        rendered_tpl = self.render_vtl(template, variables=variables)
-        return rendered_tpl.strip()
-
-    @staticmethod
-    def _validate_json(content: str):
-        """
-        Checks that the content received is a valid JSON.
-        :raise JSONDecodeError: if content is not valid JSON
-        """
-        try:
-            json.loads(content)
-        except Exception as e:
-            LOG.info("Unable to parse template result as JSON: %s - %s", e, content)
-            raise
-
-    @staticmethod
-    def _validate_xml(content: str):
-        """
-        Checks that the content received is a valid XML.
-        :raise xml.parsers.expat.ExpatError: if content is not valid XML
-        """
-        try:
-            xmltodict.parse(content)
-        except Exception as e:
-            LOG.info("Unable to parse template result as XML: %s - %s", e, content)
-            raise
+        variables_copy: MappingTemplateVariables = copy.deepcopy(variables)
+        variables_copy["context"]["responseOverride"] = ContextVarsResponseOverride(
+            header={}, status=0
+        )
+        result = self.render_vtl(template=template.strip(), variables=variables_copy)
+        return result, variables_copy["context"]["responseOverride"]

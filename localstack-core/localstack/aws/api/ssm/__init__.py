@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -366,7 +367,7 @@ ValidNextStep = str
 Version = str
 
 
-class AssociationComplianceSeverity(str):
+class AssociationComplianceSeverity(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -374,19 +375,19 @@ class AssociationComplianceSeverity(str):
     UNSPECIFIED = "UNSPECIFIED"
 
 
-class AssociationExecutionFilterKey(str):
+class AssociationExecutionFilterKey(StrEnum):
     ExecutionId = "ExecutionId"
     Status = "Status"
     CreatedTime = "CreatedTime"
 
 
-class AssociationExecutionTargetsFilterKey(str):
+class AssociationExecutionTargetsFilterKey(StrEnum):
     Status = "Status"
     ResourceId = "ResourceId"
     ResourceType = "ResourceType"
 
 
-class AssociationFilterKey(str):
+class AssociationFilterKey(StrEnum):
     InstanceId = "InstanceId"
     Name = "Name"
     AssociationId = "AssociationId"
@@ -397,34 +398,34 @@ class AssociationFilterKey(str):
     ResourceGroupName = "ResourceGroupName"
 
 
-class AssociationFilterOperatorType(str):
+class AssociationFilterOperatorType(StrEnum):
     EQUAL = "EQUAL"
     LESS_THAN = "LESS_THAN"
     GREATER_THAN = "GREATER_THAN"
 
 
-class AssociationStatusName(str):
+class AssociationStatusName(StrEnum):
     Pending = "Pending"
     Success = "Success"
     Failed = "Failed"
 
 
-class AssociationSyncCompliance(str):
+class AssociationSyncCompliance(StrEnum):
     AUTO = "AUTO"
     MANUAL = "MANUAL"
 
 
-class AttachmentHashType(str):
+class AttachmentHashType(StrEnum):
     Sha256 = "Sha256"
 
 
-class AttachmentsSourceKey(str):
+class AttachmentsSourceKey(StrEnum):
     SourceUrl = "SourceUrl"
     S3FileUrl = "S3FileUrl"
     AttachmentReference = "AttachmentReference"
 
 
-class AutomationExecutionFilterKey(str):
+class AutomationExecutionFilterKey(StrEnum):
     DocumentNamePrefix = "DocumentNamePrefix"
     ExecutionStatus = "ExecutionStatus"
     ExecutionId = "ExecutionId"
@@ -439,7 +440,7 @@ class AutomationExecutionFilterKey(str):
     OpsItemId = "OpsItemId"
 
 
-class AutomationExecutionStatus(str):
+class AutomationExecutionStatus(StrEnum):
     Pending = "Pending"
     InProgress = "InProgress"
     Waiting = "Waiting"
@@ -461,21 +462,21 @@ class AutomationExecutionStatus(str):
     Exited = "Exited"
 
 
-class AutomationSubtype(str):
+class AutomationSubtype(StrEnum):
     ChangeRequest = "ChangeRequest"
 
 
-class AutomationType(str):
+class AutomationType(StrEnum):
     CrossAccount = "CrossAccount"
     Local = "Local"
 
 
-class CalendarState(str):
+class CalendarState(StrEnum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
 
 
-class CommandFilterKey(str):
+class CommandFilterKey(StrEnum):
     InvokedAfter = "InvokedAfter"
     InvokedBefore = "InvokedBefore"
     Status = "Status"
@@ -483,7 +484,7 @@ class CommandFilterKey(str):
     DocumentName = "DocumentName"
 
 
-class CommandInvocationStatus(str):
+class CommandInvocationStatus(StrEnum):
     Pending = "Pending"
     InProgress = "InProgress"
     Delayed = "Delayed"
@@ -494,7 +495,7 @@ class CommandInvocationStatus(str):
     Cancelling = "Cancelling"
 
 
-class CommandPluginStatus(str):
+class CommandPluginStatus(StrEnum):
     Pending = "Pending"
     InProgress = "InProgress"
     Success = "Success"
@@ -503,7 +504,7 @@ class CommandPluginStatus(str):
     Failed = "Failed"
 
 
-class CommandStatus(str):
+class CommandStatus(StrEnum):
     Pending = "Pending"
     InProgress = "InProgress"
     Success = "Success"
@@ -513,7 +514,7 @@ class CommandStatus(str):
     Cancelling = "Cancelling"
 
 
-class ComplianceQueryOperatorType(str):
+class ComplianceQueryOperatorType(StrEnum):
     EQUAL = "EQUAL"
     NOT_EQUAL = "NOT_EQUAL"
     BEGIN_WITH = "BEGIN_WITH"
@@ -521,7 +522,7 @@ class ComplianceQueryOperatorType(str):
     GREATER_THAN = "GREATER_THAN"
 
 
-class ComplianceSeverity(str):
+class ComplianceSeverity(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -530,70 +531,70 @@ class ComplianceSeverity(str):
     UNSPECIFIED = "UNSPECIFIED"
 
 
-class ComplianceStatus(str):
+class ComplianceStatus(StrEnum):
     COMPLIANT = "COMPLIANT"
     NON_COMPLIANT = "NON_COMPLIANT"
 
 
-class ComplianceUploadType(str):
+class ComplianceUploadType(StrEnum):
     COMPLETE = "COMPLETE"
     PARTIAL = "PARTIAL"
 
 
-class ConnectionStatus(str):
+class ConnectionStatus(StrEnum):
     connected = "connected"
     notconnected = "notconnected"
 
 
-class DescribeActivationsFilterKeys(str):
+class DescribeActivationsFilterKeys(StrEnum):
     ActivationIds = "ActivationIds"
     DefaultInstanceName = "DefaultInstanceName"
     IamRole = "IamRole"
 
 
-class DocumentFilterKey(str):
+class DocumentFilterKey(StrEnum):
     Name = "Name"
     Owner = "Owner"
     PlatformTypes = "PlatformTypes"
     DocumentType = "DocumentType"
 
 
-class DocumentFormat(str):
+class DocumentFormat(StrEnum):
     YAML = "YAML"
     JSON = "JSON"
     TEXT = "TEXT"
 
 
-class DocumentHashType(str):
+class DocumentHashType(StrEnum):
     Sha256 = "Sha256"
     Sha1 = "Sha1"
 
 
-class DocumentMetadataEnum(str):
+class DocumentMetadataEnum(StrEnum):
     DocumentReviews = "DocumentReviews"
 
 
-class DocumentParameterType(str):
+class DocumentParameterType(StrEnum):
     String = "String"
     StringList = "StringList"
 
 
-class DocumentPermissionType(str):
+class DocumentPermissionType(StrEnum):
     Share = "Share"
 
 
-class DocumentReviewAction(str):
+class DocumentReviewAction(StrEnum):
     SendForReview = "SendForReview"
     UpdateReview = "UpdateReview"
     Approve = "Approve"
     Reject = "Reject"
 
 
-class DocumentReviewCommentType(str):
+class DocumentReviewCommentType(StrEnum):
     Comment = "Comment"
 
 
-class DocumentStatus(str):
+class DocumentStatus(StrEnum):
     Creating = "Creating"
     Active = "Active"
     Updating = "Updating"
@@ -601,7 +602,7 @@ class DocumentStatus(str):
     Failed = "Failed"
 
 
-class DocumentType(str):
+class DocumentType(StrEnum):
     Command = "Command"
     Policy = "Policy"
     Automation = "Automation"
@@ -619,23 +620,23 @@ class DocumentType(str):
     QuickSetup = "QuickSetup"
 
 
-class ExecutionMode(str):
+class ExecutionMode(StrEnum):
     Auto = "Auto"
     Interactive = "Interactive"
 
 
-class ExternalAlarmState(str):
+class ExternalAlarmState(StrEnum):
     UNKNOWN = "UNKNOWN"
     ALARM = "ALARM"
 
 
-class Fault(str):
+class Fault(StrEnum):
     Client = "Client"
     Server = "Server"
     Unknown = "Unknown"
 
 
-class InstanceInformationFilterKey(str):
+class InstanceInformationFilterKey(StrEnum):
     InstanceIds = "InstanceIds"
     AgentVersion = "AgentVersion"
     PingStatus = "PingStatus"
@@ -646,14 +647,14 @@ class InstanceInformationFilterKey(str):
     AssociationStatus = "AssociationStatus"
 
 
-class InstancePatchStateOperatorType(str):
+class InstancePatchStateOperatorType(StrEnum):
     Equal = "Equal"
     NotEqual = "NotEqual"
     LessThan = "LessThan"
     GreaterThan = "GreaterThan"
 
 
-class InstancePropertyFilterKey(str):
+class InstancePropertyFilterKey(StrEnum):
     InstanceIds = "InstanceIds"
     AgentVersion = "AgentVersion"
     PingStatus = "PingStatus"
@@ -665,7 +666,7 @@ class InstancePropertyFilterKey(str):
     AssociationStatus = "AssociationStatus"
 
 
-class InstancePropertyFilterOperator(str):
+class InstancePropertyFilterOperator(StrEnum):
     Equal = "Equal"
     NotEqual = "NotEqual"
     BeginWith = "BeginWith"
@@ -673,17 +674,17 @@ class InstancePropertyFilterOperator(str):
     GreaterThan = "GreaterThan"
 
 
-class InventoryAttributeDataType(str):
+class InventoryAttributeDataType(StrEnum):
     string = "string"
     number = "number"
 
 
-class InventoryDeletionStatus(str):
+class InventoryDeletionStatus(StrEnum):
     InProgress = "InProgress"
     Complete = "Complete"
 
 
-class InventoryQueryOperatorType(str):
+class InventoryQueryOperatorType(StrEnum):
     Equal = "Equal"
     NotEqual = "NotEqual"
     BeginWith = "BeginWith"
@@ -692,18 +693,18 @@ class InventoryQueryOperatorType(str):
     Exists = "Exists"
 
 
-class InventorySchemaDeleteOption(str):
+class InventorySchemaDeleteOption(StrEnum):
     DisableSchema = "DisableSchema"
     DeleteSchema = "DeleteSchema"
 
 
-class LastResourceDataSyncStatus(str):
+class LastResourceDataSyncStatus(StrEnum):
     Successful = "Successful"
     Failed = "Failed"
     InProgress = "InProgress"
 
 
-class MaintenanceWindowExecutionStatus(str):
+class MaintenanceWindowExecutionStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     SUCCESS = "SUCCESS"
@@ -714,24 +715,24 @@ class MaintenanceWindowExecutionStatus(str):
     SKIPPED_OVERLAPPING = "SKIPPED_OVERLAPPING"
 
 
-class MaintenanceWindowResourceType(str):
+class MaintenanceWindowResourceType(StrEnum):
     INSTANCE = "INSTANCE"
     RESOURCE_GROUP = "RESOURCE_GROUP"
 
 
-class MaintenanceWindowTaskCutoffBehavior(str):
+class MaintenanceWindowTaskCutoffBehavior(StrEnum):
     CONTINUE_TASK = "CONTINUE_TASK"
     CANCEL_TASK = "CANCEL_TASK"
 
 
-class MaintenanceWindowTaskType(str):
+class MaintenanceWindowTaskType(StrEnum):
     RUN_COMMAND = "RUN_COMMAND"
     AUTOMATION = "AUTOMATION"
     STEP_FUNCTIONS = "STEP_FUNCTIONS"
     LAMBDA = "LAMBDA"
 
 
-class NotificationEvent(str):
+class NotificationEvent(StrEnum):
     All = "All"
     InProgress = "InProgress"
     Success = "Success"
@@ -740,12 +741,12 @@ class NotificationEvent(str):
     Failed = "Failed"
 
 
-class NotificationType(str):
+class NotificationType(StrEnum):
     Command = "Command"
     Invocation = "Invocation"
 
 
-class OperatingSystem(str):
+class OperatingSystem(StrEnum):
     WINDOWS = "WINDOWS"
     AMAZON_LINUX = "AMAZON_LINUX"
     AMAZON_LINUX_2 = "AMAZON_LINUX_2"
@@ -763,7 +764,7 @@ class OperatingSystem(str):
     AMAZON_LINUX_2023 = "AMAZON_LINUX_2023"
 
 
-class OpsFilterOperatorType(str):
+class OpsFilterOperatorType(StrEnum):
     Equal = "Equal"
     NotEqual = "NotEqual"
     BeginWith = "BeginWith"
@@ -772,20 +773,20 @@ class OpsFilterOperatorType(str):
     Exists = "Exists"
 
 
-class OpsItemDataType(str):
+class OpsItemDataType(StrEnum):
     SearchableString = "SearchableString"
     String = "String"
 
 
-class OpsItemEventFilterKey(str):
+class OpsItemEventFilterKey(StrEnum):
     OpsItemId = "OpsItemId"
 
 
-class OpsItemEventFilterOperator(str):
+class OpsItemEventFilterOperator(StrEnum):
     Equal = "Equal"
 
 
-class OpsItemFilterKey(str):
+class OpsItemFilterKey(StrEnum):
     Status = "Status"
     CreatedBy = "CreatedBy"
     Source = "Source"
@@ -816,24 +817,24 @@ class OpsItemFilterKey(str):
     AccountId = "AccountId"
 
 
-class OpsItemFilterOperator(str):
+class OpsItemFilterOperator(StrEnum):
     Equal = "Equal"
     Contains = "Contains"
     GreaterThan = "GreaterThan"
     LessThan = "LessThan"
 
 
-class OpsItemRelatedItemsFilterKey(str):
+class OpsItemRelatedItemsFilterKey(StrEnum):
     ResourceType = "ResourceType"
     AssociationId = "AssociationId"
     ResourceUri = "ResourceUri"
 
 
-class OpsItemRelatedItemsFilterOperator(str):
+class OpsItemRelatedItemsFilterOperator(StrEnum):
     Equal = "Equal"
 
 
-class OpsItemStatus(str):
+class OpsItemStatus(StrEnum):
     Open = "Open"
     InProgress = "InProgress"
     Resolved = "Resolved"
@@ -855,30 +856,30 @@ class OpsItemStatus(str):
     Closed = "Closed"
 
 
-class ParameterTier(str):
+class ParameterTier(StrEnum):
     Standard = "Standard"
     Advanced = "Advanced"
     Intelligent_Tiering = "Intelligent-Tiering"
 
 
-class ParameterType(str):
+class ParameterType(StrEnum):
     String = "String"
     StringList = "StringList"
     SecureString = "SecureString"
 
 
-class ParametersFilterKey(str):
+class ParametersFilterKey(StrEnum):
     Name = "Name"
     Type = "Type"
     KeyId = "KeyId"
 
 
-class PatchAction(str):
+class PatchAction(StrEnum):
     ALLOW_AS_DEPENDENCY = "ALLOW_AS_DEPENDENCY"
     BLOCK = "BLOCK"
 
 
-class PatchComplianceDataState(str):
+class PatchComplianceDataState(StrEnum):
     INSTALLED = "INSTALLED"
     INSTALLED_OTHER = "INSTALLED_OTHER"
     INSTALLED_PENDING_REBOOT = "INSTALLED_PENDING_REBOOT"
@@ -888,7 +889,7 @@ class PatchComplianceDataState(str):
     FAILED = "FAILED"
 
 
-class PatchComplianceLevel(str):
+class PatchComplianceLevel(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -897,14 +898,14 @@ class PatchComplianceLevel(str):
     UNSPECIFIED = "UNSPECIFIED"
 
 
-class PatchDeploymentStatus(str):
+class PatchDeploymentStatus(StrEnum):
     APPROVED = "APPROVED"
     PENDING_APPROVAL = "PENDING_APPROVAL"
     EXPLICIT_APPROVED = "EXPLICIT_APPROVED"
     EXPLICIT_REJECTED = "EXPLICIT_REJECTED"
 
 
-class PatchFilterKey(str):
+class PatchFilterKey(StrEnum):
     ARCH = "ARCH"
     ADVISORY_ID = "ADVISORY_ID"
     BUGZILLA_ID = "BUGZILLA_ID"
@@ -926,12 +927,12 @@ class PatchFilterKey(str):
     VERSION = "VERSION"
 
 
-class PatchOperationType(str):
+class PatchOperationType(StrEnum):
     Scan = "Scan"
     Install = "Install"
 
 
-class PatchProperty(str):
+class PatchProperty(StrEnum):
     PRODUCT = "PRODUCT"
     PRODUCT_FAMILY = "PRODUCT_FAMILY"
     CLASSIFICATION = "CLASSIFICATION"
@@ -940,38 +941,38 @@ class PatchProperty(str):
     SEVERITY = "SEVERITY"
 
 
-class PatchSet(str):
+class PatchSet(StrEnum):
     OS = "OS"
     APPLICATION = "APPLICATION"
 
 
-class PingStatus(str):
+class PingStatus(StrEnum):
     Online = "Online"
     ConnectionLost = "ConnectionLost"
     Inactive = "Inactive"
 
 
-class PlatformType(str):
+class PlatformType(StrEnum):
     Windows = "Windows"
     Linux = "Linux"
     MacOS = "MacOS"
 
 
-class RebootOption(str):
+class RebootOption(StrEnum):
     RebootIfNeeded = "RebootIfNeeded"
     NoReboot = "NoReboot"
 
 
-class ResourceDataSyncS3Format(str):
+class ResourceDataSyncS3Format(StrEnum):
     JsonSerDe = "JsonSerDe"
 
 
-class ResourceType(str):
+class ResourceType(StrEnum):
     ManagedInstance = "ManagedInstance"
     EC2Instance = "EC2Instance"
 
 
-class ResourceTypeForTagging(str):
+class ResourceTypeForTagging(StrEnum):
     Document = "Document"
     ManagedInstance = "ManagedInstance"
     MaintenanceWindow = "MaintenanceWindow"
@@ -983,14 +984,14 @@ class ResourceTypeForTagging(str):
     Association = "Association"
 
 
-class ReviewStatus(str):
+class ReviewStatus(StrEnum):
     APPROVED = "APPROVED"
     NOT_REVIEWED = "NOT_REVIEWED"
     PENDING = "PENDING"
     REJECTED = "REJECTED"
 
 
-class SessionFilterKey(str):
+class SessionFilterKey(StrEnum):
     InvokedAfter = "InvokedAfter"
     InvokedBefore = "InvokedBefore"
     Target = "Target"
@@ -999,12 +1000,12 @@ class SessionFilterKey(str):
     SessionId = "SessionId"
 
 
-class SessionState(str):
+class SessionState(StrEnum):
     Active = "Active"
     History = "History"
 
 
-class SessionStatus(str):
+class SessionStatus(StrEnum):
     Connected = "Connected"
     Connecting = "Connecting"
     Disconnected = "Disconnected"
@@ -1013,7 +1014,7 @@ class SessionStatus(str):
     Failed = "Failed"
 
 
-class SignalType(str):
+class SignalType(StrEnum):
     Approve = "Approve"
     Reject = "Reject"
     StartStep = "StartStep"
@@ -1021,13 +1022,13 @@ class SignalType(str):
     Resume = "Resume"
 
 
-class SourceType(str):
+class SourceType(StrEnum):
     AWS_EC2_Instance = "AWS::EC2::Instance"
     AWS_IoT_Thing = "AWS::IoT::Thing"
     AWS_SSM_ManagedInstance = "AWS::SSM::ManagedInstance"
 
 
-class StepExecutionFilterKey(str):
+class StepExecutionFilterKey(StrEnum):
     StartTimeBefore = "StartTimeBefore"
     StartTimeAfter = "StartTimeAfter"
     StepExecutionStatus = "StepExecutionStatus"
@@ -1039,7 +1040,7 @@ class StepExecutionFilterKey(str):
     ParentStepIteratorValue = "ParentStepIteratorValue"
 
 
-class StopType(str):
+class StopType(StrEnum):
     Complete = "Complete"
     Cancel = "Cancel"
 

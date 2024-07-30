@@ -288,6 +288,8 @@ class TestBookstoreApplication:
             "$..ClusterConfig.Options.DedicatedMasterType",  # added in LS
             "$..DomainStatusList..EBSOptions.Iops",  # added in LS
             "$..DomainStatusList..IPAddressType",  # missing
+            "$..DomainStatusList..DomainProcessingStatus",  # missing
+            "$..DomainStatusList..ModifyingProperties",  # missing
             "$..SoftwareUpdateOptions",  # missing
             "$..OffPeakWindowOptions",  # missing
             "$..ChangeProgressDetails",  # missing
@@ -298,6 +300,7 @@ class TestBookstoreApplication:
             "$..AdvancedSecurityOptions.Options.AnonymousAuthEnabled",  # missing
             "$..DomainConfig.ClusterConfig.Options.WarmEnabled",  # missing
             "$..DomainConfig.IPAddressType",  # missing
+            "$..DomainConfig.ModifyingProperties",  # missing
             "$..ClusterConfig.Options.ColdStorageOptions",  # missing
             "$..ClusterConfig.Options.MultiAZWithStandbyEnabled",  # missing
             # TODO different values:

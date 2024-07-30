@@ -1,3 +1,5 @@
+"""Module for initialization hooks https://docs.localstack.cloud/references/init-hooks/"""
+
 import dataclasses
 import logging
 import os.path
@@ -204,19 +206,21 @@ class InitScriptManager:
             if not os.path.isdir(stage_path):
                 continue
 
-            for file in sorted(os.listdir(stage_path)):
-                script_path = os.path.join(stage_path, file)
-                if not os.path.isfile(script_path):
-                    continue
+            for root, dirs, files in os.walk(stage_path, topdown=True):
+                # from the docs: "When topdown is true, the caller can modify the dirnames list in-place"
+                dirs.sort()
+                files.sort()
+                for file in files:
+                    script_path = os.path.abspath(os.path.join(root, file))
+                    if not os.path.isfile(script_path):
+                        continue
 
-                # only add the script if there's a runner for it
-                if not self.has_script_runner(script_path):
-                    LOG.debug("No runner available for script %s", script_path)
-                    continue
+                    # only add the script if there's a runner for it
+                    if not self.has_script_runner(script_path):
+                        LOG.debug("No runner available for script %s", script_path)
+                        continue
 
-                scripts[stage].append(
-                    Script(path=os.path.abspath(os.path.join(stage_path, script_path)), stage=stage)
-                )
+                    scripts[stage].append(Script(path=script_path, stage=stage))
         LOG.debug("Init scripts discovered: %s", scripts)
 
         return scripts

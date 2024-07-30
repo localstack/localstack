@@ -173,5 +173,119 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_simple_route_table_creation_without_vpc": {
+    "recorded-date": "01-07-2024, 20:10:52",
+    "recorded-content": {
+      "tags": {
+        "Name": "Suspicious Route Table"
+      },
+      "route_table": {
+        "Associations": [],
+        "OwnerId": "111111111111",
+        "PropagatingVgws": [],
+        "RouteTableId": "<vpc-id:2>",
+        "Routes": [
+          {
+            "DestinationCidrBlock": "10.0.0.0/16",
+            "GatewayId": "local",
+            "Origin": "CreateRouteTable",
+            "State": "active"
+          }
+        ],
+        "VpcId": "<vpc-id:1>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_simple_route_table_creation": {
+    "recorded-date": "01-07-2024, 20:13:48",
+    "recorded-content": {
+      "tags": {
+        "Name": "Suspicious Route table"
+      },
+      "route_table": {
+        "Associations": [],
+        "OwnerId": "111111111111",
+        "PropagatingVgws": [],
+        "RouteTableId": "<vpc-id:2>",
+        "Routes": [
+          {
+            "DestinationCidrBlock": "10.0.0.0/16",
+            "GatewayId": "local",
+            "Origin": "CreateRouteTable",
+            "State": "active"
+          }
+        ],
+        "VpcId": "<vpc-id:1>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_cfn_with_multiple_route_table_associations": {
+    "recorded-date": "02-07-2024, 15:29:41",
+    "recorded-content": {
+      "route_table": {
+        "Associations": [
+          {
+            "AssociationState": {
+              "State": "associated"
+            },
+            "Main": false,
+            "RouteTableAssociationId": "<route-table-association-id:1>",
+            "RouteTableId": "<route-table-id:1>",
+            "SubnetId": "<subnet-id:1>"
+          },
+          {
+            "AssociationState": {
+              "State": "associated"
+            },
+            "Main": false,
+            "RouteTableAssociationId": "<route-table-association-id:2>",
+            "RouteTableId": "<route-table-id:1>",
+            "SubnetId": "<subnet-id:2>"
+          }
+        ],
+        "OwnerId": "111111111111",
+        "PropagatingVgws": [],
+        "RouteTableId": "<route-table-id:1>",
+        "Routes": [
+          {
+            "DestinationCidrBlock": "100.0.0.0/20",
+            "GatewayId": "local",
+            "Origin": "CreateRouteTable",
+            "State": "active"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-2264231d/d12f4090-3887-11ef-ba9f-0e78e2279133"
+          },
+          {
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "RouteTable"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "stack-2264231d"
+          },
+          {
+            "Key": "env",
+            "Value": "production"
+          }
+        ],
+        "VpcId": "<vpc-id:1>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_ec2_security_group_id_with_vpc": {
+    "recorded-date": "19-07-2024, 15:53:16",
+    "recorded-content": {
+      "references": {
+        "SGWithVpcIdGroupId": "<with-vpcid-group-id>",
+        "SGWithVpcIdRef": "<with-vpcid-group-id>",
+        "SGWithoutVpcIdGroupId": "<without-vpcid-group-id>",
+        "SGWithoutVpcIdRef": "<without-vpcid-group-name>"
+      }
+    }
   }
 }

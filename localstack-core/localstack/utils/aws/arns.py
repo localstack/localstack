@@ -7,6 +7,7 @@ from botocore.utils import ArnParser, InvalidArnException
 
 from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID
 from localstack.aws.connect import connect_to
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -196,11 +197,6 @@ def log_group_arn(group_name: str, account_id: str, region_name: str) -> str:
 #
 
 
-def events_rule_arn(rule_name: str, account_id: str, region_name: str) -> str:
-    pattern = "arn:aws:events:%s:%s:rule/%s"
-    return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
-
-
 def events_archive_arn(archive_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:events:%s:%s:archive/%s"
     return _resource_arn(archive_name, pattern, account_id=account_id, region_name=region_name)
@@ -214,6 +210,15 @@ def event_bus_arn(bus_name: str, account_id: str, region_name: str) -> str:
 def events_replay_arn(replay_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:events:%s:%s:replay/%s"
     return _resource_arn(replay_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def events_rule_arn(
+    rule_name: str, account_id: str, region_name: str, event_bus_name: str = "default"
+) -> str:
+    pattern = "arn:aws:events:%s:%s:rule/%s"
+    if event_bus_name != "default":
+        rule_name = f"{event_bus_name}/{rule_name}"
+    return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
 
 
 #
@@ -276,9 +281,9 @@ def stepfunctions_state_machine_arn(name: str, account_id: str, region_name: str
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
-def stepfunctions_execution_state_machine_arn(state_machine_arn: str, execution_name: str) -> str:
+def stepfunctions_standard_execution_arn(state_machine_arn: str, execution_name: str) -> str:
     arn_data: ArnData = parse_arn(state_machine_arn)
-    execution_arn = ":".join(
+    standard_execution_arn = ":".join(
         [
             "arn",
             arn_data["partition"],
@@ -290,7 +295,25 @@ def stepfunctions_execution_state_machine_arn(state_machine_arn: str, execution_
             execution_name,
         ]
     )
-    return execution_arn
+    return standard_execution_arn
+
+
+def stepfunctions_express_execution_arn(state_machine_arn: str, execution_name: str) -> str:
+    arn_data: ArnData = parse_arn(state_machine_arn)
+    express_execution_arn = ":".join(
+        [
+            "arn",
+            arn_data["partition"],
+            arn_data["service"],
+            arn_data["region"],
+            arn_data["account"],
+            "express",
+            "".join(arn_data["resource"].split(":")[1:]),
+            execution_name,
+            long_uid(),
+        ]
+    )
+    return express_execution_arn
 
 
 def stepfunctions_activity_arn(name: str, account_id: str, region_name: str) -> str:
@@ -524,3 +547,11 @@ def sqs_queue_name(queue_arn: str) -> str:
 
 def s3_bucket_name(bucket_name_or_arn: str) -> str:
     return bucket_name_or_arn.split(":::")[-1]
+
+
+def is_arn(possible_arn: str) -> bool:
+    try:
+        parse_arn(possible_arn)
+        return True
+    except InvalidArnException:
+        return False

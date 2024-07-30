@@ -2,7 +2,9 @@ import json
 import logging
 
 from rolo import Response
+from werkzeug.datastructures import Headers
 
+from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.next_gen.execute_api.api import (
     RestApiGatewayExceptionHandler,
     RestApiGatewayHandlerChain,
@@ -11,6 +13,9 @@ from localstack.services.apigateway.next_gen.execute_api.context import RestApiI
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     BaseGatewayException,
     get_gateway_response_or_default,
+)
+from localstack.services.apigateway.next_gen.execute_api.variables import (
+    GatewayResponseContextVarsError,
 )
 
 LOG = logging.getLogger(__name__)
@@ -39,9 +44,20 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
             )
             return
 
+        LOG.info("Error raised during invocation: %s", exception.type)
+        self.set_error_context(exception, context)
         error = self.create_exception_response(exception, context)
         if error:
             response.update_from(error)
+
+    @staticmethod
+    def set_error_context(exception: BaseGatewayException, context: RestApiInvocationContext):
+        context.context_variables["error"] = GatewayResponseContextVarsError(
+            message=exception.message,
+            messageString=exception.message,
+            responseType=exception.type,
+            validationErrorString="",  # TODO
+        )
 
     def create_exception_response(
         self, exception: BaseGatewayException, context: RestApiInvocationContext
@@ -52,19 +68,23 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
 
         content = self._build_response_content(exception)
 
-        headers = self._build_response_headers()
+        headers = self._build_response_headers(exception)
 
         status_code = gateway_response.get("statusCode")
         if not status_code:
             status_code = exception.status_code or 500
 
-        return Response(response=content, headers=headers, status=status_code)
+        response = Response(response=content, headers=headers, status=status_code)
+        return response
 
-    def _build_response_content(self, exception: BaseGatewayException) -> str:
+    @staticmethod
+    def _build_response_content(exception: BaseGatewayException) -> str:
         # TODO apply responseTemplates to the content. We should also handle the default simply by managing the default
         #  template body `{"message":$context.error.messageString}`
         return json.dumps({"message": exception.message})
 
-    def _build_response_headers(self) -> dict:
+    @staticmethod
+    def _build_response_headers(exception: BaseGatewayException) -> dict:
         # TODO apply responseParameters to the headers and get content-type from the gateway_response
-        return {"content-type": "application/json"}
+        headers = Headers({"Content-Type": APPLICATION_JSON, "x-amzn-ErrorType": exception.code})
+        return headers

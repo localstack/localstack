@@ -83,6 +83,8 @@ def create_rest_api_with_integration(
         res_templates=None,
         integration_type=None,
         stage=DEFAULT_STAGE_NAME,
+        resource_method: str = "POST",
+        integration_method: str = "POST",
     ):
         name = f"test-apigw-{short_uid()}"
         api_id, name, root_id = create_rest_apigw(
@@ -100,7 +102,7 @@ def create_rest_api_with_integration(
             aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
-            httpMethod="POST",
+            httpMethod=resource_method,
             authorizationType="NONE",
             apiKeyRequired=False,
             requestParameters={value: True for value in req_parameters.values()},
@@ -129,7 +131,7 @@ def create_rest_api_with_integration(
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod=method,
-            integrationHttpMethod="POST",
+            integrationHttpMethod=integration_method,
             type=integration_type or "AWS",
             credentials=assume_role_arn,
             uri=integration_uri,
@@ -141,7 +143,7 @@ def create_rest_api_with_integration(
             aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
-            httpMethod="POST",
+            httpMethod=resource_method,
             statusCode="200",
         )
 
@@ -150,7 +152,7 @@ def create_rest_api_with_integration(
             aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
-            httpMethod="POST",
+            httpMethod=resource_method,
             statusCode="200",
             responseTemplates=res_templates,
         )

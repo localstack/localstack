@@ -51,7 +51,7 @@ def create_context():
         context = RestApiInvocationContext(Request())
 
         # The api key validator only relies on the raw headers from the invocation requests
-        context.invocation_request = InvocationRequest(raw_headers=Headers(headers))
+        context.invocation_request = InvocationRequest(headers=Headers(headers))
 
         # Frozen deployment populated by the router
         context.deployment = RestApiDeployment(
@@ -70,10 +70,11 @@ def create_context():
         context.api_id = TEST_API_ID
         context.resource_method = method or Method()
         context.context_variables = ContextVariables()
+        context.context_variables["identity"] = ContextVarsIdentity()
 
         # Context populated by a Lambda Authorizer
         if api_key is not None:
-            context.context_variables["identity"] = ContextVarsIdentity(apiKey=api_key)
+            context.context_variables["identity"]["apiKey"] = api_key
         return context
 
     return _create_context

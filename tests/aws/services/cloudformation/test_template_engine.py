@@ -11,65 +11,12 @@ import yaml
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import StackDeployError
-from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.sync import wait_until
-
-TMPL = """
-Resources:
-  blaBE223B94:
-    Type: AWS::SNS::Topic
-  queue276F7297:
-    Type: AWS::SQS::Queue
-    Properties:
-      DelaySeconds: "2"
-      FifoQueue: "true"
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-Outputs:
-  QueueName:
-    Value:
-      Fn::GetAtt:
-        - queue276F7297
-        - QueueName
-  QueueUrl:
-    Value:
-      Ref: queue276F7297
-"""
-
-TEST_TEMPLATE_26_1 = """
-AWSTemplateFormatVersion: 2010-09-09
-Resources:
-  MyQueue:
-    Type: 'AWS::SQS::Queue'
-    Properties:
-      QueueName: %s
-Outputs:
-  TestOutput26:
-    Value: !GetAtt MyQueue.Arn
-    Export:
-      Name: TestQueueArn26
-"""
-
-TEST_TEMPLATE_26_2 = """
-AWSTemplateFormatVersion: 2010-09-09
-Resources:
-  MessageQueue:
-    Type: 'AWS::SQS::Queue'
-    Properties:
-      QueueName: %s
-      RedrivePolicy:
-        deadLetterTargetArn: !ImportValue TestQueueArn26
-        maxReceiveCount: 3
-Outputs:
-  MessageQueueUrl1:
-    Value: !ImportValue TestQueueArn26
-  MessageQueueUrl2:
-    Value: !Ref MessageQueue
-"""
 
 
 def create_macro(
@@ -96,7 +43,12 @@ class TestTypes:
     @markers.aws.validated
     def test_implicit_type_conversion(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.sqs_api())
-        stack = deploy_cfn_template(template=TMPL, max_wait=180)
+        stack = deploy_cfn_template(
+            max_wait=180,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/implicit_type_conversion.yml"
+            ),
+        )
         queue = aws_client.sqs.get_queue_attributes(
             QueueUrl=stack.outputs["QueueUrl"], AttributeNames=["All"]
         )
@@ -293,38 +245,30 @@ class TestIntrinsicFunctions:
 
 
 class TestImports:
-    @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
-    @markers.aws.unknown
-    def test_stack_imports(self, deploy_cfn_template, aws_client, account_id, region_name):
-        result = aws_client.cloudformation.list_imports(ExportName="_unknown_")
-        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert result["Imports"] == []  # TODO: create test with actual import values!
-
+    @markers.aws.validated
+    def test_stack_imports(self, deploy_cfn_template, aws_client):
         queue_name1 = f"q-{short_uid()}"
         queue_name2 = f"q-{short_uid()}"
-        template1 = TEST_TEMPLATE_26_1 % queue_name1
-        template2 = TEST_TEMPLATE_26_2 % queue_name2
-        deploy_cfn_template(template=template1)
-        stack2 = deploy_cfn_template(template=template2)
-
+        deploy_cfn_template(
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/sqs_export.yml"),
+            parameters={"QueueName": queue_name1},
+        )
+        stack2 = deploy_cfn_template(
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/sqs_import.yml"),
+            parameters={"QueueName": queue_name2},
+        )
         queue_url1 = aws_client.sqs.get_queue_url(QueueName=queue_name1)["QueueUrl"]
         queue_url2 = aws_client.sqs.get_queue_url(QueueName=queue_name2)["QueueUrl"]
 
-        queues = aws_client.sqs.list_queues().get("QueueUrls", [])
-        assert queue_url1 in queues
-        assert queue_url2 in queues
+        queue_arn1 = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url1, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        queue_arn2 = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url2, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
 
-        outputs = aws_client.cloudformation.describe_stacks(StackName=stack2.stack_name)["Stacks"][
-            0
-        ]["Outputs"]
-        output = [out["OutputValue"] for out in outputs if out["OutputKey"] == "MessageQueueUrl1"][
-            0
-        ]
-        assert arns.sqs_queue_arn(queue_url1, account_id, region_name) == output  # TODO
-        output = [out["OutputValue"] for out in outputs if out["OutputKey"] == "MessageQueueUrl2"][
-            0
-        ]
-        assert output == queue_url2
+        assert stack2.outputs["MessageQueueArn1"] == queue_arn1
+        assert stack2.outputs["MessageQueueArn2"] == queue_arn2
 
 
 class TestSsmParameters:
@@ -418,6 +362,41 @@ class TestSsmParameters:
 
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
+
+    @markers.aws.validated
+    def test_ssm_nested_with_nested_stack(self, s3_create_bucket, deploy_cfn_template, aws_client):
+        """
+        When resolving the references in the cloudformation template for 'Fn::GetAtt' we need to consider the attribute subname.
+        Eg: In "Fn::GetAtt": "ChildParam.Outputs.Value", where attribute reference is ChildParam.Outputs.Value the:
+        resource logical id is ChildParam and attribute name is Outputs we need to fetch the Value attribute from the resource properties
+        of the model instance.
+        """
+
+        bucket_name = s3_create_bucket()
+        domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
+
+        aws_client.s3.upload_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/nested_child_ssm.yaml"),
+            Bucket=bucket_name,
+            Key="nested_child_ssm.yaml",
+        )
+
+        key_value = "child-2-param-name"
+
+        deploy_cfn_template(
+            max_wait=120 if is_aws_cloud() else 20,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/nested_parent_ssm.yaml"
+            ),
+            parameters={
+                "ChildStackURL": f"https://{bucket_name}.s3.{domain}/nested_child_ssm.yaml",
+                "KeyValue": key_value,
+            },
+        )
+
+        ssm_parameter = aws_client.ssm.get_parameter(Name="test-param")["Parameter"]["Value"]
+
+        assert ssm_parameter == key_value
 
 
 class TestSecretsManagerParameters:
@@ -1183,3 +1162,37 @@ class TestStackEvents:
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("failed_event", failed_event)
         assert "ResourceStatusReason" in failed_event
+
+
+class TestPseudoParameters:
+    @markers.aws.validated
+    def test_stack_id(self, deploy_cfn_template, snapshot):
+        template = {
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Ref": "AWS::StackId",
+                        },
+                    },
+                },
+            },
+            "Outputs": {
+                "StackId": {
+                    "Value": {
+                        "Fn::GetAtt": [
+                            "MyParameter",
+                            "Value",
+                        ],
+                    },
+                },
+            },
+        }
+
+        stack = deploy_cfn_template(template=json.dumps(template))
+
+        snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
+
+        snapshot.match("StackId", stack.outputs["StackId"])

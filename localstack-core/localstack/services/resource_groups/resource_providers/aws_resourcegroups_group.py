@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional, TypedDict
 
@@ -92,10 +93,18 @@ class ResourceGroupsGroupProvider(ResourceProvider[ResourceGroupsGroupProperties
         model = request.desired_state
         client = request.aws_client_factory.resource_groups
 
-        # TODO: verify
-        model["Name"] = model.get("Name") or util.generate_default_name(
-            request.stack_name, request.logical_resource_id
-        )
+        if not model.get("Name"):
+            raise ValueError("Name is a required property")
+
+        # Default query
+        resource_query = model.get("ResourceQuery", {})
+        if (
+            not resource_query.get("Query")
+            and resource_query.get("Type") == "CLOUDFORMATION_STACK_1_0"
+        ):
+            resource_query["Query"] = json.dumps(
+                {"ResourceTypeFilters": ["AWS::AllSupported"], "StackIdentifier": request.stack_id}
+            )
 
         params = util.select_attributes(
             model, ["Name", "Description", "ResourceQuery", "Configuration"]

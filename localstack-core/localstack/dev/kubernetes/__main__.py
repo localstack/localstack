@@ -27,17 +27,17 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, por
         }
     )
     if pro:
-        ext_path = os.path.join(root_path, "..", "localstack-ext")
-        ext_code_path = os.path.join(ext_path, "localstack-pro-core", "localstack_ext")
+        pro_path = os.path.join(root_path, "..", "localstack-ext")
+        pro_code_path = os.path.join(pro_path, "localstack-pro-core", "localstack", "pro", "core")
         volumes.append(
             {
-                "volume": f"{os.path.normpath(ext_code_path)}:/code/localstack_ext",
+                "volume": f"{os.path.normpath(pro_code_path)}:/code/localstack_ext",
                 "nodeFilters": ["server:*", "agent:*"],
             }
         )
 
         egg_path = os.path.join(
-            ext_path, "localstack-pro-core", "localstack_ext.egg-info/entry_points.txt"
+            pro_path, "localstack-pro-core", "localstack_ext.egg-info/entry_points.txt"
         )
         volumes.append(
             {
@@ -157,7 +157,7 @@ def print_file(content: dict, file_name: str):
 
 @click.command("run")
 @click.option(
-    "--pro", is_flag=True, default=None, help="Mount the localstack-ext code into the cluster."
+    "--pro", is_flag=True, default=None, help="Mount the localstack-pro code into the cluster."
 )
 @click.option(
     "--mount-moto", is_flag=True, default=None, help="Mount the moto code into the cluster."

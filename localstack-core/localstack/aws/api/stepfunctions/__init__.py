@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -20,6 +21,8 @@ HTTPStatusMessage = str
 Identity = str
 IncludeExecutionData = bool
 IncludeExecutionDataGetExecutionHistory = bool
+KmsDataKeyReusePeriodSeconds = int
+KmsKeyId = str
 ListExecutionsPageToken = str
 LongArn = str
 MapRunLabel = str
@@ -53,18 +56,23 @@ includedDetails = bool
 truncated = bool
 
 
-class ExecutionRedriveFilter(str):
+class EncryptionType(StrEnum):
+    AWS_OWNED_KEY = "AWS_OWNED_KEY"
+    CUSTOMER_MANAGED_KMS_KEY = "CUSTOMER_MANAGED_KMS_KEY"
+
+
+class ExecutionRedriveFilter(StrEnum):
     REDRIVEN = "REDRIVEN"
     NOT_REDRIVEN = "NOT_REDRIVEN"
 
 
-class ExecutionRedriveStatus(str):
+class ExecutionRedriveStatus(StrEnum):
     REDRIVABLE = "REDRIVABLE"
     NOT_REDRIVABLE = "NOT_REDRIVABLE"
     REDRIVABLE_BY_MAP_RUN = "REDRIVABLE_BY_MAP_RUN"
 
 
-class ExecutionStatus(str):
+class ExecutionStatus(StrEnum):
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
@@ -73,7 +81,7 @@ class ExecutionStatus(str):
     PENDING_REDRIVE = "PENDING_REDRIVE"
 
 
-class HistoryEventType(str):
+class HistoryEventType(StrEnum):
     ActivityFailed = "ActivityFailed"
     ActivityScheduled = "ActivityScheduled"
     ActivityScheduleFailed = "ActivityScheduleFailed"
@@ -137,63 +145,82 @@ class HistoryEventType(str):
     MapRunRedriven = "MapRunRedriven"
 
 
-class InspectionLevel(str):
+class IncludedData(StrEnum):
+    ALL_DATA = "ALL_DATA"
+    METADATA_ONLY = "METADATA_ONLY"
+
+
+class InspectionLevel(StrEnum):
     INFO = "INFO"
     DEBUG = "DEBUG"
     TRACE = "TRACE"
 
 
-class LogLevel(str):
+class KmsKeyState(StrEnum):
+    DISABLED = "DISABLED"
+    PENDING_DELETION = "PENDING_DELETION"
+    PENDING_IMPORT = "PENDING_IMPORT"
+    UNAVAILABLE = "UNAVAILABLE"
+    CREATING = "CREATING"
+
+
+class LogLevel(StrEnum):
     ALL = "ALL"
     ERROR = "ERROR"
     FATAL = "FATAL"
     OFF = "OFF"
 
 
-class MapRunStatus(str):
+class MapRunStatus(StrEnum):
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     ABORTED = "ABORTED"
 
 
-class StateMachineStatus(str):
+class StateMachineStatus(StrEnum):
     ACTIVE = "ACTIVE"
     DELETING = "DELETING"
 
 
-class StateMachineType(str):
+class StateMachineType(StrEnum):
     STANDARD = "STANDARD"
     EXPRESS = "EXPRESS"
 
 
-class SyncExecutionStatus(str):
+class SyncExecutionStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     TIMED_OUT = "TIMED_OUT"
 
 
-class TestExecutionStatus(str):
+class TestExecutionStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     RETRIABLE = "RETRIABLE"
     CAUGHT_ERROR = "CAUGHT_ERROR"
 
 
-class ValidateStateMachineDefinitionResultCode(str):
+class ValidateStateMachineDefinitionResultCode(StrEnum):
     OK = "OK"
     FAIL = "FAIL"
 
 
-class ValidateStateMachineDefinitionSeverity(str):
+class ValidateStateMachineDefinitionSeverity(StrEnum):
     ERROR = "ERROR"
 
 
-class ValidationExceptionReason(str):
+class ValidationExceptionReason(StrEnum):
     API_DOES_NOT_SUPPORT_LABELED_ARNS = "API_DOES_NOT_SUPPORT_LABELED_ARNS"
     MISSING_REQUIRED_PARAMETER = "MISSING_REQUIRED_PARAMETER"
     CANNOT_UPDATE_COMPLETED_MAP_RUN = "CANNOT_UPDATE_COMPLETED_MAP_RUN"
     INVALID_ROUTING_CONFIGURATION = "INVALID_ROUTING_CONFIGURATION"
+
+
+class ActivityAlreadyExists(ServiceException):
+    code: str = "ActivityAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ActivityDoesNotExist(ServiceException):
@@ -256,6 +283,12 @@ class InvalidDefinition(ServiceException):
     status_code: int = 400
 
 
+class InvalidEncryptionConfiguration(ServiceException):
+    code: str = "InvalidEncryptionConfiguration"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class InvalidExecutionInput(ServiceException):
     code: str = "InvalidExecutionInput"
     sender_fault: bool = False
@@ -288,6 +321,25 @@ class InvalidToken(ServiceException):
 
 class InvalidTracingConfiguration(ServiceException):
     code: str = "InvalidTracingConfiguration"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsAccessDeniedException(ServiceException):
+    code: str = "KmsAccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsInvalidStateException(ServiceException):
+    code: str = "KmsInvalidStateException"
+    sender_fault: bool = False
+    status_code: int = 400
+    kmsKeyState: Optional[KmsKeyState]
+
+
+class KmsThrottlingException(ServiceException):
+    code: str = "KmsThrottlingException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -435,6 +487,17 @@ class CloudWatchLogsLogGroup(TypedDict, total=False):
     logGroupArn: Optional[Arn]
 
 
+EncryptionConfiguration = TypedDict(
+    "EncryptionConfiguration",
+    {
+        "kmsKeyId": Optional[KmsKeyId],
+        "kmsDataKeyReusePeriodSeconds": Optional[KmsDataKeyReusePeriodSeconds],
+        "type": EncryptionType,
+    },
+    total=False,
+)
+
+
 class Tag(TypedDict, total=False):
     key: Optional[TagKey]
     value: Optional[TagValue]
@@ -446,6 +509,7 @@ TagList = List[Tag]
 class CreateActivityInput(ServiceRequest):
     name: Name
     tags: Optional[TagList]
+    encryptionConfiguration: Optional[EncryptionConfiguration]
 
 
 class CreateActivityOutput(TypedDict, total=False):
@@ -501,6 +565,7 @@ CreateStateMachineInput = TypedDict(
         "tracingConfiguration": Optional[TracingConfiguration],
         "publish": Optional[Publish],
         "versionDescription": Optional[VersionDescription],
+        "encryptionConfiguration": Optional[EncryptionConfiguration],
     },
     total=False,
 )
@@ -552,10 +617,12 @@ class DescribeActivityOutput(TypedDict, total=False):
     activityArn: Arn
     name: Name
     creationDate: Timestamp
+    encryptionConfiguration: Optional[EncryptionConfiguration]
 
 
 class DescribeExecutionInput(ServiceRequest):
     executionArn: Arn
+    includedData: Optional[IncludedData]
 
 
 class DescribeExecutionOutput(TypedDict, total=False):
@@ -648,6 +715,7 @@ class DescribeStateMachineAliasOutput(TypedDict, total=False):
 
 class DescribeStateMachineForExecutionInput(ServiceRequest):
     executionArn: Arn
+    includedData: Optional[IncludedData]
 
 
 class DescribeStateMachineForExecutionOutput(TypedDict, total=False):
@@ -661,10 +729,12 @@ class DescribeStateMachineForExecutionOutput(TypedDict, total=False):
     mapRunArn: Optional[LongArn]
     label: Optional[MapRunLabel]
     revisionId: Optional[RevisionId]
+    encryptionConfiguration: Optional[EncryptionConfiguration]
 
 
 class DescribeStateMachineInput(ServiceRequest):
     stateMachineArn: Arn
+    includedData: Optional[IncludedData]
 
 
 DescribeStateMachineOutput = TypedDict(
@@ -682,6 +752,7 @@ DescribeStateMachineOutput = TypedDict(
         "label": Optional[MapRunLabel],
         "revisionId": Optional[RevisionId],
         "description": Optional[VersionDescription],
+        "encryptionConfiguration": Optional[EncryptionConfiguration],
     },
     total=False,
 )
@@ -1147,6 +1218,7 @@ class StartSyncExecutionInput(ServiceRequest):
     name: Optional[Name]
     input: Optional[SensitiveData]
     traceHeader: Optional[TraceHeader]
+    includedData: Optional[IncludedData]
 
 
 class StartSyncExecutionOutput(TypedDict, total=False):
@@ -1243,6 +1315,7 @@ class UpdateStateMachineInput(ServiceRequest):
     tracingConfiguration: Optional[TracingConfiguration]
     publish: Optional[Publish]
     versionDescription: Optional[VersionDescription]
+    encryptionConfiguration: Optional[EncryptionConfiguration]
 
 
 class UpdateStateMachineOutput(TypedDict, total=False):
@@ -1280,7 +1353,12 @@ class StepfunctionsApi:
 
     @handler("CreateActivity")
     def create_activity(
-        self, context: RequestContext, name: Name, tags: TagList = None, **kwargs
+        self,
+        context: RequestContext,
+        name: Name,
+        tags: TagList = None,
+        encryption_configuration: EncryptionConfiguration = None,
+        **kwargs,
     ) -> CreateActivityOutput:
         raise NotImplementedError
 
@@ -1333,7 +1411,11 @@ class StepfunctionsApi:
 
     @handler("DescribeExecution")
     def describe_execution(
-        self, context: RequestContext, execution_arn: Arn, **kwargs
+        self,
+        context: RequestContext,
+        execution_arn: Arn,
+        included_data: IncludedData = None,
+        **kwargs,
     ) -> DescribeExecutionOutput:
         raise NotImplementedError
 
@@ -1345,7 +1427,11 @@ class StepfunctionsApi:
 
     @handler("DescribeStateMachine")
     def describe_state_machine(
-        self, context: RequestContext, state_machine_arn: Arn, **kwargs
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        included_data: IncludedData = None,
+        **kwargs,
     ) -> DescribeStateMachineOutput:
         raise NotImplementedError
 
@@ -1357,7 +1443,11 @@ class StepfunctionsApi:
 
     @handler("DescribeStateMachineForExecution")
     def describe_state_machine_for_execution(
-        self, context: RequestContext, execution_arn: Arn, **kwargs
+        self,
+        context: RequestContext,
+        execution_arn: Arn,
+        included_data: IncludedData = None,
+        **kwargs,
     ) -> DescribeStateMachineForExecutionOutput:
         raise NotImplementedError
 
@@ -1517,6 +1607,7 @@ class StepfunctionsApi:
         name: Name = None,
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
+        included_data: IncludedData = None,
         **kwargs,
     ) -> StartSyncExecutionOutput:
         raise NotImplementedError
@@ -1580,6 +1671,7 @@ class StepfunctionsApi:
         tracing_configuration: TracingConfiguration = None,
         publish: Publish = None,
         version_description: VersionDescription = None,
+        encryption_configuration: EncryptionConfiguration = None,
         **kwargs,
     ) -> UpdateStateMachineOutput:
         raise NotImplementedError

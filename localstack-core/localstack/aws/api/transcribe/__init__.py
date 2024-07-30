@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
@@ -37,12 +38,12 @@ VocabularyName = str
 Word = str
 
 
-class BaseModelName(str):
+class BaseModelName(StrEnum):
     NarrowBand = "NarrowBand"
     WideBand = "WideBand"
 
 
-class CLMLanguageCode(str):
+class CLMLanguageCode(StrEnum):
     en_US = "en-US"
     hi_IN = "hi-IN"
     es_US = "es-US"
@@ -52,28 +53,28 @@ class CLMLanguageCode(str):
     ja_JP = "ja-JP"
 
 
-class CallAnalyticsFeature(str):
+class CallAnalyticsFeature(StrEnum):
     GENERATIVE_SUMMARIZATION = "GENERATIVE_SUMMARIZATION"
 
 
-class CallAnalyticsJobStatus(str):
+class CallAnalyticsJobStatus(StrEnum):
     QUEUED = "QUEUED"
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
 
 
-class CallAnalyticsSkippedReasonCode(str):
+class CallAnalyticsSkippedReasonCode(StrEnum):
     INSUFFICIENT_CONVERSATION_CONTENT = "INSUFFICIENT_CONVERSATION_CONTENT"
     FAILED_SAFETY_GUIDELINES = "FAILED_SAFETY_GUIDELINES"
 
 
-class InputType(str):
+class InputType(StrEnum):
     REAL_TIME = "REAL_TIME"
     POST_CALL = "POST_CALL"
 
 
-class LanguageCode(str):
+class LanguageCode(StrEnum):
     af_ZA = "af-ZA"
     ar_AE = "ar-AE"
     ar_SA = "ar-SA"
@@ -179,7 +180,7 @@ class LanguageCode(str):
     zu_ZA = "zu-ZA"
 
 
-class MediaFormat(str):
+class MediaFormat(StrEnum):
     mp3 = "mp3"
     mp4 = "mp4"
     wav = "wav"
@@ -190,43 +191,43 @@ class MediaFormat(str):
     m4a = "m4a"
 
 
-class MedicalContentIdentificationType(str):
+class MedicalContentIdentificationType(StrEnum):
     PHI = "PHI"
 
 
-class MedicalScribeJobStatus(str):
+class MedicalScribeJobStatus(StrEnum):
     QUEUED = "QUEUED"
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
 
 
-class MedicalScribeLanguageCode(str):
+class MedicalScribeLanguageCode(StrEnum):
     en_US = "en-US"
 
 
-class MedicalScribeParticipantRole(str):
+class MedicalScribeParticipantRole(StrEnum):
     PATIENT = "PATIENT"
     CLINICIAN = "CLINICIAN"
 
 
-class ModelStatus(str):
+class ModelStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
 
 
-class OutputLocationType(str):
+class OutputLocationType(StrEnum):
     CUSTOMER_BUCKET = "CUSTOMER_BUCKET"
     SERVICE_BUCKET = "SERVICE_BUCKET"
 
 
-class ParticipantRole(str):
+class ParticipantRole(StrEnum):
     AGENT = "AGENT"
     CUSTOMER = "CUSTOMER"
 
 
-class PiiEntityType(str):
+class PiiEntityType(StrEnum):
     BANK_ACCOUNT_NUMBER = "BANK_ACCOUNT_NUMBER"
     BANK_ROUTING = "BANK_ROUTING"
     CREDIT_DEBIT_NUMBER = "CREDIT_DEBIT_NUMBER"
@@ -241,58 +242,58 @@ class PiiEntityType(str):
     ALL = "ALL"
 
 
-class RedactionOutput(str):
+class RedactionOutput(StrEnum):
     redacted = "redacted"
     redacted_and_unredacted = "redacted_and_unredacted"
 
 
-class RedactionType(str):
+class RedactionType(StrEnum):
     PII = "PII"
 
 
-class SentimentValue(str):
+class SentimentValue(StrEnum):
     POSITIVE = "POSITIVE"
     NEGATIVE = "NEGATIVE"
     NEUTRAL = "NEUTRAL"
     MIXED = "MIXED"
 
 
-class Specialty(str):
+class Specialty(StrEnum):
     PRIMARYCARE = "PRIMARYCARE"
 
 
-class SubtitleFormat(str):
+class SubtitleFormat(StrEnum):
     vtt = "vtt"
     srt = "srt"
 
 
-class ToxicityCategory(str):
+class ToxicityCategory(StrEnum):
     ALL = "ALL"
 
 
-class TranscriptFilterType(str):
+class TranscriptFilterType(StrEnum):
     EXACT = "EXACT"
 
 
-class TranscriptionJobStatus(str):
+class TranscriptionJobStatus(StrEnum):
     QUEUED = "QUEUED"
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
 
 
-class Type(str):
+class Type(StrEnum):
     CONVERSATION = "CONVERSATION"
     DICTATION = "DICTATION"
 
 
-class VocabularyFilterMethod(str):
+class VocabularyFilterMethod(StrEnum):
     remove = "remove"
     mask = "mask"
     tag = "tag"
 
 
-class VocabularyState(str):
+class VocabularyState(StrEnum):
     PENDING = "PENDING"
     READY = "READY"
     FAILED = "FAILED"
