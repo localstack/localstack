@@ -1,5 +1,5 @@
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:ab693355763a733fdb77ea21c21b9dfad8ca2438e66fba73b4ca1262d9e4e047 as java-builder
+FROM eclipse-temurin:11@sha256:ab693355763a733fdb77ea21c21b9dfad8ca2438e66fba73b4ca1262d9e4e047 AS java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.9-slim-bookworm@sha256:80bcf8d243a0d763a7759d6b99e5bf89af1869135546698be4bf7ff6c3f98a59 as base
+FROM python:3.11.9-slim-bookworm@sha256:80bcf8d243a0d763a7759d6b99e5bf89af1869135546698be4bf7ff6c3f98a59 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -86,16 +86,16 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
 SHELL [ "/bin/bash", "-c" ]
 
 # Install Java 11
-ENV LANG C.UTF-8
+ENV LANG=C.UTF-8
 RUN { \
         echo '#!/bin/sh'; echo 'set -e'; echo; \
         echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
-ENV JAVA_HOME /usr/lib/jvm/java-11
+ENV JAVA_HOME=/usr/lib/jvm/java-11
 COPY --from=java-builder /usr/lib/jvm/java-11 $JAVA_HOME
 RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
-ENV PATH "${PATH}:${JAVA_HOME}/bin"
+ENV PATH="${PATH}:${JAVA_HOME}/bin"
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
@@ -139,7 +139,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 
 # builder: Stage which installs the dependencies of LocalStack Community
-FROM base as builder
+FROM base AS builder
 ARG TARGETARCH
 
 # Install build dependencies to base
