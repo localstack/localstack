@@ -62,6 +62,12 @@
   "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_templated_email": {
     "last_validated_date": "2023-08-25T22:00:04+00:00"
   },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_special_tags_send_email[ses:feedback-id-a-this-marketing-campaign]": {
+    "last_validated_date": "2024-07-30T11:32:59+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_special_tags_send_email[ses:feedback-id-b-that-campaign]": {
+    "last_validated_date": "2024-07-30T11:32:59+00:00"
+  },
   "tests/aws/services/ses/test_ses.py::TestSES::test_trying_to_delete_event_destination_from_non_existent_configuration_set": {
     "last_validated_date": "2023-08-25T22:05:02+00:00"
   }
