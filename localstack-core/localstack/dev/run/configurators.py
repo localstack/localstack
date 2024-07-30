@@ -222,6 +222,7 @@ class EntryPointMountConfigurator:
         if not self.pro:
             host_path = (
                 self.host_paths.localstack_project_dir
+                / "localstack-core"
                 / "localstack_core.egg-info"
                 / "entry_points.txt"
             )
