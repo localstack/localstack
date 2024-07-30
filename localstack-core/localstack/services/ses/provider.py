@@ -642,4 +642,6 @@ class SNSEmitter:
 
 class InvalidParameterValue(CommonServiceException):
     def __init__(self, message=None):
-        super().__init__("InvalidParameterValue", status_code=400, message=message)
+        super().__init__(
+            "InvalidParameterValue", status_code=400, message=message, sender_fault=True
+        )

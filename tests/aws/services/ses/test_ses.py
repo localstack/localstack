@@ -803,7 +803,6 @@ class TestSES:
         snapshot.match("delete-error", e_info.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Type"])
     @pytest.mark.parametrize(
         "tag_name,tag_value",
         [
