@@ -26,6 +26,7 @@ from localstack.testing.config import (
 )
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 from localstack.utils.urls import localstack_host
@@ -2781,9 +2782,7 @@ class TestSqsProvider:
     def test_dead_letter_queue_list_sources(self, sqs_create_queue, aws_sqs_client, region_name):
         dl_queue_url = sqs_create_queue()
         url_parts = dl_queue_url.split("/")
-        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
-        )
+        dl_target_arn = f"arn:{get_partition(region_name)}:sqs:{region_name}:{url_parts[len(url_parts) - 2]}:{url_parts[-1]}"
 
         conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
         attributes = {"RedrivePolicy": json.dumps(conf)}
@@ -3066,9 +3065,7 @@ class TestSqsProvider:
             AttributeNames=["QueueArn"],
         )
         # asserts
-        constructed_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
-        )
+        constructed_arn = f"arn:{get_partition(region_name)}:sqs:{region_name}:{url_parts[len(url_parts) - 2]}:{url_parts[-1]}"
         redrive_policy = json.loads(get_two_attributes.get("Attributes").get("RedrivePolicy"))
         assert message_retention_period == get_two_attributes.get("Attributes").get(
             "MessageRetentionPeriod"
@@ -4513,7 +4510,7 @@ def sqs_http_client(aws_http_client_factory, region_name):
 
 class TestSqsQueryApi:
     @markers.aws.validated
-    def test_get_queue_attributes_all(self, sqs_create_queue, sqs_http_client):
+    def test_get_queue_attributes_all(self, sqs_create_queue, sqs_http_client, region_name):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
             queue_url,
@@ -4525,14 +4522,17 @@ class TestSqsQueryApi:
 
         assert response.ok
         assert "<GetQueueAttributesResponse" in response.text
-        assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
+        assert (
+            f"<Attribute><Name>QueueArn</Name><Value>arn:{get_partition(region_name)}:sqs:"
+            in response.text
+        )
         assert "<Attribute><Name>VisibilityTimeout</Name><Value>30" in response.text
         assert queue_url.split("/")[-1] in response.text
 
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_get_queue_attributes_works_without_authparams(
-        self, monkeypatch, sqs_create_queue, strategy
+        self, monkeypatch, sqs_create_queue, strategy, region_name
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
@@ -4547,12 +4547,17 @@ class TestSqsQueryApi:
 
         assert response.ok
         assert "<GetQueueAttributesResponse" in response.text
-        assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
+        assert (
+            f"<Attribute><Name>QueueArn</Name><Value>arn:{get_partition(region_name)}:sqs:"
+            in response.text
+        )
         assert "<Attribute><Name>VisibilityTimeout</Name><Value>30" in response.text
         assert queue_url.split("/")[-1] in response.text
 
     @markers.aws.validated
-    def test_get_queue_attributes_with_query_args(self, sqs_create_queue, sqs_http_client):
+    def test_get_queue_attributes_with_query_args(
+        self, sqs_create_queue, sqs_http_client, region_name
+    ):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
             queue_url,
@@ -4564,7 +4569,10 @@ class TestSqsQueryApi:
 
         assert response.ok
         assert "<GetQueueAttributesResponse" in response.text
-        assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
+        assert (
+            f"<Attribute><Name>QueueArn</Name><Value>arn:{get_partition(region_name)}:sqs:"
+            in response.text
+        )
         assert "<Attribute><Name>VisibilityTimeout</Name>" not in response.text
         assert queue_url.split("/")[-1] in response.text
 
@@ -4882,7 +4890,7 @@ class TestSqsQueryApi:
         )
 
     @markers.aws.validated
-    def test_overwrite_queue_url_in_params(self, sqs_create_queue, sqs_http_client):
+    def test_overwrite_queue_url_in_params(self, sqs_create_queue, sqs_http_client, region_name):
         # here, queue1 url simply serves as AWS endpoint but we pass queue2 url in the request arg
         queue1_url = sqs_create_queue()
         queue2_url = sqs_create_queue()
@@ -4897,7 +4905,10 @@ class TestSqsQueryApi:
         )
 
         assert response.ok
-        assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
+        assert (
+            f"<Attribute><Name>QueueArn</Name><Value>arn:{get_partition(region_name)}:sqs:"
+            in response.text
+        )
         assert queue1_url.split("/")[-1] not in response.text
         assert queue2_url.split("/")[-1] in response.text
 

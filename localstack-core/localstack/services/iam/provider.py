@@ -408,6 +408,7 @@ class IamProvider(IamApi):
         if not moto_user and not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
             sts_client = connect_to(
+                region_name=context.region,
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
             ).sts

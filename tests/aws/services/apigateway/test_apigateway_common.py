@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import get_partition, parse_arn
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import (
@@ -124,7 +124,7 @@ class TestApiGatewayCommon:
                 httpMethod=http_method,
                 integrationHttpMethod="POST",
                 type="AWS_PROXY",
-                uri=f"arn:aws:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+                uri=f"arn:{get_partition(region)}:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
             )
             aws_client.apigateway.put_method_response(
                 restApiId=api_id,
@@ -143,7 +143,9 @@ class TestApiGatewayCommon:
         deploy_1 = aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
         snapshot.match("deploy-1", deploy_1)
 
-        source_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*/nested/*"
+        source_arn = (
+            f"arn:{get_partition(region)}:execute-api:{region}:{account_id}:{api_id}/*/*/nested/*"
+        )
 
         aws_client.lambda_.add_permission(
             FunctionName=lambda_arn,

@@ -154,7 +154,7 @@ class S3Bucket:
         self.acl = acl
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = owner
-        self.bucket_arn = arns.s3_bucket_arn(self.name)
+        self.bucket_arn = arns.s3_bucket_arn(self.name, region=bucket_region)
 
     def get_object(
         self,

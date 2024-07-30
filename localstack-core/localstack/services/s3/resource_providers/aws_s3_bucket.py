@@ -442,7 +442,7 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
 
         self._create_bucket_if_does_not_exist(model, request.region_name, s3_client)
 
-        self._setup_post_creation_attributes(model)
+        self._setup_post_creation_attributes(model, request.region_name)
 
         if put_config := self._get_s3_bucket_notification_config(model):
             s3_client.put_bucket_notification_configuration(**put_config)
@@ -586,8 +586,8 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
 
         return result
 
-    def _setup_post_creation_attributes(self, model):
-        model["Arn"] = arns.s3_bucket_arn(model["BucketName"])
+    def _setup_post_creation_attributes(self, model, region: str):
+        model["Arn"] = arns.s3_bucket_arn(model["BucketName"], region=region)
         domain_name = f"{model['BucketName']}.{S3_VIRTUAL_HOSTNAME}"
         model["DomainName"] = domain_name
         model["RegionalDomainName"] = domain_name

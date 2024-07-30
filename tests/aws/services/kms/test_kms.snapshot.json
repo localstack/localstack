@@ -188,7 +188,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
-    "recorded-date": "13-07-2023, 11:58:37",
+    "recorded-date": "14-06-2024, 13:34:43",
     "recorded-content": {
       "describe-key-diff-region-with-id": {
         "Error": {
@@ -204,9 +204,9 @@
       "describe-key-diff-region-with-arn": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid arn ap-southeast-1"
+          "Message": "Invalid arn <secondary-region>"
         },
-        "message": "Invalid arn ap-southeast-1",
+        "message": "Invalid arn <secondary-region>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -215,7 +215,7 @@
       "describe-key-same-specific-region-with-id": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<secondary-region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test key 123",
@@ -239,7 +239,7 @@
       "describe-key-same-specific-region-with-arn": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<secondary-region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test key 123",
