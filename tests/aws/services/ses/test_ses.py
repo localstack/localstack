@@ -843,6 +843,36 @@ class TestSES:
             )
         snapshot.match("response", e.value.response)
 
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "tag_name,tag_value",
+        [
+            ("ses:feedback-id-a", "this-marketing-campaign"),
+            ("ses:feedback-id-b", "that-campaign"),
+        ],
+    )
+    def test_special_tags_send_email(self, tag_name, tag_value, aws_client):
+        source = f"user-{short_uid()}@example.com"
+        destination = "success@example.com"
+
+        # Ensure that request passes validation and throws MessageRejected instead
+        with pytest.raises(ClientError) as exc:
+            aws_client.ses.send_email(
+                Source=source,
+                Tags=[
+                    {
+                        "Name": tag_name,
+                        "Value": tag_value,
+                    }
+                ],
+                Message=SAMPLE_SIMPLE_EMAIL,
+                Destination={
+                    "ToAddresses": [destination],
+                },
+            )
+
+        assert exc.match("MessageRejected")
+
 
 class TestSESRetrospection:
     @markers.aws.only_localstack
