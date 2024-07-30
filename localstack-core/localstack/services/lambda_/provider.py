@@ -154,6 +154,7 @@ from localstack.services.lambda_.event_source_mapping.esm_config_factory import 
     EsmConfigFactory,
 )
 from localstack.services.lambda_.event_source_mapping.esm_worker import (
+    EsmState,
     EsmWorker,
 )
 from localstack.services.lambda_.event_source_mapping.esm_worker_factory import (
@@ -1999,6 +2000,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: UpdateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
+        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
+            return self.update_event_source_mapping_v2(context, request)
+        else:
+            return self.update_event_source_mapping_v1(context, request)
+
+    def update_event_source_mapping_v1(
+        self,
+        context: RequestContext,
+        request: UpdateEventSourceMappingRequest,
+    ) -> EventSourceMappingConfiguration:
         state = lambda_stores[context.account_id][context.region]
         request_data = {**request}
         uuid = request_data.pop("UUID", None)
@@ -2060,6 +2071,61 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state.event_source_mappings[uuid] = event_source_mapping
         return {**event_source_mapping, **temp_params}
 
+    def update_event_source_mapping_v2(
+        self,
+        context: RequestContext,
+        request: UpdateEventSourceMappingRequest,
+    ) -> EventSourceMappingConfiguration:
+        # TODO: test and implement this properly (quite complex with many validations and limitations!)
+        LOG.warning(
+            "Updating Lambda Event Source Mapping is in experimental state and not yet fully tested."
+        )
+        state = lambda_stores[context.account_id][context.region]
+        request_data = {**request}
+        uuid = request_data.pop("UUID", None)
+        if not uuid:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+        old_event_source_mapping = state.event_source_mappings.get(uuid)
+        if old_event_source_mapping is None:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )  # TODO: test?
+
+        # remove the FunctionName field
+        function_name_or_arn = request_data.pop("FunctionName", None)
+
+        # normalize values to overwrite
+        event_source_mapping = {
+            **old_event_source_mapping,
+            **request_data,
+        }
+
+        if function_name_or_arn:
+            # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
+            account_id, region = api_utils.get_account_and_region(function_name_or_arn, context)
+            function_name, qualifier = api_utils.get_name_and_qualifier(
+                function_name_or_arn, None, context
+            )
+            event_source_mapping["FunctionArn"] = api_utils.qualified_lambda_arn(
+                function_name, qualifier, account_id, region
+            )
+
+        temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
+
+        esm_worker = self.esm_workers[uuid]
+        if enabled := request.get("Enabled") is not None:
+            if enabled and not old_event_source_mapping["Enabled"]:
+                esm_worker.start()
+                event_source_mapping["State"] = EsmState.ENABLING
+            elif not enabled and old_event_source_mapping["Enabled"]:
+                esm_worker.stop()
+                event_source_mapping["State"] = EsmState.DISABLING
+
+        state.event_source_mappings[uuid] = event_source_mapping
+        return {**event_source_mapping, **temp_params}
+
     def delete_event_source_mapping(
         self, context: RequestContext, uuid: String, **kwargs
     ) -> EventSourceMappingConfiguration:
@@ -2070,7 +2136,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )
         esm = state.event_source_mappings.pop(uuid)
-        return {**esm, "State": "Deleting"}
+        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
+            # TODO: add proper locking
+            esm_worker = self.esm_workers[uuid]
+            esm_worker.delete()
+        return {**esm, "State": EsmState.DELETING}
 
     def get_event_source_mapping(
         self, context: RequestContext, uuid: String, **kwargs
@@ -2082,7 +2152,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )
         if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
-            event_source_mapping["State"] = self.esm_workers[uuid].current_state
+            esm_worker = self.esm_workers[uuid]
+            event_source_mapping["State"] = esm_worker.current_state
+            event_source_mapping["StateTransitionReason"] = esm_worker.state_transition_reason
         return event_source_mapping
 
     def list_event_source_mappings(
@@ -2097,6 +2169,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
 
         esms = state.event_source_mappings.values()
+        # TODO: update and test State and StateTransitionReason for ESM v2
 
         if event_source_arn:  # TODO: validate pattern
             esms = [e for e in esms if e["EventSourceArn"] == event_source_arn]

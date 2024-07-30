@@ -1,5 +1,6 @@
 import logging
 import threading
+from enum import StrEnum
 
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
@@ -12,7 +13,7 @@ POLL_INTERVAL_SEC: float = 1
 LOG = logging.getLogger(__name__)
 
 
-class EsmState(str):
+class EsmState(StrEnum):
     # https://docs.aws.amazon.com/lambda/latest/api/API_CreateEventSourceMapping.html#lambda-CreateEventSourceMapping-response-State
     CREATING = "Creating"
     ENABLING = "Enabling"
@@ -23,17 +24,18 @@ class EsmState(str):
     DELETING = "Deleting"
 
 
-class EsmStateReason(str):
-    USER_ACTION = "User action"
+class EsmStateReason(StrEnum):
+    USER_INITIATED = "USER_INITIATED"
     NO_RECORDS_PROCESSED = "No records processed"
-    # TODO: add others
+    # TODO: add others?
 
 
 class EsmWorker:
     esm_config: EventSourceMappingConfiguration
     enabled: bool
-    current_state: str
-    state_transition_reason: str
+    current_state: EsmState
+    state_transition_reason: EsmStateReason
+    # TODO: test
     last_processing_result: str
 
     poller: Poller
@@ -49,10 +51,11 @@ class EsmWorker:
         enabled: bool = True,
     ):
         self.esm_config = esm_config
+        self.enabled = enabled
         self.current_state = EsmState.CREATING
+        self.state_transition_reason = EsmStateReason.USER_INITIATED
 
         self.poller = poller
-        self.enabled = enabled
 
         # TODO: implement lifecycle locking
         self._state_lock = threading.RLock()
@@ -65,23 +68,45 @@ class EsmWorker:
 
     def create(self):
         if self.enabled:
-            self.start_event_source_mapping()
+            with self._state_lock:
+                self.current_state = EsmState.CREATING
+                self.state_transition_reason = EsmStateReason.USER_INITIATED
+            self.start()
         else:
-            # TODO: test creating a disabled ESM
-            pass
+            # TODO: validate with tests
+            with self._state_lock:
+                self.current_state = EsmState.DISABLED
+                self.state_transition_reason = EsmStateReason.USER_INITIATED
 
-    def start_event_source_mapping(self):
-        # TODO: implement state lifecycle
+    def start(self):
+        with self._state_lock:
+            # CREATING state takes precedence over ENABLING
+            if self.current_state != EsmState.CREATING:
+                self.current_state = EsmState.ENABLING
+                self.state_transition_reason = EsmStateReason.USER_INITIATED
         self._poller_thread = FuncThread(
             self.poller_loop,
             name=f"event-source-mapping-poller-{self.uuid}",
         )
         self._poller_thread.start()
 
+    def stop(self):
+        with self._state_lock:
+            self.current_state = EsmState.DISABLING
+            self.state_transition_reason = EsmStateReason.USER_INITIATED
+        self._shutdown_event.set()
+
+    def delete(self):
+        with self._state_lock:
+            self.current_state = EsmState.DELETING
+            self.state_transition_reason = EsmStateReason.USER_INITIATED
+        self._shutdown_event.set()
+
     def poller_loop(self, *args, **kwargs):
         with self._state_lock:
-            # TODO: should we only track state in store object? => requires proper different locking!
             self.current_state = EsmState.ENABLED
+            self.state_transition_reason = EsmStateReason.USER_INITIATED
+            # TODO: idea to not update store state but query state from esm_worker upon querying, but async deletion needs to modify store?!
             # Update store state !?
             # function_version = LambdaProvider._get_function_version_from_arn(self.esm_config["FunctionArn"])
             # state = lambda_stores[function_version.id.account][function_version.id.region]
@@ -90,6 +115,7 @@ class EsmWorker:
         while not self._shutdown_event.is_set():
             try:
                 self.poller.poll_events()
+                # TODO: update state transition reason?
                 # Wait for next short-polling interval
                 # MAYBE: read the poller interval from self.poller if we need the flexibility
                 self._shutdown_event.wait(POLL_INTERVAL_SEC)
@@ -103,4 +129,4 @@ class EsmWorker:
                 # TODO: implement some backoff here and stop poller upon continuous errors
                 # Wait some time between retries to avoid running into the problem right again
                 self._shutdown_event.wait(2)
-        # TODO: Delete ESM if needed (?!) => check how deleting works with state updates
+        # TODO: Delete ESM if needed once everything shut down properly (?!) => check how deleting works with state updates

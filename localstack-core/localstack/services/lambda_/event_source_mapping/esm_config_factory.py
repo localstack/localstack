@@ -74,14 +74,15 @@ class EsmConfigFactory:
             "FunctionResponseTypes", []
         )
 
+        state = EsmState.CREATING if self.request.get("Enabled", True) else EsmState.DISABLED
         esm_config = EventSourceMappingConfiguration(
             **derived_source_parameters,
             UUID=long_uid(),
             FunctionArn=self.function_arn,
             # TODO: last modified => does state transition affect this?
             LastModified=datetime.datetime.now(),
-            State=EsmState.CREATING,
-            StateTransitionReason=EsmStateReason.USER_ACTION,
-            # TODO: complete missing fields (hardcoding for SQS test case now)
+            State=state,
+            StateTransitionReason=EsmStateReason.USER_INITIATED,
+            # TODO: complete missing fields
         )
         return esm_config
