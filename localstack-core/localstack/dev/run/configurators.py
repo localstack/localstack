@@ -233,6 +233,38 @@ class EntryPointMountConfigurator:
             dep_path = container_path.parent.name.removesuffix(".dist-info")
             dep, ver = dep_path.split("-")
 
+            if dep == "localstack_core":
+                host_path = (
+                    self.host_paths.localstack_project_dir
+                    / "localstack-core"
+                    / "localstack_core.egg-info"
+                    / "entry_points.txt"
+                )
+                if host_path.is_file():
+                    cfg.volumes.add(
+                        VolumeBind(
+                            str(host_path),
+                            str(container_path),
+                            read_only=True,
+                        )
+                    )
+                    continue
+            elif dep == "localstack_ext":
+                host_path = (
+                    self.host_paths.localstack_pro_project_dir
+                    / "localstack-pro-core"
+                    / "localstack_ext.egg-info"
+                    / "entry_points.txt"
+                )
+                if host_path.is_file():
+                    cfg.volumes.add(
+                        VolumeBind(
+                            str(host_path),
+                            str(container_path),
+                            read_only=True,
+                        )
+                    )
+                    continue
             for host_path in self.host_paths.workspace_dir.glob(
                 f"*/{dep}.egg-info/entry_points.txt"
             ):
