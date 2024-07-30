@@ -819,15 +819,13 @@ class TestSES:
             ("", ""),
             ("", "test"),
             ("test", ""),
-            # The `ses:` tags are special case that contain the `:` character and pass request validation.
-            # These raise `MessageRejected` instead of `InvalidParameterValue`.
-            ("ses:feedback-id-a", "this-marketing-campaign"),
-            ("ses:feedback-id-b", "that-campaign"),
         ],
     )
     def test_invalid_tags_send_email(self, tag_name, tag_value, snapshot, aws_client):
         source = f"user-{short_uid()}@example.com"
         destination = "success@example.com"
+
+        aws_client.ses.verify_email_identity(EmailAddress=source)
 
         with pytest.raises(ClientError) as e:
             aws_client.ses.send_email(
