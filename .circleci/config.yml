@@ -19,6 +19,9 @@ parameters:
   only-acceptance-tests:
     type: boolean
     default: false
+  non-default-partition:
+    type: boolean
+    default: false
 
 executors:
   ubuntu-machine-amd64:
@@ -73,7 +76,7 @@ commands:
       - run:
           name: Setup Environment Variables
           command: |
-            if [[ $CIRCLE_BRANCH == "master" ]] ; then
+            if [[ $CIRCLE_BRANCH == "master" && << pipeline.parameters.non-default-partition >> == "false" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             fi
             if << pipeline.parameters.randomize-aws-credentials >> ; then
@@ -111,6 +114,18 @@ commands:
                   echo "export TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" >> $BASH_ENV
                   source $BASH_ENV
 
+  prepare-non-default-partition:
+    steps:
+      - when:
+          condition: << pipeline.parameters.non-default-partition >>
+          steps:
+            - run:
+                name: Set partition to aws-gov
+                command: |
+                  echo "export TEST_AWS_REGION_NAME=us-gov-west-1" >> $BASH_ENV
+                  echo "export SECONDARY_TEST_AWS_REGION_NAME=us-gov-east-1" >> $BASH_ENV
+                  echo 'export PYTEST_ARGS="-m aws_validated"' >> $BASH_ENV
+                  source $BASH_ENV
 
 jobs:
   ################
@@ -231,6 +246,7 @@ jobs:
           at: /tmp/workspace
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
+      - prepare-non-default-partition
       - run:
           name: Unit tests
           environment:
@@ -280,6 +296,7 @@ jobs:
           command: ../bin/docker-helper.sh load
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
+      - prepare-non-default-partition
       - run:
           name: Acceptance tests
           environment:
@@ -355,6 +372,7 @@ jobs:
       - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
+      - prepare-non-default-partition
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
@@ -370,7 +388,7 @@ jobs:
               echo "Skipping test execution because no tests were selected"
               circleci-agent step halt
             else
-              PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+              PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml ${PYTEST_ARGS}" \
               COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
               TEST_PATH=$TEST_FILES \
               DEBUG=1 \
@@ -405,6 +423,7 @@ jobs:
           command: ../bin/docker-helper.sh load
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
+      - prepare-non-default-partition
       - run:
           name: Run bootstrap tests
           environment:
@@ -439,6 +458,7 @@ jobs:
       - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
+      - prepare-non-default-partition
       - run:
           name: Test SFN Legacy provider
           environment:
@@ -469,6 +489,7 @@ jobs:
       - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
+      - prepare-non-default-partition
       - run:
           name: Test S3 v2 legacy provider
           environment:
@@ -499,6 +520,7 @@ jobs:
       - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
+      - prepare-non-default-partition
       - run:
           name: Test CloudWatch v1 provider
           environment:
@@ -529,6 +551,7 @@ jobs:
       - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
+      - prepare-non-default-partition
       - run:
           name: Test EventBridge v2 provider
           environment:
@@ -805,6 +828,8 @@ jobs:
               circleci-agent step halt
             elif [[ << pipeline.parameters.randomize-aws-credentials >> == "true" ]] ; then
               TINYBIRD_WORKFLOW=tests_circleci_ma_mr
+            elif << pipeline.parameters.non-default-partition >> ; then
+              echo 'Disable tinybird reporting for partition tests for now'
             elif [[ $ONLY_ACCEPTANCE_TESTS == "true" ]] ; then
               TINYBIRD_WORKFLOW=tests_circleci_acceptance
             else
