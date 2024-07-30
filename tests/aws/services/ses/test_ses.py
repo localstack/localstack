@@ -826,6 +826,8 @@ class TestSES:
         source = f"user-{short_uid()}@example.com"
         destination = "success@example.com"
 
+        aws_client.ses.verify_email_address(EmailAddress=source)
+
         with pytest.raises(ClientError) as e:
             aws_client.ses.send_email(
                 Source=source,
