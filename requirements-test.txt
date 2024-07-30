@@ -81,7 +81,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.8.2
+cfn-lint==1.9.0
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -166,7 +166,7 @@ idna==3.7
     #   requests
 importlib-resources==6.4.0
     # via jsii
-incremental==22.10.0
+incremental==24.7.2
     # via localstack-twisted
 iniconfig==2.0.0
     # via pytest
@@ -258,7 +258,7 @@ pluggy==1.5.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest
-plux==1.11.0
+plux==1.11.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -304,7 +304,7 @@ pyparsing==3.1.2
     # via moto-ext
 pyproject-hooks==1.1.0
     # via build
-pytest==8.3.1
+pytest==8.3.2
     # via
     #   localstack-core (pyproject.toml)
     #   pytest-rerunfailures
@@ -345,7 +345,7 @@ referencing==0.35.1
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2024.5.15
+regex==2024.7.24
     # via cfn-lint
 requests==2.32.3
     # via
@@ -371,7 +371,7 @@ rich==13.7.1
     #   localstack-core (pyproject.toml)
 rolo==0.7.0
     # via localstack-core
-rpds-py==0.19.0
+rpds-py==0.19.1
     # via
     #   jsonschema
     #   referencing
