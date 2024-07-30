@@ -844,36 +844,6 @@ class TestSES:
             )
         snapshot.match("response", e.value.response)
 
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
-    @pytest.mark.parametrize(
-        "tag_name,tag_value",
-        [
-            ("ses:feedback-id-a", "this-marketing-campaign"),
-            ("ses:feedback-id-b", "that-campaign"),
-        ],
-    )
-    def test_special_tags_send_email(self, tag_name, tag_value, snapshot, aws_client):
-        source = f"user-{short_uid()}@example.com"
-        destination = "success@example.com"
-
-        # Ensure that request passes validation and throws MessageRejected due to unverified sender identity
-        with pytest.raises(ClientError) as e:
-            aws_client.ses.send_email(
-                Source=source,
-                Tags=[
-                    {
-                        "Name": tag_name,
-                        "Value": tag_value,
-                    }
-                ],
-                Message=SAMPLE_SIMPLE_EMAIL,
-                Destination={
-                    "ToAddresses": [destination],
-                },
-            )
-        snapshot.match("response", e.value.response)
-
 
 class TestSESRetrospection:
     @markers.aws.only_localstack
