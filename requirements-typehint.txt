@@ -62,7 +62,7 @@ botocore==1.34.149
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.34.146
+botocore-stubs==1.34.150
     # via boto3-stubs
 build==1.2.1
     # via
@@ -87,7 +87,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.8.2
+cfn-lint==1.9.0
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -186,7 +186,7 @@ idna==3.7
     #   requests
 importlib-resources==6.4.0
     # via jsii
-incremental==22.10.0
+incremental==24.7.2
     # via localstack-twisted
 iniconfig==2.0.0
     # via pytest
@@ -269,9 +269,9 @@ mypy-boto3-appconfig==1.34.58
     # via boto3-stubs
 mypy-boto3-appconfigdata==1.34.24
     # via boto3-stubs
-mypy-boto3-application-autoscaling==1.34.139
+mypy-boto3-application-autoscaling==1.34.149
     # via boto3-stubs
-mypy-boto3-appsync==1.34.92
+mypy-boto3-appsync==1.34.147
     # via boto3-stubs
 mypy-boto3-athena==1.34.130
     # via boto3-stubs
@@ -293,7 +293,7 @@ mypy-boto3-cloudtrail==1.34.129
     # via boto3-stubs
 mypy-boto3-cloudwatch==1.34.83
     # via boto3-stubs
-mypy-boto3-codecommit==1.34.6
+mypy-boto3-codecommit==1.34.149
     # via boto3-stubs
 mypy-boto3-cognito-identity==1.34.137
     # via boto3-stubs
@@ -303,25 +303,25 @@ mypy-boto3-dms==1.34.141
     # via boto3-stubs
 mypy-boto3-docdb==1.34.137
     # via boto3-stubs
-mypy-boto3-dynamodb==1.34.131
+mypy-boto3-dynamodb==1.34.148
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.34.0
     # via boto3-stubs
-mypy-boto3-ec2==1.34.145
+mypy-boto3-ec2==1.34.149
     # via boto3-stubs
-mypy-boto3-ecr==1.34.140
+mypy-boto3-ecr==1.34.149
     # via boto3-stubs
 mypy-boto3-ecs==1.34.123
     # via boto3-stubs
 mypy-boto3-efs==1.34.128
     # via boto3-stubs
-mypy-boto3-eks==1.34.137
+mypy-boto3-eks==1.34.149
     # via boto3-stubs
-mypy-boto3-elasticache==1.34.135
+mypy-boto3-elasticache==1.34.150
     # via boto3-stubs
 mypy-boto3-elasticbeanstalk==1.34.141
     # via boto3-stubs
-mypy-boto3-elbv2==1.34.108
+mypy-boto3-elbv2==1.34.149
     # via boto3-stubs
 mypy-boto3-emr==1.34.136
     # via boto3-stubs
@@ -433,7 +433,7 @@ mypy-boto3-ssm==1.34.132
     # via boto3-stubs
 mypy-boto3-sso-admin==1.34.0
     # via boto3-stubs
-mypy-boto3-stepfunctions==1.34.137
+mypy-boto3-stepfunctions==1.34.149
     # via boto3-stubs
 mypy-boto3-sts==1.34.0
     # via boto3-stubs
@@ -480,7 +480,7 @@ pluggy==1.5.0
     #   pytest
 plumbum==1.8.3
     # via pandoc
-plux==1.11.0
+plux==1.11.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -489,7 +489,7 @@ ply==3.11
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==3.7.1
+pre-commit==3.8.0
     # via localstack-core
 priority==1.3.0
     # via
@@ -531,7 +531,7 @@ pyparsing==3.1.2
     # via moto-ext
 pyproject-hooks==1.1.0
     # via build
-pytest==8.3.1
+pytest==8.3.2
     # via
     #   localstack-core
     #   pytest-rerunfailures
@@ -573,7 +573,7 @@ referencing==0.35.1
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2024.5.15
+regex==2024.7.24
     # via cfn-lint
 requests==2.32.3
     # via
@@ -600,7 +600,7 @@ rich==13.7.1
     #   localstack-core (pyproject.toml)
 rolo==0.7.0
     # via localstack-core
-rpds-py==0.19.0
+rpds-py==0.19.1
     # via
     #   jsonschema
     #   referencing
@@ -608,7 +608,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.5.4
+ruff==0.5.5
     # via localstack-core
 s3transfer==0.10.2
     # via
