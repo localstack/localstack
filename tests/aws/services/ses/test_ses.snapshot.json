@@ -590,7 +590,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
-    "recorded-date": "30-07-2024, 10:18:07",
+    "recorded-date": "30-07-2024, 12:03:11",
     "recorded-content": {
       "response": {
         "Error": {
@@ -606,7 +606,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
-    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-date": "30-07-2024, 12:03:12",
     "recorded-content": {
       "response": {
         "Error": {
@@ -622,7 +622,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
-    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-date": "30-07-2024, 12:03:12",
     "recorded-content": {
       "response": {
         "Error": {
@@ -638,7 +638,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]": {
-    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-date": "30-07-2024, 12:03:12",
     "recorded-content": {
       "response": {
         "Error": {
@@ -654,7 +654,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]": {
-    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-date": "30-07-2024, 12:03:12",
     "recorded-content": {
       "response": {
         "Error": {
@@ -670,7 +670,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]": {
-    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-date": "30-07-2024, 12:03:12",
     "recorded-content": {
       "response": {
         "Error": {
@@ -686,7 +686,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
-    "recorded-date": "30-07-2024, 10:18:09",
+    "recorded-date": "30-07-2024, 12:03:13",
     "recorded-content": {
       "response": {
         "Error": {
@@ -702,7 +702,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-test]": {
-    "recorded-date": "30-07-2024, 10:18:09",
+    "recorded-date": "30-07-2024, 12:03:13",
     "recorded-content": {
       "response": {
         "Error": {
@@ -718,7 +718,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-]": {
-    "recorded-date": "30-07-2024, 10:18:09",
+    "recorded-date": "30-07-2024, 12:03:13",
     "recorded-content": {
       "response": {
         "Error": {
@@ -912,6 +912,38 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[ses:feedback-id-a-this-marketing-campaign]": {
+    "recorded-date": "30-07-2024, 12:03:13",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "MessageRejected",
+          "Message": "Email address is not verified. The following identities failed the check in region EU-CENTRAL-1: success@example.com, user-549e4edf@example.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[ses:feedback-id-b-that-campaign]": {
+    "recorded-date": "30-07-2024, 12:03:13",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "MessageRejected",
+          "Message": "Email address is not verified. The following identities failed the check in region EU-CENTRAL-1: success@example.com, user-106baa2f@example.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
