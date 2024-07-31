@@ -194,3 +194,15 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
             ssm.remove_tags_from_resource(
                 ResourceType="Parameter", ResourceId=model["Name"], TagKeys=tag_keys_to_remove
             )
+
+    def list(
+        self,
+        request: ResourceRequest[SSMParameterProperties],
+    ) -> ProgressEvent[SSMParameterProperties]:
+        resources = request.aws_client_factory.ssm.describe_parameters()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                SSMParameterProperties(Id=resource["Name"]) for resource in resources["Parameters"]
+            ],
+        )

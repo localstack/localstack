@@ -70,8 +70,24 @@ def determine_id_based_on_type(type_name, props):
     # TODO: do this properly based on schema
     # cheating
     match type_name:
-        case "AWS::S3::Bucket":
-            return props["BucketName"]
+        # TODO: dynamodb
+        # TODO: secretsmanager
+        # TODO: iam
+        # TODO: cloudformation
+        # TODO: ssm
+        # TODO: ec2
+        case "AWS::DynamoDB::Table":
+            return props["TableName"]
+        case "AWS::SecretsManager::Secret":
+            return props["Id"]
+        case "AWS::IAM::Role":
+            return props["RoleName"]
+        case "AWS::CloudFormation::Stack":
+            return props["Id"]
+        case "AWS::SSM::Parameter":
+            return props["Id"]
+        case "AWS::EC2::VPC":
+            return props["VpcId"]
         case "AWS::SNS::Topic":
             return props["TopicArn"]
         case "AWS::SQS::Queue":

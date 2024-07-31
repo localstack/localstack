@@ -222,3 +222,16 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
 
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[SecretsManagerSecretProperties],
+    ) -> ProgressEvent[SecretsManagerSecretProperties]:
+        resources = request.aws_client_factory.secretsmanager.list_secrets()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                SecretsManagerSecretProperties(Id=resource["Name"])
+                for resource in resources["SecretList"]
+            ],
+        )
