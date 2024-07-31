@@ -266,13 +266,23 @@ def is_linux() -> bool:
     return platform.system() == "Linux"
 
 
+def is_macos() -> bool:
+    return platform.system() == "Darwin"
+
+
+def is_windows() -> bool:
+    return platform.system().lower() == "windows"
+
+
 def ping(host):
     """Returns True if host responds to a ping request"""
-    is_windows = platform.system().lower() == "windows"
-    ping_opts = "-n 1 -w 2000" if is_windows else "-c 1 -W 2"
+    is_in_windows = is_windows()
+    ping_opts = "-n 1 -w 2000" if is_in_windows else "-c 1 -W 2"
     args = "ping %s %s" % (ping_opts, host)
     return (
-        subprocess.call(args, shell=not is_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.call(
+            args, shell=not is_in_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         == 0
     )
 
@@ -370,6 +380,7 @@ OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
 is_in_linux = is_linux()
+is_in_macos = is_macos()
 default_ip = "0.0.0.0" if is_in_docker else "127.0.0.1"
 
 # CLI specific: the configuration profile to load
@@ -958,11 +969,16 @@ LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
     os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
 )
 
-# DEV: 0 (default) For LS developers only. Only applies to Docker mode.
+# DEV: 0 (default unless in host mode on macOS) For LS developers only. Only applies to Docker mode.
 # Whether to explicitly expose a free TCP port in lambda containers when invoking functions in host mode for
 # systems that cannot reach the container via its IPv4. For example, macOS cannot reach Docker containers:
 # https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers
-LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
+LAMBDA_DEV_PORT_EXPOSE = (
+    # Enable this dev flag by default on macOS in host mode (i.e., non-Docker environment)
+    is_env_not_false("LAMBDA_DEV_PORT_EXPOSE")
+    if not is_in_docker and is_in_macos
+    else is_env_true("LAMBDA_DEV_PORT_EXPOSE")
+)
 
 # DEV: only applies to new lambda provider. All LAMBDA_INIT_* configuration are for LS developers only.
 # There are NO stability guarantees, and they may break at any time.
