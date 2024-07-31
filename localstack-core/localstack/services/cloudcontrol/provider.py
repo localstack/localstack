@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -17,37 +18,51 @@ from localstack.aws.api.cloudcontrol import (
     TypeVersionId,
 )
 from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.resource_provider import (
-    PRO_RESOURCE_PROVIDERS,
     NoResourceProvider,
     ResourceProvider,
     ResourceRequest,
     plugin_manager,
-    pro_plugin_manager,
+    resolve_json_pointer,
 )
 
 LOG = logging.getLogger(__name__)
 
 
+def extract_physical_resource_id_from_model_with_schema(
+    resource_model: Properties, resource_type: str, resource_type_schema: dict
+) -> str:
+    if resource_type in PHYSICAL_RESOURCE_ID_SPECIAL_CASES:
+        primary_id_path = PHYSICAL_RESOURCE_ID_SPECIAL_CASES[resource_type]
+
+        if "<" in primary_id_path:
+            # composite quirk, e.g. something like MyRef|MyName
+            # try to extract parts
+            physical_resource_id = primary_id_path
+            find_results = re.findall("<([^>]+)>", primary_id_path)
+            for found_part in find_results:
+                resolved_part = resolve_json_pointer(resource_model, found_part)
+                physical_resource_id = physical_resource_id.replace(
+                    f"<{found_part}>", resolved_part
+                )
+        else:
+            physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
+    else:
+        primary_id_paths = resource_type_schema["primaryIdentifier"]
+        if len(primary_id_paths) > 1:
+            # TODO: auto-merge. Verify logic here with AWS
+            physical_resource_id = "-".join(
+                [resolve_json_pointer(resource_model, pip) for pip in primary_id_paths]
+            )
+        else:
+            physical_resource_id = resolve_json_pointer(resource_model, primary_id_paths[0])
+
+    return physical_resource_id
+
+
 def load_resource_provider(resource_type: str) -> ResourceProvider:
     # TODO: unify namespace of plugins
-
-    # 1. try to load pro resource provider
-    # prioritise pro resource providers
-    if PRO_RESOURCE_PROVIDERS:
-        try:
-            plugin = pro_plugin_manager.load(resource_type)
-            return plugin.factory()
-        except ValueError:
-            # could not find a plugin for that name
-            pass
-        except Exception:
-            LOG.warning(
-                "Failed to load PRO resource type %s as a ResourceProvider.",
-                resource_type,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
-
     # 2. try to load community resource provider
     try:
         plugin = plugin_manager.load(resource_type)
@@ -64,38 +79,6 @@ def load_resource_provider(resource_type: str) -> ResourceProvider:
             )
 
     raise NoResourceProvider
-
-
-def determine_id_based_on_type(type_name, props):
-    # TODO: do this properly based on schema
-    # cheating
-    match type_name:
-        # TODO: dynamodb
-        # TODO: secretsmanager
-        # TODO: iam
-        # TODO: cloudformation
-        # TODO: ssm
-        # TODO: ec2
-        case "AWS::DynamoDB::Table":
-            return props["TableName"]
-        case "AWS::SecretsManager::Secret":
-            return props["Id"]
-        case "AWS::IAM::Role":
-            return props["RoleName"]
-        case "AWS::CloudFormation::Stack":
-            return props["Id"]
-        case "AWS::SSM::Parameter":
-            return props["Id"]
-        case "AWS::EC2::VPC":
-            return props["VpcId"]
-        case "AWS::SNS::Topic":
-            return props["TopicArn"]
-        case "AWS::SQS::Queue":
-            return props["QueueUrl"]
-        case "AWS::Lambda::Function":
-            return props["FunctionName"]
-        case _:
-            return "?"
 
 
 class CloudControlProvider(CloudcontrolApi):
@@ -152,7 +135,9 @@ class CloudControlProvider(CloudcontrolApi):
             ResourceDescriptions=[
                 # identifier needs to again be determined from schema here, properties can be taken direclty
                 ResourceDescription(
-                    Identifier=determine_id_based_on_type(type_name, props),
+                    Identifier=extract_physical_resource_id_from_model_with_schema(
+                        props, type_name, provider.SCHEMA
+                    ),
                     Properties=json.dumps(props),
                 )
                 for props in event.resource_models

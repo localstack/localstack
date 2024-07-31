@@ -144,3 +144,15 @@ class IAMUserProvider(ResourceProvider[IAMUserProperties]):
         """
         # return ProgressEvent(OperationStatus.SUCCESS, request.desired_state)
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[IAMUserProperties],
+    ) -> ProgressEvent[IAMUserProperties]:
+        resources = request.aws_client_factory.iam.list_users()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                IAMUserProperties(Id=resource["UserName"]) for resource in resources["Users"]
+            ],
+        )

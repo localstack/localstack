@@ -62,6 +62,7 @@ class EventsEventBusProvider(ResourceProvider[EventsEventBusProperties]):
 
         response = events.create_event_bus(Name=model["Name"])
         model["Arn"] = response["EventBusArn"]
+        model["Id"] = model["Name"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
@@ -110,3 +111,16 @@ class EventsEventBusProvider(ResourceProvider[EventsEventBusProperties]):
 
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[EventsEventBusProperties],
+    ) -> ProgressEvent[EventsEventBusProperties]:
+        resources = request.aws_client_factory.events.list_event_buses()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                EventsEventBusProperties(Id=resource["Name"])
+                for resource in resources["EventBuses"]
+            ],
+        )

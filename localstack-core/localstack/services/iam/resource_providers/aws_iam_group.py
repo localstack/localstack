@@ -138,3 +138,15 @@ class IAMGroupProvider(ResourceProvider[IAMGroupProperties]):
         #     NewGroupName=props.get("NewGroupName") or "",
         # )
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[IAMGroupProperties],
+    ) -> ProgressEvent[IAMGroupProperties]:
+        resources = request.aws_client_factory.iam.list_groups()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                IAMGroupProperties(Id=resource["GroupName"]) for resource in resources["Groups"]
+            ],
+        )
