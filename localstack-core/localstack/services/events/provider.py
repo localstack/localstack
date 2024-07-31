@@ -1338,7 +1338,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 event, context.region, context.account_id, region, account_id
             ):
                 event["TraceHeader"] = encoded_trace_header
-            event_formatted = format_event(event, region, account_id)
+            event_formatted = format_event(event, region, account_id, event_bus_name)
             store = self.get_store(region, account_id)
             try:
                 event_bus = self.get_event_bus(event_bus_name, store)

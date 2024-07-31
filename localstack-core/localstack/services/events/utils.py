@@ -161,7 +161,9 @@ def recursive_remove_none_values_from_dict(d: Dict[str, Any]) -> Dict[str, Any]:
     return clean_dict
 
 
-def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
+def format_event(
+    event: PutEventsRequestEntry, region: str, account_id: str, event_bus_name: EventBusName
+) -> FormattedEvent:
     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
     trace_header = event.get("TraceHeader")
     message = {}
@@ -184,6 +186,7 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
         "region": region,
         "resources": event.get("Resources", []),
         "detail": json.loads(event.get("Detail", "{}")),
+        "event-bus-name": event_bus_name,
     }
     if replay_name := event.get("ReplayName"):
         formatted_event["replay-name"] = replay_name  # required for replay from archive
