@@ -1,4 +1,7 @@
+import json
 import logging
+import os
+import subprocess
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -15,14 +18,17 @@ from cbor2._encoder import dumps as cbor2_dumps
 from requests import Response
 
 from localstack import config, constants
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.client import _patch_cbor2
 from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
 from localstack.utils.common import retry, select_attributes, short_uid
+from localstack.utils.files import load_file
 from localstack.utils.kinesis import kinesis_connector
 from tests.aws.services.kinesis.helper_functions import get_shard_iterator
+from tests.aws.services.lambda_.test_lambda import THIS_FOLDER as LAMBDA_TEST_FOLDER
 
 LOGGER = logging.getLogger(__name__)
 
@@ -704,11 +710,52 @@ class TestKinesis:
         assert record["Data"].decode("utf-8") == test_data
 
 
-# TODO
-# - Create a Lambda -> Kinesis Test
-#   -> /home/localstack/Repos/localstack/tests/aws/services/lambda_/functions/common/endpointinjection/java/src/src/main/java/echo/Handler.java
-#   -> Create a Lambda which uses the SDK v2
-#   -> These tests are usually parameterized though!
+class TestKinesisJavaSDK:
+    # the lambda function is stored in the lambda common functions folder to re-use existing caching in CI
+    TEST_LAMBDA_KINESIS_SDK_V2 = os.path.join(
+        LAMBDA_TEST_FOLDER,
+        "functions/common/kinesis_sdkv2/java17/handler.zip",
+    )
+
+    @markers.aws.validated
+    def test_subscribe_to_shard_with_java_sdk_v2_lambda(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        create_lambda_function,
+        lambda_su_role,
+        aws_client,
+    ):
+        # lazily build the lambda if it's not there yet
+        if not os.path.exists(self.TEST_LAMBDA_KINESIS_SDK_V2) or not os.path.isfile(
+            self.TEST_LAMBDA_KINESIS_SDK_V2
+        ):
+            build_cmd = ["make", "build"]
+            LOGGER.info("Building Java Lambda for Kinesis AWS SDK v2 test.")
+            result = subprocess.run(build_cmd, cwd=os.path.dirname(self.TEST_LAMBDA_KINESIS_SDK_V2))
+            if result.returncode != 0:
+                raise Exception("Failed to build lambda for Kinesis Java AWS SDK v2 test.")
+
+        stream_name = kinesis_create_stream()
+        wait_for_stream_ready(stream_name)
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        lambda_name = f"test-{short_uid()}"
+        zip_file = load_file(self.TEST_LAMBDA_KINESIS_SDK_V2, mode="rb")
+        create_lambda_function(
+            zip_file=zip_file,
+            runtime=Runtime.java17,
+            handler="kinesis.Handler",
+            func_name=lambda_name,
+            role=lambda_su_role,
+        )
+        result = aws_client.lambda_.invoke(
+            FunctionName=lambda_name, Payload=json.dumps({"StreamARN": stream_arn})
+        )
+        response_content = json.load(result["Payload"])
+        assert response_content == "ok"
 
 
 class TestKinesisPythonClient:
