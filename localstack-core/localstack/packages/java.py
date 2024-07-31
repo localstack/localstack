@@ -1,100 +1,58 @@
-import glob
 import logging
 import os
 from typing import List
 
-import distro
-
 from localstack.packages import InstallTarget, Package
-from localstack.pro.core.packages import OSPackageInstaller  # FIXME@viren
-from localstack.utils.files import save_file
-from localstack.utils.http import download
-from localstack.utils.run import run
+from localstack.packages.core import ArchiveDownloadAndExtractInstaller
+from localstack.utils.platform import Arch, get_arch, is_linux, is_mac_os
 
 LOG = logging.getLogger(__name__)
 
-# Default version
+# Default version if not specified
 DEFAULT_JAVA_VERSION = "11"
 
-# Supported versions
-JAVA_VERSIONS = ["8", "11", "21"]
+# Supported Java LTS versions mapped with Eclipse Temurin build semvers
+JAVA_VERSIONS = {
+    "8": "8.0.422+5",
+    "11": "11.0.24+8",
+    "17": "17.0.12+7",
+    "21": "21.0.4+7",
+}
 
-# Java home dirs inside main container
-# Note: configure $JAVA_8_HOME / $JAVA_11_HOME for testing in host mode
-JAVA_8_HOME = os.environ.get("JAVA_8_HOME") or "/usr/lib/jvm/java-8"
-JAVA_11_HOME = os.environ.get("JAVA_11_HOME") or "/usr/lib/jvm/java-11"
-JAVA_21_HOME = os.environ.get("JAVA_21_HOME") or "/usr/lib/jvm/java-21"
-
-ADOPTIUM_DNS_SKIP = "jfrog-prod-.*.s3.amazonaws.com"
+JRE_DISTRIB_URL = "https://github.com/adoptium/temurin{version}-binaries/releases/download/jdk-{semver}/OpenJDK{version}U-jre_{arch}_{os}_hotspot_{semver_safe}.tar.gz"
 
 
-class JavaPackageInstaller(OSPackageInstaller):
-    """
-    Installer to install custom Java OS packages, required, e.g., for older versions of Spark.
-    Note: Currently only supported for Debian (not for Redhat)
-    """
-
+class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def __init__(self, version: str):
         super().__init__("java", version)
 
-    def is_installed(self) -> bool:
-        java_home = self.get_java_home()
-        return java_home and os.path.exists(os.path.join(java_home, "bin", "java"))
+        self.semver = JAVA_VERSIONS[version]
 
-    def _debian_get_install_dir(self, target: InstallTarget):
-        return self._get_jvm_install_dir()
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, self._get_archive_subdir())
 
-    def _debian_get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, "bin", "java")
+    def _get_download_url(self) -> str:
+        os = "linux" if is_linux() else "mac" if is_mac_os() else None
+        arch = (
+            "x64" if get_arch() == Arch.amd64 else "aarch64" if get_arch() == Arch.arm64 else None
+        )
 
-    def _debian_packages(self) -> List[str]:
-        if self.version == DEFAULT_JAVA_VERSION:
-            return []
-        return [f"temurin-{self.version}-jdk"]
+        semver_safe = self.semver.replace("+", "_")
 
-    def _debian_prepare_install(self, target: InstallTarget):
-        sources_file = "/etc/apt/sources.list.d/adoptium.list"
-        key_file = "/etc/apt/trusted.gpg.d/adoptium.asc"
-        openjdk_repo = "https://packages.adoptium.net/artifactory"
-        if self.version != DEFAULT_JAVA_VERSION and not os.path.exists(sources_file):
-            # update package index
-            download(f"{openjdk_repo}/api/gpg/key/public", key_file)
-            save_file(
-                sources_file,
-                f"deb https://packages.adoptium.net/artifactory/deb {distro.codename()} main",
-            )
-        # the new adoptium repository uses s3, so we need to exclude the buckets from transparent endpoint injection
-        try:
-            from localstack.dns import server as dns_server
+        return JRE_DISTRIB_URL.format(
+            version=self.version, semver=self.semver, os=os, arch=arch, semver_safe=semver_safe
+        )
 
-            dns_server.exclude_from_resolution(ADOPTIUM_DNS_SKIP)
-        except ImportError:
-            LOG.debug("Cannot import DNS server - skipping modification to allow apt download")
-        super()._debian_prepare_install(target)
+    def _get_archive_subdir(self) -> str | None:
+        return f"jdk-{self.semver}-jre"
 
     def _post_process(self, target: InstallTarget) -> None:
-        try:
-            from localstack.dns import server as dns_server
-
-            dns_server.revert_exclude_from_resolution(ADOPTIUM_DNS_SKIP)
-        except ImportError:
-            LOG.debug("Cannot import DNS server - skipping revert of skip")
-        target_dir = self._get_jvm_install_dir()
-        install_dir = glob.glob(f"/usr/lib/jvm/*-{self.version}-jdk-*")[0]
-        if not os.path.exists(target_dir):
-            run(["ln", "-s", install_dir, target_dir])
-
-    def _get_jvm_install_dir(self) -> str:
-        return self.get_java_home()
+        env_var = f"JAVA_{self.version}_HOME"
+        if not os.environ.get(env_var):
+            os.environ[env_var] = self.get_installed_dir()
 
     def get_java_home(self) -> str:
-        if self.version == "8":
-            return JAVA_8_HOME
-        if self.version == "11":
-            return JAVA_11_HOME
-        if self.version == "21":
-            return JAVA_21_HOME
-        return f"/usr/lib/jvm/java-{self.version}"
+        return self.get_installed_dir()
 
 
 class JavaPackage(Package):
@@ -102,7 +60,7 @@ class JavaPackage(Package):
         super().__init__(name="Java", default_version=default_version)
 
     def get_versions(self) -> List[str]:
-        return JAVA_VERSIONS
+        return list(JAVA_VERSIONS.keys())
 
     def _get_installer(self, version):
         return JavaPackageInstaller(version)
