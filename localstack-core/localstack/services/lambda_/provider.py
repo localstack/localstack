@@ -2117,10 +2117,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         esm_worker = self.esm_workers[uuid]
         # Only apply update if the desired state differs
         if enabled := request.get("Enabled") is not None:
-            if enabled and not old_event_source_mapping["Enabled"]:
+            if enabled and old_event_source_mapping["State"] != EsmState.ENABLED:
                 esm_worker.start()
                 event_source_mapping["State"] = EsmState.ENABLING
-            elif not enabled and old_event_source_mapping["Enabled"]:
+            # TODO: What happens when trying to update during an update or failed state?!
+            elif not enabled and old_event_source_mapping["State"] == EsmState.ENABLED:
                 esm_worker.stop()
                 event_source_mapping["State"] = EsmState.DISABLING
 
