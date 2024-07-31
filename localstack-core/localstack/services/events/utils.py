@@ -186,7 +186,7 @@ def format_event(
         "region": region,
         "resources": event.get("Resources", []),
         "detail": json.loads(event.get("Detail", "{}")),
-        "event-bus-name": event_bus_name,
+        "event-bus-name": event_bus_name,  # current workaround for EventStudio extension
     }
     if replay_name := event.get("ReplayName"):
         formatted_event["replay-name"] = replay_name  # required for replay from archive
