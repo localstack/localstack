@@ -138,7 +138,7 @@ class TargetSender(ABC):
     def send_event(self, event: FormattedEvent | TransformedEvent):
         pass
 
-    def proxy_send_event(self, event: FormattedEvent):
+    def proxy_send_event(self, event: FormattedEvent | TransformedEvent):
         """Proxy method to process the event and send it to the target.
         required for EventStudio extension"""
         self.send_event(event)
