@@ -220,9 +220,5 @@
         }
       ]
     }
-  },
-  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_cbor_blob_handling": {
-    "recorded-date": "31-07-2024, 11:17:28",
-    "recorded-content": {}
   }
 }
