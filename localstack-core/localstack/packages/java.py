@@ -13,10 +13,10 @@ from localstack.utils.run import run
 
 LOG = logging.getLogger(__name__)
 
-# Version that is preinstalled during Docker build
-PREINSTALLED_JAVA_VERSION = "21"
+# Default version
+DEFAULT_JAVA_VERSION = "11"
 
-# Versions supported by this package
+# Supported versions
 JAVA_VERSIONS = ["8", "11", "21"]
 
 # Java home dirs inside main container
@@ -48,7 +48,7 @@ class JavaPackageInstaller(OSPackageInstaller):
         return os.path.join(install_dir, "bin", "java")
 
     def _debian_packages(self) -> List[str]:
-        if self.version == PREINSTALLED_JAVA_VERSION:
+        if self.version == DEFAULT_JAVA_VERSION:
             return []
         return [f"temurin-{self.version}-jdk"]
 
@@ -56,7 +56,7 @@ class JavaPackageInstaller(OSPackageInstaller):
         sources_file = "/etc/apt/sources.list.d/adoptium.list"
         key_file = "/etc/apt/trusted.gpg.d/adoptium.asc"
         openjdk_repo = "https://packages.adoptium.net/artifactory"
-        if self.version != PREINSTALLED_JAVA_VERSION and not os.path.exists(sources_file):
+        if self.version != DEFAULT_JAVA_VERSION and not os.path.exists(sources_file):
             # update package index
             download(f"{openjdk_repo}/api/gpg/key/public", key_file)
             save_file(
@@ -98,7 +98,7 @@ class JavaPackageInstaller(OSPackageInstaller):
 
 
 class JavaPackage(Package):
-    def __init__(self, default_version: str = PREINSTALLED_JAVA_VERSION):
+    def __init__(self, default_version: str = DEFAULT_JAVA_VERSION):
         super().__init__(name="Java", default_version=default_version)
 
     def get_versions(self) -> List[str]:
