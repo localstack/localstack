@@ -11,7 +11,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm
+from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm, is_v2_esm
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON,
@@ -415,6 +415,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
 
 
 # TODO: flaky against AWS
+@pytest.mark.skipif(is_v2_esm(), reason="FunctionResponseTypes not yet implemented in ESM v2")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # FIXME: we don't seem to be returning SQS FIFO sequence numbers correctly
@@ -678,6 +679,7 @@ def test_report_batch_item_failures_on_lambda_error(
     snapshot.match("dlq_messages", messages)
 
 
+@pytest.mark.skipif(is_v2_esm(), reason="FunctionResponseTypes not yet implemented in ESM v2")
 @markers.aws.validated
 def test_report_batch_item_failures_invalid_result_json_batch_fails(
     create_lambda_function,
@@ -953,6 +955,9 @@ def test_fifo_message_group_parallelism(
 )
 class TestSQSEventSourceMapping:
     # TODO refactor
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="ESM v2 does not implement create and update validations yet"
+    )
     @markers.aws.validated
     def test_event_source_mapping_default_batch_size(
         self,
@@ -1060,6 +1065,10 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages", []) == []
 
+    @pytest.mark.skipif(
+        is_v2_esm(),
+        reason="Filtering behavior for JSON detection not yet implemented in ESM v2",
+    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "filter, item_matching, item_not_matching",
@@ -1190,6 +1199,9 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages", []) == []
 
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="Invalid filter detection not yet implemented in ESM v2"
+    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "invalid_filter", [None, "simple string", {"eventSource": "aws:sqs"}, {"eventSource": []}]
@@ -1234,6 +1246,9 @@ class TestSQSEventSourceMapping:
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
         expected.match(InvalidParameterValueException.code)
 
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="ESM v2 does not yet handle state update on update_event_source_mapping"
+    )
     @markers.aws.validated
     def test_sqs_event_source_mapping_update(
         self,
