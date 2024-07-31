@@ -154,10 +154,24 @@ class ResourcesResource:
     """
 
     def on_get(self, request):
-        types = connect_to().cloudformation.list_types()["TypeSummaries"]
-        cc_client = connect_to().cloudcontrol
-        response = {}
+        from localstack.aws.client import botocore_in_memory_endpoint_patch
 
+        if not botocore_in_memory_endpoint_patch.is_applied:
+            botocore_in_memory_endpoint_patch.apply()
+        from localstack.aws.client import GatewayShortCircuit
+        from localstack.runtime import get_current_runtime
+
+        # region_name = request
+        client_factory = connect_to()
+        # client_factory = connect_to(region_name=region_name, aws_access_key_id=account_id, aws_secret_access_key="test")
+        cfn_client = client_factory.cloudformation
+        cc_client = client_factory.cloudcontrol
+        GatewayShortCircuit.modify_client(cfn_client, get_current_runtime().components.gateway)
+        GatewayShortCircuit.modify_client(cc_client, get_current_runtime().components.gateway)
+
+        types = cfn_client.list_types()["TypeSummaries"]
+
+        response = {}
         for cfn_type in types:
             type_name = cfn_type["TypeName"]
             resources = cc_client.list_resources(TypeName=type_name)["ResourceDescriptions"]
