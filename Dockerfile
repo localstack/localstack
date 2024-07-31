@@ -1,34 +1,6 @@
-# java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:21@sha256:3f9bfce63186b9ded168250c8e350631fd643ad00afab5986cf8a7cf79f3b043 as java-builder
-
-# create a custom, minimized JRE via jlink
-RUN jlink --add-modules \
-# include required modules
-java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
-# jdk.unsupported contains sun.misc.Unsafe which is required by certain dependencies
-jdk.unsupported,\
-# add additional cipher suites
-jdk.crypto.cryptoki,\
-# add ability to open ZIP/JAR files
-jdk.zipfs,\
-# OpenSearch needs some jdk modules
-jdk.httpserver,jdk.management,\
-# MQ Broker requires management agent
-jdk.management.agent,\
-# required for Spark/Hadoop
-java.security.jgss,jdk.security.auth,\
-# Elasticsearch 7+ crashes without Thai Segmentation support
-jdk.localedata --include-locales en,th \
-    --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-21 && \
-  cp ${JAVA_HOME}/bin/javac /usr/lib/jvm/java-21/bin/javac && \
-  cp -r ${JAVA_HOME}/include /usr/lib/jvm/java-21/include && \
-  mv /usr/lib/jvm/java-21/lib/modules /usr/lib/jvm/java-21/lib/modules.bk; \
-  cp -r ${JAVA_HOME}/lib/* /usr/lib/jvm/java-21/lib/; \
-  mv /usr/lib/jvm/java-21/lib/modules.bk /usr/lib/jvm/java-21/lib/modules; \
-  rm -rf /usr/bin/java ${JAVA_HOME} && ln -s /usr/lib/jvm/java-21/bin/java /usr/bin/java
-
-
+#
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
+#
 FROM python:3.11.9-slim-bookworm@sha256:3f3c35617e79276c5f6a2e6a13cdbabdd10257332df963c90c986858b26fad5e AS base
 ARG TARGETARCH
 
@@ -84,18 +56,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && test ! $(which python3.9)
 
 SHELL [ "/bin/bash", "-c" ]
-
-# Install Java 21
 ENV LANG C.UTF-8
-RUN { \
-        echo '#!/bin/sh'; echo 'set -e'; echo; \
-        echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
-    } > /usr/local/bin/docker-java-home \
-    && chmod +x /usr/local/bin/docker-java-home
-ENV JAVA_HOME /usr/lib/jvm/java-21
-COPY --from=java-builder /usr/lib/jvm/java-21 $JAVA_HOME
-RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
-ENV PATH="${PATH}:${JAVA_HOME}/bin"
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
@@ -137,8 +98,9 @@ RUN --mount=type=cache,target=/root/.cache \
     pip3 install --upgrade awscli awscli-local requests
 
 
-
+#
 # builder: Stage which installs the dependencies of LocalStack Community
+#
 FROM base AS builder
 ARG TARGETARCH
 
@@ -166,8 +128,9 @@ RUN --mount=type=cache,target=/root/.cache \
 RUN . .venv/bin/activate && pip3 freeze -l > requirements-runtime.txt
 
 
-
+#
 # final stage: Builds upon base stage and copies resources from builder stages
+#
 FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 
@@ -186,11 +149,22 @@ RUN make entrypoints
 RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/var/lib/localstack/cache \
     source .venv/bin/activate && \
+    python -m localstack.cli.lpm install java --version 11 && \
     python -m localstack.cli.lpm install \
       lambda-runtime \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
+
+# Set up Java
+ENV JAVA_HOME /usr/lib/localstack/java/11
+RUN { \
+        echo '#!/bin/sh'; echo 'set -e'; echo; \
+        echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
+    } > /usr/local/bin/docker-java-home \
+    && chmod +x /usr/local/bin/docker-java-home
+RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
+ENV PATH="${PATH}:${JAVA_HOME}/bin"
 
 # link the python package installer virtual environments into the localstack venv
 RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \
