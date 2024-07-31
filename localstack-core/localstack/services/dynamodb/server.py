@@ -7,7 +7,6 @@ from localstack.aws.connect import connect_externally_to
 from localstack.aws.forwarder import AwsRequestProxy
 from localstack.config import is_env_true
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
-from localstack.packages.java import java_package
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.functions import run_safe
@@ -161,10 +160,7 @@ class DynamodbServer(Server):
             log_listener=_log_listener,
             auto_restart=True,
             name="dynamodb-local",
-            env_vars={
-                "JAVA_HOME": java_package.get_installer("11").get_java_home(),
-                "DDB_LOCAL_TELEMETRY": "0",
-            },
+            env_vars={"DDB_LOCAL_TELEMETRY": "0"},
         )
         TMP_THREADS.append(t)
         t.start()
