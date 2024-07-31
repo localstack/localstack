@@ -40,6 +40,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         tag_slug = f"jdk-{self.semver}"
         semver_safe = self.semver.replace("+", "_")
 
+        # v8 uses a different tag and version scheme
         if self.version == "8":
             semver_safe = semver_safe.replace("-", "")
             tag_slug = f"jdk{self.semver}"
