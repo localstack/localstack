@@ -140,7 +140,10 @@ class TargetSender(ABC):
 
     def proxy_send_event(self, event: FormattedEvent | TransformedEvent):
         """Proxy method to process the event and send it to the target.
-        required for EventStudio extension"""
+        required for EventStudio extension,
+        in addition it removes the field event-bus-name from the event"""
+        if isinstance(event, dict):
+            event.pop("event-bus-name", None)
         self.send_event(event)
 
     def process_event(self, event: FormattedEvent):
