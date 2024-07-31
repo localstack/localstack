@@ -6,6 +6,7 @@ from . import (
     auth,
     codec,
     cors,
+    custom,
     fallback,
     internal,
     internal_requests,
@@ -26,6 +27,7 @@ content_decoder = codec.ContentDecoder()
 parse_service_name = service.ServiceNameParser()
 parse_service_request = service.ServiceRequestParser()
 add_account_id = auth.AccountIdEnricher()
+collect_account_region = custom.AccountRegionCollector()
 inject_auth_header_if_missing = auth.MissingAuthHeaderInjector()
 add_region_from_header = region.RegionContextEnricher()
 rewrite_region = region.RegionRewriter()

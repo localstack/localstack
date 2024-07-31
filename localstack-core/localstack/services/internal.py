@@ -11,6 +11,7 @@ from plux import PluginManager
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
+from localstack.aws.connect import connect_to
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Resource, Response, Router
 from localstack.http.dispatcher import handler_dispatcher
@@ -144,6 +145,38 @@ class InfoResource:
             "server_time_utc": datetime.utcnow().isoformat(timespec="seconds"),
             "uptime": uptime,
         }
+
+
+class ResourcesResource:
+    """
+    Resource that is exposed to /_localstack/info and used to get generalized information about the current
+    localstack instance.
+    """
+
+    def on_get(self, request):
+        types = connect_to().cloudformation.list_types()["TypeSummaries"]
+        cc_client = connect_to().cloudcontrol
+        response = {}
+
+        for cfn_type in types:
+            type_name = cfn_type["TypeName"]
+            resources = cc_client.list_resources(TypeName=type_name)["ResourceDescriptions"]
+            response[type_name] = resources
+        return response
+
+
+class AccountsRegionUsageResource:
+    """
+    Resource that is exposed to /_localstack/account-region-usage to get a list of unique account/region combinations that have been used in this session
+    """
+
+    def on_get(self, request):
+        from localstack.aws.handlers.custom import AccountRegionTracker
+
+        return [
+            {"account_id": entry[0], "region_name": entry[1]}
+            for entry in AccountRegionTracker.tracked
+        ]
 
 
 class UsageResource:
@@ -316,6 +349,8 @@ class LocalstackResources(Router):
         health_resource = HealthResource(SERVICE_PLUGINS)
         self.add(Resource("/_localstack/health", health_resource))
         self.add(Resource("/_localstack/info", InfoResource()))
+        self.add(Resource("/_localstack/resources", ResourcesResource()))
+        self.add(Resource("/_localstack/account-region-usage", AccountsRegionUsageResource()))
         self.add(Resource("/_localstack/plugins", PluginsResource()))
         self.add(Resource("/_localstack/init", InitScriptsResource()))
         self.add(Resource("/_localstack/init/<stage>", InitScriptsStageResource()))
