@@ -2115,6 +2115,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
 
         esm_worker = self.esm_workers[uuid]
+        # Only apply update if the desired state differs
         if enabled := request.get("Enabled") is not None:
             if enabled and not old_event_source_mapping["Enabled"]:
                 esm_worker.start()

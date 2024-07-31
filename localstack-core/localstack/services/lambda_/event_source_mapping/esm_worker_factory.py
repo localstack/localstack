@@ -77,8 +77,10 @@ class EsmWorkerFactory:
             service_principal=ServicePrincipal.lambda_,
             source_arn=self.event_source_mapping_config["FunctionArn"],
         )
+        filter_criteria = self.event_source_mapping_config.get("FilterCriteria", {"Filters": []})
         if source_service == "sqs":
             source_parameters = PipeSourceParameters(
+                FilterCriteria=filter_criteria,
                 SqsQueueParameters=PipeSourceSqsQueueParameters(
                     BatchSize=self.event_source_mapping_config["BatchSize"],
                     MaximumBatchingWindowInSeconds=self.event_source_mapping_config[
@@ -95,6 +97,7 @@ class EsmWorkerFactory:
         elif source_service == "kinesis":
             # TODO: map all supported ESM to Pipe parameters
             source_parameters = PipeSourceParameters(
+                FilterCriteria=filter_criteria,
                 KinesisStreamParameters=PipeSourceKinesisStreamParameters(
                     StartingPosition=KinesisStreamStartPosition[
                         self.event_source_mapping_config["StartingPosition"]
@@ -113,12 +116,13 @@ class EsmWorkerFactory:
         elif source_service == "dynamodbstreams":
             # TODO: map all supported ESM to Pipe parameters
             source_parameters = PipeSourceParameters(
+                FilterCriteria=filter_criteria,
                 DynamoDBStreamParameters=PipeSourceDynamoDBStreamParameters(
                     StartingPosition=DynamoDBStreamStartPosition[
                         self.event_source_mapping_config["StartingPosition"]
                     ],
                     BatchSize=self.event_source_mapping_config["BatchSize"],
-                )
+                ),
             )
             poller = DynamoDBPoller(
                 source_arn=source_arn,

@@ -92,6 +92,9 @@ class SqsPoller(Poller):
     def handle_messages(self, messages):
         polled_events = transform_into_events(messages)
         # Filtering: matching vs. discarded (i.e., not matching filter criteria)
+        # TODO: implement format detection behavior (e.g., for JSON body):
+        #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html#pipes-filter-sqs
+        #  Check whether we need poller-specific filter-preprocessing here without modifying the actual event!
         matching_events = self.filter_events(polled_events)
         all_message_ids = {message["MessageId"] for message in messages}
         matching_message_ids = {event["messageId"] for event in matching_events}
