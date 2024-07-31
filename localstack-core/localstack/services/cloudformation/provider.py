@@ -108,6 +108,7 @@ from localstack.services.cloudformation.engine.validations import (
     DEFAULT_TEMPLATE_VALIDATIONS,
     ValidationError,
 )
+from localstack.services.cloudformation.resource_provider import ResourceProvider
 from localstack.services.cloudformation.stores import (
     cloudformation_stores,
     find_active_stack_by_name_or_id,
@@ -1282,18 +1283,29 @@ class CloudformationProvider(CloudformationApi):
     def list_types(
         self, context: RequestContext, request: ListTypesInput, **kwargs
     ) -> ListTypesOutput:
+        def is_list_overridden(child_class, parent_class):
+            if hasattr(child_class, "list"):
+                import inspect
+
+                child_method = child_class.list
+                parent_method = parent_class.list
+                return inspect.unwrap(child_method) is not inspect.unwrap(parent_method)
+            return False
+
         from localstack.services.cloudformation.resource_provider import (
             plugin_manager,
         )
 
         plugins = plugin_manager.list_names()
 
-        return ListTypesOutput(
-            TypeSummaries=[
-                TypeSummary(
-                    Type=RegistryType.RESOURCE,
-                    TypeName=type_name,
-                )
-                for type_name in plugins
-            ]
-        )
+        type_summaries = []
+        for plugin in plugins:
+            type_summary = TypeSummary(
+                Type=RegistryType.RESOURCE,
+                TypeName=plugin,
+            )
+            provider = plugin_manager.load(plugin)
+            if is_list_overridden(provider.factory, ResourceProvider):
+                type_summaries.append(type_summary)
+
+        return ListTypesOutput(TypeSummaries=type_summaries)
