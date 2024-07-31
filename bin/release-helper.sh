@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 
-set -e
+# set -x
+set -euo pipefail
+shopt -s nullglob
+shopt -s globstar
 
-VERSION_FILE=${VERSION_FILE-VERSION}
-VERSION_PY=${VERSION_PY-"**/version.py"}
-DEPENDENCY_FILE=${DEPENDENCY_FILE-pyproject.toml}
+VERSION_FILE=${VERSION_FILE:-VERSION}
+VERSION_PY=${VERSION_PY:-"**/version.py"}
+DEPENDENCY_FILE=${DEPENDENCY_FILE:-pyproject.toml}
 
 function usage() {
     echo "A set of commands that facilitate release automation"
@@ -193,7 +196,7 @@ function cmd-git-commit-release() {
     echo $1 || verify_valid_version
 
     for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
-            git add "$file" || echo "did not add file '$file' to commit"
+        git add "$file" || echo "did not add file '$file' to commit"
     done
     git commit -m "release version ${1}"
     git tag -a "v${1}" -m "Release version ${1}"
@@ -201,7 +204,7 @@ function cmd-git-commit-release() {
 
 function cmd-git-commit-increment() {
     for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
-            [ -e "$file" ] && git add "$file"
+        git add "$file" || echo "did not add file '$file' to commit"
     done
     git commit -m "prepare next development iteration"
 }
