@@ -15,7 +15,7 @@ from localstack.aws.api.pipes import (
 from localstack.services.lambda_.event_source_mapping.esm_event_processor import (
     EsmEventProcessor,
 )
-from localstack.services.lambda_.event_source_mapping.esm_worker import EsmWorker
+from localstack.services.lambda_.event_source_mapping.esm_worker import EsmStateReason, EsmWorker
 from localstack.services.lambda_.event_source_mapping.pipe_loggers.noops_pipe_logger import (
     NoOpsPipeLogger,
 )
@@ -78,7 +78,9 @@ class EsmWorkerFactory:
             source_arn=self.event_source_mapping_config["FunctionArn"],
         )
         filter_criteria = self.event_source_mapping_config.get("FilterCriteria", {"Filters": []})
+        user_state_reason = EsmStateReason.USER_ACTION
         if source_service == "sqs":
+            user_state_reason = EsmStateReason.USER_INITIATED
             source_parameters = PipeSourceParameters(
                 FilterCriteria=filter_criteria,
                 SqsQueueParameters=PipeSourceSqsQueueParameters(
@@ -138,6 +140,9 @@ class EsmWorkerFactory:
             )
 
         esm_worker = EsmWorker(
-            self.event_source_mapping_config, poller=poller, enabled=self.enabled
+            self.event_source_mapping_config,
+            poller=poller,
+            enabled=self.enabled,
+            user_state_reason=user_state_reason,
         )
         return esm_worker

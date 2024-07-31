@@ -25,6 +25,9 @@ class EsmState(StrEnum):
 
 
 class EsmStateReason(StrEnum):
+    # Used for Kinesis and DynamoDB
+    USER_ACTION = "User action"
+    # Used for SQS
     USER_INITIATED = "USER_INITIATED"
     NO_RECORDS_PROCESSED = "No records processed"
     # TODO: add others?
@@ -35,6 +38,8 @@ class EsmWorker:
     enabled: bool
     current_state: EsmState
     state_transition_reason: EsmStateReason
+    # Either USER_ACTION or USER_INITIATED (SQS) depending on the event source
+    user_state_reason: EsmStateReason
     # TODO: test
     last_processing_result: str
 
@@ -49,11 +54,13 @@ class EsmWorker:
         esm_config: EventSourceMappingConfiguration,
         poller: Poller,
         enabled: bool = True,
+        user_state_reason: EsmStateReason = EsmStateReason.USER_ACTION,
     ):
         self.esm_config = esm_config
         self.enabled = enabled
         self.current_state = EsmState.CREATING
-        self.state_transition_reason = EsmStateReason.USER_INITIATED
+        self.user_state_reason = user_state_reason
+        self.state_transition_reason = self.user_state_reason
 
         self.poller = poller
 
@@ -70,20 +77,20 @@ class EsmWorker:
         if self.enabled:
             with self._state_lock:
                 self.current_state = EsmState.CREATING
-                self.state_transition_reason = EsmStateReason.USER_INITIATED
+                self.state_transition_reason = self.user_state_reason
             self.start()
         else:
             # TODO: validate with tests
             with self._state_lock:
                 self.current_state = EsmState.DISABLED
-                self.state_transition_reason = EsmStateReason.USER_INITIATED
+                self.state_transition_reason = self.user_state_reason
 
     def start(self):
         with self._state_lock:
             # CREATING state takes precedence over ENABLING
             if self.current_state != EsmState.CREATING:
                 self.current_state = EsmState.ENABLING
-                self.state_transition_reason = EsmStateReason.USER_INITIATED
+                self.state_transition_reason = self.user_state_reason
         self._poller_thread = FuncThread(
             self.poller_loop,
             name=f"event-source-mapping-poller-{self.uuid}",
@@ -93,19 +100,19 @@ class EsmWorker:
     def stop(self):
         with self._state_lock:
             self.current_state = EsmState.DISABLING
-            self.state_transition_reason = EsmStateReason.USER_INITIATED
+            self.state_transition_reason = self.user_state_reason
         self._shutdown_event.set()
 
     def delete(self):
         with self._state_lock:
             self.current_state = EsmState.DELETING
-            self.state_transition_reason = EsmStateReason.USER_INITIATED
+            self.state_transition_reason = self.user_state_reason
         self._shutdown_event.set()
 
     def poller_loop(self, *args, **kwargs):
         with self._state_lock:
             self.current_state = EsmState.ENABLED
-            self.state_transition_reason = EsmStateReason.USER_INITIATED
+            self.state_transition_reason = self.user_state_reason
             # TODO: idea to not update store state but query state from esm_worker upon querying, but async deletion needs to modify store?!
             # Update store state !?
             # function_version = LambdaProvider._get_function_version_from_arn(self.esm_config["FunctionArn"])

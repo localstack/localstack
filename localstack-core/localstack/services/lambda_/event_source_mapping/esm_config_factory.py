@@ -35,9 +35,11 @@ class EsmConfigFactory:
         service = get_standardized_service_name(parsed_arn["service"])
 
         default_source_parameters = {}
+        user_state_reason = EsmStateReason.USER_ACTION
         if service == "sqs":
             default_source_parameters["BatchSize"] = 10
             default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
+            user_state_reason = EsmStateReason.USER_INITIATED
         elif service == "kinesis":
             # TODO: test all defaults
             default_source_parameters["BatchSize"] = 100
@@ -82,7 +84,7 @@ class EsmConfigFactory:
             # TODO: last modified => does state transition affect this?
             LastModified=datetime.datetime.now(),
             State=state,
-            StateTransitionReason=EsmStateReason.USER_INITIATED,
+            StateTransitionReason=user_state_reason,
             # TODO: complete missing fields
         )
         return esm_config
