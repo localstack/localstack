@@ -249,3 +249,13 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
             result[k] = v
 
         return result
+
+    def list(
+        self,
+        request: ResourceRequest[SQSQueueProperties],
+    ) -> ProgressEvent[SQSQueueProperties]:
+        resources = request.aws_client_factory.sqs.list_queues()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[SQSQueueProperties(QueueUrl=url) for url in resources["QueueUrls"]],
+        )

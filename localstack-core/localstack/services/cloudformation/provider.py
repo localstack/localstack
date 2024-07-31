@@ -54,12 +54,15 @@ from localstack.aws.api.cloudformation import (
     ListStackSetsInput,
     ListStackSetsOutput,
     ListStacksOutput,
+    ListTypesInput,
+    ListTypesOutput,
     LogicalResourceId,
     NextToken,
     Parameter,
     PhysicalResourceId,
     RegisterTypeInput,
     RegisterTypeOutput,
+    RegistryType,
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
@@ -70,6 +73,7 @@ from localstack.aws.api.cloudformation import (
     StackStatusFilter,
     TemplateParameter,
     TemplateStage,
+    TypeSummary,
     UpdateStackInput,
     UpdateStackOutput,
     UpdateStackSetInput,
@@ -1274,3 +1278,22 @@ class CloudformationProvider(CloudformationApi):
         request: RegisterTypeInput,
     ) -> RegisterTypeOutput:
         return RegisterTypeOutput()
+
+    def list_types(
+        self, context: RequestContext, request: ListTypesInput, **kwargs
+    ) -> ListTypesOutput:
+        from localstack.services.cloudformation.resource_provider import (
+            plugin_manager,
+        )
+
+        plugins = plugin_manager.list_names()
+
+        return ListTypesOutput(
+            TypeSummaries=[
+                TypeSummary(
+                    Type=RegistryType.RESOURCE,
+                    TypeName=type_name,
+                )
+                for type_name in plugins
+            ]
+        )

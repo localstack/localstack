@@ -513,3 +513,13 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
             status=OperationStatus.SUCCESS,
             resource_model={**request.previous_state, **request.desired_state},
         )
+
+    def list(
+        self,
+        request: ResourceRequest[LambdaFunctionProperties],
+    ) -> ProgressEvent[LambdaFunctionProperties]:
+        functions = request.aws_client_factory.lambda_.list_functions()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[LambdaFunctionProperties(**fn) for fn in functions["Functions"]],
+        )

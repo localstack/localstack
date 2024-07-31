@@ -68,7 +68,8 @@ class OperationStatus(Enum):
 @dataclass
 class ProgressEvent(Generic[Properties]):
     status: OperationStatus
-    resource_model: Properties
+    resource_model: Optional[Properties] = None
+    resource_models: Optional[list[Properties]] = None
 
     message: str = ""
     result: Optional[str] = None
@@ -212,6 +213,12 @@ class ResourceProvider(Generic[Properties]):
         raise NotImplementedError
 
     def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        raise NotImplementedError
+
+    def read(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        raise NotImplementedError
+
+    def list(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         raise NotImplementedError
 
 

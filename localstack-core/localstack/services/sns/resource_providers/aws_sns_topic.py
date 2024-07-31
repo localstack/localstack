@@ -167,3 +167,15 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
           - sns:PutDataProtectionPolicy
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[SNSTopicProperties],
+    ) -> ProgressEvent[SNSTopicProperties]:
+        resources = request.aws_client_factory.sns.list_topics()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                SNSTopicProperties(TopicArn=topic["TopicArn"]) for topic in resources["Topics"]
+            ],
+        )
