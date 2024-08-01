@@ -6,19 +6,19 @@ from localstack.packages.core import ArchiveDownloadAndExtractInstaller
 from localstack.utils.platform import get_arch
 
 FFMPEG_STATIC_BIN_URL = (
-    "https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-{version}-{arch}-static.tar.xz"
+    "https://www.johnvansickle.com/ffmpeg/releases/ffmpeg-{version}-{arch}-static.tar.xz"
 )
 
 
 class FfmpegPackage(Package):
     def __init__(self):
-        super().__init__(name="ffmpeg", default_version="4.4.1")
+        super().__init__(name="ffmpeg", default_version="7.0.1")
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return FfmpegPackageInstaller(version)
 
     def get_versions(self) -> List[str]:
-        return ["4.4.1"]
+        return ["7.0.1"]
 
 
 class FfmpegPackageInstaller(ArchiveDownloadAndExtractInstaller):
