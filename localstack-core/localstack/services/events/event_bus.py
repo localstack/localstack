@@ -107,7 +107,7 @@ class EventBusService:
         if condition and principal != "*":
             raise ValueError("Condition can only be set when principal is '*'")
         if principal != "*":
-            principal = {"AWS": f"arn:{get_partition(self.region)}:iam::{principal}:root"}
+            principal = {"AWS": f"arn:{get_partition(self.event_bus.region)}:iam::{principal}:root"}
         statement = Statement(
             Sid=statement_id,
             Effect="Allow",
