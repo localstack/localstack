@@ -28,6 +28,7 @@ from localstack.aws.api.lambda_ import (
     VpcConfigResponse,
 )
 from localstack.services.lambda_.runtimes import ALL_RUNTIMES, VALID_LAYER_RUNTIMES, VALID_RUNTIMES
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition
 from localstack.utils.collections import merge_recursive
 
 if TYPE_CHECKING:
@@ -44,12 +45,12 @@ if TYPE_CHECKING:
 
 # Pattern for a full (both with and without qualifier) lambda function ARN
 FULL_FN_ARN_PATTERN = re.compile(
-    r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
+    rf"{ARN_PARTITION_REGEX}:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
 )
 
 # Pattern for a full (both with and without qualifier) lambda function ARN
 LAYER_VERSION_ARN_PATTERN = re.compile(
-    r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):layer:(?P<layer_name>[^:]+)(:(?P<layer_version>\d+))?$"
+    rf"{ARN_PARTITION_REGEX}:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):layer:(?P<layer_name>[^:]+)(:(?P<layer_version>\d+))?$"
 )
 
 
@@ -233,6 +234,7 @@ def get_name_and_qualifier(
 
 
 def build_statement(
+    partition: str,
     resource_arn: str,
     statement_id: str,
     action: str,
@@ -256,9 +258,9 @@ def build_statement(
     if principal.endswith(".amazonaws.com"):
         statement["Principal"] = {"Service": principal}
     elif is_aws_account(principal):
-        statement["Principal"] = {"AWS": f"arn:aws:iam::{principal}:root"}
+        statement["Principal"] = {"AWS": f"arn:{partition}:iam::{principal}:root"}
     # TODO: potentially validate against IAM?
-    elif principal.startswith("arn:aws:iam:"):
+    elif re.match(f"{ARN_PARTITION_REGEX}:iam:", principal):
         statement["Principal"] = {"AWS": principal}
     elif principal == "*":
         statement["Principal"] = principal
@@ -306,15 +308,14 @@ def generate_random_url_id() -> str:
 
 def unqualified_lambda_arn(function_name: str, account: str, region: str):
     """
-    Generate a unqualified lambda arn
+    Generate an unqualified lambda arn
 
     :param function_name: Function name (not an arn!)
     :param account: Account ID
     :param region: Region
     :return: Unqualified lambda arn
     """
-    # TODO should get partition here, but current way is too expensive (15-120ms) using aws_stack get_partition
-    return f"arn:aws:lambda:{region}:{account}:function:{function_name}"
+    return f"arn:{get_partition(region)}:lambda:{region}:{account}:function:{function_name}"
 
 
 def qualified_lambda_arn(
@@ -579,11 +580,11 @@ def map_layer_out(layer_version: "LayerVersion") -> PublishLayerVersionResponse:
 
 
 def layer_arn(layer_name: str, account: str, region: str):
-    return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}"
+    return f"arn:{get_partition(region)}:lambda:{region}:{account}:layer:{layer_name}"
 
 
 def layer_version_arn(layer_name: str, account: str, region: str, version: str):
-    return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}:{version}"
+    return f"arn:{get_partition(region)}:lambda:{region}:{account}:layer:{layer_name}:{version}"
 
 
 def parse_layer_arn(layer_version_arn: str) -> Tuple[str, str, str, str]:

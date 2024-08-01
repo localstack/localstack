@@ -8,8 +8,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -34,9 +34,9 @@
             "eventID": "shardId-000000000000:<sequence-number:1>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -50,9 +50,9 @@
             "eventID": "shardId-000000000000:<sequence-number:2>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -66,9 +66,9 @@
             "eventID": "shardId-000000000000:<sequence-number:3>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -82,9 +82,9 @@
             "eventID": "shardId-000000000000:<sequence-number:4>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -98,9 +98,9 @@
             "eventID": "shardId-000000000000:<sequence-number:5>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -114,9 +114,9 @@
             "eventID": "shardId-000000000000:<sequence-number:6>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -130,9 +130,9 @@
             "eventID": "shardId-000000000000:<sequence-number:7>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -146,9 +146,9 @@
             "eventID": "shardId-000000000000:<sequence-number:8>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -162,9 +162,9 @@
             "eventID": "shardId-000000000000:<sequence-number:9>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -178,9 +178,9 @@
             "eventID": "shardId-000000000000:<sequence-number:10>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -202,8 +202,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -238,9 +238,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:1>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -254,9 +254,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:2>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -270,9 +270,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:3>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -286,9 +286,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:4>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -302,9 +302,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:5>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -318,9 +318,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:6>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -334,9 +334,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:7>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -350,9 +350,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:8>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -366,9 +366,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:9>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -382,9 +382,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:10>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               }
             ]
           }
@@ -405,9 +405,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:11>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -421,9 +421,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:12>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -437,9 +437,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:13>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -453,9 +453,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:14>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -469,9 +469,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:15>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -485,9 +485,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:16>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -501,9 +501,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:17>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -517,9 +517,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:18>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -533,9 +533,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:19>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -549,9 +549,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:20>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               }
             ]
           }
@@ -568,8 +568,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -604,9 +604,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:1>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -620,9 +620,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:2>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -636,9 +636,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:3>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -652,9 +652,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:4>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -668,9 +668,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:5>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -684,9 +684,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:6>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -700,9 +700,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:7>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -716,9 +716,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:8>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -732,9 +732,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:9>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -748,9 +748,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:10>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               }
             ]
           }
@@ -771,9 +771,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:11>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -787,9 +787,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:12>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -803,9 +803,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:13>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -819,9 +819,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:14>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -835,9 +835,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:15>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -851,9 +851,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:16>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -867,9 +867,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:17>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -883,9 +883,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:18>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -899,9 +899,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:19>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -915,9 +915,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:20>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               }
             ]
           }
@@ -938,9 +938,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:21>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -954,9 +954,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:22>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -970,9 +970,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:23>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -986,9 +986,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:24>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -1002,9 +1002,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:25>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -1018,9 +1018,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:26>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -1034,9 +1034,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:27>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -1050,9 +1050,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:28>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -1066,9 +1066,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:29>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               },
               {
                 "kinesis": {
@@ -1082,9 +1082,9 @@
                 "eventVersion": "1.0",
                 "eventID": "shardId-000000000000:<sequence-number:30>",
                 "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+                "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "awsRegion": "<region>",
-                "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+                "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
               }
             ]
           }
@@ -1101,8 +1101,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1135,9 +1135,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:1>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1151,9 +1151,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:2>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1167,9 +1167,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:3>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1183,9 +1183,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:4>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1199,9 +1199,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:5>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1215,9 +1215,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:6>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1231,9 +1231,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:7>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1247,9 +1247,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:8>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1263,9 +1263,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:9>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             },
             {
               "kinesis": {
@@ -1279,9 +1279,9 @@
               "eventVersion": "1.0",
               "eventID": "shardId-000000000000:<sequence-number:10>",
               "eventName": "aws:kinesis:record",
-              "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:3>",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
               "awsRegion": "<region>",
-              "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>"
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
             }
           ]
         }
@@ -1296,11 +1296,11 @@
         "BisectBatchOnFunctionError": false,
         "DestinationConfig": {
           "OnFailure": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
           }
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:2>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1324,7 +1324,7 @@
             "Body": {
               "requestContext": {
                 "requestId": "<uuid:2>",
-                "functionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
                 "condition": "RetryAttemptsExhausted",
                 "approximateInvokeCount": 2
               },
@@ -1342,7 +1342,7 @@
                 "approximateArrivalOfFirstRecord": "date",
                 "approximateArrivalOfLastRecord": "date",
                 "batchSize": 1,
-                "streamArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:2>"
+                "streamArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
               }
             },
             "MD5OfBody": "<m-d5-of-body:1>",
@@ -1366,7 +1366,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1380,7 +1380,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1404,7 +1404,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1418,7 +1418,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1447,8 +1447,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1469,10 +1469,10 @@
       "error": {
         "Error": {
           "Code": "ResourceConflictException",
-          "Message": "The event source arn (\" arn:aws:kinesis:<region>:111111111111:stream/<resource:1> \") and function (\" <resource:2> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:1>"
+          "Message": "The event source arn (\" arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1> \") and function (\" <resource:2> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:1>"
         },
         "Type": "User",
-        "message": "The event source arn (\" arn:aws:kinesis:<region>:111111111111:stream/<resource:1> \") and function (\" <resource:2> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:1>",
+        "message": "The event source arn (\" arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1> \") and function (\" <resource:2> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
@@ -1489,8 +1489,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1514,8 +1514,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1540,9 +1540,9 @@
             "eventID": "shardId-000000000000:<sequence-number:1>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:4>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:4>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",
@@ -1560,9 +1560,9 @@
             "eventID": "shardId-000000000000:<sequence-number:1>",
             "eventName": "aws:kinesis:record",
             "eventSource": "aws:kinesis",
-            "eventSourceARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+            "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
             "eventVersion": "1.0",
-            "invokeIdentityArn": "arn:aws:iam::111111111111:role/<resource:4>",
+            "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:4>",
             "kinesis": {
               "approximateArrivalTimestamp": "timestamp",
               "data": "aGVsbG8=",

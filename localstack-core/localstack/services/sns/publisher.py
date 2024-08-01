@@ -30,6 +30,7 @@ from localstack.services.sns.models import (
     SnsSubscription,
 )
 from localstack.utils.aws.arns import (
+    PARTITION_NAMES,
     extract_account_id_from_arn,
     extract_region_from_arn,
     extract_resource_from_arn,
@@ -1055,7 +1056,10 @@ def store_delivery_log(
         )
         return
 
-    log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
+    log_group_name = subscriber.get("TopicArn", "")
+    for partition in PARTITION_NAMES:
+        log_group_name = log_group_name.replace(f"arn:{partition}:", "")
+    log_group_name = log_group_name.replace(":", "/")
     log_stream_name = long_uid()
     invocation_time = int(time.time() * 1000)
 

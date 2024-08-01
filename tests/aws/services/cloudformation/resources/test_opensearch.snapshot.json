@@ -4,7 +4,7 @@
     "recorded-content": {
       "describe_domain": {
         "DomainStatus": {
-          "ARN": "arn:aws:es:<region>:111111111111:domain/<domain-name:1>",
+          "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
           "AccessPolicies": "",
           "AdvancedOptions": {
             "override_main_response_version": "false",
@@ -115,17 +115,17 @@
     "recorded-content": {
       "describe_domain": {
         "DomainStatus": {
-          "ARN": "arn:aws:es:<region>:111111111111:domain/test-opensearch-domain",
+          "ARN": "arn:<partition>:es:<region>:111111111111:domain/test-opensearch-domain",
           "AccessPolicies": {
             "Version": "2012-10-17",
             "Statement": [
               {
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:root"
+                  "AWS": "arn:<partition>:iam::111111111111:root"
                 },
                 "Action": "es:*",
-                "Resource": "arn:aws:es:<region>:111111111111:domain/test-opensearch-domain/*"
+                "Resource": "arn:<partition>:es:<region>:111111111111:domain/test-opensearch-domain/*"
               }
             ]
           },

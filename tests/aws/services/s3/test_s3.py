@@ -44,7 +44,7 @@ from localstack.services.s3.utils import (
     parse_expiration_header,
     rfc_1123_datetime,
 )
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.util import in_default_partition, is_aws_cloud
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -53,6 +53,7 @@ from localstack.testing.config import (
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
@@ -1000,20 +1001,28 @@ class TestS3:
         snapshot.match("exc", e.value.response)
 
     @markers.aws.validated
-    def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client):
+    def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client, region_name):
         # TODO check redirection (happens in AWS because of region name), should it happen in LS?
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingBackwardsCompatibility
         bucket_name = f"test-{short_uid()}"
         try:
             response = s3_vhost_client.create_bucket(
                 Bucket=bucket_name,
-                CreateBucketConfiguration={"LocationConstraint": "eu-central-1"},
+                CreateBucketConfiguration={
+                    "LocationConstraint": region_name
+                    if region_name != "us-east-1"
+                    else "eu-central-1"
+                },
             )
             assert "Location" in response
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
             response = s3_vhost_client.get_bucket_location(Bucket=bucket_name)
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-            assert response["LocationConstraint"] == "eu-central-1"
+            assert (
+                response["LocationConstraint"] == region_name
+                if region_name != "us-east-1"
+                else "eu-central-1"
+            )
         finally:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
@@ -4762,6 +4771,9 @@ class TestS3:
         assert len(proxied_response.headers["server"].split(",")) == 1
         assert len(proxied_response.headers["date"].split(",")) == 2  # coma in the date
 
+    @pytest.mark.skipif(
+        not in_default_partition(), reason="Test not applicable in non-default partitions"
+    )
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
     def test_s3_sse_validate_kms_key(
@@ -6015,7 +6027,7 @@ class TestS3:
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
     @markers.aws.validated
-    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot):
+    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot, region_name):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
         dest_bucket = s3_create_bucket()
@@ -6028,7 +6040,7 @@ class TestS3:
                     "Effect": "Allow",
                     "Principal": {"Service": "s3.amazonaws.com"},
                     "Action": "s3:PutObject",
-                    "Resource": [f"arn:aws:s3:::{dest_bucket}/*"],
+                    "Resource": [f"arn:{get_partition(region_name)}:s3:::{dest_bucket}/*"],
                     "Condition": {
                         "ArnLike": {"aws:SourceArn": f"arn:aws:s3:::{src_bucket}"},
                     },
@@ -6041,7 +6053,7 @@ class TestS3:
             "Id": "test-inventory",
             "Destination": {
                 "S3BucketDestination": {
-                    "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                    "Bucket": f"arn:{get_partition(region_name)}:s3:::{dest_bucket}",
                     "Format": "CSV",
                 }
             },
@@ -6156,7 +6168,9 @@ class TestS3:
         snapshot.match("wrong-optional-field", e.value.response)
 
     @markers.aws.validated
-    def test_put_bucket_inventory_config_order(self, aws_client, s3_create_bucket, snapshot):
+    def test_put_bucket_inventory_config_order(
+        self, aws_client, s3_create_bucket, snapshot, region_name
+    ):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
         dest_bucket = s3_create_bucket()
@@ -6166,7 +6180,7 @@ class TestS3:
                 "Id": config_id,
                 "Destination": {
                     "S3BucketDestination": {
-                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Bucket": f"arn:{get_partition(region_name)}:s3:::{dest_bucket}",
                         "Format": "CSV",
                     }
                 },
@@ -7159,6 +7173,8 @@ class TestS3PresignedUrl:
         account_id,
         wait_and_assume_role,
         patch_s3_skip_signature_validation_false,
+        region_name,
+        aws_client_factory,
     ):
         bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
@@ -7192,6 +7208,7 @@ class TestS3PresignedUrl:
 
         client = boto3.client(
             "s3",
+            region_name=region_name,
             config=Config(signature_version="s3v4"),
             endpoint_url=_endpoint_url(),
             aws_access_key_id=credentials["AccessKeyId"],
@@ -7199,8 +7216,13 @@ class TestS3PresignedUrl:
             aws_session_token=credentials["SessionToken"],
         )
 
+        kwargs = (
+            {"CreateBucketConfiguration": {"LocationConstraint": region_name}}
+            if region_name != "us-east-1"
+            else {}
+        )
         retry(
-            lambda: s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name),
+            lambda: s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name, **kwargs),
             sleep=3 if is_aws_cloud() else 0.5,
         )
 

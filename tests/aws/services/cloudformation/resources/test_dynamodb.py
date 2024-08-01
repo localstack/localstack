@@ -6,11 +6,12 @@ from aws_cdk import aws_dynamodb as dynamodb
 from aws_cdk.aws_dynamodb import BillingMode
 
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.strings import short_uid
 
 
 @markers.aws.validated
-def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client):
+def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client, region_name):
     env = "Staging"
     ddb_table_name_prefix = f"ddb-table-{short_uid()}"
     ddb_table_name = f"{ddb_table_name_prefix}-{env}"
@@ -22,7 +23,7 @@ def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client):
         parameters={"tableName": ddb_table_name_prefix, "env": env},
     )
 
-    assert stack.outputs["Arn"].startswith("arn:aws:dynamodb")
+    assert stack.outputs["Arn"].startswith(f"arn:{get_partition(region_name)}:dynamodb")
     assert f"table/{ddb_table_name}" in stack.outputs["Arn"]
     assert stack.outputs["Name"] == ddb_table_name
 

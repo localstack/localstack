@@ -268,14 +268,14 @@
     "recorded-date": "10-01-2024, 12:59:51",
     "recorded-content": {
       "SSEDescription": {
-        "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "SSEType": "KMS",
         "Status": "ENABLED"
       },
       "KMSDescription": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "Default key that protects my DynamoDB data when no other key is defined",
@@ -297,7 +297,7 @@
         }
       },
       "update-table-disable-sse-spec": {
-        "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "SSEType": "KMS",
         "Status": "UPDATING"
       }
@@ -459,7 +459,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -470,7 +470,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -498,7 +498,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
@@ -659,7 +659,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -670,7 +670,7 @@
             "StreamEnabled": true,
             "StreamViewType": "KEYS_ONLY"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -698,7 +698,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "KEYS_ONLY",
@@ -876,7 +876,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -887,7 +887,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -915,7 +915,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
@@ -1148,7 +1148,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -1159,7 +1159,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -1192,7 +1192,7 @@
             "ReadCapacityUnits": 5,
             "WriteCapacityUnits": 5
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:2>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:2>",
           "TableId": "<uuid:2>",
           "TableName": "<table-name:2>",
           "TableSizeBytes": 0,
@@ -1220,7 +1220,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
@@ -1286,7 +1286,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -1297,7 +1297,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -1325,7 +1325,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",

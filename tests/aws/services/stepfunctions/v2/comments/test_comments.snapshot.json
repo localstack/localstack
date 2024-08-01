@@ -69,7 +69,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:lambda_function_1_name"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_1_name"
             },
             "previousEventId": 4,
             "timestamp": "timestamp",
@@ -224,7 +224,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:lambda_function_1_name"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_1_name"
             },
             "previousEventId": 15,
             "timestamp": "timestamp",

@@ -14,8 +14,8 @@
           {
             "ApproximateNumberOfMessagesMoved": 2,
             "ApproximateNumberOfMessagesToMove": 2,
-            "DestinationArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-            "SourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+            "DestinationArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
             "StartedTimestamp": "timestamp",
             "Status": "COMPLETED"
           }
@@ -135,9 +135,9 @@
           {
             "ApproximateNumberOfMessagesMoved": 2,
             "ApproximateNumberOfMessagesToMove": 10,
-            "DestinationArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "DestinationArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
             "MaxNumberOfMessagesPerSecond": 1,
-            "SourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
             "StartedTimestamp": "timestamp",
             "Status": "RUNNING",
             "TaskHandle": "<task-handle:1>"
@@ -160,9 +160,9 @@
           {
             "ApproximateNumberOfMessagesMoved": 8,
             "ApproximateNumberOfMessagesToMove": 10,
-            "DestinationArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "DestinationArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
             "MaxNumberOfMessagesPerSecond": 1,
-            "SourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
             "StartedTimestamp": "timestamp",
             "Status": "CANCELLED"
           }
@@ -182,10 +182,10 @@
           {
             "ApproximateNumberOfMessagesMoved": 3,
             "ApproximateNumberOfMessagesToMove": 10,
-            "DestinationArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "DestinationArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
             "FailureReason": "AWS.SimpleQueueService.NonExistentQueue",
             "MaxNumberOfMessagesPerSecond": 1,
-            "SourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
             "StartedTimestamp": "timestamp",
             "Status": "FAILED"
           }
@@ -217,8 +217,8 @@
   "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_default_destination": {
     "recorded-date": "30-04-2024, 10:22:20",
     "recorded-content": {
-      "source-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-      "original-source": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+      "source-arn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+      "original-source": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
       "start-message-move-task-response": {
         "TaskHandle": "<task-handle:1>",
         "ResponseMetadata": {
@@ -231,7 +231,7 @@
           {
             "ApproximateNumberOfMessagesMoved": 2,
             "ApproximateNumberOfMessagesToMove": 2,
-            "SourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
             "StartedTimestamp": "timestamp",
             "Status": "COMPLETED"
           }
@@ -246,9 +246,9 @@
   "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_multiple_sources_as_default_destination": {
     "recorded-date": "30-04-2024, 10:22:29",
     "recorded-content": {
-      "source-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-      "original-source-1": "arn:aws:sqs:<region>:111111111111:<resource:2>",
-      "original-source-2": "arn:aws:sqs:<region>:111111111111:<resource:3>",
+      "source-arn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+      "original-source-1": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+      "original-source-2": "arn:<partition>:sqs:<region>:111111111111:<resource:3>",
       "start-message-move-task-response": {
         "TaskHandle": "<task-handle:1>",
         "ResponseMetadata": {
@@ -261,7 +261,7 @@
           {
             "ApproximateNumberOfMessagesMoved": 4,
             "ApproximateNumberOfMessagesToMove": 4,
-            "SourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
             "StartedTimestamp": "timestamp",
             "Status": "COMPLETED"
           }

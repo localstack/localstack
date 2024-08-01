@@ -82,7 +82,7 @@
       "list-access-points-start": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
             "Alias": "<name:1>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -96,7 +96,7 @@
         }
       },
       "create-access-point": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
         "Alias": "<name:2>-<alias-random-part>-s3alias",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -104,7 +104,7 @@
         }
       },
       "get-access-point": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
         "Alias": "<name:2>-<alias-random-part>-s3alias",
         "Bucket": "<bucket:2>",
         "BucketAccountId": "111111111111",
@@ -131,7 +131,7 @@
       "list-access-points-after-create": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
             "Alias": "<name:2>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:2>",
             "BucketAccountId": "111111111111",
@@ -139,7 +139,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
             "Alias": "<name:1>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -161,7 +161,7 @@
       "list-access-points-after-delete": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
             "Alias": "<name:1>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -265,7 +265,7 @@
     "recorded-date": "30-05-2024, 17:38:08",
     "recorded-content": {
       "put-ap-empty-pabc": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
         "Alias": "<name:1>-<alias-random-part>-s3alias",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -273,7 +273,7 @@
         }
       },
       "get-ap-empty-pabc": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
         "Alias": "<name:1>-<alias-random-part>-s3alias",
         "Bucket": "<bucket:1>",
         "BucketAccountId": "111111111111",
@@ -298,7 +298,7 @@
         }
       },
       "put-ap-partial-pabc": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
         "Alias": "<name:2>-<alias-random-part>-s3alias",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -306,7 +306,7 @@
         }
       },
       "get-ap-partial-pabc": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
         "Alias": "<name:2>-<alias-random-part>-s3alias",
         "Bucket": "<bucket:1>",
         "BucketAccountId": "111111111111",
@@ -331,7 +331,7 @@
         }
       },
       "put-ap-partial-true-pabc": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:3>",
         "Alias": "<name:3>-<alias-random-part>-s3alias",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -339,7 +339,7 @@
         }
       },
       "get-ap-partial-true-pabc": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:3>",
         "Alias": "<name:3>-<alias-random-part>-s3alias",
         "Bucket": "<bucket:1>",
         "BucketAccountId": "111111111111",
@@ -364,7 +364,7 @@
         }
       },
       "put-ap-pabc-not-set": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:4>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:4>",
         "Alias": "<name:4>-<alias-random-part>-s3alias",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -372,7 +372,7 @@
         }
       },
       "get-ap-pabc-not-set": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:4>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:4>",
         "Alias": "<name:4>-<alias-random-part>-s3alias",
         "Bucket": "<bucket:1>",
         "BucketAccountId": "111111111111",
@@ -399,7 +399,7 @@
       "list-access-points": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
             "Alias": "<name:1>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -407,7 +407,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
             "Alias": "<name:2>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -415,7 +415,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:3>",
             "Alias": "<name:3>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -423,7 +423,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:4>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:4>",
             "Alias": "<name:4>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -431,7 +431,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:5>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:5>",
             "Alias": "<name:5>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:2>",
             "BucketAccountId": "111111111111",
@@ -450,7 +450,7 @@
     "recorded-date": "30-05-2024, 17:42:07",
     "recorded-content": {
       "create-access-point-0": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
         "Alias": "<name:2>-<alias-random-part>-s3alias",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -458,7 +458,7 @@
         }
       },
       "create-access-point-1": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
         "Alias": "<name:1>-<alias-random-part>-s3alias",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -466,7 +466,7 @@
         }
       },
       "create-access-point-2": {
-        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+        "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:3>",
         "Alias": "<name:3>-<alias-random-part>-s3alias",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -476,7 +476,7 @@
       "list-all": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
             "Alias": "<name:1>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -484,7 +484,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
             "Alias": "<name:2>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -492,7 +492,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:3>",
             "Alias": "<name:3>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:2>",
             "BucketAccountId": "111111111111",
@@ -500,7 +500,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:4>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:4>",
             "Alias": "<name:4>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:3>",
             "BucketAccountId": "111111111111",
@@ -516,7 +516,7 @@
       "list-one-max": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
             "Alias": "<name:1>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -533,7 +533,7 @@
       "list-one-next": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
             "Alias": "<name:2>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -550,7 +550,7 @@
       "list-one-next-2": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:3>",
             "Alias": "<name:3>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:2>",
             "BucketAccountId": "111111111111",
@@ -567,7 +567,7 @@
       "list-by-bucket": {
         "AccessPointList": [
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:1>",
             "Alias": "<name:1>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",
@@ -575,7 +575,7 @@
             "NetworkOrigin": "Internet"
           },
           {
-            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+            "AccessPointArn": "arn:<partition>:s3:<region>:111111111111:accesspoint/<name:2>",
             "Alias": "<name:2>-<alias-random-part>-s3alias",
             "Bucket": "<bucket:1>",
             "BucketAccountId": "111111111111",

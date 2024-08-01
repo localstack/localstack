@@ -234,7 +234,7 @@
             "DomainName": "<identifier:1>.s3.amazonaws.com",
             "WebsiteURL": "http://<identifier:1>.s3-website-<region>.amazonaws.com",
             "DualStackDomainName": "<identifier:1>.s3.dualstack.<region>.amazonaws.com",
-            "Arn": "arn:aws:s3:::<identifier:1>"
+            "Arn": "arn:<partition>:s3:::<identifier:1>"
           }
         },
         "TypeName": "AWS::S3::Bucket",

@@ -5,11 +5,11 @@
       "list_attached_role_policies": {
         "AttachedPolicies": [
           {
-            "PolicyArn": "arn:aws:iam::aws:policy/service-role/<policy-name:1>",
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:1>",
             "PolicyName": "<policy-name:1>"
           },
           {
-            "PolicyArn": "arn:aws:iam::aws:policy/<policy-name:2>",
+            "PolicyArn": "arn:<partition>:iam::aws:policy/<policy-name:2>",
             "PolicyName": "<policy-name:2>"
           }
         ],
@@ -38,7 +38,7 @@
         "rootResourceId": "<root-resource-id:1>",
         "tags": {
           "aws:cloudformation:logical-id": "Api",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/<name:1>/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<name:1>/<resource:1>",
           "aws:cloudformation:stack-name": "<name:1>"
         },
         "version": "1.0",
@@ -62,7 +62,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -74,10 +74,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:2>",
           "Runtime": "python3.11",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:3>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -92,7 +92,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "Lambda",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/<name:1>/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<name:1>/<resource:1>",
           "aws:cloudformation:stack-name": "<name:1>",
           "lambda:createdBy": "SAM"
         },

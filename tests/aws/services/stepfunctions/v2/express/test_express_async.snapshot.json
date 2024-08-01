@@ -4,7 +4,7 @@
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -20,7 +20,7 @@
           }
         },
         "event_timestamp": "timestamp",
-        "execution_arn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
         "id": "4",
         "previous_event_id": "3",
         "redrive_count": "0",
@@ -33,7 +33,7 @@
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -45,7 +45,7 @@
           "error": "SomeFailure"
         },
         "event_timestamp": "timestamp",
-        "execution_arn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
         "id": "3",
         "previous_event_id": "2",
         "redrive_count": "0",
@@ -58,7 +58,7 @@
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -70,7 +70,7 @@
             "message": "TestMessage",
             "query_values_1": {
               "execution": {
-                "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+                "Id": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
                 "Input": {
                   "message": "TestMessage"
                 },
@@ -81,8 +81,8 @@
               },
               "execution_rolearn": "sfn_role_arn",
               "execution_name": "<ExpressExecArn_Part1_0idx>",
-              "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-              "execution_id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+              "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+              "execution_id": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
               "execution_input": {
                 "message": "TestMessage"
               },
@@ -90,7 +90,7 @@
               "state_name": "QueryValues1",
               "state_enteredtime": "entered-time",
               "statemachine": {
-                "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Name": "<ArnPart_0idx>"
               },
               "state": {
@@ -99,7 +99,7 @@
               },
               "context_object": {
                 "Execution": {
-                  "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+                  "Id": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
                   "Input": {
                     "message": "TestMessage"
                   },
@@ -109,7 +109,7 @@
                   "RedriveCount": 0
                 },
                 "StateMachine": {
-                  "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "Name": "<ArnPart_0idx>"
                 },
                 "State": {
@@ -122,7 +122,7 @@
             "query_values_2": {
               "context_object": {
                 "Execution": {
-                  "Id": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+                  "Id": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
                   "Input": {
                     "message": "TestMessage"
                   },
@@ -132,7 +132,7 @@
                   "RedriveCount": 0
                 },
                 "StateMachine": {
-                  "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "Name": "<ArnPart_0idx>"
                 },
                 "State": {
@@ -147,7 +147,7 @@
           }
         },
         "event_timestamp": "timestamp",
-        "execution_arn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
         "id": "6",
         "previous_event_id": "5",
         "redrive_count": "0",
@@ -160,7 +160,7 @@
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -177,7 +177,7 @@
           }
         },
         "event_timestamp": "timestamp",
-        "execution_arn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
         "id": "9",
         "previous_event_id": "8",
         "redrive_count": "0",
@@ -190,7 +190,7 @@
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -207,7 +207,7 @@
           }
         },
         "event_timestamp": "timestamp",
-        "execution_arn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
         "id": "18",
         "previous_event_id": "17",
         "redrive_count": "0",

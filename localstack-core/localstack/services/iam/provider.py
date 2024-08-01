@@ -102,7 +102,7 @@ POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::(?:\d{12}|aws):policy/.*")
 
 
 def get_iam_backend(context: RequestContext) -> IAMBackend:
-    return iam_backends[context.account_id]["global"]
+    return iam_backends[context.account_id][context.partition]
 
 
 class IamProvider(IamApi):
@@ -337,8 +337,8 @@ class IamProvider(IamApi):
             tags={},
             max_session_duration=3600,
         )
-        role.service_linked_role_arn = "arn:aws:iam::{0}:role/aws-service-role/{1}/{2}".format(
-            context.account_id, aws_service_name, role.name
+        role.service_linked_role_arn = "arn:{0}:iam::{1}:role/aws-service-role/{2}/{3}".format(
+            context.partition, context.account_id, aws_service_name, role.name
         )
 
         res_role = self.moto_role_to_role_type(role)
@@ -408,6 +408,7 @@ class IamProvider(IamApi):
         if not moto_user and not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
             sts_client = connect_to(
+                region_name=context.region,
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
             ).sts

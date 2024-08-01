@@ -3,10 +3,10 @@
     "recorded-date": "11-05-2023, 13:43:51",
     "recorded-content": {
       "outputs": {
-        "MyTopicArn": "arn:aws:sns:<region>:111111111111:<topic-name>",
+        "MyTopicArn": "arn:<partition>:sns:<region>:111111111111:<topic-name>",
         "MyTopicCustom": "<topic-name>",
         "MyTopicName": "<topic-name>",
-        "MyTopicRef": "arn:aws:sns:<region>:111111111111:<topic-name>"
+        "MyTopicRef": "arn:<partition>:sns:<region>:111111111111:<topic-name>"
       }
     }
   },
@@ -14,10 +14,10 @@
     "recorded-date": "11-05-2023, 13:44:18",
     "recorded-content": {
       "outputs": {
-        "MyTopicArn": "arn:aws:sns:<region>:111111111111:<topic-name>",
-        "MyTopicCustom": "arn:aws:sns:<region>:111111111111:<topic-name>",
+        "MyTopicArn": "arn:<partition>:sns:<region>:111111111111:<topic-name>",
+        "MyTopicCustom": "arn:<partition>:sns:<region>:111111111111:<topic-name>",
         "MyTopicName": "<topic-name>",
-        "MyTopicRef": "arn:aws:sns:<region>:111111111111:<topic-name>"
+        "MyTopicRef": "arn:<partition>:sns:<region>:111111111111:<topic-name>"
       }
     }
   },
@@ -25,11 +25,11 @@
     "recorded-date": "12-05-2023, 07:51:06",
     "recorded-content": {
       "outputs": {
-        "MyTopicArn": "arn:aws:sns:<region>:111111111111:<topic-name>",
+        "MyTopicArn": "arn:<partition>:sns:<region>:111111111111:<topic-name>",
         "MyTopicName": "<topic-name>",
-        "MyTopicRef": "arn:aws:sns:<region>:111111111111:<topic-name>",
-        "MyTopicSub": "<topic-name>|arn:aws:sns:<region>:111111111111:<topic-name>|<topic-name>|arn:aws:sns:<region>:111111111111:<topic-name>",
-        "MyTopicSubWithMap": "<topic-name>|arn:aws:sns:<region>:111111111111:<topic-name>|something"
+        "MyTopicRef": "arn:<partition>:sns:<region>:111111111111:<topic-name>",
+        "MyTopicSub": "<topic-name>|arn:<partition>:sns:<region>:111111111111:<topic-name>|<topic-name>|arn:<partition>:sns:<region>:111111111111:<topic-name>",
+        "MyTopicSubWithMap": "<topic-name>|arn:<partition>:sns:<region>:111111111111:<topic-name>|something"
       }
     }
   }

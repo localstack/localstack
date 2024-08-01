@@ -109,7 +109,7 @@
     "recorded-date": "15-05-2024, 14:58:01",
     "recorded-content": {
       "put_rule_with_tags": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule_name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule_name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -143,7 +143,7 @@
     "recorded-date": "15-05-2024, 14:58:04",
     "recorded-content": {
       "create_event_bus_with_tags": {
-        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus_name>",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus_name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

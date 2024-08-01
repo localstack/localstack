@@ -16,7 +16,7 @@
         "rootResourceId": "<root-resource-id:1>",
         "tags": {
           "aws:cloudformation:logical-id": "<name:1>",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
           "aws:cloudformation:stack-name": "stack-name"
         },
         "ResponseMetadata": {
@@ -96,7 +96,7 @@
         "rootResourceId": "<root-resource-id:1>",
         "tags": {
           "aws:cloudformation:logical-id": "MyApi",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
           "aws:cloudformation:stack-name": "stack-name"
         },
         "ResponseMetadata": {
@@ -123,7 +123,7 @@
         "rootResourceId": "<id:2>",
         "tags": {
           "aws:cloudformation:logical-id": "ApiGatewayRestApi",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
           "aws:cloudformation:stack-name": "stack-name"
         },
         "version": "1.0.0",

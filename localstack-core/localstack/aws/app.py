@@ -42,6 +42,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.parse_pre_signed_url_request,
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
+                handlers.rewrite_region,
                 handlers.add_account_id,
                 handlers.parse_service_request,
                 metric_collector.record_parsed_request,

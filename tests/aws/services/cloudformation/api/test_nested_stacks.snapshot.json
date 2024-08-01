@@ -4,7 +4,7 @@
     "recorded-content": {
       "get_role_response": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<role-name>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -49,7 +49,7 @@
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:sns:<region>:111111111111:<topic>"
+                "arn:<partition>:sns:<region>:111111111111:<topic>"
               ]
             }
           ],

@@ -26,7 +26,7 @@
               "sqs:GetQueueAttributes",
               "sqs:GetQueueUrl"
             ],
-            "Resource": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+            "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
           }
         ]
       },
@@ -41,7 +41,7 @@
               "sqs:GetQueueAttributes",
               "sqs:GetQueueUrl"
             ],
-            "Resource": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+            "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
           }
         ]
       }
@@ -92,7 +92,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue-name>.fifo",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue-name>.fifo",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"

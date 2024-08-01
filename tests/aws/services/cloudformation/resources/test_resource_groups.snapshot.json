@@ -4,7 +4,7 @@
     "recorded-content": {
       "resource-group": {
         "Group": {
-          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/testgroup",
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/testgroup",
           "Name": "testgroup"
         },
         "ResponseMetadata": {

@@ -13,7 +13,7 @@
       "ssm-aws-integration": {
         "GetParameterResult": {
           "Parameter": {
-            "ARN": "arn:aws:ssm:<region>:111111111111:parameter/param-test-123",
+            "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/param-test-123",
             "DataType": "text",
             "LastModifiedDate": "<timestamp>",
             "Name": "param-test-123",
@@ -37,7 +37,7 @@
         "@xmlns": "http://ssm.amazonaws.com/doc/2014-11-06/",
         "GetParameterResult": {
           "Parameter": {
-            "ARN": "arn:aws:ssm:<region>:111111111111:parameter/<name:1>",
+            "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<name:1>",
             "DataType": "text",
             "LastModifiedDate": "<timestamp>",
             "Name": "<name:1>",
@@ -53,7 +53,7 @@
       "get-parameter-query-json": {
         "GetParameterResult": {
           "Parameter": {
-            "ARN": "arn:aws:ssm:<region>:111111111111:parameter/<name:1>",
+            "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<name:1>",
             "DataType": "text",
             "LastModifiedDate": "<timestamp>",
             "Name": "<name:1>",

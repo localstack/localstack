@@ -1369,7 +1369,7 @@
       "put-object-encrypted": {
         "BucketKeyEnabled": true,
         "ETag": "\"dc1b467a7cb371279306a6f710c7ad2d\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1379,7 +1379,7 @@
       "managed-kms-key": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "Default key that protects my S3 objects when no other key is defined",
@@ -1408,7 +1408,7 @@
         "ETag": "\"dc1b467a7cb371279306a6f710c7ad2d\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1424,7 +1424,7 @@
         "ETag": "\"dc1b467a7cb371279306a6f710c7ad2d\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1462,7 +1462,7 @@
       "put-object-encrypted": {
         "BucketKeyEnabled": true,
         "ETag": "\"31f9fc96ed971f30ac05dd6eb7b6c2cc\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1477,7 +1477,7 @@
         "ETag": "\"31f9fc96ed971f30ac05dd6eb7b6c2cc\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1493,7 +1493,7 @@
         "ETag": "\"31f9fc96ed971f30ac05dd6eb7b6c2cc\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1508,7 +1508,7 @@
       },
       "put-object-encrypted-bucket-key-disabled": {
         "ETag": "\"ff3e3e3afc59e48b1d4ae52980c00bb8\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},

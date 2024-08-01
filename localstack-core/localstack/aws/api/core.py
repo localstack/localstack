@@ -80,6 +80,8 @@ class RequestContext(RoloRequestContext):
     """The botocore OperationModel of the AWS operation being invoked."""
     region: Optional[str]
     """The region the request is made to."""
+    partition: str
+    """The partition the request is made to."""
     account_id: Optional[str]
     """The account the request is made from."""
     request_id: Optional[str]
@@ -98,6 +100,7 @@ class RequestContext(RoloRequestContext):
         self.service = None
         self.operation = None
         self.region = None
+        self.partition = "aws"  # Sensible default - will be overwritten by region-handler
         self.account_id = None
         self.request_id = long_uid()
         self.service_request = None
