@@ -257,9 +257,13 @@ def get_secret_access_key_from_access_key_id(access_key_id: str, region: str) ->
     If the AccessKey is not registered, use the default `test` value that was historically used for pre-signed URLs, in
     order to support default use cases
     :param access_key_id: the provided AccessKeyID in the Credentials parameter
+    :param region: the region from the credentials
     :return: the linked secret_access_key to the access_key
     """
-    from moto.iam.models import AccessKey, iam_backends
+    try:
+        from moto.iam.models import AccessKey, iam_backends
+    except ImportError:
+        return
 
     account_id = get_account_id_from_access_key_id(access_key_id)
     moto_access_key: AccessKey = iam_backends[account_id][get_partition(region)].access_keys.get(
