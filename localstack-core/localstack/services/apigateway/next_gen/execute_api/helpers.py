@@ -6,6 +6,7 @@ from typing import Type, TypedDict
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
 from localstack.services.apigateway.models import MergedRestApi, RestApiContainer, RestApiDeployment
+from localstack.utils.aws.arns import get_partition
 
 from .context import RestApiInvocationContext
 from .moto_helpers import get_resources_from_moto_rest_api
@@ -85,7 +86,7 @@ def get_source_arn(context: RestApiInvocationContext):
     method = context.resource_method["httpMethod"]
     path = context.resource["path"]
     return (
-        "arn:aws:execute-api"
+        f"arn:{get_partition(context.region)}:execute-api"
         f":{context.region}"
         f":{context.account_id}"
         f":{context.api_id}"
