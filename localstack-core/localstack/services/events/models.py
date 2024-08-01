@@ -76,6 +76,7 @@ FormattedEvent = TypedDict(  # functional syntax required due to name-name keys
         "resources": Optional[EventResourceList],
         "detail": dict[str, str | dict],
         "replay-name": Optional[ReplayName],
+        "event-bus-name": EventBusName,
     },
 )
 
