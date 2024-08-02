@@ -1580,12 +1580,12 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_fifo_message_group_parallelism": {
-    "recorded-date": "30-07-2024, 09:55:53",
+    "recorded-date": "02-08-2024, 14:48:56",
     "recorded-content": {
       "create_esm_disabled": {
         "BatchSize": 1,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
@@ -1599,8 +1599,8 @@
       },
       "update_esm_enabling": {
         "BatchSize": 1,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
@@ -1614,8 +1614,8 @@
       },
       "get_esm_enabled": {
         "BatchSize": 1,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,

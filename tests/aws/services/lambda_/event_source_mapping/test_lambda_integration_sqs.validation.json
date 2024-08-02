@@ -51,7 +51,7 @@
     "last_validated_date": "2023-02-27T16:02:53+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_fifo_message_group_parallelism": {
-    "last_validated_date": "2024-07-30T10:01:37+00:00"
+    "last_validated_date": "2024-08-02T14:48:55+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_message_body_and_attributes_passed_correctly": {
     "last_validated_date": "2023-03-17T16:04:06+00:00"
