@@ -429,6 +429,10 @@ if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_
 LS_LOG = eval_log_type("LS_LOG")
 DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
 
+# PUBLIC: 0 (default)
+# When enabled it triggers specialised workflows for the debugging.
+DEBUG_MODE = is_env_true("DEBUG_MODE")
+
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")
 

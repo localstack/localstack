@@ -23,6 +23,7 @@ from localstack.services.lambda_.invocation.runtime_executor import (
     RuntimeExecutor,
     get_runtime_executor,
 )
+from localstack.utils.debug_mode import DEFAULT_DEBUG_MODE_TIMEOUT_SECONDS, is_debug_mode
 from localstack.utils.strings import to_str
 
 STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
@@ -136,7 +137,7 @@ class ExecutionEnvironment:
             # AWS_LAMBDA_DOTNET_PREJIT
             "TZ": ":UTC",
             # 2) Public AWS RIE interface: https://github.com/aws/aws-lambda-runtime-interface-emulator
-            "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
+            "AWS_LAMBDA_FUNCTION_TIMEOUT": self._get_execution_timeout_seconds(),
             # 3) Public LocalStack endpoint
             "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
             "EDGE_PORT": str(config.GATEWAY_LISTEN[0].port),
@@ -390,3 +391,11 @@ class ExecutionEnvironment:
             "utf-8"
         )  # TODO: segment doesn't actually exist at the moment
         return f"Root={root_trace_id};Parent={parent};Sampled={sampled}"
+
+    def _get_execution_timeout_seconds(self) -> int:
+        # Returns the timeout value in seconds to be enforced during the execution of the
+        # lambda function. This is the configured value or the DEBUG MODE default if this
+        # is enabled.
+        if is_debug_mode():
+            return DEFAULT_DEBUG_MODE_TIMEOUT_SECONDS
+        return self.function_version.config.timeout
