@@ -77,7 +77,8 @@ EMAILS_ENDPOINT = "/_aws/ses"
 
 _EMAILS_ENDPOINT_REGISTERED = False
 
-ALLOWED_TAG_CHARS = "^[A-Za-z0-9_-]*$"
+REGEX_TAG_NAME = r"^[A-Za-z0-9_-]*$"
+REGEX_TAG_VALUE = r"^[A-Za-z0-9_\-.@]*$"
 
 ALLOWED_TAG_LEN = 255
 
@@ -341,15 +342,17 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                     raise InvalidParameterValue("The tag value must be specified.")
                 if len(tag_name) > 255:
                     raise InvalidParameterValue("Tag name cannot exceed 255 characters.")
-                if not re.match(ALLOWED_TAG_CHARS, tag_name):
+                # The `ses:` prefix is for a special case and disregarded for validation
+                # see https://docs.aws.amazon.com/ses/latest/dg/monitor-using-event-publishing.html#event-publishing-fine-grained-feedback
+                if not re.match(REGEX_TAG_NAME, tag_name.removeprefix("ses:")):
                     raise InvalidParameterValue(
-                        f"Invalid tag name <{tag_name}>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+                        f"Invalid tag name <{tag_name}>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
                     )
                 if len(tag_value) > 255:
                     raise InvalidParameterValue("Tag value cannot exceed 255 characters.")
-                if not re.match(ALLOWED_TAG_CHARS, tag_value):
+                if not re.match(REGEX_TAG_VALUE, tag_value):
                     raise InvalidParameterValue(
-                        f"Invalid tag value <{tag_value}>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+                        f"Invalid tag value <{tag_value}>: only alphanumeric ASCII characters, '_',  '-' , '.', '@' are allowed.",
                     )
 
         response = call_moto(context)
@@ -639,4 +642,6 @@ class SNSEmitter:
 
 class InvalidParameterValue(CommonServiceException):
     def __init__(self, message=None):
-        super().__init__("InvalidParameterValue", status_code=400, message=message)
+        super().__init__(
+            "InvalidParameterValue", status_code=400, message=message, sender_fault=True
+        )

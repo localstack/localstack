@@ -590,12 +590,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:07",
     "recorded-content": {
       "response": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -606,12 +606,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Invalid tag value <test_invalid_value:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Message": "Invalid tag value <test_invalid_value:123>: only alphanumeric ASCII characters, '_',  '-' , '.', '@' are allowed.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -622,12 +622,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -638,7 +638,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
@@ -654,7 +654,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
@@ -670,12 +670,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Invalid tag name <test_invalid_name@123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Message": "Invalid tag name <test_invalid_name@123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -686,7 +686,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:09",
     "recorded-content": {
       "response": {
         "Error": {
@@ -702,7 +702,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-test]": {
-    "recorded-date": "26-08-2023, 00:05:48",
+    "recorded-date": "30-07-2024, 10:18:09",
     "recorded-content": {
       "response": {
         "Error": {
@@ -718,7 +718,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-]": {
-    "recorded-date": "26-08-2023, 00:05:48",
+    "recorded-date": "30-07-2024, 10:18:09",
     "recorded-content": {
       "response": {
         "Error": {
