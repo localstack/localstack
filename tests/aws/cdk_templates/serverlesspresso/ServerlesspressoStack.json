@@ -1119,7 +1119,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-69a4a40f/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-35e09126/api/config_service_api.yaml"
             }
           }
         }
@@ -2549,7 +2549,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-69a4a40f/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-35e09126/api/order_manager_api.yaml"
             }
           }
         }

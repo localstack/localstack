@@ -265,20 +265,21 @@ class ServerlesspressoCoreStack(cdk.Stack):
         }
 
         for frontend, service in frontends.items():
-
-            body = (f"https://workshop-{service}.serverlesscoffee.com/?region=${{AWS::Region}}"
-                    f"&userPoolId=${{UserPoolID}}"
-                    f"&userPoolWebClientId=${{UserPoolWebClientId}}"
-                    f"&orderManagerEndpoint=${{OrderManagerEndpoint}}"
-                    f"&APIGWEndpointValidatorService=${{APIGWEndpointValidatorService}}"
-                    f"&APIGWEndpointConfigService=${{APIGWEndpointConfigService}}"
-                    f"&host=${{HostEndpoint}}"
-                    f"&poolId=${{IdentityPoolId}}")
+            body = (
+                f"https://workshop-{service}.serverlesscoffee.com/?region=${{AWS::Region}}"
+                f"&userPoolId=${{UserPoolID}}"
+                f"&userPoolWebClientId=${{UserPoolWebClientId}}"
+                f"&orderManagerEndpoint=${{OrderManagerEndpoint}}"
+                f"&APIGWEndpointValidatorService=${{APIGWEndpointValidatorService}}"
+                f"&APIGWEndpointConfigService=${{APIGWEndpointConfigService}}"
+                f"&host=${{HostEndpoint}}"
+                f"&poolId=${{IdentityPoolId}}"
+            )
 
             cdk.CfnOutput(
                 self,
                 f"{frontend}URI",
-                value= cdk.Fn.sub(
+                value=cdk.Fn.sub(
                     body=body,
                     variables={
                         "UserPoolID": auth_service.user_pool.user_pool_id,
@@ -287,7 +288,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
                             "",
                             [
                                 "https://",
-                                 order_manager_service.order_manager_api.attr_rest_api_id,
+                                order_manager_service.order_manager_api.attr_rest_api_id,
                                 ".execute-api.",
                                 self.region,
                                 ".amazonaws.com/Prod",
@@ -313,7 +314,9 @@ class ServerlesspressoCoreStack(cdk.Stack):
                                 ".amazonaws.com/Prod",
                             ],
                         ),
-                        "HostEndpoint": iot_endpoint.get_att(attribute_name="IotEndpointAddress").to_string(),
+                        "HostEndpoint": iot_endpoint.get_att(
+                            attribute_name="IotEndpointAddress"
+                        ).to_string(),
                         "IdentityPoolId": auth_service.identity_pool.identity_pool_id,
                     },
                 ),

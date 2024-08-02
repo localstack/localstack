@@ -88,12 +88,11 @@ class ValidatorService(constructs.Construct):
             ),
             deploy_options=cdk.aws_apigateway.StageOptions(
                 stage_name="Prod",
-            )
+            ),
         )
 
         cognito_authorizer = cdk.aws_apigateway.CognitoUserPoolsAuthorizer(
             self, "MyCognitoAuthorizor", cognito_user_pools=[user_pool]
-
         )
 
         qr_code_resource = self.rest_api_validator_service.root.add_resource("qr-code")
@@ -111,4 +110,3 @@ class ValidatorService(constructs.Construct):
             authorizer=cognito_authorizer,
             integration=cdk.aws_apigateway.LambdaIntegration(verify_qr_code_fn),
         )
-

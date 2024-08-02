@@ -86,7 +86,7 @@ class TestServerlesspressoScenario:
         provisioner.add_custom_setup(_create_bucket_and_upload_files)
         provisioner.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
         provisioner.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
-        with provisioner.provisioner(skip_teardown=True, skip_deployment=False) as prov:
+        with provisioner.provisioner(skip_teardown=True, skip_deployment=True) as prov:
             yield prov
 
     def _change_store_state(self, aws_client, infrastructure, new_state: bool):
@@ -211,12 +211,40 @@ class TestServerlesspressoScenario:
             choice = [
                 e
                 for e in events["events"]
-                if e["type"] == "ChoiceStateExited" and "Shop open?" in e["stateExitedEventDetails"]["name"]][0]
+                if e["type"] == "ChoiceStateExited"
+                and "Shop open?" in e["stateExitedEventDetails"]["name"]
+            ][0]
 
             event_output = json.loads(choice["stateExitedEventDetails"]["output"])
             assert event_output["GetStore"]["Item"]["storeOpen"]["BOOL"]
 
         retry(_assert_shop_open_choice_result, sleep=2, retries=10, sleep_before=2)
+
+    @markers.aws.validated
+    def test_register_admin_user(self, aws_client, infrastructure):
+        outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
+        user_pool_id = outputs["UserPoolId"]
+        user = aws_client.cognito_idp.admin_create_user(
+            UserPoolId=user_pool_id,
+            Username="admin",
+            UserAttributes=[
+                {"Name": "email", "Value": "test.admin@localstack.cloud"},
+                {"Name": "email_verified", "Value": "true"},
+            ],
+            TemporaryPassword="Password123!",
+            MessageAction="SUPPRESS",
+        )
+
+        aws_client.cognito_idp.admin_set_user_password(
+            UserPoolId=user_pool_id,
+            Username=user["User"]["Username"],
+            Password="Password123!",
+            Permanent=True,
+        )
+
+        aws_client.cognito_idp.admin_add_user_to_group(
+            UserPoolId=user_pool_id, Username=user["User"]["Username"], GroupName="admin"
+        )
 
     @markers.aws.validated
     def test_closed_store_aborts(self, aws_client, infrastructure):
@@ -308,7 +336,10 @@ class TestServerlesspressoScenario:
             "sleep_before": 10 if is_aws_cloud() else 2,
         }
 
-        retry((lambda: self._get_order_state(aws_client, infrastructure, order_id=order_id)), **retry_config)
+        retry(
+            (lambda: self._get_order_state(aws_client, infrastructure, order_id=order_id)),
+            **retry_config,
+        )
 
         ################################
         # Phase 2: Customer Selects Drink
@@ -330,12 +361,18 @@ class TestServerlesspressoScenario:
         def _order_has_drink():
             order_state = self._get_order_state(aws_client, infrastructure, order_id=order_id)
             assert json.loads(order_state["drinkOrder"]["S"])["drink"] == "Cappuccino"
+
         retry(_order_has_drink, **retry_config)
 
         #####################################
         # Phase 3: Barista Starts Making Drink
         #####################################
-        payload_barista_make = {"action": "make", "body": {}, "orderId": order_id, "baristaUserId": "3"}
+        payload_barista_make = {
+            "action": "make",
+            "body": {},
+            "orderId": order_id,
+            "baristaUserId": "3",
+        }
         aws_client.stepfunctions.start_execution(
             stateMachineArn=order_manager_sm_arn, input=json.dumps(payload_barista_make)
         )
@@ -343,7 +380,8 @@ class TestServerlesspressoScenario:
         def _order_has_barista():
             order_state = self._get_order_state(aws_client, infrastructure, order_id=order_id)
             assert order_state["baristaUserId"]["S"] == "3"
-        retry(_order_has_barista,**retry_config)
+
+        retry(_order_has_barista, **retry_config)
 
         #################################
         # Phase 4: Barista Completes Order
@@ -361,7 +399,8 @@ class TestServerlesspressoScenario:
         def _order_is_complete():
             order_state = self._get_order_state(aws_client, infrastructure, order_id=order_id)
             assert order_state["ORDERSTATE"]["S"] == "Completed"
-        retry(_order_is_complete,**retry_config)
+
+        retry(_order_is_complete, **retry_config)
 
     @markers.aws.validated
     def test_concurrent_order_limit(self, aws_client, infrastructure):

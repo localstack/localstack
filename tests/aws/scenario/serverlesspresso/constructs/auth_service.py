@@ -36,10 +36,7 @@ class AuthService(constructs.Construct):
             self_sign_up_enabled=True,
         )
         admin_group = cdk.aws_cognito.CfnUserPoolGroup(
-            self,
-            "AdminGroup",
-            user_pool_id=user_pool.user_pool_id,
-            group_name="admin"
+            self, "AdminGroup", user_pool_id=user_pool.user_pool_id, group_name="admin"
         )
 
         user_pool.node.default_child.override_logical_id("UserPool")
