@@ -142,12 +142,12 @@ class TargetSender(ABC):
         """Proxy method to process the event and send it to the target,
         in addition it removes the field event-bus-name from the event,
         required for EventStudio extension"""
-        if isinstance(event, dict):
-            event.pop("event-bus-name", None)
         self.send_event(event)
 
     def process_event(self, event: FormattedEvent):
         """Processes the event and send it to the target."""
+        if isinstance(event, dict):
+            event.pop("event-bus-name", None)
         if input_path := self.target.get("InputPath"):
             event = transform_event_with_target_input_path(input_path, event)
         if input_transformer := self.target.get("InputTransformer"):
@@ -158,7 +158,6 @@ class TargetSender(ABC):
         self, input_transformer: InputTransformer, event: FormattedEvent
     ) -> TransformedEvent:
         input_template = input_transformer["InputTemplate"]
-        event.pop("event-bus-name", None)
         template_replacements = get_template_replacements(input_transformer, event)
         predefined_template_replacements = self._get_predefined_template_replacements(event)
         template_replacements.update(predefined_template_replacements)
