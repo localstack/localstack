@@ -77,7 +77,7 @@ class ApiInvocationContext:
         auth_context: Dict[str, Any] = None,
     ):
         self.method = method
-        self.path = path
+        self._path = path
         self.data = data
         self.headers = headers
         self.context = {"requestId": short_uid()} if context is None else context
@@ -99,6 +99,16 @@ class ApiInvocationContext:
         self.response = None
 
     @property
+    def path(self) -> str:
+        return self._path
+
+    @path.setter
+    def path(self, new_path: str):
+        if isinstance(new_path, str):
+            new_path = "/" + new_path.lstrip("/")
+        self._path = new_path
+
+    @property
     def resource_id(self) -> Optional[str]:
         return (self.resource or {}).get("id")
 
@@ -116,6 +126,8 @@ class ApiInvocationContext:
     @path_with_query_string.setter
     def path_with_query_string(self, new_path: str):
         """Set a custom invocation path with query string (used to handle "../_user_request_/.." paths)."""
+        if isinstance(new_path, str):
+            new_path = "/" + new_path.lstrip("/")
         self._path_with_query_string = new_path
 
     def query_params(self) -> Dict[str, str]:

@@ -1503,11 +1503,11 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     resource_id = invocation_context.resource_id
 
     set_api_id_stage_invocation_path(invocation_context)
-    relative_path, query_string_params = extract_query_string_params(
-        path=invocation_context.path_with_query_string
-    )
     api_id = invocation_context.api_id
     stage = invocation_context.stage
+
+    full_path = invocation_context.raw_uri.removeprefix(f"/{stage}")
+    relative_path, query_string_params = extract_query_string_params(path=full_path)
 
     source_ip = invocation_context.auth_identity.get("sourceIp")
     integration_uri = integration_uri or ""
