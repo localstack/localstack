@@ -243,6 +243,19 @@ class TestIntrinsicFunctions:
         result = stack.outputs["Result"]
         assert result == "test"
 
+    @markers.aws.validated
+    def test_sub_number_type(self, deploy_cfn_template):
+        alarm_name = "alarm-test-latency-preemptive"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/sub_number_type.yml"
+            ),
+            parameters={"ResourceNamePrefix": alarm_name},
+        )
+
+        result = stack.outputs["Result"]
+        assert result == alarm_name
+
 
 class TestImports:
     @markers.aws.validated
