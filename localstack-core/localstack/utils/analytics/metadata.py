@@ -2,7 +2,7 @@ import dataclasses
 import logging
 import os
 import platform
-from typing import Literal, Optional
+from typing import Optional
 
 from localstack import config
 from localstack.constants import VERSION
@@ -106,17 +106,17 @@ def get_machine_id() -> str:
     return doc["machine_id"]
 
 
-def get_localstack_edition() -> Optional[Literal["enterprise", "pro", "community", "azure-alpha"]]:
-    if os.path.exists("/usr/lib/localstack/.enterprise-version"):
-        return "enterprise"
-    elif os.path.exists("/usr/lib/localstack/.pro-version"):
-        return "pro"
-    elif os.path.exists("/usr/lib/localstack/.community-version"):
-        return "community"
-    elif os.path.exists("/usr/lib/localstack/.azure-alpha-version"):
-        return "azure-alpha"
+def get_localstack_edition() -> Optional[str]:
+    version_dir = "/usr/lib/localstack"
 
-    return None
+    # Generator expression to find the first hidden file ending with '-version'
+    version_file = next(
+        (f for f in os.listdir(version_dir) if f.startswith(".") and f.endswith("-version")),
+        None,
+    )
+
+    # Return the base name of the version file, or None if no file is found
+    return version_file.removesuffix("-version") if version_file else None
 
 
 def is_license_activated() -> bool:
