@@ -107,16 +107,18 @@ def get_machine_id() -> str:
 
 
 def get_localstack_edition() -> Optional[str]:
-    version_dir = "/usr/lib/localstack"
-
     # Generator expression to find the first hidden file ending with '-version'
     version_file = next(
-        (f for f in os.listdir(version_dir) if f.startswith(".") and f.endswith("-version")),
+        (
+            f
+            for f in os.listdir(config.dirs.static_libs)
+            if f.startswith(".") and f.endswith("-version")
+        ),
         None,
     )
 
     # Return the base name of the version file, or None if no file is found
-    return version_file.removesuffix("-version") if version_file else None
+    return version_file.removesuffix("-version").removeprefix(".") if version_file else None
 
 
 def is_license_activated() -> bool:
