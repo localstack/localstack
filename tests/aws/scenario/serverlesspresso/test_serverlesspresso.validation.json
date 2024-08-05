@@ -3,10 +3,10 @@
     "last_validated_date": "2024-07-25T19:38:27+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_closed_store_aborts": {
-    "last_validated_date": "2024-08-02T15:51:53+00:00"
+    "last_validated_date": "2024-08-05T19:00:24+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_concurrent_order_limit": {
-    "last_validated_date": "2024-08-02T15:52:56+00:00"
+    "last_validated_date": "2024-08-05T19:02:23+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_customer_timeout": {
     "last_validated_date": "2024-07-25T19:38:27+00:00"
@@ -15,22 +15,22 @@
     "last_validated_date": "2024-07-10T18:48:42+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_full_e2e": {
-    "last_validated_date": "2024-08-02T15:52:56+00:00"
+    "last_validated_date": "2024-08-05T19:02:23+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_mocking_of_validator_service": {
-    "last_validated_date": "2024-08-02T15:52:04+00:00"
+    "last_validated_date": "2024-08-05T19:00:35+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_open_store": {
-    "last_validated_date": "2024-08-05T13:58:04+00:00"
+    "last_validated_date": "2024-08-05T19:00:21+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_order_completion_workflow": {
     "last_validated_date": "2024-08-05T17:32:37+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_populate_data": {
-    "last_validated_date": "2024-08-05T16:08:13+00:00"
+    "last_validated_date": "2024-08-05T19:00:19+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_register_admin_user": {
-    "last_validated_date": "2024-08-05T15:42:07+00:00"
+    "last_validated_date": "2024-08-05T19:00:23+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_workflow_start": {
     "last_validated_date": "2024-07-23T19:38:59+00:00"

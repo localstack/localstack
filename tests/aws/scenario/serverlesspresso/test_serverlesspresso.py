@@ -398,7 +398,7 @@ class TestServerlesspressoScenario:
 
         def _order_is_complete():
             order_state = self._get_order_state(aws_client, infrastructure, order_id=order_id)
-            assert order_state["ORDERSTATE"]["S"] == "Completed"
+            assert order_state["ORDERSTATE"]["S"] == "COMPLETED"
 
         retry(_order_is_complete, **retry_config)
 
