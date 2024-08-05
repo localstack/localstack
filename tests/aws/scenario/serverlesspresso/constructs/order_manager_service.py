@@ -219,4 +219,6 @@ class OrderManagerService(constructs.Construct):
                 detail_type=["OrderProcessor.WaitingCompletion"], source=[source]
             ),
         )
-        waiting_for_completion_rule.add_target(cdk.aws_events_targets.LambdaFunction(waiting_completion_fn))
+        waiting_for_completion_rule.add_target(
+            cdk.aws_events_targets.LambdaFunction(waiting_completion_fn)
+        )
