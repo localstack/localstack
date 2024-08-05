@@ -35,7 +35,7 @@ exports.handler = async (event) => {
     }
 
     console.log(params)
-    const result = await documentClient.update(params).promise()
+    const result = await documentClient.update(params)
     console.log(result)
 
     // Publish event to EventBridge
