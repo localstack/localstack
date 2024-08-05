@@ -203,10 +203,20 @@ class OrderManagerService(constructs.Construct):
                         cdk.aws_iam.PolicyStatement(
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["dynamodb:GetItem", "dynamodb:Query"],
-                            resources=[order_table.table_arn],
+                            resources=[order_table.table_arn, order_table.table_arn + "/*"],
                         ),
                     ]
                 )
             },
         )
         rest_api_role.node.default_child.override_logical_id("RESTApiRole")
+
+        waiting_for_completion_rule = cdk.aws_events.Rule(
+            self,
+            "WaitingForCompletion",
+            event_bus=event_bus,
+            event_pattern=cdk.aws_events.EventPattern(
+                detail_type=["OrderProcessor.WaitingCompletion"], source=[source]
+            ),
+        )
+        waiting_for_completion_rule.add_target(cdk.aws_events_targets.LambdaFunction(waiting_completion_fn))

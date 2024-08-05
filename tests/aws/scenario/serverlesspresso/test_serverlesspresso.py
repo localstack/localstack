@@ -86,7 +86,7 @@ class TestServerlesspressoScenario:
         provisioner.add_custom_setup(_create_bucket_and_upload_files)
         provisioner.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
         provisioner.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
-        with provisioner.provisioner(skip_teardown=True, skip_deployment=True) as prov:
+        with provisioner.provisioner(skip_teardown=True) as prov:
             yield prov
 
     def _change_store_state(self, aws_client, infrastructure, new_state: bool):
@@ -226,19 +226,19 @@ class TestServerlesspressoScenario:
         user_pool_id = outputs["UserPoolId"]
         user = aws_client.cognito_idp.admin_create_user(
             UserPoolId=user_pool_id,
-            Username="admin",
+            Username="test.admin@localstack.cloud",
             UserAttributes=[
                 {"Name": "email", "Value": "test.admin@localstack.cloud"},
                 {"Name": "email_verified", "Value": "true"},
             ],
-            TemporaryPassword="Password123!",
+            TemporaryPassword="Password123",
             MessageAction="SUPPRESS",
         )
 
         aws_client.cognito_idp.admin_set_user_password(
             UserPoolId=user_pool_id,
             Username=user["User"]["Username"],
-            Password="Password123!",
+            Password="Password123",
             Permanent=True,
         )
 
