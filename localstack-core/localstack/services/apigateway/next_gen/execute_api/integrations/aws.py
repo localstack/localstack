@@ -514,7 +514,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             queryStringParameters=invocation_req["query_string_parameters"] or None,
             multiValueQueryStringParameters=invocation_req["multi_value_query_string_parameters"]
             or None,
-            pathParameters=invocation_req["path_parameters"],
+            pathParameters=invocation_req["path_parameters"] or None,
             httpMethod=invocation_req["http_method"],
             path=invocation_req["path"],
             resource=context.resource["path"],
