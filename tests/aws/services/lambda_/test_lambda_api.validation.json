@@ -18,7 +18,7 @@
     "last_validated_date": "2024-04-10T09:12:27+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
-    "last_validated_date": "2024-04-10T09:12:45+00:00"
+    "last_validated_date": "2024-07-26T13:07:55+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
     "last_validated_date": "2024-04-10T09:12:41+00:00"

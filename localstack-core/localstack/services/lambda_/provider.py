@@ -2106,15 +2106,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
 
         custom_id: str | None = None
-        # Note: currently this only works with $LATEST. However, it would
-        # be nice if we could specify a custom URL for any alias being
-        # passed via the qualifier parameter. Once a strategy for that has
-        # been decided on, it can go here.
-        if (
-            fn.tags is not None
-            and TAG_KEY_CUSTOM_URL in fn.tags
-            and normalized_qualifier == "$LATEST"
-        ):
+        if fn.tags is not None and TAG_KEY_CUSTOM_URL in fn.tags:
             # Note: I really wanted to add verification here that the
             # url_id is unique, so we could surface that to the user ASAP.
             # However, it seems like that information isn't available yet,
@@ -2123,7 +2115,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # of the routes -- and we need to verify that it's unique not
             # just for this particular lambda function, but for the entire
             # lambda provider. Therefore... that idea proved non-trivial!
-            custom_id_tag_value = fn.tags[TAG_KEY_CUSTOM_URL]
+            custom_id_tag_value = (
+                f"{fn.tags[TAG_KEY_CUSTOM_URL]}-{qualifier}"
+                if qualifier
+                else fn.tags[TAG_KEY_CUSTOM_URL]
+            )
             if TAG_KEY_CUSTOM_URL_VALIDATOR.match(custom_id_tag_value):
                 custom_id = custom_id_tag_value
 
