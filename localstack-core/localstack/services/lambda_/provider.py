@@ -2027,10 +2027,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name_or_arn = request_data.pop("FunctionName", None)
 
         # normalize values to overwrite
-        event_source_mapping = {
-            **old_event_source_mapping,
-            **request_data,
-        }
+        event_source_mapping = old_event_source_mapping | request_data
 
         if function_name_or_arn:
             # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
@@ -2097,10 +2094,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name_or_arn = request_data.pop("FunctionName", None)
 
         # normalize values to overwrite
-        event_source_mapping = {
-            **old_event_source_mapping,
-            **request_data,
-        }
+        event_source_mapping = old_event_source_mapping | request_data
 
         if function_name_or_arn:
             # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
