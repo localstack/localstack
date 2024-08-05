@@ -13,3 +13,10 @@ def ffmpeg_package() -> Package:
     from localstack.packages.ffmpeg import ffmpeg_package
 
     return ffmpeg_package
+
+
+@package(name="java")
+def java_package() -> Package:
+    from localstack.packages.java import java_package
+
+    return java_package
