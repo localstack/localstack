@@ -32,23 +32,23 @@ from localstack.utils.aws.client_types import ServicePrincipal
 
 
 class EsmWorkerFactory:
-    event_source_mapping_config: EventSourceMappingConfiguration
+    esm_config: EventSourceMappingConfiguration
     function_role_arn: str
     enabled: bool
 
-    def __init__(self, event_source_mapping_config, function_role, enabled):
-        self.event_source_mapping_config = event_source_mapping_config
+    def __init__(self, esm_config, function_role, enabled):
+        self.esm_config = esm_config
         self.function_role_arn = function_role
         self.enabled = enabled
 
     def get_esm_worker(self) -> EsmWorker:
         # Sender (always Lambda)
-        function_arn = self.event_source_mapping_config["FunctionArn"]
+        function_arn = self.esm_config["FunctionArn"]
         lambda_client = get_internal_client(
             arn=function_arn,
             role_arn=self.function_role_arn,
             service_principal=ServicePrincipal.pipes,
-            source_arn=self.event_source_mapping_config["FunctionArn"],
+            source_arn=self.esm_config["FunctionArn"],
         )
         sender = LambdaSender(
             target_arn=function_arn,
@@ -68,24 +68,24 @@ class EsmWorkerFactory:
         esm_processor = EsmEventProcessor(sender=sender, logger=logger)
 
         # Poller
-        source_arn = self.event_source_mapping_config["EventSourceArn"]
+        source_arn = self.esm_config["EventSourceArn"]
         parsed_source_arn = parse_arn(source_arn)
         source_service = get_standardized_service_name(parsed_source_arn["service"])
         source_client = get_internal_client(
             arn=source_arn,
             role_arn=self.function_role_arn,
             service_principal=ServicePrincipal.lambda_,
-            source_arn=self.event_source_mapping_config["FunctionArn"],
+            source_arn=self.esm_config["FunctionArn"],
         )
-        filter_criteria = self.event_source_mapping_config.get("FilterCriteria", {"Filters": []})
+        filter_criteria = self.esm_config.get("FilterCriteria", {"Filters": []})
         user_state_reason = EsmStateReason.USER_ACTION
         if source_service == "sqs":
             user_state_reason = EsmStateReason.USER_INITIATED
             source_parameters = PipeSourceParameters(
                 FilterCriteria=filter_criteria,
                 SqsQueueParameters=PipeSourceSqsQueueParameters(
-                    BatchSize=self.event_source_mapping_config["BatchSize"],
-                    MaximumBatchingWindowInSeconds=self.event_source_mapping_config[
+                    BatchSize=self.esm_config["BatchSize"],
+                    MaximumBatchingWindowInSeconds=self.esm_config[
                         "MaximumBatchingWindowInSeconds"
                     ],
                 ),
@@ -102,9 +102,9 @@ class EsmWorkerFactory:
                 FilterCriteria=filter_criteria,
                 KinesisStreamParameters=PipeSourceKinesisStreamParameters(
                     StartingPosition=KinesisStreamStartPosition[
-                        self.event_source_mapping_config["StartingPosition"]
+                        self.esm_config["StartingPosition"]
                     ],
-                    BatchSize=self.event_source_mapping_config["BatchSize"],
+                    BatchSize=self.esm_config["BatchSize"],
                 ),
             )
             poller = KinesisPoller(
@@ -121,9 +121,9 @@ class EsmWorkerFactory:
                 FilterCriteria=filter_criteria,
                 DynamoDBStreamParameters=PipeSourceDynamoDBStreamParameters(
                     StartingPosition=DynamoDBStreamStartPosition[
-                        self.event_source_mapping_config["StartingPosition"]
+                        self.esm_config["StartingPosition"]
                     ],
-                    BatchSize=self.event_source_mapping_config["BatchSize"],
+                    BatchSize=self.esm_config["BatchSize"],
                 ),
             )
             poller = DynamoDBPoller(
@@ -140,7 +140,7 @@ class EsmWorkerFactory:
             )
 
         esm_worker = EsmWorker(
-            self.event_source_mapping_config,
+            self.esm_config,
             poller=poller,
             enabled=self.enabled,
             user_state_reason=user_state_reason,
