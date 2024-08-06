@@ -518,7 +518,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[insert_same_entry_twice]": {
-    "recorded-date": "11-04-2024, 20:49:00",
+    "recorded-date": "31-07-2024, 12:38:15",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -661,7 +661,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_or_filter]": {
-    "recorded-date": "11-04-2024, 20:50:44",
+    "recorded-date": "31-07-2024, 12:39:42",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -835,7 +835,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_multiple_filters]": {
-    "recorded-date": "11-04-2024, 20:52:04",
+    "recorded-date": "31-07-2024, 12:41:06",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -975,7 +975,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_filter_type]": {
-    "recorded-date": "11-04-2024, 20:53:04",
+    "recorded-date": "31-07-2024, 12:42:14",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1124,7 +1124,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter_type]": {
-    "recorded-date": "11-04-2024, 20:54:44",
+    "recorded-date": "31-07-2024, 12:44:08",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1606,7 +1606,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[prefix_filter]": {
-    "recorded-date": "11-04-2024, 20:59:06",
+    "recorded-date": "31-07-2024, 12:45:08",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1757,7 +1757,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[date_time_conversion]": {
-    "recorded-date": "11-04-2024, 21:00:11",
+    "recorded-date": "31-07-2024, 12:47:15",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {

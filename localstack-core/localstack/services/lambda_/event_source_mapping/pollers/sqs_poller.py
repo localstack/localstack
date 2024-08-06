@@ -5,6 +5,7 @@ from functools import cached_property
 from botocore.client import BaseClient
 
 from localstack.aws.api.pipes import PipeSourceSqsQueueParameters
+from localstack.aws.api.sqs import MessageSystemAttributeName
 from localstack.config import internal_service_url
 from localstack.services.lambda_.event_source_listeners.utils import message_attributes_to_lower
 from localstack.services.lambda_.event_source_mapping.event_processor import (
@@ -65,7 +66,8 @@ class SqsPoller(Poller):
         response = self.source_client.receive_message(
             QueueUrl=self.queue_url,
             MaxNumberOfMessages=self.sqs_queue_parameters["BatchSize"],
-            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+            MessageSystemAttributeNames=[MessageSystemAttributeName.All],
         )
         if messages := response.get("Messages"):
             LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
@@ -90,6 +92,9 @@ class SqsPoller(Poller):
     def handle_messages(self, messages):
         polled_events = transform_into_events(messages)
         # Filtering: matching vs. discarded (i.e., not matching filter criteria)
+        # TODO: implement format detection behavior (e.g., for JSON body):
+        #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html#pipes-filter-sqs
+        #  Check whether we need poller-specific filter-preprocessing here without modifying the actual event!
         matching_events = self.filter_events(polled_events)
         all_message_ids = {message["MessageId"] for message in messages}
         matching_message_ids = {event["messageId"] for event in matching_events}
@@ -178,9 +183,9 @@ def transform_into_events(messages: list[dict]) -> list[dict]:
             # TODO: test with empty body
             "md5OfBody": message.get("MD5OfBody") or message.get("MD5OfMessageBody"),
         }
-        # TODO: test with message attributes
-        if "MD5OfMessageAttributes" in message:
-            event["md5OfMessageAttributes"] = message["md5OfMessageAttributes"]
+        # TODO: test Pipe with message attributes (only covered by Lambda ESM SQS test so far)
+        if md5_of_message_attributes := message.get("MD5OfMessageAttributes"):
+            event["md5OfMessageAttributes"] = md5_of_message_attributes
         events.append(event)
     return events
 

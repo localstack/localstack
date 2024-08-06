@@ -17,6 +17,10 @@ LOG = logging.getLogger(__name__)
 class KinesisPoller(StreamPoller):
     # The role ARN of the processor (e.g., role ARN of the Pipe)
     invoke_identity_arn: str | None
+    # Flag to enable nested kinesis namespace when formatting events to support the nested `kinesis` field structure
+    # used for Lambda ESM: https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html#services-kinesis-event-example
+    # EventBridge Pipes uses no nesting: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-kinesis.html
+    kinesis_namespace: bool
 
     def __init__(
         self,
@@ -26,6 +30,7 @@ class KinesisPoller(StreamPoller):
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
         invoke_identity_arn: str | None = None,
+        kinesis_namespace: bool = False,
     ):
         super().__init__(
             source_arn,
@@ -35,6 +40,7 @@ class KinesisPoller(StreamPoller):
             partner_resource_arn=partner_resource_arn,
         )
         self.invoke_identity_arn = invoke_identity_arn
+        self.kinesis_namespace = kinesis_namespace
 
     @property
     def stream_parameters(self) -> dict:
@@ -90,9 +96,11 @@ class KinesisPoller(StreamPoller):
             #  localstack.services.lambda_.event_source_listeners.kinesis_event_source_listener.KinesisEventSourceListener._create_lambda_event_payload
             sequence_number = record["SequenceNumber"]
             event = {
-                # TODO: add this metadata after filtering
+                # TODO: add this metadata after filtering.
+                #  This requires some design adjustment because the sequence number depends on the record.
                 "eventID": f"{shard_id}:{sequence_number}",
-                # record content
+            }
+            kinesis_fields = {
                 "kinesisSchemaVersion": "1.0",
                 "partitionKey": record["PartitionKey"],
                 "sequenceNumber": sequence_number,
@@ -101,5 +109,9 @@ class KinesisPoller(StreamPoller):
                 "data": to_str(base64.b64encode(record["Data"])),
                 "approximateArrivalTimestamp": record["ApproximateArrivalTimestamp"].timestamp(),
             }
+            if self.kinesis_namespace:
+                event["kinesis"] = kinesis_fields
+            else:
+                event.update(kinesis_fields)
             events.append(event)
         return events

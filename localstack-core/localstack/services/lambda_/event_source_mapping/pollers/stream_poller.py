@@ -47,9 +47,9 @@ class StreamPoller(Poller):
         partner_resource_arn: str | None = None,
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
-        self.partner_resource_arn: str = partner_resource_arn
-        self.shards: dict[str, str] = {}
-        self.iterator_over_shards: Iterator[str, str] | None = None
+        self.partner_resource_arn = partner_resource_arn
+        self.shards = {}
+        self.iterator_over_shards = None
 
     @abstractmethod
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:

@@ -18,6 +18,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
+from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
@@ -365,6 +366,9 @@ class TestKinesisSource:
         )
         snapshot.match("invocation_events", invocation_events)
 
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="Iterator expiration and disabling ESM not yet handled in ESM v2"
+    )
     @markers.aws.validated
     def test_disable_kinesis_event_source_mapping(
         self,
@@ -438,6 +442,7 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
+    @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet supported in ESM v2")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
@@ -530,6 +535,9 @@ class TestKinesisSource:
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="DestinationConfig and LastProcessing result snapshot diff in ESM v2"
+    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
