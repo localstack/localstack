@@ -4367,5 +4367,13 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_delete_function": {
     "recorded-date": "14-06-2024, 15:17:17",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_custom_id": {
+    "recorded-date": "05-08-2024, 12:24:48",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_custom_id_aliased": {
+    "recorded-date": "05-08-2024, 12:48:07",
+    "recorded-content": {}
   }
 }

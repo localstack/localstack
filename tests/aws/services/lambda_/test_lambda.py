@@ -909,9 +909,7 @@ class TestLambdaURL:
             },
         )
 
-    # Note: separate from above, since this is explicitly and exclusively
-    # testing invocation via custom_id, which is localstack-only
-    @markers.aws.only_localstack
+    @markers.aws.validated
     def test_lambda_url_invocation_custom_id(self, create_lambda_function, aws_client):
         function_name = f"test-function-{short_uid()}"
         custom_id = "my-custom-id"
@@ -942,6 +940,55 @@ class TestLambdaURL:
         )
 
         url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+        result = safe_requests.post(url, data=b"{'key':'value'}")
+        assert result.status_code == 200
+
+    @markers.aws.validated
+    def test_lambda_url_invocation_custom_id_aliased(self, create_lambda_function, aws_client):
+        function_name = f"test-function-{short_uid()}"
+        custom_id = "my-custom-id"
+        function_return_value = '{"hello": "world"}'
+        alias_name = "myalias"
+
+        handler_file = files.new_tmp_file()
+        handler_code = URL_HANDLER_CODE.replace("<<returnvalue>>", function_return_value)
+        files.save_file(handler_file, handler_code)
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=handler_file,
+            runtime=Runtime.python3_12,
+            Tags={TAG_KEY_CUSTOM_URL: custom_id},
+        )
+
+        # create version & alias pointing to the version
+        aws_client.lambda_.create_alias(
+            FunctionName=function_name, FunctionVersion="$LATEST", Name=alias_name
+        )
+
+        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+            Qualifier=alias_name,
+        )
+
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+            Qualifier=alias_name,
+        )
+
+        url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+        if not is_aws_cloud():
+            assert f"://{custom_id}-{alias_name}.lambda-url." in url
+
         result = safe_requests.post(url, data=b"{'key':'value'}")
         assert result.status_code == 200
 
