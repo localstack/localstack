@@ -4169,9 +4169,9 @@ class TestLambdaUrl:
         assert function_v1_sha256 == function_latest_sha256
 
         # Assert that update actually did occur
-        rev_id_v1 = update_function_code_v1_resp.get("RevisionId")
-        rev_id_latest = update_function_code_latest_resp.get("RevisionId")
-        assert rev_id_latest > rev_id_v1
+        last_modified_v1 = update_function_code_v1_resp.get("LastModified")
+        last_modified_latest = update_function_code_latest_resp.get("LastModified")
+        assert last_modified_latest > last_modified_v1
 
         # Create a URL for an unpublished function
         _assert_create_function_url(qualifier=None, expected_url_id=custom_id_value)
