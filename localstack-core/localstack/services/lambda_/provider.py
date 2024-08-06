@@ -1719,11 +1719,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
         if name not in function.aliases:
             raise ValueError("Alias not found")  # TODO proper exception
-        function.aliases.pop(name, None)
+        version_alias = function.aliases.pop(name, None)
 
         # cleanup related resources
         if name in function.provisioned_concurrency_configs:
             function.provisioned_concurrency_configs.pop(name)
+
+        # TODO: Allow for deactivating/unregistering specific Lambda URLs
+        if version_alias and name in function.function_url_configs:
+            url_config = function.function_url_configs.pop(name)
+            LOG.debug(
+                f"Stopping aliased Lambda Function URL {url_config.url} for {url_config.function_arn}"
+            )
 
     def get_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias, **kwargs

@@ -1201,6 +1201,99 @@ class TestLambdaURL:
         assert result.status_code == 502
 
     @markers.aws.validated
+    def test_lambda_url_persists_after_alias_delete(
+        self, create_lambda_function, snapshot, aws_client
+    ):
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "FunctionUrl", "<function-url>", reference_replacement=False
+            )
+        )
+
+        function_name = f"test-fnurl-echo-{short_uid()}"
+        alias_name = f"alias-{short_uid()}"
+
+        exists_waiter = aws_client.lambda_.get_waiter(waiter_name="function_exists")
+        active_waiter = aws_client.lambda_.get_waiter("function_active_v2")
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_URL,
+            runtime=Runtime.nodejs20_x,
+        )
+
+        # Wait for function to exist and then create publish version and create alias
+        exists_waiter.wait(FunctionName=function_name)
+        fn_version_v1 = aws_client.lambda_.publish_version(FunctionName=function_name).get(
+            "Version"
+        )
+        aws_client.lambda_.create_alias(
+            FunctionName=function_name, FunctionVersion=fn_version_v1, Name=alias_name
+        )
+
+        # Create an aliased URL
+        exists_waiter.wait(FunctionName=function_name, Qualifier=alias_name)
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+            InvokeMode=InvokeMode.BUFFERED,
+            Qualifier=alias_name,
+        )
+        snapshot.match("create_lambda_url_config", url_config)
+
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+            Qualifier=alias_name,
+        )
+
+        def _invoke_function() -> dict:
+            url = url_config["FunctionUrl"]
+            response = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
+            result = {"status_code": response.status_code}
+            if error_type := response.headers.get("x-amzn-ErrorType"):
+                return {
+                    **result,
+                    "headers": {
+                        "x-amzn-ErrorType": error_type,
+                    },
+                    "content": to_str(response.text),
+                }
+
+            return result
+
+        def _is_url_config_deleted():
+            try:
+                aws_client.lambda_.get_function_url_config(
+                    FunctionName=function_name, Qualifier=alias_name
+                )
+                return False
+            except aws_client.lambda_.exceptions.ResourceNotFoundException:
+                return True
+
+        # Wait for active lambda and then invoke
+        active_waiter.wait(FunctionName=function_name, Qualifier=alias_name)
+        snapshot.match("invoke_aliased_url_response", _invoke_function())
+
+        # Delete alias and then invoke aliased-URL
+        delete_alias_resp = aws_client.lambda_.delete_alias(
+            FunctionName=function_name, Name=alias_name
+        )
+        snapshot.match("delete_alias_resp", delete_alias_resp)
+
+        # TODO: The below will fail on LocalStack since URL deletions are async.
+        # When async URL deletion has been implemented, the below can be uncommented
+        # snapshot.match("invoke_deleted_alias_url_response_immediate", _invoke_function())
+
+        # Wait until URL config has deleted and then re-invoke aliased-URL
+        wait_until(_is_url_config_deleted, strategy="linear")
+        time.sleep(2)  # Wait some extra time to ensure cleanup on AWS
+        snapshot.match("invoke_deleted_alias_url_response_delayed", _invoke_function())
+
+    @markers.aws.validated
     def test_lambda_url_invalid_invoke_mode(self, create_lambda_function, snapshot, aws_client):
         function_name = f"test-fn-echo-{short_uid()}"
 

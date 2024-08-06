@@ -4375,5 +4375,39 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_custom_id_aliased": {
     "recorded-date": "05-08-2024, 12:48:07",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_persists_after_alias_delete": {
+    "recorded-date": "05-08-2024, 13:57:04",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "BUFFERED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invoke_aliased_url_response": {
+        "status_code": 200
+      },
+      "delete_alias_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "invoke_deleted_alias_url_response_delayed": {
+        "content": {
+          "Message": null
+        },
+        "headers": {
+          "x-amzn-ErrorType": "AccessDeniedException"
+        },
+        "status_code": 403
+      }
+    }
   }
 }
