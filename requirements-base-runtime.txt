@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=base-runtime --output-file=requirements-base-runtime.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-attrs==23.2.0
+attrs==24.1.0
     # via localstack-twisted
 awscrt==0.21.2
     # via localstack-core (pyproject.toml)

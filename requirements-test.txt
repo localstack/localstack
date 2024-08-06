@@ -33,7 +33,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.150.0
+aws-cdk-lib==2.151.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.89.0
     # via
@@ -81,7 +81,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.9.0
+cfn-lint==1.9.5
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -95,7 +95,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.3.0
     # via aws-cdk-lib
-coverage==7.6.0
+coverage==7.6.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -180,7 +180,7 @@ joserfc==1.0.0
     # via moto-ext
 jpype1==1.5.0
     # via localstack-core
-jsii==1.101.0
+jsii==1.102.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
