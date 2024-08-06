@@ -8,6 +8,7 @@ from localstack.services.apigateway.next_gen.execute_api.context import RestApiI
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     AccessDeniedError,
     BaseGatewayException,
+    UnauthorizedError,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import GatewayExceptionHandler
 from localstack.services.apigateway.next_gen.execute_api.router import ApiGatewayEndpoint
@@ -69,7 +70,62 @@ class TestGatewayResponseHandler:
     def test_gateway_exception(self, get_context, apigw_response):
         exception_handler = GatewayExceptionHandler()
 
-        # Create an Access Denied exception with no Gateway Response configured
+        # Create an UnauthorizedError exception with no Gateway Response configured
+        exception = UnauthorizedError("Unauthorized")
+        exception_handler(
+            chain=RestApiGatewayHandlerChain(),
+            exception=exception,
+            context=get_context(),
+            response=apigw_response,
+        )
+
+        assert apigw_response.status_code == 401
+        assert apigw_response.json == {"message": "Unauthorized"}
+        assert apigw_response.headers.get("x-amzn-errortype") == "UnauthorizedException"
+
+    def test_gateway_exception_with_default_4xx(self, get_context, apigw_response):
+        exception_handler = GatewayExceptionHandler()
+
+        # Configure DEFAULT_4XX response
+        gateway_responses = {GatewayResponseType.DEFAULT_4XX: GatewayResponse(statusCode="400")}
+
+        # Create an UnauthorizedError exception with DEFAULT_4xx configured
+        exception = UnauthorizedError("Unauthorized")
+        exception_handler(
+            chain=RestApiGatewayHandlerChain(),
+            exception=exception,
+            context=get_context(gateway_responses),
+            response=apigw_response,
+        )
+
+        assert apigw_response.status_code == 400
+        assert apigw_response.json == {"message": "Unauthorized"}
+        assert apigw_response.headers.get("x-amzn-errortype") == "UnauthorizedException"
+
+    def test_gateway_exception_with_gateway_response(self, get_context, apigw_response):
+        exception_handler = GatewayExceptionHandler()
+
+        # Configure Access Denied response
+        gateway_responses = {GatewayResponseType.UNAUTHORIZED: GatewayResponse(statusCode="405")}
+
+        # Create an UnauthorizedError exception with UNAUTHORIZED configured
+        exception = UnauthorizedError("Unauthorized")
+        exception_handler(
+            chain=RestApiGatewayHandlerChain(),
+            exception=exception,
+            context=get_context(gateway_responses),
+            response=apigw_response,
+        )
+
+        assert apigw_response.status_code == 405
+        assert apigw_response.json == {"message": "Unauthorized"}
+        assert apigw_response.headers.get("x-amzn-errortype") == "UnauthorizedException"
+
+    def test_gateway_exception_access_denied(self, get_context, apigw_response):
+        # special case where the `Message` field is capitalized
+        exception_handler = GatewayExceptionHandler()
+
+        # Create an AccessDeniedError exception with no Gateway Response configured
         exception = AccessDeniedError("Access Denied")
         exception_handler(
             chain=RestApiGatewayHandlerChain(),
@@ -79,43 +135,5 @@ class TestGatewayResponseHandler:
         )
 
         assert apigw_response.status_code == 403
-        assert apigw_response.json == {"message": "Access Denied"}
-        assert apigw_response.headers.get("x-amzn-errortype") == "AccessDeniedException"
-
-    def test_gateway_exception_with_default_4xx(self, get_context, apigw_response):
-        exception_handler = GatewayExceptionHandler()
-
-        # Configure DEFAULT_4XX response
-        gateway_responses = {GatewayResponseType.DEFAULT_4XX: GatewayResponse(statusCode="400")}
-
-        # Create an Access Denied exception with DEFAULT_4xx configured
-        exception = AccessDeniedError("Access Denied")
-        exception_handler(
-            chain=RestApiGatewayHandlerChain(),
-            exception=exception,
-            context=get_context(gateway_responses),
-            response=apigw_response,
-        )
-
-        assert apigw_response.status_code == 400
-        assert apigw_response.json == {"message": "Access Denied"}
-        assert apigw_response.headers.get("x-amzn-errortype") == "AccessDeniedException"
-
-    def test_gateway_exception_with_gateway_response(self, get_context, apigw_response):
-        exception_handler = GatewayExceptionHandler()
-
-        # Configure Access Denied response
-        gateway_responses = {GatewayResponseType.ACCESS_DENIED: GatewayResponse(statusCode="400")}
-
-        # Create an Access Denied exception with ACCESS_DENIED configured
-        exception = AccessDeniedError("Access Denied")
-        exception_handler(
-            chain=RestApiGatewayHandlerChain(),
-            exception=exception,
-            context=get_context(gateway_responses),
-            response=apigw_response,
-        )
-
-        assert apigw_response.status_code == 400
-        assert apigw_response.json == {"message": "Access Denied"}
+        assert apigw_response.json == {"Message": "Access Denied"}
         assert apigw_response.headers.get("x-amzn-errortype") == "AccessDeniedException"

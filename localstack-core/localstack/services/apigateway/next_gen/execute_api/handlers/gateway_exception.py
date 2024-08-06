@@ -11,6 +11,7 @@ from localstack.services.apigateway.next_gen.execute_api.api import (
 )
 from localstack.services.apigateway.next_gen.execute_api.context import RestApiInvocationContext
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
+    AccessDeniedError,
     BaseGatewayException,
     get_gateway_response_or_default,
 )
@@ -81,6 +82,13 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
     def _build_response_content(exception: BaseGatewayException) -> str:
         # TODO apply responseTemplates to the content. We should also handle the default simply by managing the default
         #  template body `{"message":$context.error.messageString}`
+
+        # TODO: remove this workaround by properly managing the responseTemplate for UnauthorizedError
+        #  on the CRUD level, it returns the same template as all other errors but in reality the message field is
+        #  capitalized
+        if isinstance(exception, AccessDeniedError):
+            return json.dumps({"Message": exception.message})
+
         return json.dumps({"message": exception.message})
 
     @staticmethod
