@@ -81,88 +81,7 @@ class StreamPoller(Poller):
 
         current_shard_tuple = next(self.iterator_over_shards, None)
         if current_shard_tuple:
-            # TODO: the functionality and control flow below is too complex and should be refactored
-            abort_condition = None
-            shard_id, shard_iterator = current_shard_tuple
-            # TODO: implement MaximumBatchingWindowInSeconds flush condition
-            get_records_response = self.source_client.get_records(
-                # TODO: double-check cross-account behavior (region should be fine)
-                # StreamARN=self.source_arn,  # differs for DynamoDB but optional
-                ShardIterator=shard_iterator,
-                Limit=self.stream_parameters["BatchSize"],
-            )
-            records = get_records_response["Records"]
-            polled_events = self.transform_into_events(records, shard_id)
-            # Check MaximumRecordAgeInSeconds
-            if maximum_record_age_in_seconds := self.stream_parameters.get(
-                "MaximumRecordAgeInSeconds"
-            ):
-                arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
-                now = get_current_time().timestamp()
-                record_age_in_seconds = now - arrival_timestamp_of_last_event
-                if record_age_in_seconds > maximum_record_age_in_seconds:
-                    abort_condition = "RecordAgeExpired"
-            matching_events = self.filter_events(polled_events)
-            # Don't trigger upon empty events
-            if len(matching_events) == 0:
-                # Update shard iterator upon if no records match the filter
-                self.shards[shard_id] = get_records_response["NextShardIterator"]
-                return
-            events = self.add_source_metadata(matching_events)
-            LOG.debug(
-                "Polled %d events from %s in shard %s", len(events), self.source_arn, shard_id
-            )
-            # TODO: A retry should probably re-trigger fetching the record from the stream again?!
-            #  -> This could be tested by setting a high retry number, using a long pipe execution, and a relatively
-            #  short record expiration age at the source. Check what happens if the record expires at the source.
-            #  A potential implementation could use checkpointing based on the iterator position (within shard scope)
-            # TODO: handle partial batch failure (see poller.py:parse_batch_item_failures)
-            # TODO: think about how to avoid starvation of other shards if one shard runs into infinite retries
-            attempts = 0
-            while not abort_condition and not self.max_retries_exceeded(attempts):
-                try:
-                    self.processor.process_events_batch(events)
-                    # Update shard iterator upon successful pipe execution
-                    self.shards[shard_id] = get_records_response["NextShardIterator"]
-                    return
-                except PartialBatchFailureError:
-                    # TODO: add tests for partial batch failure scenarios
-                    if (
-                        self.stream_parameters["OnPartialBatchItemFailure"]
-                        == OnPartialBatchItemFailureStreams.AUTOMATIC_BISECT
-                    ):
-                        # TODO: implement and test splitting batches in half until batch size 1
-                        #  https://docs.aws.amazon.com/eventbridge/latest/pipes-reference/API_PipeSourceKinesisStreamParameters.html
-                        LOG.warning(
-                            "AUTOMATIC_BISECT upon partial batch item failure is not yet implemented. Retrying the entire batch."
-                        )
-
-                    # let entire batch fail (ideally raise BatchFailureError)
-                    LOG.debug(
-                        f"Attempt {attempts} failed while processing {self.partner_resource_arn} with events: {events}"
-                    )
-                    attempts += 1
-                    # Retry polling until the record expires at the source
-                    if self.stream_parameters.get("MaximumRetryAttempts", -1) == -1:
-                        return
-                except Exception:
-                    LOG.debug(
-                        f"Attempt {attempts} failed while processing {self.partner_resource_arn} with events: {events}"
-                    )
-                    attempts += 1
-                    # Retry polling until the record expires at the source
-                    if self.stream_parameters.get("MaximumRetryAttempts", -1) == -1:
-                        return
-
-            # Send failed events to potential DLQ
-            abort_condition = abort_condition or "RetryAttemptsExhausted"
-            context = {
-                "condition": abort_condition,
-                "partnerResourceArn": self.partner_resource_arn,
-            }
-            self.send_events_to_dlq(events, context=context)
-            # Update shard iterator upon failure once the events are sent to the DLQ
-            self.shards[shard_id] = get_records_response["NextShardIterator"]
+            self.poll_events_from_shard(*current_shard_tuple)
         else:
             # Set current shard iterator to None to re-start round-robin at the first shard
             self.iterator_over_shards = None
@@ -176,6 +95,84 @@ class StreamPoller(Poller):
         * Only Kinesis supports the additional StartingPosition called "AT_TIMESTAMP" using "StartingPositionTimestamp"
         """
         pass
+
+    def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
+        abort_condition = None
+        # TODO: implement MaximumBatchingWindowInSeconds flush condition
+        get_records_response = self.source_client.get_records(
+            # TODO: double-check cross-account behavior (region should be fine)
+            # StreamARN=self.source_arn,  # differs for DynamoDB but optional
+            ShardIterator=shard_iterator,
+            Limit=self.stream_parameters["BatchSize"],
+        )
+        records = get_records_response["Records"]
+        polled_events = self.transform_into_events(records, shard_id)
+        # Check MaximumRecordAgeInSeconds
+        if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
+            arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
+            now = get_current_time().timestamp()
+            record_age_in_seconds = now - arrival_timestamp_of_last_event
+            if record_age_in_seconds > maximum_record_age_in_seconds:
+                abort_condition = "RecordAgeExpired"
+        matching_events = self.filter_events(polled_events)
+        # Don't trigger upon empty events
+        if len(matching_events) == 0:
+            # Update shard iterator upon if no records match the filter
+            self.shards[shard_id] = get_records_response["NextShardIterator"]
+            return
+        events = self.add_source_metadata(matching_events)
+        LOG.debug("Polled %d events from %s in shard %s", len(events), self.source_arn, shard_id)
+        # TODO: A retry should probably re-trigger fetching the record from the stream again?!
+        #  -> This could be tested by setting a high retry number, using a long pipe execution, and a relatively
+        #  short record expiration age at the source. Check what happens if the record expires at the source.
+        #  A potential implementation could use checkpointing based on the iterator position (within shard scope)
+        # TODO: handle partial batch failure (see poller.py:parse_batch_item_failures)
+        # TODO: think about how to avoid starvation of other shards if one shard runs into infinite retries
+        attempts = 0
+        while not abort_condition and not self.max_retries_exceeded(attempts):
+            try:
+                self.processor.process_events_batch(events)
+                # Update shard iterator upon successful pipe execution
+                self.shards[shard_id] = get_records_response["NextShardIterator"]
+                return
+            except PartialBatchFailureError:
+                # TODO: add tests for partial batch failure scenarios
+                if (
+                    self.stream_parameters["OnPartialBatchItemFailure"]
+                    == OnPartialBatchItemFailureStreams.AUTOMATIC_BISECT
+                ):
+                    # TODO: implement and test splitting batches in half until batch size 1
+                    #  https://docs.aws.amazon.com/eventbridge/latest/pipes-reference/API_PipeSourceKinesisStreamParameters.html
+                    LOG.warning(
+                        "AUTOMATIC_BISECT upon partial batch item failure is not yet implemented. Retrying the entire batch."
+                    )
+
+                # let entire batch fail (ideally raise BatchFailureError)
+                LOG.debug(
+                    f"Attempt {attempts} failed while processing {self.partner_resource_arn} with events: {events}"
+                )
+                attempts += 1
+                # Retry polling until the record expires at the source
+                if self.stream_parameters.get("MaximumRetryAttempts", -1) == -1:
+                    return
+            except Exception:
+                LOG.debug(
+                    f"Attempt {attempts} failed while processing {self.partner_resource_arn} with events: {events}"
+                )
+                attempts += 1
+                # Retry polling until the record expires at the source
+                if self.stream_parameters.get("MaximumRetryAttempts", -1) == -1:
+                    return
+
+        # Send failed events to potential DLQ
+        abort_condition = abort_condition or "RetryAttemptsExhausted"
+        context = {
+            "condition": abort_condition,
+            "partnerResourceArn": self.partner_resource_arn,
+        }
+        self.send_events_to_dlq(events, context=context)
+        # Update shard iterator upon failure once the events are sent to the DLQ
+        self.shards[shard_id] = get_records_response["NextShardIterator"]
 
     def send_events_to_dlq(self, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")
