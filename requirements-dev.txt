@@ -79,7 +79,7 @@ certifi==2024.7.4
     #   httpx
     #   opensearch-py
     #   requests
-cffi==1.16.0
+cffi==1.17.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
@@ -402,9 +402,9 @@ rich==13.7.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.0
+rolo==0.7.1
     # via localstack-core
-rpds-py==0.19.1
+rpds-py==0.20.0
     # via
     #   jsonschema
     #   referencing
@@ -482,7 +482,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.4.post2
+zope-interface==7.0.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
