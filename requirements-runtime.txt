@@ -18,7 +18,7 @@ apispec==6.6.1
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via amazon-kclpy
-attrs==23.2.0
+attrs==24.1.0
     # via
     #   jsonschema
     #   localstack-twisted
@@ -64,7 +64,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==1.9.0
+cfn-lint==1.9.5
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
