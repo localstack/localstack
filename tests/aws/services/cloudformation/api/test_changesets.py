@@ -336,6 +336,94 @@ def test_create_change_set_with_ssm_parameter(
 
 
 @markers.aws.validated
+def test_create_change_set_with_ssm_parameter_list(
+    cleanup_changesets,
+    cleanup_stacks,
+    is_change_set_created_and_available,
+    is_stack_created,
+    aws_client,
+    region_name,
+    account_id,
+    snapshot,
+):
+    """References a simple stack parameter"""
+    snapshot.add_transformer(snapshot.transform.key_value(key="role-name"))
+
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+    parameter_name = f"ls-param-{short_uid()}"
+    role_name = f"ls-role-{short_uid()}"
+    parameter_value = ",".join(
+        [
+            f"arn:aws:ssm:{region_name}:{account_id}:parameter/some/params",
+            f"arn:aws:ssm:{region_name}:{account_id}:parameter/some/other/params",
+        ]
+    )
+    parameter_logical_id = "parameter123"
+    role_logical_id = "role123"
+    snapshot.match("role-name", role_name)
+
+    aws_client.ssm.put_parameter(Name=parameter_name, Value=parameter_value, Type="StringList")
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/dynamicparameter_ssm_list.yaml"
+    )
+    template_rendered = render_template(load_template_raw(template_path), role_name=role_name)
+    response = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template_rendered,
+        ChangeSetType="CREATE",
+        Capabilities=["CAPABILITY_NAMED_IAM"],
+        Parameters=[{"ParameterKey": parameter_logical_id, "ParameterValue": parameter_name}],
+    )
+    change_set_id = response["Id"]
+    stack_id = response["StackId"]
+    assert change_set_id
+    assert stack_id
+
+    try:
+        # stack is initially in REVIEW_IN_PROGRESS state. only after executing the change_set will it change its status
+        stack_response = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+        assert stack_response["Stacks"][0]["StackStatus"] == "REVIEW_IN_PROGRESS"
+
+        # Change set can now either be already created/available or it is pending/unavailable
+        wait_until(is_change_set_created_and_available(change_set_id))
+        describe_response = aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id
+        )
+
+        assert describe_response["ChangeSetName"] == change_set_name
+        assert describe_response["ChangeSetId"] == change_set_id
+        assert describe_response["StackId"] == stack_id
+        assert describe_response["StackName"] == stack_name
+        assert describe_response["ExecutionStatus"] == "AVAILABLE"
+        assert describe_response["Status"] == "CREATE_COMPLETE"
+        changes = describe_response["Changes"]
+        assert len(changes) == 1
+        assert changes[0]["Type"] == "Resource"
+        assert changes[0]["ResourceChange"]["Action"] == "Add"
+        assert changes[0]["ResourceChange"]["ResourceType"] == "AWS::IAM::Role"
+        assert changes[0]["ResourceChange"]["LogicalResourceId"] == role_logical_id
+
+        parameters = describe_response["Parameters"]
+        assert len(parameters) == 1
+        assert parameters[0]["ParameterKey"] == parameter_logical_id
+        assert parameters[0]["ParameterValue"] == parameter_name
+        assert (
+            parameters[0]["ResolvedValue"] == parameter_value
+        )  # The resolved values remains a coma separated list
+
+        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_stack_created(stack_id))
+
+        role_policy = aws_client.iam.get_role_policy(RoleName=role_name, PolicyName="policy-123")
+        snapshot.match("iam_role_policy", role_policy)
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])
+
+
+@markers.aws.validated
 def test_describe_change_set_nonexisting(snapshot, aws_client):
     with pytest.raises(Exception) as ex:
         aws_client.cloudformation.describe_change_set(
