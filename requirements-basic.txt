@@ -10,7 +10,7 @@ cachetools==5.4.0
     # via localstack-core (pyproject.toml)
 certifi==2024.7.4
     # via requests
-cffi==1.16.0
+cffi==1.17.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
