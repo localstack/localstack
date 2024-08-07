@@ -366,9 +366,6 @@ class TestKinesisSource:
         )
         snapshot.match("invocation_events", invocation_events)
 
-    @pytest.mark.skipif(
-        is_v2_esm(), reason="Iterator expiration and disabling ESM not yet handled in ESM v2"
-    )
     @markers.aws.validated
     def test_disable_kinesis_event_source_mapping(
         self,
