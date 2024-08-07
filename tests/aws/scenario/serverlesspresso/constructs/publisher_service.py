@@ -1,3 +1,4 @@
+import json
 import os
 
 import aws_cdk as cdk
@@ -42,17 +43,17 @@ class PublisherService(constructs.Construct):
             self,
             "AdminTriggerRule",
             event_bus=event_bus,
-            event_pattern=cdk.aws_events.EventPattern(
-                source=[source],
-                detail_type=[
-                    "prefix: 'OrderManager.'",
-                    "prefix: 'OrderProcessor.'",
-                    "prefix: 'Validator.'",
-                    "prefix: 'ConfigService.'",
-                ],
-            ),
+            event_pattern=cdk.aws_events.EventPattern(source=[source]),
             targets=[cdk.aws_events_targets.LambdaFunction(publisher_function_admin)],
         )
+        publisher_admin_rule.node.default_child.event_pattern = {
+            "source": [source],
+            "detail-type": [
+                {"prefix": "OrderManager."},
+                 {"prefix": "OrderProcessor."},
+                  {"prefix": "Validator."},
+                   {"prefix": "ConfigService."},
+        ]}
 
         publisher_function_user_handler = load_file(
             os.path.join(
@@ -78,26 +79,27 @@ class PublisherService(constructs.Construct):
             self,
             "OrderManagerEvents",
             event_bus=event_bus,
-            event_pattern=cdk.aws_events.EventPattern(
-                source=[source],
-                detail_type=[
-                    "prefix: 'OrderManager.'",
-                ],
-            ),
+            event_pattern=cdk.aws_events.EventPattern(source=[source]),
             targets=[cdk.aws_events_targets.LambdaFunction(publisher_function_user)],
         )
+        order_manager_rule.node.default_child.event_pattern = {
+            "source": [source],
+            "detail-type": [
+                {"prefix": "OrderManager."},
+            ]}
+
         order_processor_rule = cdk.aws_events.Rule(
             self,
             "OrderProcessorEvents",
             event_bus=event_bus,
-            event_pattern=cdk.aws_events.EventPattern(
-                source=[source],
-                detail_type=[
-                    "prefix: 'OrderProcessor.'",
-                ],
-            ),
+            event_pattern=cdk.aws_events.EventPattern( source=[source]),
             targets=[cdk.aws_events_targets.LambdaFunction(publisher_function_user)],
         )
+        order_processor_rule.node.default_child.event_pattern = {
+            "source": [source],
+            "detail-type": [
+                {"prefix": 'OrderProcessor.'},
+            ]}
 
         publisher_function_config_handler = load_file(
             os.path.join(os.path.dirname(__file__), "../artifacts/functions/publishToIOT.js")
@@ -120,11 +122,11 @@ class PublisherService(constructs.Construct):
             self,
             "TriggerValidator",
             event_bus=event_bus,
-            event_pattern=cdk.aws_events.EventPattern(
-                source=[source],
-                detail_type=[
-                    "prefix: 'ConfigService.'",
-                ],
-            ),
+            event_pattern=cdk.aws_events.EventPattern(source=[source]),
             targets=[cdk.aws_events_targets.LambdaFunction(publisher_function_config)],
         )
+        trigger_validator_rule.node.default_child.event_pattern = {
+            "source": [source],
+            "detail-type": [
+                {"prefix": 'ConfigService.'},
+            ]}

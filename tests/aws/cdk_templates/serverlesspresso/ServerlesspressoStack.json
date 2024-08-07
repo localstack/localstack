@@ -313,14 +313,22 @@
           "Ref": "ServerlesspressoEventBus4F0AE0D8"
         },
         "EventPattern": {
-          "detail-type": [
-            "prefix: 'OrderManager.'",
-            "prefix: 'OrderProcessor.'",
-            "prefix: 'Validator.'",
-            "prefix: 'ConfigService.'"
-          ],
           "source": [
             "lstesting.serverlesspresso"
+          ],
+          "detail-type": [
+            {
+              "prefix": "OrderManager."
+            },
+            {
+              "prefix": "OrderProcessor."
+            },
+            {
+              "prefix": "Validator."
+            },
+            {
+              "prefix": "ConfigService."
+            }
           ]
         },
         "State": "ENABLED",
@@ -449,11 +457,13 @@
           "Ref": "ServerlesspressoEventBus4F0AE0D8"
         },
         "EventPattern": {
-          "detail-type": [
-            "prefix: 'OrderManager.'"
-          ],
           "source": [
             "lstesting.serverlesspresso"
+          ],
+          "detail-type": [
+            {
+              "prefix": "OrderManager."
+            }
           ]
         },
         "State": "ENABLED",
@@ -496,11 +506,13 @@
           "Ref": "ServerlesspressoEventBus4F0AE0D8"
         },
         "EventPattern": {
-          "detail-type": [
-            "prefix: 'OrderProcessor.'"
-          ],
           "source": [
             "lstesting.serverlesspresso"
+          ],
+          "detail-type": [
+            {
+              "prefix": "OrderProcessor."
+            }
           ]
         },
         "State": "ENABLED",
@@ -629,11 +641,13 @@
           "Ref": "ServerlesspressoEventBus4F0AE0D8"
         },
         "EventPattern": {
-          "detail-type": [
-            "prefix: 'ConfigService.'"
-          ],
           "source": [
             "lstesting.serverlesspresso"
+          ],
+          "detail-type": [
+            {
+              "prefix": "ConfigService."
+            }
           ]
         },
         "State": "ENABLED",
@@ -1119,7 +1133,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-5d184453/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-f8e4cb16/api/config_service_api.yaml"
             }
           }
         }
@@ -2549,7 +2563,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-5d184453/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-f8e4cb16/api/order_manager_api.yaml"
             }
           }
         }
