@@ -26,7 +26,7 @@ class PublisherService(constructs.Construct):
         )
         self.publisher_function_admin = publisher_function_admin = cdk.aws_lambda.Function(
             self,
-            "PublisherFunctionAdmin",
+            "AdminPublisher",
             runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=publisher_function_admin_handler),
@@ -61,7 +61,7 @@ class PublisherService(constructs.Construct):
         )
         self.publisher_function_user = publisher_function_user = cdk.aws_lambda.Function(
             self,
-            "PublisherFunctionUser",
+            "UserPublisher",
             runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=publisher_function_user_handler),
@@ -104,7 +104,7 @@ class PublisherService(constructs.Construct):
         )  # TODO: same as admin?
         self.publisher_function_config = publisher_function_config = cdk.aws_lambda.Function(
             self,
-            "PublisherFunctionConfig",
+            "ConfigPublisher",
             runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,
             handler="index.handler",
             code=cdk.aws_lambda.Code.from_inline(code=publisher_function_config_handler),

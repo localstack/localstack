@@ -220,7 +220,7 @@
         }
       }
     },
-    "PublisherServicePublisherFunctionAdminServiceRole4601C4D9": {
+    "PublisherServiceAdminPublisherServiceRole784963C3": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -251,7 +251,7 @@
         ]
       }
     },
-    "PublisherServicePublisherFunctionAdminServiceRoleDefaultPolicy73CA1DD4": {
+    "PublisherServiceAdminPublisherServiceRoleDefaultPolicyA9F64E0F": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
         "PolicyDocument": {
@@ -267,15 +267,15 @@
           ],
           "Version": "2012-10-17"
         },
-        "PolicyName": "PublisherServicePublisherFunctionAdminServiceRoleDefaultPolicy73CA1DD4",
+        "PolicyName": "PublisherServiceAdminPublisherServiceRoleDefaultPolicyA9F64E0F",
         "Roles": [
           {
-            "Ref": "PublisherServicePublisherFunctionAdminServiceRole4601C4D9"
+            "Ref": "PublisherServiceAdminPublisherServiceRole784963C3"
           }
         ]
       }
     },
-    "PublisherServicePublisherFunctionAdmin226F35A2": {
+    "PublisherServiceAdminPublisher608FF40B": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
@@ -295,15 +295,15 @@
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
-            "PublisherServicePublisherFunctionAdminServiceRole4601C4D9",
+            "PublisherServiceAdminPublisherServiceRole784963C3",
             "Arn"
           ]
         },
         "Runtime": "nodejs18.x"
       },
       "DependsOn": [
-        "PublisherServicePublisherFunctionAdminServiceRoleDefaultPolicy73CA1DD4",
-        "PublisherServicePublisherFunctionAdminServiceRole4601C4D9"
+        "PublisherServiceAdminPublisherServiceRoleDefaultPolicyA9F64E0F",
+        "PublisherServiceAdminPublisherServiceRole784963C3"
       ]
     },
     "PublisherServiceAdminTriggerRuleF3819C56": {
@@ -328,7 +328,7 @@
           {
             "Arn": {
               "Fn::GetAtt": [
-                "PublisherServicePublisherFunctionAdmin226F35A2",
+                "PublisherServiceAdminPublisher608FF40B",
                 "Arn"
               ]
             },
@@ -337,13 +337,13 @@
         ]
       }
     },
-    "PublisherServiceAdminTriggerRuleAllowEventRuleServerlesspressoStackPublisherServicePublisherFunctionAdmin1D5C595A6147D771": {
+    "PublisherServiceAdminTriggerRuleAllowEventRuleServerlesspressoStackPublisherServiceAdminPublisher61BA633FA9D38A8A": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
           "Fn::GetAtt": [
-            "PublisherServicePublisherFunctionAdmin226F35A2",
+            "PublisherServiceAdminPublisher608FF40B",
             "Arn"
           ]
         },
@@ -356,7 +356,7 @@
         }
       }
     },
-    "PublisherServicePublisherFunctionUserServiceRole712DF138": {
+    "PublisherServiceUserPublisherServiceRoleFBC76122": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -387,7 +387,7 @@
         ]
       }
     },
-    "PublisherServicePublisherFunctionUserServiceRoleDefaultPolicyBDE8B789": {
+    "PublisherServiceUserPublisherServiceRoleDefaultPolicyF1DAC8B8": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
         "PolicyDocument": {
@@ -403,15 +403,15 @@
           ],
           "Version": "2012-10-17"
         },
-        "PolicyName": "PublisherServicePublisherFunctionUserServiceRoleDefaultPolicyBDE8B789",
+        "PolicyName": "PublisherServiceUserPublisherServiceRoleDefaultPolicyF1DAC8B8",
         "Roles": [
           {
-            "Ref": "PublisherServicePublisherFunctionUserServiceRole712DF138"
+            "Ref": "PublisherServiceUserPublisherServiceRoleFBC76122"
           }
         ]
       }
     },
-    "PublisherServicePublisherFunctionUserE00A536B": {
+    "PublisherServiceUserPublisher86026A96": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
@@ -431,15 +431,15 @@
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
-            "PublisherServicePublisherFunctionUserServiceRole712DF138",
+            "PublisherServiceUserPublisherServiceRoleFBC76122",
             "Arn"
           ]
         },
         "Runtime": "nodejs18.x"
       },
       "DependsOn": [
-        "PublisherServicePublisherFunctionUserServiceRoleDefaultPolicyBDE8B789",
-        "PublisherServicePublisherFunctionUserServiceRole712DF138"
+        "PublisherServiceUserPublisherServiceRoleDefaultPolicyF1DAC8B8",
+        "PublisherServiceUserPublisherServiceRoleFBC76122"
       ]
     },
     "PublisherServiceOrderManagerEvents229DA4C1": {
@@ -461,7 +461,7 @@
           {
             "Arn": {
               "Fn::GetAtt": [
-                "PublisherServicePublisherFunctionUserE00A536B",
+                "PublisherServiceUserPublisher86026A96",
                 "Arn"
               ]
             },
@@ -470,13 +470,13 @@
         ]
       }
     },
-    "PublisherServiceOrderManagerEventsAllowEventRuleServerlesspressoStackPublisherServicePublisherFunctionUser0EF82A454E02AE52": {
+    "PublisherServiceOrderManagerEventsAllowEventRuleServerlesspressoStackPublisherServiceUserPublisherD8506D313C5F13DF": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
           "Fn::GetAtt": [
-            "PublisherServicePublisherFunctionUserE00A536B",
+            "PublisherServiceUserPublisher86026A96",
             "Arn"
           ]
         },
@@ -508,7 +508,7 @@
           {
             "Arn": {
               "Fn::GetAtt": [
-                "PublisherServicePublisherFunctionUserE00A536B",
+                "PublisherServiceUserPublisher86026A96",
                 "Arn"
               ]
             },
@@ -517,13 +517,13 @@
         ]
       }
     },
-    "PublisherServiceOrderProcessorEventsAllowEventRuleServerlesspressoStackPublisherServicePublisherFunctionUser0EF82A45AA1E83AE": {
+    "PublisherServiceOrderProcessorEventsAllowEventRuleServerlesspressoStackPublisherServiceUserPublisherD8506D31FF584B29": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
           "Fn::GetAtt": [
-            "PublisherServicePublisherFunctionUserE00A536B",
+            "PublisherServiceUserPublisher86026A96",
             "Arn"
           ]
         },
@@ -536,7 +536,7 @@
         }
       }
     },
-    "PublisherServicePublisherFunctionConfigServiceRoleAD16D3A0": {
+    "PublisherServiceConfigPublisherServiceRole3D37315E": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -567,7 +567,7 @@
         ]
       }
     },
-    "PublisherServicePublisherFunctionConfigServiceRoleDefaultPolicy268A6115": {
+    "PublisherServiceConfigPublisherServiceRoleDefaultPolicyC8D4BD44": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
         "PolicyDocument": {
@@ -583,15 +583,15 @@
           ],
           "Version": "2012-10-17"
         },
-        "PolicyName": "PublisherServicePublisherFunctionConfigServiceRoleDefaultPolicy268A6115",
+        "PolicyName": "PublisherServiceConfigPublisherServiceRoleDefaultPolicyC8D4BD44",
         "Roles": [
           {
-            "Ref": "PublisherServicePublisherFunctionConfigServiceRoleAD16D3A0"
+            "Ref": "PublisherServiceConfigPublisherServiceRole3D37315E"
           }
         ]
       }
     },
-    "PublisherServicePublisherFunctionConfig80C87C83": {
+    "PublisherServiceConfigPublisherCF810700": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
@@ -611,15 +611,15 @@
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
-            "PublisherServicePublisherFunctionConfigServiceRoleAD16D3A0",
+            "PublisherServiceConfigPublisherServiceRole3D37315E",
             "Arn"
           ]
         },
         "Runtime": "nodejs18.x"
       },
       "DependsOn": [
-        "PublisherServicePublisherFunctionConfigServiceRoleDefaultPolicy268A6115",
-        "PublisherServicePublisherFunctionConfigServiceRoleAD16D3A0"
+        "PublisherServiceConfigPublisherServiceRoleDefaultPolicyC8D4BD44",
+        "PublisherServiceConfigPublisherServiceRole3D37315E"
       ]
     },
     "PublisherServiceTriggerValidatorFEDE6986": {
@@ -641,7 +641,7 @@
           {
             "Arn": {
               "Fn::GetAtt": [
-                "PublisherServicePublisherFunctionConfig80C87C83",
+                "PublisherServiceConfigPublisherCF810700",
                 "Arn"
               ]
             },
@@ -650,13 +650,13 @@
         ]
       }
     },
-    "PublisherServiceTriggerValidatorAllowEventRuleServerlesspressoStackPublisherServicePublisherFunctionConfigBCB2EBFDAD8FF81D": {
+    "PublisherServiceTriggerValidatorAllowEventRuleServerlesspressoStackPublisherServiceConfigPublisher9C4B3F9C1CEDB7CB": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
           "Fn::GetAtt": [
-            "PublisherServicePublisherFunctionConfig80C87C83",
+            "PublisherServiceConfigPublisherCF810700",
             "Arn"
           ]
         },
@@ -1119,7 +1119,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-a73c7339/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-5d184453/api/config_service_api.yaml"
             }
           }
         }
@@ -2549,7 +2549,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-a73c7339/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-5d184453/api/order_manager_api.yaml"
             }
           }
         }
@@ -3361,17 +3361,17 @@
     },
     "AdminFnName": {
       "Value": {
-        "Ref": "PublisherServicePublisherFunctionAdmin226F35A2"
+        "Ref": "PublisherServiceAdminPublisher608FF40B"
       }
     },
     "UserFnName": {
       "Value": {
-        "Ref": "PublisherServicePublisherFunctionUserE00A536B"
+        "Ref": "PublisherServiceUserPublisher86026A96"
       }
     },
     "ConfigFnName": {
       "Value": {
-        "Ref": "PublisherServicePublisherFunctionConfig80C87C83"
+        "Ref": "PublisherServiceConfigPublisherCF810700"
       }
     },
     "UserPoolId": {
