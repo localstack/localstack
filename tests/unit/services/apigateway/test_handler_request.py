@@ -16,7 +16,10 @@ from localstack.services.apigateway.next_gen.execute_api.handlers.parse import (
 from localstack.services.apigateway.next_gen.execute_api.handlers.resource_router import (
     InvocationRequestRouter,
 )
-from localstack.services.apigateway.next_gen.execute_api.helpers import freeze_rest_api
+from localstack.services.apigateway.next_gen.execute_api.helpers import (
+    freeze_rest_api,
+    parse_trace_id,
+)
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 TEST_API_ID = "testapi"
@@ -177,6 +180,25 @@ class TestParsingHandler:
         # assert that the user request prefix has been stripped off
         assert context.invocation_request["path"] == f"/{TEST_API_STAGE}"
         assert context.invocation_request["raw_path"] == f"/{TEST_API_STAGE}"
+
+    def test_trace_id_logic(self):
+        headers = Headers({"x-amzn-trace-id": "Root=trace;Parent=parent"})
+        trace = InvocationRequestParser.populate_trace_id(headers)
+        assert trace == "Root=trace;Parent=parent;Sampled=1"
+
+        no_trace_headers = Headers()
+        trace = InvocationRequestParser.populate_trace_id(no_trace_headers)
+        parsed_trace = parse_trace_id(trace)
+        assert len(parsed_trace["Root"]) == 35
+        assert len(parsed_trace["Parent"]) == 16
+        assert parsed_trace["Sampled"] == "0"
+
+        no_parent_headers = Headers({"x-amzn-trace-id": "Root=trace"})
+        trace = InvocationRequestParser.populate_trace_id(no_parent_headers)
+        parsed_trace = parse_trace_id(trace)
+        assert parsed_trace["Root"] == "trace"
+        assert len(parsed_trace["Parent"]) == 16
+        assert parsed_trace["Sampled"] == "0"
 
 
 class TestRoutingHandler:

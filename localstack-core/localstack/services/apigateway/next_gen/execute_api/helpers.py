@@ -124,3 +124,18 @@ def generate_trace_id():
     version_number = "1"
     unique_id = token_hex(12)
     return f"{version_number}-{timestamp_hex}-{unique_id}"
+
+
+def generate_trace_parent():
+    return token_hex(8)
+
+
+def parse_trace_id(trace_id: str) -> dict[str, str]:
+    split_trace = trace_id.split(";")
+    trace_values = {}
+    for trace_part in split_trace:
+        key_value = trace_part.split("=")
+        if len(key_value) == 2:
+            trace_values[key_value[0].capitalize()] = key_value[1]
+
+    return trace_values

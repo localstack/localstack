@@ -23,7 +23,8 @@ class InvocationResponseEnricher(RestApiGatewayHandler):
         headers.set("x-amz-apigw-id", short_uid() + "=")
         if (
             context.integration
-            and context.integration["type"] != IntegrationType.HTTP_PROXY
+            and context.integration["type"]
+            not in (IntegrationType.HTTP_PROXY, IntegrationType.MOCK)
             and not context.context_variables.get("error")
         ):
             headers.set("X-Amzn-Trace-Id", context.trace_id)

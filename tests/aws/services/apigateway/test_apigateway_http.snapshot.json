@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda[HTTP]": {
-    "recorded-date": "12-07-2024, 20:28:00",
+    "recorded-date": "07-08-2024, 18:37:12",
     "recorded-content": {
       "api_id": {
         "rest_api_id": "<rest_api_id:1>"
@@ -44,7 +44,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda[HTTP_PROXY]": {
-    "recorded-date": "12-07-2024, 20:28:06",
+    "recorded-date": "07-08-2024, 18:37:25",
     "recorded-content": {
       "api_id": {
         "rest_api_id": "<rest_api_id:1>"
