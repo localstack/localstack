@@ -4,13 +4,11 @@ Parameters:
     Type: String
   RestLatencyPreemptiveAlarmPeriod:
     Type: Number
-    Default: 60
   RestLatencyPreemptiveAlarmEvaluationPeriods:
     Type: Number
     Default: 1
   RestLatencyPreemptiveAlarmThreshold:
     Type: Number
-    Default: 1000
 
 Resources:
   RestLatencyPreemptiveAlarm:
@@ -20,7 +18,8 @@ Resources:
       AlarmActions:
         - Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:opsitem:2
       AlarmDescription: Test alarm
-      AlarmName: !Ref ResourceNamePrefix
+      AlarmName:
+        Fn::Sub: ${ResourceNamePrefix}
       Namespace: AWS/ApiGateway
       MetricName: Latency
       Dimensions:
@@ -36,5 +35,9 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
 
 Outputs:
-  Result:
+  AlarmName:
     Value: !Ref RestLatencyPreemptiveAlarm
+  Threshold:
+    Value: !Ref RestLatencyPreemptiveAlarmThreshold
+  Period:
+    Value: !Ref RestLatencyPreemptiveAlarmPeriod

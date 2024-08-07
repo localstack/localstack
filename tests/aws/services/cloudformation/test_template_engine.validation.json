@@ -36,7 +36,7 @@
     "last_validated_date": "2024-05-09T08:33:45+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_sub_number_type": {
-    "last_validated_date": "2024-08-05T08:53:33+00:00"
+    "last_validated_date": "2024-08-06T18:16:15+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
     "last_validated_date": "2023-01-30T19:15:46+00:00"

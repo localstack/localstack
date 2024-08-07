@@ -716,6 +716,16 @@ def resolve_placeholders_in_string(
     Variables can be template parameter names, resource logical IDs, resource attributes, or a variable in a key-value map
     """
 
+    def _validate_result_type(value: str):
+        if value.isdigit():
+            return int(value)
+        else:
+            try:
+                res = float(value)
+                return res
+            except ValueError:
+                return value
+
     def _replace(match):
         ref_expression = match.group(1)
         parts = ref_expression.split(".")
@@ -785,7 +795,7 @@ def resolve_placeholders_in_string(
 
     regex = r"\$\{([^\}]+)\}"
     result = re.sub(regex, _replace, result)
-    return int(result) if result.isdigit() else result
+    return _validate_result_type(result)
 
 
 def evaluate_resource_condition(conditions: dict[str, bool], resource: dict) -> bool:
