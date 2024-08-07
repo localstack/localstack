@@ -116,6 +116,7 @@ def resolve_parameters(
             if pm["ParameterType"] in [
                 "AWS::SSM::Parameter::Value<String>",
                 "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+                "AWS::SSM::Parameter::Value<CommaDelimitedList>",
             ]:
                 # TODO: error handling (e.g. no permission to lookup SSM parameter or SSM parameter doesn't exist)
                 resolved_param["ResolvedValue"] = resolve_ssm_parameter(
