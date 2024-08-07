@@ -109,6 +109,13 @@ class KinesisPoller(StreamPoller):
                     e,
                 )
                 raise CustomerInvocationError from e
+            elif "ResourceNotFoundException" in str(e):
+                LOG.warning(
+                    "Source stream %s does not exist: %s",
+                    self.source_arn,
+                    e,
+                )
+                raise CustomerInvocationError from e
             else:
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
                 raise PipeInternalError from e
