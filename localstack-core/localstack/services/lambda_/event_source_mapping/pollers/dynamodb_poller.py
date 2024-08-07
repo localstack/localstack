@@ -1,9 +1,13 @@
 import logging
 
 from botocore.client import BaseClient
+from botocore.exceptions import ClientError
 
-from localstack.aws.api.dynamodbstreams import StreamStatus
-from localstack.services.lambda_.event_source_mapping.event_processor import EventProcessor
+from localstack.aws.api.dynamodbstreams import ExpiredIteratorException, StreamStatus
+from localstack.services.lambda_.event_source_mapping.event_processor import (
+    EventProcessor,
+    PipeInternalError,
+)
 from localstack.services.lambda_.event_source_mapping.pollers.stream_poller import StreamPoller
 
 LOG = logging.getLogger(__name__)
@@ -57,6 +61,27 @@ class DynamoDBPoller(StreamPoller):
             )
             shards[shard_id] = get_shard_iterator_response["ShardIterator"]
         return shards
+
+    def get_records(self, shard_iterator: str) -> dict:
+        try:
+            get_records_response = self.source_client.get_records(
+                # TODO: add test for cross-account scenario
+                StreamArn=self.source_arn,  # differs for Kinesis but required for cross-account scenario
+                ShardIterator=shard_iterator,
+                Limit=self.stream_parameters["BatchSize"],
+            )
+            return get_records_response
+        except ExpiredIteratorException as e:
+            LOG.debug(
+                "Shard iterator %s expired for stream %s, re-initializing shards",
+                shard_iterator,
+                self.source_arn,
+            )
+            self.shards = self.initialize_shards()
+            raise PipeInternalError from e
+        except ClientError as e:
+            LOG.debug("ClientError during get_records for stream %s. Error: %s", self.source_arn, e)
+            raise PipeInternalError from e
 
     def event_source(self) -> str:
         return "aws:dynamodb"

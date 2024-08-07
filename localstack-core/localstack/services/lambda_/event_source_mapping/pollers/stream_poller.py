@@ -12,6 +12,7 @@ from localstack.aws.api.pipes import (
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
     PartialBatchFailureError,
+    PipeInternalError,
 )
 from localstack.services.lambda_.event_source_mapping.pipe_utils import (
     format_time_iso_8601_z,
@@ -81,7 +82,13 @@ class StreamPoller(Poller):
 
         current_shard_tuple = next(self.iterator_over_shards, None)
         if current_shard_tuple:
-            self.poll_events_from_shard(*current_shard_tuple)
+            try:
+                self.poll_events_from_shard(*current_shard_tuple)
+            # TODO: implement exponential back-off for errors in general
+            except PipeInternalError:
+                # TODO: standardize logging
+                # Ignore and wait for the next polling interval, which will do retry
+                pass
         else:
             # Set current shard iterator to None to re-start round-robin at the first shard
             self.iterator_over_shards = None
@@ -98,13 +105,7 @@ class StreamPoller(Poller):
 
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
         abort_condition = None
-        # TODO: implement MaximumBatchingWindowInSeconds flush condition
-        get_records_response = self.source_client.get_records(
-            # TODO: double-check cross-account behavior (region should be fine)
-            # StreamARN=self.source_arn,  # differs for DynamoDB but optional
-            ShardIterator=shard_iterator,
-            Limit=self.stream_parameters["BatchSize"],
-        )
+        get_records_response = self.get_records(shard_iterator)
         records = get_records_response["Records"]
         polled_events = self.transform_into_events(records, shard_id)
         # Check MaximumRecordAgeInSeconds
@@ -115,9 +116,10 @@ class StreamPoller(Poller):
             if record_age_in_seconds > maximum_record_age_in_seconds:
                 abort_condition = "RecordAgeExpired"
         matching_events = self.filter_events(polled_events)
+        # TODO: implement MaximumBatchingWindowInSeconds flush condition (before or after filter?)
         # Don't trigger upon empty events
         if len(matching_events) == 0:
-            # Update shard iterator upon if no records match the filter
+            # Update shard iterator if no records match the filter
             self.shards[shard_id] = get_records_response["NextShardIterator"]
             return
         events = self.add_source_metadata(matching_events)
@@ -132,7 +134,7 @@ class StreamPoller(Poller):
         while not abort_condition and not self.max_retries_exceeded(attempts):
             try:
                 self.processor.process_events_batch(events)
-                # Update shard iterator upon successful pipe execution
+                # Update shard iterator if execution is successful
                 self.shards[shard_id] = get_records_response["NextShardIterator"]
                 return
             except PartialBatchFailureError:
@@ -171,8 +173,13 @@ class StreamPoller(Poller):
             "partnerResourceArn": self.partner_resource_arn,
         }
         self.send_events_to_dlq(events, context=context)
-        # Update shard iterator upon failure once the events are sent to the DLQ
+        # Update shard iterator if the execution failed but the events are sent to a DLQ
         self.shards[shard_id] = get_records_response["NextShardIterator"]
+
+    @abstractmethod
+    def get_records(self, shard_iterator: str) -> dict:
+        """Returns a GetRecordsOutput from the GetRecords endpoint of streaming services such as Kinesis or DynamoDB"""
+        pass
 
     def send_events_to_dlq(self, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")
