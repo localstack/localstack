@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.dynamodbstreams import ExpiredIteratorException, StreamStatus
 from localstack.services.lambda_.event_source_mapping.event_processor import (
+    CustomerInvocationError,
     EventProcessor,
     PipeInternalError,
 )
@@ -80,8 +81,16 @@ class DynamoDBPoller(StreamPoller):
             self.shards = self.initialize_shards()
             raise PipeInternalError from e
         except ClientError as e:
-            LOG.debug("ClientError during get_records for stream %s. Error: %s", self.source_arn, e)
-            raise PipeInternalError from e
+            if "AccessDeniedException" in str(e):
+                LOG.warning(
+                    "Insufficient permissions to get records from stream %s: %s",
+                    self.source_arn,
+                    e,
+                )
+                raise CustomerInvocationError from e
+            else:
+                LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
+                raise PipeInternalError from e
 
     def event_source(self) -> str:
         return "aws:dynamodb"
