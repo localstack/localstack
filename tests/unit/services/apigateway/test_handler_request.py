@@ -117,6 +117,8 @@ class TestParsingHandler:
         assert context.context_variables["domainPrefix"] == TEST_API_ID
         assert context.context_variables["path"] == f"/{TEST_API_STAGE}/normal-path"
 
+        assert "Root=" in context.trace_id
+
     def test_parse_raw_path(self, dummy_deployment, parse_handler_chain, get_invocation_context):
         request = Request(
             "GET",

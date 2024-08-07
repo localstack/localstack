@@ -15,6 +15,7 @@ from localstack.utils.time import timestamp
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import InvocationRequest, RestApiInvocationContext
 from ..header_utils import should_drop_header_from_invocation
+from ..helpers import generate_trace_id
 from ..moto_helpers import get_stage_variables
 from ..variables import ContextVariables, ContextVarsIdentity
 
@@ -43,6 +44,9 @@ class InvocationRequestParser(RestApiGatewayHandler):
         # then populate the stage variables
         context.stage_variables = self.fetch_stage_variables(context)
         LOG.debug("Initializing $stageVariables='%s'", context.stage_variables)
+
+        # TODO: improve the logic here, maybe there's already a X-Amz-Trace-Id header we should take from?
+        context.trace_id = f"Root={generate_trace_id()}"
 
     def create_invocation_request(self, context: RestApiInvocationContext) -> InvocationRequest:
         request = context.request

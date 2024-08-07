@@ -26,4 +26,4 @@ class InvocationResponseEnricher(RestApiGatewayHandler):
             and context.integration["type"] != IntegrationType.HTTP_PROXY
             and not context.context_variables.get("error")
         ):
-            headers.set("X-Amzn-Trace-Id", short_uid())  # TODO
+            headers.set("X-Amzn-Trace-Id", context.trace_id)

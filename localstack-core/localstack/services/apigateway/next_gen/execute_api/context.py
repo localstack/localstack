@@ -88,6 +88,8 @@ class RestApiInvocationContext(RequestContext):
     """The region the REST API is living in."""
     account_id: Optional[str]
     """The account the REST API is living in."""
+    trace_id: Optional[str]
+    """The X-Ray trace ID for the request."""
     resource: Optional[Resource]
     """The resource the invocation matched"""
     resource_method: Optional[Method]
@@ -126,3 +128,4 @@ class RestApiInvocationContext(RequestContext):
         self.integration_request = None
         self.endpoint_response = None
         self.invocation_response = None
+        self.trace_id = None

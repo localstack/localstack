@@ -7,7 +7,7 @@ from localstack.aws.api.apigateway import Integration, IntegrationType
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Request, Response
 from localstack.utils.collections import merge_recursive
-from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.strings import to_bytes, to_str
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
@@ -282,7 +282,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             default_headers["Content-Type"] = content_type
 
         set_default_headers(headers, default_headers)
-        headers.set("X-Amzn-Trace-Id", short_uid())  # TODO
+        headers.set("X-Amzn-Trace-Id", context.trace_id)
         if integration_type not in (IntegrationType.AWS_PROXY, IntegrationType.AWS):
             headers.set("X-Amzn-Apigateway-Api-Id", context.api_id)
 
