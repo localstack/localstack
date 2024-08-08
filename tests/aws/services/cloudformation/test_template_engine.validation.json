@@ -83,6 +83,9 @@
   "tests/aws/services/cloudformation/test_template_engine.py::TestPseudoParameters::test_stack_id": {
     "last_validated_date": "2024-07-18T08:56:47+00:00"
   },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_change_set_with_ssm_parameter_list": {
+    "last_validated_date": "2024-08-08T21:21:23+00:00"
+  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
     "last_validated_date": "2023-01-15T16:54:23+00:00"
   },

@@ -478,32 +478,5 @@
         }
       }
     }
-  },
-  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_with_ssm_parameter_list": {
-    "recorded-date": "07-08-2024, 18:22:46",
-    "recorded-content": {
-      "role-name": "<role-name:1>",
-      "iam_role_policy": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": "*",
-              "Effect": "Allow",
-              "Resource": [
-                "arn:<partition>:ssm:<region>:111111111111:parameter/some/params",
-                "arn:<partition>:ssm:<region>:111111111111:parameter/some/other/params"
-              ]
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-123",
-        "RoleName": "<role-name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
   }
 }

@@ -2,9 +2,6 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_update_without_parameters": {
     "last_validated_date": "2022-05-31T07:32:02+00:00"
   },
-  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_with_ssm_parameter_list": {
-    "last_validated_date": "2024-08-07T18:22:46+00:00"
-  },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_changeset_with_stack_id": {
     "last_validated_date": "2023-11-28T06:48:23+00:00"
   },
