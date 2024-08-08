@@ -75,7 +75,8 @@ class StreamPoller(Poller):
 
     @abstractmethod
     def stream_arn_param(self) -> dict:
-        """Returns a dict of the correct key/value pair for StreamArn (DynamoDB) or StreamARN (Kinesis)."""
+        """Returns a dict of the correct key/value pair for the stream arn used in GetRecords.
+        Either StreamARN for Kinesis or {} for DynamoDB (unsupported)"""
         pass
 
     @abstractmethod
