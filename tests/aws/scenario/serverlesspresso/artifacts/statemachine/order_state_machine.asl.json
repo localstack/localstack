@@ -32,9 +32,10 @@
       "Type": "Pass",
       "Next": "DynamoDB Update Order Record",
       "Result": {
-        "state": "Cancelled"
+        "name": "Cancelled",
+        "state": "CANCELLED"
       },
-      "ResultPath": "$.result"
+      "ResultPath": "$.event"
     },
     "DynamoDB Update Order Record": {
       "Type": "Task",
@@ -55,7 +56,7 @@
         },
         "ExpressionAttributeValues": {
           ":OS": {
-            "S.$": "$.result.state"
+            "S.$": "$.event.state"
           }
         },
         "ReturnValues": "ALL_NEW"
@@ -74,7 +75,7 @@
         "orderId.$": "$.orderId",
         "userId.$": "$.result.Attributes.USERID.S",
         "ORDERSTATE.$": "$.result.Attributes.ORDERSTATE.S",
-        "Message": "Barrista has cancelled or completed teh order"
+        "Message": "Barrista has cancelled or completed the order"
       }
     },
     "Emit Completed || Cancelled": {
@@ -84,7 +85,7 @@
         "Entries": [
           {
             "Detail.$": "States.JsonToString($.detail)",
-            "DetailType.$": "States.Format('OrderManager.Order{}', $.detail.ORDERSTATE)",
+            "DetailType.$": "States.Format('OrderManager.Order{}', $.event.name)",
             "EventBusName": "Serverlesspresso",
             "Source": "lstesting.serverlesspresso",
             "Time.$": "$$.State.EnteredTime"
@@ -98,9 +99,10 @@
       "Type": "Pass",
       "Next": "DynamoDB Update Order Record",
       "Result": {
+        "name": "Completed",
         "state": "COMPLETED"
       },
-      "ResultPath": "$.result"
+      "ResultPath": "$.event"
     },
     "Customer Put Order": {
       "Type": "Pass",
