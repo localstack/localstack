@@ -110,7 +110,7 @@ ResourceProperties = TypeVar("ResourceProperties")
 
 def _handler_provide_client_params(event_name: str, params: dict, model: OperationModel, **kwargs):
     """
-    A botocore hook handler that will convert the passed parameters according to the corresponding operation model
+    A botocore hook handler that will try to convert the passed parameters according to the given operation model
     """
     return convert_request_kwargs(params, model.input_shape)
 
@@ -118,16 +118,14 @@ def _handler_provide_client_params(event_name: str, params: dict, model: Operati
 class ConvertingInternalClientFactory(InternalClientFactory):
     def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
         """
-        Register handlers that enable internal data object transfer mechanism
-        for internal clients.
+        Register handlers that modify the passed properties to make them compatible with the API structure
         """
 
         client.meta.events.register(
             "provide-client-params.*.*", handler=_handler_provide_client_params
         )
 
-        super()._get_client_post_hook(client)
-        return client
+        return super()._get_client_post_hook(client)
 
 
 _cfn_resource_client_factory = ConvertingInternalClientFactory(use_ssl=config.DISTRIBUTED_MODE)
