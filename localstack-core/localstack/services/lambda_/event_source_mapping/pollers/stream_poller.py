@@ -5,11 +5,13 @@ from datetime import datetime
 from typing import Iterator
 
 from botocore.client import BaseClient
+from botocore.exceptions import ClientError
 
 from localstack.aws.api.pipes import (
     OnPartialBatchItemFailureStreams,
 )
 from localstack.services.lambda_.event_source_mapping.event_processor import (
+    CustomerInvocationError,
     EventProcessor,
     PartialBatchFailureError,
     PipeInternalError,
@@ -61,6 +63,25 @@ class StreamPoller(Poller):
     def stream_parameters(self) -> dict:
         pass
 
+    @abstractmethod
+    def initialize_shards(self) -> dict[str, str]:
+        """Returns a shard dict mapping from shard id -> shard iterator
+        The implementations for Kinesis and DynamoDB are similar but differ in various ways:
+        * Kinesis uses "StreamARN" and DynamoDB uses "StreamArn" as source parameter
+        * Kinesis uses "StreamStatus.ACTIVE" and DynamoDB uses "StreamStatus.ENABLED"
+        * Only Kinesis supports the additional StartingPosition called "AT_TIMESTAMP" using "StartingPositionTimestamp"
+        """
+        pass
+
+    @abstractmethod
+    def stream_arn_param(self) -> dict:
+        """Returns a dict of the correct key/value pair for StreamArn (DynamoDB) or StreamARN (Kinesis)."""
+        pass
+
+    @abstractmethod
+    def expired_iterator_exception_type(self) -> type:
+        pass
+
     def poll_events(self):
         """Generalized poller for streams such as Kinesis or DynamoDB
         Examples of Kinesis consumers:
@@ -92,16 +113,6 @@ class StreamPoller(Poller):
         else:
             # Set current shard iterator to None to re-start round-robin at the first shard
             self.iterator_over_shards = None
-
-    @abstractmethod
-    def initialize_shards(self) -> dict[str, str]:
-        """Returns a shard dict mapping from shard id -> shard iterator
-        The implementations for Kinesis and DynamoDB are similar but differ in various ways:
-        * Kinesis uses "StreamARN" and DynamoDB uses "StreamArn" as source parameter
-        * Kinesis uses "StreamStatus.ACTIVE" and DynamoDB uses "StreamStatus.ENABLED"
-        * Only Kinesis supports the additional StartingPosition called "AT_TIMESTAMP" using "StartingPositionTimestamp"
-        """
-        pass
 
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
         abort_condition = None
@@ -176,10 +187,43 @@ class StreamPoller(Poller):
         # Update shard iterator if the execution failed but the events are sent to a DLQ
         self.shards[shard_id] = get_records_response["NextShardIterator"]
 
-    @abstractmethod
     def get_records(self, shard_iterator: str) -> dict:
         """Returns a GetRecordsOutput from the GetRecords endpoint of streaming services such as Kinesis or DynamoDB"""
-        pass
+        try:
+            get_records_response = self.source_client.get_records(
+                # TODO: add test for cross-account scenario
+                # Differs for Kinesis and DynamoDB but required for cross-account scenario
+                **self.stream_arn_param(),
+                ShardIterator=shard_iterator,
+                Limit=self.stream_parameters["BatchSize"],
+            )
+            return get_records_response
+        except self.expired_iterator_exception_type() as e:
+            LOG.debug(
+                "Shard iterator %s expired for stream %s, re-initializing shards",
+                shard_iterator,
+                self.source_arn,
+            )
+            self.shards = self.initialize_shards()
+            raise PipeInternalError from e
+        except ClientError as e:
+            if "AccessDeniedException" in str(e):
+                LOG.warning(
+                    "Insufficient permissions to get records from stream %s: %s",
+                    self.source_arn,
+                    e,
+                )
+                raise CustomerInvocationError from e
+            elif "ResourceNotFoundException" in str(e):
+                LOG.warning(
+                    "Source stream %s does not exist: %s",
+                    self.source_arn,
+                    e,
+                )
+                raise CustomerInvocationError from e
+            else:
+                LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
+                raise PipeInternalError from e
 
     def send_events_to_dlq(self, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")
