@@ -60,6 +60,8 @@ def add_http_integration_transformers(snapshot):
         # TODO: for HTTP integration only: requests (urllib3) automatically adds `Accept-Encoding` when sending the
         #  request, seems like we cannot remove it
         "$..headers.accept-encoding",
+        # TODO: for HTTP integration, Lambda URL do not add the Self=<trace-id> to its incoming headers
+        "$..headers.x-amzn-trace-id",
         # TODO: only missing for HTTP_PROXY, Must be coming from the lambda url
         "$..headers.x-amzn-remapped-x-amzn-requestid",
         #  TODO AWS doesn't seems to add Server to lambda invocation for lambda url
@@ -71,7 +73,6 @@ def add_http_integration_transformers(snapshot):
     paths=[
         "$..content.headers.x-amzn-trace-id",
         "$..headers.x-amz-apigw-id",
-        "$..headers.x-amzn-trace-id",
         "$..headers.x-amzn-requestid",
         "$..content.headers.user-agent",  # TODO: We have to properly set that header on non proxied requests.
         "$..content.headers.accept",  # legacy does not properly manage accept header

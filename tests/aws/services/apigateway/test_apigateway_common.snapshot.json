@@ -1130,5 +1130,77 @@
         "errorType": "MissingAuthenticationTokenException"
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_invocation_trace_id": {
+    "recorded-date": "07-08-2024, 20:24:17",
+    "recorded-content": {
+      "register-lambda": {
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>"
+      },
+      "normal-req-headers-MOCK": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:1>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:1>",
+        "x-amz-cf-id": "<x-amz-cf-id:1>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:1>",
+        "x-cache": "Miss from cloudfront"
+      },
+      "trace-id-req-headers-MOCK": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:2>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:2>",
+        "x-amz-cf-id": "<x-amz-cf-id:2>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:2>",
+        "x-cache": "Miss from cloudfront"
+      },
+      "normal-req-headers-AWS_PROXY": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:3>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:3>",
+        "x-amz-cf-id": "<x-amz-cf-id:3>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:3>",
+        "x-amzn-trace-id": "<x-amzn-trace-id:1>",
+        "x-cache": "Miss from cloudfront"
+      },
+      "trace-id-req-headers-AWS_PROXY": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:4>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:4>",
+        "x-amz-cf-id": "<x-amz-cf-id:4>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:4>",
+        "x-amzn-trace-id": "<x-amzn-trace-id:2>",
+        "x-cache": "Miss from cloudfront"
+      },
+      "trace-id-small-req-headers-AWS_PROXY": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:5>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:5>",
+        "x-amz-cf-id": "<x-amz-cf-id:5>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:5>",
+        "x-amzn-trace-id": "<x-amzn-trace-id:3>",
+        "x-cache": "Miss from cloudfront"
+      }
+    }
   }
 }

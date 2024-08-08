@@ -15,6 +15,7 @@ from localstack.utils.time import timestamp
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import InvocationRequest, RestApiInvocationContext
 from ..header_utils import should_drop_header_from_invocation
+from ..helpers import generate_trace_id, generate_trace_parent, parse_trace_id
 from ..moto_helpers import get_stage_variables
 from ..variables import ContextVariables, ContextVarsIdentity
 
@@ -43,6 +44,8 @@ class InvocationRequestParser(RestApiGatewayHandler):
         # then populate the stage variables
         context.stage_variables = self.fetch_stage_variables(context)
         LOG.debug("Initializing $stageVariables='%s'", context.stage_variables)
+
+        context.trace_id = self.populate_trace_id(context.request.headers)
 
     def create_invocation_request(self, context: RestApiInvocationContext) -> InvocationRequest:
         request = context.request
@@ -166,3 +169,15 @@ class InvocationRequestParser(RestApiGatewayHandler):
             return None
 
         return stage_variables
+
+    @staticmethod
+    def populate_trace_id(headers: Headers) -> str:
+        incoming_trace = parse_trace_id(headers.get("x-amzn-trace-id", ""))
+        # parse_trace_id always return capitalized keys
+
+        trace = incoming_trace.get("Root", generate_trace_id())
+        incoming_parent = incoming_trace.get("Parent")
+        parent = incoming_parent or generate_trace_parent()
+        sampled = incoming_trace.get("Sampled", "1" if incoming_parent else "0")
+        # TODO: lineage? not sure what it related to
+        return f"Root={trace};Parent={parent};Sampled={sampled}"
