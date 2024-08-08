@@ -167,7 +167,7 @@ def resolve_ref(
         parameter_type: str = parameter["ParameterType"]
         parameter_value = parameter.get("ResolvedValue") or parameter.get("ParameterValue")
 
-        if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith("List<"):
+        if "CommaDelimitedList" in parameter_type or parameter_type.startswith("List<"):
             return [p.strip() for p in parameter_value.split(",")]
         else:
             return parameter_value
