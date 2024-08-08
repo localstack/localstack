@@ -61,7 +61,9 @@ class DynamoDBPoller(StreamPoller):
         return shards
 
     def stream_arn_param(self) -> dict:
-        return {"StreamArn": self.source_arn}
+        # Not supported for GetRecords:
+        # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_GetRecords.html
+        return {}
 
     def expired_iterator_exception_type(self) -> type:
         return ExpiredIteratorException
