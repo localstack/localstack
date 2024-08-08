@@ -317,7 +317,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
                         "HostEndpoint": iot_endpoint.get_att(
                             attribute_name="IotEndpointAddress"
                         ).to_string(),
-                        "IdentityPoolId": auth_service.identity_pool.identity_pool_id,
+                        "IdentityPoolId": auth_service.identity_pool_id,
                     },
                 ),
             )

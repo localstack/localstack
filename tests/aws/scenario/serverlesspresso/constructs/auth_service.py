@@ -56,20 +56,20 @@ class AuthService(constructs.Construct):
             string_value=user_pool_client.user_pool_client_id,
         )  # TODO Ref?
 
-        self.identity_pool = identitypool.IdentityPool(
+        self.identity_pool = cdk.aws_cognito.CfnIdentityPool(
             self,
             "IdentityPool",
             identity_pool_name="ServerlesspressoIdentityPool",
             allow_unauthenticated_identities=True,
-            authentication_providers=identitypool.IdentityPoolAuthenticationProviders(
-                user_pools=[
-                    identitypool.UserPoolAuthenticationProvider(
-                        user_pool=user_pool,
-                        user_pool_client=user_pool_client,
-                    )
-                ]
-            ),
+            cognito_identity_providers=[
+                cdk.aws_cognito.CfnIdentityPool.CognitoIdentityProviderProperty(
+                    client_id=user_pool_client.user_pool_client_id,
+                    provider_name=user_pool.user_pool_provider_name,
+                )
+            ]
         )
+
+        self.identity_pool_id = self.identity_pool.ref
 
         unauthenticated_role = cdk.aws_iam.Role(
             self,
@@ -79,7 +79,7 @@ class AuthService(constructs.Construct):
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
                 conditions={
                     "StringEquals": {
-                        "cognito-identity.amazonaws.com:aud": self.identity_pool.identity_pool_id  # TODO
+                        "cognito-identity.amazonaws.com:aud": self.identity_pool_id
                     },
                     "ForAnyValue:StringLike": {
                         "cognito-identity.amazonaws.com:amr": "unauthenticated"
@@ -93,28 +93,62 @@ class AuthService(constructs.Construct):
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["cognito-sync:*"],
                             resources=[
-                                self.identity_pool.identity_pool_arn
-                            ],  # TODO: check arn format (should be arn:aws:cognito-sync)
+                                cdk.Fn.join(
+                                    "",
+                                    [
+                                        "arn:aws:cognito-sync:",
+                                        cdk.Stack.of(self).region,
+                                        ":",
+                                        cdk.Stack.of(self).account,
+                                        ":identitypool/",
+                                        self.identity_pool_id
+                                    ],
+                                )
+                            ],
                         ),
                         cdk.aws_iam.PolicyStatement(
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["iot:Connect"],
-                            resources=["*"],  # TODO
+                            resources=[
+                                cdk.Fn.join(
+                                    "",
+                                    [
+                                        "arn:aws:iot:",
+                                        cdk.Stack.of(self).region,
+                                        ":",
+                                        cdk.Stack.of(self).account,
+                                        ":client/serverlesspresso-*",
+                                    ],
+                                )
+                            ],
                         ),
                         cdk.aws_iam.PolicyStatement(
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["iot:Subscribe"],
-                            resources=["*"],  # TODO
+                            resources=["*"],
                         ),
                         cdk.aws_iam.PolicyStatement(
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["iot:Receive"],
-                            resources=["*"],  # TODO
+                            resources=[
+                                cdk.Fn.join(
+                                    "",
+                                    [
+                                        "arn:aws:iot:",
+                                        cdk.Stack.of(self).region,
+                                        ":",
+                                        cdk.Stack.of(self).account,
+                                        ":topic/*",
+                                    ],
+                                )
+                            ],
                         ),
                     ]
                 )
             },
         )
+
+
         authenticated_role = cdk.aws_iam.Role(
             self,
             "CognitoAuthorizedRole",
@@ -123,7 +157,7 @@ class AuthService(constructs.Construct):
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
                 conditions={
                     "StringEquals": {
-                        "cognito-identity.amazonaws.com:aud": self.identity_pool.identity_pool_id
+                        "cognito-identity.amazonaws.com:aud": self.identity_pool_id
                     },
                     "ForAnyValue:StringLike": {
                         "cognito-identity.amazonaws.com:amr": "authenticated"
@@ -137,36 +171,67 @@ class AuthService(constructs.Construct):
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["cognito-sync:*"],
                             resources=[
-                                self.identity_pool.identity_pool_arn
-                            ],  # TODO: check arn format (should be arn:aws:cognito-sync)
+                                cdk.Fn.join(
+                                    "",
+                                    [
+                                        "arn:aws:cognito-sync:",
+                                        cdk.Stack.of(self).region,
+                                        ":",
+                                        cdk.Stack.of(self).account,
+                                        ":identitypool/",
+                                        self.identity_pool_id
+                                    ],
+                                )
+                            ],
                         ),
                         cdk.aws_iam.PolicyStatement(
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["iot:Connect"],
-                            resources=["*"],  # TODO
+                            resources=[
+                                cdk.Fn.join(
+                                    "",
+                                    [
+                                        "arn:aws:iot:",
+                                        cdk.Stack.of(self).region,
+                                        ":",
+                                        cdk.Stack.of(self).account,
+                                        ":client/serverlesspresso-*",
+                                    ],
+                                )
+                            ],
                         ),
                         cdk.aws_iam.PolicyStatement(
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["iot:Subscribe"],
-                            resources=["*"],  # TODO
+                            resources=["*"],
                         ),
                         cdk.aws_iam.PolicyStatement(
                             effect=cdk.aws_iam.Effect.ALLOW,
                             actions=["iot:Receive"],
-                            resources=["*"],  # TODO
+                            resources=[
+                                cdk.Fn.join(
+                                    "",
+                                    [
+                                        "arn:aws:iot:",
+                                        cdk.Stack.of(self).region,
+                                        ":",
+                                        cdk.Stack.of(self).account,
+                                        ":topic/*",
+                                    ],
+                                )
+                            ],
                         ),
                     ]
                 )
             },
         )
 
-        cdk.custom_resources.AwsCustomResource
-        # TODO for some reason this currently fails
-        # role_mapping = identitypool.IdentityPoolRoleAttachment(
-        #     self,
-        #     "IdentityPoolRoleMapping",
-        #     identity_pool=identity_pool,
-        #     authenticated_role=authenticated_role,
-        #     unauthenticated_role=unauthenticated_role,
-        #     # role_mappings=[]
-        # )
+        cdk.aws_cognito.CfnIdentityPoolRoleAttachment(
+            self,
+            "IdentityPoolRoleMapping",
+            identity_pool_id=self.identity_pool_id,
+            roles={
+                "unauthenticated": unauthenticated_role.role_arn,
+                "authenticated": authenticated_role.role_arn,
+            },
+        )

@@ -790,7 +790,7 @@
         }
       }
     },
-    "AuthServiceIdentityPool0DD75433": {
+    "AuthServiceIdentityPool37D7C17B": {
       "Type": "AWS::Cognito::IdentityPool",
       "Properties": {
         "AllowUnauthenticatedIdentities": true,
@@ -800,149 +800,15 @@
               "Ref": "AuthServiceUserPoolUserPoolClient16DCF8BB"
             },
             "ProviderName": {
-              "Fn::Join": [
-                "",
-                [
-                  "cognito-idp.",
-                  {
-                    "Ref": "AWS::Region"
-                  },
-                  ".",
-                  {
-                    "Ref": "AWS::URLSuffix"
-                  },
-                  "/",
-                  {
-                    "Ref": "UserPool"
-                  }
-                ]
+              "Fn::GetAtt": [
+                "UserPool",
+                "ProviderName"
               ]
-            },
-            "ServerSideTokenCheck": true
+            }
           }
         ],
         "IdentityPoolName": "ServerlesspressoIdentityPool"
-      },
-      "DependsOn": [
-        "UserPool",
-        "AuthServiceUserPoolUserPoolClient16DCF8BB"
-      ]
-    },
-    "AuthServiceIdentityPoolAuthenticatedRoleC5B99337": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRoleWithWebIdentity",
-              "Condition": {
-                "StringEquals": {
-                  "cognito-identity.amazonaws.com:aud": {
-                    "Ref": "AuthServiceIdentityPool0DD75433"
-                  }
-                },
-                "ForAnyValue:StringLike": {
-                  "cognito-identity.amazonaws.com:amr": "authenticated"
-                }
-              },
-              "Effect": "Allow",
-              "Principal": {
-                "Federated": "cognito-identity.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "Description": {
-          "Fn::Join": [
-            "",
-            [
-              "Default Authenticated Role for Identity Pool ",
-              {
-                "Fn::GetAtt": [
-                  "AuthServiceIdentityPool0DD75433",
-                  "Name"
-                ]
-              }
-            ]
-          ]
-        }
-      },
-      "DependsOn": [
-        "UserPool",
-        "AuthServiceUserPoolUserPoolClient16DCF8BB"
-      ]
-    },
-    "AuthServiceIdentityPoolUnauthenticatedRole8AD0092E": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRoleWithWebIdentity",
-              "Condition": {
-                "StringEquals": {
-                  "cognito-identity.amazonaws.com:aud": {
-                    "Ref": "AuthServiceIdentityPool0DD75433"
-                  }
-                },
-                "ForAnyValue:StringLike": {
-                  "cognito-identity.amazonaws.com:amr": "unauthenticated"
-                }
-              },
-              "Effect": "Allow",
-              "Principal": {
-                "Federated": "cognito-identity.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "Description": {
-          "Fn::Join": [
-            "",
-            [
-              "Default Unauthenticated Role for Identity Pool ",
-              {
-                "Fn::GetAtt": [
-                  "AuthServiceIdentityPool0DD75433",
-                  "Name"
-                ]
-              }
-            ]
-          ]
-        }
-      },
-      "DependsOn": [
-        "UserPool",
-        "AuthServiceUserPoolUserPoolClient16DCF8BB"
-      ]
-    },
-    "AuthServiceIdentityPoolDefaultRoleAttachmentEC446C7D": {
-      "Type": "AWS::Cognito::IdentityPoolRoleAttachment",
-      "Properties": {
-        "IdentityPoolId": {
-          "Ref": "AuthServiceIdentityPool0DD75433"
-        },
-        "Roles": {
-          "authenticated": {
-            "Fn::GetAtt": [
-              "AuthServiceIdentityPoolAuthenticatedRoleC5B99337",
-              "Arn"
-            ]
-          },
-          "unauthenticated": {
-            "Fn::GetAtt": [
-              "AuthServiceIdentityPoolUnauthenticatedRole8AD0092E",
-              "Arn"
-            ]
-          }
-        }
-      },
-      "DependsOn": [
-        "UserPool",
-        "AuthServiceUserPoolUserPoolClient16DCF8BB"
-      ]
+      }
     },
     "AuthServiceCognitoUnAuthorizedRoleE9C36CE4": {
       "Type": "AWS::IAM::Role",
@@ -954,7 +820,7 @@
               "Condition": {
                 "StringEquals": {
                   "cognito-identity.amazonaws.com:aud": {
-                    "Ref": "AuthServiceIdentityPool0DD75433"
+                    "Ref": "AuthServiceIdentityPool37D7C17B"
                   }
                 },
                 "ForAnyValue:StringLike": {
@@ -980,11 +846,7 @@
                     "Fn::Join": [
                       "",
                       [
-                        "arn:",
-                        {
-                          "Ref": "AWS::Partition"
-                        },
-                        ":cognito-identity:",
+                        "arn:aws:cognito-sync:",
                         {
                           "Ref": "AWS::Region"
                         },
@@ -994,7 +856,7 @@
                         },
                         ":identitypool/",
                         {
-                          "Ref": "AuthServiceIdentityPool0DD75433"
+                          "Ref": "AuthServiceIdentityPool37D7C17B"
                         }
                       ]
                     ]
@@ -1003,7 +865,22 @@
                 {
                   "Action": "iot:Connect",
                   "Effect": "Allow",
-                  "Resource": "*"
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:iot:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":client/serverlesspresso-*"
+                      ]
+                    ]
+                  }
                 },
                 {
                   "Action": "iot:Subscribe",
@@ -1013,7 +890,22 @@
                 {
                   "Action": "iot:Receive",
                   "Effect": "Allow",
-                  "Resource": "*"
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:iot:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":topic/*"
+                      ]
+                    ]
+                  }
                 }
               ],
               "Version": "2012-10-17"
@@ -1033,7 +925,7 @@
               "Condition": {
                 "StringEquals": {
                   "cognito-identity.amazonaws.com:aud": {
-                    "Ref": "AuthServiceIdentityPool0DD75433"
+                    "Ref": "AuthServiceIdentityPool37D7C17B"
                   }
                 },
                 "ForAnyValue:StringLike": {
@@ -1059,11 +951,7 @@
                     "Fn::Join": [
                       "",
                       [
-                        "arn:",
-                        {
-                          "Ref": "AWS::Partition"
-                        },
-                        ":cognito-identity:",
+                        "arn:aws:cognito-sync:",
                         {
                           "Ref": "AWS::Region"
                         },
@@ -1073,7 +961,7 @@
                         },
                         ":identitypool/",
                         {
-                          "Ref": "AuthServiceIdentityPool0DD75433"
+                          "Ref": "AuthServiceIdentityPool37D7C17B"
                         }
                       ]
                     ]
@@ -1082,7 +970,22 @@
                 {
                   "Action": "iot:Connect",
                   "Effect": "Allow",
-                  "Resource": "*"
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:iot:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":client/serverlesspresso-*"
+                      ]
+                    ]
+                  }
                 },
                 {
                   "Action": "iot:Subscribe",
@@ -1092,7 +995,22 @@
                 {
                   "Action": "iot:Receive",
                   "Effect": "Allow",
-                  "Resource": "*"
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:iot:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":topic/*"
+                      ]
+                    ]
+                  }
                 }
               ],
               "Version": "2012-10-17"
@@ -1100,6 +1018,28 @@
             "PolicyName": "CognitoAuthorizedPolicy"
           }
         ]
+      }
+    },
+    "AuthServiceIdentityPoolRoleMappingD54E5D1D": {
+      "Type": "AWS::Cognito::IdentityPoolRoleAttachment",
+      "Properties": {
+        "IdentityPoolId": {
+          "Ref": "AuthServiceIdentityPool37D7C17B"
+        },
+        "Roles": {
+          "unauthenticated": {
+            "Fn::GetAtt": [
+              "AuthServiceCognitoUnAuthorizedRoleE9C36CE4",
+              "Arn"
+            ]
+          },
+          "authenticated": {
+            "Fn::GetAtt": [
+              "AuthServiceCognitoAuthorizedRoleCE60131D",
+              "Arn"
+            ]
+          }
+        }
       }
     },
     "ConfigServiceConfigTableD352B014": {
@@ -1133,7 +1073,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-f8e4cb16/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-dfc0e45b/api/config_service_api.yaml"
             }
           }
         }
@@ -2563,7 +2503,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-f8e4cb16/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-dfc0e45b/api/order_manager_api.yaml"
             }
           }
         }
@@ -3480,7 +3420,7 @@
               ]
             },
             "IdentityPoolId": {
-              "Ref": "AuthServiceIdentityPool0DD75433"
+              "Ref": "AuthServiceIdentityPool37D7C17B"
             }
           }
         ]
@@ -3558,7 +3498,7 @@
               ]
             },
             "IdentityPoolId": {
-              "Ref": "AuthServiceIdentityPool0DD75433"
+              "Ref": "AuthServiceIdentityPool37D7C17B"
             }
           }
         ]
@@ -3636,7 +3576,7 @@
               ]
             },
             "IdentityPoolId": {
-              "Ref": "AuthServiceIdentityPool0DD75433"
+              "Ref": "AuthServiceIdentityPool37D7C17B"
             }
           }
         ]
