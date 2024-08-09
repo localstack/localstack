@@ -7,6 +7,13 @@ TEST_PATH ?= .
 TEST_EXEC ?= python -m
 PYTEST_LOGLEVEL ?= warning
 
+uname_m := $(shell uname -m)
+ifeq ($(uname_m),x86_64)
+platform = amd64
+else
+platform = arm64
+endif
+
 ifeq ($(OS), Windows_NT)
 	VENV_ACTIVATE = $(VENV_DIR)/Scripts/activate
 else
@@ -129,6 +136,9 @@ format-modified:          ## Run ruff to format only modified code
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
+
+docker-build:
+	IMAGE_NAME=$(IMAGE_NAME) PLATFORM=$(platform) ./bin/docker-helper.sh build
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf .filesystem
