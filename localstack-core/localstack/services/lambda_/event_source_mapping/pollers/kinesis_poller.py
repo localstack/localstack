@@ -120,3 +120,18 @@ class KinesisPoller(StreamPoller):
                 event.update(kinesis_fields)
             events.append(event)
         return events
+
+    def failure_payload_details_field_name(self) -> str:
+        return "KinesisBatchInfo"
+
+    def get_approximate_arrival_time(self, record: dict) -> float:
+        if self.kinesis_namespace:
+            return record["kinesis"]["approximateArrivalTimestamp"]
+        else:
+            return record["approximateArrivalTimestamp"]
+
+    def get_sequence_number(self, record: dict) -> str:
+        if self.kinesis_namespace:
+            return record["kinesis"]["sequenceNumber"]
+        else:
+            return record["sequenceNumber"]

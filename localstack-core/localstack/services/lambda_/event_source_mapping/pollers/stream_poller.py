@@ -79,6 +79,18 @@ class StreamPoller(Poller):
         Either StreamARN for Kinesis or {} for DynamoDB (unsupported)"""
         pass
 
+    @abstractmethod
+    def failure_payload_details_field_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_approximate_arrival_time(self, record: dict) -> float:
+        pass
+
+    @abstractmethod
+    def get_sequence_number(self, record: dict) -> str:
+        pass
+
     def poll_events(self):
         """Generalized poller for streams such as Kinesis or DynamoDB
         Examples of Kinesis consumers:
@@ -178,9 +190,12 @@ class StreamPoller(Poller):
 
         # Send failed events to potential DLQ
         abort_condition = abort_condition or "RetryAttemptsExhausted"
+        # TODO: fix format for ESM using `requestContext` and `responseContext` (which requires info from the Lambda sender!) instead
         context = {
-            "condition": abort_condition,
-            "partnerResourceArn": self.partner_resource_arn,
+            "context": {
+                "condition": abort_condition,
+                "partnerResourceArn": self.partner_resource_arn,
+            }
         }
         self.send_events_to_dlq(events, context=context)
         # Update shard iterator if the execution failed but the events are sent to a DLQ
@@ -230,30 +245,7 @@ class StreamPoller(Poller):
     def send_events_to_dlq(self, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")
         if dlq_arn:
-            # Create DLQ event
-            first_record = events[0]
-            first_record_arrival = get_datetime_from_timestamp(
-                first_record["approximateArrivalTimestamp"]
-            )
-            last_record = events[-1]
-            last_record_arrival = get_datetime_from_timestamp(
-                last_record["approximateArrivalTimestamp"]
-            )
-            shard_id = first_record["eventID"].split(":")[0]
-            dlq_event = {
-                "context": context,
-                "KinesisBatchInfo": {
-                    "approximateArrivalOfFirstRecord": format_time_iso_8601_z(first_record_arrival),
-                    "approximateArrivalOfLastRecord": format_time_iso_8601_z(last_record_arrival),
-                    "batchSize": len(events),
-                    "endSequenceNumber": last_record["sequenceNumber"],
-                    "shardId": shard_id,
-                    "startSequenceNumber": first_record["sequenceNumber"],
-                    "streamArn": self.source_arn,
-                },
-                "timestamp": format_time_iso_8601_z(datetime.utcnow()),
-                "version": "1.0",
-            }
+            dlq_event = self.create_dlq_event(events, context)
             # Send DLQ event to DLQ target
             parsed_arn = parse_arn(dlq_arn)
             service = parsed_arn["service"]
@@ -268,6 +260,32 @@ class StreamPoller(Poller):
             else:
                 # TODO: implement sns DLQ
                 LOG.warning("Unsupported DLQ service %s", service)
+
+    def create_dlq_event(self, events: list[dict], context: dict) -> dict:
+        first_record = events[0]
+        first_record_arrival = get_datetime_from_timestamp(
+            self.get_approximate_arrival_time(first_record)
+        )
+
+        last_record = events[-1]
+        last_record_arrival = get_datetime_from_timestamp(
+            self.get_approximate_arrival_time(last_record)
+        )
+        shard_id = first_record["eventID"].split(":")[0]
+        return {
+            **context,
+            self.failure_payload_details_field_name(): {
+                "approximateArrivalOfFirstRecord": format_time_iso_8601_z(first_record_arrival),
+                "approximateArrivalOfLastRecord": format_time_iso_8601_z(last_record_arrival),
+                "batchSize": len(events),
+                "endSequenceNumber": self.get_sequence_number(last_record),
+                "shardId": shard_id,
+                "startSequenceNumber": self.get_sequence_number(first_record),
+                "streamArn": self.source_arn,
+            },
+            "timestamp": format_time_iso_8601_z(datetime.utcnow()),
+            "version": "1.0",
+        }
 
     def max_retries_exceeded(self, attempts: int) -> bool:
         maximum_retry_attempts = self.stream_parameters.get("MaximumRetryAttempts", -1)

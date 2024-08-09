@@ -333,7 +333,7 @@ class TestDynamoDBEventSourceMapping:
         list_esm = aws_client.lambda_.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
-    @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet implemented in ESM v2")
+    # @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet implemented in ESM v2")
     @markers.aws.validated
     # FIXME last three skip verification entries are purely due to numbering mismatches
     @markers.snapshot.skip_snapshot_verify(
@@ -418,7 +418,7 @@ class TestDynamoDBEventSourceMapping:
             return res
 
         # It can take ~3 min against AWS until the message is received
-        sleep = 10 if is_aws_cloud() else 5
+        sleep = 15 if is_aws_cloud() else 5
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 

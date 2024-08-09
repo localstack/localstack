@@ -442,7 +442,7 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
-    @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet supported in ESM v2")
+    # @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet supported in ESM v2")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",

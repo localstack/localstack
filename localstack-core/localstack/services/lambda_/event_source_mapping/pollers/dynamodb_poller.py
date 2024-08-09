@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from botocore.client import BaseClient
 
@@ -81,10 +82,11 @@ class DynamoDBPoller(StreamPoller):
             dynamodb = record["dynamodb"]
 
             if creation_time := dynamodb.get("ApproximateCreationDateTime"):
-                # validated by TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
+                # Float conversion validated by TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
                 dynamodb["ApproximateCreationDateTime"] = float(creation_time.timestamp())
             event = {
                 # TODO: add this metadata after filtering (these are based on the original record!)
+                #  This requires some design adjustment because the eventId and eventName depend on the record.
                 "eventID": record["eventID"],
                 "eventName": record["eventName"],
                 # record content
@@ -92,3 +94,16 @@ class DynamoDBPoller(StreamPoller):
             }
             events.append(event)
         return events
+
+    def failure_payload_details_field_name(self) -> str:
+        return "DDBStreamBatchInfo"
+
+    def get_approximate_arrival_time(self, record: dict) -> float:
+        # TODO: validate whether the default should be now
+        # Optional according to AWS docs:
+        # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_StreamRecord.html
+        # TODO: parse float properly if present from ApproximateCreationDateTime -> now works, compare via debug!
+        return record["dynamodb"].get("abc", datetime.utcnow().timestamp())
+
+    def get_sequence_number(self, record: dict) -> str:
+        return record["dynamodb"]["SequenceNumber"]
