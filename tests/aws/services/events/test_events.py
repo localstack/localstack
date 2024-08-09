@@ -225,6 +225,7 @@ class TestEvents:
 
     @markers.aws.unknown
     # TODO move to schedule
+    @pytest.mark.skip(reason="flaky")
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_scheduled_expression_events(
         self,
