@@ -428,7 +428,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         # find matching hosted zone
         zone_id = None
-        route53 = connect_to().route53
+        # TODO check if this call is IAM enforced
+        route53 = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).route53
         hosted_zones = route53.list_hosted_zones().get("HostedZones", [])
         hosted_zones = [hz for hz in hosted_zones if domain_name.endswith(hz["Name"].strip("."))]
         zone_id = hosted_zones[0]["Id"].replace("/hostedzone/", "") if hosted_zones else zone_id

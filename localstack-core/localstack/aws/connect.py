@@ -318,7 +318,7 @@ class ClientFactory(ABC):
         :return: Service Level Client Factory
         """
         session_name = session_name or f"session-{short_uid()}"
-        sts_client = self(endpoint_url=endpoint_url, config=config).sts
+        sts_client = self(endpoint_url=endpoint_url, config=config, region_name=region_name).sts
 
         metadata = {}
         if service_principal:
