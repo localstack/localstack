@@ -1,4 +1,5 @@
 import copy
+import itertools
 import json
 import logging
 import re
@@ -110,6 +111,7 @@ from localstack.services.cloudformation.stores import (
     find_change_set,
     find_stack,
     find_stack_by_id,
+    find_stack_set,
     get_cloudformation_store,
 )
 from localstack.state import StateVisitor
@@ -331,7 +333,7 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return not_found_error(f'Unable to update non-existing stack "{stack_name}"')
 
-        api_utils.prepare_template_body(request)
+        api_utils.prepare_template_body(request, stack)
         template = template_preparer.parse_template(request["TemplateBody"])
 
         if (
@@ -530,8 +532,18 @@ class CloudformationProvider(CloudformationApi):
         request: GetTemplateSummaryInput,
     ) -> GetTemplateSummaryOutput:
         stack_name = request.get("StackName")
+        stack_set_name = request.get("StackSetName")
 
-        if stack_name:
+        if stack_set_name:
+            stack_set = find_stack_set(context.account_id, context.region, stack_set_name)
+            if not stack_set:
+                # TODO: different error?
+                return stack_not_found_error(stack_set_name)
+
+            template = template_preparer.parse_template(stack_set.template_body)
+            request["StackName"] = "tmp-stack"
+            stack = Stack(context.account_id, context.region, request, template)
+        elif stack_name:
             stack = find_stack(context.account_id, context.region, stack_name)
             if not stack:
                 return stack_not_found_error(stack_name)
@@ -555,10 +567,12 @@ class CloudformationProvider(CloudformationApi):
             id_summaries[res_type].append(resource_id)
 
         result["ResourceTypes"] = list(id_summaries.keys())
-        result["ResourceIdentifierSummaries"] = [
-            {"ResourceType": key, "LogicalResourceIds": values}
-            for key, values in id_summaries.items()
-        ]
+        if not stack_set_name:
+            # this property is only available for stacks, not stack sets
+            result["ResourceIdentifierSummaries"] = [
+                {"ResourceType": key, "LogicalResourceIds": values}
+                for key, values in id_summaries.items()
+            ]
         result["Metadata"] = stack.template.get("Metadata")
         result["Version"] = stack.template.get("AWSTemplateFormatVersion", "2010-09-09")
         # these do not appear in the output
@@ -1163,6 +1177,45 @@ class CloudformationProvider(CloudformationApi):
         accounts = request["Accounts"]
         regions = request["Regions"]
 
+        # check if any stacks exist already
+        for account, region, instance in itertools.product(
+            accounts, regions, stack_set.stack_instances
+        ):
+            if instance.account == account and instance.region == region:
+                # record an operation
+                operation = {
+                    "OperationId": op_id,
+                    "StackSetId": stack_set.metadata["StackSetId"],
+                    "Action": "CREATE",
+                    "Status": "SUCCEEDED",
+                }
+                stack_set.operations[op_id] = operation
+                return CreateStackInstancesOutput(OperationId=op_id)
+
+        # temp: find a better home for this
+        def merge_parameters(*parameters_lists: list) -> list:
+            """
+            Merge multiple lists of parameters
+
+            >>> ps1 = [{"ParameterKey": "a", "ParameterValue": "b"}]
+            >>> ps2 = [{"ParameterKey": "c", "ParameterValue": "d"}]
+            >>> ps3 = [{"ParameterKey": "a", "ParameterValue": "1"}]
+            >>> ps = merge_parameters(ps1, ps2, ps3)
+            >>> assert ps == [{"ParameterKey": "a", "ParameterValue": "1"},
+            ...   {"ParameterKey": "c", "ParameterValue": "d"}]
+            """
+            from functools import reduce
+
+            def _merge(acc: list, new: list) -> list:
+                acc_d = {every["ParameterKey"]: every["ParameterValue"] for every in acc}
+                new_d = {every["ParameterKey"]: every["ParameterValue"] for every in new}
+                acc_d.update(**new_d)
+                return [
+                    {"ParameterKey": key, "ParameterValue": value} for (key, value) in acc_d.items()
+                ]
+
+            return reduce(_merge, parameters_lists, [])
+
         stacks_to_await = []
         for account in accounts:
             for region in regions:
@@ -1177,6 +1230,10 @@ class CloudformationProvider(CloudformationApi):
                 kwargs = select_attributes(sset_meta, ["TemplateBody"]) or select_attributes(
                     sset_meta, ["TemplateURL"]
                 )
+                kwargs["Parameters"] = merge_parameters(
+                    sset_meta.get("Parameters", []), request.get("ParameterOverrides", [])
+                )
+                # allow overrides from the request
                 stack_name = f"sset-{set_name}-{account}"
 
                 # skip creation of existing stacks
