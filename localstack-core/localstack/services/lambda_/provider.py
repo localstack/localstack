@@ -201,6 +201,10 @@ from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
+from localstack.services.lambda_.provider_utils import (
+    get_function_version,
+    get_function_version_from_arn,
+)
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
@@ -351,61 +355,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         return function
 
     @staticmethod
-    def _get_function_version_from_arn(function_arn: str) -> FunctionVersion:
-        function_name, qualifier, account_id, region = function_locators_from_arn(function_arn)
-        fn = lambda_stores[account_id][region].functions.get(function_name)
-        if fn is None:
-            if qualifier is None:
-                raise ResourceNotFoundException(
-                    f"Function not found: {api_utils.unqualified_lambda_arn(function_name, account_id, region)}",
-                    Type="User",
-                )
-            else:
-                raise ResourceNotFoundException(
-                    f"Function not found: {api_utils.qualified_lambda_arn(function_name, qualifier, account_id, region)}",
-                    Type="User",
-                )
-        alias_name = None
-        if qualifier and api_utils.qualifier_is_alias(qualifier):
-            if qualifier not in fn.aliases:
-                alias_arn = api_utils.qualified_lambda_arn(
-                    function_name, qualifier, account_id, region
-                )
-                raise ResourceNotFoundException(f"Function not found: {alias_arn}", Type="User")
-            alias_name = qualifier
-            qualifier = fn.aliases[alias_name].function_version
-
-        version = LambdaProvider._get_function_version(
-            function_name=function_name,
-            qualifier=qualifier,
-            account_id=account_id,
-            region=region,
-        )
-        return version
-
-    @staticmethod
-    def _get_function_version(
-        function_name: str, qualifier: str | None, account_id: str, region: str
-    ) -> FunctionVersion:
-        state = lambda_stores[account_id][region]
-        function = state.functions.get(function_name)
-        qualifier_or_latest = qualifier or "$LATEST"
-        version = function and function.versions.get(qualifier_or_latest)
-        if not function or not version:
-            arn = api_utils.lambda_arn(
-                function_name=function_name,
-                qualifier=qualifier,
-                account=account_id,
-                region=region,
-            )
-            raise ResourceNotFoundException(
-                f"Function not found: {arn}",
-                Type="User",
-            )
-        # TODO what if version is missing?
-        return version
-
-    @staticmethod
     def _validate_qualifier_expression(qualifier: str) -> None:
         if not api_utils.is_qualifier_expression(qualifier):
             raise ValidationException(
@@ -498,7 +447,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         :param code_sha256: Code sha256, function will raise error if it does not match latest code hash
         :return: Tuple of (published version, whether version was released or last released version returned, since nothing changed)
         """
-        current_latest_version = self._get_function_version(
+        current_latest_version = get_function_version(
             function_name=function_name, qualifier="$LATEST", account_id=account_id, region=region
         )
         if revision_id and current_latest_version.config.revision_id != revision_id:
@@ -1008,7 +957,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if config.LAMBDA_SYNCHRONOUS_CREATE:
             # block via retrying until "terminal" condition reached before returning
             if not poll_condition(
-                lambda: self._get_function_version(
+                lambda: get_function_version(
                     function_name, version.id.qualifier, version.id.account, version.id.region
                 ).config.state.state
                 in [State.Active, State.Failed],
@@ -1444,7 +1393,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             alias_name = qualifier
             qualifier = fn.aliases[alias_name].function_version
 
-        version = self._get_function_version(
+        version = get_function_version(
             function_name=function_name,
             qualifier=qualifier,
             account_id=account_id,
@@ -1487,7 +1436,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
-        version = self._get_function_version(
+        version = get_function_version(
             function_name=function_name,
             qualifier=qualifier,
             account_id=account_id,
@@ -1665,7 +1614,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
 
             # checking if the version in the config exists
-            self._get_function_version(
+            get_function_version(
                 function_name=function_version.id.function_name,
                 qualifier=key,
                 region=function_version.id.region,
@@ -1690,7 +1639,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         account_id, region = api_utils.get_account_and_region(function_name, context)
         function_name = api_utils.get_function_name(function_name, context)
-        target_version = self._get_function_version(
+        target_version = get_function_version(
             function_name=function_name,
             qualifier=function_version,
             region=region,
@@ -1864,7 +1813,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # Copy esm_config to avoid a race condition with potential async update in the store
         state.event_source_mappings[esm_config["UUID"]] = esm_config.copy()
-        function_version = LambdaProvider._get_function_version_from_arn(function_arn)
+        function_version = get_function_version_from_arn(function_arn)
         function_role = function_version.config.role
         enabled = request.get("Enabled", True)
         # TODO: check for potential async race condition update -> think about locking
@@ -2117,7 +2066,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         esm_worker = self.esm_workers[uuid]
         # Only apply update if the desired state differs
-        if enabled := request.get("Enabled") is not None:
+        enabled = request.get("Enabled")
+        if enabled is not None:
             if enabled and old_event_source_mapping["State"] != EsmState.ENABLED:
                 esm_worker.start()
                 event_source_mapping["State"] = EsmState.ENABLING
@@ -2138,11 +2088,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )
-        esm = state.event_source_mappings.pop(uuid)
+        esm = state.event_source_mappings[uuid]
         if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
             # TODO: add proper locking
             esm_worker = self.esm_workers[uuid]
+            # Asynchronous delete in v2
             esm_worker.delete()
+        else:
+            # Synchronous delete in v1 (AWS parity issue)
+            del state.event_source_mappings[uuid]
         return {**esm, "State": EsmState.DELETING}
 
     def get_event_source_mapping(

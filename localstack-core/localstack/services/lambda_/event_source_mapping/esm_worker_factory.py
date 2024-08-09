@@ -131,8 +131,6 @@ class EsmWorkerFactory:
                 source_parameters=source_parameters,
                 source_client=source_client,
                 processor=esm_processor,
-                # TODO: validate
-                partner_resource_arn=None,
             )
         else:
             raise Exception(

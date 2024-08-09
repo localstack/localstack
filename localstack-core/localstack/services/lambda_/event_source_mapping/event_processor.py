@@ -6,6 +6,24 @@ class EventProcessorError(Exception):
     pass
 
 
+class PipeInternalError(EventProcessorError):
+    """Errors caused by an internal event processor implementation such as Pipes or Lambda ESM.
+    Examples: connection error to target service, transient availability issue, implementation error
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-error-troubleshooting.html#eb-pipes-error-invoke
+    """
+
+    pass
+
+
+class CustomerInvocationError(EventProcessorError):
+    """Errors caused by customers due to configuration or code errors.
+    Examples: insufficient permissions, logic error in synchronously invoked Lambda target.
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-error-troubleshooting.html#eb-pipes-error-invoke
+    """
+
+    pass
+
+
 class BatchFailureError(EventProcessorError):
     """The entire batch failed."""
 

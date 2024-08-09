@@ -2,8 +2,10 @@ import logging
 
 from botocore.client import BaseClient
 
-from localstack.aws.api.dynamodbstreams import StreamStatus
-from localstack.services.lambda_.event_source_mapping.event_processor import EventProcessor
+from localstack.aws.api.dynamodbstreams import ExpiredIteratorException, StreamStatus
+from localstack.services.lambda_.event_source_mapping.event_processor import (
+    EventProcessor,
+)
 from localstack.services.lambda_.event_source_mapping.pollers.stream_poller import StreamPoller
 
 LOG = logging.getLogger(__name__)
@@ -57,6 +59,14 @@ class DynamoDBPoller(StreamPoller):
             )
             shards[shard_id] = get_shard_iterator_response["ShardIterator"]
         return shards
+
+    def stream_arn_param(self) -> dict:
+        # Not supported for GetRecords:
+        # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_GetRecords.html
+        return {}
+
+    def expired_iterator_exception_type(self) -> type:
+        return ExpiredIteratorException
 
     def event_source(self) -> str:
         return "aws:dynamodb"
