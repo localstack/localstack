@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import re
 import time
 from abc import ABC
 from typing import Dict, Optional
@@ -127,7 +128,10 @@ class SsmProvider(SsmApi, ABC):
         if SsmProvider._has_secrets(names):
             return SsmProvider._get_params_and_secrets(context.account_id, context.region, names)
 
-        norm_names = [SsmProvider._normalize_name(name, validate=True) for name in names]
+        norm_names = [
+            SsmProvider._normalize_name_or_arn(name, context.region, validate=True)
+            for name in names
+        ]
         request = {"Names": norm_names, "WithDecryption": bool(with_decryption)}
         res = call_moto_with_request(context, request)
 
@@ -142,7 +146,7 @@ class SsmProvider(SsmApi, ABC):
         self, context: RequestContext, request: PutParameterRequest, **kwargs
     ) -> PutParameterResult:
         name = request["Name"]
-        nname = SsmProvider._normalize_name(name)
+        nname = SsmProvider._normalize_name(name, context.region)
         if name != nname:
             request.update({"Name": nname})
             moto_res = call_moto_with_request(context, request)
@@ -160,7 +164,7 @@ class SsmProvider(SsmApi, ABC):
     ) -> GetParameterResult:
         result = None
 
-        norm_name = self._normalize_name(name, validate=True)
+        norm_name = self._normalize_name_or_arn(name, context.region, validate=True)
         details = norm_name.split("/")
         if len(details) > 4:
             service = details[3]
@@ -362,11 +366,28 @@ class SsmProvider(SsmApi, ABC):
         return maybe_secret is not None
 
     @staticmethod
+    def _normalize_name_or_arn(
+        param_name: ParameterName, region_name: str, validate=False
+    ) -> ParameterName:
+        if param_name.startswith("arn:"):
+            if validate:
+                if not re.match(r"^arn:aws:.+:.+:.+:.+$", param_name):
+                    raise ValidationException("Invalid arn: " + param_name)
+                region_pattern = r"(af|ap|ca|eu|me|sa|us)-(central|north|(north(?:east|west))|south|south(?:east|west)|east|west)-\d+"
+                match = re.search(region_pattern, param_name)
+                if match is None or match.group(0) != region_name:
+                    raise ValidationException("Incorrect region in: " + param_name)
+            return param_name
+        return SsmProvider._normalize_name(param_name, validate)
+
+    @staticmethod
     def _normalize_name(param_name: ParameterName, validate=False) -> ParameterName:
         if is_arn(param_name):
             return extract_resource_from_arn(param_name).split("/")[-1]
 
         if validate:
+            if re.match(r"^arn:aws:.+$", param_name):
+                raise
             if "//" in param_name or ("/" in param_name and not param_name.startswith("/")):
                 raise InvalidParameterNameException()
         param_name = param_name.strip("/")
