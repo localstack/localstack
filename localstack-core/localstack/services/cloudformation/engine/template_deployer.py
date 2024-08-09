@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 import re
-import traceback
 import uuid
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -1134,10 +1133,9 @@ class TemplateDeployerBase(ABC):
                 if config.CFN_VERBOSE_ERRORS:
                     log_method = LOG.exception
                 log_method(
-                    'Error applying changes for CloudFormation stack "%s": %s %s',
+                    'Error applying changes for CloudFormation stack "%s": %s',
                     stack.stack_name,
                     e,
-                    traceback.format_exc(),
                 )
                 status = f"{action}_FAILED"
                 status_reason = str(e)

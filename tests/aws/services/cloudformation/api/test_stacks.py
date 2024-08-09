@@ -307,6 +307,19 @@ class TestStacksApi:
         response = aws_client.cloudformation.describe_stack_events(StackName=stack.stack_name)
         snapshot.match("events", response)
 
+    @markers.aws.only_localstack
+    def test_deploy_template(self, aws_client):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
+        )
+
+        with open(template_path) as infile:
+            template_body = infile.read()
+
+        stack_name = f"stack-{short_uid()}"
+        aws_client.cloudformation.create_stack(StackName=stack_name, TemplateBody=template_body)
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
     @markers.aws.validated
     @pytest.mark.skip(reason="disable rollback not supported")
     @pytest.mark.parametrize("rollback_disabled, length_expected", [(False, 0), (True, 1)])

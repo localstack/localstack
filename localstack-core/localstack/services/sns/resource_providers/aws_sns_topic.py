@@ -73,6 +73,9 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
 
         """
         model = request.desired_state
+        # deliberately raise key error as bug in LS
+        foo = model["Flkjnasdglkjnsdg"]
+
         sns = request.aws_client_factory.sns
         # TODO: validations and iam checks
 
