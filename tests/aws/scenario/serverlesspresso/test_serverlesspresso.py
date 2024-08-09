@@ -15,7 +15,9 @@ import time
 
 import aws_cdk as cdk
 import pytest
+import requests
 
+from localstack.config import LOCALSTACK_HOST
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 
@@ -153,6 +155,57 @@ class TestServerlesspressoScenario:
             TableName=order_table_name, Key={"PK": {"S": "orders"}, "SK": {"S": order_id}}
         ).get("Item")
 
+    def _register_admin_user(self, aws_client, infrastructure, username: str, password: str):
+        outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
+        user_pool_id = outputs["UserPoolId"]
+        user = aws_client.cognito_idp.admin_create_user(
+            UserPoolId=user_pool_id,
+            Username=username,
+            UserAttributes=[
+                {"Name": "email", "Value": username},
+                {"Name": "email_verified", "Value": "true"},
+            ],
+            TemporaryPassword=password,
+            MessageAction="SUPPRESS",
+        )
+
+        aws_client.cognito_idp.admin_set_user_password(
+            UserPoolId=user_pool_id,
+            Username=username,
+            Password=password,
+            Permanent=True,
+        )
+
+        aws_client.cognito_idp.admin_add_user_to_group(
+            UserPoolId=user_pool_id, Username=username, GroupName="admin"
+        )
+        return user
+
+    def _login_admin_user(self, aws_client, infrastructure, username: str, password: str):
+        outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
+        user_pool_id = outputs["UserPoolId"]
+        user = aws_client.cognito_idp.admin_initiate_auth(
+            UserPoolId=user_pool_id,
+            ClientId=outputs["UserPoolClientId"],
+            AuthFlow="ADMIN_USER_PASSWORD_AUTH",
+            AuthParameters={"USERNAME": username, "PASSWORD": password},
+        )
+        return user["AuthenticationResult"]["AccessToken"]
+
+    @pytest.fixture(scope="class")
+    def user(self, aws_client, infrastructure):
+        username = f"test-{short_uid()}@example.com"
+        password = f"test{short_uid()}"
+        user = self._register_admin_user(aws_client, infrastructure, username, password)["User"]
+        token = self._login_admin_user(aws_client, infrastructure, username, password)
+        return user, token
+
+    def _get_api_endpoint(self, region, api_id):
+        if is_aws_cloud():
+            return f"https://{api_id}.execute-api.{region}.amazonaws.com/Prod"
+
+        return f"https://{api_id}.execute-api.{region}.{LOCALSTACK_HOST.host}:{LOCALSTACK_HOST.port}/Prod"
+
     @markers.aws.validated
     def test_populate_data(self, aws_client, infrastructure: "InfraProvisioner"):
         """populate dynamodb table with data"""
@@ -221,29 +274,21 @@ class TestServerlesspressoScenario:
         retry(_assert_shop_open_choice_result, sleep=2, retries=10, sleep_before=2)
 
     @markers.aws.validated
-    def test_register_admin_user(self, aws_client, infrastructure):
-        outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
-        user_pool_id = outputs["UserPoolId"]
-        user = aws_client.cognito_idp.admin_create_user(
-            UserPoolId=user_pool_id,
-            Username="test.admin@localstack.cloud",
-            UserAttributes=[
-                {"Name": "email", "Value": "test.admin@localstack.cloud"},
-                {"Name": "email_verified", "Value": "true"},
-            ],
-            TemporaryPassword="Password123",
-            MessageAction="SUPPRESS",
-        )
+    def test_register_admin_user(self, aws_client, infrastructure, snapshot):
+        username = f"sample.{short_uid()}@example.com"
+        password = "Password123!"
+        self._register_admin_user(aws_client, infrastructure, username, password)
 
-        aws_client.cognito_idp.admin_set_user_password(
-            UserPoolId=user_pool_id,
-            Username=user["User"]["Username"],
-            Password="Password123",
-            Permanent=True,
+        user = aws_client.get_client("cognito-idp").admin_get_user(
+            UserPoolId=infrastructure.get_stack_outputs(stack_name=STACK_NAME)["UserPoolId"],
+            Username=username,
         )
-
-        aws_client.cognito_idp.admin_add_user_to_group(
-            UserPoolId=user_pool_id, Username=user["User"]["Username"], GroupName="admin"
+        snapshot.match("user", user)
+        snapshot.add_transformer(snapshot.transform.regex(username, "<email>"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "<uuid>"
+            )
         )
 
     @markers.aws.validated
@@ -469,6 +514,43 @@ class TestServerlesspressoScenario:
         retry(_check_event_exists, sleep=2, retries=10, sleep_before=2)
 
     @markers.aws.validated
-    def test_full_e2e(self):
-        # TODO: do a full test via HTTP requests through apigw, cognito, etc.
-        ...
+    def test_e2e(self, aws_client, infrastructure, snapshot, region_name):
+        outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
+
+        user_data, auth_token = self._new_user()
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        # Make sure store is open and there is a menus
+        self._open_store(aws_client, infrastructure)
+        aws_client.lambda_.invoke(
+            FunctionName=outputs["PopulateDbFunctionName"],
+            InvocationType="RequestResponse",
+            LogType="Tail",
+        )
+
+        # Display App requests for QR Code to show it
+        validator_endpoint = self._get_api_endpoint(region_name, outputs["ValidatorApi"])
+        response = requests.get(url=validator_endpoint + "/qr-code", headers=headers)
+        assert response.status_code == 200
+
+        # Order app sends the code, requests the menu and submits an order
+        qr_code = json.loads(response.content)["bucket"]["last_code"]
+        post_response = requests.post(
+            url=validator_endpoint + f"/qr-code?token={qr_code}", headers=headers
+        )
+        assert post_response.status_code == 200
+
+        config_enpoint = self._get_api_endpoint(region_name, outputs["ConfigApi"])
+        config = json.loads(requests.get(url=config_enpoint + "/config").content)
+        order_id = json.loads(post_response.content)["orderId"]
+        drink = config[0]["value"]["L"][0]["M"]["drink"]["S"]
+        icon = config[0]["value"]["L"][0]["M"]["icon"]["S"]
+
+        orders_endpoint = self._get_api_endpoint(region_name, outputs["OrderManagerApi"])
+        user_id = user_data["Attributes"][2]["Value"]
+        put_response = requests.put(
+            url=orders_endpoint + f"/orders/{order_id}",
+            data={"drink": drink, "icon": icon, "modifiers": [], "userId": user_id},
+            headers=headers,
+        )
+        assert put_response.status_code == 200

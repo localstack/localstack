@@ -1,5 +1,4 @@
 import aws_cdk as cdk
-import aws_cdk.aws_cognito_identitypool_alpha as identitypool
 import constructs
 
 
@@ -41,7 +40,11 @@ class AuthService(constructs.Construct):
 
         user_pool.node.default_child.override_logical_id("UserPool")
         self.user_pool_client = user_pool_client = user_pool.add_client(
-            "UserPoolClient", generate_secret=False
+            "UserPoolClient",
+            generate_secret=False,
+            auth_flows=cdk.aws_cognito.AuthFlow(
+                admin_user_password=True, user_srp=True, user_password=True
+            ),
         )
         user_pool_parameter = cdk.aws_ssm.StringParameter(
             self,
@@ -66,7 +69,7 @@ class AuthService(constructs.Construct):
                     client_id=user_pool_client.user_pool_client_id,
                     provider_name=user_pool.user_pool_provider_name,
                 )
-            ]
+            ],
         )
 
         self.identity_pool_id = self.identity_pool.ref
@@ -78,9 +81,7 @@ class AuthService(constructs.Construct):
                 federated="cognito-identity.amazonaws.com",
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
                 conditions={
-                    "StringEquals": {
-                        "cognito-identity.amazonaws.com:aud": self.identity_pool_id
-                    },
+                    "StringEquals": {"cognito-identity.amazonaws.com:aud": self.identity_pool_id},
                     "ForAnyValue:StringLike": {
                         "cognito-identity.amazonaws.com:amr": "unauthenticated"
                     },
@@ -101,7 +102,7 @@ class AuthService(constructs.Construct):
                                         ":",
                                         cdk.Stack.of(self).account,
                                         ":identitypool/",
-                                        self.identity_pool_id
+                                        self.identity_pool_id,
                                     ],
                                 )
                             ],
@@ -148,7 +149,6 @@ class AuthService(constructs.Construct):
             },
         )
 
-
         authenticated_role = cdk.aws_iam.Role(
             self,
             "CognitoAuthorizedRole",
@@ -156,9 +156,7 @@ class AuthService(constructs.Construct):
                 federated="cognito-identity.amazonaws.com",
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
                 conditions={
-                    "StringEquals": {
-                        "cognito-identity.amazonaws.com:aud": self.identity_pool_id
-                    },
+                    "StringEquals": {"cognito-identity.amazonaws.com:aud": self.identity_pool_id},
                     "ForAnyValue:StringLike": {
                         "cognito-identity.amazonaws.com:amr": "authenticated"
                     },
@@ -179,7 +177,7 @@ class AuthService(constructs.Construct):
                                         ":",
                                         cdk.Stack.of(self).account,
                                         ":identitypool/",
-                                        self.identity_pool_id
+                                        self.identity_pool_id,
                                     ],
                                 )
                             ],

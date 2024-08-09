@@ -14,6 +14,9 @@
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_deployed_infra_state": {
     "last_validated_date": "2024-07-10T18:48:42+00:00"
   },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_e2e": {
+    "last_validated_date": "2024-08-09T19:32:44+00:00"
+  },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_full_e2e": {
     "last_validated_date": "2024-08-08T15:44:57+00:00"
   },
@@ -29,8 +32,11 @@
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_populate_data": {
     "last_validated_date": "2024-08-08T15:43:02+00:00"
   },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_qr_code_api": {
+    "last_validated_date": "2024-08-09T18:57:41+00:00"
+  },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_register_admin_user": {
-    "last_validated_date": "2024-08-08T15:41:27+00:00"
+    "last_validated_date": "2024-08-09T16:29:10+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_workflow_start": {
     "last_validated_date": "2024-07-23T19:38:59+00:00"

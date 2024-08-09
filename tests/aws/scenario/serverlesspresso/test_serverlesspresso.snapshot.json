@@ -115,5 +115,52 @@
         "Tags": []
       }
     }
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_register_admin_user": {
+    "recorded-date": "09-08-2024, 16:29:10",
+    "recorded-content": {
+      "user": {
+        "Enabled": true,
+        "UserAttributes": [
+          {
+            "Name": "email",
+            "Value": "<email>"
+          },
+          {
+            "Name": "email_verified",
+            "Value": "true"
+          },
+          {
+            "Name": "sub",
+            "Value": "<uuid>"
+          }
+        ],
+        "UserCreateDate": "<datetime>",
+        "UserLastModifiedDate": "<datetime>",
+        "UserStatus": "CONFIRMED",
+        "Username": "<email>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_rest_apis": {
+    "recorded-date": "09-08-2024, 19:09:30",
+    "recorded-content": {
+      "get-response": {
+        "bucket": {
+          "PK": 5744101,
+          "availableTokens": 10,
+          "end_full": "Fri Aug 09 2024 19:09:59 GMT+0000 (Coordinated Universal Time)",
+          "end_ts": 1723230599999,
+          "last_code": "piII5_1gJZ",
+          "last_id": 5744101,
+          "start_full": "Fri Aug 09 2024 19:05:00 GMT+0000 (Coordinated Universal Time)",
+          "start_ts": 1723230300000
+        }
+      }
+    }
   }
 }

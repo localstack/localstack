@@ -258,6 +258,16 @@ class ServerlesspressoCoreStack(cdk.Stack):
         )
         cdk.CfnOutput(self, "LogAllLogGroupName", value=debug_log_group.log_group_name)
 
+        cdk.CfnOutput(
+            self, "ValidatorApi", value=validator_service.rest_api_validator_service.rest_api_id
+        )
+        cdk.CfnOutput(
+            self, "ConfigApi", value=config_service.rest_api_config_service.attr_rest_api_id
+        )
+        cdk.CfnOutput(
+            self, "OrderManagerApi", value=order_manager_service.order_manager_api.attr_rest_api_id
+        )
+
         frontends = {
             "DisplayApp": "display",
             "BaristaApp": "barista",

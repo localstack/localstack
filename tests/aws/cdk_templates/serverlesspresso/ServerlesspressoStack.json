@@ -752,6 +752,12 @@
         "CallbackURLs": [
           "https://example.com"
         ],
+        "ExplicitAuthFlows": [
+          "ALLOW_USER_PASSWORD_AUTH",
+          "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+          "ALLOW_USER_SRP_AUTH",
+          "ALLOW_REFRESH_TOKEN_AUTH"
+        ],
         "GenerateSecret": false,
         "SupportedIdentityProviders": [
           "COGNITO"
@@ -1073,7 +1079,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-cb7120c6/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-2f2b5634/api/config_service_api.yaml"
             }
           }
         }
@@ -2503,7 +2509,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-cb7120c6/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-2f2b5634/api/order_manager_api.yaml"
             }
           }
         }
@@ -3346,6 +3352,27 @@
     "LogAllLogGroupName": {
       "Value": {
         "Ref": "DebugLogGroup630DE26B"
+      }
+    },
+    "ValidatorApi": {
+      "Value": {
+        "Ref": "ValidatorServiceRESTApiValidatorService2534BF48"
+      }
+    },
+    "ConfigApi": {
+      "Value": {
+        "Fn::GetAtt": [
+          "ConfigServiceRESTApConfigServiceE52F9E36",
+          "RestApiId"
+        ]
+      }
+    },
+    "OrderManagerApi": {
+      "Value": {
+        "Fn::GetAtt": [
+          "OrderManagerServiceRESTApiForOrderManager03927D4C",
+          "RestApiId"
+        ]
       }
     },
     "DisplayAppURI": {
