@@ -259,7 +259,7 @@ class TestIntrinsicFunctions:
             },
         )
 
-        assert stack.outputs["AlarmName"] == alarm_name_prefix
+        assert stack.outputs["AlarmName"] == f"{alarm_name_prefix}-{period}"
         assert stack.outputs["Threshold"] == threshold
         assert stack.outputs["Period"] == period
 

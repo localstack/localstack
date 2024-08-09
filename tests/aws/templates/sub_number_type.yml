@@ -19,7 +19,7 @@ Resources:
         - Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:opsitem:2
       AlarmDescription: Test alarm
       AlarmName:
-        Fn::Sub: ${ResourceNamePrefix}
+        Fn::Sub: "${ResourceNamePrefix}-${RestLatencyPreemptiveAlarmPeriod}"
       Namespace: AWS/ApiGateway
       MetricName: Latency
       Dimensions:
