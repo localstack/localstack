@@ -739,6 +739,9 @@ class TestApiGatewayImportRestApi:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..origin"])
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_next_gen_api(), paths=["$..method"]
+    )
     def test_import_with_stage_variables(
         self, import_apigw, aws_client, create_echo_http_server, snapshot
     ):
