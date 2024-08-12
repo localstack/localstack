@@ -107,7 +107,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
-    "recorded-date": "17-06-2024, 21:54:27",
+    "recorded-date": "12-08-2024, 13:13:34",
     "recorded-content": {
       "rest-api": {
         "apiKeySource": "HEADER",
@@ -157,6 +157,44 @@
             }
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "Test Stage 123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {
+          "*/*": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": false,
+            "dataTraceEnabled": true,
+            "loggingLevel": "ERROR",
+            "metricsEnabled": true,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 5000,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          }
+        },
+        "stageName": "local",
+        "tags": {
+          "aws:cloudformation:logical-id": "ApiGWStage",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-name": "stack-name"
+        },
+        "tracingEnabled": true,
+        "variables": {
+          "TestCasing": "myvar",
+          "testCasingTwo": "myvar2",
+          "testlowcasing": "myvar3"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
