@@ -1257,12 +1257,10 @@ def import_api_from_openapi_spec(
                 case "AWS_PROXY":
                     # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
                     integration_method = "POST"
-                case "AWS":
+                case _:
                     integration_method = (
                         method_integration.get("httpMethod") or method_name
                     ).upper()
-                case _:
-                    integration_method = method_name
 
             connection_type = (
                 ConnectionType.INTERNET

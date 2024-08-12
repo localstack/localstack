@@ -737,20 +737,38 @@ class TestApiGatewayImportRestApi:
         assert request.json().get("message") == "Invalid request body"
 
     @markers.aws.validated
-    def test_import_with_stage_variables(self, import_apigw, aws_client, echo_http_server_post):
+    @markers.snapshot.skip_snapshot_verify(paths=["$..origin"])
+    def test_import_with_stage_variables(
+        self, import_apigw, aws_client, create_echo_http_server, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("domain"),
+                snapshot.transform.key_value("origin"),
+            ]
+        )
         spec_file = load_file(OAS_30_STAGE_VARIABLES)
+        if not is_aws_cloud():
+            # to make sure we return the test without https
+            spec_file.replace("https://", "http://")
+
         import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
         rest_api_id = import_resp["id"]
+        echo_server_url = create_echo_http_server(trim_x_headers=True)
+        endpoint = re.sub(r"https?://", "", echo_server_url)
 
         response = aws_client.apigateway.create_deployment(restApiId=rest_api_id)
         # workaround to remove the fixture scheme prefix. AWS won't allow stage variables
-        # on the OpenAPI uri without the scheme. So we let the scheme on the spec, "http://{stageVariables.url}",
+        # on the OpenAPI uri without the scheme. So we let the scheme on the spec, "https://{stageVariables.url}",
         # and remove it from the fixture
-        endpoint = re.sub(r"https?://", "", echo_http_server_post)
         aws_client.apigateway.create_stage(
             restApiId=rest_api_id,
             stageName="v1",
-            variables={"url": endpoint},
+            variables={
+                "TestHost": endpoint,
+                "testPath": "test-path",
+                "querystring": "qs_key=qs_value",
+            },
             deploymentId=response["id"],
         )
 
@@ -758,8 +776,12 @@ class TestApiGatewayImportRestApi:
             url = api_invoke_url(api_id=rest_api_id, stage="v1", path="/path1")
             res = requests.get(url)
             assert res.ok
+            return res.json()
 
-        retry(call_api, retries=5, sleep=2)
+        resp = retry(call_api, retries=5, sleep=2)
+        # we remove the headers from the response, not really needed for this test
+        resp.pop("headers", None)
+        snapshot.match("get-resp-from-http", resp)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

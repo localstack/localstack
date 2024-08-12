@@ -4792,7 +4792,18 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_stage_variables": {
-    "recorded-date": "15-04-2024, 21:38:55",
-    "recorded-content": {}
+    "recorded-date": "12-08-2024, 12:48:55",
+    "recorded-content": {
+      "get-resp-from-http": {
+        "args": {
+          "qs_key": "qs_value"
+        },
+        "data": "",
+        "domain": "<domain:1>",
+        "method": "POST",
+        "origin": "<origin:1>",
+        "path": "/test-path"
+      }
+    }
   }
 }
