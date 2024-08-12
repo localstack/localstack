@@ -99,7 +99,7 @@ class ApiGatewayStageProvider(ResourceProvider[ApiGatewayStageProperties]):
         apigw = request.aws_client_factory.apigateway
 
         stage_name = model.get("StageName", "default")
-        stage_variables = model.get("Variables", {})
+        stage_variables = model.get("Variables")
         # we need to deep copy as several fields are nested dict and arrays
         params = keys_to_lower(copy.deepcopy(model))
         # TODO: add methodSettings
