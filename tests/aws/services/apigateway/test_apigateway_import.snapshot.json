@@ -4792,7 +4792,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_stage_variables": {
-    "recorded-date": "12-08-2024, 12:48:55",
+    "recorded-date": "12-08-2024, 13:42:20",
     "recorded-content": {
       "get-resp-from-http": {
         "args": {
@@ -4803,6 +4803,9 @@
         "method": "POST",
         "origin": "<origin:1>",
         "path": "/test-path"
+      },
+      "get-error-resp-from-http": {
+        "message": "Internal server error"
       }
     }
   }

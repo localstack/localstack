@@ -8,7 +8,7 @@ from werkzeug.datastructures import Headers
 from localstack.aws.api.apigateway import Integration
 
 from ..context import EndpointResponse, IntegrationRequest, RestApiInvocationContext
-from ..gateway_response import IntegrationFailureError
+from ..gateway_response import ApiConfigurationError, IntegrationFailureError
 from ..header_utils import build_multi_value_headers
 from .core import RestApiIntegration
 
@@ -49,10 +49,11 @@ class RestApiHttpIntegration(BaseRestApiHttpIntegration):
     def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
+        uri = integration_req["uri"]
 
         request_parameters: SimpleHttpRequest = {
             "method": method,
-            "url": integration_req["uri"],
+            "url": uri,
             "params": integration_req["query_string_parameters"],
             "headers": integration_req["headers"],
         }
@@ -67,13 +68,20 @@ class RestApiHttpIntegration(BaseRestApiHttpIntegration):
         # request_parameters["allow_redirects"] = False
         try:
             request_response = requests.request(**request_parameters)
-        except (requests.exceptions.Timeout, requests.exceptions.SSLError):
+
+        except (requests.exceptions.InvalidURL, requests.exceptions.InvalidSchema) as e:
+            LOG.warning("Execution failed due to configuration error: Invalid endpoint address")
+            LOG.debug("The URI specified for the HTTP/HTTP_PROXY integration is invalid: %s", uri)
+            raise ApiConfigurationError("Internal server error") from e
+
+        except (requests.exceptions.Timeout, requests.exceptions.SSLError) as e:
             # TODO make the exception catching more fine grained
             # this can be reproduced in AWS if you try to hit an HTTP endpoint which is HTTPS only like lambda URL
             LOG.warning("Execution failed due to a network error communicating with endpoint")
-            raise IntegrationFailureError("Network error communicating with endpoint")
-        except requests.exceptions.ConnectionError:
-            raise IntegrationFailureError("Internal server error")
+            raise IntegrationFailureError("Network error communicating with endpoint") from e
+
+        except requests.exceptions.ConnectionError as e:
+            raise ApiConfigurationError("Internal server error") from e
 
         return EndpointResponse(
             body=request_response.content,
@@ -94,13 +102,14 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
     def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         integration_req: IntegrationRequest = context.integration_request
         method = integration_req["http_method"]
+        uri = integration_req["uri"]
 
         multi_value_headers = build_multi_value_headers(integration_req["headers"])
         request_headers = {key: ",".join(value) for key, value in multi_value_headers.items()}
 
         request_parameters: SimpleHttpRequest = {
             "method": method,
-            "url": integration_req["uri"],
+            "url": uri,
             "params": integration_req["query_string_parameters"],
             "headers": request_headers,
         }
@@ -114,13 +123,21 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
         # request_parameters["timeout"] = self._get_integration_timeout(integration)
         try:
             request_response = requests.request(**request_parameters)
+
+        except (requests.exceptions.InvalidURL, requests.exceptions.InvalidSchema) as e:
+            LOG.warning("Execution failed due to configuration error: Invalid endpoint address")
+            LOG.debug("The URI specified for the HTTP/HTTP_PROXY integration is invalid: %s", uri)
+            raise ApiConfigurationError("Internal server error") from e
+
         except (requests.exceptions.Timeout, requests.exceptions.SSLError):
             # TODO make the exception catching more fine grained
             # this can be reproduced in AWS if you try to hit an HTTP endpoint which is HTTPS only like lambda URL
             LOG.warning("Execution failed due to a network error communicating with endpoint")
             raise IntegrationFailureError("Network error communicating with endpoint")
+
         except requests.exceptions.ConnectionError:
-            raise IntegrationFailureError("Internal server error")
+            raise ApiConfigurationError("Internal server error")
+
         response_headers = Headers(dict(request_response.headers))
 
         return EndpointResponse(

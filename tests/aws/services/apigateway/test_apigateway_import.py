@@ -21,6 +21,7 @@ from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from localstack.utils.urls import localstack_host
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
+from tests.aws.services.apigateway.conftest import is_next_gen_api
 
 LOG = logging.getLogger(__name__)
 
@@ -758,6 +759,7 @@ class TestApiGatewayImportRestApi:
         endpoint = re.sub(r"https?://", "", echo_server_url)
 
         response = aws_client.apigateway.create_deployment(restApiId=rest_api_id)
+        deployment_id = response["id"]
         # workaround to remove the fixture scheme prefix. AWS won't allow stage variables
         # on the OpenAPI uri without the scheme. So we let the scheme on the spec, "https://{stageVariables.url}",
         # and remove it from the fixture
@@ -769,12 +771,13 @@ class TestApiGatewayImportRestApi:
                 "testPath": "test-path",
                 "querystring": "qs_key=qs_value",
             },
-            deploymentId=response["id"],
+            deploymentId=deployment_id,
         )
 
+        url_success = api_invoke_url(api_id=rest_api_id, stage="v1", path="/path1")
+
         def call_api():
-            url = api_invoke_url(api_id=rest_api_id, stage="v1", path="/path1")
-            res = requests.get(url)
+            res = requests.get(url_success)
             assert res.ok
             return res.json()
 
@@ -782,6 +785,26 @@ class TestApiGatewayImportRestApi:
         # we remove the headers from the response, not really needed for this test
         resp.pop("headers", None)
         snapshot.match("get-resp-from-http", resp)
+
+        if is_next_gen_api() or is_aws_cloud():
+            # assert that we properly raise an integration failure error if the endpoint is bad
+            aws_client.apigateway.create_stage(
+                restApiId=rest_api_id,
+                stageName="v2",
+                deploymentId=deployment_id,
+            )
+
+            url_error = api_invoke_url(api_id=rest_api_id, stage="v2", path="/path1")
+
+            def call_api_error():
+                res = requests.get(url_error)
+                assert res.status_code == 500
+                return res.json()
+
+            resp = retry(call_api_error, retries=5, sleep=2)
+            # we remove the headers from the response, not really needed for this test
+            resp.pop("headers", None)
+            snapshot.match("get-error-resp-from-http", resp)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
