@@ -287,5 +287,16 @@
         "SGWithoutVpcIdRef": "<without-vpcid-group-name>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_keypair_create_import": {
+    "recorded-date": "12-08-2024, 21:51:36",
+    "recorded-content": {
+      "outputs": {
+        "GeneratedKeyPairFingerprint": "<fingerprint>",
+        "GeneratedKeyPairName": "<generated-key-name>",
+        "ImportedKeyPairFingerprint": "4LmcYnyBOqlloHZ5TKAxfa8BgMK2wL6WeOOTvXVdhmw=",
+        "ImportedKeyPairName": "<imported-key-name>"
+      }
+    }
   }
 }

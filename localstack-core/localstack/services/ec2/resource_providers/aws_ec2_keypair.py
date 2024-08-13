@@ -68,11 +68,19 @@ class EC2KeyPairProvider(ResourceProvider[EC2KeyPairProperties]):
         """
         model = request.desired_state
 
-        create_params = util.select_attributes(
-            model, ["KeyName", "KeyType", "KeyFormat", "PublicKeyMaterial", "Tags"]
-        )
+        if "KeyName" not in model:
+            raise ValueError("Property 'KeyName' is required")
 
-        response = request.aws_client_factory.ec2.create_key_pair(**create_params)
+        if public_key_material := model.get("PublicKeyMaterial"):
+            response = request.aws_client_factory.ec2.import_key_pair(
+                KeyName=model["KeyName"],
+                PublicKeyMaterial=public_key_material,
+            )
+        else:
+            create_params = util.select_attributes(
+                model, ["KeyName", "KeyType", "KeyFormat", "Tags"]
+            )
+            response = request.aws_client_factory.ec2.create_key_pair(**create_params)
 
         model["KeyPairId"] = response["KeyPairId"]
         model["KeyFingerprint"] = response["KeyFingerprint"]
