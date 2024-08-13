@@ -94,6 +94,8 @@ class EsmWorker:
             if self.current_state != EsmState.CREATING:
                 self.current_state = EsmState.ENABLING
                 self.state_transition_reason = self.user_state_reason
+        # Reset the shutdown event such that we don't stop immediately after a restart
+        self._shutdown_event.clear()
         self._poller_thread = FuncThread(
             self.poller_loop,
             name=f"event-source-mapping-poller-{self.uuid}",
