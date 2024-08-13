@@ -27,10 +27,9 @@ class LambdaSender(Sender):
         if self.payload_dict:
             events = {"Records": events}
         parsed_arn = parse_arn(self.target_arn)
-        # TODO: test qualified Lambda invoke
-        optional_qualifier = {}
-        if qualifier := parsed_arn.get("qualifier"):
-            optional_qualifier["Qualifier"] = qualifier
+        # TODO: test qualified + unqualified Lambda invoke
+        # Assuming a fully qualified ARN
+        qualifier = parsed_arn["resource"].split(":")[-1]
         invocation_type = InvocationType.RequestResponse
         if (
             self.target_parameters.get("LambdaFunctionParameters", {}).get("InvocationType")
@@ -45,7 +44,7 @@ class LambdaSender(Sender):
             FunctionName=self.target_arn,
             Payload=to_json_str(events),
             InvocationType=invocation_type,
-            **optional_qualifier,
+            Qualifier=qualifier,
         )
         payload = json.load(invoke_result["Payload"])
         if "FunctionError" in invoke_result:
