@@ -79,10 +79,6 @@ class StreamPoller(Poller):
         Either StreamARN for Kinesis or {} for DynamoDB (unsupported)"""
         pass
 
-    @abstractmethod
-    def expired_iterator_exception_type(self) -> type:
-        pass
-
     def poll_events(self):
         """Generalized poller for streams such as Kinesis or DynamoDB
         Examples of Kinesis consumers:
@@ -201,12 +197,15 @@ class StreamPoller(Poller):
                 Limit=self.stream_parameters["BatchSize"],
             )
             return get_records_response
-        except self.expired_iterator_exception_type() as e:
+        # TODO: test iterator expired with conditional error scenario (requires failure destinations)
+        except self.source_client.exceptions.ExpiredIteratorException as e:
             LOG.debug(
                 "Shard iterator %s expired for stream %s, re-initializing shards",
                 shard_iterator,
                 self.source_arn,
             )
+            # TODO: test TRIM_HORIZON and AT_TIMESTAMP scenarios for this case. We don't want to start from scratch and
+            #  might need to think about checkpointing here.
             self.shards = self.initialize_shards()
             raise PipeInternalError from e
         except ClientError as e:

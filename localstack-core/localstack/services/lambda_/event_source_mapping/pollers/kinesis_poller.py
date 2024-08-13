@@ -3,7 +3,7 @@ import logging
 
 from botocore.client import BaseClient
 
-from localstack.aws.api.kinesis import ExpiredIteratorException, StreamStatus
+from localstack.aws.api.kinesis import StreamStatus
 from localstack.aws.api.pipes import (
     KinesisStreamStartPosition,
 )
@@ -83,9 +83,6 @@ class KinesisPoller(StreamPoller):
 
     def stream_arn_param(self) -> dict:
         return {"StreamARN": self.source_arn}
-
-    def expired_iterator_exception_type(self) -> type:
-        return ExpiredIteratorException
 
     def event_source(self) -> str:
         return "aws:kinesis"

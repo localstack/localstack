@@ -2,7 +2,7 @@ import logging
 
 from botocore.client import BaseClient
 
-from localstack.aws.api.dynamodbstreams import ExpiredIteratorException, StreamStatus
+from localstack.aws.api.dynamodbstreams import StreamStatus
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
 )
@@ -64,9 +64,6 @@ class DynamoDBPoller(StreamPoller):
         # Not supported for GetRecords:
         # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_GetRecords.html
         return {}
-
-    def expired_iterator_exception_type(self) -> type:
-        return ExpiredIteratorException
 
     def event_source(self) -> str:
         return "aws:dynamodb"
