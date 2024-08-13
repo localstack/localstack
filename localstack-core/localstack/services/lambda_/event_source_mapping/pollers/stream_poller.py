@@ -168,6 +168,7 @@ class StreamPoller(Poller):
                 attempts += 1
                 # Retry polling until the record expires at the source
                 if self.stream_parameters.get("MaximumRetryAttempts", -1) == -1:
+                    # TODO: handle iterator expired scenario
                     return
             except Exception:
                 LOG.debug(
@@ -176,6 +177,7 @@ class StreamPoller(Poller):
                 attempts += 1
                 # Retry polling until the record expires at the source
                 if self.stream_parameters.get("MaximumRetryAttempts", -1) == -1:
+                    # TODO: handle iterator expired scenario
                     return
 
         # Send failed events to potential DLQ

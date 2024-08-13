@@ -6,7 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
-from localstack.aws.api.lambda_ import EventSourcePosition, Runtime
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
@@ -20,7 +20,10 @@ from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 TEST_LAMBDA_PARALLEL_FILE = FUNCTIONS_PATH / "lambda_parallel.py"
 TEST_LAMBDA_KINESIS_LOG = FUNCTIONS_PATH / "kinesis_log.py"
@@ -527,73 +530,6 @@ class TestKinesisSource:
 
         sqs_payload = retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
-
-    # TODO: add slow marker!
-    @markers.aws.validated
-    def test_esm_kinesis_shard_iterator_expired(
-        self,
-        create_lambda_function,
-        kinesis_create_stream,
-        wait_for_stream_ready,
-        cleanups,
-        snapshot,
-        aws_client,
-    ):
-        """Test whether we can properly handle idle period causing the shard iterator to expire."""
-        function_name = f"lambda-esm-{short_uid()}"
-        stream_name = f"my-stream-{short_uid()}"
-
-        create_lambda_function(
-            func_name=function_name,
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_12,
-        )
-
-        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
-        wait_for_stream_ready(stream_name=stream_name)
-        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
-        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
-        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
-            "StreamDescription"
-        ]["StreamARN"]
-
-        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
-            EventSourceArn=stream_arn,
-            FunctionName=function_name,
-            StartingPosition=EventSourcePosition.TRIM_HORIZON,
-        )
-        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
-        uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
-        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
-
-        partition_key = "my-partition-key"
-        aws_client.kinesis.put_record(
-            Data="data-1",
-            PartitionKey=partition_key,
-            StreamName=stream_name,
-        )
-
-        events = _get_lambda_invocation_events(
-            aws_client.logs, function_name, expected_num_events=1, retries=15
-        )
-        snapshot.match("kinesis_records_before_idle", events[0])
-
-        # Wait until the shard iterator expires
-        # A shard iterator expires 5 minutes after it is returned to the requester.
-        # https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html
-        # TODO: figure out how to reproduce the iterator expired exception?
-        # time.sleep(5 * 60 + 5)
-
-        aws_client.kinesis.put_record(
-            Data="data-2",
-            PartitionKey=partition_key,
-            StreamName=stream_name,
-        )
-        events = _get_lambda_invocation_events(
-            aws_client.logs, function_name, expected_num_events=2, retries=15
-        )
-        snapshot.match("kinesis_records_after_idle", events[0])
 
 
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
