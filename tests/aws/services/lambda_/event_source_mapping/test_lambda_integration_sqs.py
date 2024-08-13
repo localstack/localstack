@@ -1247,7 +1247,7 @@ class TestSQSEventSourceMapping:
         expected.match(InvalidParameterValueException.code)
 
     @pytest.mark.skipif(
-        is_v2_esm(), reason="ESM v2 does not yet handle state update on update_event_source_mapping"
+        is_v2_esm(), reason="ESM v2 does not yet implement update_event_source_mapping properly"
     )
     @markers.aws.validated
     def test_sqs_event_source_mapping_update(
