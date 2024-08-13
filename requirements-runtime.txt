@@ -64,7 +64,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.17.0
     # via cryptography
-cfn-lint==1.9.5
+cfn-lint==1.10.0
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -251,7 +251,7 @@ python-dotenv==1.0.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via
     #   awscli
     #   cfn-lint
@@ -314,7 +314,7 @@ six==1.16.0
     #   opensearch-py
     #   python-dateutil
     #   rfc3339-validator
-sympy==1.13.1
+sympy==1.13.2
     # via cfn-lint
 tailer==0.4.1
     # via
