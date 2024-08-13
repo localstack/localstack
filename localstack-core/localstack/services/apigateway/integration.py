@@ -168,7 +168,7 @@ def get_internal_mocked_headers(
 ) -> dict[str, str]:
     if role_arn:
         access_key_id = (
-            connect_to()
+            connect_to(region_name=region_name)
             .sts.request_metadata(service_principal=ServicePrincipal.apigateway)
             .assume_role(RoleArn=role_arn, RoleSessionName="BackplaneAssumeRoleSession")[
                 "Credentials"

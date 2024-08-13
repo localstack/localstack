@@ -884,7 +884,7 @@ class FirehoseProvider(FirehoseApi):
 
         role_arn = redshift_destination_description.get("RoleARN")
         account_id = extract_account_id_from_arn(role_arn)
-        region_name = extract_region_from_arn(role_arn)
+        region_name = self._get_region_from_jdbc_url(jdbcurl)
         redshift_data = connect_to(
             aws_access_key_id=account_id, region_name=region_name
         ).redshift_data
@@ -908,6 +908,14 @@ class FirehoseProvider(FirehoseApi):
             return match.group(1)
         else:
             raise ValueError(f"Unable to extract cluster id from jdbc url: {jdbc_url}")
+
+    def _get_region_from_jdbc_url(self, jdbc_url: str) -> str | None:
+        match = re.search(r"://(?:[^.]+\.){2}([^.]+)\.", jdbc_url)
+        if match:
+            return match.group(1)
+        else:
+            LOG.debug("Cannot extract region from JDBC url '%s'", jdbc_url)
+            return None
 
     def _decode_record(self, record: Dict) -> Dict:
         data = base64.b64decode(record.get("Data") or record.get("data"))
