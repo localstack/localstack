@@ -106,7 +106,7 @@ python-dateutil==2.9.0.post0
     # via botocore
 python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via localstack-core (pyproject.toml)
 readerwriterlock==1.0.9
     # via localstack-core (pyproject.toml)
