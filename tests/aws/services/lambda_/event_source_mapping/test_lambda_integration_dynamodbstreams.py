@@ -333,8 +333,17 @@ class TestDynamoDBEventSourceMapping:
         list_esm = aws_client.lambda_.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
-    # @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet implemented in ESM v2")
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_esm,
+        paths=[
+            # Pipe uses "context" (extra)
+            "$..context",
+            # ESM uses "requestContext" and "responseContext" (not implemented yet)
+            "$..requestContext",
+            "$..responseContext",
+        ],
+    )
     # FIXME last three skip verification entries are purely due to numbering mismatches
     @markers.snapshot.skip_snapshot_verify(
         paths=[

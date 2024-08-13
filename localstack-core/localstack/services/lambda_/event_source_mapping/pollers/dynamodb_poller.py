@@ -103,7 +103,7 @@ class DynamoDBPoller(StreamPoller):
         # Optional according to AWS docs:
         # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_StreamRecord.html
         # TODO: parse float properly if present from ApproximateCreationDateTime -> now works, compare via debug!
-        return record["dynamodb"].get("abc", datetime.utcnow().timestamp())
+        return record["dynamodb"].get("todo", datetime.utcnow().timestamp())
 
     def get_sequence_number(self, record: dict) -> str:
         return record["dynamodb"]["SequenceNumber"]

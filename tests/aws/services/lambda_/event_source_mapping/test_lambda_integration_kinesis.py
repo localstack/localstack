@@ -442,7 +442,18 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
-    # @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet supported in ESM v2")
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_esm,
+        paths=[
+            # Pipe uses "context" (extra)
+            "$..context",
+            # ESM uses "requestContext" and "responseContext" (not implemented yet)
+            "$..requestContext",
+            "$..responseContext",
+            # uuid ordering issue because the missing requestContext contains a uuid
+            "$..Messages..MessageId",
+        ],
+    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
