@@ -428,6 +428,17 @@ def validate_sse_c(
     encryption_key_md5: SSECustomerKeyMD5,
     server_side_encryption: ServerSideEncryption = None,
 ):
+    """
+    This method validates the SSE Customer parameters for different requests.
+    :param algorithm: the SSECustomerAlgorithm parameter of the incoming Request, can only be AES256
+    :param encryption_key: the SSECustomerKey of the incoming Request, represent the base64 encoded encryption key
+    :param encryption_key_md5: the SSECustomerKeyMD5 of the request, represents the base64 encoded MD5 hash of the
+    encryption key
+    :param server_side_encryption: when the incoming request is a "write" request (PutObject, CopyObject,
+     CreateMultipartUpload), the user can specify the encryption. Customer encryption and AWS SSE can't both be set.
+    :raises: InvalidArgument if the request is invalid
+    :raises: InvalidEncryptionAlgorithmError if the given algorithm is different from AES256
+    """
     if not encryption_key and not algorithm:
         return
     elif server_side_encryption:
