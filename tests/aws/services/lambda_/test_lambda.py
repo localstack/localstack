@@ -84,6 +84,7 @@ TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
 TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
 TEST_LAMBDA_NODEJS_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.js")
 TEST_LAMBDA_NODEJS_APIGW_INTEGRATION = os.path.join(THIS_FOLDER, "functions/apigw_integration.js")
+TEST_LAMBDA_NODEJS_NEWLINE_ENCODING = os.path.join(THIS_FOLDER, "functions/lambda_newlines.js")
 TEST_LAMBDA_HTTP_RUST = os.path.join(THIS_FOLDER, "functions/rust-lambda/function.zip")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
     THIS_FOLDER, "functions/java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
@@ -818,6 +819,32 @@ class TestLambdaBehavior:
 
         result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=json.dumps({"pid": 1}))
         snapshot.match("lambda-init-inspection", result)
+
+    @markers.aws.validated
+    def test_lambda_log_new_line_encoding(self, aws_client, create_lambda_function):
+        function_name = f"test-function-{short_uid()}"
+        log_group_name = f"/aws/lambda/{function_name}"
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_NODEJS_NEWLINE_ENCODING,
+            func_name=function_name,
+            runtime=Runtime.nodejs20_x,
+        )
+
+        aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"")
+
+        def fetch_logs():
+            log_events_result = aws_client.logs.filter_log_events(logGroupName=log_group_name)
+            assert any("REPORT" in e["message"] for e in log_events_result["events"])
+            return log_events_result
+
+        log_events = retry(fetch_logs, retries=30, sleep=2)
+        log_entries = [
+            e["message"].rpartition("\t")[2] for e in log_events["events"] if "test" in e["message"]
+        ]
+        print(log_entries)
+        assert log_entries[0] == "test\nwith\nnewlines\n"
+        assert log_entries[1] == "test\rwith\rcarriage\rreturns\n"
 
 
 URL_HANDLER_CODE = """
