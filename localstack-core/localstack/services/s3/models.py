@@ -58,6 +58,7 @@ from localstack.aws.api.s3 import (
     ServerSideEncryption,
     ServerSideEncryptionRule,
     Size,
+    SSECustomerKeyMD5,
     SSEKMSKeyId,
     StorageClass,
     WebsiteConfiguration,
@@ -245,7 +246,6 @@ class S3Bucket:
         return s3_object
 
 
-# note: might be migrated to dataclass once the full API is set
 class S3Object:
     key: ObjectKey
     version_id: Optional[ObjectVersionId]
@@ -262,6 +262,7 @@ class S3Object:
     encryption: Optional[ServerSideEncryption]  # inherit bucket
     kms_key_id: Optional[SSEKMSKeyId]  # inherit bucket
     bucket_key_enabled: Optional[bool]  # inherit bucket
+    sse_key_hash: Optional[SSECustomerKeyMD5]
     checksum_algorithm: ChecksumAlgorithm
     checksum_value: str
     lock_mode: Optional[ObjectLockMode | ObjectLockRetentionMode]
@@ -289,6 +290,7 @@ class S3Object:
         checksum_value: Optional[str] = None,
         encryption: Optional[ServerSideEncryption] = None,
         kms_key_id: Optional[SSEKMSKeyId] = None,
+        sse_key_hash: Optional[SSECustomerKeyMD5] = None,
         bucket_key_enabled: bool = False,
         lock_mode: Optional[ObjectLockMode | ObjectLockRetentionMode] = None,
         lock_legal_status: Optional[ObjectLockLegalHoldStatus] = None,
@@ -312,6 +314,7 @@ class S3Object:
         self.encryption = encryption
         self.kms_key_id = kms_key_id
         self.bucket_key_enabled = bucket_key_enabled
+        self.sse_key_hash = sse_key_hash
         self.lock_mode = lock_mode
         self.lock_legal_status = lock_legal_status
         self.lock_until = lock_until
@@ -435,6 +438,7 @@ class S3Multipart:
         encryption: Optional[ServerSideEncryption] = None,  # inherit bucket
         kms_key_id: Optional[SSEKMSKeyId] = None,  # inherit bucket
         bucket_key_enabled: bool = False,  # inherit bucket
+        sse_key_hash: Optional[SSECustomerKeyMD5] = None,
         lock_mode: Optional[ObjectLockMode] = None,
         lock_legal_status: Optional[ObjectLockLegalHoldStatus] = None,
         lock_until: Optional[datetime] = None,
@@ -463,6 +467,7 @@ class S3Multipart:
             encryption=encryption,
             kms_key_id=kms_key_id,
             bucket_key_enabled=bucket_key_enabled,
+            sse_key_hash=sse_key_hash,
             lock_mode=lock_mode,
             lock_legal_status=lock_legal_status,
             lock_until=lock_until,

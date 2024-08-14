@@ -942,6 +942,14 @@ class EntityTooLarge(ServiceException):
     ProposedSize: Optional[ProposedSize]
 
 
+class InvalidEncryptionAlgorithmError(ServiceException):
+    code: str = "InvalidEncryptionAlgorithmError"
+    sender_fault: bool = False
+    status_code: int = 400
+    ArgumentName: Optional[ArgumentName]
+    ArgumentValue: Optional[ArgumentValue]
+
+
 AbortDate = datetime
 
 

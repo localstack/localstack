@@ -680,6 +680,27 @@
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3v4]": {
     "last_validated_date": "2023-08-04T21:59:38+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_copy_object_with_sse_c": {
+    "last_validated_date": "2024-08-14T18:24:33+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_multipart_upload_sse_c": {
+    "last_validated_date": "2024-08-14T17:17:30+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_multipart_upload_sse_c_validation": {
+    "last_validated_date": "2024-08-14T18:46:26+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_object_retrieval_sse_c": {
+    "last_validated_date": "2024-08-14T17:16:18+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_put_object_lifecycle_with_sse_c": {
+    "last_validated_date": "2024-08-14T17:16:11+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_put_object_validation_sse_c": {
+    "last_validated_date": "2024-08-14T18:09:54+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_sse_c_with_versioning": {
+    "last_validated_date": "2024-08-14T18:38:47+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3StaticWebsiteHosting::test_crud_website_configuration": {
     "last_validated_date": "2023-08-25T22:29:24+00:00"
   },
