@@ -753,8 +753,8 @@ class TestApiGatewayImportRestApi:
         )
         spec_file = load_file(OAS_30_STAGE_VARIABLES)
         if not is_aws_cloud():
-            # to make sure we return the test without https
-            spec_file.replace("https://", "http://")
+            # to make sure we return the endpoint without https to avoid cert issues
+            spec_file = spec_file.replace("https://", "http://")
 
         import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
         rest_api_id = import_resp["id"]
