@@ -3,6 +3,7 @@ import logging
 
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.pipes import PipeTargetInvocationType
+from localstack.services.lambda_.api_utils import function_locators_from_arn
 from localstack.services.lambda_.event_source_mapping.pipe_utils import to_json_str
 from localstack.services.lambda_.event_source_mapping.pollers.poller import has_batch_item_failures
 from localstack.services.lambda_.event_source_mapping.senders.sender import (
@@ -10,7 +11,6 @@ from localstack.services.lambda_.event_source_mapping.senders.sender import (
     Sender,
     SenderError,
 )
-from localstack.utils.aws.arns import parse_arn
 
 LOG = logging.getLogger(__name__)
 
@@ -26,10 +26,12 @@ class LambdaSender(Sender):
     def send_events(self, events: list[dict]) -> dict:
         if self.payload_dict:
             events = {"Records": events}
-        parsed_arn = parse_arn(self.target_arn)
         # TODO: test qualified + unqualified Lambda invoke
-        # Assuming a fully qualified ARN
-        qualifier = parsed_arn["resource"].split(":")[-1]
+        # According to Pipe trace logs, the internal awsRequest contains a qualifier, even if "null"
+        _, qualifier, _, _ = function_locators_from_arn(self.target_arn)
+        optional_qualifier = {}
+        if qualifier is not None:
+            optional_qualifier["Qualifier"] = qualifier
         invocation_type = InvocationType.RequestResponse
         if (
             self.target_parameters.get("LambdaFunctionParameters", {}).get("InvocationType")
@@ -44,7 +46,7 @@ class LambdaSender(Sender):
             FunctionName=self.target_arn,
             Payload=to_json_str(events),
             InvocationType=invocation_type,
-            Qualifier=qualifier,
+            **optional_qualifier,
         )
         payload = json.load(invoke_result["Payload"])
         if "FunctionError" in invoke_result:
