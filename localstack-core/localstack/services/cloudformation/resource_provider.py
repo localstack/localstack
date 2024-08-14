@@ -12,10 +12,12 @@ from math import ceil
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
 
 import botocore
+from botocore.client import BaseClient
+from botocore.model import OperationModel
 from plux import Plugin, PluginManager
 
 from localstack import config
-from localstack.aws.connect import ServiceLevelClientFactory, connect_to
+from localstack.aws.connect import InternalClientFactory, ServiceLevelClientFactory
 from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
@@ -26,6 +28,7 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
+from localstack.services.cloudformation.provider_utils import convert_request_kwargs
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE
 
 PRO_RESOURCE_PROVIDERS = False
@@ -105,10 +108,33 @@ class ResourceProviderPayload(TypedDict):
 ResourceProperties = TypeVar("ResourceProperties")
 
 
+def _handler_provide_client_params(event_name: str, params: dict, model: OperationModel, **kwargs):
+    """
+    A botocore hook handler that will try to convert the passed parameters according to the given operation model
+    """
+    return convert_request_kwargs(params, model.input_shape)
+
+
+class ConvertingInternalClientFactory(InternalClientFactory):
+    def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
+        """
+        Register handlers that modify the passed properties to make them compatible with the API structure
+        """
+
+        client.meta.events.register(
+            "provide-client-params.*.*", handler=_handler_provide_client_params
+        )
+
+        return super()._get_client_post_hook(client)
+
+
+_cfn_resource_client_factory = ConvertingInternalClientFactory(use_ssl=config.DISTRIBUTED_MODE)
+
+
 def convert_payload(
     stack_name: str, stack_id: str, payload: ResourceProviderPayload
 ) -> ResourceRequest[Properties]:
-    client_factory = connect_to(
+    client_factory = _cfn_resource_client_factory(
         aws_access_key_id=payload["requestData"]["callerCredentials"]["accessKeyId"],
         aws_session_token=payload["requestData"]["callerCredentials"]["sessionToken"],
         aws_secret_access_key=payload["requestData"]["callerCredentials"]["secretAccessKey"],
