@@ -442,7 +442,18 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
-    @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet supported in ESM v2")
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_esm,
+        paths=[
+            # Pipe uses "context" (extra)
+            "$..context",
+            # ESM uses "requestContext" and "responseContext" (not implemented yet)
+            "$..requestContext",
+            "$..responseContext",
+            # uuid ordering issue because the missing requestContext contains a uuid
+            "$..Messages..MessageId",
+        ],
+    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
@@ -536,7 +547,8 @@ class TestKinesisSource:
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
     @pytest.mark.skipif(
-        is_v2_esm(), reason="DestinationConfig and LastProcessing result snapshot diff in ESM v2"
+        is_v2_esm(),
+        reason="JSON conversion for filtering not yet implemented in ESM v2",
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
