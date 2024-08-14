@@ -155,8 +155,10 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
     if not config.DISABLE_CUSTOM_CORS_APIGATEWAY:
         # we don't check for service_name == "apigw" here because ``.execute-api.`` can be either apigw v1 or v2
         path = context.request.path
-        is_user_request = ".execute-api." in context.request.host or (
-            path.startswith("/restapis/") and f"/{PATH_USER_REQUEST}" in context.request.path
+        is_user_request = (
+            ".execute-api." in context.request.host
+            or (path.startswith("/restapis/") and f"/{PATH_USER_REQUEST}" in context.request.path)
+            or (path.startswith("/_aws/apigateway/execute-api"))
         )
         if is_user_request:
             return False

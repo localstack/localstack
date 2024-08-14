@@ -21,6 +21,7 @@ from localstack.services.apigateway.helpers import (
     get_resource_for_path,
     get_rest_api_paths,
     host_based_url,
+    localstack_path_based_url,
     path_based_url,
 )
 from localstack.testing.aws.util import in_default_partition
@@ -152,10 +153,14 @@ class TestAPIGateway:
         assert "Invalid API identifier specified" in e.value.response["Error"]["Message"]
         assert "foobar" in e.value.response["Error"]["Message"]
 
-    @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
+    @pytest.mark.parametrize(
+        "url_function", [path_based_url, host_based_url, localstack_path_based_url]
+    )
     @markers.aws.only_localstack
     # This is not a possible feature on aws.
     def test_create_rest_api_with_custom_id(self, create_rest_apigw, url_function, aws_client):
+        if not is_next_gen_api() and url_function == localstack_path_based_url:
+            pytest.skip("This URL type is not supported in the legacy implementation")
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
         api_id, name, _ = create_rest_apigw(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
@@ -311,13 +316,18 @@ class TestAPIGateway:
         assert response.headers["Content-Type"] == "text/html"
         assert response.headers["Access-Control-Allow-Origin"] == "*"
 
-    @pytest.mark.parametrize("url_type", [UrlType.HOST_BASED, UrlType.PATH_BASED])
+    @pytest.mark.parametrize(
+        "url_type", [UrlType.HOST_BASED, UrlType.PATH_BASED, UrlType.LS_PATH_BASED]
+    )
     @pytest.mark.parametrize("disable_custom_cors", [True, False])
     @pytest.mark.parametrize("origin", ["http://allowed", "http://denied"])
     @markers.aws.only_localstack
     def test_invoke_endpoint_cors_headers(
         self, url_type, disable_custom_cors, origin, monkeypatch, aws_client
     ):
+        if not is_next_gen_api() and url_type == UrlType.LS_PATH_BASED:
+            pytest.skip("This URL type is not supported with the legacy implementation")
+
         monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", disable_custom_cors)
         monkeypatch.setattr(
             cors, "ALLOWED_CORS_ORIGINS", cors.ALLOWED_CORS_ORIGINS + ["http://allowed"]

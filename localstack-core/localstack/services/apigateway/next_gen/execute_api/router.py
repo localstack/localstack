@@ -104,6 +104,7 @@ class ApiGatewayEndpoint:
 class ApiGatewayRouter:
     router: Router[Handler]
     handler: ApiGatewayEndpoint
+    EXECUTE_API_INTERNAL_PATH = "/_aws/apigateway/execute-api"
 
     def __init__(self, router: Router[Handler] = None, handler: ApiGatewayEndpoint = None):
         self.router = router or ROUTER
@@ -134,7 +135,7 @@ class ApiGatewayRouter:
                 endpoint=self.handler,
                 strict_slashes=True,
             ),
-            # add the localstack-specific _user_request_ routes
+            # add the deprecated localstack-specific _user_request_ routes
             self.router.add(
                 path="/restapis/<api_id>/<stage>/_user_request_",
                 endpoint=self.handler,
@@ -142,6 +143,24 @@ class ApiGatewayRouter:
             ),
             self.router.add(
                 path="/restapis/<api_id>/<stage>/_user_request_/<greedy_path:path>",
+                endpoint=self.handler,
+                strict_slashes=True,
+            ),
+            # add the localstack-specific so-called "path-style" routes when DNS resolving is not possible
+            self.router.add(
+                path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/",
+                endpoint=self.handler,
+                defaults={"path": "", "stage": None},
+                strict_slashes=True,
+            ),
+            self.router.add(
+                path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/<stage>/",
+                endpoint=self.handler,
+                defaults={"path": ""},
+                strict_slashes=False,
+            ),
+            self.router.add(
+                path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/<stage>/<greedy_path:path>",
                 endpoint=self.handler,
                 strict_slashes=True,
             ),

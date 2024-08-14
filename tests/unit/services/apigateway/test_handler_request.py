@@ -159,13 +159,34 @@ class TestParsingHandler:
         assert context.invocation_request["path"] == "/foo%2Fbar/ed"
         assert context.invocation_request["raw_path"] == "//foo%2Fbar/ed"
 
-    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    def test_parse_localstack_only_path(
+        self, dummy_deployment, parse_handler_chain, get_invocation_context
+    ):
+        # simulate a path request
+        request = Request(
+            "GET",
+            path=f"/_aws/apigateway/execute-api/{TEST_API_ID}/{TEST_API_STAGE}/foo/bar/ed",
+            raw_path=f"/_aws/apigateway/execute-api/{TEST_API_ID}/{TEST_API_STAGE}//foo%2Fbar/ed",
+        )
+
+        context = get_invocation_context(request)
+        context.deployment = dummy_deployment
+
+        parse_handler_chain.handle(context, Response())
+
+        # assert that the user request prefix has been stripped off
+        assert context.invocation_request["path"] == "/foo%2Fbar/ed"
+        assert context.invocation_request["raw_path"] == "//foo%2Fbar/ed"
+
+    @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_parse_path_same_as_stage(
         self, dummy_deployment, parse_handler_chain, get_invocation_context, addressing
     ):
         path = TEST_API_STAGE
         if addressing == "host":
             full_path = f"/{TEST_API_STAGE}/{path}"
+        elif addressing == "path_style":
+            full_path = f"/_aws/apigateway/execute-api/{TEST_API_ID}/{TEST_API_STAGE}/{path}"
         else:
             full_path = f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/{path}"
 
@@ -180,6 +201,27 @@ class TestParsingHandler:
         # assert that the user request prefix has been stripped off
         assert context.invocation_request["path"] == f"/{TEST_API_STAGE}"
         assert context.invocation_request["raw_path"] == f"/{TEST_API_STAGE}"
+
+    @pytest.mark.parametrize("addressing", ["user_request", "path_style"])
+    def test_cased_api_id_in_path(
+        self, dummy_deployment, parse_handler_chain, get_invocation_context, addressing
+    ):
+        if addressing == "path_style":
+            full_path = f"/_aws/apigateway/execute-api/TestApi/{TEST_API_STAGE}/test"
+        else:
+            full_path = f"/restapis/{TEST_API_ID}/TestApi/_user_request_/test"
+
+        # simulate a path request
+        request = Request("GET", path=full_path)
+
+        context = get_invocation_context(request)
+        context.deployment = dummy_deployment
+
+        parse_handler_chain.handle(context, Response())
+
+        # assert that the user request prefix has been stripped off
+        assert context.invocation_request["path"] == "/test"
+        assert context.invocation_request["raw_path"] == "/test"
 
     def test_trace_id_logic(self):
         headers = Headers({"x-amzn-trace-id": "Root=trace;Parent=parent"})
@@ -336,10 +378,13 @@ class TestRoutingHandler:
     def get_path_from_addressing(path: str, addressing: str) -> str:
         if addressing == "host":
             return f"/{TEST_API_STAGE}{path}"
-        else:
+        elif addressing == "user_request":
             return f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/{path}"
+        else:
+            # this new style allows following the regular order in an easier way, stage is always before path
+            return f"/_aws/apigateway/execute-api/{TEST_API_ID}/{TEST_API_STAGE}{path}"
 
-    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_route_request_no_param(
         self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
@@ -364,7 +409,7 @@ class TestRoutingHandler:
         assert context.invocation_request["path_parameters"] == {}
         assert context.stage_variables == {"foo": "bar"}
 
-    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_route_request_with_path_parameter(
         self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
@@ -389,7 +434,7 @@ class TestRoutingHandler:
         assert context.context_variables["resourcePath"] == "/foo/{param}"
         assert context.context_variables["resourceId"] == context.resource["id"]
 
-    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_route_request_with_greedy_parameter(
         self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
@@ -448,7 +493,7 @@ class TestRoutingHandler:
             "proxy": "test2/is/a/proxy/req2%Fuest"
         }
 
-    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_route_request_no_match_on_path(
         self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
@@ -466,7 +511,7 @@ class TestRoutingHandler:
         with pytest.raises(MissingAuthTokenError):
             handler(parse_handler_chain, context, Response())
 
-    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_route_request_no_match_on_method(
         self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
@@ -484,7 +529,7 @@ class TestRoutingHandler:
         with pytest.raises(MissingAuthTokenError):
             handler(parse_handler_chain, context, Response())
 
-    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_route_request_with_double_slash_and_trailing_and_encoded(
         self, deployment_with_routes, parse_handler_chain, get_invocation_context, addressing
     ):
@@ -504,7 +549,7 @@ class TestRoutingHandler:
         assert context.resource["path"] == "/foo/{param}"
         assert context.invocation_request["path_parameters"] == {"param": "foo%2Fbar"}
 
-    @pytest.mark.parametrize("addressing", ["host", "user_request"])
+    @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_route_request_any_is_last(
         self, deployment_with_any_routes, parse_handler_chain, get_invocation_context, addressing
     ):

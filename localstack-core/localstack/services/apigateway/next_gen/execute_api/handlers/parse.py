@@ -1,10 +1,11 @@
 import datetime
 import logging
+import re
 from collections import defaultdict
 from typing import Optional
 from urllib.parse import urlparse
 
-from rolo.request import Request, restore_payload
+from rolo.request import restore_payload
 from werkzeug.datastructures import Headers, MultiDict
 
 from localstack.http import Response
@@ -58,16 +59,16 @@ class InvocationRequestParser(RestApiGatewayHandler):
             headers=headers,
             body=restore_payload(request),
         )
-
-        self._enrich_with_raw_path(request, invocation_request, stage_name=context.stage)
+        self._enrich_with_raw_path(context, invocation_request)
 
         return invocation_request
 
     @staticmethod
     def _enrich_with_raw_path(
-        request: Request, invocation_request: InvocationRequest, stage_name: str
+        context: RestApiInvocationContext, invocation_request: InvocationRequest
     ):
         # Base path is not URL-decoded, so we need to get the `RAW_URI` from the request
+        request = context.request
         raw_uri = request.environ.get("RAW_URI") or request.path
 
         # if the request comes from the LocalStack only `_user_request_` route, we need to remove this prefix from the
@@ -76,8 +77,17 @@ class InvocationRequestParser(RestApiGatewayHandler):
             # in this format, the stage is before `_user_request_`, so we don't need to remove it
             raw_uri = raw_uri.partition("_user_request_")[2]
         else:
+            if raw_uri.startswith("/_aws/apigateway/execute-api"):
+                # the API can be cased in the path, so we need to ignore it to remove it
+                raw_uri = re.sub(
+                    f"^/_aws/apigateway/execute-api/{context.api_id}",
+                    "",
+                    raw_uri,
+                    flags=re.IGNORECASE,
+                )
+
             # remove the stage from the path, only replace the first occurrence
-            raw_uri = raw_uri.replace(f"/{stage_name}", "", 1)
+            raw_uri = raw_uri.replace(f"/{context.stage}", "", 1)
 
         if raw_uri.startswith("//"):
             # TODO: AWS validate this assumption
