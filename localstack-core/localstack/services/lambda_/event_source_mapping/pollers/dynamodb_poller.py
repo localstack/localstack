@@ -107,3 +107,9 @@ class DynamoDBPoller(StreamPoller):
 
     def get_sequence_number(self, record: dict) -> str:
         return record["dynamodb"]["SequenceNumber"]
+
+    def get_data(self, event: dict) -> str:
+        return event["dynamodb"]
+
+    def set_data(self, event: dict, data: bytes) -> None:
+        event["dynamodb"] = data

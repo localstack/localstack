@@ -96,7 +96,6 @@ class SqsPoller(Poller):
         # TODO: implement format detection behavior (e.g., for JSON body):
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html#pipes-filter-sqs
         #  Check whether we need poller-specific filter-preprocessing here without modifying the actual event!
-
         # convert to json for filtering (HACK for fixing parity with v1 and getting regression tests passing)
         for event in polled_events:
             try:

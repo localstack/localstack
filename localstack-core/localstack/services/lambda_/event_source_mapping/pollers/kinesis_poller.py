@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 
 from botocore.client import BaseClient
@@ -99,6 +100,7 @@ class KinesisPoller(StreamPoller):
         for record in records:
             # TODO: consolidate with Kinesis event source listener:
             #  localstack.services.lambda_.event_source_listeners.kinesis_event_source_listener.KinesisEventSourceListener._create_lambda_event_payload
+            #  check `encryptionType` leading to serialization errors by Dotnet Lambdas
             sequence_number = record["SequenceNumber"]
             event = {
                 # TODO: add this metadata after filtering.
@@ -135,3 +137,22 @@ class KinesisPoller(StreamPoller):
             return record["kinesis"]["sequenceNumber"]
         else:
             return record["sequenceNumber"]
+
+    def get_data(self, event: dict) -> str:
+        if self.kinesis_namespace:
+            return event["kinesis"]["data"]
+        else:
+            return event["data"]
+
+    def set_data(self, event: dict, data: bytes) -> None:
+        if self.kinesis_namespace:
+            event["kinesis"]["data"] = data
+        else:
+            event["data"] = data
+
+    def parse_data(self, raw_data: str | dict) -> dict | str:
+        decoded_data = base64.b64decode(raw_data)
+        return json.loads(decoded_data)
+
+    def encode_data(self, parsed_data: dict) -> dict | str | bytes:
+        return json.dumps(parsed_data).encode()

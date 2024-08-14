@@ -546,9 +546,12 @@ class TestKinesisSource:
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
-    @pytest.mark.skipif(
-        is_v2_esm(),
-        reason="JSON conversion for filtering not yet implemented in ESM v2",
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_esm,
+        paths=[
+            # Lifecycle updates not yet implemented in ESM v2
+            "$..LastProcessingResult",
+        ],
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
