@@ -548,7 +548,7 @@ class TestKinesisSource:
 class TestKinesisEventFiltering:
     @pytest.mark.skipif(
         is_v2_esm(),
-        reason="Function doesn't get invoked in ESM v2 (likely related to JSON filtering)",
+        reason="JSON conversion for filtering not yet implemented in ESM v2",
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[

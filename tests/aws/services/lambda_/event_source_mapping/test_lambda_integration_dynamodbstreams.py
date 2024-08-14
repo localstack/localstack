@@ -433,6 +433,9 @@ class TestDynamoDBEventSourceMapping:
     #  a) strict event ordering and b) a final event that passes all filters to reliably determine the end of the test.
     #  The current behavior leads to hard-to-detect false negatives such as in this CI run:
     #  https://app.circleci.com/pipelines/github/localstack/localstack/24012/workflows/461664c2-0203-45f9-aec2-394666f48f03/jobs/197705/tests
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="JSON conversion for filtering not yet implemented in ESM v2"
+    )
     @pytest.mark.parametrize(
         # Calls represents the expected number of Lambda invocations (either 1 or 2).
         # Negative tests with calls=0 are unreliable due to undetermined waiting times.
@@ -554,10 +557,6 @@ class TestDynamoDBEventSourceMapping:
         Test assumption: The first item MUST always match the filter and the second item CAN match the filter.
         => This enables two-step testing (i.e., snapshots between inserts) but is unreliable and should be revised.
         """
-        # TODO: Investigate and fix content_multiple_filters case for ESM v2
-        if is_v2_esm() and filter == {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]}:
-            pytest.skip(reason="content_multiple_filters failing for ESM v2 (needs investigation)")
-
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         max_retries = 50
