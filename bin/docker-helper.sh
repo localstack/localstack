@@ -5,7 +5,6 @@ set -eo pipefail
 shopt -s nullglob
 
 # global defaults
-VERSION_FILE=${VERSION_FILE-"VERSION"}
 DOCKERFILE=${DOCKERFILE-"Dockerfile"}
 DEFAULT_TAG=${DEFAULT_TAG-"latest"}
 
@@ -50,7 +49,12 @@ function _fail {
 }
 
 function _get_current_version() {
-    cat ${VERSION_FILE}
+    # TODO setuptools is now a dependency of the release-helper! Should it install it if not available?
+    python3 -m setuptools_scm
+}
+
+function _is_release_commit() {
+    [[ $(_get_current_version) =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]
 }
 
 function _get_current_branch() {
@@ -113,7 +117,7 @@ function cmd-build() {
     # --cache-from: Use the inlined caching information when building the image
     DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
       --cache-from "$IMAGE_NAME" --build-arg BUILDKIT_INLINE_CACHE=1 \
-      --build-arg LOCALSTACK_PRE_RELEASE=$(_get_current_version | grep -v '.dev' >> /dev/null && echo "0" || echo "1") \
+      --build-arg LOCALSTACK_PRE_RELEASE=$(_is_release_commit && echo "0" || echo "1") \
       --build-arg LOCALSTACK_BUILD_GIT_HASH=$(git rev-parse --short HEAD) \
       --build-arg=LOCALSTACK_BUILD_DATE=$(date -u +"%Y-%m-%d") \
       --build-arg=LOCALSTACK_BUILD_VERSION=$IMAGE_TAG \
@@ -152,6 +156,8 @@ function cmd-push() {
     _enforce_docker_credentials
     _enforce_platform
     _set_version_defaults
+
+    echo "VERSION: $(_get_current_version)"
 
     if [ -z "$TARGET_IMAGE_NAME" ]; then TARGET_IMAGE_NAME=$IMAGE_NAME; fi
 
@@ -192,16 +198,11 @@ function cmd-push() {
       docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION-$PLATFORM
     }
 
-    if [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "1" ]; then
-      echo "Force-enabled version tag push."
-      _push
-    elif [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
-      echo "Force-disabled version tag push. Not pushing any other tags."
-    elif (git diff HEAD^ ${VERSION_FILE} | tail -n 1 | grep -v '.dev'); then
-      echo "Pushing version tags, version has changed in last commit."
+    if _is_release_commit; then
+      echo "Pushing version tags, we're building the commit of a version tag."
       _push
     else
-      echo "Not pushing any other tags, version has not changed in last commit."
+      echo "Not pushing any other tags, we're not building a version-tagged commit."
     fi
 }
 
@@ -261,16 +262,11 @@ function cmd-push-manifests() {
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION
     }
 
-    if [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "1" ]; then
-      echo "Force-enabled version tag push."
-      _push
-    elif [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
-      echo "Force-disabled version tag push. Not pushing any other tags."
-    elif (git diff HEAD^ ${VERSION_FILE} | tail -n 1 | grep -v '.dev'); then
-      echo "Pushing version tags, version has changed in last commit."
+    if _is_release_commit; then
+      echo "Pushing version tags, we're building the commit of a version tag."
       _push
     else
-      echo "Not pushing any other tags, version has not changed in last commit."
+      echo "Not pushing any other tags, we're not building a version-tagged commit."
     fi
 }
 
