@@ -6,6 +6,8 @@ from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
 from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
+from localstack.services.lambda_.invocation.models import lambda_stores
+from localstack.services.lambda_.provider_utils import get_function_version_from_arn
 from localstack.utils.threads import FuncThread
 
 POLL_INTERVAL_SEC: float = 1
@@ -87,10 +89,13 @@ class EsmWorker:
 
     def start(self):
         with self._state_lock:
+            self.enabled = True
             # CREATING state takes precedence over ENABLING
             if self.current_state != EsmState.CREATING:
                 self.current_state = EsmState.ENABLING
                 self.state_transition_reason = self.user_state_reason
+        # Reset the shutdown event such that we don't stop immediately after a restart
+        self._shutdown_event.clear()
         self._poller_thread = FuncThread(
             self.poller_loop,
             name=f"event-source-mapping-poller-{self.uuid}",
@@ -99,6 +104,7 @@ class EsmWorker:
 
     def stop(self):
         with self._state_lock:
+            self.enabled = False
             self.current_state = EsmState.DISABLING
             self.state_transition_reason = self.user_state_reason
         self._shutdown_event.set()
@@ -113,12 +119,7 @@ class EsmWorker:
         with self._state_lock:
             self.current_state = EsmState.ENABLED
             self.state_transition_reason = self.user_state_reason
-            # TODO: idea to not update store state but query state from esm_worker upon querying, but async deletion needs to modify store?!
-            # Update store state !?
-            # function_version = LambdaProvider._get_function_version_from_arn(self.esm_config["FunctionArn"])
-            # state = lambda_stores[function_version.id.account][function_version.id.region]
-            # esm_update = {"State": EsmState.ENABLED}
-            # state.event_source_mappings[self.esm_config["UUID"]].update(esm_update)
+
         while not self._shutdown_event.is_set():
             try:
                 self.poller.poll_events()
@@ -136,4 +137,39 @@ class EsmWorker:
                 # TODO: implement some backoff here and stop poller upon continuous errors
                 # Wait some time between retries to avoid running into the problem right again
                 self._shutdown_event.wait(2)
-        # TODO: Delete ESM if needed once everything shut down properly (?!) => check how deleting works with state updates
+
+        try:
+            # Update state in store after async stop or delete
+            if self.enabled and self.current_state == EsmState.DELETING:
+                function_version = get_function_version_from_arn(self.esm_config["FunctionArn"])
+                state = lambda_stores[function_version.id.account][function_version.id.region]
+                # TODO: we also need to remove the ESM worker reference from the Lambda provider to esm_worker
+                # TODO: proper locking for store updates
+                del state.event_source_mappings[self.esm_config["UUID"]]
+            elif not self.enabled and self.current_state == EsmState.DISABLING:
+                with self._state_lock:
+                    self.current_state = EsmState.DISABLED
+                    self.state_transition_reason = self.user_state_reason
+                self.update_esm_state_in_store(EsmState.DISABLED)
+            else:
+                LOG.warning(
+                    "Invalid state %s for event source mapping %s.",
+                    self.current_state,
+                    self.esm_config["UUID"],
+                )
+        except Exception as e:
+            LOG.warning(
+                "Failed to update state %s for event source mapping %s. Exception: %s ",
+                self.current_state,
+                self.esm_config["UUID"],
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+
+    # TODO: how can we handle async state updates better? Async deletion or disabling needs to update the model state.
+    def update_esm_state_in_store(self, new_state: EsmState):
+        function_version = get_function_version_from_arn(self.esm_config["FunctionArn"])
+        state = lambda_stores[function_version.id.account][function_version.id.region]
+        esm_update = {"State": new_state}
+        # TODO: add proper locking for store updates
+        state.event_source_mappings[self.esm_config["UUID"]].update(esm_update)
