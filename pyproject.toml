@@ -1,6 +1,6 @@
 # LocalStack project configuration
 [build-system]
-requires = ['setuptools', 'wheel', 'plux>=1.10']
+requires = ['setuptools>=64', 'wheel', 'plux>=1.10', "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -36,6 +36,9 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Emulators",
 ]
+
+[tool.setuptools_scm]
+version_file = "localstack-core/localstack/version.py"
 
 [project.urls]
 Homepage = "https://localstack.cloud"
