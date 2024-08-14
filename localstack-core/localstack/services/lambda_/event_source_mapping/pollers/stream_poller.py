@@ -1,7 +1,6 @@
 import json
 import logging
 from abc import abstractmethod
-from copy import deepcopy
 from datetime import datetime
 from typing import Iterator
 
@@ -10,10 +9,6 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.pipes import (
     OnPartialBatchItemFailureStreams,
-)
-from localstack.services.lambda_.event_source_listeners.utils import (
-    has_data_filter_criteria,
-    has_data_filter_criteria_parsed,
 )
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     CustomerInvocationError,
@@ -96,21 +91,11 @@ class StreamPoller(Poller):
     def get_sequence_number(self, record: dict) -> str:
         pass
 
-    @abstractmethod
-    def get_data(self, event: dict) -> str:
-        pass
+    def pre_filter(self, events: list[dict]) -> list[dict]:
+        return events
 
-    @abstractmethod
-    def set_data(self, event: dict, data: bytes) -> dict:
-        pass
-
-    def parse_data(self, raw_data: str | dict) -> dict | str:
-        """Identity function as default implementation."""
-        return raw_data
-
-    def encode_data(self, parsed_data: dict) -> dict | str | bytes:
-        """Identity function as default implementation."""
-        return parsed_data
+    def post_filter(self, events: list[dict]) -> list[dict]:
+        return events
 
     def poll_events(self):
         """Generalized poller for streams such as Kinesis or DynamoDB
@@ -164,53 +149,22 @@ class StreamPoller(Poller):
         # localstack.services.lambda_.event_source_listeners.kinesis_event_source_listener.KinesisEventSourceListener._filter_records
         # TODO: explore better abstraction for the entire filtering, including the set_data and get_data remapping
         #  We need better clarify which transformations happen before and after filtering -> fix missing test coverage
-        # TODO: test what happens with a mixture of data and non-data filters?
-        if has_data_filter_criteria_parsed(self.filter_patterns):
-            parsed_events = []
-            for event in polled_events:
-                raw_data = self.get_data(event)
-                try:
-                    data = self.parse_data(raw_data)
-                    # TODO: test "data" key remapping
-                    # Filtering remaps stream-specific data fields (e.g., "dynamodb", "kinesis.data", "data") to "data"
-                    # https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis-filtering.html
-                    # It doesn't seem necessary for ESM DynamoDB: https://docs.aws.amazon.com/lambda/latest/dg/with-ddb-filtering.html
-                    # TODO: deepcopy leads to potential duplicate data within a namespace
-                    parsed_event = deepcopy(event)
-                    parsed_event["data"] = data
-
-                    parsed_events.append(parsed_event)
-                except json.JSONDecodeError:
-                    # Filtering decision table for ESM and Pipes:
-                    # https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis-filtering.html
-                    # https://docs.aws.amazon.com/lambda/latest/dg/with-ddb-filtering.html
-                    # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html
-                    LOG.warning(
-                        f"Unable to convert event data '{raw_data}' to json... Record will be dropped.",
-                        exc_info=LOG.isEnabledFor(logging.DEBUG),
-                    )
-        else:
-            parsed_events = polled_events
+        parsed_events = self.pre_filter(polled_events)
         # TODO: advance iterator past matching events!
         #  We need to checkpoint the sequence number for each shard and then advance the shard iterator using
         #  GetShardIterator with a given sequence number
         #  https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html
         #  Failing to do so kinda blocks the stream resulting in very high latency.
         matching_events = self.filter_events(parsed_events)
-        if has_data_filter_criteria(self.filter_patterns):
-            # convert them back (HACK for fixing parity with v1 and getting regression tests passing)
-            for event in matching_events:
-                parsed_data = event.pop("data")
-                encoded_data = self.encode_data(parsed_data)
-                self.set_data(event, encoded_data)
+        matching_events_post_filter = self.post_filter(matching_events)
 
         # TODO: implement MaximumBatchingWindowInSeconds flush condition (before or after filter?)
         # Don't trigger upon empty events
-        if len(matching_events) == 0:
+        if len(matching_events_post_filter) == 0:
             # Update shard iterator if no records match the filter
             self.shards[shard_id] = get_records_response["NextShardIterator"]
             return
-        events = self.add_source_metadata(matching_events)
+        events = self.add_source_metadata(matching_events_post_filter)
         LOG.debug("Polled %d events from %s in shard %s", len(events), self.source_arn, shard_id)
         # TODO: A retry should probably re-trigger fetching the record from the stream again?!
         #  -> This could be tested by setting a high retry number, using a long pipe execution, and a relatively

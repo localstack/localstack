@@ -1,12 +1,17 @@
 import base64
 import json
 import logging
+from copy import deepcopy
 
 from botocore.client import BaseClient
 
 from localstack.aws.api.kinesis import StreamStatus
 from localstack.aws.api.pipes import (
     KinesisStreamStartPosition,
+)
+from localstack.services.lambda_.event_source_listeners.utils import (
+    has_data_filter_criteria,
+    has_data_filter_criteria_parsed,
 )
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
@@ -137,6 +142,41 @@ class KinesisPoller(StreamPoller):
             return record["kinesis"]["sequenceNumber"]
         else:
             return record["sequenceNumber"]
+
+    def pre_filter(self, events: list[dict]) -> list[dict]:
+        # TODO: test what happens with a mixture of data and non-data filters?
+        if has_data_filter_criteria_parsed(self.filter_patterns):
+            parsed_events = []
+            for event in events:
+                raw_data = self.get_data(event)
+                try:
+                    data = self.parse_data(raw_data)
+                    # TODO: test "data" key remapping
+                    # Filtering remaps "kinesis.data" in ESM to "data (idempotent for Pipes using "data" directly)
+                    # ESM: https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis-filtering.html
+                    # Pipes: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-kinesis.html
+                    # Pipes filtering: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html
+                    parsed_event = deepcopy(event)
+                    parsed_event["data"] = data
+
+                    parsed_events.append(parsed_event)
+                except json.JSONDecodeError:
+                    LOG.warning(
+                        f"Unable to convert event data '{raw_data}' to json... Record will be dropped.",
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
+            return parsed_events
+        else:
+            return events
+
+    def post_filter(self, events: list[dict]) -> list[dict]:
+        if has_data_filter_criteria(self.filter_patterns):
+            # convert them back (HACK for fixing parity with v1 and getting regression tests passing)
+            for event in events:
+                parsed_data = event.pop("data")
+                encoded_data = self.encode_data(parsed_data)
+                self.set_data(event, encoded_data)
+        return events
 
     def get_data(self, event: dict) -> str:
         if self.kinesis_namespace:
