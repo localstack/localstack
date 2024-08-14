@@ -101,7 +101,7 @@ class SqsPoller(Poller):
             try:
                 event["body"] = json.loads(event["body"])
             except json.JSONDecodeError:
-                LOG.warning(
+                LOG.debug(
                     f"Unable to convert event body '{event['body']}' to json... Event might be dropped."
                 )
         matching_events = self.filter_events(polled_events)

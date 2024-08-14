@@ -685,4 +685,9 @@ class TestKinesisEventFiltering:
             return _inner
 
         assert wait_until(_wait_lambda_fn_invoked_x_times(function1_name, 1))
+        log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{function1_name}")
+        records = [e for e in log_events["events"] if "{" in e["message"]]
+        message = records[0]["message"]
+        # TODO: missing trailing \n is a LocalStack Lambda logging issue
+        snapshot.match("kinesis-record-lambda-payload", message.strip())
         assert wait_until(_wait_lambda_fn_invoked_x_times(function2_name, 1))

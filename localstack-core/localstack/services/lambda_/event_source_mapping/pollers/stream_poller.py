@@ -201,8 +201,8 @@ class StreamPoller(Poller):
                     # TODO: handle iterator expired scenario
                     return
             except Exception:
-                LOG.debug(
-                    f"Attempt {attempts} failed while processing {self.partner_resource_arn} with events: {events}"
+                LOG.warning(
+                    f"Attempt {attempts} failed unexpectedly while processing {self.partner_resource_arn} with events: {events}"
                 )
                 attempts += 1
                 # Retry polling until the record expires at the source

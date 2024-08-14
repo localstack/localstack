@@ -10,7 +10,6 @@ from localstack.aws.api.pipes import (
     KinesisStreamStartPosition,
 )
 from localstack.services.lambda_.event_source_listeners.utils import (
-    has_data_filter_criteria,
     has_data_filter_criteria_parsed,
 )
 from localstack.services.lambda_.event_source_mapping.event_processor import (
@@ -170,7 +169,7 @@ class KinesisPoller(StreamPoller):
             return events
 
     def post_filter(self, events: list[dict]) -> list[dict]:
-        if has_data_filter_criteria(self.filter_patterns):
+        if has_data_filter_criteria_parsed(self.filter_patterns):
             # convert them back (HACK for fixing parity with v1 and getting regression tests passing)
             for event in events:
                 parsed_data = event.pop("data")
@@ -190,9 +189,9 @@ class KinesisPoller(StreamPoller):
         else:
             event["data"] = data
 
-    def parse_data(self, raw_data: str | dict) -> dict | str:
+    def parse_data(self, raw_data: str) -> dict | str:
         decoded_data = base64.b64decode(raw_data)
         return json.loads(decoded_data)
 
-    def encode_data(self, parsed_data: dict) -> dict | str | bytes:
-        return json.dumps(parsed_data).encode()
+    def encode_data(self, parsed_data: dict) -> str:
+        return base64.b64encode(json.dumps(parsed_data).encode()).decode()
