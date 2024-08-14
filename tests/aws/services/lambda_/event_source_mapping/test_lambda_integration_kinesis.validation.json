@@ -3,7 +3,7 @@
     "last_validated_date": "2023-02-27T16:01:08+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisEventFiltering::test_kinesis_event_filtering_json_pattern": {
-    "last_validated_date": "2023-12-07T08:15:24+00:00"
+    "last_validated_date": "2024-08-14T17:21:54+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping": {
     "last_validated_date": "2024-07-31T13:52:23+00:00"

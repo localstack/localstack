@@ -11,4 +11,4 @@ def _process_kinesis_records(event):
 
 def handler(event, context):
     records_data = list(_process_kinesis_records(event))
-    print(json.dumps(records_data, indent=4))
+    print(json.dumps(records_data))
