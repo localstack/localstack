@@ -5,8 +5,6 @@ set -euo pipefail
 shopt -s nullglob
 shopt -s globstar
 
-VERSION_FILE=${VERSION_FILE:-VERSION}
-VERSION_PY=${VERSION_PY:-"**/version.py"}
 DEPENDENCY_FILE=${DEPENDENCY_FILE:-pyproject.toml}
 
 function usage() {
@@ -24,13 +22,6 @@ function usage() {
     echo ""
     echo "  get-ver"
     echo "      prints the current version number in the version file"
-    echo ""
-    echo "  next-dev-ver"
-    echo "      prints the next development release version from the current version"
-    echo ""
-    echo "  set-ver <version>"
-    echo "      sets the version number in the version file"
-    echo "      example: set-ver 0.15.0"
     echo ""
     echo "  set-dep-ver <dep> <range>"
     echo "      set the dependency version in the dependency file"
@@ -51,15 +42,12 @@ function usage() {
 }
 
 function get_current_version() {
-    cat ${VERSION_FILE}
+    # TODO setuptools is now a dependency of the release-helper! Should it install it if not available?
+    python3 -m setuptools_scm
 }
 
 function remove_ver_suffix() {
     awk -F. '{ print $1 "." $2 "." $3 }'
-}
-
-function increment_dev() {
-    awk -F. -v time="$(date -u +%Y%m%d%H%M%S)" '{ print $1 "." $2 "." $3 ".dev" time }'
 }
 
 function add_dev_suffix() {
@@ -117,16 +105,14 @@ function release_env_validate() {
 }
 
 function explain_release_steps() {
-    echo "- bump VERSION: ${CURRENT_VER} -> ${RELEASE_VER}"
-    echo "- set synced dependencies to ==${RELEASE_VER}"
     echo "- perform release"
+    echo "  - set synced dependencies to ==${RELEASE_VER}"
     echo "  - git commit -a -m 'Release version ${RELEASE_VER}'"
-    echo "  - make publish"
     echo "  - git tag -a 'v${RELEASE_VER}' -m 'Release version ${RELEASE_VER}'"
+    echo "  - make publish"
     echo "  - git push && git push --tags"
-    echo "- bump VERSION: ${RELEASE_VER} -> ${DEVELOP_VER}"
-    echo "- set synced dependencies to >=${DEVELOP_VER},<${BOUNDARY_VER}"
     echo "- prepare development iteration"
+    echo "  - set synced dependencies to >=${DEVELOP_VER},<${BOUNDARY_VER}"
     echo "  - git commit -a -m 'Prepare next development iteration'"
     echo "  - git push"
 }
@@ -143,17 +129,6 @@ function print_github_outputs() {
 function cmd-get-ver() {
     [[ $# -eq 0 ]] || { usage; exit 1; }
     get_current_version
-}
-
-function cmd-next-dev-ver() {
-    [[ $# -eq 0 ]] || { usage; exit 1; }
-    get_current_version | increment_dev
-}
-
-function cmd-set-ver() {
-    [[ $# -eq 1 ]] || { usage; exit 1; }
-
-    echo $1 > ${VERSION_FILE}
 }
 
 function cmd-set-dep-ver() {
@@ -195,17 +170,12 @@ function cmd-git-commit-release() {
 
     echo $1 || verify_valid_version
 
-    for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
-        git add "$file" || echo "did not add file '$file' to commit"
-    done
-    git commit -m "release version ${1}"
+    git add "${DEPENDENCY_FILE}" && git commit -m "release version ${1}" || "Did not create a commit, only creating a tag."
     git tag -a "v${1}" -m "Release version ${1}"
 }
 
 function cmd-git-commit-increment() {
-    for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
-        git add "$file" || echo "did not add file '$file' to commit"
-    done
+    git add "${DEPENDENCY_FILE}"
     git commit -m "prepare next development iteration"
 }
 
@@ -218,8 +188,6 @@ function main() {
     # invoke command
     case $command_name in
         "get-ver")              cmd-get-ver "$@" ;;
-        "next-dev-ver")         cmd-next-dev-ver "$@" ;;
-        "set-ver")              cmd-set-ver "$@" ;;
         "set-dep-ver")          cmd-set-dep-ver "$@" ;;
         "github-outputs")       cmd-github-outputs "$@" ;;
         "explain-steps")        cmd-explain-steps "$@" ;;
