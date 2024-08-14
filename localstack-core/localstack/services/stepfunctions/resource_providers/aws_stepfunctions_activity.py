@@ -56,10 +56,7 @@ class StepFunctionsActivityProvider(ResourceProvider[StepFunctionsActivityProper
         """
         model = request.desired_state
         step_functions = request.aws_client_factory.stepfunctions
-        input_shape = step_functions.meta.service_model.operation_model(
-            "CreateActivity"
-        ).input_shape
-        response = step_functions.create_activity(**util.convert_request_kwargs(model, input_shape))
+        response = step_functions.create_activity(**model)
         model["Arn"] = response["activityArn"]
 
         return ProgressEvent(
