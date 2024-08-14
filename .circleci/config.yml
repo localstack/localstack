@@ -815,8 +815,8 @@ jobs:
           name: Publish a dev release
           command: |
             source .venv/bin/activate
-            bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
-            make publish
+            # TODO this would publish a release when being executed on a version tag!
+            # make publish
 
   push-to-tinybird:
     executor: ubuntu-machine-amd64
