@@ -1065,10 +1065,6 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages", []) == []
 
-    @pytest.mark.skipif(
-        is_v2_esm(),
-        reason="Filtering behavior for JSON detection not yet implemented in ESM v2",
-    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "filter, item_matching, item_not_matching",
