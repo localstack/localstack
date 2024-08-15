@@ -82,8 +82,8 @@ from localstack.services.ec2.exceptions import (
 from localstack.services.ec2.models import get_ec2_backend
 from localstack.services.ec2.patches import apply_patches
 from localstack.services.moto import call_moto
-from localstack.utils.patch import patch
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.patch import patch
 from localstack.utils.strings import first_char_to_upper, long_uid, short_uid
 
 # additional subnet attributes not yet supported upstream

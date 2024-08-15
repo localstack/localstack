@@ -1,17 +1,14 @@
-import json
 import logging
 from typing import Dict, List, Optional
 
 from moto.ec2 import models as ec2_models
-from moto.ec2 import exceptions as ec2_exceptions
-from moto.core.utils import camelcase_to_underscores
 
+from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
 from localstack.services.ec2.exceptions import (
-    InvalidSubnetDuplicateCustomIdError,
     InvalidSecurityGroupDuplicateIdError,
+    InvalidSubnetDuplicateCustomIdError,
     InvalidVpcDuplicateCustomIdError,
 )
-from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID, apply_json_patch_safe
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
@@ -43,7 +40,7 @@ def apply_patches():
 
         # Return the subnet with the patched custom id
         return result
-    
+
     @patch(ec2_models.security_groups.SecurityGroupBackend.create_security_group)
     def ec2_create_security_group(
         fn: ec2_models.security_groups.SecurityGroupBackend.create_security_group,
@@ -51,11 +48,13 @@ def apply_patches():
         *args,
         tags: Optional[Dict[str, str]] = None,
         force: bool = False,
-        **kwargs
+        **kwargs,
     ):
         # Generate security group with moto library
         tags: Optional[dict] = tags or {}
-        result: ec2_models.security_groups.SecurityGroup = fn(self, *args, tags=tags, force=force, **kwargs)
+        result: ec2_models.security_groups.SecurityGroup = fn(
+            self, *args, tags=tags, force=force, **kwargs
+        )
         security_group_name = result.name
         vpc_id = result.vpc_id
 
@@ -68,7 +67,7 @@ def apply_patches():
             self.groups[vpc_id].pop(result)
             result.id = custom_id
             self.groups[vpc_id][custom_id] = result
-    
+
     @patch(ec2_models.vpcs.VPCBackend.create_vpc)
     def ec2_create_vpc(
         fn: ec2_models.vpcs.VPCBackend.create_vpc,
@@ -77,12 +76,12 @@ def apply_patches():
         tags: Optional[List[Dict[str, str]]] = None,
         is_default: bool = False,
         **kwargs,
-    ):  
+    ):
         # Generate VPC with moto library
         tags: Optional[List[Dict[str, str]]] = tags or []
         result: ec2_models.vpcs.VPC = fn(self, *args, tags=tags, is_default=is_default, **kwargs)
         vpc_id = result.id
-        
+
         # Extract custom ID from tags if it exists
         custom_ids = [tag["Value"] for tag in tags if tag["Key"] == TAG_KEY_CUSTOM_ID]
         custom_id = custom_ids[0] if len(custom_ids) > 0 else None
@@ -91,7 +90,7 @@ def apply_patches():
             # Check if custom id is unique
             if custom_id in self.vpcs:
                 raise InvalidVpcDuplicateCustomIdError(custom_id)
-            
+
             # Remove security group associated with unique non-custom VPC ID
             default = self.get_security_group_from_name("default", vpc_id=vpc_id)
             if not default:
@@ -114,6 +113,4 @@ def apply_patches():
                     is_default=is_default,
                 )
 
-
         return fn(self, *args, **kwargs)
-    
