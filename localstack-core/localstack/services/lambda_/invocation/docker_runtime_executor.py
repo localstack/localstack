@@ -43,6 +43,7 @@ from localstack.utils.container_utils.container_client import (
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.files import chmod_r, rm_rf
+from localstack.utils.lambda_debug_mode.lambda_debug_mode import lambda_debug_port_for
 from localstack.utils.net import get_free_tcp_port
 from localstack.utils.strings import short_uid, truncate
 
@@ -319,6 +320,10 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             platform=docker_platform(self.function_version.config.architectures[0]),
             additional_flags=config.LAMBDA_DOCKER_FLAGS,
         )
+        debug_port = lambda_debug_port_for(self.function_version.qualified_arn)
+        if debug_port is not None:
+            container_config.ports.add(debug_port, debug_port)
+
         if self.function_version.config.package_type == PackageType.Zip:
             if self.function_version.config.code.is_hot_reloading():
                 container_config.env_vars[HOT_RELOADING_ENV_VARIABLE] = "/var/task"

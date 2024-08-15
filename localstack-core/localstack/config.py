@@ -433,6 +433,9 @@ DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
 # When enabled it triggers specialised workflows for the debugging.
 LAMBDA_DEBUG_MODE = is_env_true("LAMBDA_DEBUG_MODE")
 
+# path to the lambda debug mode configuration file.
+LAMBDA_DEBUG_MODE_CONFIG_PATH = os.environ.get("LAMBDA_DEBUG_MODE_CONFIG_PATH")
+
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")
 
