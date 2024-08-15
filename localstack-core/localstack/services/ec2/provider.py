@@ -80,15 +80,20 @@ from localstack.services.ec2.exceptions import (
     MissingParameterError,
 )
 from localstack.services.ec2.models import get_ec2_backend
+from localstack.services.ec2.patches import apply_patches
 from localstack.services.moto import call_moto
 from localstack.utils.patch import patch
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import first_char_to_upper, long_uid, short_uid
 
 # additional subnet attributes not yet supported upstream
 ADDITIONAL_SUBNET_ATTRS = ("private_dns_name_options_on_launch", "enable_dns64")
 
 
-class Ec2Provider(Ec2Api, ABC):
+class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
+    def on_after_init(self):
+        apply_patches()
+
     @handler("DescribeAvailabilityZones", expand=False)
     def describe_availability_zones(
         self,
