@@ -5,14 +5,12 @@ from .gateway_exception import GatewayExceptionHandler
 from .integration import IntegrationHandler
 from .integration_request import IntegrationRequestHandler
 from .integration_response import IntegrationResponseHandler
-from .legacy import LegacyHandler
 from .method_request import MethodRequestHandler
 from .method_response import MethodResponseHandler
 from .parse import InvocationRequestParser
 from .resource_router import InvocationRequestRouter
 from .response_enricher import InvocationResponseEnricher
 
-legacy_handler = LegacyHandler()
 parse_request = InvocationRequestParser()
 modify_request = CompositeHandler()
 route_request = InvocationRequestRouter()

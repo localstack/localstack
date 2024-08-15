@@ -1223,6 +1223,26 @@
         "documentation":"<p>Container for version information.</p>",
         "locationName":"Version"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidEncryptionAlgorithmError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ArgumentName": {
+            "shape": "ArgumentName"
+          },
+          "ArgumentValue": {
+            "shape": "ArgumentValue"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The Encryption request you specified is not valid.</p>",
+        "exception": true
+      }
     }
   ]
 }

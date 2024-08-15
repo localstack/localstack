@@ -1,0 +1,27 @@
+Parameters:
+  parameter123:
+    Type: AWS::SSM::Parameter::Value<CommaDelimitedList>
+
+Resources:
+  role123:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: {{role_name}}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: policy-123
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: "*"
+                Resource: !Ref parameter123

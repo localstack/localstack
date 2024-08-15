@@ -284,6 +284,7 @@ from localstack.services.s3.validation import (
     validate_inventory_configuration,
     validate_lifecycle_configuration,
     validate_object_key,
+    validate_sse_c,
     validate_website_configuration,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
@@ -629,6 +630,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
 
+        # TODO: we're not encrypting the object with the provided key for now
+        sse_c_key_md5 = request.get("SSECustomerKeyMD5")
+        validate_sse_c(
+            algorithm=request.get("SSECustomerAlgorithm"),
+            encryption_key=request.get("SSECustomerKey"),
+            encryption_key_md5=sse_c_key_md5,
+            server_side_encryption=request.get("ServerSideEncryption"),
+        )
+
         encryption_parameters = get_encryption_parameters_from_request_and_bucket(
             request,
             s3_bucket,
@@ -654,6 +664,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             encryption=encryption_parameters.encryption,
             kms_key_id=encryption_parameters.kms_key_id,
             bucket_key_enabled=encryption_parameters.bucket_key_enabled,
+            sse_key_hash=sse_c_key_md5,
             lock_mode=lock_parameters.lock_mode,
             lock_legal_status=lock_parameters.lock_legal_status,
             lock_until=lock_parameters.lock_until,
@@ -732,6 +743,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 response["Expiration"] = expiration_header
 
         add_encryption_to_response(response, s3_object=s3_object)
+        if sse_c_key_md5:
+            response["SSECustomerAlgorithm"] = "AES256"
+            response["SSECustomerKeyMD5"] = sse_c_key_md5
+
         self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
         return response
@@ -774,6 +789,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if not config.S3_SKIP_KMS_KEY_VALIDATION and s3_object.kms_key_id:
             validate_kms_key_id(kms_key=s3_object.kms_key_id, bucket=s3_bucket)
+
+        sse_c_key_md5 = request.get("SSECustomerKeyMD5")
+        # we're using getattr access because when restoring, the field might not exist
+        # TODO: cleanup at next major release
+        if sse_key_hash := getattr(s3_object, "sse_key_hash", None):
+            if sse_key_hash and not sse_c_key_md5:
+                raise InvalidRequest(
+                    "The object was stored using a form of Server Side Encryption. "
+                    "The correct parameters must be provided to retrieve the object."
+                )
+            elif sse_key_hash != sse_c_key_md5:
+                raise AccessDenied("Access Denied")
+
+        validate_sse_c(
+            algorithm=request.get("SSECustomerAlgorithm"),
+            encryption_key=request.get("SSECustomerKey"),
+            encryption_key_md5=sse_c_key_md5,
+        )
 
         validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
@@ -867,6 +900,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.lock_legal_status:
             response["ObjectLockLegalHoldStatus"] = s3_object.lock_legal_status
 
+        if sse_c_key_md5:
+            response["SSECustomerAlgorithm"] = "AES256"
+            response["SSECustomerKeyMD5"] = sse_c_key_md5
+
         for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
             if request_param_value := request.get(request_param):
                 response[response_param] = request_param_value
@@ -891,6 +928,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
+
+        sse_c_key_md5 = request.get("SSECustomerKeyMD5")
+        # we're using getattr access because when restoring, the field might not exist
+        # TODO: cleanup at next major release
+        if sse_key_hash := getattr(s3_object, "sse_key_hash", None):
+            if sse_key_hash and not sse_c_key_md5:
+                raise InvalidRequest(
+                    "The object was stored using a form of Server Side Encryption. "
+                    "The correct parameters must be provided to retrieve the object."
+                )
+            elif sse_key_hash != sse_c_key_md5:
+                raise AccessDenied("Access Denied")
+
+        validate_sse_c(
+            algorithm=request.get("SSECustomerAlgorithm"),
+            encryption_key=request.get("SSECustomerKey"),
+            encryption_key_md5=sse_c_key_md5,
+        )
 
         response = HeadObjectOutput(
             AcceptRanges="bytes",
@@ -952,6 +1007,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 response["ObjectLockRetainUntilDate"] = s3_object.lock_until
         if s3_object.lock_legal_status:
             response["ObjectLockLegalHoldStatus"] = s3_object.lock_legal_status
+
+        if sse_c_key_md5:
+            response["SSECustomerAlgorithm"] = "AES256"
+            response["SSECustomerKeyMD5"] = sse_c_key_md5
 
         # TODO: missing return fields:
         #  ArchiveStatus: Optional[ArchiveStatus]
@@ -1207,9 +1266,36 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 Condition=failed_condition,
             )
 
+        source_sse_c_key_md5 = request.get("CopySourceSSECustomerKeyMD5")
+        # we're using getattr access because when restoring, the field might not exist
+        # TODO: cleanup at next major release
+        if sse_key_hash_src := getattr(src_s3_object, "sse_key_hash", None):
+            if sse_key_hash_src and not source_sse_c_key_md5:
+                raise InvalidRequest(
+                    "The object was stored using a form of Server Side Encryption. "
+                    "The correct parameters must be provided to retrieve the object."
+                )
+            elif sse_key_hash_src != source_sse_c_key_md5:
+                raise AccessDenied("Access Denied")
+
+        validate_sse_c(
+            algorithm=request.get("CopySourceSSECustomerAlgorithm"),
+            encryption_key=request.get("CopySourceSSECustomerKey"),
+            encryption_key_md5=source_sse_c_key_md5,
+        )
+
+        target_sse_c_key_md5 = request.get("SSECustomerKeyMD5")
+        server_side_encryption = request.get("ServerSideEncryption")
+        # validate target SSE-C parameters
+        validate_sse_c(
+            algorithm=request.get("SSECustomerAlgorithm"),
+            encryption_key=request.get("SSECustomerKey"),
+            encryption_key_md5=target_sse_c_key_md5,
+            server_side_encryption=server_side_encryption,
+        )
+
         # TODO validate order of validation
         storage_class = request.get("StorageClass")
-        server_side_encryption = request.get("ServerSideEncryption")
         metadata_directive = request.get("MetadataDirective")
         website_redirect_location = request.get("WebsiteRedirectLocation")
         # we need to check for identity of the object, to see if the default one has been changed
@@ -1224,6 +1310,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 (
                     storage_class,
                     server_side_encryption,
+                    target_sse_c_key_md5,
                     metadata_directive == "REPLACE",
                     website_redirect_location,
                     dest_s3_bucket.encryption_rule
@@ -1278,6 +1365,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             bucket_key_enabled=request.get(
                 "BucketKeyEnabled"
             ),  # CopyObject does not inherit from the bucket here
+            sse_key_hash=target_sse_c_key_md5,
             lock_mode=lock_parameters.lock_mode,
             lock_legal_status=lock_parameters.lock_legal_status,
             lock_until=lock_parameters.lock_until,
@@ -1327,6 +1415,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
 
         add_encryption_to_response(response, s3_object=s3_object)
+        if target_sse_c_key_md5:
+            response["SSECustomerAlgorithm"] = "AES256"
+            response["SSECustomerKeyMD5"] = target_sse_c_key_md5
 
         if (
             src_s3_bucket.versioning_status
@@ -1744,6 +1835,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             http_method="GET",
         )
 
+        sse_c_key_md5 = request.get("SSECustomerKeyMD5")
+        # we're using getattr access because when restoring, the field might not exist
+        # TODO: cleanup at next major release
+        if sse_key_hash := getattr(s3_object, "sse_key_hash", None):
+            if sse_key_hash and not sse_c_key_md5:
+                raise InvalidRequest(
+                    "The object was stored using a form of Server Side Encryption. "
+                    "The correct parameters must be provided to retrieve the object."
+                )
+            elif sse_key_hash != sse_c_key_md5:
+                raise AccessDenied("Access Denied")
+
+        validate_sse_c(
+            algorithm=request.get("SSECustomerAlgorithm"),
+            encryption_key=request.get("SSECustomerKey"),
+            encryption_key_md5=sse_c_key_md5,
+        )
+
         object_attrs = request.get("ObjectAttributes", [])
         response = GetObjectAttributesOutput()
         if "ETag" in object_attrs:
@@ -1864,6 +1973,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
             )
 
+        # TODO: we're not encrypting the object with the provided key for now
+        sse_c_key_md5 = request.get("SSECustomerKeyMD5")
+        validate_sse_c(
+            algorithm=request.get("SSECustomerAlgorithm"),
+            encryption_key=request.get("SSECustomerKey"),
+            encryption_key_md5=sse_c_key_md5,
+            server_side_encryption=request.get("ServerSideEncryption"),
+        )
+
         encryption_parameters = get_encryption_parameters_from_request_and_bucket(
             request,
             s3_bucket,
@@ -1884,6 +2002,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             encryption=encryption_parameters.encryption,
             kms_key_id=encryption_parameters.kms_key_id,
             bucket_key_enabled=encryption_parameters.bucket_key_enabled,
+            sse_key_hash=sse_c_key_md5,
             lock_mode=lock_parameters.lock_mode,
             lock_legal_status=lock_parameters.lock_legal_status,
             lock_until=lock_parameters.lock_until,
@@ -1905,6 +2024,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ChecksumAlgorithm"] = checksum_algorithm
 
         add_encryption_to_response(response, s3_object=s3_multipart.object)
+        if sse_c_key_md5:
+            response["SSECustomerAlgorithm"] = "AES256"
+            response["SSECustomerKeyMD5"] = sse_c_key_md5
 
         # TODO: missing response fields we're not currently supporting
         # - AbortDate: lifecycle related,not currently supported, todo
@@ -1946,6 +2068,30 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
+
+        # TODO: we're not encrypting the object with the provided key for now
+        sse_c_key_md5 = request.get("SSECustomerKeyMD5")
+        validate_sse_c(
+            algorithm=request.get("SSECustomerAlgorithm"),
+            encryption_key=request.get("SSECustomerKey"),
+            encryption_key_md5=sse_c_key_md5,
+        )
+
+        if (s3_multipart.object.sse_key_hash and not sse_c_key_md5) or (
+            sse_c_key_md5 and not s3_multipart.object.sse_key_hash
+        ):
+            raise InvalidRequest(
+                "The multipart upload initiate requested encryption. "
+                "Subsequent part requests must include the appropriate encryption parameters."
+            )
+        elif (
+            s3_multipart.object.sse_key_hash
+            and sse_c_key_md5
+            and s3_multipart.object.sse_key_hash != sse_c_key_md5
+        ):
+            raise InvalidRequest(
+                "The provided encryption parameters did not match the ones used originally."
+            )
 
         s3_part = S3Part(
             part_number=part_number,
@@ -2001,6 +2147,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         add_encryption_to_response(response, s3_object=s3_multipart.object)
+        if sse_c_key_md5:
+            response["SSECustomerAlgorithm"] = "AES256"
+            response["SSECustomerKeyMD5"] = sse_c_key_md5
 
         if s3_part.checksum_algorithm:
             response[f"Checksum{s3_part.checksum_algorithm.upper()}"] = s3_part.checksum_value
@@ -3922,6 +4071,10 @@ def get_encryption_parameters_from_request_and_bucket(
     s3_bucket: S3Bucket,
     store: S3Store,
 ) -> EncryptionParameters:
+    if request.get("SSECustomerKey"):
+        # we return early, because ServerSideEncryption does not apply if the request has SSE-C
+        return EncryptionParameters(None, None, False)
+
     encryption = request.get("ServerSideEncryption")
     kms_key_id = request.get("SSEKMSKeyId")
     bucket_key_enabled = request.get("BucketKeyEnabled")

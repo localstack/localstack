@@ -11,7 +11,7 @@
           "httpMethod":"POST",
           "payloadFormatVersion":"1.0",
           "type":"HTTP_PROXY",
-          "uri": "http://${stageVariables.url}"
+          "uri": "https://${stageVariables.TestHost}/${stageVariables.testPath}?${stageVariables.querystring}"
         },
         "responses": {
           "200": {

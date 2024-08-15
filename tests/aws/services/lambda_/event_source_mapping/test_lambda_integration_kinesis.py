@@ -20,7 +20,10 @@ from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 TEST_LAMBDA_PARALLEL_FILE = FUNCTIONS_PATH / "lambda_parallel.py"
 TEST_LAMBDA_KINESIS_LOG = FUNCTIONS_PATH / "kinesis_log.py"
@@ -366,9 +369,6 @@ class TestKinesisSource:
         )
         snapshot.match("invocation_events", invocation_events)
 
-    @pytest.mark.skipif(
-        is_v2_esm(), reason="Iterator expiration and disabling ESM not yet handled in ESM v2"
-    )
     @markers.aws.validated
     def test_disable_kinesis_event_source_mapping(
         self,
@@ -442,7 +442,18 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
-    @pytest.mark.skipif(is_v2_esm(), reason="Destinations not yet supported in ESM v2")
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_esm,
+        paths=[
+            # Pipe uses "context" (extra)
+            "$..context",
+            # ESM uses "requestContext" and "responseContext" (not implemented yet)
+            "$..requestContext",
+            "$..responseContext",
+            # uuid ordering issue because the missing requestContext contains a uuid
+            "$..Messages..MessageId",
+        ],
+    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
@@ -535,8 +546,12 @@ class TestKinesisSource:
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
-    @pytest.mark.skipif(
-        is_v2_esm(), reason="DestinationConfig and LastProcessing result snapshot diff in ESM v2"
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_esm,
+        paths=[
+            # Lifecycle updates not yet implemented in ESM v2
+            "$..LastProcessingResult",
+        ],
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -670,4 +685,9 @@ class TestKinesisEventFiltering:
             return _inner
 
         assert wait_until(_wait_lambda_fn_invoked_x_times(function1_name, 1))
+        log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{function1_name}")
+        records = [e for e in log_events["events"] if "{" in e["message"]]
+        message = records[0]["message"]
+        # TODO: missing trailing \n is a LocalStack Lambda logging issue
+        snapshot.match("kinesis-record-lambda-payload", message.strip())
         assert wait_until(_wait_lambda_fn_invoked_x_times(function2_name, 1))

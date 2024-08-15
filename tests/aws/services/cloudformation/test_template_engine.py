@@ -243,6 +243,26 @@ class TestIntrinsicFunctions:
         result = stack.outputs["Result"]
         assert result == "test"
 
+    @markers.aws.validated
+    def test_sub_number_type(self, deploy_cfn_template):
+        alarm_name_prefix = "alarm-test-latency-preemptive"
+        threshold = "1000.0"
+        period = "60"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/sub_number_type.yml"
+            ),
+            parameters={
+                "ResourceNamePrefix": alarm_name_prefix,
+                "RestLatencyPreemptiveAlarmThreshold": threshold,
+                "RestLatencyPreemptiveAlarmPeriod": period,
+            },
+        )
+
+        assert stack.outputs["AlarmName"] == f"{alarm_name_prefix}-{period}"
+        assert stack.outputs["Threshold"] == threshold
+        assert stack.outputs["Period"] == period
+
 
 class TestImports:
     @markers.aws.validated
@@ -397,6 +417,36 @@ class TestSsmParameters:
         ssm_parameter = aws_client.ssm.get_parameter(Name="test-param")["Parameter"]["Value"]
 
         assert ssm_parameter == key_value
+
+    @markers.aws.validated
+    def test_create_change_set_with_ssm_parameter_list(
+        self, deploy_cfn_template, aws_client, region_name, account_id, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value(key="role-name"))
+
+        parameter_logical_id = "parameter123"
+        parameter_name = f"ls-param-{short_uid()}"
+        role_name = f"ls-role-{short_uid()}"
+        parameter_value = ",".join(
+            [
+                f"arn:aws:ssm:{region_name}:{account_id}:parameter/some/params",
+                f"arn:aws:ssm:{region_name}:{account_id}:parameter/some/other/params",
+            ]
+        )
+        snapshot.match("role-name", role_name)
+
+        aws_client.ssm.put_parameter(Name=parameter_name, Value=parameter_value, Type="StringList")
+
+        deploy_cfn_template(
+            max_wait=120 if is_aws_cloud() else 20,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/dynamicparameter_ssm_list.yaml"
+            ),
+            template_mapping={"role_name": role_name},
+            parameters={parameter_logical_id: parameter_name},
+        )
+        role_policy = aws_client.iam.get_role_policy(RoleName=role_name, PolicyName="policy-123")
+        snapshot.match("iam_role_policy", role_policy)
 
 
 class TestSecretsManagerParameters:

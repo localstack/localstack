@@ -39,7 +39,7 @@
     "last_validated_date": "2023-04-26T08:48:20+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
-    "last_validated_date": "2023-02-27T17:36:42+00:00"
+    "last_validated_date": "2024-08-08T20:50:25+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
     "last_validated_date": "2023-02-27T17:44:25+00:00"

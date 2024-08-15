@@ -35,6 +35,9 @@
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-west-2]": {
     "last_validated_date": "2024-05-09T08:33:45+00:00"
   },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_sub_number_type": {
+    "last_validated_date": "2024-08-09T06:55:16+00:00"
+  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
     "last_validated_date": "2023-01-30T19:15:46+00:00"
   },
@@ -82,6 +85,9 @@
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestPseudoParameters::test_stack_id": {
     "last_validated_date": "2024-07-18T08:56:47+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_change_set_with_ssm_parameter_list": {
+    "last_validated_date": "2024-08-08T21:21:23+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
     "last_validated_date": "2023-01-15T16:54:23+00:00"
