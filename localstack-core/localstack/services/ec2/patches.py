@@ -73,6 +73,8 @@ def apply_patches():
             result.id = custom_id
             self.groups[vpc_id][custom_id] = result
 
+        return result
+
     @patch(ec2_models.vpcs.VPCBackend.create_vpc)
     def ec2_create_vpc(
         fn: ec2_models.vpcs.VPCBackend.create_vpc,
@@ -119,4 +121,4 @@ def apply_patches():
                     is_default=is_default,
                 )
 
-        return fn(self, *args, **kwargs)
+        return result
