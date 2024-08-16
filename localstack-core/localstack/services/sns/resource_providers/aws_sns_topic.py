@@ -80,7 +80,7 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
             k: v
             for k, v in model.items()
             if v is not None
-            if k not in ["TopicName", "Subscriptions", "Tags"]
+            if k not in ["TopicName", "Subscription", "Tags"]
         }
         if (fifo_topic := attributes.get("FifoTopic")) is not None:
             attributes["FifoTopic"] = canonicalize_bool_to_str(fifo_topic)
