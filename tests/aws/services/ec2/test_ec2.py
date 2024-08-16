@@ -442,7 +442,7 @@ class TestEc2Integrations:
         assert vpc["VpcId"] == custom_id
 
         # Check if an duplicate custom ID exception is thrown if we try to recreate the VPC with the same custom ID
-        with pytest.raises(InvalidVpcDuplicateCustomIdError):
+        with pytest.raises(ClientError) as e:
             ec2_client.create_vpc(
                 CidrBlock="10.0.0.0/16",
                 TagSpecifications=[
@@ -454,6 +454,9 @@ class TestEc2Integrations:
                     }
                 ],
             )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidVpc.DuplicateCustomId"
 
     @markers.aws.only_localstack
     def test_create_subnet_with_custom_id(self, aws_client):
@@ -482,7 +485,6 @@ class TestEc2Integrations:
         # Check if the custom ID is present in the describe_subnets response as well
         subnet: dict = ec2_client.describe_subnets(
             SubnetIds=[custom_id],
-            MaxResults=1,
         )["Subnets"][0]
         assert subnet["SubnetId"] == custom_id
 
@@ -490,6 +492,7 @@ class TestEc2Integrations:
         with pytest.raises(InvalidSubnetDuplicateCustomIdError):
             ec2_client.create_subnet(
                 CidrBlock="10.0.1.0/24",
+                VpcId=vpc_id,
                 TagSpecifications=[
                     {
                         "ResourceType": "subnet",
@@ -529,7 +532,6 @@ class TestEc2Integrations:
         # Check if the custom ID is present in the describe_security_groups response as well
         security_group: dict = ec2_client.describe_security_groups(
             GroupIds=[custom_id],
-            MaxResults=1,
         )["SecurityGroups"][0]
         assert security_group["GroupId"] == custom_id
 
