@@ -2,12 +2,12 @@ import contextlib
 
 import pytest
 from botocore.exceptions import ClientError
+from moto.ec2 import ec2_backends
 from moto.ec2.utils import (
     random_security_group_id,
     random_subnet_id,
     random_vpc_id,
 )
-from moto.ec2 import ec2_backends
 from mypy_boto3_ec2 import EC2Client
 
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
