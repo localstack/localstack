@@ -72,7 +72,7 @@ class ApiGatewayEndpoint:
         return context, response
 
     def is_rest_api(self, api_id: str, stage: str):
-        return (api_id, stage) in self._global_store.active_deployments
+        return (api := self._global_store.active_deployments[api_id]) and stage in api
 
     def populate_rest_api_invocation_context(
         self, context: RestApiInvocationContext, api_id: str, stage: str
