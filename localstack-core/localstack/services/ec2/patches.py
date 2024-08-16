@@ -27,12 +27,15 @@ def apply_patches():
         tags: Optional[dict] = tags or {}
         result: ec2_models.subnets.Subnet = fn(self, *args, tags=tags, **kwargs)
         availability_zone = result.availability_zone
+        vpc_id = result.vpc_id
 
         if custom_id := tags.get("subnet", {}).get(TAG_KEY_CUSTOM_ID):
-            # Check if custom id is unique
-            if custom_id in self.subnets[availability_zone]:
-                self.delete_subnet(subnet_id=result.id)
-                raise InvalidSubnetDuplicateCustomIdError(custom_id)
+            # Check if custom id is unique within a given VPC
+            for az_subnets in self.subnets.values():
+                for subnet in az_subnets.values():
+                    if subnet.vpc_id == vpc_id and custom_id == subnet.id:
+                        self.delete_subnet(subnet_id=result.id)
+                        raise InvalidSubnetDuplicateCustomIdError(custom_id)
 
             # Remove the subnet from the default dict and add it back with the custom id
             self.subnets[availability_zone].pop(result.id)
