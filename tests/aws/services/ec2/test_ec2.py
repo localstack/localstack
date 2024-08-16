@@ -11,11 +11,6 @@ from moto.ec2.utils import (
 from mypy_boto3_ec2 import EC2Client
 
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
-from localstack.services.ec2.exceptions import (
-    InvalidSecurityGroupDuplicateIdError,
-    InvalidSubnetDuplicateCustomIdError,
-    InvalidVpcDuplicateCustomIdError,
-)
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -530,7 +525,9 @@ class TestEc2Integrations:
                 }
             ],
         )
-        assert security_group["GroupId"] == custom_id, f"Security group ID does not match custom ID: {security_group}"
+        assert (
+            security_group["GroupId"] == custom_id
+        ), f"Security group ID does not match custom ID: {security_group}"
 
         # Check if the custom ID is present in the describe_security_groups response as well
         security_groups: dict = ec2_client.describe_security_groups(
