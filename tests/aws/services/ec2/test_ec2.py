@@ -489,7 +489,7 @@ class TestEc2Integrations:
         assert subnet["SubnetId"] == custom_id
 
         # Check if a duplicate custom ID exception is thrown if we try to recreate the subnet with the same custom ID
-        with pytest.raises(InvalidSubnetDuplicateCustomIdError):
+        with pytest.raises(ClientError) as e:
             ec2_client.create_subnet(
                 CidrBlock="10.0.1.0/24",
                 VpcId=vpc_id,
@@ -502,6 +502,9 @@ class TestEc2Integrations:
                     }
                 ],
             )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidSubnet.DuplicateCustomId"
 
     @markers.aws.only_localstack
     def test_create_security_group_with_custom_id(self, aws_client):
