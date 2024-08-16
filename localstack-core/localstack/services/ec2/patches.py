@@ -24,7 +24,7 @@ def apply_patches():
         **kwargs,
     ):
         # Generate subnet with moto library
-        tags: Optional[dict] = tags or {}
+        tags: Dict[str, str] = tags or {}
         result: ec2_models.subnets.Subnet = fn(self, *args, tags=tags, **kwargs)
         availability_zone = result.availability_zone
         vpc_id = result.vpc_id
@@ -55,7 +55,7 @@ def apply_patches():
         **kwargs,
     ):
         # Generate security group with moto library
-        tags: Optional[dict] = tags or {}
+        tags: Dict[str, str] = tags or {}
         result: ec2_models.security_groups.SecurityGroup = fn(
             self, *args, tags=tags, force=force, **kwargs
         )
@@ -83,7 +83,7 @@ def apply_patches():
         **kwargs,
     ):
         # Generate VPC with moto library
-        tags: Optional[List[Dict[str, str]]] = tags or []
+        tags: List[Dict[str, str]] = tags or []
         result: ec2_models.vpcs.VPC = fn(self, *args, tags=tags, is_default=is_default, **kwargs)
         vpc_id = result.id
 
