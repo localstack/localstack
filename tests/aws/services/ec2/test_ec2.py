@@ -530,16 +530,21 @@ class TestEc2Integrations:
                 }
             ],
         )
-        assert security_group["GroupId"] == custom_id
+        assert security_group["GroupId"] == custom_id, f"Security group ID does not match custom ID: {security_group}"
 
         # Check if the custom ID is present in the describe_security_groups response as well
-        security_group: dict = ec2_client.describe_security_groups(
+        security_groups: dict = ec2_client.describe_security_groups(
             GroupIds=[custom_id],
-        )["SecurityGroups"][0]
+        )["SecurityGroups"]
+
+        # Get security group that match a given VPC id
+        security_group = next(
+            (sg for sg in security_groups if sg["VpcId"] == vpc["Vpc"]["VpcId"]), None
+        )
         assert security_group["GroupId"] == custom_id
 
         # Check if a duplicate custom ID exception is thrown if we try to recreate the security group with the same custom ID
-        with pytest.raises(InvalidSecurityGroupDuplicateIdError):
+        with pytest.raises(ClientError) as e:
             ec2_client.create_security_group(
                 Description="Test security group",
                 GroupName="test-security-group-1",
@@ -553,6 +558,9 @@ class TestEc2Integrations:
                     }
                 ],
             )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidSecurityGroupId.DuplicateCustomId"
 
 
 @markers.aws.validated

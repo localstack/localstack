@@ -60,17 +60,18 @@ def apply_patches():
             self, *args, tags=tags, force=force, **kwargs
         )
         security_group_name = result.name
+        security_group_id = result.group_id
         vpc_id = result.vpc_id
 
         if custom_id := tags.get(TAG_KEY_CUSTOM_ID):
             # Check if custom id is unique
-            if force and custom_id in self.groups[vpc_id]:
-                self.delete_security_group(group_id=result.id)
+            if not force and custom_id in self.groups[vpc_id]:
+                self.delete_security_group(name=security_group_name, group_id=security_group_id)
                 raise InvalidSecurityGroupDuplicateIdError(custom_id, security_group_name)
 
             # Remove the security group from the default dict and add it back with the custom id
-            self.groups[vpc_id].pop(result.id)
-            result.id = custom_id
+            self.groups[vpc_id].pop(result.group_id)
+            result.group_id = result.id = custom_id
             self.groups[vpc_id][custom_id] = result
 
         return result
