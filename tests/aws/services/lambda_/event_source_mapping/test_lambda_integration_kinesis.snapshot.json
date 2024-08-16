@@ -1358,7 +1358,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisEventFiltering::test_kinesis_event_filtering_json_pattern": {
-    "recorded-date": "07-12-2023, 09:15:24",
+    "recorded-date": "14-08-2024, 17:21:57",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -1435,7 +1435,8 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
         }
-      }
+      },
+      "kinesis-record-lambda-payload": "[{\"event_type\": \"function_1\", \"message\": \"foo\"}]"
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_duplicate_event_source_mappings": {

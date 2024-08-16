@@ -43,6 +43,7 @@ class EsmConfigFactory:
         elif service == "kinesis":
             # TODO: test all defaults
             default_source_parameters["BatchSize"] = 100
+            default_source_parameters["DestinationConfig"] = DestinationConfig(OnFailure={})
             default_source_parameters["BisectBatchOnFunctionError"] = False
             default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
             default_source_parameters["MaximumRecordAgeInSeconds"] = -1

@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import defaultdict
 from functools import cached_property
@@ -95,7 +96,21 @@ class SqsPoller(Poller):
         # TODO: implement format detection behavior (e.g., for JSON body):
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html#pipes-filter-sqs
         #  Check whether we need poller-specific filter-preprocessing here without modifying the actual event!
+        # convert to json for filtering (HACK for fixing parity with v1 and getting regression tests passing)
+        for event in polled_events:
+            try:
+                event["body"] = json.loads(event["body"])
+            except json.JSONDecodeError:
+                LOG.debug(
+                    f"Unable to convert event body '{event['body']}' to json... Event might be dropped."
+                )
         matching_events = self.filter_events(polled_events)
+        # convert them back (HACK for fixing parity with v1 and getting regression tests passing)
+        for event in matching_events:
+            event["body"] = (
+                json.dumps(event["body"]) if not isinstance(event["body"], str) else event["body"]
+            )
+
         all_message_ids = {message["MessageId"] for message in messages}
         matching_message_ids = {event["messageId"] for event in matching_events}
         discarded_message_ids = all_message_ids.difference(matching_message_ids)

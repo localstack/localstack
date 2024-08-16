@@ -7,6 +7,8 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from botocore.exceptions import ClientError
+
 from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
@@ -225,12 +227,20 @@ def resolve_refs_recursively(
             # only these 3 services are supported for dynamic references right now
             if service_name == "ssm":
                 ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
-                return ssm_client.get_parameter(Name=reference_key)["Parameter"]["Value"]
+                try:
+                    return ssm_client.get_parameter(Name=reference_key)["Parameter"]["Value"]
+                except ClientError:
+                    LOG.error("client error accessing SSM parameter '%s'", reference_key)
+                    raise
             elif service_name == "ssm-secure":
                 ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
-                return ssm_client.get_parameter(Name=reference_key, WithDecryption=True)[
-                    "Parameter"
-                ]["Value"]
+                try:
+                    return ssm_client.get_parameter(Name=reference_key, WithDecryption=True)[
+                        "Parameter"
+                    ]["Value"]
+                except ClientError:
+                    LOG.error("client error accessing SSM parameter '%s'", reference_key)
+                    raise
             elif service_name == "secretsmanager":
                 # reference key needs to be parsed further
                 # because {{resolve:secretsmanager:secret-id:secret-string:json-key:version-stage:version-id}}
@@ -256,9 +266,14 @@ def resolve_refs_recursively(
                 secretsmanager_client = connect_to(
                     aws_access_key_id=account_id, region_name=region_name
                 ).secretsmanager
-                secret_value = secretsmanager_client.get_secret_value(SecretId=secret_id, **kwargs)[
-                    "SecretString"
-                ]
+                try:
+                    secret_value = secretsmanager_client.get_secret_value(
+                        SecretId=secret_id, **kwargs
+                    )["SecretString"]
+                except ClientError:
+                    LOG.error("client error while trying to access key '%s'", secret_id)
+                    raise
+
                 if json_key:
                     json_secret = json.loads(secret_value)
                     if json_key not in json_secret:
@@ -636,9 +651,15 @@ def _resolve_refs_recursively(
                 or region_name
             )
 
-            get_availability_zones = connect_to(
-                aws_access_key_id=account_id, region_name=region
-            ).ec2.describe_availability_zones()["AvailabilityZones"]
+            ec2_client = connect_to(aws_access_key_id=account_id, region_name=region).ec2
+            try:
+                get_availability_zones = ec2_client.describe_availability_zones()[
+                    "AvailabilityZones"
+                ]
+            except ClientError:
+                LOG.error("client error describing availability zones")
+                raise
+
             azs = [az["ZoneName"] for az in get_availability_zones]
 
             return azs

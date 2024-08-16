@@ -5,6 +5,7 @@ from copy import deepcopy
 from typing import Dict, Optional, Type, Union
 
 import boto3
+from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.api import CommonServiceException
@@ -42,7 +43,11 @@ class AwsIncludeTransformer(Transformer):
         if location and location.startswith("s3://"):
             s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             bucket, _, path = location.removeprefix("s3://").partition("/")
-            content = testutil.download_s3_object(s3_client, bucket, path)
+            try:
+                content = testutil.download_s3_object(s3_client, bucket, path)
+            except ClientError:
+                LOG.error("client error downloading S3 object '%s/%s'", bucket, path)
+                raise
             content = parse_template(content)
             return content
         else:
@@ -228,9 +233,17 @@ def execute_macro(
     }
 
     client = connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_
-    invocation = client.invoke(
-        FunctionName=macro_definition["FunctionName"], Payload=json.dumps(event)
-    )
+    try:
+        invocation = client.invoke(
+            FunctionName=macro_definition["FunctionName"], Payload=json.dumps(event)
+        )
+    except ClientError:
+        LOG.error(
+            "client error executing lambda function '%s' with payload '%s'",
+            macro_definition["FunctionName"],
+            json.dumps(event),
+        )
+        raise
     if invocation.get("StatusCode") != 200 or invocation.get("FunctionError") == "Unhandled":
         raise FailedTransformationException(
             transformation=macro["Name"],
