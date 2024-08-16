@@ -31,10 +31,11 @@ def apply_patches():
         if custom_id := tags.get("subnet", {}).get(TAG_KEY_CUSTOM_ID):
             # Check if custom id is unique
             if custom_id in self.subnets[availability_zone]:
+                self.delete_subnet(subnet_id=result.id)
                 raise InvalidSubnetDuplicateCustomIdError(custom_id)
 
             # Remove the subnet from the default dict and add it back with the custom id
-            self.subnets[availability_zone].pop(result)
+            self.subnets[availability_zone].pop(result.id)
             result.id = custom_id
             self.subnets[availability_zone][custom_id] = result
 
@@ -61,10 +62,11 @@ def apply_patches():
         if custom_id := tags.get(TAG_KEY_CUSTOM_ID):
             # Check if custom id is unique
             if force and custom_id in self.groups[vpc_id]:
+                self.delete_security_group(group_id=result.id)
                 raise InvalidSecurityGroupDuplicateIdError(custom_id, security_group_name)
 
             # Remove the security group from the default dict and add it back with the custom id
-            self.groups[vpc_id].pop(result)
+            self.groups[vpc_id].pop(result.id)
             result.id = custom_id
             self.groups[vpc_id][custom_id] = result
 
@@ -89,6 +91,7 @@ def apply_patches():
         if custom_id:
             # Check if custom id is unique
             if custom_id in self.vpcs:
+                self.delete_vpc(vpc_id=vpc_id)
                 raise InvalidVpcDuplicateCustomIdError(custom_id)
 
             # Remove security group associated with unique non-custom VPC ID
