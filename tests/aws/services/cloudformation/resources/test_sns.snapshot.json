@@ -104,5 +104,13 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_with_attributes": {
+    "recorded-date": "16-08-2024, 15:44:50",
+    "recorded-content": {
+      "topic-archive-policy": {
+        "MessageRetentionPeriod": "30"
+      }
+    }
   }
 }
