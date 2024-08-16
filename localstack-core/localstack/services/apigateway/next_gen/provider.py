@@ -59,8 +59,8 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     def delete_rest_api(self, context: RequestContext, rest_api_id: String, **kwargs) -> None:
         super().delete_rest_api(context, rest_api_id, **kwargs)
         store = get_apigateway_store(context=context)
-        store.active_deployments.pop(rest_api_id)
-        store.internal_deployments.pop(rest_api_id)
+        store.active_deployments.pop(rest_api_id, None)
+        store.internal_deployments.pop(rest_api_id, None)
 
     @handler("CreateStage", expand=False)
     def create_stage(self, context: RequestContext, request: CreateStageRequest) -> Stage:
