@@ -124,12 +124,14 @@ class ApiGatewayStore(BaseStore):
 
     # internal deployments, represents a frozen REST API for a deployment, used in our router
     # TODO: make sure API ID are unique across all accounts
-    # maps ApiID + deploymentId to a RestApiDeployment, an executable/snapshot of a REST API
-    internal_deployments: dict[(str, str), RestApiDeployment] = CrossAccountAttribute(default=dict)
+    # maps ApiID to a map of deploymentId and RestApiDeployment, an executable/snapshot of a REST API
+    internal_deployments: dict[str, dict[str, RestApiDeployment]] = CrossAccountAttribute(
+        default=dict
+    )
 
-    # active deployments, mapping API ID + Stage to deployment ID
+    # active deployments, mapping API ID to a map of Stage and deployment ID
     # TODO: make sure API ID are unique across all accounts
-    active_deployments: dict[(str, str), str] = CrossAccountAttribute(dict)
+    active_deployments: dict[str, dict[str, str]] = CrossAccountAttribute(dict)
 
     def __init__(self):
         super().__init__()
