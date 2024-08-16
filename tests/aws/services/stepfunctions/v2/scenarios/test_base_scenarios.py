@@ -5,7 +5,7 @@ import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     SfnNoneRecursiveParallelTransformer,
@@ -1207,9 +1207,7 @@ class TestBaseScenarios:
         execution_history = aws_client.stepfunctions.get_execution_history(
             executionArn=execution_arn
         )
-        map_run_arn = JSONPathUtils.extract_json(
-            "$..mapRunStartedEventDetails.mapRunArn", execution_history
-        )
+        map_run_arn = extract_json("$..mapRunStartedEventDetails.mapRunArn", execution_history)
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_map_run_arn(map_run_arn, 0))
 
         # Normalise s3 ListObjectV2 response in the execution events output to ensure variable fields such as

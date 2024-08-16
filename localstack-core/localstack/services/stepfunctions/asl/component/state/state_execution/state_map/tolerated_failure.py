@@ -16,7 +16,7 @@ from localstack.services.stepfunctions.asl.component.eval_component import EvalC
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 TOLERATED_FAILURE_COUNT_MIN: Final[int] = 0
 TOLERATED_FAILURE_COUNT_DEFAULT: Final[int] = 0
@@ -52,7 +52,7 @@ class ToleratedFailureCountPath(ToleratedFailureCountDecl):
 
     def _eval_tolerated_failure_count(self, env: Environment) -> int:
         inp = env.stack[-1]
-        tolerated_failure_count = JSONPathUtils.extract_json(self.tolerated_failure_count_path, inp)
+        tolerated_failure_count = extract_json(self.tolerated_failure_count_path, inp)
 
         error_cause = None
         if not isinstance(tolerated_failure_count, int):
@@ -113,9 +113,7 @@ class ToleratedFailurePercentagePath(ToleratedFailurePercentageDecl):
 
     def _eval_tolerated_failure_percentage(self, env: Environment) -> float:
         inp = env.stack[-1]
-        tolerated_failure_percentage = JSONPathUtils.extract_json(
-            self.tolerate_failure_percentage_path, inp
-        )
+        tolerated_failure_percentage = extract_json(self.tolerate_failure_percentage_path, inp)
 
         if isinstance(tolerated_failure_percentage, int):
             tolerated_failure_percentage = float(tolerated_failure_percentage)

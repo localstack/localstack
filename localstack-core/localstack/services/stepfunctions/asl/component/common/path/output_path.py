@@ -2,7 +2,7 @@ from typing import Final, Optional
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class OutputPath(EvalComponent):
@@ -18,5 +18,5 @@ class OutputPath(EvalComponent):
             env.inp = dict()
         else:
             current_output = env.stack.pop()
-            state_output = JSONPathUtils.extract_json(self.output_path, current_output)
+            state_output = extract_json(self.output_path, current_output)
             env.inp = state_output

@@ -46,3 +46,6 @@ class BaseTemplate(TemplateLoader):
     WAIT_SECONDS_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/wait_seconds_path.json5"
     )
+    JSON_PATH_ARRAY_ACCESS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/json_path_array_access.json5"
+    )

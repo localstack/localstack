@@ -3,7 +3,7 @@ from typing import Final, Optional
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class Timeout(EvalComponent, abc.ABC):
@@ -51,7 +51,7 @@ class TimeoutSecondsPath(Timeout):
 
     def _eval_seconds(self, env: Environment) -> int:
         inp = env.stack[-1]
-        seconds = JSONPathUtils.extract_json(self.path, inp)
+        seconds = extract_json(self.path, inp)
         if not isinstance(seconds, int) and seconds <= 0:
             raise ValueError(
                 f"Expected non-negative integer for TimeoutSecondsPath, got '{seconds}' instead."

@@ -396,3 +396,30 @@ class TestSnfBase:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "json_path_string",
+        ["$.items[0]", "$.items[10]"],
+    )
+    def test_json_path_array_access(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        json_path_string,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.JSON_PATH_ARRAY_ACCESS)
+        template["States"]["EntryState"]["Parameters"]["item.$"] = json_path_string
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"items": [{"item_key": i} for i in range(11)]})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

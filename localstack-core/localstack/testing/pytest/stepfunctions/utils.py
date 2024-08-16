@@ -26,7 +26,7 @@ from localstack.aws.api.stepfunctions import (
 )
 from localstack.services.stepfunctions.asl.eval.event.logging import is_logging_enabled_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
@@ -391,7 +391,7 @@ def launch_and_record_execution(
 
     # Transform all map runs if any.
     try:
-        map_run_arns = JSONPathUtils.extract_json("$..mapRunArn", get_execution_history)
+        map_run_arns = extract_json("$..mapRunArn", get_execution_history)
         if isinstance(map_run_arns, str):
             map_run_arns = [map_run_arns]
         for i, map_run_arn in enumerate(list(set(map_run_arns))):

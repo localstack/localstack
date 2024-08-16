@@ -8,7 +8,7 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
     Operator,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class StringEquals(Operator):
@@ -39,7 +39,7 @@ class StringEqualsPath(StringEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = StringEqualsPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -72,7 +72,7 @@ class StringGreaterThanPath(StringGreaterThan):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = StringGreaterThanPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -105,7 +105,7 @@ class StringGreaterThanEqualsPath(StringGreaterThanEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = StringGreaterThanEqualsPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -138,7 +138,7 @@ class StringLessThanPath(StringLessThan):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = StringLessThanPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -171,7 +171,7 @@ class StringLessThanEqualsPath(StringLessThanEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = StringLessThanEqualsPath._compare(variable, comp_value)
         env.stack.append(res)
 

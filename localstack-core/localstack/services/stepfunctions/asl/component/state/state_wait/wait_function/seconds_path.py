@@ -16,7 +16,7 @@ from localstack.services.stepfunctions.asl.component.state.state_wait.wait_funct
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class SecondsPath(WaitFunction):
@@ -56,6 +56,6 @@ class SecondsPath(WaitFunction):
 
     def _get_wait_seconds(self, env: Environment) -> int:
         inp = env.stack[-1]
-        seconds = JSONPathUtils.extract_json(self.path, inp)
+        seconds = extract_json(self.path, inp)
         self._validate_seconds_value(env=env, seconds=seconds)
         return seconds

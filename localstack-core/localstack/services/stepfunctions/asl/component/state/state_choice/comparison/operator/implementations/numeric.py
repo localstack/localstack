@@ -7,7 +7,7 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
     Operator,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 def _is_numeric(variable: Any) -> bool:
@@ -42,7 +42,7 @@ class NumericEqualsPath(NumericEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = NumericEquals._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -75,7 +75,7 @@ class NumericGreaterThanPath(NumericGreaterThan):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = NumericGreaterThanPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -108,7 +108,7 @@ class NumericGreaterThanEqualsPath(NumericGreaterThanEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = NumericGreaterThanEqualsPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -141,7 +141,7 @@ class NumericLessThanPath(NumericLessThan):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = NumericLessThanPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -174,6 +174,6 @@ class NumericLessThanEqualsPath(NumericLessThanEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = NumericLessThanEqualsPath._compare(variable, comp_value)
         env.stack.append(res)
