@@ -103,10 +103,12 @@ def find_active_stack_by_name_or_id(
 
 
 def find_change_set(
-    account_id: str, region_name: str, cs_name: str, stack_name: Optional[str] = None
+    account_id: str, region_name: str, cs_name: str, stack_name: Optional[str] = None, active_only: bool = False
 ) -> Optional[StackChangeSet]:
     store = get_cloudformation_store(account_id, region_name)
     for stack in store.stacks.values():
+        if active_only and stack.status == "DELETE_COMPLETE":
+            continue
         if stack_name in (stack.stack_name, stack.stack_id, None):
             for change_set in stack.change_sets:
                 if cs_name in (change_set.change_set_id, change_set.change_set_name):
