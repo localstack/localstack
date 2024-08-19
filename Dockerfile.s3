@@ -57,13 +57,12 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # add files necessary to install all dependencies
 ADD Makefile pyproject.toml requirements-base-runtime.txt ./
-# add the VERSION file to invalidate docker layers with version bumps
-ADD VERSION ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
 # install dependencies to run the LocalStack Pro runtime and save which ones were installed
 RUN --mount=type=cache,target=/root/.cache \
+    --mount=type=bind,source=.git,target=.git \
     make install-s3
 RUN . .venv/bin/activate && pip3 freeze -l > requirements-runtime.txt
 
@@ -77,7 +76,7 @@ FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 
 # add project files necessary to install all dependencies
-ADD Makefile pyproject.toml VERSION requirements-base-runtime.txt setup.py ./
+ADD Makefile pyproject.toml requirements-base-runtime.txt ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
