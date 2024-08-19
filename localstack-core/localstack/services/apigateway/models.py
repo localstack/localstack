@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Any, Dict, List
 
 from requests.structures import CaseInsensitiveDict
@@ -127,12 +126,12 @@ class ApiGatewayStore(BaseStore):
     # TODO: make sure API ID are unique across all accounts
     # maps ApiID to a map of deploymentId and RestApiDeployment, an executable/snapshot of a REST API
     internal_deployments: dict[str, dict[str, RestApiDeployment]] = CrossAccountAttribute(
-        default=lambda: defaultdict(dict)
+        default=dict
     )
 
     # active deployments, mapping API ID to a map of Stage and deployment ID
     # TODO: make sure API ID are unique across all accounts
-    active_deployments: dict[str, dict[str, str]] = CrossAccountAttribute(lambda: defaultdict(dict))
+    active_deployments: dict[str, dict[str, str]] = CrossAccountAttribute(dict)
 
     def __init__(self):
         super().__init__()
