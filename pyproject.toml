@@ -148,7 +148,6 @@ package-dir = { "" = "localstack-core"}
 
 [tool.setuptools.dynamic]
 readme = { file = ["README.md"], content-type = "text/markdown"}
-version = { file = "VERSION" }
 
 [tool.setuptools.packages.find]
 where = ["localstack-core/"]
@@ -159,7 +158,6 @@ exclude = ["tests*"]
 "*" = [
     "*.md",
     "Makefile",
-    "VERSION"
 ]
 "localstack" = [
     "aws/**/*.json",
