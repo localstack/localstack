@@ -12,6 +12,9 @@ import json
 import os
 import random
 import time
+import websocket
+import json
+import ssl
 
 import aws_cdk as cdk
 import pytest
@@ -195,7 +198,7 @@ class TestServerlesspressoScenario:
     @pytest.fixture(scope="class")
     def user(self, aws_client, infrastructure):
         username = f"test-{short_uid()}@example.com"
-        password = f"test{short_uid()}"
+        password = f"test11"
         user = self._register_admin_user(aws_client, infrastructure, username, password)["User"]
         token = self._login_admin_user(aws_client, infrastructure, username, password)
         return user, token
@@ -514,10 +517,10 @@ class TestServerlesspressoScenario:
         retry(_check_event_exists, sleep=2, retries=10, sleep_before=2)
 
     @markers.aws.validated
-    def test_e2e(self, aws_client, infrastructure, snapshot, region_name):
+    def test_e2e(self, aws_client, infrastructure, snapshot, region_name, user):
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
 
-        user_data, auth_token = self._new_user()
+        user_data, auth_token = user
         headers = {"Authorization": f"Bearer {auth_token}"}
 
         # Make sure store is open and there is a menus
@@ -542,15 +545,44 @@ class TestServerlesspressoScenario:
 
         config_enpoint = self._get_api_endpoint(region_name, outputs["ConfigApi"])
         config = json.loads(requests.get(url=config_enpoint + "/config").content)
-        order_id = json.loads(post_response.content)["orderId"]
-        drink = config[0]["value"]["L"][0]["M"]["drink"]["S"]
-        icon = config[0]["value"]["L"][0]["M"]["icon"]["S"]
 
         orders_endpoint = self._get_api_endpoint(region_name, outputs["OrderManagerApi"])
         user_id = user_data["Attributes"][2]["Value"]
+        order_id = json.loads(post_response.content)["orderId"]
+        drink = config[0]["value"]["L"][0]["M"]["drink"]["S"]
+        icon = config[0]["value"]["L"][0]["M"]["icon"]["S"]
         put_response = requests.put(
             url=orders_endpoint + f"/orders/{order_id}",
-            data={"drink": drink, "icon": icon, "modifiers": [], "userId": user_id},
+            data=json.dumps({"drink": drink, "icon": icon, "modifiers": [], "userId": user_id}),
             headers=headers,
         )
         assert put_response.status_code == 200
+        await_execution_terminated(
+            aws_client.stepfunctions, json.loads(put_response.content)["executionArn"]
+        )
+
+        # Barista selects the order to process
+        make_order_response = json.loads(
+            requests.put(
+                url=orders_endpoint + f"/orders/{order_id}?action=make", headers=headers
+            ).content
+        )
+
+        assert "executionArn" in make_order_response
+        await_execution_terminated(aws_client.stepfunctions, make_order_response["executionArn"])
+
+        # Barista marks the order as completed
+        complete_order_response = json.loads(
+            requests.put(
+                url=orders_endpoint + f"/orders/{order_id}?action=complete", headers=headers
+            ).content
+        )
+        await_execution_terminated(aws_client.stepfunctions, complete_order_response["executionArn"])
+
+        # Get Order and confirm it is complete
+        order_response = json.loads(
+            to_str(
+                requests.get(url=orders_endpoint + f"/orders/{order_id}", headers=headers).content
+            )
+        )
+        assert order_response["orderState"] == "COMPLETED"

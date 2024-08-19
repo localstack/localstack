@@ -267,6 +267,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
         cdk.CfnOutput(
             self, "OrderManagerApi", value=order_manager_service.order_manager_api.attr_rest_api_id
         )
+        cdk.CfnOutput(self, "IotEndpointAddress", value=iot_endpoint.get_att(attribute_name="IotEndpointAddress").to_string())
 
         frontends = {
             "DisplayApp": "display",

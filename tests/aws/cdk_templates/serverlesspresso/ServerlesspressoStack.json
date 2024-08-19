@@ -1079,7 +1079,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-2f2b5634/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-722d3027/api/config_service_api.yaml"
             }
           }
         }
@@ -2509,7 +2509,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-2f2b5634/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-722d3027/api/order_manager_api.yaml"
             }
           }
         }
@@ -3372,6 +3372,14 @@
         "Fn::GetAtt": [
           "OrderManagerServiceRESTApiForOrderManager03927D4C",
           "RestApiId"
+        ]
+      }
+    },
+    "IotEndpointAddress": {
+      "Value": {
+        "Fn::GetAtt": [
+          "IotEndpoint",
+          "IotEndpointAddress"
         ]
       }
     },

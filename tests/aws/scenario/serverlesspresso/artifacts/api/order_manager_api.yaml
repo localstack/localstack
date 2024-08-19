@@ -130,7 +130,7 @@ paths:
             responseTemplates:
               application/json: "\n#set($allParams = $input.params())\n{\n\"orderId\"\
                 \ : $input.json('$.Item.SK.S'),\n\"drinkOrder\":  $input.json('$.Item.drinkOrder'),\n\
-                \"orderState\":  $input.json('$.Item.ORDERSTATE.S'),\n\"TS\":  $input.json('$.Item.TS.N'),\n\
+                \"orderState\":  $input.json('$.Item.ORDERSTATE.S'),\n\"TS\":  $input.json('$.Item.TS.N')\
                 \n}\n"
         requestTemplates:
           application/json: "\n#set($id = $input.params('id'))\n{\n    \"TableName\"\

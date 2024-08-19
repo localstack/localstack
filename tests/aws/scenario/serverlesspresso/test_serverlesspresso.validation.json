@@ -15,7 +15,7 @@
     "last_validated_date": "2024-07-10T18:48:42+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_e2e": {
-    "last_validated_date": "2024-08-09T19:32:44+00:00"
+    "last_validated_date": "2024-08-19T18:56:41+00:00"
   },
   "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_full_e2e": {
     "last_validated_date": "2024-08-08T15:44:57+00:00"
