@@ -40,14 +40,12 @@ class ConfigService(constructs.Construct):
                 },
             ),
         )
-        deployment = cdk.aws_apigateway.CfnDeployment(
+        cdk.aws_apigateway.CfnDeployment(
             self,
             "Deployment",
             rest_api_id=self.rest_api_config_service.attr_rest_api_id,
             stage_name="Prod",
         )
-
-        # cdk.aws_apigateway.CfnStage(self, "Stage", stage_name="Prod", deployment_id=deployment.attr_deployment_id, rest_api_id=self.rest_api_config_service.attr_rest_api_id)
 
         config_changed_fn_handler = load_file(
             os.path.join(os.path.dirname(__file__), "../artifacts/functions/configChanged.js")

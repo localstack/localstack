@@ -24,7 +24,8 @@ class OrderProcessorService(constructs.Construct):
         # order processor IAM role
         # ================================================================================================
 
-        order_processor_role_policy = cdk.aws_iam.Policy(
+        # TODO Find the place where is used.
+        cdk.aws_iam.Policy(
             self,
             "RolePolicies",
             policy_name="orderProcessorWFPolicy",

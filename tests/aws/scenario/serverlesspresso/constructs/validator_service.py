@@ -96,14 +96,14 @@ class ValidatorService(constructs.Construct):
         )
 
         qr_code_resource = self.rest_api_validator_service.root.add_resource("qr-code")
-        get_qr_code = qr_code_resource.add_method(
+        qr_code_resource.add_method(
             "GET",
             authorization_type=cdk.aws_apigateway.AuthorizationType.COGNITO,
             authorization_scopes=["aws.cognito.signin.user.admin"],
             authorizer=cognito_authorizer,
             integration=cdk.aws_apigateway.LambdaIntegration(get_qr_code_fn),
         )
-        verify_qr_code = qr_code_resource.add_method(
+        qr_code_resource.add_method(
             "POST",
             authorization_type=cdk.aws_apigateway.AuthorizationType.COGNITO,
             authorization_scopes=["aws.cognito.signin.user.admin"],

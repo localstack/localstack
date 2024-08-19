@@ -92,10 +92,11 @@ class OrderManagerService(constructs.Construct):
             timeout=cdk.Duration.seconds(20),
         )
 
+        # TODO check if this is till necessary
         get_order_by_id_fn_handler = load_file(
             os.path.join(os.path.dirname(__file__), "../artifacts/functions/getById.js")
         )
-        get_order_by_id_fn = cdk.aws_lambda.Function(
+        cdk.aws_lambda.Function(
             self,
             "GetOrderByIdFunction",
             runtime=cdk.aws_lambda.Runtime.NODEJS_18_X,

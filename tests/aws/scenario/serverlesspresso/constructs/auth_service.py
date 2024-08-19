@@ -34,7 +34,7 @@ class AuthService(constructs.Construct):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             self_sign_up_enabled=True,
         )
-        admin_group = cdk.aws_cognito.CfnUserPoolGroup(
+        cdk.aws_cognito.CfnUserPoolGroup(
             self, "AdminGroup", user_pool_id=user_pool.user_pool_id, group_name="admin"
         )
 
@@ -46,13 +46,13 @@ class AuthService(constructs.Construct):
                 admin_user_password=True, user_srp=True, user_password=True
             ),
         )
-        user_pool_parameter = cdk.aws_ssm.StringParameter(
+        cdk.aws_ssm.StringParameter(
             self,
             "UserPoolParameter",
             parameter_name=f"/{app_name}/{service}/userpool",
             string_value=user_pool.user_pool_id,
         )  # TODO Ref?
-        user_pool_client_parameter = cdk.aws_ssm.StringParameter(
+        cdk.aws_ssm.StringParameter(
             self,
             "UserPoolClientParameter",
             parameter_name=f"/{app_name}/{service}/userpoolclient",

@@ -7,14 +7,10 @@ It's originally written via SAM but has been adapted here into a Python-based CD
 
 """
 
-import base64
 import json
 import os
 import random
 import time
-import websocket
-import json
-import ssl
 
 import aws_cdk as cdk
 import pytest
@@ -198,7 +194,7 @@ class TestServerlesspressoScenario:
     @pytest.fixture(scope="class")
     def user(self, aws_client, infrastructure):
         username = f"test-{short_uid()}@example.com"
-        password = f"test11"
+        password = "test11"
         user = self._register_admin_user(aws_client, infrastructure, username, password)["User"]
         token = self._login_admin_user(aws_client, infrastructure, username, password)
         return user, token
@@ -227,10 +223,9 @@ class TestServerlesspressoScenario:
         assert objs["Count"] == 0
 
         # populate the data now (sync)
-        result = aws_client.lambda_.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=populate_data_fn, InvocationType="RequestResponse", LogType="Tail"
         )
-        logs = to_str(base64.b64decode(result["LogResult"]))
 
         config_table_name = outputs["ConfigTableName"]
         counting_table_name = outputs["CountingTableName"]
@@ -321,7 +316,6 @@ class TestServerlesspressoScenario:
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
         sm_arn = outputs["OrderProcessorWorkflowStateMachineArn"]
         event_bus_name = outputs["EventBusName"]
-        config_table_name = outputs["ConfigTableName"]
 
         self._close_store(aws_client, infrastructure)
 
@@ -577,7 +571,9 @@ class TestServerlesspressoScenario:
                 url=orders_endpoint + f"/orders/{order_id}?action=complete", headers=headers
             ).content
         )
-        await_execution_terminated(aws_client.stepfunctions, complete_order_response["executionArn"])
+        await_execution_terminated(
+            aws_client.stepfunctions, complete_order_response["executionArn"]
+        )
 
         # Get Order and confirm it is complete
         order_response = json.loads(

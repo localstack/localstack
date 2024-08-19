@@ -127,7 +127,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
         # ================================================================================================
         # IoT core / MQTT messaging
         # ================================================================================================
-        thing = cdk.aws_iot.CfnThing(
+        cdk.aws_iot.CfnThing(
             self,
             "ServerlesspressoRealtime",
             thing_name="serverlesspresso-realtime-workshop",
@@ -267,7 +267,11 @@ class ServerlesspressoCoreStack(cdk.Stack):
         cdk.CfnOutput(
             self, "OrderManagerApi", value=order_manager_service.order_manager_api.attr_rest_api_id
         )
-        cdk.CfnOutput(self, "IotEndpointAddress", value=iot_endpoint.get_att(attribute_name="IotEndpointAddress").to_string())
+        cdk.CfnOutput(
+            self,
+            "IotEndpointAddress",
+            value=iot_endpoint.get_att(attribute_name="IotEndpointAddress").to_string(),
+        )
 
         frontends = {
             "DisplayApp": "display",
