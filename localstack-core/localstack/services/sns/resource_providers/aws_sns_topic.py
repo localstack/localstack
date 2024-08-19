@@ -102,7 +102,7 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
         model["TopicArn"] = create_sns_response["TopicArn"]
 
         # now we add subscriptions if they exists
-        for subscription in model.get("Subscriptions", []):
+        for subscription in model.get("Subscription", []):
             sns.subscribe(
                 TopicArn=model["TopicArn"],
                 Protocol=subscription["Protocol"],
