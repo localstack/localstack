@@ -58,6 +58,10 @@ Refer to our official [Dockerfile](https://github.com/localstack/localstack/blob
 * [JPype1](https://pypi.org/project/JPype1/) might require `g++` to fix a compile error on ARM Linux `gcc: fatal error: cannot execute ‘cc1plus’`
   * Used in EventBridge, EventBridge Pipes, and Lambda Event Source Mapping for a Java-based event ruler via the opt-in configuration `EVENT_RULE_ENGINE=java`
   * Introduced in [#10615](https://github.com/localstack/localstack/pull/10615)
+* [Amazon Ion Python](https://github.com/amazon-ion/ion-python) might fail to compile on more recent versions of `gcc` where the diagnostics [`incompatible-pointer-types`](https://gcc.gnu.org/pipermail/gcc-cvs/2023-December/394351.html) and [`int-conversion`](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=106416) were promoted from warnings to errors. This is more likely to affect Mac OSX ARM users since there are no build wheels available for [`amazon-ion==0.9.3`](https://pypi.org/project/amazon.ion/0.9.3/#files).
+  * Used by the Python driver for Amazon QLDB `pyqldb` and pinned to `amazon-ion==0.9.3` since later versions of `amazon-ion` have introduced [breaking changes](https://github.com/awslabs/amazon-qldb-driver-python/issues/164).
+  * As a workaround, installation can be done with `CFLAGS="-Wno-incompatible-pointer-types -Wno-int-conversion" pip install --no-cache amazon-ion==0.9.3` which prevents the aforementioned diagnostics entirely.
+  * Alternatively, remove `cmake` from `$PATH` to ensure a pure Python wheel gets built.
 
 #### Test Dependencies
 
