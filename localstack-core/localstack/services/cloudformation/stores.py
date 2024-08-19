@@ -113,6 +113,8 @@ def find_change_set(
         stack = find_active_stack_by_name_or_id(account_id, region_name, stack_name)
     else:
         stack = find_stack(account_id, region_name, stack_name)
+    if not stack:
+        return None
     for change_set in stack.change_sets:
         if cs_name in (change_set.change_set_id, change_set.change_set_name):
             return change_set
