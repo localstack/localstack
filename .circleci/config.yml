@@ -289,6 +289,7 @@ jobs:
             PYTEST_ARGS: "${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance-test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml -o junit_suite_name='acceptance_test'"
             LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
             DEBUG: 1
+            PROVIDER_OVERRIDE_EVENTS: "v2"
           command: |
             make docker-run-tests
       - store_test_results:
@@ -328,6 +329,7 @@ jobs:
       PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
       IMAGE_NAME: "localstack/localstack"
       PLATFORM: "<< parameters.platform >>"
+      PROVIDER_OVERRIDE_EVENTS: "v2"
     steps:
       - prepare-acceptance-tests
       - attach_workspace:
@@ -617,6 +619,7 @@ jobs:
     environment:
       IMAGE_NAME: "localstack/localstack"
       PLATFORM: "amd64"
+      PROVIDER_OVERRIDE_EVENTS: "v2"
     steps:
       - prepare-acceptance-tests
       - attach_workspace:
