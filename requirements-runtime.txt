@@ -23,7 +23,7 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.89.0
+aws-sam-translator==1.91.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -51,7 +51,7 @@ build==1.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.4.0
+cachetools==5.5.0
     # via
     #   airspeed-ext
     #   localstack-core
@@ -64,7 +64,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.17.0
     # via cryptography
-cfn-lint==1.10.0
+cfn-lint==1.10.3
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
