@@ -33,6 +33,7 @@ class AuthService(constructs.Construct):
             ),
             removal_policy=cdk.RemovalPolicy.DESTROY,
             self_sign_up_enabled=True,
+            sign_in_aliases=cdk.aws_cognito.SignInAliases(email=True),
         )
         cdk.aws_cognito.CfnUserPoolGroup(
             self, "AdminGroup", user_pool_id=user_pool.user_pool_id, group_name="admin"
@@ -45,6 +46,7 @@ class AuthService(constructs.Construct):
             auth_flows=cdk.aws_cognito.AuthFlow(
                 admin_user_password=True, user_srp=True, user_password=True
             ),
+            supported_identity_providers=[cdk.aws_cognito.UserPoolClientIdentityProvider.COGNITO],
         )
         cdk.aws_ssm.StringParameter(
             self,

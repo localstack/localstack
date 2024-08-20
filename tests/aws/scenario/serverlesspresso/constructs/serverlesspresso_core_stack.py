@@ -253,6 +253,7 @@ class ServerlesspressoCoreStack(cdk.Stack):
         cdk.CfnOutput(
             self, "UserPoolClientId", value=auth_service.user_pool_client.user_pool_client_id
         )
+        cdk.CfnOutput(self, "IdentityPoolId", value=auth_service.identity_pool_id)
         cdk.CfnOutput(
             self, "ValidatorTableName", value=validator_service.validator_table.table_name
         )

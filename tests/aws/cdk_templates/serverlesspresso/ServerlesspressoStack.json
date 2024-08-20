@@ -724,6 +724,9 @@
         ],
         "SmsVerificationMessage": "The verification code to your new account is {####}",
         "UserPoolName": "ServerlesspressoUserPool",
+        "UsernameAttributes": [
+          "email"
+        ],
         "VerificationMessageTemplate": {
           "DefaultEmailOption": "CONFIRM_WITH_CODE",
           "EmailMessage": "Here is your Serverlesspresso workshop verification code: {####}.",
@@ -1079,7 +1082,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-722d3027/api/config_service_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-f3b6d640/api/config_service_api.yaml"
             }
           }
         }
@@ -2509,7 +2512,7 @@
           "Fn::Transform": {
             "Name": "AWS::Include",
             "Parameters": {
-              "Location": "s3://serverlesspresso-localstack-testing-722d3027/api/order_manager_api.yaml"
+              "Location": "s3://serverlesspresso-localstack-testing-f3b6d640/api/order_manager_api.yaml"
             }
           }
         }
@@ -3342,6 +3345,11 @@
     "UserPoolClientId": {
       "Value": {
         "Ref": "AuthServiceUserPoolUserPoolClient16DCF8BB"
+      }
+    },
+    "IdentityPoolId": {
+      "Value": {
+        "Ref": "AuthServiceIdentityPool37D7C17B"
       }
     },
     "ValidatorTableName": {

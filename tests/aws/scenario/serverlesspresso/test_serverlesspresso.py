@@ -15,6 +15,8 @@ import time
 import aws_cdk as cdk
 import pytest
 import requests
+from awscrt import auth, mqtt
+from awsiot import mqtt_connection_builder
 
 from localstack.config import LOCALSTACK_HOST
 from localstack.testing.aws.util import is_aws_cloud
@@ -189,15 +191,15 @@ class TestServerlesspressoScenario:
             AuthFlow="ADMIN_USER_PASSWORD_AUTH",
             AuthParameters={"USERNAME": username, "PASSWORD": password},
         )
-        return user["AuthenticationResult"]["AccessToken"]
+        return user["AuthenticationResult"]
 
     @pytest.fixture(scope="class")
     def user(self, aws_client, infrastructure):
         username = f"test-{short_uid()}@example.com"
         password = "test11"
         user = self._register_admin_user(aws_client, infrastructure, username, password)["User"]
-        token = self._login_admin_user(aws_client, infrastructure, username, password)
-        return user, token
+        auth_result = self._login_admin_user(aws_client, infrastructure, username, password)
+        return user, auth_result
 
     def _get_api_endpoint(self, region, api_id):
         if is_aws_cloud():
@@ -514,7 +516,8 @@ class TestServerlesspressoScenario:
     def test_e2e(self, aws_client, infrastructure, snapshot, region_name, user):
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
 
-        user_data, auth_token = user
+        user_data, auth_result = user
+        auth_token = auth_result["AccessToken"]
         headers = {"Authorization": f"Bearer {auth_token}"}
 
         # Make sure store is open and there is a menus
@@ -582,3 +585,58 @@ class TestServerlesspressoScenario:
             )
         )
         assert order_response["orderState"] == "COMPLETED"
+
+    @markers.aws.validated
+    def test_websocket(self, aws_client, infrastructure, user, region_name, cleanups, account_id):
+        outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
+        user_data, auth_result = user
+        user_pool_url = f'cognito-idp.{region_name}.amazonaws.com/{outputs["UserPoolId"]}'
+        identity_id = aws_client.cognito_identity.get_id(
+            AccountId=account_id,
+            IdentityPoolId=outputs["IdentityPoolId"],
+            Logins={user_pool_url: auth_result["IdToken"]},
+        )["IdentityId"]
+
+        credentials = aws_client.cognito_identity.get_credentials_for_identity(
+            IdentityId=identity_id,
+            Logins={
+                user_pool_url: auth_result["IdToken"],
+            },
+        )["Credentials"]
+
+        credentials_provider = auth.AwsCredentialsProvider.new_static(
+            credentials["AccessKeyId"], credentials["SecretKey"], credentials["SessionToken"]
+        )
+
+        messages = []
+
+        def _capture_msgs(topic, payload, **kwargs):
+            print(f"topic: {topic}")
+            print(f"payload: {payload}")
+            messages.append(payload)
+
+        client = mqtt_connection_builder.websockets_with_default_aws_signing(
+            endpoint=outputs["IotEndpointAddress"],
+            region=region_name,
+            credentials_provider=credentials_provider,
+            client_id="test-client-id",
+        )
+
+        future_connect = client.connect()
+        future_connect.result()
+
+        subscribe_future, packet_id = client.subscribe(
+            topic="serverlesspresso-config", qos=mqtt.QoS.AT_LEAST_ONCE, callback=_capture_msgs
+        )
+        subscribe_result = subscribe_future.result()
+        print(f"Subscribed with {subscribe_result['qos']}")
+
+        self._open_store(aws_client, infrastructure)
+        self._close_store(aws_client, infrastructure)
+
+        def _assert_message_counts():
+            assert len(messages) >= 2
+
+        retry(_assert_message_counts, retries=10, sleep=2)
+        disconnect_future = client.disconnect()
+        disconnect_future.result()
