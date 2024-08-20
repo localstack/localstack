@@ -3621,5 +3621,13 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_redrive_policy[sqs]": {
+    "recorded-date": "20-08-2024, 14:14:08",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_redrive_policy[sqs_query]": {
+    "recorded-date": "20-08-2024, 14:14:11",
+    "recorded-content": {}
   }
 }
