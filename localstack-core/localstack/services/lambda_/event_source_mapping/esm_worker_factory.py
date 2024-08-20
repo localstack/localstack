@@ -98,6 +98,12 @@ class EsmWorkerFactory:
             )
         elif source_service == "kinesis":
             # TODO: map all supported ESM to Pipe parameters
+            optional_params = {}
+            dead_letter_config_arn = (
+                self.esm_config.get("DestinationConfig", {}).get("OnFailure", {}).get("Destination")
+            )
+            if dead_letter_config_arn:
+                optional_params["DeadLetterConfig"] = {"Arn": dead_letter_config_arn}
             source_parameters = PipeSourceParameters(
                 FilterCriteria=filter_criteria,
                 KinesisStreamParameters=PipeSourceKinesisStreamParameters(
@@ -105,6 +111,8 @@ class EsmWorkerFactory:
                         self.esm_config["StartingPosition"]
                     ],
                     BatchSize=self.esm_config["BatchSize"],
+                    MaximumRetryAttempts=self.esm_config["MaximumRetryAttempts"],
+                    **optional_params,
                 ),
             )
             poller = KinesisPoller(
@@ -117,6 +125,12 @@ class EsmWorkerFactory:
             )
         elif source_service == "dynamodbstreams":
             # TODO: map all supported ESM to Pipe parameters
+            optional_params = {}
+            dead_letter_config_arn = (
+                self.esm_config.get("DestinationConfig", {}).get("OnFailure", {}).get("Destination")
+            )
+            if dead_letter_config_arn:
+                optional_params["DeadLetterConfig"] = {"Arn": dead_letter_config_arn}
             source_parameters = PipeSourceParameters(
                 FilterCriteria=filter_criteria,
                 DynamoDBStreamParameters=PipeSourceDynamoDBStreamParameters(
@@ -124,6 +138,8 @@ class EsmWorkerFactory:
                         self.esm_config["StartingPosition"]
                     ],
                     BatchSize=self.esm_config["BatchSize"],
+                    MaximumRetryAttempts=self.esm_config["MaximumRetryAttempts"],
+                    **optional_params,
                 ),
             )
             poller = DynamoDBPoller(
@@ -131,8 +147,6 @@ class EsmWorkerFactory:
                 source_parameters=source_parameters,
                 source_client=source_client,
                 processor=esm_processor,
-                # TODO: validate
-                partner_resource_arn=None,
             )
         else:
             raise Exception(

@@ -243,6 +243,26 @@ class TestIntrinsicFunctions:
         result = stack.outputs["Result"]
         assert result == "test"
 
+    @markers.aws.validated
+    def test_sub_number_type(self, deploy_cfn_template):
+        alarm_name_prefix = "alarm-test-latency-preemptive"
+        threshold = "1000.0"
+        period = "60"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/sub_number_type.yml"
+            ),
+            parameters={
+                "ResourceNamePrefix": alarm_name_prefix,
+                "RestLatencyPreemptiveAlarmThreshold": threshold,
+                "RestLatencyPreemptiveAlarmPeriod": period,
+            },
+        )
+
+        assert stack.outputs["AlarmName"] == f"{alarm_name_prefix}-{period}"
+        assert stack.outputs["Threshold"] == threshold
+        assert stack.outputs["Period"] == period
+
 
 class TestImports:
     @markers.aws.validated

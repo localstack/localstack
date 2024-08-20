@@ -326,3 +326,32 @@ def test_ec2_security_group_id_with_vpc(deploy_cfn_template, snapshot, aws_clien
         )
     )
     snapshot.match("references", stack.outputs)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # fingerprint algorithm is different but presence is ensured by CFn output implementation
+        "$..ImportedKeyPairFingerprint",
+    ],
+)
+def test_keypair_create_import(deploy_cfn_template, snapshot, aws_client):
+    imported_key_name = f"imported-key-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(imported_key_name, "<imported-key-name>"))
+    generated_key_name = f"generated-key-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(generated_key_name, "<generated-key-name>"))
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/ec2_import_keypair.yaml"
+        ),
+        parameters={"ImportedKeyName": imported_key_name, "GeneratedKeyName": generated_key_name},
+    )
+
+    outputs = stack.outputs
+    # for the generated key pair, use the EC2 API to get the fingerprint and snapshot the value
+    key_res = aws_client.ec2.describe_key_pairs(KeyNames=[outputs["GeneratedKeyPairName"]])[
+        "KeyPairs"
+    ][0]
+    snapshot.add_transformer(snapshot.transform.regex(key_res["KeyFingerprint"], "<fingerprint>"))
+
+    snapshot.match("outputs", outputs)

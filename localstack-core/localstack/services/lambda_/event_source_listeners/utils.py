@@ -227,3 +227,10 @@ def has_data_filter_criteria(filters: list[FilterCriteria]) -> bool:
             if "data" in parsed_pattern:
                 return True
     return False
+
+
+def has_data_filter_criteria_parsed(parsed_filters: list[dict]) -> bool:
+    for filter in parsed_filters:
+        if "data" in filter:
+            return True
+    return False

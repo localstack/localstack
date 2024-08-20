@@ -1,5 +1,7 @@
 import base64
+import json
 import logging
+from copy import deepcopy
 
 from botocore.client import BaseClient
 
@@ -7,7 +9,12 @@ from localstack.aws.api.kinesis import StreamStatus
 from localstack.aws.api.pipes import (
     KinesisStreamStartPosition,
 )
-from localstack.services.lambda_.event_source_mapping.event_processor import EventProcessor
+from localstack.services.lambda_.event_source_listeners.utils import (
+    has_data_filter_criteria_parsed,
+)
+from localstack.services.lambda_.event_source_mapping.event_processor import (
+    EventProcessor,
+)
 from localstack.services.lambda_.event_source_mapping.pollers.stream_poller import StreamPoller
 from localstack.utils.strings import to_str
 
@@ -79,6 +86,9 @@ class KinesisPoller(StreamPoller):
             shards[shard_id] = get_shard_iterator_response["ShardIterator"]
         return shards
 
+    def stream_arn_param(self) -> dict:
+        return {"StreamARN": self.source_arn}
+
     def event_source(self) -> str:
         return "aws:kinesis"
 
@@ -94,6 +104,7 @@ class KinesisPoller(StreamPoller):
         for record in records:
             # TODO: consolidate with Kinesis event source listener:
             #  localstack.services.lambda_.event_source_listeners.kinesis_event_source_listener.KinesisEventSourceListener._create_lambda_event_payload
+            #  check `encryptionType` leading to serialization errors by Dotnet Lambdas
             sequence_number = record["SequenceNumber"]
             event = {
                 # TODO: add this metadata after filtering.
@@ -115,3 +126,72 @@ class KinesisPoller(StreamPoller):
                 event.update(kinesis_fields)
             events.append(event)
         return events
+
+    def failure_payload_details_field_name(self) -> str:
+        return "KinesisBatchInfo"
+
+    def get_approximate_arrival_time(self, record: dict) -> float:
+        if self.kinesis_namespace:
+            return record["kinesis"]["approximateArrivalTimestamp"]
+        else:
+            return record["approximateArrivalTimestamp"]
+
+    def get_sequence_number(self, record: dict) -> str:
+        if self.kinesis_namespace:
+            return record["kinesis"]["sequenceNumber"]
+        else:
+            return record["sequenceNumber"]
+
+    def pre_filter(self, events: list[dict]) -> list[dict]:
+        # TODO: test what happens with a mixture of data and non-data filters?
+        if has_data_filter_criteria_parsed(self.filter_patterns):
+            parsed_events = []
+            for event in events:
+                raw_data = self.get_data(event)
+                try:
+                    data = self.parse_data(raw_data)
+                    # TODO: test "data" key remapping
+                    # Filtering remaps "kinesis.data" in ESM to "data (idempotent for Pipes using "data" directly)
+                    # ESM: https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis-filtering.html
+                    # Pipes: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-kinesis.html
+                    # Pipes filtering: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html
+                    parsed_event = deepcopy(event)
+                    parsed_event["data"] = data
+
+                    parsed_events.append(parsed_event)
+                except json.JSONDecodeError:
+                    LOG.warning(
+                        f"Unable to convert event data '{raw_data}' to json... Record will be dropped.",
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
+            return parsed_events
+        else:
+            return events
+
+    def post_filter(self, events: list[dict]) -> list[dict]:
+        if has_data_filter_criteria_parsed(self.filter_patterns):
+            # convert them back (HACK for fixing parity with v1 and getting regression tests passing)
+            for event in events:
+                parsed_data = event.pop("data")
+                encoded_data = self.encode_data(parsed_data)
+                self.set_data(event, encoded_data)
+        return events
+
+    def get_data(self, event: dict) -> str:
+        if self.kinesis_namespace:
+            return event["kinesis"]["data"]
+        else:
+            return event["data"]
+
+    def set_data(self, event: dict, data: bytes) -> None:
+        if self.kinesis_namespace:
+            event["kinesis"]["data"] = data
+        else:
+            event["data"] = data
+
+    def parse_data(self, raw_data: str) -> dict | str:
+        decoded_data = base64.b64decode(raw_data)
+        return json.loads(decoded_data)
+
+    def encode_data(self, parsed_data: dict) -> str:
+        return base64.b64encode(json.dumps(parsed_data).encode()).decode()

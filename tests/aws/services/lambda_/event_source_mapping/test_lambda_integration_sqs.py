@@ -4,6 +4,7 @@ import time
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.aws.util import is_aws_cloud
@@ -1065,10 +1066,6 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages", []) == []
 
-    @pytest.mark.skipif(
-        is_v2_esm(),
-        reason="Filtering behavior for JSON detection not yet implemented in ESM v2",
-    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "filter, item_matching, item_not_matching",
@@ -1135,7 +1132,11 @@ class TestSQSEventSourceMapping:
         snapshot,
         cleanups,
         aws_client,
+        monkeypatch,
     ):
+        if is_v2_esm() and item_not_matching == "this is a test string":
+            # String comparison is broken in the Python rule engine for this specific case in ESM v2, using java engine.
+            monkeypatch.setattr(config, "EVENT_RULE_ENGINE", "java")
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         mapping_uuid = None
@@ -1247,7 +1248,7 @@ class TestSQSEventSourceMapping:
         expected.match(InvalidParameterValueException.code)
 
     @pytest.mark.skipif(
-        is_v2_esm(), reason="ESM v2 does not yet handle state update on update_event_source_mapping"
+        is_v2_esm(), reason="ESM v2 does not yet implement update_event_source_mapping properly"
     )
     @markers.aws.validated
     def test_sqs_event_source_mapping_update(

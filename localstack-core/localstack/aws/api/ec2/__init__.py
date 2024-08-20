@@ -2101,6 +2101,12 @@ class IpAddressType(StrEnum):
     ipv6 = "ipv6"
 
 
+class IpSource(StrEnum):
+    amazon = "amazon"
+    byoip = "byoip"
+    none = "none"
+
+
 class IpamAddressHistoryResourceType(StrEnum):
     eip = "eip"
     vpc = "vpc"
@@ -2230,6 +2236,12 @@ class IpamPublicAddressType(StrEnum):
     ec2_public_ip = "ec2-public-ip"
 
 
+class IpamResourceCidrIpSource(StrEnum):
+    amazon = "amazon"
+    byoip = "byoip"
+    none = "none"
+
+
 class IpamResourceDiscoveryAssociationState(StrEnum):
     associate_in_progress = "associate-in-progress"
     associate_complete = "associate-complete"
@@ -2304,6 +2316,11 @@ class IpamState(StrEnum):
 class IpamTier(StrEnum):
     free = "free"
     advanced = "advanced"
+
+
+class Ipv6AddressAttribute(StrEnum):
+    public = "public"
+    private = "private"
 
 
 class Ipv6SupportValue(StrEnum):
@@ -4523,6 +4540,8 @@ class SubnetIpv6CidrBlockAssociation(TypedDict, total=False):
     AssociationId: Optional[SubnetCidrAssociationId]
     Ipv6CidrBlock: Optional[String]
     Ipv6CidrBlockState: Optional[SubnetCidrBlockState]
+    Ipv6AddressAttribute: Optional[Ipv6AddressAttribute]
+    IpSource: Optional[IpSource]
 
 
 class AssociateSubnetCidrBlockResult(TypedDict, total=False):
@@ -4634,6 +4653,8 @@ class VpcIpv6CidrBlockAssociation(TypedDict, total=False):
     Ipv6CidrBlockState: Optional[VpcCidrBlockState]
     NetworkBorderGroup: Optional[String]
     Ipv6Pool: Optional[String]
+    Ipv6AddressAttribute: Optional[Ipv6AddressAttribute]
+    IpSource: Optional[IpSource]
 
 
 class AssociateVpcCidrBlockResult(TypedDict, total=False):
@@ -6702,6 +6723,7 @@ class CreateIpamRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     Tier: Optional[IpamTier]
+    EnablePrivateGua: Optional[Boolean]
 
 
 class CreateIpamResourceDiscoveryRequest(ServiceRequest):
@@ -6752,6 +6774,7 @@ class Ipam(TypedDict, total=False):
     ResourceDiscoveryAssociationCount: Optional[Integer]
     StateMessage: Optional[String]
     Tier: Optional[IpamTier]
+    EnablePrivateGua: Optional[Boolean]
 
 
 class CreateIpamResult(TypedDict, total=False):
@@ -15541,6 +15564,7 @@ class IpamDiscoveredResourceCidr(TypedDict, total=False):
     ResourceId: Optional[String]
     ResourceOwnerId: Optional[String]
     ResourceCidr: Optional[String]
+    IpSource: Optional[IpamResourceCidrIpSource]
     ResourceType: Optional[IpamResourceType]
     ResourceTags: Optional[IpamResourceTagList]
     IpUsage: Optional[BoxedDouble]
@@ -16802,6 +16826,7 @@ class ModifyIpamRequest(ServiceRequest):
     AddOperatingRegions: Optional[AddIpamOperatingRegionSet]
     RemoveOperatingRegions: Optional[RemoveIpamOperatingRegionSet]
     Tier: Optional[IpamTier]
+    EnablePrivateGua: Optional[Boolean]
 
 
 class ModifyIpamResourceCidrRequest(ServiceRequest):
@@ -19419,6 +19444,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         tier: IpamTier = None,
+        enable_private_gua: Boolean = None,
         **kwargs,
     ) -> CreateIpamResult:
         raise NotImplementedError
@@ -24626,6 +24652,7 @@ class Ec2Api:
         add_operating_regions: AddIpamOperatingRegionSet = None,
         remove_operating_regions: RemoveIpamOperatingRegionSet = None,
         tier: IpamTier = None,
+        enable_private_gua: Boolean = None,
         **kwargs,
     ) -> ModifyIpamResult:
         raise NotImplementedError

@@ -33,25 +33,25 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.151.0
+aws-cdk-lib==2.153.0
     # via localstack-core (pyproject.toml)
-aws-sam-translator==1.89.0
+aws-sam-translator==1.91.0
     # via
     #   cfn-lint
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.33.31
+awscli==1.33.40
     # via localstack-core
 awscrt==0.21.2
     # via localstack-core
-boto3==1.34.149
+boto3==1.34.158
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.34.149
+botocore==1.34.158
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +64,7 @@ build==1.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.4.0
+cachetools==5.5.0
     # via
     #   airspeed-ext
     #   localstack-core
@@ -81,7 +81,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.17.0
     # via cryptography
-cfn-lint==1.9.5
+cfn-lint==1.10.3
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -164,7 +164,7 @@ idna==3.7
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.4.0
+importlib-resources==6.4.3
     # via jsii
 incremental==24.7.2
     # via localstack-twisted
@@ -310,7 +310,7 @@ pytest==8.3.2
     #   pytest-rerunfailures
     #   pytest-split
     #   pytest-tinybird
-pytest-httpserver==1.0.12
+pytest-httpserver==1.1.0
     # via localstack-core (pyproject.toml)
 pytest-rerunfailures==14.0
     # via localstack-core (pyproject.toml)
@@ -328,7 +328,7 @@ python-dotenv==1.0.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via
     #   awscli
     #   cfn-lint
@@ -396,7 +396,7 @@ sniffio==1.3.1
     # via
     #   anyio
     #   httpx
-sympy==1.13.1
+sympy==1.13.2
     # via cfn-lint
 tailer==0.4.1
     # via

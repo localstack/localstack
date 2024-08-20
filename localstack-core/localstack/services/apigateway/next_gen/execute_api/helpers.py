@@ -39,7 +39,9 @@ def freeze_rest_api(
     )
 
 
-def render_uri_with_stage_variables(uri: str | None, stage_variables: dict[str, str]) -> str | None:
+def render_uri_with_stage_variables(
+    uri: str | None, stage_variables: dict[str, str] | None
+) -> str | None:
     """
     https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html#stage-variables-in-integration-HTTP-uris
     URI=https://${stageVariables.<variable_name>}
@@ -48,9 +50,10 @@ def render_uri_with_stage_variables(uri: str | None, stage_variables: dict[str, 
     """
     if not uri:
         return uri
+    stage_vars = stage_variables or {}
 
     def replace_match(match_obj: re.Match) -> str:
-        return stage_variables.get(match_obj.group("varName"), "")
+        return stage_vars.get(match_obj.group("varName"), "")
 
     return _stage_variable_pattern.sub(replace_match, uri)
 
