@@ -224,7 +224,7 @@
     }
   },
   "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_security_group_with_tags": {
-    "recorded-date": "28-06-2024, 19:04:12",
+    "recorded-date": "16-08-2024, 19:09:00",
     "recorded-content": {
       "security-group": {
         "Description": "Security Group",
@@ -246,6 +246,18 @@
         ],
         "OwnerId": "111111111111",
         "Tags": [
+          {
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "SecurityGroup"
+          },
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "<stack-id>"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "<stack-name>"
+          },
           {
             "Key": "key1",
             "Value": "value1"
