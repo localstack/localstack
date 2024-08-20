@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  StateMachineName:
+    Type: String
+    Default: "MyStateMachine"
+    Description: Name of the Step Functions State Machine
+  ActivityName:
+    Type: String
+    Default: "MyActivity"
+    Description: Name of the Step Functions Activity
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  StateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Ref StateMachineName
+      DefinitionString: "{\"Comment\": \"A Hello World example of the Amazon States Language using Pass states\", \"StartAt\": \"Hello\", \"States\": {\"Hello\": {\"Type\": \"Pass\", \"Result\": \"Hello\", \"Next\": \"World\"}, \"World\": {\"Type\": \"Pass\", \"Result\": \"World\", \"End\": true } } }"
+      RoleArn: !GetAtt
+        - LambdaRole
+        - Arn
+    DependsOn:
+      - Activity
+
+  Activity:
+    Type: AWS::StepFunctions::Activity
+    Properties:
+      Name: !Ref ActivityName
+      Tags:
+        - Key: test-key
+          Value: test-value
