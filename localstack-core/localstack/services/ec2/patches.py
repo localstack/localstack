@@ -1,11 +1,11 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Optional
 
 from moto.ec2 import models as ec2_models
 
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
 from localstack.services.ec2.exceptions import (
-    InvalidSecurityGroupDuplicateIdError,
+    InvalidSecurityGroupDuplicateCustomIdError,
     InvalidSubnetDuplicateCustomIdError,
     InvalidVpcDuplicateCustomIdError,
 )
@@ -20,11 +20,11 @@ def apply_patches():
         fn: ec2_models.subnets.SubnetBackend.create_subnet,
         self: ec2_models.subnets.SubnetBackend,
         *args,
-        tags: Optional[Dict[str, str]] = None,
+        tags: Optional[dict[str, str]] = None,
         **kwargs,
     ):
         # Generate subnet with moto library
-        tags: Dict[str, str] = tags or {}
+        tags: dict[str, str] = tags or {}
         result: ec2_models.subnets.Subnet = fn(self, *args, tags=tags, **kwargs)
         availability_zone = result.availability_zone
         vpc_id = result.vpc_id
@@ -50,12 +50,12 @@ def apply_patches():
         fn: ec2_models.security_groups.SecurityGroupBackend.create_security_group,
         self: ec2_models.security_groups.SecurityGroupBackend,
         *args,
-        tags: Optional[Dict[str, str]] = None,
+        tags: Optional[dict[str, str]] = None,
         force: bool = False,
         **kwargs,
     ):
         # Generate security group with moto library
-        tags: Dict[str, str] = tags or {}
+        tags: dict[str, str] = tags or {}
         result: ec2_models.security_groups.SecurityGroup = fn(
             self, *args, tags=tags, force=force, **kwargs
         )
@@ -67,7 +67,7 @@ def apply_patches():
             # Check if custom id is unique
             if not force and custom_id in self.groups[vpc_id]:
                 self.delete_security_group(name=security_group_name, group_id=security_group_id)
-                raise InvalidSecurityGroupDuplicateIdError(custom_id, security_group_name)
+                raise InvalidSecurityGroupDuplicateCustomIdError(custom_id, security_group_name)
 
             # Remove the security group from the default dict and add it back with the custom id
             self.groups[vpc_id].pop(result.group_id)
@@ -81,12 +81,12 @@ def apply_patches():
         fn: ec2_models.vpcs.VPCBackend.create_vpc,
         self: ec2_models.vpcs.VPCBackend,
         *args,
-        tags: Optional[List[Dict[str, str]]] = None,
+        tags: Optional[list[dict[str, str]]] = None,
         is_default: bool = False,
         **kwargs,
     ):
         # Generate VPC with moto library
-        tags: List[Dict[str, str]] = tags or []
+        tags: list[dict[str, str]] = tags or []
         result: ec2_models.vpcs.VPC = fn(self, *args, tags=tags, is_default=is_default, **kwargs)
         vpc_id = result.id
 

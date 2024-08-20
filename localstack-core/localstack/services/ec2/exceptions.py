@@ -64,7 +64,7 @@ class InvalidSubnetDuplicateCustomIdError(CommonServiceException):
         )
 
 
-class InvalidSecurityGroupDuplicateIdError(CommonServiceException):
+class InvalidSecurityGroupDuplicateCustomIdError(CommonServiceException):
     def __init__(self, custom_id, security_group_name):
         super().__init__(
             code="InvalidSecurityGroupId.DuplicateCustomId",
