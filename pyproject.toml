@@ -86,7 +86,7 @@ runtime = [
     "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
-    "moto-ext[all]==5.0.12.post2",
+    "moto-ext[all]==5.0.13.post1",
     "opensearch-py>=2.4.1",
     "pymongo>=4.2.0",
     "pyopenssl>=23.0.0",
