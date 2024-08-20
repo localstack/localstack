@@ -72,7 +72,7 @@ install-s3: venv     ## Install dependencies for the localstack runtime for s3-o
 install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run plux to build entry points
-	$(VENV_RUN); python3 -m setup plugins egg_info
+	$(VENV_RUN); python3 -c "from setuptools import setup; setup()" plugins egg_info
 	@# make sure that the entrypoints were correctly created and are non-empty
 	@test -s localstack-core/localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
 
