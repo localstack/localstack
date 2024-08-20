@@ -33,9 +33,9 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.151.0
+aws-cdk-lib==2.153.0
     # via localstack-core
-aws-sam-translator==1.89.0
+aws-sam-translator==1.91.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -64,7 +64,7 @@ build==1.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.4.0
+cachetools==5.5.0
     # via
     #   airspeed-ext
     #   localstack-core
@@ -83,7 +83,7 @@ cffi==1.17.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.10.0
+cfn-lint==1.10.3
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -180,7 +180,7 @@ idna==3.7
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.4.0
+importlib-resources==6.4.3
     # via jsii
 incremental==24.7.2
     # via localstack-twisted
@@ -412,7 +412,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.5.7
+ruff==0.6.1
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.2
     # via
