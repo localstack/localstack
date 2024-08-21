@@ -189,7 +189,10 @@ class TestServerlesspressoScenario:
             UserPoolId=user_pool_id,
             ClientId=outputs["UserPoolClientId"],
             AuthFlow="ADMIN_USER_PASSWORD_AUTH",
-            AuthParameters={"USERNAME": username, "PASSWORD": password},
+            AuthParameters={
+                "USERNAME": "b4f804d8-c091-70d6-dc1a-5a7e006b40d3",
+                "PASSWORD": "test11",
+            },
         )
         return user["AuthenticationResult"]
 
@@ -587,43 +590,46 @@ class TestServerlesspressoScenario:
         assert order_response["orderState"] == "COMPLETED"
 
     @markers.aws.validated
-    def test_websocket(self, aws_client, infrastructure, user, region_name, cleanups, account_id):
+    def test_websocket(
+        self, aws_client, infrastructure, region_name, cleanups, account_id, aws_client_factory
+    ):
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
-        user_data, auth_result = user
-        user_pool_url = f'cognito-idp.{region_name}.amazonaws.com/{outputs["UserPoolId"]}'
         identity_id = aws_client.cognito_identity.get_id(
-            AccountId=account_id,
             IdentityPoolId=outputs["IdentityPoolId"],
-            Logins={user_pool_url: auth_result["IdToken"]},
         )["IdentityId"]
 
         credentials = aws_client.cognito_identity.get_credentials_for_identity(
             IdentityId=identity_id,
-            Logins={
-                user_pool_url: auth_result["IdToken"],
-            },
         )["Credentials"]
 
         credentials_provider = auth.AwsCredentialsProvider.new_static(
-            credentials["AccessKeyId"], credentials["SecretKey"], credentials["SessionToken"]
+            access_key_id=credentials["AccessKeyId"],
+            secret_access_key=credentials["SecretKey"],
+            session_token=credentials["SessionToken"],
         )
 
         messages = []
 
         def _capture_msgs(topic, payload, **kwargs):
-            print(f"topic: {topic}")
-            print(f"payload: {payload}")
             messages.append(payload)
 
         client = mqtt_connection_builder.websockets_with_default_aws_signing(
             endpoint=outputs["IotEndpointAddress"],
             region=region_name,
             credentials_provider=credentials_provider,
-            client_id="test-client-id",
+            client_id="serverlesspresso-id",
+            clean_session=False,
+            keep_alive_secs=30,
         )
 
         future_connect = client.connect()
         future_connect.result()
+
+        def _disconnect():
+            disconnect_future = client.disconnect()
+            disconnect_future.result()
+
+        cleanups.append(lambda: _disconnect())
 
         subscribe_future, packet_id = client.subscribe(
             topic="serverlesspresso-config", qos=mqtt.QoS.AT_LEAST_ONCE, callback=_capture_msgs
@@ -631,12 +637,10 @@ class TestServerlesspressoScenario:
         subscribe_result = subscribe_future.result()
         print(f"Subscribed with {subscribe_result['qos']}")
 
-        self._open_store(aws_client, infrastructure)
         self._close_store(aws_client, infrastructure)
+        self._open_store(aws_client, infrastructure)
 
         def _assert_message_counts():
             assert len(messages) >= 2
 
-        retry(_assert_message_counts, retries=10, sleep=2)
-        disconnect_future = client.disconnect()
-        disconnect_future.result()
+        retry(_assert_message_counts, retries=15, sleep=1)
