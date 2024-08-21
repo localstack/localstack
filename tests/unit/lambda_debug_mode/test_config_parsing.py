@@ -6,31 +6,31 @@ from localstack.utils.lambda_debug_mode.lambda_debug_mode_config import (
 
 DEBUG_CONFIG_EMPTY = ""
 
-DEBUG_CONFIG_NULL_LAMBDAS = """
-lambdas:
+DEBUG_CONFIG_NULL_FUNCTIONS = """
+functions:
     null
 """
 
-DEBUG_CONFIG_NULL_LAMBDA_CONFIG = """
-lambdas:
+DEBUG_CONFIG_NULL_FUNCTION_CONFIG = """
+functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:$LATEST:
     null
 """
 
 DEBUG_CONFIG_NULL_DEBUG_PORT = """
-lambdas:
+functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
     debug-port: null
 """
 
 DEBUG_CONFIG_NULL_TIMEOUT_DISABLE = """
-lambdas:
+functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
     debug-port: null
 """
 
 DEBUG_CONFIG_DUPLICATE_DEBUG_PORT = """
-lambdas:
+functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname1:
     debug-port: 19891
   arn:aws:lambda:eu-central-1:000000000000:function:functionname2:
@@ -38,7 +38,7 @@ lambdas:
 """
 
 DEBUG_CONFIG_DUPLICATE_ARN = """
-lambdas:
+functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
     debug-port: 19891
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
@@ -46,7 +46,7 @@ lambdas:
 """
 
 DEBUG_CONFIG_DUPLICATE_IMPLICIT_ARN = """
-lambdas:
+functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
     debug-port: 19891
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:$LATEST:
@@ -54,13 +54,13 @@ lambdas:
 """
 
 DEBUG_CONFIG_BASE = """
-lambdas:
+functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:$LATEST:
     debug-port: 19891
 """
 
 DEBUG_CONFIG_BASE_UNQUALIFIED = """
-lambdas:
+functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
     debug-port: 19891
 """
@@ -70,16 +70,16 @@ lambdas:
     "yaml_config",
     [
         DEBUG_CONFIG_EMPTY,
-        DEBUG_CONFIG_NULL_LAMBDAS,
-        DEBUG_CONFIG_NULL_LAMBDA_CONFIG,
+        DEBUG_CONFIG_NULL_FUNCTIONS,
+        DEBUG_CONFIG_NULL_FUNCTION_CONFIG,
         DEBUG_CONFIG_DUPLICATE_DEBUG_PORT,
         DEBUG_CONFIG_DUPLICATE_ARN,
         DEBUG_CONFIG_DUPLICATE_IMPLICIT_ARN,
     ],
     ids=[
         "empty",
-        "null_lambdas",
-        "null_lambda_config",
+        "null_functions",
+        "null_function_config",
         "duplicate_debug_port",
         "deplicate_arn",
         "duplicate_implicit_arn",

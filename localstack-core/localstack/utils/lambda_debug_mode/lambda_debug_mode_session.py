@@ -62,7 +62,7 @@ class _LambdaDebugModeSession:
         return self._is_lambda_debug_mode
 
     def debug_config_for(self, lambda_arn: Arn) -> Optional[LambdaDebugConfig]:
-        return self._configuration.lambdas.get(lambda_arn) if self._configuration else None
+        return self._configuration.functions.get(lambda_arn) if self._configuration else None
 
 
 lambda_debug_mode_session = _LambdaDebugModeSession()

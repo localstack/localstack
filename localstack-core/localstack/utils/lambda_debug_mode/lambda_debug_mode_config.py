@@ -19,7 +19,7 @@ class LambdaDebugConfig(BaseModel):
 
 class LambdaDebugModeConfig(BaseModel):
     # Bindings of Lambda function Arn and the respective debugging configuration.
-    lambdas: dict[Arn, LambdaDebugConfig]
+    functions: dict[Arn, LambdaDebugConfig]
 
 
 class LambdaDebugModeConfigException(Exception): ...
@@ -89,7 +89,9 @@ def from_yaml_string(yaml_string: str) -> Optional[LambdaDebugModeConfig]:
     try:
         data = yaml.load(yaml_string, _SafeLoaderWithDuplicateCheck)
     except yaml.YAMLError as yaml_error:
-        LOG.error(f"Could not parse yaml lambda debug configuration file due to: {str(yaml_error)}")
+        LOG.error(
+            f"Could not parse yaml lambda debug mode configuration file due to: {str(yaml_error)}"
+        )
         data = None
     if not data:
         return None
@@ -106,19 +108,19 @@ def validate_lambda_debug_mode_config(config: LambdaDebugModeConfig) -> None:
 def _validate_lambda_debug_mode_config(
     validation_state: _LambdaDebugModeConfigValidationState, config: LambdaDebugModeConfig
 ):
-    config_lambdas = config.lambdas
-    lambda_arns = list(config_lambdas.keys())
+    config_functions = config.functions
+    lambda_arns = list(config_functions.keys())
     for lambda_arn in lambda_arns:
         qualified_lambda_arn = _to_qualified_lambda_function_arn(lambda_arn)
         if lambda_arn != qualified_lambda_arn:
-            if qualified_lambda_arn in config_lambdas:
+            if qualified_lambda_arn in config_functions:
                 raise DuplicateLambdaDebugConfig(
                     lambda_arn_debug_config_first=lambda_arn,
                     lambda_arn_debug_config_second=qualified_lambda_arn,
                 )
-            config_lambdas[qualified_lambda_arn] = config_lambdas.pop(lambda_arn)
+            config_functions[qualified_lambda_arn] = config_functions.pop(lambda_arn)
 
-    for lambda_arn, lambda_debug_config in config_lambdas.items():
+    for lambda_arn, lambda_debug_config in config_functions.items():
         _validate_lambda_debug_config(
             validation_state=validation_state, lambda_debug_config=lambda_debug_config
         )
@@ -165,7 +167,9 @@ def load_lambda_debug_mode_config(yaml_string: str) -> Optional[LambdaDebugModeC
     try:
         yaml_data = yaml.load(yaml_string, _SafeLoaderWithDuplicateCheck)
     except yaml.YAMLError as yaml_error:
-        LOG.error(f"Could not parse yaml lambda debug configuration file due to: {str(yaml_error)}")
+        LOG.error(
+            f"Could not parse yaml lambda debug mode configuration file due to: {str(yaml_error)}"
+        )
         yaml_data = None
     if not yaml_data:
         return None
@@ -180,7 +184,7 @@ def load_lambda_debug_mode_config(yaml_string: str) -> Optional[LambdaDebugModeC
             for err in validation_errors
         ]
         LOG.error(
-            f"Unable to parse lambda debug model configuration file due to errors: {error_messages}"
+            f"Unable to parse lambda debug mode configuration file due to errors: {error_messages}"
         )
         return None
 
@@ -188,7 +192,7 @@ def load_lambda_debug_mode_config(yaml_string: str) -> Optional[LambdaDebugModeC
     try:
         validate_lambda_debug_mode_config(config)
     except LambdaDebugModeConfigException as lambda_debug_mode_error:
-        LOG.error(f"Invalid lambda debug model configuration due to: {lambda_debug_mode_error}")
+        LOG.error(f"Invalid lambda debug mode configuration due to: {lambda_debug_mode_error}")
         config = None
 
     return config
