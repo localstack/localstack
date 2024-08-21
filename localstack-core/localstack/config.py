@@ -748,6 +748,9 @@ OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 # Whether to enable the partition adjustment listener (in order to support other partitions that the default)
 ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
 
+# Feature flag to enable validation of internal endpoint responses in the handler chain. For test use only.
+OPENAPI_VALIDATE_RESPONSE = is_env_true("OPENAPI_VALIDATE_RESPONSE")
+
 # Fallback partition to use if not possible to determine from ARN region.
 # Applicable only when ARN partition rewriting is enabled.
 ARN_PARTITION_FALLBACK = os.environ.get("ARN_PARTITION_FALLBACK", "") or "aws"
@@ -1254,6 +1257,7 @@ CONFIG_ENV_VARS = [
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
     "MAIN_DOCKER_NETWORK",
+    "OPENAPI_VALIDATE_RESPONSE",
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
