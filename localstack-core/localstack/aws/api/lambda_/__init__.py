@@ -93,6 +93,7 @@ Timestamp = str
 Topic = str
 TumblingWindowInSeconds = int
 URI = str
+UnqualifiedFunctionName = str
 UnreservedConcurrentExecutions = int
 Version = str
 VpcId = str
@@ -207,6 +208,11 @@ class ProvisionedConcurrencyStatusEnum(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     READY = "READY"
     FAILED = "FAILED"
+
+
+class RecursiveLoop(StrEnum):
+    Allow = "Allow"
+    Terminate = "Terminate"
 
 
 class ResponseStreamingInvocationType(StrEnum):
@@ -1207,6 +1213,14 @@ class GetFunctionEventInvokeConfigRequest(ServiceRequest):
     Qualifier: Optional[Qualifier]
 
 
+class GetFunctionRecursionConfigRequest(ServiceRequest):
+    FunctionName: UnqualifiedFunctionName
+
+
+class GetFunctionRecursionConfigResponse(TypedDict, total=False):
+    RecursiveLoop: Optional[RecursiveLoop]
+
+
 class GetFunctionRequest(ServiceRequest):
     FunctionName: NamespacedFunctionName
     Qualifier: Optional[Qualifier]
@@ -1590,6 +1604,15 @@ class PutFunctionEventInvokeConfigRequest(ServiceRequest):
     MaximumRetryAttempts: Optional[MaximumRetryAttempts]
     MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
     DestinationConfig: Optional[DestinationConfig]
+
+
+class PutFunctionRecursionConfigRequest(ServiceRequest):
+    FunctionName: UnqualifiedFunctionName
+    RecursiveLoop: RecursiveLoop
+
+
+class PutFunctionRecursionConfigResponse(TypedDict, total=False):
+    RecursiveLoop: Optional[RecursiveLoop]
 
 
 class PutProvisionedConcurrencyConfigRequest(ServiceRequest):
@@ -2025,6 +2048,12 @@ class LambdaApi:
     ) -> FunctionEventInvokeConfig:
         raise NotImplementedError
 
+    @handler("GetFunctionRecursionConfig")
+    def get_function_recursion_config(
+        self, context: RequestContext, function_name: UnqualifiedFunctionName, **kwargs
+    ) -> GetFunctionRecursionConfigResponse:
+        raise NotImplementedError
+
     @handler("GetFunctionUrlConfig")
     def get_function_url_config(
         self,
@@ -2314,6 +2343,16 @@ class LambdaApi:
         destination_config: DestinationConfig = None,
         **kwargs,
     ) -> FunctionEventInvokeConfig:
+        raise NotImplementedError
+
+    @handler("PutFunctionRecursionConfig")
+    def put_function_recursion_config(
+        self,
+        context: RequestContext,
+        function_name: UnqualifiedFunctionName,
+        recursive_loop: RecursiveLoop,
+        **kwargs,
+    ) -> PutFunctionRecursionConfigResponse:
         raise NotImplementedError
 
     @handler("PutProvisionedConcurrencyConfig")
