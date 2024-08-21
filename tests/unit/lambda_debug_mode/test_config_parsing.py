@@ -91,12 +91,12 @@ def test_debug_config_invalid(yaml_config: str):
 
 def test_debug_config_null_debug_port():
     config = load_lambda_debug_mode_config(DEBUG_CONFIG_NULL_DEBUG_PORT)
-    assert list(config.lambdas.values())[0].debug_port is None
+    assert list(config.functions.values())[0].debug_port is None
 
 
 def test_debug_config_null_timeout_disable():
     config = load_lambda_debug_mode_config(DEBUG_CONFIG_NULL_TIMEOUT_DISABLE)
-    assert list(config.lambdas.values())[0].timeout_disable is False
+    assert list(config.functions.values())[0].timeout_disable is False
 
 
 @pytest.mark.parametrize(
@@ -112,9 +112,9 @@ def test_debug_config_null_timeout_disable():
 )
 def test_debug_config_base(yaml_config):
     config = load_lambda_debug_mode_config(yaml_config)
-    assert len(config.lambdas) == 1
+    assert len(config.functions) == 1
     assert (
-        "arn:aws:lambda:eu-central-1:000000000000:function:functionname:$LATEST" in config.lambdas
+        "arn:aws:lambda:eu-central-1:000000000000:function:functionname:$LATEST" in config.functions
     )
-    assert list(config.lambdas.values())[0].debug_port == 19891
-    assert list(config.lambdas.values())[0].timeout_disable is False
+    assert list(config.functions.values())[0].debug_port == 19891
+    assert list(config.functions.values())[0].timeout_disable is False
