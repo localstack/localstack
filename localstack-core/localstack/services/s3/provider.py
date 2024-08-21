@@ -96,6 +96,7 @@ from localstack.aws.api.s3 import (
     HeadBucketOutput,
     HeadObjectOutput,
     HeadObjectRequest,
+    IfNoneMatch,
     IntelligentTieringConfiguration,
     IntelligentTieringId,
     InvalidArgument,
@@ -121,6 +122,7 @@ from localstack.aws.api.s3 import (
     ListObjectVersionsOutput,
     ListPartsOutput,
     Marker,
+    MaxBuckets,
     MaxKeys,
     MaxParts,
     MaxUploads,
@@ -532,7 +534,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # clean up the storage backend
         self._storage_backend.delete_bucket(bucket)
 
-    def list_buckets(self, context: RequestContext, **kwargs) -> ListBucketsOutput:
+    def list_buckets(
+        self,
+        context: RequestContext,
+        max_buckets: MaxBuckets = None,
+        continuation_token: Token = None,
+        **kwargs,
+    ) -> ListBucketsOutput:
+        # TODO add support for max_buckets and continuation_token
         owner = get_owner_for_account_id(context.account_id)
         store = self.get_store(context.account_id, context.region)
         buckets = [
@@ -2265,11 +2274,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_sha256: ChecksumSHA256 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_none_match: IfNoneMatch = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         **kwargs,
     ) -> CompleteMultipartUploadOutput:
+        # TODO add support for if_none_match
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if (
