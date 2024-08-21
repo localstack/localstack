@@ -23,7 +23,10 @@ from localstack.utils.sync import poll_condition
 LOG = logging.getLogger(__name__)
 
 ENV_TEST_CONTAINER_MOUNT_SOURCES = "TEST_CONTAINER_MOUNT_SOURCES"
-"""Environment variable used to indicate that we should mount localstack source files into the container."""
+"""Environment variable used to indicate that we should mount LocalStack  source files into the container."""
+
+ENV_TEST_CONTAINER_MOUNT_DEPENDENCIES = "TEST_CONTAINER_MOUNT_DEPENDENCIES"
+"""Environment variable used to indicate that we should mount dependencies into the container."""
 
 
 class ContainerFactory:
