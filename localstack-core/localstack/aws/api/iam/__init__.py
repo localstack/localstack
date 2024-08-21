@@ -452,7 +452,7 @@ class AccessKey(TypedDict, total=False):
 
 
 class AccessKeyLastUsed(TypedDict, total=False):
-    LastUsedDate: dateType
+    LastUsedDate: Optional[dateType]
     ServiceName: stringType
     Region: stringType
 
