@@ -1834,6 +1834,10 @@ class TestS3BucketAccelerateConfiguration:
         snapshot.match("put-bucket-accelerate-config-dot-bucket", e.value.response)
 
 
+@pytest.mark.skipif(
+    condition=config.LEGACY_V2_S3_PROVIDER,
+    reason="Not implemented in legacy",
+)
 class TestS3ObjectWritePrecondition:
     @pytest.fixture(autouse=True)
     def add_snapshot_transformers(self, snapshot):
