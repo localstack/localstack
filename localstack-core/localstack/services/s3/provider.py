@@ -40,6 +40,7 @@ from localstack.aws.api.s3 import (
     CommonPrefix,
     CompletedMultipartUpload,
     CompleteMultipartUploadOutput,
+    ConditionalRequestConflict,
     ConfirmRemoveSelfBucketAccess,
     ContentMD5,
     CopyObjectOutput,
@@ -201,6 +202,7 @@ from localstack.aws.api.s3 import (
     VersioningConfiguration,
     WebsiteConfiguration,
 )
+from localstack.aws.api.s3 import NotImplemented as NotImplementedException
 from localstack.aws.handlers import (
     modify_service_response,
     preprocess_request,
@@ -612,6 +614,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: still need to handle following parameters
         #  request_payer: RequestPayer = None,
         bucket_name = request["Bucket"]
+        key = request["Key"]
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
 
         if (storage_class := request.get("StorageClass")) is not None and (
@@ -624,9 +627,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, s3_bucket)
 
-        key = request["Key"]
-
         validate_object_key(key)
+
+        if (if_none_match := request.get("IfNoneMatch")) and if_none_match != "*":
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header="If-None-Match",
+                additionalMessage="We don't accept the provided value of If-None-Match header for this API",
+            )
 
         system_metadata = get_system_metadata_from_request(request)
         if not system_metadata.get("ContentType"):
@@ -700,6 +708,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             body = AwsChunkedDecoder(body, decoded_content_length, s3_object=s3_object)
 
         with self._storage_backend.open(bucket_name, s3_object, mode="w") as s3_stored_object:
+            # as we are inside the lock here, if multiple concurrent requests happen for the same object, it's the first
+            # one to finish to succeed, and subsequent will raise exceptions. Once the first write finishes, we're
+            # opening the lock and other requests can check this condition
+            if if_none_match and object_exists_for_precondition_write(s3_bucket, key):
+                raise PreconditionFailed(
+                    "At least one of the pre-conditions you specified did not hold",
+                    Condition="If-None-Match",
+                )
+
             s3_stored_object.write(body)
 
             if (
@@ -2021,6 +2038,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             initiator=get_owner_for_account_id(context.account_id),
             tagging=tagging,
             owner=s3_bucket.owner,
+            precondition=object_exists_for_precondition_write(s3_bucket, key),
         )
 
         s3_bucket.multiparts[s3_multipart.id] = s3_multipart
@@ -2291,6 +2309,27 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
+
+        if if_none_match:
+            if if_none_match != "*":
+                raise NotImplementedException(
+                    "A header you provided implies functionality that is not implemented",
+                    Header="If-None-Match",
+                    additionalMessage="We don't accept the provided value of If-None-Match header for this API",
+                )
+            # for persistence, field might not always be there in restored version.
+            # TODO: remove for next major version
+            if object_exists_for_precondition_write(s3_bucket, key):
+                raise PreconditionFailed(
+                    "At least one of the pre-conditions you specified did not hold",
+                    Condition="If-None-Match",
+                )
+            elif getattr(s3_multipart, "precondition", None):
+                raise ConditionalRequestConflict(
+                    "The conditional request cannot succeed due to a conflicting operation against this resource.",
+                    Condition="If-None-Match",
+                    Key=key,
+                )
 
         parts = multipart_upload.get("Parts", [])
         if not parts:
@@ -4274,3 +4313,7 @@ def get_access_control_policy_for_new_resource_request(
         grants.extend(partial_grants)
 
     return AccessControlPolicy(Owner=owner, Grants=grants)
+
+
+def object_exists_for_precondition_write(s3_bucket: S3Bucket, key: ObjectKey) -> bool:
+    return (existing := s3_bucket.objects.get(key)) and not isinstance(existing, S3DeleteMarker)

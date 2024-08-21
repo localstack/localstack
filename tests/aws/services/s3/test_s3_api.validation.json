@@ -116,6 +116,21 @@
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_on_existing_bucket": {
     "last_validated_date": "2024-01-15T03:13:25+00:00"
   },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_delete": {
+    "last_validated_date": "2024-08-21T22:26:26+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_put": {
+    "last_validated_date": "2024-08-21T22:26:28+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match": {
+    "last_validated_date": "2024-08-21T22:26:21+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_validation": {
+    "last_validated_date": "2024-08-21T22:26:23+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_versioned_bucket": {
+    "last_validated_date": "2024-08-21T22:26:31+00:00"
+  },
   "tests/aws/services/s3/test_s3_api.py::TestS3PublicAccessBlock::test_crud_public_access_block": {
     "last_validated_date": "2023-08-10T01:29:18+00:00"
   }
