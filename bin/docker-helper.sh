@@ -8,10 +8,6 @@ shopt -s nullglob
 DOCKERFILE=${DOCKERFILE-"Dockerfile"}
 DEFAULT_TAG=${DEFAULT_TAG-"latest"}
 
-# install setuptools_scm if not available
-pip3 install --upgrade setuptools setuptools_scm
-
-# TODO extend help
 function usage() {
     echo "A set of commands that facilitate building and pushing versioned Docker images"
     echo ""
@@ -52,8 +48,10 @@ function _fail {
 }
 
 function _get_current_version() {
-    # TODO setuptools is now a dependency of the release-helper! Should it install it if not available?
-    # (like at the start of this file)
+    # setuptools_scm will be installed transparently if not available, Python3 is expected to be present
+    if ! python3 -m pip -qqq list | grep -F "setuptools_scm"; then
+      python3 -m pip install -qqq setuptools_scm > /dev/null 2>&1
+    fi
     python3 -m setuptools_scm
 }
 

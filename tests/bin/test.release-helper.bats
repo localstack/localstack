@@ -7,9 +7,17 @@ setup_file() {
   }
   export -f git
 
-  # mock python3 / setuptools
+  # mock python3 / pip + setuptools_scm
   function python3() {
-    echo "$TEST_SPECIFIC_VERSION"
+    case $2 in
+    "setuptools_scm")
+      # setuptools_scm returns out test version
+      echo "$TEST_SPECIFIC_VERSION"
+      ;;
+    *)
+      # everything else just prints the command
+      echo "python3 $@"
+    esac
   }
   export -f python3
 }
@@ -72,22 +80,22 @@ _setup_tmp_dependency_file() {
 }
 
 @test "pip-download-retry succeeds on successful 'pip download' call" {
-  # TODO
-  echo "TODO"
+  run bin/release-helper.sh pip-download-retry "testdep" "0.0.1"
+
+  [ "$status" -eq 0 ]
 }
 
-@test "git-commit-release only creates tag if nothing to commit" {
-  # TODO
-  echo "TODO"
+@test "git-commit-release creates (potentially empty) commit and tag" {
+  run bin/release-helper.sh git-commit-release "1.0.0"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "git commit --allow-empty -m release version 1.0.0" ]]
+  [[ "$output" =~ "git tag -a v1.0.0" ]]
 }
 
-@test "git-commit-release creates commit and tag if dependency file is changed" {
-  # TODO
-  echo "TODO"
-}
+@test "git-commit-increment creates (potentially empty) commit" {
+  run bin/release-helper.sh git-commit-increment
 
-@test "git-commit-increment fails if there is nothing to commit" {
-  # TODO git-commit-increment really only creates a commit with the dependnecy file
-  #      -> It should not even be called if it's not necessary
-  echo "TODO"
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "git commit --allow-empty -m prepare next development iteration" ]]
 }

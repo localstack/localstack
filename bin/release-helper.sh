@@ -42,7 +42,10 @@ function usage() {
 }
 
 function get_current_version() {
-    # TODO setuptools is now a dependency of the release-helper! Should it install it if not available?
+    # setuptools_scm will be installed transparently if not available, Python3 is expected to be present
+    if ! python3 -m pip -qqq list | grep -F "setuptools_scm"; then
+      python3 -m pip install -qqq setuptools_scm > /dev/null 2>&1
+    fi
     python3 -m setuptools_scm
 }
 
@@ -160,7 +163,7 @@ function cmd-pip-download-retry() {
     export pip_download_tmpdir="$(mktemp -d)"
     trap 'rm -rf -- "$pip_download_tmpdir"' EXIT
 
-    while ! pip download -d ${pip_download_tmpdir} --no-deps --pre "${dep}==${ver}" &> /dev/null; do
+    while ! python3 -m pip download -d ${pip_download_tmpdir} --no-deps --pre "${dep}==${ver}" &> /dev/null; do
         sleep 5
     done
 }
@@ -170,13 +173,14 @@ function cmd-git-commit-release() {
 
     echo $1 || verify_valid_version
 
-    git add "${DEPENDENCY_FILE}" && git commit -m "release version ${1}" || "Did not create a commit, only creating a tag."
+    git add "${DEPENDENCY_FILE}"
+    git commit --allow-empty -m "release version ${1}"
     git tag -a "v${1}" -m "Release version ${1}"
 }
 
 function cmd-git-commit-increment() {
     git add "${DEPENDENCY_FILE}"
-    git commit -m "prepare next development iteration"
+    git commit --allow-empty -m "prepare next development iteration"
 }
 
 function main() {
