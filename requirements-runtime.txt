@@ -29,17 +29,17 @@ aws-sam-translator==1.91.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.33.40
+awscli==1.34.2
     # via localstack-core (pyproject.toml)
 awscrt==0.21.2
     # via localstack-core
-boto3==1.34.158
+boto3==1.35.2
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.34.158
+botocore==1.35.2
     # via
     #   aws-xray-sdk
     #   awscli
@@ -194,7 +194,7 @@ openapi-schema-validator==0.6.2
     # via openapi-spec-validator
 openapi-spec-validator==0.7.1
     # via moto-ext
-opensearch-py==2.6.0
+opensearch-py==2.7.0
     # via localstack-core (pyproject.toml)
 packaging==24.1
     # via
@@ -311,7 +311,6 @@ six==1.16.0
     # via
     #   airspeed-ext
     #   jsonpath-rw
-    #   opensearch-py
     #   python-dateutil
     #   rfc3339-validator
 sympy==1.13.2

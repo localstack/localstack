@@ -76,7 +76,6 @@ jobs:
           echo "Pinning botocore, boto3, and boto3-stubs to version $BOTOCORE_VERSION"
           bin/release-helper.sh set-dep-ver botocore "==$BOTOCORE_VERSION"
           bin/release-helper.sh set-dep-ver boto3 "==$BOTOCORE_VERSION"
-          bin/release-helper.sh set-dep-ver boto3-stubs "==$BOTOCORE_VERSION"
 
           # upgrade the requirements files only for the botocore package
           pip install pip-tools
@@ -84,7 +83,7 @@ jobs:
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --extra runtime -o requirements-runtime.txt pyproject.toml
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --extra test -o requirements-test.txt pyproject.toml
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --extra dev -o requirements-dev.txt pyproject.toml
-          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --upgrade-package "boto3-stubs==$BOTOCORE_VERSION" --extra typehint -o requirements-typehint.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --extra typehint -o requirements-typehint.txt pyproject.toml
 
       - name: Read PR markdown template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
