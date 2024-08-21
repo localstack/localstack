@@ -815,8 +815,7 @@ jobs:
           name: Publish a dev release
           command: |
             source .venv/bin/activate
-            # TODO this would publish a release when being executed on a version tag!
-            # make publish
+            make dev-publish || echo "Not publishing a dev release"
 
   push-to-tinybird:
     executor: ubuntu-machine-amd64
