@@ -3,7 +3,7 @@ import json
 import pytest
 import yaml
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import RegexTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.stepfunctions import HistoryEventList, StateMachineType
@@ -23,6 +23,9 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
+from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
+    CallbackTemplates as CT,
+)
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
@@ -414,16 +417,38 @@ class TestSnfApi:
 
         # expect no state machines created in this test to be leftover after deletion
         wait_until(lambda: not _list_state_machines(expected_results_count=0), max_retries=20)
+
+    @markers.aws.validated
     def test_start_execution_idempotent(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_send_task_success_state_machine,
+        sqs_create_queue,
+        sfn_snapshot,
+        aws_client,
     ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..TaskToken",
+                replacement="<task_token>",
+                replace_reference=True,
+            )
+        )
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+
         snf_role_arn = create_iam_role_for_sfn()
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
         execution_name: str = f"execution_name_{short_uid()}"
 
-        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_WAIT_1_MIN)
+        template = BaseTemplate.load_sfn_template(CT.SQS_WAIT_FOR_TASK_TOKEN)
         definition = json.dumps(template)
 
         creation_resp = create_state_machine(
@@ -433,7 +458,7 @@ class TestSnfApi:
         sfn_snapshot.match("creation_resp", creation_resp)
         state_machine_arn = creation_resp["stateMachineArn"]
 
-        input_data = '{"body" : "data"}'
+        input_data = json.dumps({"QueueUrl": queue_url, "Message": "test_message_txt"})
         exec_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input=input_data, name=execution_name
         )
@@ -464,6 +489,8 @@ class TestSnfApi:
 
         stop_res = aws_client.stepfunctions.stop_execution(executionArn=execution_arn)
         sfn_snapshot.match("stop_res", stop_res)
+
+        sqs_send_task_success_state_machine(queue_name)
 
         await_execution_terminated(
             stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
