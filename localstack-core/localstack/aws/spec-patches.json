@@ -1244,5 +1244,12 @@
         "exception": true
       }
     }
+  ],
+  "apigatewayv2/2018-11-29/service-2": [
+    {
+      "op": "add",
+      "path": "/operations/UpdateDeployment/http/responseCode",
+      "value": 201
+    }
   ]
 }
