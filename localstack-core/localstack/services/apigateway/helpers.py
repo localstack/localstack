@@ -95,9 +95,6 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
     "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 )
 
-# special tag name to allow specifying a custom ID for new REST APIs
-TAG_KEY_CUSTOM_ID = "_custom_id_"
-
 EMPTY_MODEL = "Empty"
 ERROR_MODEL = "Error"
 

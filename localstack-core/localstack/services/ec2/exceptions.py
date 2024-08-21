@@ -65,10 +65,10 @@ class InvalidSubnetDuplicateCustomIdError(CommonServiceException):
 
 
 class InvalidSecurityGroupDuplicateCustomIdError(CommonServiceException):
-    def __init__(self, custom_id, security_group_name):
+    def __init__(self, custom_id):
         super().__init__(
             code="InvalidSecurityGroupId.DuplicateCustomId",
-            message=f"Security group '{security_group_name}' with custom id '{custom_id}' already exists",
+            message=f"Security group with custom id '{custom_id}' already exists",
         )
 
 

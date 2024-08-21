@@ -41,6 +41,7 @@ from localstack.aws.api.kms import (
     SigningAlgorithmSpec,
     UnsupportedOperationException,
 )
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.kms.exceptions import ValidationException
 from localstack.services.kms.utils import is_valid_key_arn
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
@@ -107,8 +108,6 @@ RESERVED_ALIASES = [
 # list of key names that should be skipped when serializing the encryption context
 IGNORED_CONTEXT_KEYS = ["aws-crypto-public-key"]
 
-# special tag name to allow specifying a custom ID for created keys
-TAG_KEY_CUSTOM_ID = "_custom_id_"
 # special tag name to allow specifying a custom key material for created keys
 TAG_KEY_CUSTOM_KEY_MATERIAL = "_custom_key_material_"
 

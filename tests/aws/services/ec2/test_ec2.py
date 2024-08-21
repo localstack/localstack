@@ -9,7 +9,7 @@ from moto.ec2.utils import (
     random_vpc_id,
 )
 
-from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -44,17 +44,21 @@ def create_vpc(aws_client):
     vpcs = []
 
     def _create_vpc(
-        CidrBlock: str,
-        TagSpecifications: list[dict],
+        cidr_block: str,
+        tag_specifications: list[dict],
     ):
-        vpc = aws_client.ec2.create_vpc(CidrBlock=CidrBlock, TagSpecifications=TagSpecifications)
+        vpc = aws_client.ec2.create_vpc(CidrBlock=cidr_block, TagSpecifications=tag_specifications)
         vpcs.append(vpc["Vpc"]["VpcId"])
         return vpc
 
     yield _create_vpc
 
     for vpc_id in vpcs:
-        aws_client.ec2.delete_vpc(VpcId=vpc_id)
+        # Best effort deletion of VPC resources
+        try:
+            aws_client.ec2.delete_vpc(VpcId=vpc_id)
+        except Exception:
+            pass
 
 
 class TestEc2Integrations:
@@ -436,8 +440,8 @@ class TestEc2Integrations:
 
         # Check if the custom ID is present
         vpc: dict = create_vpc(
-            CidrBlock="10.0.0.0/16",
-            TagSpecifications=[
+            cidr_block="10.0.0.0/16",
+            tag_specifications=[
                 {
                     "ResourceType": "vpc",
                     "Tags": [
@@ -455,8 +459,8 @@ class TestEc2Integrations:
         # Check if an duplicate custom ID exception is thrown if we try to recreate the VPC with the same custom ID
         with pytest.raises(ClientError) as e:
             create_vpc(
-                CidrBlock="10.0.0.0/16",
-                TagSpecifications=[
+                cidr_block="10.0.0.0/16",
+                tag_specifications=[
                     {
                         "ResourceType": "vpc",
                         "Tags": [
@@ -474,7 +478,7 @@ class TestEc2Integrations:
         custom_id = random_subnet_id()
 
         # Create necessary VPC resource
-        vpc: dict = create_vpc(CidrBlock="10.0.0.0/16", TagSpecifications=[])
+        vpc: dict = create_vpc(cidr_block="10.0.0.0/16", tag_specifications=[])
         vpc_id = vpc["Vpc"]["VpcId"]
 
         # Check if subnet ID matches the custom ID
@@ -522,8 +526,8 @@ class TestEc2Integrations:
 
         # Create necessary VPC resource
         vpc: dict = create_vpc(
-            CidrBlock="10.0.0.0/24",
-            TagSpecifications=[],
+            cidr_block="10.0.0.0/24",
+            tag_specifications=[],
         )
 
         # Check if security group ID matches the custom ID
