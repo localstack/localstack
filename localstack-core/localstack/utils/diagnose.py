@@ -143,7 +143,7 @@ def get_docker_image_details() -> Dict[str, str]:
         try:
             image = DOCKER_CLIENT.inspect_container(get_main_container_name())["Config"]["Image"]
         except ContainerException:
-            image = None
+            return {}
     return bootstrap.get_docker_image_details(image_name=image)
 
 
