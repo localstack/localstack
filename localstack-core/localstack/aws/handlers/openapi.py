@@ -57,6 +57,11 @@ class OpenAPIRequestValidator(Handler):
 
 class OpenAPIResponseValidator(OpenAPIRequestValidator):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        # We are more lenient in validating the responses, since there is no users fault involved.
+        #   We can eventually leverage this feature flag and be more strict in out test pipeline.
+        if not config.OPENAPI_VALIDATE_RESPONSE:
+            return
+
         path = context.request.path
 
         if path.startswith(INTERNAL_RESOURCE_PATH) or path.startswith("/_aws/"):
@@ -66,10 +71,7 @@ class OpenAPIResponseValidator(OpenAPIRequestValidator):
                     WerkzeugOpenAPIResponse(response),
                 )
             except OpenAPIError as exc:
-                # We are more lenient in validating the responses, since there is no users fault involved.
-                #   We can eventually leverage this feature flag and be more strict in out test pipeline.
-                if config.OPENAPI_VALIDATE_RESPONSE:
-                    LOG.debug(exc)
-                    response.status_code = 400
-                    response.set_json({"error": exc.__class__.__name__, "message": str(exc)})
-                    chain.stop()
+                LOG.debug(exc)
+                response.status_code = 400
+                response.set_json({"error": exc.__class__.__name__, "message": str(exc)})
+                chain.stop()
