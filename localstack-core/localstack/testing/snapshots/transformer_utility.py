@@ -705,6 +705,7 @@ class TransformerUtility:
             # Transform MD5OfMessageBody value bindings as in StepFunctions these are not deterministic
             # about the input message.
             TransformerUtility.key_value("MD5OfMessageBody"),
+            TransformerUtility.key_value("MD5OfMessageAttributes"),
         ]
 
     @staticmethod
