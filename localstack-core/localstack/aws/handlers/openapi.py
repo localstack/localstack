@@ -7,7 +7,7 @@ import logging
 from openapi_core import OpenAPI
 from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest, WerkzeugOpenAPIResponse
 from openapi_core.exceptions import OpenAPIError
-from openapi_core.templating.paths.exceptions import OperationNotFound, PathNotFound, ServerNotFound
+from openapi_core.templating.paths.exceptions import PathNotFound
 from openapi_core.validation.request.exceptions import (
     RequestValidationError,
 )
@@ -30,6 +30,9 @@ class OpenAPIRequestValidator(Handler):
         self.openapi = OpenAPI.from_dict(spec.OPENAPI)
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        if not config.OPENAPI_VALIDATE_REQUEST:
+            return
+
         path = context.request.path
 
         def _create_response(exception: OpenAPIError, status_code: int) -> None:
@@ -43,14 +46,13 @@ class OpenAPIRequestValidator(Handler):
             try:
                 self.openapi.validate_request(WerkzeugOpenAPIRequest(context.request))
             except OpenAPIError as e:
-                LOG.error(e)
+                # Note: we could be more strict here and check for things such as ServerNotFound or
+                #   OperationNotFound
                 match e:
                     case PathNotFound():
                         _create_response(e, 404)
-                    case RequestValidationError() | ServerNotFound():
+                    case RequestValidationError():
                         _create_response(e, 400)
-                    case OperationNotFound():
-                        _create_response(e, 405)
                     case _:
                         LOG.debug("Uncaught exception: (%s): %s", e.__class__.__name__, str(e))
 

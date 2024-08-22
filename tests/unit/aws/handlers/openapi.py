@@ -8,21 +8,6 @@ from localstack.aws.handlers.openapi import OpenAPIRequestValidator
 
 
 class TestOpenAPIRequestValidator:
-    def test_server_not_found(self):
-        chain = HandlerChain([OpenAPIRequestValidator()])
-        context = RequestContext(
-            Request(
-                path="/_localstack/diagnose",
-                method="GET",
-                scheme="http",
-                headers={"Host": "local.stack.cloud:4566"},
-            )
-        )
-        response = Response()
-        chain.handle(context=context, response=response)
-        assert response.status_code == 400
-        assert response.json["error"] == "ServerNotFound"
-
     def test_valid_request(self):
         chain = HandlerChain([OpenAPIRequestValidator()])
         context = RequestContext(
@@ -107,18 +92,3 @@ class TestOpenAPIRequestValidator:
         chain.handle(context=context, response=response)
         assert response.status_code == 400
         assert response.json["error"] == "InvalidRequestBody"
-
-    def test_operation_not_found(self):
-        chain = HandlerChain([OpenAPIRequestValidator()])
-        context = RequestContext(
-            Request(
-                path="/_aws/sns/subscription-tokens/arn:aws:sns:us-west-2:123456789012:topic",
-                method="PUT",
-                scheme="http",
-                headers={"Host": "localhost.localstack.cloud:4566"},
-            )
-        )
-        response = Response()
-        chain.handle(context=context, response=response)
-        assert response.status_code == 405
-        assert response.json["error"] == "OperationNotFound"
