@@ -1278,7 +1278,7 @@
         "exception": true
       }
     },
-        {
+    {
       "op": "add",
       "path": "/shapes/ConditionalRequestConflict",
       "value": {
