@@ -158,20 +158,16 @@ ADD Makefile pyproject.toml requirements-runtime.txt ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
-# create the localstack-core directory for the version autogeneration from setuptools_scm
-RUN mkdir -p /opt/code/localstack/localstack-core/localstack
-
-# install dependencies to run the LocalStack Pro runtime and save which ones were installed
-RUN --mount=type=cache,target=/root/.cache \
-    --mount=type=bind,source=.git,target=.git \
-    make install-runtime
-RUN . .venv/bin/activate && pip3 freeze -l > requirements-runtime.txt
+RUN --mount=type=cache,target=/root/.cache\
+    . .venv/bin/activate && pip3 install -r requirements-runtime.txt
 
 
 
 # final stage: Builds upon base stage and copies resources from builder stages
 FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
+# The build version is set in the docker-helper.sh script to be the output of setuptools_scm
+ARG LOCALSTACK_BUILD_VERSION
 
 # add project files necessary to install all dependencies
 ADD Makefile pyproject.toml ./
@@ -181,8 +177,10 @@ ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 # add the code as late as possible
 ADD localstack-core/ /opt/code/localstack/localstack-core
 
-# copy the generated version file from the builder
-COPY --from=builder /opt/code/localstack/localstack-core/localstack/version.py /opt/code/localstack/localstack-core/localstack/version.py
+RUN --mount=type=cache,target=/root/.cache \
+    . .venv/bin/activate && \
+    SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
+    pip install -e .[runtime]
 
 # Generate the plugin entrypoints
 RUN make entrypoints
@@ -221,7 +219,6 @@ LABEL description="LocalStack Docker image"
 # Add the build date and git hash at last (changes everytime)
 ARG LOCALSTACK_BUILD_DATE
 ARG LOCALSTACK_BUILD_GIT_HASH
-ARG LOCALSTACK_BUILD_VERSION
 ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
 ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
