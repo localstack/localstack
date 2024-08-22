@@ -39,7 +39,7 @@ class OpenAPIRequestValidator(Handler):
             response.set_json(doc)
             chain.stop()
 
-        if path.startswith(INTERNAL_RESOURCE_PATH) or path.startswith("/_aws/"):
+        if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
             try:
                 self.openapi.validate_request(WerkzeugOpenAPIRequest(context.request))
             except OpenAPIError as e:
