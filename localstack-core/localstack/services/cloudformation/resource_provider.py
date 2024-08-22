@@ -203,6 +203,8 @@ class ResourceProvider(Generic[Properties]):
     This provides a base class onto which service-specific resource providers are built.
     """
 
+    SCHEMA: dict
+
     def create(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         raise NotImplementedError
 
