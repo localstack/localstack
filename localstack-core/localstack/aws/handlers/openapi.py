@@ -7,7 +7,6 @@ import logging
 from openapi_core import OpenAPI
 from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest, WerkzeugOpenAPIResponse
 from openapi_core.exceptions import OpenAPIError
-from openapi_core.templating.paths.exceptions import PathNotFound
 from openapi_core.validation.request.exceptions import (
     RequestValidationError,
 )
@@ -35,24 +34,18 @@ class OpenAPIRequestValidator(Handler):
 
         path = context.request.path
 
-        def _create_response(exception: OpenAPIError, status_code: int) -> None:
-            """Utility function that populated the response and stops the chain."""
-            doc = {"error": exception.__class__.__name__, "message": str(exception)}
-            response.status_code = status_code
-            response.set_json(doc)
-            chain.stop()
-
         if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
             try:
                 self.openapi.validate_request(WerkzeugOpenAPIRequest(context.request))
             except OpenAPIError as e:
-                # Note: we could be more strict here and check for things such as ServerNotFound or
-                #   OperationNotFound
+                # Note: we only check request validations.
+                #   We could be more strict here and check for things such as ServerNotFound or OperationNotFound.
+                #   PathNotFound is handled by the last handler in request_handlers.
                 match e:
-                    case PathNotFound():
-                        _create_response(e, 404)
                     case RequestValidationError():
-                        _create_response(e, 400)
+                        response.status_code = 400
+                        response.set_json({"error": "Bad Request", "message": str(e)})
+                        chain.stop()
                     case _:
                         LOG.debug("Uncaught exception: (%s): %s", e.__class__.__name__, str(e))
 
