@@ -39,6 +39,9 @@ classifiers = [
 
 [tool.setuptools_scm]
 version_file = "localstack-core/localstack/version.py"
+# pypi does not support local versions:
+# https://setuptools-scm.readthedocs.io/en/latest/usage/#default-versioning-scheme
+local_scheme = "no-local-version"
 
 [project.urls]
 Homepage = "https://localstack.cloud"
