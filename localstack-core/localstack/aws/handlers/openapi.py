@@ -38,9 +38,9 @@ class OpenAPIRequestValidator(Handler):
             try:
                 self.openapi.validate_request(WerkzeugOpenAPIRequest(context.request))
             except OpenAPIError as e:
-                # Note: we only check request validations.
-                #   We could be more strict here and check for things such as ServerNotFound or OperationNotFound.
-                #   PathNotFound is handled by the last handler in request_handlers.
+                # Note: we only check request body validation errors, like invalid body requests or missing required
+                #   parameters. Other things we do currently explicitly check are ServerNotFound, OperationNotFound,
+                #   and PathNotFound. They are most likely intercepted in the handler chain.
                 match e:
                     case RequestValidationError():
                         response.status_code = 400
@@ -52,8 +52,7 @@ class OpenAPIRequestValidator(Handler):
 
 class OpenAPIResponseValidator(OpenAPIRequestValidator):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-        # We are more lenient in validating the responses, since there is no users fault involved.
-        #   We can eventually leverage this feature flag and be more strict in out test pipeline.
+        # We are more lenient in validating the responses. The use of this flag is intended for test.
         if not config.OPENAPI_VALIDATE_RESPONSE:
             return
 

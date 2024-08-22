@@ -39,14 +39,6 @@ OPENAPI: Final = {
             "url": "http://localhost.localstack.cloud:{port}",
             "variables": {"port": {"default": "4566"}},
         },
-        {
-            "url": "http://localhost:{port}",
-            "variables": {"port": {"default": "4566"}},
-        },
-        {
-            "url": "http://127.0.0.1:{port}",
-            "variables": {"port": {"default": "4566"}},
-        },
     ],
     "components": {
         "schemas": {
