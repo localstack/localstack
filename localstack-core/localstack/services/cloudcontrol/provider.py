@@ -18,6 +18,7 @@ from localstack.aws.api.cloudcontrol import (
     TypeVersionId,
 )
 from localstack.aws.connect import connect_to
+from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.resource_provider import (
     NoResourceProvider,
@@ -110,6 +111,9 @@ class CloudControlProvider(CloudcontrolApi):
         provider = load_resource_provider(type_name)
         client_factory = connect_to(
             region_name=context.region,
+            aws_access_key_id=context.account_id,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+            aws_session_token="",
         )
         # state handling is still a bit unclear
         event = provider.list(
