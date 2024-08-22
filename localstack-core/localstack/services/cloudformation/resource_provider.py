@@ -424,6 +424,7 @@ class ResourceProviderExecutor:
 
     def deploy_loop(
         self,
+        resource_provider: ResourceProvider,
         resource: dict,
         raw_payload: ResourceProviderPayload,
         max_timeout: int = config.CFN_PER_RESOURCE_TIMEOUT,
@@ -438,8 +439,6 @@ class ResourceProviderExecutor:
                 {"Type": raw_payload["resourceType"]}
             )  # TODO: simplify signature of get_resource_type to just take the type
             try:
-                resource_provider = self.load_resource_provider(resource_type)
-
                 resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
                 try:

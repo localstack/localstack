@@ -1381,7 +1381,8 @@ class TemplateDeployerV2(TemplateDeployerBase):
                     len(resources),
                     resource["ResourceType"],
                 )
-                event = executor.deploy_loop(resource, resource_provider_payload)
+                resource_provider = executor.load_resource_provider(resource["Type"])
+                event = executor.deploy_loop(resource_provider, resource, resource_provider_payload)
                 match event.status:
                     case OperationStatus.SUCCESS:
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
@@ -1550,7 +1551,10 @@ class TemplateDeployerLegacy(TemplateDeployerBase):
                             resource["ResourceType"],
                             iteration_cycle,
                         )
-                        event = executor.deploy_loop(resource, resource_provider_payload)
+                        resource_provider = executor.load_resource_provider(resource["Type"])
+                        event = executor.deploy_loop(
+                            resource_provider, resource, resource_provider_payload
+                        )
                         match event.status:
                             case OperationStatus.SUCCESS:
                                 self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
