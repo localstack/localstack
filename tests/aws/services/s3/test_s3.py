@@ -1517,6 +1517,95 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
+    @pytest.mark.parametrize("tagging_directive", ["COPY", "REPLACE", None])
+    def test_s3_copy_tagging_directive_versioned(
+        self, s3_bucket, snapshot, aws_client, tagging_directive
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        object_key = "source-object"
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="test", Tagging="key1=value1"
+        )
+        snapshot.match("put-object", resp)
+        version_1 = resp["VersionId"]
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="test-v2", Tagging="key1=value1-v2"
+        )
+        snapshot.match("put-object-v2", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tag", get_object_tags)
+
+        get_object_tags_v1 = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_1
+        )
+        snapshot.match("get-object-tag-v1", get_object_tags_v1)
+
+        kwargs = {"TaggingDirective": tagging_directive} if tagging_directive else {}
+
+        object_key_copy = f"{object_key}-copy"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key_copy,
+            Tagging="key2=value2",
+            **kwargs,
+        )
+        snapshot.match("copy-object", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key_copy)
+        snapshot.match("get-copy-object-tag", get_object_tags)
+
+        object_key_copy_tag_empty = f"{object_key}-copy-tag-empty"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key_copy_tag_empty,
+            **kwargs,
+        )
+        snapshot.match("copy-object-tag-empty", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key_copy_tag_empty
+        )
+        snapshot.match("get-copy-object-tag-empty", get_object_tags)
+
+        object_key_copy_v1 = f"{object_key}-copy-v1"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}?versionId={version_1}",
+            Key=object_key_copy_v1,
+            Tagging="key2=value2",
+            **kwargs,
+        )
+        snapshot.match("copy-object-v1", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key_copy_v1)
+        snapshot.match("get-copy-object-tag-v1", get_object_tags)
+
+        object_key_copy_tag_empty_v1 = f"{object_key}-copy-tag-empty-v1"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}?versionId={version_1}",
+            Key=object_key_copy_tag_empty_v1,
+            **kwargs,
+        )
+        snapshot.match("copy-object-tag-empty-v1", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key_copy_tag_empty_v1
+        )
+        snapshot.match("get-copy-object-tag-empty-v1", get_object_tags)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..ServerSideEncryption"],
+    )
     def test_s3_copy_content_type_and_metadata(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
