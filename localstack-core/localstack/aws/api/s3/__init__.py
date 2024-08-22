@@ -185,6 +185,8 @@ HttpMethod = str
 ResourceType = str
 MissingHeaderName = str
 KeyLength = str
+Header = str
+additionalMessage = str
 
 
 class AnalyticsS3ExportFileFormat(StrEnum):
@@ -949,6 +951,22 @@ class InvalidEncryptionAlgorithmError(ServiceException):
     status_code: int = 400
     ArgumentName: Optional[ArgumentName]
     ArgumentValue: Optional[ArgumentValue]
+
+
+class NotImplemented(ServiceException):
+    code: str = "NotImplemented"
+    sender_fault: bool = False
+    status_code: int = 501
+    Header: Optional[Header]
+    additionalMessage: Optional[additionalMessage]
+
+
+class ConditionalRequestConflict(ServiceException):
+    code: str = "ConditionalRequestConflict"
+    sender_fault: bool = False
+    status_code: int = 409
+    Condition: Optional[IfCondition]
+    Key: Optional[ObjectKey]
 
 
 AbortDate = datetime
