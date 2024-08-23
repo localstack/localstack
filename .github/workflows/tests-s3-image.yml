@@ -97,6 +97,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
 
       - name: Login to Docker Hub
