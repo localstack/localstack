@@ -371,14 +371,54 @@ class BatchTargetSender(TargetSender):
             raise ValueError("BatchParameters.JobName is required for Batch target")
 
 
-class ContainerTargetSender(TargetSender):
+class ECSTargetSender(TargetSender):
     def send_event(self, event):
-        raise NotImplementedError("ECS target is not yet implemented")
+        ecs_parameters = self.target.get("EcsParameters", {})
+        task_definition_arn = ecs_parameters.get("TaskDefinitionArn")
+
+        # Extract network configuration if it exists
+        vpc_configuration = ecs_parameters.get("NetworkConfiguration", {}).get(
+            "awsvpcConfiguration", {}
+        )
+        aws_vpc_configuration = {
+            "subnets": vpc_configuration.get("Subnets"),
+            "securityGroups": vpc_configuration.get("SecurityGroups"),
+            "assignPublicIp": vpc_configuration.get("AssignPublicIp"),
+        }
+
+        kwargs = {
+            "launchType": ecs_parameters.get("LaunchType"),
+            "networkConfiguration": {"awsvpcConfiguration": aws_vpc_configuration}
+            if aws_vpc_configuration
+            else None,
+            "count": ecs_parameters.get("TaskCount"),
+            "platformVersion": ecs_parameters.get("PlatformVersion"),
+            "group": ecs_parameters.get("Group"),
+            "capacityProviderStrategy": ecs_parameters.get("CapacityProviderStrategy"),
+            "enableECSManagedTags": ecs_parameters.get("EnableECSManagedTags"),
+            "enableExecuteCommand": ecs_parameters.get("EnableExecuteCommand"),
+            "propagateTags": ecs_parameters.get("PropagateTags"),
+            "referenceId": ecs_parameters.get("ReferenceId"),
+            "tags": ecs_parameters.get("Tags"),
+        }
+
+        # Remove any keys with a value of None
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+
+        self.client.run_task(taskDefinition=task_definition_arn, cluster=self.arn, **kwargs)
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
         if not collections.get_safe(target, "$.EcsParameters.TaskDefinitionArn"):
             raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
+        ecs_parameters = target.get("EcsParameters", {})
+        if ecs_parameters.get("LaunchType", {}) == "FARGATE":
+            if not ecs_parameters.get("NetworkConfiguration", {}):
+                raise ValueError("NetworkConfiguration is required for FARGATE LaunchType")
+            if not ecs_parameters.get("NetworkConfiguration", {}).get("awsvpcConfiguration", {}):
+                raise ValueError("awsvpcConfiguration is required for FARGATE LaunchType")
+            if ecs_parameters.get("CapacityProviderStrategy") and ecs_parameters.get("LaunchType"):
+                raise ValueError("only LaunchType or CapacityProviderStrategy can be provided")
 
 
 class EventsTargetSender(TargetSender):
@@ -555,7 +595,7 @@ class TargetSenderFactory:
         "apigateway": ApiGatewayTargetSender,
         "appsync": AppSyncTargetSender,
         "batch": BatchTargetSender,
-        "ecs": ContainerTargetSender,
+        "ecs": ECSTargetSender,
         "events": EventsTargetSender,
         "firehose": FirehoseTargetSender,
         "kinesis": KinesisTargetSender,
