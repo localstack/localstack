@@ -2045,5 +2045,40 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_amount_of_datapoints": {
+    "recorded-date": "23-08-2024, 14:14:54",
+    "recorded-content": {
+      "error-invalid-amount-datapoints": {
+        "Error": {
+          "Code": "InvalidParameterCombination",
+          "Message": "You have requested up to 86400 datapoints, which exceeds the limit of 1440. You may reduce the datapoints requested by increasing Period, or decreasing the time range.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-invalid-time-frame": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The parameter StartTime must be less than the parameter EndTime.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-metric-statitics": {
+        "Datapoints": [],
+        "Label": "metric_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
