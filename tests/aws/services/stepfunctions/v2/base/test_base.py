@@ -397,6 +397,8 @@ class TestSnfBase:
             exec_input,
         )
 
+    # TODO: the jsonpath library used in the SFN v2 interpreter does not support indexing features available in
+    #  AWS SFN such as: negative ([-1]) and list ([1,2]) indexing.
     @markers.aws.validated
     @pytest.mark.parametrize(
         "json_path_string",
