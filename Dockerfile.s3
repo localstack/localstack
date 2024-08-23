@@ -60,9 +60,6 @@ ADD Makefile pyproject.toml requirements-base-runtime.txt ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
-# create the localstack-core directory for the version autogeneration from setuptools_scm
-RUN mkdir -p /opt/code/localstack/localstack-core/localstack
-
 # Install dependencies for running the LocalStack base runtime (for S3)
 RUN --mount=type=cache,target=/root/.cache \
     . .venv/bin/activate && pip3 install -r requirements-base-runtime.txt
