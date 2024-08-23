@@ -158,6 +158,7 @@ ADD Makefile pyproject.toml requirements-runtime.txt ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
+# Install dependencies for running the LocalStack runtime
 RUN --mount=type=cache,target=/root/.cache\
     . .venv/bin/activate && pip3 install -r requirements-runtime.txt
 
@@ -177,13 +178,15 @@ ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 # add the code as late as possible
 ADD localstack-core/ /opt/code/localstack/localstack-core
 
+# Install LocalStack Community and generate the version file while doing so
 RUN --mount=type=cache,target=/root/.cache \
     . .venv/bin/activate && \
     SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
     pip install -e .[runtime]
 
 # Generate the plugin entrypoints
-RUN make entrypoints
+RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
+    make entrypoints
 
 # Install packages which should be shipped by default
 RUN --mount=type=cache,target=/root/.cache \
