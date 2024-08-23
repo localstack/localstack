@@ -814,8 +814,12 @@ jobs:
       - run:
           name: Publish a dev release
           command: |
-            source .venv/bin/activate
-            make dev-publish || echo "Not publishing a dev release"
+            if git describe --exact-match --tags >/dev/null 2>&1; then
+              echo "not publishing a dev release as this is a tagged commit"
+            else
+              source .venv/bin/activate
+              make publish || echo "dev release failed (maybe it is already published)"
+            fi
 
   push-to-tinybird:
     executor: ubuntu-machine-amd64
