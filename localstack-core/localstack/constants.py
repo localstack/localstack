@@ -1,12 +1,8 @@
 import os
 
-from localstack.version import __version_tuple__
+from localstack.version import __version__
 
-# Adapt the version from setuptools_scm to the version format used by LocalStack before
-if len(__version_tuple__) > 3:
-    VERSION = ".".join([str(i) for i in __version_tuple__[0:3]]) + ".dev"
-else:
-    VERSION = ".".join([str(i) for i in __version_tuple__[0:3]])
+VERSION = __version__
 
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"
