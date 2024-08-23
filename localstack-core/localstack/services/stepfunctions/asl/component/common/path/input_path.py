@@ -3,7 +3,7 @@ from typing import Final, Optional
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class InputPath(EvalComponent):
@@ -21,5 +21,5 @@ class InputPath(EvalComponent):
             case InputPath.DEFAULT_PATH:
                 value = env.inp
             case _:
-                value = JSONPathUtils.extract_json(self.input_path_src, env.inp)
+                value = extract_json(self.input_path_src, env.inp)
         env.stack.append(copy.deepcopy(value))
