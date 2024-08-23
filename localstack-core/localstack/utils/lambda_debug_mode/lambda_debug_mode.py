@@ -28,4 +28,4 @@ def is_lambda_debug_timeout_for(lambda_arn: Arn) -> bool:
     debug_configuration = lambda_debug_mode_session.debug_config_for(lambda_arn=lambda_arn)
     if debug_configuration is None:
         return True
-    return not debug_configuration.timeout_disable
+    return not debug_configuration.enforce_timeouts

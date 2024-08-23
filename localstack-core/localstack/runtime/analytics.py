@@ -21,6 +21,8 @@ TRACKED_ENV_VAR = [
     "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "KINESIS_ERROR_PROBABILITY",
     "KMS_PROVIDER",
+    "LAMBDA_DEBUG_MODE",
+    "LAMBDA_DEBUG_MODE_CONFIG_PATH",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
     "LAMBDA_EXECUTOR",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "LAMBDA_STAY_OPEN_MODE",  # Not functional; deprecated in 2.0.0, removed in 3.0.0

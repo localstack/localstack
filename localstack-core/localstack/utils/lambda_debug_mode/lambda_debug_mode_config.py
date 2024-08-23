@@ -14,7 +14,7 @@ LOG = logging.getLogger(__name__)
 
 class LambdaDebugConfig(BaseModel):
     debug_port: Optional[int] = Field(None, alias="debug-port")
-    timeout_disable: bool = Field(False, alias="timeout-disable")
+    enforce_timeouts: bool = Field(False, alias="enforce-timeouts")
 
 
 class LambdaDebugModeConfig(BaseModel):

@@ -27,6 +27,7 @@ DEBUG_CONFIG_NULL_TIMEOUT_DISABLE = """
 functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
     debug-port: null
+    enforce-timeout: null
 """
 
 DEBUG_CONFIG_DUPLICATE_DEBUG_PORT = """
@@ -96,7 +97,7 @@ def test_debug_config_null_debug_port():
 
 def test_debug_config_null_timeout_disable():
     config = load_lambda_debug_mode_config(DEBUG_CONFIG_NULL_TIMEOUT_DISABLE)
-    assert list(config.functions.values())[0].timeout_disable is False
+    assert list(config.functions.values())[0].enforce_timeouts is False
 
 
 @pytest.mark.parametrize(
@@ -117,4 +118,4 @@ def test_debug_config_base(yaml_config):
         "arn:aws:lambda:eu-central-1:000000000000:function:functionname:$LATEST" in config.functions
     )
     assert list(config.functions.values())[0].debug_port == 19891
-    assert list(config.functions.values())[0].timeout_disable is False
+    assert list(config.functions.values())[0].enforce_timeouts is False
