@@ -16,8 +16,8 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.apigateway.helpers import (
-    TAG_KEY_CUSTOM_ID,
     get_resource_for_path,
     get_rest_api_paths,
     host_based_url,

@@ -54,3 +54,27 @@ class InvalidLaunchTemplateIdError(CommonServiceException):
             code="InvalidLaunchTemplateId.VersionNotFound",
             message="Could not find launch template version",
         )
+
+
+class InvalidSubnetDuplicateCustomIdError(CommonServiceException):
+    def __init__(self, custom_id):
+        super().__init__(
+            code="InvalidSubnet.DuplicateCustomId",
+            message=f"Subnet with custom id '{custom_id}' already exists",
+        )
+
+
+class InvalidSecurityGroupDuplicateCustomIdError(CommonServiceException):
+    def __init__(self, custom_id):
+        super().__init__(
+            code="InvalidSecurityGroupId.DuplicateCustomId",
+            message=f"Security group with custom id '{custom_id}' already exists",
+        )
+
+
+class InvalidVpcDuplicateCustomIdError(CommonServiceException):
+    def __init__(self, custom_id):
+        super().__init__(
+            code="InvalidVpc.DuplicateCustomId",
+            message=f"VPC with custom id '{custom_id}' already exists",
+        )
