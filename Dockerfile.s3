@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-             ca-certificates curl make openssl git
+             ca-certificates curl make openssl
 # TODO: add this if we need the DNS server: iputils-ping iproute2
 
 SHELL [ "/bin/bash", "-c" ]
