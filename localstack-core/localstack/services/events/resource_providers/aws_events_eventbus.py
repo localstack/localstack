@@ -120,7 +120,7 @@ class EventsEventBusProvider(ResourceProvider[EventsEventBusProperties]):
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_models=[
-                EventsEventBusProperties(Id=resource["Name"])
+                EventsEventBusProperties(Name=resource["Name"])
                 for resource in resources["EventBuses"]
             ],
         )
