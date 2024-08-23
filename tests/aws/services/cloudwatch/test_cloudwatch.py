@@ -2604,6 +2604,7 @@ class TestCloudwatch:
         snapshot.match("list-metrics", list_metrics_res)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
     def test_invalid_amount_of_datapoints(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=timezone.utc)
