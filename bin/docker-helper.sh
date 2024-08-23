@@ -159,8 +159,6 @@ function cmd-push() {
     _enforce_platform
     _set_version_defaults
 
-    echo "VERSION: $(_get_current_version)"
-
     if [ -z "$TARGET_IMAGE_NAME" ]; then TARGET_IMAGE_NAME=$IMAGE_NAME; fi
 
     # login to DockerHub
