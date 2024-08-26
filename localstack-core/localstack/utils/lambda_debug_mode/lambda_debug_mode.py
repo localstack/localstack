@@ -22,10 +22,10 @@ def lambda_debug_port_for(lambda_arn: Arn) -> Optional[int]:
     return debug_configuration.debug_port
 
 
-def is_lambda_debug_timeout_enforced_for(lambda_arn: Arn) -> bool:
+def is_lambda_debug_timeout_enabled_for(lambda_arn: Arn) -> bool:
     if not is_lambda_debug_mode():
         return False
     debug_configuration = LambdaDebugModeSession.get().debug_config_for(lambda_arn=lambda_arn)
     if debug_configuration is None:
-        return True
+        return False
     return not debug_configuration.enforce_timeouts
