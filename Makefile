@@ -125,7 +125,7 @@ lint-modified:     		  ## Run code linter to check code style, check if formatte
 	($(VENV_RUN); python -m ruff check --output-format=full `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && python -m ruff format --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
 	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files $(git diff master --name-only) # run pre-commit hook manually here to ensure that this check runs in CI as well
 
-check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibilty markers set
+check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibility markers set
 	($(VENV_RUN); python -m pytest --co tests/aws/)
 
 format:            		  ## Run ruff to format the whole codebase
