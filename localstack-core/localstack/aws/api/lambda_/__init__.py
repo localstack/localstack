@@ -25,6 +25,8 @@ EnvironmentVariableValue = str
 EphemeralStorageSize = int
 EventSourceToken = str
 FileSystemArn = str
+FilterCriteriaErrorCode = str
+FilterCriteriaErrorMessage = str
 FunctionArn = str
 FunctionName = str
 FunctionUrl = str
@@ -836,6 +838,7 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
     ScalingConfig: Optional[ScalingConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
+    KMSKeyArn: Optional[KMSKeyArn]
 
 
 class LoggingConfig(TypedDict, total=False):
@@ -1009,6 +1012,11 @@ class EnvironmentResponse(TypedDict, total=False):
     Error: Optional[EnvironmentError]
 
 
+class FilterCriteriaError(TypedDict, total=False):
+    ErrorCode: Optional[FilterCriteriaErrorCode]
+    Message: Optional[FilterCriteriaErrorMessage]
+
+
 class EventSourceMappingConfiguration(TypedDict, total=False):
     UUID: Optional[String]
     StartingPosition: Optional[EventSourcePosition]
@@ -1037,6 +1045,8 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
     ScalingConfig: Optional[ScalingConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
+    KMSKeyArn: Optional[KMSKeyArn]
+    FilterCriteriaError: Optional[FilterCriteriaError]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -1707,6 +1717,7 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
     ScalingConfig: Optional[ScalingConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
+    KMSKeyArn: Optional[KMSKeyArn]
 
 
 class UpdateFunctionCodeRequest(ServiceRequest):
@@ -1859,6 +1870,7 @@ class LambdaApi:
         self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig = None,
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
+        kms_key_arn: KMSKeyArn = None,
         **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
@@ -2460,6 +2472,7 @@ class LambdaApi:
         function_response_types: FunctionResponseTypeList = None,
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
+        kms_key_arn: KMSKeyArn = None,
         **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError

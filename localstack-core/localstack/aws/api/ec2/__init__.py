@@ -11317,6 +11317,20 @@ class DescribeInstanceStatusRequest(ServiceRequest):
     IncludeAllInstances: Optional[Boolean]
 
 
+class EbsStatusDetails(TypedDict, total=False):
+    ImpairedSince: Optional[MillisecondDateTime]
+    Name: Optional[StatusName]
+    Status: Optional[StatusType]
+
+
+EbsStatusDetailsList = List[EbsStatusDetails]
+
+
+class EbsStatusSummary(TypedDict, total=False):
+    Details: Optional[EbsStatusDetailsList]
+    Status: Optional[SummaryStatus]
+
+
 class InstanceStatusDetails(TypedDict, total=False):
     ImpairedSince: Optional[DateTime]
     Name: Optional[StatusName]
@@ -11356,6 +11370,7 @@ class InstanceStatus(TypedDict, total=False):
     InstanceState: Optional[InstanceState]
     InstanceStatus: Optional[InstanceStatusSummary]
     SystemStatus: Optional[InstanceStatusSummary]
+    AttachedEbsStatus: Optional[EbsStatusSummary]
 
 
 InstanceStatusList = List[InstanceStatus]
