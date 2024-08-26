@@ -25,6 +25,16 @@ class LambdaDebugModeConfig(BaseModel):
 class LambdaDebugModeConfigException(Exception): ...
 
 
+class UnknownLambdaArnFormat(LambdaDebugModeConfigException):
+    unknown_lambda_arn: str
+
+    def __init__(self, unknown_lambda_arn: str):
+        self.unknown_lambda_arn = unknown_lambda_arn
+
+    def __str__(self):
+        return f"UnknownLambdaArnFormat: '{self.unknown_lambda_arn}'"
+
+
 class PortAlreadyInUse(LambdaDebugModeConfigException):
     port_number: int
 
@@ -50,7 +60,7 @@ class DuplicateLambdaDebugConfig(LambdaDebugModeConfigException):
         )
 
 
-class _LambdaDebugModeConfigValidationState:
+class _LambdaDebugModeConfigPostProcessingState:
     ports_used: set[int]
 
     def __init__(self):
@@ -99,14 +109,14 @@ def from_yaml_string(yaml_string: str) -> Optional[LambdaDebugModeConfig]:
     return config
 
 
-def validate_lambda_debug_mode_config(config: LambdaDebugModeConfig) -> None:
-    _validate_lambda_debug_mode_config(
-        validation_state=_LambdaDebugModeConfigValidationState(), config=config
+def post_process_lambda_debug_mode_config(config: LambdaDebugModeConfig) -> None:
+    _post_process_lambda_debug_mode_config(
+        post_processing_state=_LambdaDebugModeConfigPostProcessingState(), config=config
     )
 
 
-def _validate_lambda_debug_mode_config(
-    validation_state: _LambdaDebugModeConfigValidationState, config: LambdaDebugModeConfig
+def _post_process_lambda_debug_mode_config(
+    post_processing_state: _LambdaDebugModeConfigPostProcessingState, config: LambdaDebugModeConfig
 ):
     config_functions = config.functions
     lambda_arns = list(config_functions.keys())
@@ -121,8 +131,8 @@ def _validate_lambda_debug_mode_config(
             config_functions[qualified_lambda_arn] = config_functions.pop(lambda_arn)
 
     for lambda_arn, lambda_debug_config in config_functions.items():
-        _validate_lambda_debug_config(
-            validation_state=validation_state, lambda_debug_config=lambda_debug_config
+        _post_process_lambda_debug_config(
+            post_processing_state=post_processing_state, lambda_debug_config=lambda_debug_config
         )
 
 
@@ -139,10 +149,10 @@ def _to_qualified_lambda_function_arn(lambda_arn: Arn) -> Arn:
     if is_qualified and lambda_arn_parts[-1]:
         return lambda_arn
 
-    # The arn is not unqualified, but probably erroneous, pass the value upstream.
+    # Unknown lambda arn format.
     is_unqualified = lambda_arn_parts_len == 7
     if not is_unqualified:
-        return lambda_arn
+        raise UnknownLambdaArnFormat(unknown_lambda_arn=lambda_arn)
 
     # Structure-wise, the arn is missing the qualifier.
     qualifier = "$LATEST"
@@ -151,15 +161,16 @@ def _to_qualified_lambda_function_arn(lambda_arn: Arn) -> Arn:
     return qualified_lambda_arn
 
 
-def _validate_lambda_debug_config(
-    validation_state: _LambdaDebugModeConfigValidationState, lambda_debug_config: LambdaDebugConfig
+def _post_process_lambda_debug_config(
+    post_processing_state: _LambdaDebugModeConfigPostProcessingState,
+    lambda_debug_config: LambdaDebugConfig,
 ) -> None:
     debug_port: Optional[int] = lambda_debug_config.debug_port
     if debug_port is None:
         return
-    if debug_port in validation_state.ports_used:
+    if debug_port in post_processing_state.ports_used:
         raise PortAlreadyInUse(port_number=debug_port)
-    validation_state.ports_used.add(debug_port)
+    post_processing_state.ports_used.add(debug_port)
 
 
 def load_lambda_debug_mode_config(yaml_string: str) -> Optional[LambdaDebugModeConfig]:
@@ -188,9 +199,9 @@ def load_lambda_debug_mode_config(yaml_string: str) -> Optional[LambdaDebugModeC
         )
         return None
 
-    # Attempt to validate the configuration.
+    # Attempt to post_process the configuration.
     try:
-        validate_lambda_debug_mode_config(config)
+        post_process_lambda_debug_mode_config(config)
     except LambdaDebugModeConfigException as lambda_debug_mode_error:
         LOG.error(f"Invalid lambda debug mode configuration due to: {lambda_debug_mode_error}")
         config = None

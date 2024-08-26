@@ -23,11 +23,11 @@ functions:
     debug-port: null
 """
 
-DEBUG_CONFIG_NULL_TIMEOUT_DISABLE = """
+DEBUG_CONFIG_NULL_ENFORCE_TIMEOUTS = """
 functions:
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
     debug-port: null
-    enforce-timeout: null
+    enforce-timeouts: null
 """
 
 DEBUG_CONFIG_DUPLICATE_DEBUG_PORT = """
@@ -44,6 +44,18 @@ functions:
     debug-port: 19891
   arn:aws:lambda:eu-central-1:000000000000:function:functionname:
     debug-port: 19892
+"""
+
+DEBUG_CONFIG_INVALID_MISSING_QUALIFIER_ARN = """
+functions:
+  arn:aws:lambda:eu-central-1:000000000000:function:functionname::
+    debug-port: 19891
+"""
+
+DEBUG_CONFIG_INVALID_ARN_STRUCTURE = """
+functions:
+  arn:aws:lambda:eu-central-1:000000000000:function:
+    debug-port: 19891
 """
 
 DEBUG_CONFIG_DUPLICATE_IMPLICIT_ARN = """
@@ -76,6 +88,9 @@ functions:
         DEBUG_CONFIG_DUPLICATE_DEBUG_PORT,
         DEBUG_CONFIG_DUPLICATE_ARN,
         DEBUG_CONFIG_DUPLICATE_IMPLICIT_ARN,
+        DEBUG_CONFIG_NULL_ENFORCE_TIMEOUTS,
+        DEBUG_CONFIG_INVALID_ARN_STRUCTURE,
+        DEBUG_CONFIG_INVALID_MISSING_QUALIFIER_ARN,
     ],
     ids=[
         "empty",
@@ -84,6 +99,9 @@ functions:
         "duplicate_debug_port",
         "deplicate_arn",
         "duplicate_implicit_arn",
+        "null_enforce_timeouts",
+        "invalid_arn_structure",
+        "invalid_missing_qualifier_arn",
     ],
 )
 def test_debug_config_invalid(yaml_config: str):
@@ -93,11 +111,6 @@ def test_debug_config_invalid(yaml_config: str):
 def test_debug_config_null_debug_port():
     config = load_lambda_debug_mode_config(DEBUG_CONFIG_NULL_DEBUG_PORT)
     assert list(config.functions.values())[0].debug_port is None
-
-
-def test_debug_config_null_timeout_disable():
-    config = load_lambda_debug_mode_config(DEBUG_CONFIG_NULL_TIMEOUT_DISABLE)
-    assert list(config.functions.values())[0].enforce_timeouts is False
 
 
 @pytest.mark.parametrize(
