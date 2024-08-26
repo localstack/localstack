@@ -138,12 +138,13 @@ def traverse_file_tree(root: str) -> List[str]:
 
 
 def get_docker_image_details() -> Dict[str, str]:
-    image = os.environ.get("IMAGE_NAME")
-    if not image:
-        try:
-            image = DOCKER_CLIENT.inspect_container(get_main_container_name())["Config"]["Image"]
-        except ContainerException:
-            return {}
+    try:
+        image = DOCKER_CLIENT.inspect_container(get_main_container_name())["Config"]["Image"]
+    except ContainerException:
+        return {}
+    # The default bootstrap image detection does not take custom images into account.
+    # Also, the patches to correctly detect a `-pro` image are only applied on the host, so the detection fails
+    # at runtime. The bootstrap detection is mostly used for the CLI, so having a different logic here makes sense.
     return bootstrap.get_docker_image_details(image_name=image)
 
 
