@@ -14049,7 +14049,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_arns": {
-    "recorded-date": "10-04-2024, 09:00:25",
+    "recorded-date": "22-08-2024, 15:53:32",
     "recorded-content": {
       "create-function-arn-response": {
         "CreateEventSourceMappingResponse": null,
@@ -14152,7 +14152,7 @@
       "invalid_function_name_exc": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'invalid:function:name' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+          "Message": "1 validation error detected: Value 'invalid:function:name' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -14316,7 +14316,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
-    "recorded-date": "10-04-2024, 09:12:45",
+    "recorded-date": "22-08-2024, 16:08:22",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -16418,6 +16418,942 @@
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_cross_region_arn_function_access": {
     "recorded-date": "11-06-2024, 13:06:45",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_is_single_invalid-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:25",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '*' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_is_single_invalid-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:26",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '*' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_is_single_invalid-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:26",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '*' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_is_single_invalid-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:26",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '*' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_characters_in_function_name-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:24",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'my-function!' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_characters_in_function_name-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:24",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'my-function!' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_characters_in_function_name-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:25",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'my-function!' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_characters_in_function_name-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:25",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'my-function!' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_characters_in_qualifier-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:27",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'invalid!' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_characters_in_qualifier-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:27",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'invalid!' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_characters_in_qualifier-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:27",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'invalid!' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_characters_in_qualifier-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:27",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'my-function:invalid!' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long0-get_function]": {
+    "recorded-date": "22-08-2024, 15:07:09",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long0-delete_function]": {
+    "recorded-date": "22-08-2024, 15:07:10",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long0-invoke]": {
+    "recorded-date": "22-08-2024, 15:07:10",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long0-create_function]": {
+    "recorded-date": "22-08-2024, 15:07:10",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'my-function:<a:len(129)>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_account_id_in_partial_arn-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:29",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'invalid-account:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_account_id_in_partial_arn-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:29",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'invalid-account:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_account_id_in_partial_arn-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:29",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'invalid-account:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_account_id_in_partial_arn-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:30",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'invalid-account:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_region_in_arn-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:30",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_region_in_arn-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:30",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_region_in_arn-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:31",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[invalid_region_in_arn-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:31",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[non_lambda_arn-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:31",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:ec2:<region>:111111111111:instance:i-1234567890abcdef0' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[non_lambda_arn-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:31",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:ec2:<region>:111111111111:instance:i-1234567890abcdef0' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[non_lambda_arn-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:32",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:ec2:<region>:111111111111:instance:i-1234567890abcdef0' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[non_lambda_arn-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:32",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:ec2:<region>:111111111111:instance:i-1234567890abcdef0' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_too_long-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:32",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<a:len(65)>"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_too_long-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:33",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<a:len(65)>"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_too_long-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:33",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<a:len(65)>:$LATEST"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_too_long-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:33",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "InvalidParameterValueException",
+        "Count": 1,
+        "Errors": [
+          "Value '<a:len(65)>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 64"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_too_long_and_invalid_region-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:34",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 2,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function<a:len(170)>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 170",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function<a:len(170)>' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_too_long_and_invalid_region-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:34",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 2,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function<a:len(140)>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function<a:len(140)>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_too_long_and_invalid_region-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:34",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 2,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function<a:len(170)>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 170",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function<a:len(170)>' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_too_long_and_invalid_region-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:35",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 2,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function<a:len(140)>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function<a:len(140)>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[full_arn_and_qualifier_too_long_and_invalid_region-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:35",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 3,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function-<a:len(170)>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 170",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function-<a:len(170)>' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[full_arn_and_qualifier_too_long_and_invalid_region-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:35",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 3,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function-<a:len(140)>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function-<a:len(140)>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[full_arn_and_qualifier_too_long_and_invalid_region-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:36",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 3,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function-<a:len(170)>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 170",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function-<a:len(170)>' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[full_arn_and_qualifier_too_long_and_invalid_region-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:36",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 2,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function-<a:len(140)>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:<a:len(129)>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140",
+          "Value 'arn:<partition>:lambda:invalid-region:111111111111:function:my-function-<a:len(140)>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:<a:len(129)>' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long1-get_function]": {
+    "recorded-date": "22-08-2024, 15:07:18",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:my-function:<a:len(65)>"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long1-delete_function]": {
+    "recorded-date": "22-08-2024, 15:07:18",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "InvalidParameterValueException",
+        "Message": "Deletion of aliases is not currently supported."
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long1-invoke]": {
+    "recorded-date": "22-08-2024, 15:07:18",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:my-function:<a:len(65)>"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long1-create_function]": {
+    "recorded-date": "22-08-2024, 15:07:19",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[full_arn_with_multiple_qualifiers-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:36",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:1:2' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[full_arn_with_multiple_qualifiers-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:36",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:1:2' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[full_arn_with_multiple_qualifiers-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:37",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:1:2' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[full_arn_with_multiple_qualifiers-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:37",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:1:2' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[incomplete_arn-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:37",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:function"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[incomplete_arn-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:38",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:function"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[incomplete_arn-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:38",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:function:$LATEST"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[incomplete_arn-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:38",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[partial_arn_with_extra_qualifier-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:38",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'function:my-function:$LATEST:extra' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[partial_arn_with_extra_qualifier-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:39",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'function:my-function:$LATEST:extra' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[partial_arn_with_extra_qualifier-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:39",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'function:my-function:$LATEST:extra' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[partial_arn_with_extra_qualifier-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:39",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'function:my-function:$LATEST:extra' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[latest_version_with_additional_qualifier-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:39",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "InvalidParameterValueException",
+        "Message": "The derived qualifier from the function name does not match the specified qualifier."
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[latest_version_with_additional_qualifier-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:40",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "InvalidParameterValueException",
+        "Message": "The derived qualifier from the function name does not match the specified qualifier."
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[latest_version_with_additional_qualifier-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:40",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "InvalidParameterValueException",
+        "Message": "The derived qualifier from the function name does not match the specified qualifier."
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[latest_version_with_additional_qualifier-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:40",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:$LATEST:1' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[lowercase_latest_qualifier-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:41",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:my-function:$latest"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[lowercase_latest_qualifier-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:41",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[lowercase_latest_qualifier-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:41",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:my-function:$latest"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[lowercase_latest_qualifier-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:41",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:$latest' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[missing_region_in_arn-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:42",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda::111111111111:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[missing_region_in_arn-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:42",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda::111111111111:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[missing_region_in_arn-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:42",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda::111111111111:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[missing_region_in_arn-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:43",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda::111111111111:function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[missing_account_id_in_arn-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:43",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>::function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[missing_account_id_in_arn-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:43",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>::function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[missing_account_id_in_arn-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:44",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>::function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[missing_account_id_in_arn-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:44",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>::function:my-function' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[misspelled_latest_in_arn-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:44",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:$LATES' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[misspelled_latest_in_arn-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:44",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:$LATES' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[misspelled_latest_in_arn-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:45",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:$LATES' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[misspelled_latest_in_arn-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:45",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'arn:<partition>:lambda:<region>:111111111111:function:my-function:$LATES' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long-get_function]": {
+    "recorded-date": "22-08-2024, 15:20:28",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long-delete_function]": {
+    "recorded-date": "22-08-2024, 15:20:28",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long-invoke]": {
+    "recorded-date": "22-08-2024, 15:20:28",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value '<a:len(129)>' at 'qualifier' failed to satisfy constraint: Member must have length less than or equal to 128"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[qualifier_too_long-create_function]": {
+    "recorded-date": "22-08-2024, 15:20:29",
+    "recorded-content": {
+      "create_function_exception": {
+        "Code": "ValidationException",
+        "Count": 1,
+        "Errors": [
+          "Value 'my-function:<a:len(129)>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_and_qualifier_too_long-get_function]": {
+    "recorded-date": "22-08-2024, 15:10:43",
+    "recorded-content": {
+      "get_function_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:my-function:<a:len(65)>"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_and_qualifier_too_long-delete_function]": {
+    "recorded-date": "22-08-2024, 15:10:43",
+    "recorded-content": {
+      "delete_function_exception": {
+        "Code": "InvalidParameterValueException",
+        "Message": "Deletion of aliases is not currently supported."
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_and_qualifier_too_long-invoke]": {
+    "recorded-date": "22-08-2024, 15:10:44",
+    "recorded-content": {
+      "invoke_exception": {
+        "Code": "ResourceNotFoundException",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:my-function:<a:len(65)>"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_and_qualifier_too_long-create_function]": {
+    "recorded-date": "22-08-2024, 15:10:45",
     "recorded-content": {}
   }
 }
