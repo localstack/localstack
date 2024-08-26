@@ -7,6 +7,7 @@ shopt -s nullglob
 # global defaults
 DOCKERFILE=${DOCKERFILE-"Dockerfile"}
 DEFAULT_TAG=${DEFAULT_TAG-"latest"}
+DOCKER_BUILD_CONTEXT=${DOCKER_BUILD_CONTEXT-"."}
 
 function usage() {
     echo "A set of commands that facilitate building and pushing versioned Docker images"
@@ -110,6 +111,9 @@ function cmd-build() {
     _enforce_image_name
     _set_version_defaults
 
+    if [ ! -f "pyproject.toml" ]; then
+      echo "No pyproject.toml found, setuptools_scm will not be able to retrieve configuration."
+    fi
     if [ -z "$DOCKERFILE" ]; then DOCKERFILE=Dockerfile; fi
     # by default we load the result to the docker daemon
     if [ "$DOCKER_BUILD_FLAGS" = "" ]; then DOCKER_BUILD_FLAGS="--load"; fi
@@ -124,7 +128,7 @@ function cmd-build() {
       --build-arg=LOCALSTACK_BUILD_DATE=$(date -u +"%Y-%m-%d") \
       --build-arg=LOCALSTACK_BUILD_VERSION=$IMAGE_TAG \
       --add-host="localhost.localdomain:127.0.0.1" \
-      -t "$IMAGE_NAME:$DEFAULT_TAG" $DOCKER_BUILD_FLAGS . -f $DOCKERFILE
+      -t "$IMAGE_NAME:$DEFAULT_TAG" $DOCKER_BUILD_FLAGS $DOCKER_BUILD_CONTEXT -f $DOCKERFILE
 }
 
 function cmd-save() {
