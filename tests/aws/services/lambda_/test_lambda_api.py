@@ -760,6 +760,214 @@ class TestLambdaFunction:
             )
         snapshot.match("function_arn_other_account_exc", e.value.response)
 
+    @pytest.mark.parametrize(
+        "clientfn",
+        [
+            "get_function",
+            "delete_function",
+            "invoke",
+            "create_function",
+        ],
+    )
+    @pytest.mark.parametrize(
+        "test_case",
+        [
+            pytest.param(
+                {"FunctionName": "my-function!"},
+                id="invalid_characters_in_function_name",
+            ),
+            pytest.param(
+                {"FunctionName": "*"},
+                id="function_name_is_single_invalid",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "my-function",
+                    "Qualifier": "invalid!",
+                },
+                id="invalid_characters_in_qualifier",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "my-function",
+                    "Qualifier": "a" * 129,
+                },
+                id="qualifier_too_long",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "invalid-account:function:my-function",
+                },
+                id="invalid_account_id_in_partial_arn",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:lambda:invalid-region:{account_id}:function:my-function",
+                },
+                id="invalid_region_in_arn",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:ec2:{region_name}:{account_id}:instance:i-1234567890abcdef0",
+                },
+                id="non_lambda_arn",
+            ),
+            pytest.param(
+                {"FunctionName": "a" * 65},
+                id="function_name_too_long",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": f"arn:aws:lambda:invalid-region:{{account_id}}:function:my-function{'a' * 170}",
+                },
+                id="function_name_too_long_and_invalid_region",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": f"arn:aws:lambda:invalid-region:{{account_id}}:function:my-function-{'a' * 170}",
+                    "Qualifier": "a" * 129,
+                },
+                id="full_arn_and_qualifier_too_long_and_invalid_region",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:lambda:{region_name}:{account_id}:function:my-function:1:2",
+                },
+                id="full_arn_with_multiple_qualifiers",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:lambda:{region_name}:{account_id}:function",
+                },
+                id="incomplete_arn",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "function:my-function:$LATEST:extra",
+                },
+                id="partial_arn_with_extra_qualifier",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:lambda:{region_name}:{account_id}:function:my-function:$LATEST",
+                    "Qualifier": "1",
+                },
+                id="latest_version_with_additional_qualifier",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:lambda:{region_name}:{account_id}:function:my-function",
+                    "Qualifier": "$latest",
+                },
+                id="lowercase_latest_qualifier",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:lambda::{account_id}:function:my-function",
+                },
+                id="missing_region_in_arn",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:lambda:{region_name}::function:my-function",
+                },
+                id="missing_account_id_in_arn",
+            ),
+            pytest.param(
+                {
+                    "FunctionName": "arn:aws:lambda:{region_name}:{account_id}:function:my-function:$LATES",
+                },
+                id="misspelled_latest_in_arn",
+            ),
+        ],
+    )
+    @markers.aws.validated
+    def test_function_name_and_qualifier_validation(
+        self,
+        request,
+        region_name,
+        account_id,
+        aws_client,
+        clientfn,
+        lambda_su_role,
+        test_case,
+        snapshot,
+    ):
+        if (
+            request.node.callspec.id
+            in (
+                "incomplete_arn-create_function",  # "arn:aws:lambda:{region_name}:{account_id}:function" is valid
+                "lowercase_latest_qualifier-delete_function",  # --qualifier "$latest" is valid
+                # TODO: both are 'valid' but LocalStack does not include the version qualifier '$LATEST' in raised NotFound exception
+                "function_name_too_long-invoke",
+                "incomplete_arn-invoke",
+            )
+        ):
+            pytest.skip("skipping test case")
+
+        function_name = test_case["FunctionName"].format(
+            region_name=region_name, account_id=account_id
+        )
+        test_case["FunctionName"] = function_name
+
+        # (Create|Delete)Function has a max length of 140, but GetFunction and Invoke 170.
+        max_arn_length = 170 if clientfn in ("invoke", "get_function") else 140
+        max_qualifier_length = 129
+        max_function_name_length = 65
+
+        snapshot.add_transformer(
+            snapshot.transform.regex("a" * max_arn_length, f"<a:len({max_arn_length})>")
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex("a" * max_qualifier_length, f"<a:len({max_qualifier_length})>")
+        )
+
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                "a" * max_function_name_length, f"<a:len({max_function_name_length})>"
+            )
+        )
+
+        def _extract_from_error_message(exception_response):
+            error_pattern = r"(Value '.*?' at '.*?' failed to satisfy constraint: .+?(?=;|$))"
+            error_message = exception_response["Error"]["Message"]
+            error_code = exception_response["Error"]["Code"]
+
+            if error_messages_matches := re.findall(error_pattern, error_message):
+                return {
+                    "Code": error_code,
+                    "Errors": sorted(error_messages_matches),
+                    "Count": len(error_messages_matches),
+                }
+
+            return {"Code": error_code, "Message": error_message}
+
+        def _wrap_create_function(FunctionName, Qualifier=""):
+            full_function_name = f"{FunctionName}:{Qualifier}" if Qualifier else FunctionName
+            zip_file_bytes = create_lambda_archive(
+                load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+            )
+            return aws_client.lambda_.create_function(
+                FunctionName=full_function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+
+        method = getattr(aws_client.lambda_, clientfn)
+        if clientfn == "create_function":
+            method = _wrap_create_function
+
+        with pytest.raises(Exception) as ex:
+            method(**test_case)
+
+        snapshot.match(
+            f"{clientfn}_exception",
+            _extract_from_error_message(ex.value.response),
+        )
+
     @markers.lambda_runtime_update
     @markers.aws.validated
     def test_create_lambda_exceptions(self, lambda_su_role, snapshot, aws_client):
