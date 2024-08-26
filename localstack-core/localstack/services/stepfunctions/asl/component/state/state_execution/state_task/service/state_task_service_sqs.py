@@ -29,7 +29,7 @@ _ERROR_NAME_AWS: Final[str] = "SQS.AmazonSQSException"
 _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
     "sendmessage": {
         "DelaySeconds",
-        "MessageAttribute",
+        "MessageAttributes",
         "MessageBody",
         "MessageDeduplicationId",
         "MessageGroupId",
@@ -75,10 +75,14 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
             boto_service_name=boto_service_name,
             service_action_name=service_action_name,
         )
-        # Normalise output value key to SFN standard for Md5OfMessageBody.
+        # Normalise output value keys to SFN standard for Md5OfMessageBody and Md5OfMessageAttributes
         if response and "Md5OfMessageBody" in response:
             md5_message_body = response.pop("Md5OfMessageBody")
             response["MD5OfMessageBody"] = md5_message_body
+
+        if response and "Md5OfMessageAttributes" in response:
+            md5_message_attributes = response.pop("Md5OfMessageAttributes")
+            response["MD5OfMessageAttributes"] = md5_message_attributes
 
     def _eval_service_task(
         self,

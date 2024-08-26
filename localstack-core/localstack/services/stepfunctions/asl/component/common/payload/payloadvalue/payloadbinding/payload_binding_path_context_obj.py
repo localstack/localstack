@@ -4,7 +4,7 @@ from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue
     PayloadBinding,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class PayloadBindingPathContextObj(PayloadBinding):
@@ -19,7 +19,5 @@ class PayloadBindingPathContextObj(PayloadBinding):
         return cls(field=field, path_context_obj=path_context_obj)
 
     def _eval_val(self, env: Environment) -> Any:
-        value = JSONPathUtils.extract_json(
-            self.path_context_obj, env.context_object_manager.context_object
-        )
+        value = extract_json(self.path_context_obj, env.context_object_manager.context_object)
         return value

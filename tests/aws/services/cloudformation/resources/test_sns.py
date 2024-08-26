@@ -1,5 +1,6 @@
 import os.path
 
+import aws_cdk as cdk
 import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
@@ -131,3 +132,21 @@ def test_update_subscription(snapshot, deploy_cfn_template, aws_client, sqs_queu
     subscription_updated = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
     snapshot.match("subscription-2", subscription_updated)
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+
+@markers.aws.validated
+def test_sns_topic_with_attributes(infrastructure_setup, aws_client, snapshot):
+    infra = infrastructure_setup(namespace="SnsTests")
+    stack_name = f"stack-{short_uid()}"
+    stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
+
+    # Add more configurations here conform they are needed to be tested
+    topic = cdk.aws_sns.Topic(stack, id="Topic", fifo=True, message_retention_period_in_days=30)
+
+    cdk.CfnOutput(stack, "TopicArn", value=topic.topic_arn)
+    with infra.provisioner() as prov:
+        outputs = prov.get_stack_outputs(stack_name=stack_name)
+        response = aws_client.sns.get_topic_attributes(
+            TopicArn=outputs["TopicArn"],
+        )
+        snapshot.match("topic-archive-policy", response["Attributes"]["ArchivePolicy"])

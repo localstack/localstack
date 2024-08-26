@@ -427,6 +427,7 @@ class S3Multipart:
     upload_id: MultipartUploadId
     checksum_value: Optional[str]
     initiated: datetime
+    precondition: bool
 
     def __init__(
         self,
@@ -449,6 +450,7 @@ class S3Multipart:
         initiator: Optional[Owner] = None,
         tagging: Optional[dict[str, str]] = None,
         owner: Optional[Owner] = None,
+        precondition: Optional[bool] = None,
     ):
         self.id = token_urlsafe(96)  # MultipartUploadId is 128 characters long
         self.initiated = datetime.now(tz=_gmt_zone_info)
@@ -456,6 +458,7 @@ class S3Multipart:
         self.initiator = initiator
         self.tagging = tagging
         self.checksum_value = None
+        self.precondition = precondition
         self.object = S3Object(
             key=key,
             user_metadata=user_metadata,

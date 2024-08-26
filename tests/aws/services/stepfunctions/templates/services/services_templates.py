@@ -54,6 +54,9 @@ class ServicesTemplates(TemplateLoader):
     SQS_SEND_MESSAGE_AND_WAIT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sqs_send_msg_and_wait.json5"
     )
+    SQS_SEND_MESSAGE_ATTRIBUTES: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sqs_send_msg_attributes.json5"
+    )
     SNS_PUBLISH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sns_publish.json5")
     SNS_FIFO_PUBLISH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sns_fifo_publish.json5"

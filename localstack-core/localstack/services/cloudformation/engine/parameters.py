@@ -18,10 +18,15 @@ Documentation extracted from AWS docs (https://docs.aws.amazon.com/AWSCloudForma
 
 """
 
+import logging
 from typing import Literal, Optional, TypedDict
+
+from botocore.exceptions import ClientError
 
 from localstack.aws.api.cloudformation import Parameter, ParameterDeclaration
 from localstack.aws.connect import connect_to
+
+LOG = logging.getLogger(__name__)
 
 
 def extract_stack_parameter_declarations(template: dict) -> dict[str, ParameterDeclaration]:
@@ -133,9 +138,12 @@ def resolve_ssm_parameter(account_id: str, region_name: str, stack_parameter_val
     """
     Resolve the SSM stack parameter from the SSM service with a name equal to the stack parameter value.
     """
-    return connect_to(aws_access_key_id=account_id, region_name=region_name).ssm.get_parameter(
-        Name=stack_parameter_value
-    )["Parameter"]["Value"]
+    ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
+    try:
+        return ssm_client.get_parameter(Name=stack_parameter_value)["Parameter"]["Value"]
+    except ClientError:
+        LOG.error("client error fetching parameter '%s'", stack_parameter_value)
+        raise
 
 
 def strip_parameter_type(in_param: StackParameter) -> Parameter:

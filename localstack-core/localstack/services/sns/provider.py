@@ -163,6 +163,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 moto_response["Attributes"][key] = getattr(moto_topic_model, attr)
             elif attr == "signature_version":
                 moto_response["Attributes"]["SignatureVersion"] = moto_topic_model.signature_version
+            elif attr == "archive_policy":
+                moto_response["Attributes"]["ArchivePolicy"] = moto_topic_model.archive_policy
         return moto_response
 
     def publish_batch(

@@ -329,6 +329,15 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[REPLACE]": {
     "last_validated_date": "2024-06-19T17:17:03+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[COPY]": {
+    "last_validated_date": "2024-08-22T01:55:44+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[None]": {
+    "last_validated_date": "2024-08-22T01:55:52+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[REPLACE]": {
+    "last_validated_date": "2024-08-22T01:55:48+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_delete_object_with_version_id": {
     "last_validated_date": "2023-08-03T02:23:32+00:00"
   },

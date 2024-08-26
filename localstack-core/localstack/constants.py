@@ -178,3 +178,6 @@ READY_MARKER_OUTPUT = "Ready."
 # eg.
 #   Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request
 AUTH_CREDENTIAL_REGEX = r"Credential=(?P<access_key_id>[a-zA-Z0-9-_.]{1,})/(?P<date>\d{8})/(?P<region_name>[a-z0-9-]{1,})/(?P<service_name>[a-z0-9]{1,})/"
+
+# Custom resource tag to override the generated resource ID.
+TAG_KEY_CUSTOM_ID = "_custom_id_"

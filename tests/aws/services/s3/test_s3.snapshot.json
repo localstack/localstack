@@ -12722,5 +12722,454 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[COPY]": {
+    "recorded-date": "22-08-2024, 01:55:44",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-v2": {
+        "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[REPLACE]": {
+    "recorded-date": "22-08-2024, 01:55:48",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-v2": {
+        "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key2",
+            "Value": "value2"
+          }
+        ],
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty": {
+        "TagSet": [],
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key2",
+            "Value": "value2"
+          }
+        ],
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty-v1": {
+        "TagSet": [],
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[None]": {
+    "recorded-date": "22-08-2024, 01:55:52",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-v2": {
+        "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

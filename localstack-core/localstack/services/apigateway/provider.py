@@ -1921,6 +1921,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Integrations of type 'AWS_PROXY' currently only supports "
                     "Lambda function and Firehose stream invocations."
                 )
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
+        resource = moto_rest_api.resources.get(request.get("resourceId"))
+        if not resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        method = resource.resource_methods.get(request.get("httpMethod"))
+        if not method:
+            raise NotFoundException("Invalid Method identifier specified")
 
         # TODO: if the IntegrationType is AWS, `credentials` is mandatory
         moto_request = copy.copy(request)
@@ -2006,11 +2014,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutIntegrationResponseRequest,
     ) -> IntegrationResponse:
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
+        moto_resource = moto_rest_api.resources.get(request.get("resourceId"))
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        method = moto_resource.resource_methods.get(request.get("httpMethod"))
+        if not method:
+            raise NotFoundException("Invalid Method identifier specified")
+
         response = call_moto(context)
         # Moto has a specific case where it will set a None to an empty dict, but AWS does not behave the same
         if request.get("responseTemplates") is None:
-            moto_rest_api = get_moto_rest_api(context, request.get("restApiId"))
-            moto_resource = moto_rest_api.resources.get(request["resourceId"])
             method_integration = moto_resource.resource_methods[
                 request["httpMethod"]
             ].method_integration

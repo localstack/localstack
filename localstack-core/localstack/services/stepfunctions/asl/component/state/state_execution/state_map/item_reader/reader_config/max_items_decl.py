@@ -15,7 +15,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class MaxItemsDecl(EvalComponent, abc.ABC):
@@ -104,6 +104,6 @@ class MaxItemsPath(MaxItemsDecl):
 
     def _get_value(self, env: Environment) -> int:
         inp = env.stack[-1]
-        max_items = JSONPathUtils.extract_json(self.path, inp)
+        max_items = extract_json(self.path, inp)
         self._validate_value(env=env, value=max_items)
         return max_items

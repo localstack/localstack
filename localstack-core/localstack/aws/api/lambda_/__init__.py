@@ -25,6 +25,8 @@ EnvironmentVariableValue = str
 EphemeralStorageSize = int
 EventSourceToken = str
 FileSystemArn = str
+FilterCriteriaErrorCode = str
+FilterCriteriaErrorMessage = str
 FunctionArn = str
 FunctionName = str
 FunctionUrl = str
@@ -93,6 +95,7 @@ Timestamp = str
 Topic = str
 TumblingWindowInSeconds = int
 URI = str
+UnqualifiedFunctionName = str
 UnreservedConcurrentExecutions = int
 Version = str
 VpcId = str
@@ -207,6 +210,11 @@ class ProvisionedConcurrencyStatusEnum(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     READY = "READY"
     FAILED = "FAILED"
+
+
+class RecursiveLoop(StrEnum):
+    Allow = "Allow"
+    Terminate = "Terminate"
 
 
 class ResponseStreamingInvocationType(StrEnum):
@@ -830,6 +838,7 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
     ScalingConfig: Optional[ScalingConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
+    KMSKeyArn: Optional[KMSKeyArn]
 
 
 class LoggingConfig(TypedDict, total=False):
@@ -1003,6 +1012,11 @@ class EnvironmentResponse(TypedDict, total=False):
     Error: Optional[EnvironmentError]
 
 
+class FilterCriteriaError(TypedDict, total=False):
+    ErrorCode: Optional[FilterCriteriaErrorCode]
+    Message: Optional[FilterCriteriaErrorMessage]
+
+
 class EventSourceMappingConfiguration(TypedDict, total=False):
     UUID: Optional[String]
     StartingPosition: Optional[EventSourcePosition]
@@ -1031,6 +1045,8 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
     ScalingConfig: Optional[ScalingConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
+    KMSKeyArn: Optional[KMSKeyArn]
+    FilterCriteriaError: Optional[FilterCriteriaError]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -1205,6 +1221,14 @@ class GetFunctionConfigurationRequest(ServiceRequest):
 class GetFunctionEventInvokeConfigRequest(ServiceRequest):
     FunctionName: FunctionName
     Qualifier: Optional[Qualifier]
+
+
+class GetFunctionRecursionConfigRequest(ServiceRequest):
+    FunctionName: UnqualifiedFunctionName
+
+
+class GetFunctionRecursionConfigResponse(TypedDict, total=False):
+    RecursiveLoop: Optional[RecursiveLoop]
 
 
 class GetFunctionRequest(ServiceRequest):
@@ -1592,6 +1616,15 @@ class PutFunctionEventInvokeConfigRequest(ServiceRequest):
     DestinationConfig: Optional[DestinationConfig]
 
 
+class PutFunctionRecursionConfigRequest(ServiceRequest):
+    FunctionName: UnqualifiedFunctionName
+    RecursiveLoop: RecursiveLoop
+
+
+class PutFunctionRecursionConfigResponse(TypedDict, total=False):
+    RecursiveLoop: Optional[RecursiveLoop]
+
+
 class PutProvisionedConcurrencyConfigRequest(ServiceRequest):
     FunctionName: FunctionName
     Qualifier: Qualifier
@@ -1684,6 +1717,7 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
     ScalingConfig: Optional[ScalingConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
+    KMSKeyArn: Optional[KMSKeyArn]
 
 
 class UpdateFunctionCodeRequest(ServiceRequest):
@@ -1836,6 +1870,7 @@ class LambdaApi:
         self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig = None,
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
+        kms_key_arn: KMSKeyArn = None,
         **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
@@ -2023,6 +2058,12 @@ class LambdaApi:
         qualifier: Qualifier = None,
         **kwargs,
     ) -> FunctionEventInvokeConfig:
+        raise NotImplementedError
+
+    @handler("GetFunctionRecursionConfig")
+    def get_function_recursion_config(
+        self, context: RequestContext, function_name: UnqualifiedFunctionName, **kwargs
+    ) -> GetFunctionRecursionConfigResponse:
         raise NotImplementedError
 
     @handler("GetFunctionUrlConfig")
@@ -2316,6 +2357,16 @@ class LambdaApi:
     ) -> FunctionEventInvokeConfig:
         raise NotImplementedError
 
+    @handler("PutFunctionRecursionConfig")
+    def put_function_recursion_config(
+        self,
+        context: RequestContext,
+        function_name: UnqualifiedFunctionName,
+        recursive_loop: RecursiveLoop,
+        **kwargs,
+    ) -> PutFunctionRecursionConfigResponse:
+        raise NotImplementedError
+
     @handler("PutProvisionedConcurrencyConfig")
     def put_provisioned_concurrency_config(
         self,
@@ -2421,6 +2472,7 @@ class LambdaApi:
         function_response_types: FunctionResponseTypeList = None,
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
+        kms_key_arn: KMSKeyArn = None,
         **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError

@@ -17,7 +17,7 @@ from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class PayloadBindingPath(PayloadBinding):
@@ -33,7 +33,7 @@ class PayloadBindingPath(PayloadBinding):
     def _eval_val(self, env: Environment) -> Any:
         inp = env.stack[-1]
         try:
-            value = JSONPathUtils.extract_json(self.path, inp)
+            value = extract_json(self.path, inp)
         except RuntimeError:
             failure_event = FailureEvent(
                 env=env,

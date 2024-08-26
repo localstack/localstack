@@ -2,7 +2,7 @@ from localstack.services.stepfunctions.asl.component.intrinsic.argument.function
     FunctionArgument,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class FunctionArgumentJsonPath(FunctionArgument):
@@ -14,5 +14,5 @@ class FunctionArgumentJsonPath(FunctionArgument):
 
     def _eval_body(self, env: Environment) -> None:
         inp = env.stack[-1]
-        self._value = JSONPathUtils.extract_json(self._json_path, inp)
+        self._value = extract_json(self._json_path, inp)
         super()._eval_body(env=env)

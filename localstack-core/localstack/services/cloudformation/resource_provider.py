@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedD
 
 import botocore
 from botocore.client import BaseClient
+from botocore.exceptions import ClientError
 from botocore.model import OperationModel
 from plux import Plugin, PluginManager
 
@@ -441,7 +442,16 @@ class ResourceProviderExecutor:
 
                 resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
-                event = self.execute_action(resource_provider, payload)
+                try:
+                    event = self.execute_action(resource_provider, payload)
+                except ClientError:
+                    LOG.error(
+                        "client error invoking '%s' handler for resource '%s' (type '%s')",
+                        raw_payload["action"],
+                        raw_payload["requestData"]["logicalResourceId"],
+                        resource_type,
+                    )
+                    raise
 
                 match event.status:
                     case OperationStatus.FAILED:
