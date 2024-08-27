@@ -24,7 +24,7 @@ dnslib==0.9.25
     # via localstack-core (pyproject.toml)
 dnspython==2.6.1
     # via localstack-core (pyproject.toml)
-idna==3.7
+idna==3.8
     # via requests
 markdown-it-py==3.0.0
     # via rich
@@ -48,7 +48,7 @@ pyyaml==6.0.2
     # via localstack-core (pyproject.toml)
 requests==2.32.3
     # via localstack-core (pyproject.toml)
-rich==13.7.1
+rich==13.8.0
     # via localstack-core (pyproject.toml)
 semver==3.0.2
     # via localstack-core (pyproject.toml)
