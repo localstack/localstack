@@ -12,11 +12,9 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
-from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     get_action_name_for_resource_change,
-    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.changes import ChangeConfig, ResourceChange
@@ -34,7 +32,6 @@ from localstack.services.cloudformation.engine.template_utils import (
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
-    NoResourceProvider,
     OperationStatus,
     ProgressEvent,
     ResourceProviderExecutor,
@@ -1243,22 +1240,8 @@ class TemplateDeployerBase(ABC):
             action, logical_resource_id=resource_id
         )
 
-        try:
-            resource_provider = executor.load_resource_provider(resource["Type"])
-        except NoResourceProvider:
-            log_not_available_message(
-                resource["Type"],
-                f"No resource provider found for \"{resource['Type']}\"",
-            )
-
-            usage.missing_resource_types.record(resource["Type"])
-
-            if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-                # TODO: figure out a better way to handle non-implemented here?
-                progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
-            else:
-                raise  # re-raise here if explicitly enabled
-        else:
+        resource_provider = executor.load_resource_provider(resource["Type"])
+        if resource_provider is not None:
             resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
             physical_resource_id = None
             if action in ("Modify", "Remove"):
@@ -1276,10 +1259,11 @@ class TemplateDeployerBase(ABC):
                 physical_res_id=physical_resource_id,
                 status=resource_status,
             )
-
             progress_event = executor.deploy_loop(
                 resource_provider, resource, resource_provider_payload
             )
+        else:
+            progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
         # TODO: clean up the surrounding loop (do_apply_changes_in_loop) so that the responsibilities are clearer
         stack_action = get_action_name_for_resource_change(action)
@@ -1422,7 +1406,12 @@ class TemplateDeployerV2(TemplateDeployerBase):
                     resource["ResourceType"],
                 )
                 resource_provider = executor.load_resource_provider(resource["Type"])
-                event = executor.deploy_loop(resource_provider, resource, resource_provider_payload)
+                if resource_provider is not None:
+                    event = executor.deploy_loop(
+                        resource_provider, resource, resource_provider_payload
+                    )
+                else:
+                    event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
                 match event.status:
                     case OperationStatus.SUCCESS:
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
@@ -1592,9 +1581,12 @@ class TemplateDeployerLegacy(TemplateDeployerBase):
                             iteration_cycle,
                         )
                         resource_provider = executor.load_resource_provider(resource["Type"])
-                        event = executor.deploy_loop(
-                            resource_provider, resource, resource_provider_payload
-                        )
+                        if resource_provider is not None:
+                            event = executor.deploy_loop(
+                                resource_provider, resource, resource_provider_payload
+                            )
+                        else:
+                            event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
                         match event.status:
                             case OperationStatus.SUCCESS:
                                 self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")

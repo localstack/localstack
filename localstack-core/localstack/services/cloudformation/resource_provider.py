@@ -25,6 +25,7 @@ from localstack.services.cloudformation.deployment_utils import (
     convert_data_types,
     fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
+    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
@@ -554,7 +555,7 @@ class ResourceProviderExecutor:
             case _:
                 raise NotImplementedError(change_type)  # TODO: change error type
 
-    def load_resource_provider(self, resource_type: str) -> ResourceProvider:
+    def load_resource_provider(self, resource_type: str) -> ResourceProvider | None:
         # TODO: unify namespace of plugins
 
         # 1. try to load pro resource provider
@@ -588,7 +589,19 @@ class ResourceProviderExecutor:
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
-        raise NoResourceProvider
+        # 3. we could not find the resource provider so log the missing resource provider
+        log_not_available_message(
+            resource_type,
+            f'No resource provider found for "{resource_type}"',
+        )
+
+        usage.missing_resource_types.record(resource_type)
+
+        if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            # TODO: figure out a better way to handle non-implemented here?
+            return None
+        else:
+            raise NoResourceProvider
 
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type: str, resource_type_schema: dict
