@@ -555,7 +555,8 @@ class ResourceProviderExecutor:
             case _:
                 raise NotImplementedError(change_type)  # TODO: change error type
 
-    def load_resource_provider(self, resource_type: str) -> ResourceProvider | None:
+    @staticmethod
+    def load_resource_provider(resource_type: str) -> ResourceProvider | None:
         # TODO: unify namespace of plugins
 
         # 1. try to load pro resource provider
