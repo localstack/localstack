@@ -5,11 +5,10 @@ set -eo pipefail
 shopt -s nullglob
 
 # global defaults
-VERSION_FILE=${VERSION_FILE-"VERSION"}
 DOCKERFILE=${DOCKERFILE-"Dockerfile"}
 DEFAULT_TAG=${DEFAULT_TAG-"latest"}
+DOCKER_BUILD_CONTEXT=${DOCKER_BUILD_CONTEXT-"."}
 
-# TODO extend help
 function usage() {
     echo "A set of commands that facilitate building and pushing versioned Docker images"
     echo ""
@@ -50,7 +49,15 @@ function _fail {
 }
 
 function _get_current_version() {
-    cat ${VERSION_FILE}
+    # setuptools_scm will be installed transparently if not available, Python3 is expected to be present
+    if ! python3 -m pip -qqq list | grep -F "setuptools_scm"; then
+      python3 -m pip install -qqq setuptools_scm > /dev/null 2>&1
+    fi
+    python3 -m setuptools_scm
+}
+
+function _is_release_commit() {
+    [[ $(_get_current_version) =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
 
 function _get_current_branch() {
@@ -104,6 +111,9 @@ function cmd-build() {
     _enforce_image_name
     _set_version_defaults
 
+    if [ ! -f "pyproject.toml" ]; then
+      echo "No pyproject.toml found, setuptools_scm will not be able to retrieve configuration."
+    fi
     if [ -z "$DOCKERFILE" ]; then DOCKERFILE=Dockerfile; fi
     # by default we load the result to the docker daemon
     if [ "$DOCKER_BUILD_FLAGS" = "" ]; then DOCKER_BUILD_FLAGS="--load"; fi
@@ -113,12 +123,12 @@ function cmd-build() {
     # --cache-from: Use the inlined caching information when building the image
     DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
       --cache-from "$IMAGE_NAME" --build-arg BUILDKIT_INLINE_CACHE=1 \
-      --build-arg LOCALSTACK_PRE_RELEASE=$(_get_current_version | grep -v '.dev' >> /dev/null && echo "0" || echo "1") \
+      --build-arg LOCALSTACK_PRE_RELEASE=$(_is_release_commit && echo "0" || echo "1") \
       --build-arg LOCALSTACK_BUILD_GIT_HASH=$(git rev-parse --short HEAD) \
       --build-arg=LOCALSTACK_BUILD_DATE=$(date -u +"%Y-%m-%d") \
       --build-arg=LOCALSTACK_BUILD_VERSION=$IMAGE_TAG \
       --add-host="localhost.localdomain:127.0.0.1" \
-      -t "$IMAGE_NAME:$DEFAULT_TAG" $DOCKER_BUILD_FLAGS . -f $DOCKERFILE
+      -t "$IMAGE_NAME:$DEFAULT_TAG" $DOCKER_BUILD_FLAGS $DOCKER_BUILD_CONTEXT -f $DOCKERFILE
 }
 
 function cmd-save() {
@@ -164,7 +174,7 @@ function cmd-push() {
     # push default tag
     docker push $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM
 
-    function _push() {
+    function _push_versioned_tags() {
       # create explicitly set image tag (via $IMAGE_TAG)
       docker tag $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM $TARGET_IMAGE_NAME:$IMAGE_TAG-$PLATFORM
 
@@ -192,16 +202,11 @@ function cmd-push() {
       docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION-$PLATFORM
     }
 
-    if [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "1" ]; then
-      echo "Force-enabled version tag push."
-      _push
-    elif [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
-      echo "Force-disabled version tag push. Not pushing any other tags."
-    elif (git diff HEAD^ ${VERSION_FILE} | tail -n 1 | grep -v '.dev'); then
-      echo "Pushing version tags, version has changed in last commit."
-      _push
+    if _is_release_commit; then
+      echo "Pushing version tags, we're building the commit of a version tag."
+      _push_versioned_tags
     else
-      echo "Not pushing any other tags, version has not changed in last commit."
+      echo "Not pushing any other tags, we're not building a version-tagged commit."
     fi
 }
 
@@ -221,7 +226,7 @@ function cmd-push-manifests() {
     # push default tag
     docker manifest push $IMAGE_NAME:$DEFAULT_TAG
 
-    function _push() {
+    function _push_versioned_tags() {
       # create explicitly set image tag (via $IMAGE_TAG)
       docker manifest create $IMAGE_NAME:$IMAGE_TAG \
         --amend $IMAGE_NAME:$IMAGE_TAG-amd64 \
@@ -261,16 +266,11 @@ function cmd-push-manifests() {
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION
     }
 
-    if [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "1" ]; then
-      echo "Force-enabled version tag push."
-      _push
-    elif [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
-      echo "Force-disabled version tag push. Not pushing any other tags."
-    elif (git diff HEAD^ ${VERSION_FILE} | tail -n 1 | grep -v '.dev'); then
-      echo "Pushing version tags, version has changed in last commit."
-      _push
+    if _is_release_commit; then
+      echo "Pushing version tags, we're building the commit of a version tag."
+      _push_versioned_tags
     else
-      echo "Not pushing any other tags, version has not changed in last commit."
+      echo "Not pushing any other tags, we're not building a version-tagged commit."
     fi
 }
 
