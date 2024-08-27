@@ -101,8 +101,7 @@ class TestEvents:
         response = aws_client.events.put_events(Entries=entries)
         snapshot.match("put-events", response)
 
-    @markers.aws.only_localstack
-    # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
+    @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
         reason="V1 provider does not support this feature",
