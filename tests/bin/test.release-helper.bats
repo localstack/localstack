@@ -41,12 +41,12 @@ _setup_tmp_dependency_file() {
 }
 
 @test "get-ver prints a correct version" {
-  export TEST_SPECIFIC_VERSION="3.6.1.dev45+g15cb62bd5.d20240814"
+  export TEST_SPECIFIC_VERSION="3.6.1.dev45"
 
   run bin/release-helper.sh get-ver
 
   [ "$status" -eq 0 ]
-  [[ "$output" == "3.6.1.dev45+g15cb62bd5.d20240814" ]]
+  [[ "$output" == "3.6.1.dev45" ]]
 }
 
 @test "set-dep-ver sets dependency version in dependency file" {
@@ -61,19 +61,19 @@ _setup_tmp_dependency_file() {
 
 @test "github-outputs appends metadata to GITHUB_OUTPUT" {
   export GITHUB_OUTPUT=$(mktemp)
-  export TEST_SPECIFIC_VERSION="3.6.1.dev45+g15cb62bd5.d20240814"
+  export TEST_SPECIFIC_VERSION="3.6.1.dev45"
   run bin/release-helper.sh github-outputs "patch"
 
   cat $GITHUB_OUTPUT
   [ "$status" -eq 0 ]
-  cat $GITHUB_OUTPUT | grep "current=3.6.1.dev45+g15cb62bd5.d20240814"
+  cat $GITHUB_OUTPUT | grep "current=3.6.1.dev45"
   cat $GITHUB_OUTPUT | grep "release=3.6.1"
   cat $GITHUB_OUTPUT | grep "develop=3.6.2.dev"
   cat $GITHUB_OUTPUT | grep "boundary=3.7"
 }
 
 @test "explain-steps command output" {
-  export TEST_SPECIFIC_VERSION="3.6.1.dev45+g15cb62bd5.d20240814"
+  export TEST_SPECIFIC_VERSION="3.6.1.dev45"
   run bin/release-helper.sh explain-steps "minor"
 
   [ "$status" -eq 0 ]

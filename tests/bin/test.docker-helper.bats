@@ -49,7 +49,7 @@ setup_file() {
 @test "build creates image from custom Dockerfile" {
   export IMAGE_NAME="localstack/test"
   export DOCKERFILE="tests/bin/files/Dockerfile"
-  export TEST_SPECIFIC_VERSION="3.6.1.dev45+g15cb62bd5.d20240814"
+  export TEST_SPECIFIC_VERSION="3.6.1.dev45"
   run bin/docker-helper.sh build
   [ "$status" -eq 0 ]
   [[ "$output" =~ "-f tests/bin/files/Dockerfile" ]]
@@ -124,7 +124,7 @@ setup_file() {
   export DOCKER_USERNAME=test
   export DOCKER_PASSWORD=test
   export PLATFORM=arm64
-  export TEST_SPECIFIC_VERSION="3.6.1.dev45+g15cb62bd5.d20240814"
+  export TEST_SPECIFIC_VERSION="3.6.1.dev45"
   run bin/docker-helper.sh push
   [ "$status" -eq 0 ]
   [[ "$output" =~ "docker push $IMAGE_NAME:latest-$PLATFORM" ]]
@@ -177,7 +177,7 @@ setup_file() {
   export MAIN_BRANCH="main"
   export DOCKER_USERNAME=test
   export DOCKER_PASSWORD=test
-  export TEST_SPECIFIC_VERSION="3.6.1.dev45+g15cb62bd5.d20240814"
+  export TEST_SPECIFIC_VERSION="3.6.1.dev45"
   run bin/docker-helper.sh push-manifests
   [ "$status" -eq 0 ]
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:latest" ]]
