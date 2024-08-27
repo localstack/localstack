@@ -12,7 +12,7 @@ from openapi_core.validation.request.exceptions import (
     RequestValidationError,
 )
 
-from localstack import config, spec
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 from localstack.constants import INTERNAL_RESOURCE_PATH
@@ -27,8 +27,7 @@ class OpenAPIRequestValidator(Handler):
     """
 
     def __init__(self):
-        self.openapi = OpenAPI.from_dict(spec.OPENAPI)
-        oas = files("localstack").joinpath("openapi.yaml")
+        oas = files("localstack.spec").joinpath("openapi.yaml")
         with as_file(oas) as oas_path:  # noqa
             self.openapi = OpenAPI.from_path(oas_path)
 
