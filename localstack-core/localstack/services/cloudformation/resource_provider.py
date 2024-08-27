@@ -25,7 +25,6 @@ from localstack.services.cloudformation.deployment_utils import (
     convert_data_types,
     fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
-    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
@@ -440,72 +439,55 @@ class ResourceProviderExecutor:
             resource_type = get_resource_type(
                 {"Type": raw_payload["resourceType"]}
             )  # TODO: simplify signature of get_resource_type to just take the type
+            resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
+
             try:
-                resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
-
-                try:
-                    event = self.execute_action(resource_provider, payload)
-                except ClientError:
-                    LOG.error(
-                        "client error invoking '%s' handler for resource '%s' (type '%s')",
-                        raw_payload["action"],
-                        raw_payload["requestData"]["logicalResourceId"],
-                        resource_type,
-                    )
-                    raise
-
-                match event.status:
-                    case OperationStatus.FAILED:
-                        return event
-                    case OperationStatus.SUCCESS:
-                        if not hasattr(resource_provider, "SCHEMA"):
-                            raise Exception(
-                                "A ResourceProvider should always have a SCHEMA property defined."
-                            )
-                        resource_type_schema = resource_provider.SCHEMA
-                        physical_resource_id = (
-                            self.extract_physical_resource_id_from_model_with_schema(
-                                event.resource_model,
-                                raw_payload["resourceType"],
-                                resource_type_schema,
-                            )
-                        )
-
-                        resource["PhysicalResourceId"] = physical_resource_id
-                        resource["Properties"] = event.resource_model
-                        resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
-                        return event
-                    case OperationStatus.IN_PROGRESS:
-                        # update the shared state
-                        context = {**payload["callbackContext"], **event.custom_context}
-                        payload["callbackContext"] = context
-                        payload["requestData"]["resourceProperties"] = event.resource_model
-
-                        if current_iteration == 0:
-                            time.sleep(0)
-                        else:
-                            time.sleep(sleep_time)
-                    case OperationStatus.PENDING:
-                        # come back to this resource in another iteration
-                        return event
-                    case invalid_status:
-                        raise ValueError(
-                            f"Invalid OperationStatus ({invalid_status}) returned for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']})"
-                        )
-
-            except NoResourceProvider:
-                log_not_available_message(
-                    raw_payload["resourceType"],
-                    f"No resource provider found for \"{raw_payload['resourceType']}\"",
+                event = self.execute_action(resource_provider, payload)
+            except ClientError:
+                LOG.error(
+                    "client error invoking '%s' handler for resource '%s' (type '%s')",
+                    raw_payload["action"],
+                    raw_payload["requestData"]["logicalResourceId"],
+                    resource_type,
                 )
+                raise
 
-                usage.missing_resource_types.record(raw_payload["resourceType"])
+            match event.status:
+                case OperationStatus.FAILED:
+                    return event
+                case OperationStatus.SUCCESS:
+                    if not hasattr(resource_provider, "SCHEMA"):
+                        raise Exception(
+                            "A ResourceProvider should always have a SCHEMA property defined."
+                        )
+                    resource_type_schema = resource_provider.SCHEMA
+                    physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
+                        event.resource_model,
+                        raw_payload["resourceType"],
+                        resource_type_schema,
+                    )
 
-                if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-                    # TODO: figure out a better way to handle non-implemented here?
-                    return ProgressEvent(OperationStatus.SUCCESS, resource_model={})
-                else:
-                    raise  # re-raise here if explicitly enabled
+                    resource["PhysicalResourceId"] = physical_resource_id
+                    resource["Properties"] = event.resource_model
+                    resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
+                    return event
+                case OperationStatus.IN_PROGRESS:
+                    # update the shared state
+                    context = {**payload["callbackContext"], **event.custom_context}
+                    payload["callbackContext"] = context
+                    payload["requestData"]["resourceProperties"] = event.resource_model
+
+                    if current_iteration == 0:
+                        time.sleep(0)
+                    else:
+                        time.sleep(sleep_time)
+                case OperationStatus.PENDING:
+                    # come back to this resource in another iteration
+                    return event
+                case invalid_status:
+                    raise ValueError(
+                        f"Invalid OperationStatus ({invalid_status}) returned for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']})"
+                    )
 
         else:
             raise TimeoutError(

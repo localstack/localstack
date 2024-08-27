@@ -12,9 +12,11 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     get_action_name_for_resource_change,
+    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.changes import ChangeConfig, ResourceChange
@@ -32,7 +34,9 @@ from localstack.services.cloudformation.engine.template_utils import (
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
+    NoResourceProvider,
     OperationStatus,
+    ProgressEvent,
     ResourceProviderExecutor,
     ResourceProviderPayload,
     get_resource_type,
@@ -1239,28 +1243,43 @@ class TemplateDeployerBase(ABC):
             action, logical_resource_id=resource_id
         )
 
-        resource_provider = executor.load_resource_provider(resource["Type"])
-        resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
-        physical_resource_id = None
-        if action in ("Modify", "Remove"):
-            previous_state = self.resources[resource_id].get("_last_deployed_state")
-            if not previous_state:
-                # TODO: can this happen?
-                previous_state = self.resources[resource_id]["Properties"]
-            physical_resource_id = executor.extract_physical_resource_id_from_model_with_schema(
-                resource_model=previous_state,
-                resource_type=resource["Type"],
-                resource_type_schema=resource_provider.SCHEMA,
+        try:
+            resource_provider = executor.load_resource_provider(resource["Type"])
+        except NoResourceProvider:
+            log_not_available_message(
+                resource["Type"],
+                f"No resource provider found for \"{resource['Type']}\"",
             )
-        stack.add_stack_event(
-            resource_id=resource_id,
-            physical_res_id=physical_resource_id,
-            status=resource_status,
-        )
 
-        progress_event = executor.deploy_loop(
-            resource_provider, resource, resource_provider_payload
-        )
+            usage.missing_resource_types.record(resource["Type"])
+
+            if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                # TODO: figure out a better way to handle non-implemented here?
+                progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
+            else:
+                raise  # re-raise here if explicitly enabled
+        else:
+            resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
+            physical_resource_id = None
+            if action in ("Modify", "Remove"):
+                previous_state = self.resources[resource_id].get("_last_deployed_state")
+                if not previous_state:
+                    # TODO: can this happen?
+                    previous_state = self.resources[resource_id]["Properties"]
+                physical_resource_id = executor.extract_physical_resource_id_from_model_with_schema(
+                    resource_model=previous_state,
+                    resource_type=resource["Type"],
+                    resource_type_schema=resource_provider.SCHEMA,
+                )
+            stack.add_stack_event(
+                resource_id=resource_id,
+                physical_res_id=physical_resource_id,
+                status=resource_status,
+            )
+
+            progress_event = executor.deploy_loop(
+                resource_provider, resource, resource_provider_payload
+            )
 
         # TODO: clean up the surrounding loop (do_apply_changes_in_loop) so that the responsibilities are clearer
         stack_action = get_action_name_for_resource_change(action)
