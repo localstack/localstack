@@ -1240,7 +1240,7 @@ class TemplateDeployerBase(ABC):
             action, logical_resource_id=resource_id
         )
 
-        resource_provider = executor.try_load_resource_provider(resource["Type"])
+        resource_provider = executor.try_load_resource_provider(get_resource_type(resource))
         if resource_provider is not None:
             # add in-progress event
             resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
@@ -1408,7 +1408,7 @@ class TemplateDeployerV2(TemplateDeployerBase):
                     len(resources),
                     resource["ResourceType"],
                 )
-                resource_provider = executor.try_load_resource_provider(resource["Type"])
+                resource_provider = executor.try_load_resource_provider(get_resource_type(resource))
                 if resource_provider is not None:
                     event = executor.deploy_loop(
                         resource_provider, resource, resource_provider_payload
@@ -1583,7 +1583,9 @@ class TemplateDeployerLegacy(TemplateDeployerBase):
                             resource["ResourceType"],
                             iteration_cycle,
                         )
-                        resource_provider = executor.try_load_resource_provider(resource["Type"])
+                        resource_provider = executor.try_load_resource_provider(
+                            get_resource_type(resource)
+                        )
                         if resource_provider is not None:
                             event = executor.deploy_loop(
                                 resource_provider, resource, resource_provider_payload
