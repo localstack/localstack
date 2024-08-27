@@ -174,7 +174,7 @@ function cmd-push() {
     # push default tag
     docker push $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM
 
-    function _push() {
+    function _push_versioned_tags() {
       # create explicitly set image tag (via $IMAGE_TAG)
       docker tag $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM $TARGET_IMAGE_NAME:$IMAGE_TAG-$PLATFORM
 
@@ -204,7 +204,7 @@ function cmd-push() {
 
     if _is_release_commit; then
       echo "Pushing version tags, we're building the commit of a version tag."
-      _push
+      _push_versioned_tags
     else
       echo "Not pushing any other tags, we're not building a version-tagged commit."
     fi
@@ -226,7 +226,7 @@ function cmd-push-manifests() {
     # push default tag
     docker manifest push $IMAGE_NAME:$DEFAULT_TAG
 
-    function _push() {
+    function _push_versioned_tags() {
       # create explicitly set image tag (via $IMAGE_TAG)
       docker manifest create $IMAGE_NAME:$IMAGE_TAG \
         --amend $IMAGE_NAME:$IMAGE_TAG-amd64 \
@@ -268,7 +268,7 @@ function cmd-push-manifests() {
 
     if _is_release_commit; then
       echo "Pushing version tags, we're building the commit of a version tag."
-      _push
+      _push_versioned_tags
     else
       echo "Not pushing any other tags, we're not building a version-tagged commit."
     fi
