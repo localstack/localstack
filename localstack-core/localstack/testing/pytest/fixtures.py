@@ -1321,7 +1321,8 @@ def create_echo_http_server(aws_client, create_lambda_function):
     from localstack.aws.api.lambda_ import Runtime
 
     lambda_client = aws_client.lambda_
-    handler_code = textwrap.dedent("""
+    handler_code = textwrap.dedent(
+        """
     import json
     import os
 
@@ -1354,7 +1355,8 @@ def create_echo_http_server(aws_client, create_lambda_function):
             "origin": event["requestContext"]["http"].get("sourceIp", ""),
             "path": event["requestContext"]["http"].get("path", ""),
         }
-        return make_response(response)""")
+        return make_response(response)"""
+    )
 
     def _create_echo_http_server(trim_x_headers: bool = False) -> str:
         """Creates a server that will echo any request. Any request will be returned with the
@@ -1738,40 +1740,6 @@ def firehose_create_delivery_stream(wait_for_delivery_stream_ready, aws_client):
             aws_client.firehose.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
         except Exception:
             LOG.info("Failed to delete delivery stream %s", delivery_stream_name)
-
-
-@pytest.fixture
-def events_create_rule(aws_client):
-    rules = []
-
-    def _create_rule(**kwargs):
-        rule_name = kwargs["Name"]
-        bus_name = kwargs.get("EventBusName", "")
-        pattern = kwargs.get("EventPattern", {})
-        schedule = kwargs.get("ScheduleExpression", "")
-        rule_arn = aws_client.events.put_rule(
-            Name=rule_name,
-            EventBusName=bus_name,
-            EventPattern=json.dumps(pattern),
-            ScheduleExpression=schedule,
-        )["RuleArn"]
-        rules.append({"name": rule_name, "bus": bus_name})
-        return rule_arn
-
-    yield _create_rule
-
-    for rule in rules:
-        targets = aws_client.events.list_targets_by_rule(
-            Rule=rule["name"], EventBusName=rule["bus"]
-        )["Targets"]
-
-        targetIds = [target["Id"] for target in targets]
-        if len(targetIds) > 0:
-            aws_client.events.remove_targets(
-                Rule=rule["name"], EventBusName=rule["bus"], Ids=targetIds
-            )
-
-        aws_client.events.delete_rule(Name=rule["name"], EventBusName=rule["bus"])
 
 
 @pytest.fixture
@@ -2246,51 +2214,10 @@ def hosted_zone(aws_client):
 
 
 @pytest.fixture
-def clean_up(
-    aws_client,
-):  # TODO: legacy clean up fixtures for eventbridge - remove and use individual fixtures for creating resources instead
-    def _clean_up(
-        bus_name=None,
-        rule_name=None,
-        target_ids=None,
-        queue_url=None,
-        log_group_name=None,
-    ):
-        events_client = aws_client.events
-        kwargs = {"EventBusName": bus_name} if bus_name else {}
-        if target_ids:
-            target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
-            call_safe(
-                events_client.remove_targets,
-                kwargs=dict(Rule=rule_name, Ids=target_ids, Force=True, **kwargs),
-            )
-        if rule_name:
-            call_safe(events_client.delete_rule, kwargs=dict(Name=rule_name, Force=True, **kwargs))
-        if bus_name:
-            call_safe(events_client.delete_event_bus, kwargs=dict(Name=bus_name))
-        if queue_url:
-            sqs_client = aws_client.sqs
-            call_safe(sqs_client.delete_queue, kwargs=dict(QueueUrl=queue_url))
-        if log_group_name:
-            logs_client = aws_client.logs
-
-            def _delete_log_group():
-                log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
-                for log_stream in log_streams["logStreams"]:
-                    logs_client.delete_log_stream(
-                        logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
-                    )
-                logs_client.delete_log_group(logGroupName=log_group_name)
-
-            call_safe(_delete_log_group)
-
-    yield _clean_up
-
-
-@pytest.fixture
 def openapi_validate(monkeypatch):
     monkeypatch.setattr(config, "OPENAPI_VALIDATE_RESPONSE", "true")
     monkeypatch.setattr(config, "OPENAPI_VALIDATE_REQUEST", "true")
+
 ###############################
 # Events (EventBridge) fixtures
 ###############################
@@ -2332,7 +2259,7 @@ def events_create_event_bus(aws_client, region_name, account_id):
 
                     aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
                 except Exception as e:
-                    LOG.warning(f"Failed to delete rule {rule}: {e}")
+                    LOG.warning("Failed to delete rule %s: %s", rule, e)
 
             # Delete archives for event bus
             event_source_arn = (
@@ -2344,11 +2271,11 @@ def events_create_event_bus(aws_client, region_name, account_id):
                 try:
                     aws_client.events.delete_archive(ArchiveName=archive)
                 except Exception as e:
-                    LOG.warning(f"Failed to delete archive {archive}: {e}")
+                    LOG.warning("Failed to delete archive %s: %s", archive, e)
 
             aws_client.events.delete_event_bus(Name=event_bus_name)
         except Exception as e:
-            LOG.warning(f"Failed to delete event bus {event_bus_name}: {e}")
+            LOG.warning("Failed to delete event bus %s: %s", event_bus_name, e)
 
 
 @pytest.fixture
@@ -2381,7 +2308,41 @@ def events_put_rule(aws_client):
 
             aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
         except Exception as e:
-            LOG.warning(f"Failed to delete rule {rule}: {e}")
+            LOG.warning("Failed to delete rule %s: %s", rule, e)
+
+
+@pytest.fixture
+def events_create_rule(aws_client):
+    rules = []
+
+    def _create_rule(**kwargs):
+        rule_name = kwargs["Name"]
+        bus_name = kwargs.get("EventBusName", "")
+        pattern = kwargs.get("EventPattern", {})
+        schedule = kwargs.get("ScheduleExpression", "")
+        rule_arn = aws_client.events.put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps(pattern),
+            ScheduleExpression=schedule,
+        )["RuleArn"]
+        rules.append({"name": rule_name, "bus": bus_name})
+        return rule_arn
+
+    yield _create_rule
+
+    for rule in rules:
+        targets = aws_client.events.list_targets_by_rule(
+            Rule=rule["name"], EventBusName=rule["bus"]
+        )["Targets"]
+
+        targetIds = [target["Id"] for target in targets]
+        if len(targetIds) > 0:
+            aws_client.events.remove_targets(
+                Rule=rule["name"], EventBusName=rule["bus"], Ids=targetIds
+            )
+
+        aws_client.events.delete_rule(Name=rule["name"], EventBusName=rule["bus"])
 
 
 @pytest.fixture
@@ -2420,3 +2381,45 @@ def sqs_as_events_target(aws_client, sqs_get_queue_arn):
             aws_client.sqs.delete_queue(QueueUrl=queue_url)
         except Exception as e:
             LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.fixture
+def clean_up(
+    aws_client,
+):  # TODO: legacy clean up fixtures for eventbridge - remove and use individual fixtures for creating resources instead
+    def _clean_up(
+        bus_name=None,
+        rule_name=None,
+        target_ids=None,
+        queue_url=None,
+        log_group_name=None,
+    ):
+        events_client = aws_client.events
+        kwargs = {"EventBusName": bus_name} if bus_name else {}
+        if target_ids:
+            target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
+            call_safe(
+                events_client.remove_targets,
+                kwargs=dict(Rule=rule_name, Ids=target_ids, Force=True, **kwargs),
+            )
+        if rule_name:
+            call_safe(events_client.delete_rule, kwargs=dict(Name=rule_name, Force=True, **kwargs))
+        if bus_name:
+            call_safe(events_client.delete_event_bus, kwargs=dict(Name=bus_name))
+        if queue_url:
+            sqs_client = aws_client.sqs
+            call_safe(sqs_client.delete_queue, kwargs=dict(QueueUrl=queue_url))
+        if log_group_name:
+            logs_client = aws_client.logs
+
+            def _delete_log_group():
+                log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+                for log_stream in log_streams["logStreams"]:
+                    logs_client.delete_log_stream(
+                        logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
+                    )
+                logs_client.delete_log_group(logGroupName=log_group_name)
+
+            call_safe(_delete_log_group)
+
+    yield _clean_up
