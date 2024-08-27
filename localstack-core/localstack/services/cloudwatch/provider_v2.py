@@ -102,12 +102,18 @@ HISTORY_VERSION = "1.0"
 
 LOG = logging.getLogger(__name__)
 _STORE_LOCK = threading.RLock()
+AWS_MAX_DATAPOINTS_ACCEPTED: int = 1440
 
 
 class ValidationError(CommonServiceException):
     # TODO: check this error against AWS (doesn't exist in the API)
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
+
+
+class InvalidParameterCombination(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__("InvalidParameterCombination", message, 400, True)
 
 
 def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
@@ -652,6 +658,22 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         unit: StandardUnit = None,
         **kwargs,
     ) -> GetMetricStatisticsOutput:
+        start_time_unix = int(start_time.timestamp())
+        end_time_unix = int(end_time.timestamp())
+
+        if not start_time_unix < end_time_unix:
+            raise InvalidParameterValueException(
+                "The parameter StartTime must be less than the parameter EndTime."
+            )
+
+        expected_datapoints = (end_time_unix - start_time_unix) / period
+
+        if expected_datapoints > AWS_MAX_DATAPOINTS_ACCEPTED:
+            raise InvalidParameterCombination(
+                f"You have requested up to {int(expected_datapoints)} datapoints, which exceeds the limit of {AWS_MAX_DATAPOINTS_ACCEPTED}. "
+                f"You may reduce the datapoints requested by increasing Period, or decreasing the time range."
+            )
+
         stat_datapoints = {}
 
         units = (
