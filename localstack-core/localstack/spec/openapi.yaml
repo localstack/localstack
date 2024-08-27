@@ -1,3 +1,22 @@
+openapi: 3.1.0
+info:
+  contact:
+    email: info@localstack.cloud
+    name: LocalStack Support
+    url: https://www.localstack.cloud/contact
+  summary: The LocalStack REST API exposes functionality related to diagnostics, health
+    checks, plugins, initialisation hooks, service introspection, and more.
+  termsOfService: https://www.localstack.cloud/legal/tos
+  title: LocalStack REST API for Community
+  version: 3.6.1.dev
+externalDocs:
+  description: LocalStack Documentation
+  url: https://docs.localstack.cloud
+servers:
+  - url: http://localhost.localstack.cloud:{port}
+    variables:
+      port:
+        default: '4566'
 components:
   parameters:
     SesMessageId:
@@ -165,20 +184,6 @@ components:
       - error
       - subscription_arn
       type: object
-externalDocs:
-  description: LocalStack Documentation
-  url: https://docs.localstack.cloud
-info:
-  contact:
-    email: info@localstack.cloud
-    name: LocalStack Support
-    url: https://www.localstack.cloud/contact
-  summary: The LocalStack REST API exposes functionality related to diagnostics, health
-    checks, plugins, initialisation hooks, service introspection, and more.
-  termsOfService: https://www.localstack.cloud/legal/tos
-  title: LocalStack REST API for Community
-  version: 3.6.1.dev
-openapi: 3.1.0
 paths:
   /_aws/cloudwatch/metrics/raw:
     get:
@@ -801,8 +806,3 @@ paths:
           content:
             application/json: {}
           description: ''
-servers:
-- url: http://localhost.localstack.cloud:{port}
-  variables:
-    port:
-      default: '4566'

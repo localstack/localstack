@@ -169,6 +169,7 @@ exclude = ["tests*"]
     "services/**/*.html",
     "services/**/resource_providers/*.schema.json",
     "utils/kinesis/java/cloud/localstack/*.*",
+    "spec/openapi.yaml"
 ]
 
 [tool.ruff]

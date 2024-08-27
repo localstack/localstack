@@ -11,10 +11,10 @@ from . import (
     internal_requests,
     legacy,
     logging,
-    openapi,
     presigned_url,
     region,
     service,
+    validation,
 )
 
 handle_runtime_shutdown = internal.RuntimeShutdownHandler()
@@ -29,8 +29,8 @@ inject_auth_header_if_missing = auth.MissingAuthHeaderInjector()
 add_region_from_header = region.RegionContextEnricher()
 rewrite_region = region.RegionRewriter()
 add_internal_request_params = internal_requests.InternalRequestParamsEnricher()
-validate_request_schema = openapi.OpenAPIRequestValidator()
-validate_response_schema = openapi.OpenAPIResponseValidator()
+validate_request_schema = validation.OpenAPIRequestValidator()
+validate_response_schema = validation.OpenAPIResponseValidator()
 log_exception = logging.ExceptionLogger()
 log_response = logging.ResponseLogger()
 count_service_request = analytics.ServiceRequestCounter()

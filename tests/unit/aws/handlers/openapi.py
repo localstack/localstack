@@ -5,7 +5,7 @@ from rolo.gateway import RequestContext
 from rolo.gateway.handlers import EmptyResponseHandler
 
 from localstack.aws.chain import HandlerChain
-from localstack.aws.handlers.openapi import OpenAPIRequestValidator
+from localstack.aws.handlers.validation import OpenAPIRequestValidator
 
 
 class TestOpenAPIRequestValidator:
@@ -17,6 +17,19 @@ class TestOpenAPIRequestValidator:
                 method="GET",
                 scheme="http",
                 headers={"Host": "localhost.localstack.cloud:4566"},
+            )
+        )
+        response = Response()
+        chain.handle(context=context, response=response)
+        assert response.status_code == 200
+
+        # make sure the request work with a different host value
+        context = RequestContext(
+            Request(
+                path="/_localstack/diagnose",
+                method="GET",
+                scheme="http",
+                headers={"Host": "localhost:4588"},
             )
         )
         response = Response()
