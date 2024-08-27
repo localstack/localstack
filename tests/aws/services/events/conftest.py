@@ -79,6 +79,9 @@ def events_create_event_bus(aws_client, region_name, account_id):
             )
 
 
+# some fixtures are shared in localstack/testing/pytest/fixtures.py
+
+
 @pytest.fixture
 def events_create_default_or_custom_event_bus(events_create_event_bus, region_name, account_id):
     def _create_default_or_custom_event_bus(event_bus_type: str = "default"):
@@ -261,44 +264,6 @@ def put_event_to_archive(aws_client, events_create_event_bus, events_create_arch
 
 
 @pytest.fixture
-def create_sqs_events_target(aws_client, sqs_get_queue_arn):
-    queue_urls = []
-
-    def _create_sqs_events_target(queue_name: str | None = None) -> tuple[str, str]:
-        if not queue_name:
-            queue_name = f"tests-queue-{short_uid()}"
-        sqs_client = aws_client.sqs
-        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_urls.append(queue_url)
-        queue_arn = sqs_get_queue_arn(queue_url)
-        policy = {
-            "Version": "2012-10-17",
-            "Id": f"sqs-eventbridge-{short_uid()}",
-            "Statement": [
-                {
-                    "Sid": f"SendMessage-{short_uid()}",
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": "sqs:SendMessage",
-                    "Resource": queue_arn,
-                }
-            ],
-        }
-        sqs_client.set_queue_attributes(
-            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
-        )
-        return queue_url, queue_arn
-
-    yield _create_sqs_events_target
-
-    for queue_url in queue_urls:
-        try:
-            aws_client.sqs.delete_queue(QueueUrl=queue_url)
-        except Exception as e:
-            LOG.debug("error cleaning up queue %s: %s", queue_url, e)
-
-
-@pytest.fixture
 def events_allow_event_rule_to_sqs_queue(aws_client):
     def _allow_event_rule(sqs_queue_url, sqs_queue_arn, event_rule_arn) -> None:
         # allow event rule to write to sqs queue
@@ -327,7 +292,7 @@ def events_allow_event_rule_to_sqs_queue(aws_client):
 
 @pytest.fixture
 def put_events_with_filter_to_sqs(
-    aws_client, events_create_event_bus, events_put_rule, create_sqs_events_target
+    aws_client, events_create_event_bus, events_put_rule, sqs_as_events_target
 ):
     def _put_events_with_filter_to_sqs(
         pattern: dict,
@@ -342,7 +307,7 @@ def put_events_with_filter_to_sqs(
             event_bus_name = f"test-bus-{short_uid()}"
             events_create_event_bus(Name=event_bus_name)
 
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         events_put_rule(
             Name=rule_name,

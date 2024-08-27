@@ -307,7 +307,7 @@ class TestEventsTargetEvents:
         account_id,
         events_put_rule,
         create_role_event_bus_source_to_bus_target,
-        create_sqs_events_target,
+        sqs_as_events_target,
         aws_client,
         snapshot,
     ):
@@ -371,7 +371,7 @@ class TestEventsTargetEvents:
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
         target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name_target_to_sqs,
