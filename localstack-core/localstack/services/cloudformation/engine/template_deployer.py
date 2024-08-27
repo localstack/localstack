@@ -1242,6 +1242,7 @@ class TemplateDeployerBase(ABC):
 
         resource_provider = executor.try_load_resource_provider(resource["Type"])
         if resource_provider is not None:
+            # add in-progress event
             resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
             physical_resource_id = None
             if action in ("Modify", "Remove"):
@@ -1259,6 +1260,8 @@ class TemplateDeployerBase(ABC):
                 physical_res_id=physical_resource_id,
                 status=resource_status,
             )
+
+            # perform the deploy
             progress_event = executor.deploy_loop(
                 resource_provider, resource, resource_provider_payload
             )
