@@ -12,7 +12,7 @@ from localstack.services.lambda_.runtimes import IMAGE_MAPPING
 from localstack.utils import bootstrap
 from localstack.utils.analytics import usage
 from localstack.utils.container_networking import get_main_container_name
-from localstack.utils.container_utils.container_client import NoSuchImage
+from localstack.utils.container_utils.container_client import ContainerException, NoSuchImage
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 
@@ -138,7 +138,14 @@ def traverse_file_tree(root: str) -> List[str]:
 
 
 def get_docker_image_details() -> Dict[str, str]:
-    return bootstrap.get_docker_image_details()
+    try:
+        image = DOCKER_CLIENT.inspect_container(get_main_container_name())["Config"]["Image"]
+    except ContainerException:
+        return {}
+    # The default bootstrap image detection does not take custom images into account.
+    # Also, the patches to correctly detect a `-pro` image are only applied on the host, so the detection fails
+    # at runtime. The bootstrap detection is mostly used for the CLI, so having a different logic here makes sense.
+    return bootstrap.get_docker_image_details(image_name=image)
 
 
 def get_host_kernel_version() -> str:
