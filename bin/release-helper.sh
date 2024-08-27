@@ -174,6 +174,7 @@ function cmd-git-commit-release() {
     echo $1 || verify_valid_version
 
     git add "${DEPENDENCY_FILE}"
+    # allow empty commit here as the community version might not have any changes, but we still need a commit for a tag
     git commit --allow-empty -m "release version ${1}"
     git tag -a "v${1}" -m "Release version ${1}"
 }
