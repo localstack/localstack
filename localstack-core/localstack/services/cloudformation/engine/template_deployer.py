@@ -4,7 +4,6 @@ import logging
 import re
 import traceback
 import uuid
-from abc import ABC, abstractmethod
 from typing import Optional
 
 from botocore.exceptions import ClientError
@@ -831,7 +830,7 @@ def evaluate_resource_condition(conditions: dict[str, bool], resource: dict) -> 
 # -----------------------
 
 
-class TemplateDeployerBase(ABC):
+class TemplateDeployer:
     def __init__(self, account_id: str, region_name: str, stack):
         self.stack = stack
         self.account_id = account_id
@@ -1338,20 +1337,6 @@ class TemplateDeployerBase(ABC):
         }
         return resource_provider_payload
 
-    @abstractmethod
-    def delete_stack(self):
-        pass
-
-    @abstractmethod
-    def do_apply_changes_in_loop(self, changes: list[ChangeConfig], stack: Stack) -> list:
-        pass
-
-    @classmethod
-    def factory(cls, *args, **kwargs):
-        return TemplateDeployerV2(*args, **kwargs)
-
-
-class TemplateDeployerV2(TemplateDeployerBase):
     def delete_stack(self):
         if not self.stack:
             return

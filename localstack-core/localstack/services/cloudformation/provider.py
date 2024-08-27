@@ -287,9 +287,7 @@ class CloudformationProvider(CloudformationApi):
             stack.stack_name,
             len(stack.template_resources),
         )
-        deployer = template_deployer.TemplateDeployerBase.factory(
-            context.account_id, context.region, stack
-        )
+        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         try:
             deployer.deploy_stack()
         except Exception as e:
@@ -315,9 +313,7 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             # aws will silently ignore invalid stack names - we should do the same
             return
-        deployer = template_deployer.TemplateDeployerBase.factory(
-            context.account_id, context.region, stack
-        )
+        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         deployer.delete_stack()
 
     @handler("UpdateStack", expand=False)
@@ -395,9 +391,7 @@ class CloudformationProvider(CloudformationApi):
         # update the template
         stack.template_original = template
 
-        deployer = template_deployer.TemplateDeployerBase.factory(
-            context.account_id, context.region, stack
-        )
+        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         # TODO: there shouldn't be a "new" stack on update
         new_stack = Stack(
             context.account_id, context.region, request, template, request["TemplateBody"]
@@ -745,7 +739,7 @@ class CloudformationProvider(CloudformationApi):
         except NoResourceInStack as e:
             raise ValidationError(str(e)) from e
 
-        deployer = template_deployer.TemplateDeployerBase.factory(
+        deployer = template_deployer.TemplateDeployer(
             context.account_id, context.region, change_set
         )
         changes = deployer.construct_changes(
@@ -872,7 +866,7 @@ class CloudformationProvider(CloudformationApi):
             stack_name,
             len(change_set.template_resources),
         )
-        deployer = template_deployer.TemplateDeployerBase.factory(
+        deployer = template_deployer.TemplateDeployer(
             context.account_id, context.region, change_set.stack
         )
         try:
@@ -1137,7 +1131,7 @@ class CloudformationProvider(CloudformationApi):
         # TODO: add a check for remaining stack instances
 
         for instance in stack_set[0].stack_instances:
-            deployer = template_deployer.TemplateDeployerBase.factory(
+            deployer = template_deployer.TemplateDeployer(
                 context.account_id, context.region, instance.stack
             )
             deployer.delete_stack()
