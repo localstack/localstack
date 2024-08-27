@@ -57,7 +57,7 @@ function _get_current_version() {
 }
 
 function _is_release_commit() {
-    [[ $(_get_current_version) =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]
+    [[ $(_get_current_version) =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
 
 function _get_current_branch() {
