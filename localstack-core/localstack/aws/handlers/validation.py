@@ -23,7 +23,8 @@ LOG = logging.getLogger(__name__)
 
 class OpenAPIRequestValidator(Handler):
     """
-    Validates the requests to the LocalStack public endpoints (the ones with a _localstack or _aws prefix).
+    Validates the requests to the LocalStack public endpoints (the ones with a _localstack or _aws prefix) against
+    a OpenAPI specification.
     """
 
     def __init__(self):
@@ -46,8 +47,10 @@ class OpenAPIRequestValidator(Handler):
                 response.set_json({"error": "Bad Request", "message": str(e)})
                 chain.stop()
             except OpenAPIError as e:
-                # We currently explicitly do not check errors like ServerNotFound, OperationNotFound, and PathNotFound.
-                LOG.debug("Uncaught exception: (%s): %s", e.__class__.__name__, str(e))
+                # Other errors can be raised when validating a request against the OpenAPI specification.
+                #   The most common are: ServerNotFound, OperationNotFound, or PathNotFound.
+                #   We explicitly do not check any other error but RequestValidationError ones.
+                LOG.debug("OpenAPI validation exception: (%s): %s", e.__class__.__name__, str(e))
 
 
 class OpenAPIResponseValidator(OpenAPIRequestValidator):
