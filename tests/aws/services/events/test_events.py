@@ -1026,7 +1026,7 @@ class TestEventBus:
         self,
         strategy,
         monkeypatch,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         aws_client,
@@ -1102,7 +1102,7 @@ class TestEventBus:
         )
 
         # Create sqs target
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         # Rule and target bus 2 to sqs
         rule_name_bus_two = f"rule-{short_uid()}"

@@ -83,13 +83,13 @@ class TestScheduleRate:
     @markers.aws.validated
     def tests_schedule_rate_target_sqs(
         self,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_put_rule,
         aws_client,
         snapshot,
     ):
         queue_name = f"test-queue-{short_uid()}"
-        queue_url, queue_arn = create_sqs_events_target(queue_name)
+        queue_url, queue_arn = sqs_as_events_target(queue_name)
 
         bus_name = "default"
         rule_name = f"test-rule-{short_uid()}"
@@ -143,9 +143,9 @@ class TestScheduleRate:
 
     @markers.aws.validated
     def tests_schedule_rate_custom_input_target_sqs(
-        self, create_sqs_events_target, events_put_rule, aws_client, snapshot
+        self, sqs_as_events_target, events_put_rule, aws_client, snapshot
     ):
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         bus_name = "default"
         rule_name = f"test-rule-{short_uid()}"
@@ -306,12 +306,12 @@ class TestScheduleCron:
     @pytest.mark.skip("Flaky, target time can be 1min off message time")
     def test_schedule_cron_target_sqs(
         self,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_put_rule,
         aws_client,
         snapshot,
     ):
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         schedule_cron, target_datetime = get_cron_expression(
             1

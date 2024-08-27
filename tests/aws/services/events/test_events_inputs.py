@@ -29,9 +29,9 @@ INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>
     reason="V1 provider does not support this feature",
 )
 def test_put_event_input_path_and_input_transformer(
-    create_sqs_events_target, events_create_event_bus, events_put_rule, aws_client, snapshot
+    sqs_as_events_target, events_create_event_bus, events_put_rule, aws_client, snapshot
 ):
-    _, queue_arn = create_sqs_events_target()
+    _, queue_arn = sqs_as_events_target()
     bus_name = f"test-bus-{short_uid()}"
     events_create_event_bus(Name=bus_name)
 
@@ -153,14 +153,14 @@ class TestInputPath:
     def test_put_events_with_input_path_multiple_targets(
         self,
         aws_client,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         snapshot,
     ):
         # prepare target queues
-        queue_url_1, queue_arn_1 = create_sqs_events_target()
-        queue_url_2, queue_arn_2 = create_sqs_events_target()
+        queue_url_1, queue_arn_1 = sqs_as_events_target()
+        queue_url_2, queue_arn_2 = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
@@ -344,13 +344,13 @@ class TestInputTransformer:
     )
     def test_put_events_with_input_transformer_missing_keys(
         self,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         aws_client_factory,
         snapshot,
     ):
-        _, queue_arn = create_sqs_events_target()
+        _, queue_arn = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
@@ -400,7 +400,7 @@ class TestInputTransformer:
     def test_input_transformer_predefined_variables(
         self,
         input_template,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         aws_client,
@@ -409,7 +409,7 @@ class TestInputTransformer:
         # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html#eb-transform-input-predefined
 
         # prepare target queues
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
