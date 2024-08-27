@@ -33,6 +33,7 @@ from localstack.services.cloudformation.engine.template_utils import (
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
     OperationStatus,
+    ProgressEvent,
     ResourceProviderExecutor,
     ResourceProviderPayload,
     get_resource_type,
@@ -1239,7 +1240,33 @@ class TemplateDeployerBase(ABC):
             action, logical_resource_id=resource_id
         )
 
-        progress_event = executor.deploy_loop(resource, resource_provider_payload)  # noqa
+        resource_provider = executor.try_load_resource_provider(resource["Type"])
+        if resource_provider is not None:
+            # add in-progress event
+            resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
+            physical_resource_id = None
+            if action in ("Modify", "Remove"):
+                previous_state = self.resources[resource_id].get("_last_deployed_state")
+                if not previous_state:
+                    # TODO: can this happen?
+                    previous_state = self.resources[resource_id]["Properties"]
+                physical_resource_id = executor.extract_physical_resource_id_from_model_with_schema(
+                    resource_model=previous_state,
+                    resource_type=resource["Type"],
+                    resource_type_schema=resource_provider.SCHEMA,
+                )
+            stack.add_stack_event(
+                resource_id=resource_id,
+                physical_res_id=physical_resource_id,
+                status=resource_status,
+            )
+
+            # perform the deploy
+            progress_event = executor.deploy_loop(
+                resource_provider, resource, resource_provider_payload
+            )
+        else:
+            progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
         # TODO: clean up the surrounding loop (do_apply_changes_in_loop) so that the responsibilities are clearer
         stack_action = get_action_name_for_resource_change(action)
@@ -1381,7 +1408,13 @@ class TemplateDeployerV2(TemplateDeployerBase):
                     len(resources),
                     resource["ResourceType"],
                 )
-                event = executor.deploy_loop(resource, resource_provider_payload)
+                resource_provider = executor.try_load_resource_provider(resource["Type"])
+                if resource_provider is not None:
+                    event = executor.deploy_loop(
+                        resource_provider, resource, resource_provider_payload
+                    )
+                else:
+                    event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
                 match event.status:
                     case OperationStatus.SUCCESS:
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
@@ -1550,7 +1583,13 @@ class TemplateDeployerLegacy(TemplateDeployerBase):
                             resource["ResourceType"],
                             iteration_cycle,
                         )
-                        event = executor.deploy_loop(resource, resource_provider_payload)
+                        resource_provider = executor.try_load_resource_provider(resource["Type"])
+                        if resource_provider is not None:
+                            event = executor.deploy_loop(
+                                resource_provider, resource, resource_provider_payload
+                            )
+                        else:
+                            event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
                         match event.status:
                             case OperationStatus.SUCCESS:
                                 self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
