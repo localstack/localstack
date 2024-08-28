@@ -11,7 +11,7 @@ from localstack.version import __version__ as version
 LOG = logging.getLogger(__name__)
 
 # Download URLs
-SSL_CERT_URL = f"{ASSETS_ENDPOINT}/local-certs/server.key?version={version}"
+SSL_CERT_URL = f"{ASSETS_ENDPOINT}/local-certs/localstack.cert.key?version={version}"
 SSL_CERT_URL_FALLBACK = f"{API_ENDPOINT}/proxy/localstack.cert.key?version={version}"
 
 # path for test certificate
