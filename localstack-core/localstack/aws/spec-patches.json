@@ -1304,6 +1304,11 @@
       "op": "add",
       "path": "/operations/UpdateDeployment/http/responseCode",
       "value": 201
+    },
+    {
+      "op": "add",
+      "path": "/operations/UpdateApi/http/responseCode",
+      "value": 201
     }
   ]
 }
