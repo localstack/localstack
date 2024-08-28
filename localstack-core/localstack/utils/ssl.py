@@ -4,7 +4,7 @@ import os
 from localstack import config
 from localstack.constants import API_ENDPOINT, ASSETS_ENDPOINT
 from localstack.utils.crypto import generate_ssl_cert
-from localstack.utils.http import download, download_github_artifact
+from localstack.utils.http import download
 from localstack.utils.time import now
 from localstack.version import __version__ as version
 
@@ -43,14 +43,13 @@ def setup_ssl_cert():
     LOG.debug("Attempting to download local SSL certificate file")
 
     # apply timeout (and fall back to using self-signed certs)
-    timeout_gh = 3  # short timeout for GitHub (default download)
-    timeout_proxy = 5  # slightly higher timeout for our proxy
+    timeout = 5  # slightly higher timeout for our proxy
     try:
-        return download_github_artifact(SSL_CERT_URL, target_file, timeout=timeout_gh)
+        return download(SSL_CERT_URL, target_file, timeout=timeout)
     except Exception:
         # try fallback URL, directly from our API proxy
         try:
-            return download(SSL_CERT_URL_FALLBACK, target_file, timeout=timeout_proxy)
+            return download(SSL_CERT_URL_FALLBACK, target_file, timeout=timeout)
         except Exception as e:
             LOG.info(
                 "Unable to download local test SSL certificate from %s to %s (using self-signed cert as fallback): %s",
