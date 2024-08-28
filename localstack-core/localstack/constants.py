@@ -28,7 +28,7 @@ MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 
 # Artifacts endpoint
-ARTIFACTS_ENDPOINT = "https://analytics.localstack.cloud"
+ASSETS_ENDPOINT = "https://assets.localstack.cloud"
 
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
