@@ -4,7 +4,6 @@ import logging
 import re
 import traceback
 import uuid
-from abc import ABC, abstractmethod
 from typing import Optional
 
 from botocore.exceptions import ClientError
@@ -831,7 +830,7 @@ def evaluate_resource_condition(conditions: dict[str, bool], resource: dict) -> 
 # -----------------------
 
 
-class TemplateDeployerBase(ABC):
+class TemplateDeployer:
     def __init__(self, account_id: str, region_name: str, stack):
         self.stack = stack
         self.account_id = account_id
@@ -1338,23 +1337,6 @@ class TemplateDeployerBase(ABC):
         }
         return resource_provider_payload
 
-    @abstractmethod
-    def delete_stack(self):
-        pass
-
-    @abstractmethod
-    def do_apply_changes_in_loop(self, changes: list[ChangeConfig], stack: Stack) -> list:
-        pass
-
-    @classmethod
-    def factory(cls, *args, **kwargs):
-        if config.CFN_LEGACY_TEMPLATE_DEPLOYER:
-            return TemplateDeployerLegacy(*args, **kwargs)
-        else:
-            return TemplateDeployerV2(*args, **kwargs)
-
-
-class TemplateDeployerV2(TemplateDeployerBase):
     def delete_stack(self):
         if not self.stack:
             return
@@ -1519,226 +1501,6 @@ class TemplateDeployerV2(TemplateDeployerBase):
                 if config.CFN_VERBOSE_ERRORS:
                     LOG.exception(f"Failed to deploy resource {resource_id}, stack deploy failed")
                 raise
-
-        # clean up references to deleted resources in stack
-        deletes = [c for c in changes_done if c["ResourceChange"]["Action"] == "Remove"]
-        for delete in deletes:
-            stack.template["Resources"].pop(delete["ResourceChange"]["LogicalResourceId"], None)
-
-        # resolve outputs
-        stack.resolved_outputs = resolve_outputs(self.account_id, self.region_name, stack)
-
-        return changes_done
-
-
-class TemplateDeployerLegacy(TemplateDeployerBase):
-    def delete_stack(self):
-        if not self.stack:
-            return
-        self.stack.set_stack_status("DELETE_IN_PROGRESS")
-        stack_resources = list(self.stack.resources.values())
-        resources = {r["LogicalResourceId"]: clone_safe(r) for r in stack_resources}
-
-        # TODO: what is this doing?
-        for key, resource in resources.items():
-            resource["Properties"] = resource.get(
-                "Properties", clone_safe(resource)
-            )  # TODO: why is there a fallback?
-            resource["ResourceType"] = get_resource_type(resource)
-
-        def _safe_lookup_is_deleted(r_id):
-            """handles the case where self.stack.resource_status(..) fails for whatever reason"""
-            try:
-                return self.stack.resource_status(r_id).get("ResourceStatus") == "DELETE_COMPLETE"
-            except Exception:
-                if config.CFN_VERBOSE_ERRORS:
-                    LOG.exception(f"failed to lookup if resource {r_id} is deleted")
-                return True  # just an assumption
-
-        # a bit of a workaround until we have a proper dependency graph
-        max_cycle = 10  # 10 cycles should be a safe choice for now
-        for iteration_cycle in range(1, max_cycle + 1):
-            resources = {
-                r_id: r for r_id, r in resources.items() if not _safe_lookup_is_deleted(r_id)
-            }
-            if len(resources) == 0:
-                break
-            for i, (resource_id, resource) in enumerate(resources.items()):
-                try:
-                    # TODO: cache condition value in resource details on deployment and use cached value here
-                    if evaluate_resource_condition(
-                        self.stack.resolved_conditions,
-                        resource,
-                    ):
-                        executor = self.create_resource_provider_executor()
-                        resource_provider_payload = self.create_resource_provider_payload(
-                            "Remove", logical_resource_id=resource_id
-                        )
-                        # TODO: check actual return value
-                        LOG.debug(
-                            'Handling "Remove" for resource "%s" (%s/%s) type "%s" in loop iteration %s',
-                            resource_id,
-                            i + 1,
-                            len(resources),
-                            resource["ResourceType"],
-                            iteration_cycle,
-                        )
-                        resource_provider = executor.try_load_resource_provider(
-                            get_resource_type(resource)
-                        )
-                        if resource_provider is not None:
-                            event = executor.deploy_loop(
-                                resource_provider, resource, resource_provider_payload
-                            )
-                        else:
-                            event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
-                        match event.status:
-                            case OperationStatus.SUCCESS:
-                                self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
-                            case OperationStatus.PENDING:
-                                # the resource is still being deleted, specifically the provider has
-                                # signalled that the deployment loop should skip this resource this
-                                # time and come back to it later, likely due to unmet child
-                                # resources still existing because we don't delete things in the
-                                # correct order yet.
-                                continue
-                            case OperationStatus.FAILED:
-                                if iteration_cycle == max_cycle:
-                                    LOG.exception(
-                                        "Last cycle failed to delete resource with id %s. Reason: %s",
-                                        resource_id,
-                                        event.message or "unknown",
-                                    )
-                                else:
-                                    # the resource failed to delete this time, but we have more
-                                    # iterations left to complete the process
-                                    continue
-                            case OperationStatus.IN_PROGRESS:
-                                # the resource provider executor should not return this state, so
-                                # this state is a programming error
-                                raise Exception(
-                                    "Programming error: ResourceProviderExecutor cannot return IN_PROGRESS"
-                                )
-                            case other_status:
-                                raise Exception(f"Use of unsupported status found: {other_status}")
-
-                except Exception as e:
-                    if iteration_cycle == max_cycle:
-                        LOG.exception(
-                            "Last cycle failed to delete resource with id %s. Final exception: %s",
-                            resource_id,
-                            e,
-                        )
-                    else:
-                        log_method = LOG.warning
-                        if config.CFN_VERBOSE_ERRORS:
-                            log_method = LOG.exception
-                        log_method(
-                            "Failed delete of resource with id %s in iteration cycle %d. Retrying in next cycle.",
-                            resource_id,
-                            iteration_cycle,
-                        )
-
-        # update status
-        self.stack.set_stack_status("DELETE_COMPLETE")
-        self.stack.set_time_attribute("DeletionTime")
-
-    def do_apply_changes_in_loop(self, changes: list[ChangeConfig], stack: Stack) -> list:
-        # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
-        changes_done = []
-        max_iters = 30
-        new_resources = stack.resources
-
-        # start deployment loop
-        for i in range(max_iters):
-            j = 0
-            updated = False
-            while j < len(changes):
-                change = changes[j]
-                res_change = change["ResourceChange"]
-                action = res_change["Action"]
-                is_add_or_modify = action in ["Add", "Modify"]
-                resource_id = res_change["LogicalResourceId"]
-
-                # TODO: do resolve_refs_recursively once here
-                try:
-                    if is_add_or_modify:
-                        resource = new_resources[resource_id]
-                        should_deploy = self.prepare_should_deploy_change(
-                            resource_id, change, stack, new_resources
-                        )
-                        LOG.debug(
-                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s (should_deploy=%s)',
-                            action,
-                            resource_id,
-                            j + 1,
-                            len(changes),
-                            res_change["ResourceType"],
-                            i + 1,
-                            should_deploy,
-                        )
-                        if not should_deploy:
-                            del changes[j]
-                            stack_action = get_action_name_for_resource_change(action)
-                            stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
-                            continue
-                        if not self.all_resource_dependencies_satisfied(resource):
-                            j += 1
-                            continue
-                    elif action == "Remove":
-                        should_remove = self.prepare_should_deploy_change(
-                            resource_id, change, stack, new_resources
-                        )
-                        if not should_remove:
-                            del changes[j]
-                            continue
-                        LOG.debug(
-                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s',
-                            action,
-                            resource_id,
-                            j + 1,
-                            len(changes),
-                            res_change["ResourceType"],
-                            i + 1,
-                        )
-                    self.apply_change(change, stack=stack)
-                    changes_done.append(change)
-                    del changes[j]
-                    updated = True
-                except DependencyNotYetSatisfied as e:
-                    log_method = LOG.debug
-                    if config.CFN_VERBOSE_ERRORS:
-                        log_method = LOG.exception
-                    log_method(
-                        'Dependencies for "%s" not yet satisfied, retrying in next loop: %s',
-                        resource_id,
-                        e,
-                    )
-                    j += 1
-                except Exception as e:
-                    status_action = {
-                        "Add": "CREATE",
-                        "Modify": "UPDATE",
-                        "Dynamic": "UPDATE",
-                        "Remove": "DELETE",
-                    }[action]
-                    stack.add_stack_event(
-                        resource_id=resource_id,
-                        physical_res_id=new_resources[resource_id].get("PhysicalResourceId"),
-                        status=f"{status_action}_FAILED",
-                        status_reason=str(e),
-                    )
-                    if config.CFN_VERBOSE_ERRORS:
-                        LOG.exception(
-                            f"Failed to deploy resource {resource_id}, stack deploy failed"
-                        )
-                    raise
-            if not changes:
-                break
-            if not updated:
-                raise Exception(
-                    f"Resource deployment loop completed, pending resource changes: {changes}"
-                )
 
         # clean up references to deleted resources in stack
         deletes = [c for c in changes_done if c["ResourceChange"]["Action"] == "Remove"]
