@@ -2,8 +2,6 @@ import os
 
 from localstack.version import __version__
 
-# temporary fix to avoid issues with missing version package in image
-# FIXME: remove this once all images contain the version package
 VERSION = __version__
 
 # HTTP headers used to forward proxy request URLs

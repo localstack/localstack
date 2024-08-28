@@ -8,7 +8,7 @@
 # https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
 import json
 import logging
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_str
@@ -109,9 +109,9 @@ class ParametersMapper:
     def _retrieve_parameter_from_variables_and_static(
         self,
         mapping_value: str,
-        context_variables: ContextVariables,
+        context_variables: dict[str, Any],
         stage_variables: dict[str, str],
-    ):
+    ) -> str | None:
         if mapping_value.startswith("context."):
             context_var_expr = mapping_value.removeprefix("context.")
             return self._retrieve_parameter_from_context_variables(
@@ -253,10 +253,13 @@ class ParametersMapper:
             )
 
     def _retrieve_parameter_from_context_variables(
-        self, expr: str, context_variables: ContextVariables
+        self, expr: str, context_variables: dict[str, Any]
     ) -> str | None:
         # we're using JSON path here because we could access nested properties like `context.identity.sourceIp`
-        return self._get_json_path_from_dict(context_variables, expr)
+        if (value := self._get_json_path_from_dict(context_variables, expr)) and isinstance(
+            value, str
+        ):
+            return value
 
     @staticmethod
     def _retrieve_parameter_from_stage_variables(

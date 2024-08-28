@@ -139,7 +139,7 @@ def _post_process_lambda_debug_mode_config(
 def _to_qualified_lambda_function_arn(lambda_arn: Arn) -> Arn:
     """
     Returns the $LATEST qualified version of a structurally unqualified version of a lambda Arn iff this
-    if detected to be structurally unqualified. Otherwise, it returns the given string.
+    is detected to be structurally unqualified. Otherwise, it returns the given string.
     Example:
           - arn:aws:lambda:eu-central-1:000000000000:function:functionname:$LATEST ->
               unchanged

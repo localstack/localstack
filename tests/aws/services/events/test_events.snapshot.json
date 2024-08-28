@@ -36,7 +36,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
-    "recorded-date": "19-06-2024, 10:40:53",
+    "recorded-date": "27-08-2024, 10:02:33",
     "recorded-content": {
       "messages": [
         {

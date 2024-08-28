@@ -126,7 +126,7 @@ hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-idna==3.7
+idna==3.8
     # via
     #   hyperlink
     #   localstack-twisted
@@ -194,7 +194,7 @@ openapi-schema-validator==0.6.2
     # via openapi-spec-validator
 openapi-spec-validator==0.7.1
     # via moto-ext
-opensearch-py==2.7.0
+opensearch-py==2.7.1
     # via localstack-core (pyproject.toml)
 packaging==24.1
     # via
@@ -238,7 +238,7 @@ pyopenssl==24.2.1
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
-pyparsing==3.1.2
+pyparsing==3.1.4
     # via moto-ext
 pyproject-hooks==1.1.0
     # via build
@@ -287,7 +287,7 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.7.1
+rich==13.8.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -335,7 +335,7 @@ urllib3==2.2.2
     #   opensearch-py
     #   requests
     #   responses
-werkzeug==3.0.3
+werkzeug==3.0.4
     # via
     #   localstack-core
     #   moto-ext
@@ -348,7 +348,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==7.0.1
+zope-interface==7.0.2
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
