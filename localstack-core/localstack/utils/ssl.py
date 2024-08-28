@@ -2,13 +2,16 @@ import logging
 import os
 
 from localstack import config
-from localstack.constants import API_ENDPOINT, SSL_CERT_URL, SSL_CERT_URL_FALLBACK
+from localstack.constants import API_ENDPOINT, ARTIFACTS_ENDPOINT
 from localstack.utils.crypto import generate_ssl_cert
 from localstack.utils.http import download, download_github_artifact
 from localstack.utils.time import now
 
 LOG = logging.getLogger(__name__)
 
+# Download URLs
+SSL_CERT_URL = f"{ARTIFACTS_ENDPOINT}/local-certs/server.key"
+SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
 
 # path for test certificate
 _SERVER_CERT_PEM_FILE = "server.test.pem"
