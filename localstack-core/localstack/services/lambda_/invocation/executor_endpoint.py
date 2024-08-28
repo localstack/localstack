@@ -10,7 +10,7 @@ from werkzeug import Request
 from localstack.http import Response, route
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
-from localstack.utils.lambda_debug_mode import (
+from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
     DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
     is_lambda_debug_mode,
 )
@@ -197,10 +197,18 @@ class ExecutorEndpoint(Endpoint):
             raise InvokeSendError(
                 f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"
             )
+
+        # Set a reference future awaiting limit to ensure this process eventually ends,
+        # with timeout errors being handled by the lambda evaluator.
+        # The following logic selects which maximum waiting time to consider depending
+        # on whether the application is being debugged or not.
+        # Note that if timeouts are enforced for the lambda function invoked at this endpoint
+        # (this is needs to be configured in the Lambda Debug Mode Config file), the lambda
+        # function will continue to enforce the expected timeouts.
         if is_lambda_debug_mode():
+            # The value is set to a default high value to ensure eventual termination.
             timeout_seconds = DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
         else:
-            # TODO: integration timeouts should be enforced instead.
             # Do not wait longer for an invoke than the maximum lambda timeout plus a buffer
             lambda_max_timeout_seconds = 900
             invoke_timeout_buffer_seconds = 5
