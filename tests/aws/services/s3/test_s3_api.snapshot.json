@@ -3370,5 +3370,260 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match": {
+    "recorded-date": "21-08-2024, 22:26:22",
+    "recorded-content": {
+      "put-obj": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-if-none-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "del-obj": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "put-obj-after-del": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_validation": {
+    "recorded-date": "21-08-2024, 22:26:24",
+    "recorded-content": {
+      "put-obj": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-if-none-match-bad-value": {
+        "Error": {
+          "Code": "NotImplemented",
+          "Header": "If-None-Match",
+          "Message": "A header you provided implies functionality that is not implemented",
+          "additionalMessage": "We don't accept the provided value of If-None-Match header for this API"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 501
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_versioned_bucket": {
+    "recorded-date": "21-08-2024, 22:26:32",
+    "recorded-content": {
+      "put-obj": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-if-none-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "del-obj": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "put-obj-after-del": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-versions": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": false,
+            "Key": "test-precondition",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name:1>",
+              "ID": "<i-d:1>"
+            },
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": true,
+            "Key": "test-precondition",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name:1>",
+              "ID": "<i-d:1>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "test-precondition",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name:1>",
+              "ID": "<i-d:1>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_delete": {
+    "recorded-date": "21-08-2024, 22:26:27",
+    "recorded-content": {
+      "put-obj": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-multipart": {
+        "Bucket": "<bucket:1>",
+        "Key": "test-precondition",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart-if-none-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "del-obj": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "complete-multipart-after-del": {
+        "Error": {
+          "Code": "ConditionalRequestConflict",
+          "Condition": "If-None-Match",
+          "Key": "test-precondition",
+          "Message": "The conditional request cannot succeed due to a conflicting operation against this resource."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "complete-multipart-after-del-restart": {
+        "Bucket": "<bucket:1>",
+        "ETag": "\"60cd54a928cbbcbb6e7b5595bab46a9e-1\"",
+        "Key": "test-precondition",
+        "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_put": {
+    "recorded-date": "21-08-2024, 22:26:29",
+    "recorded-content": {
+      "create-multipart": {
+        "Bucket": "<bucket:1>",
+        "Key": "test-precondition",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart-if-none-match-put-during": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
   }
 }

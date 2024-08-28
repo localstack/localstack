@@ -1,0 +1,13 @@
+{
+  "Comment": "JSON_PATH_ARRAY_ACCESS",
+  "StartAt": "EntryState",
+  "States": {
+    "EntryState": {
+      "Type": "Pass",
+      "Parameters": {
+        "item.$": "$.items[0]"
+      },
+      "End": true
+    }
+  }
+}

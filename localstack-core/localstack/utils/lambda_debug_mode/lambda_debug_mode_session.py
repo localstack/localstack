@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Optional
 
@@ -8,23 +10,24 @@ from localstack.utils.lambda_debug_mode.lambda_debug_mode_config import (
     LambdaDebugModeConfig,
     load_lambda_debug_mode_config,
 )
+from localstack.utils.objects import singleton_factory
 
 LOG = logging.getLogger(__name__)
 
 
-class _LambdaDebugModeSession:
-    _instance = None
+class LambdaDebugModeSession:
     _is_lambda_debug_mode: bool
     _config: Optional[LambdaDebugModeConfig]
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(_LambdaDebugModeSession, cls).__new__(cls)
-        return cls._instance
 
     def __init__(self):
         self._is_lambda_debug_mode = bool(LAMBDA_DEBUG_MODE)
         self._configuration = self._load_lambda_debug_mode_config()
+
+    @staticmethod
+    @singleton_factory
+    def get() -> LambdaDebugModeSession:
+        """Returns a singleton instance of the Lambda Debug Mode session."""
+        return LambdaDebugModeSession()
 
     def _load_lambda_debug_mode_config(self) -> Optional[LambdaDebugModeConfig]:
         file_path = LAMBDA_DEBUG_MODE_CONFIG_PATH
@@ -63,6 +66,3 @@ class _LambdaDebugModeSession:
 
     def debug_config_for(self, lambda_arn: Arn) -> Optional[LambdaDebugConfig]:
         return self._configuration.functions.get(lambda_arn) if self._configuration else None
-
-
-lambda_debug_mode_session = _LambdaDebugModeSession()

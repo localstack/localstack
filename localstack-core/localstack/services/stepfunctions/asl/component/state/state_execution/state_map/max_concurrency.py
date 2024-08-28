@@ -16,7 +16,7 @@ from localstack.services.stepfunctions.asl.component.eval_component import EvalC
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 DEFAULT_MAX_CONCURRENCY_VALUE: Final[int] = 0  # No limit.
 
@@ -50,7 +50,7 @@ class MaxConcurrencyPath(MaxConcurrency):
 
     def _eval_max_concurrency(self, env: Environment) -> int:
         inp = env.stack[-1]
-        max_concurrency_value = JSONPathUtils.extract_json(self.max_concurrency_path, inp)
+        max_concurrency_value = extract_json(self.max_concurrency_path, inp)
 
         error_cause = None
         if not isinstance(max_concurrency_value, int):

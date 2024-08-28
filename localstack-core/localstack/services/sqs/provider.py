@@ -1349,6 +1349,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             del queue.attributes[QueueAttributeName.Policy]
 
         redrive_policy = queue.attributes.get(QueueAttributeName.RedrivePolicy)
+        if redrive_policy == "":
+            del queue.attributes[QueueAttributeName.RedrivePolicy]
+            return
+
         if redrive_policy:
             _redrive_policy = json.loads(redrive_policy)
             dl_target_arn = _redrive_policy.get("deadLetterTargetArn")

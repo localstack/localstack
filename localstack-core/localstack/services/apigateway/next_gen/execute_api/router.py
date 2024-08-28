@@ -72,14 +72,14 @@ class ApiGatewayEndpoint:
         return context, response
 
     def is_rest_api(self, api_id: str, stage: str):
-        return (api_id, stage) in self._global_store.active_deployments
+        return stage in self._global_store.active_deployments.get(api_id, {})
 
     def populate_rest_api_invocation_context(
         self, context: RestApiInvocationContext, api_id: str, stage: str
     ):
         try:
-            deployment_id = self._global_store.active_deployments[(api_id, stage)]
-            frozen_deployment = self._global_store.internal_deployments[(api_id, deployment_id)]
+            deployment_id = self._global_store.active_deployments[api_id][stage]
+            frozen_deployment = self._global_store.internal_deployments[api_id][deployment_id]
 
         except KeyError:
             # TODO: find proper error when trying to hit an API with no deployment/stage linked

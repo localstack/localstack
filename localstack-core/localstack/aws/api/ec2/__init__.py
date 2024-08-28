@@ -5864,6 +5864,20 @@ class CpuOptionsRequest(TypedDict, total=False):
     AmdSevSnp: Optional[AmdSevSnpSpecification]
 
 
+class CreateCapacityReservationBySplittingRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    ClientToken: Optional[String]
+    SourceCapacityReservationId: CapacityReservationId
+    InstanceCount: Integer
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class CreateCapacityReservationBySplittingResult(TypedDict, total=False):
+    SourceCapacityReservation: Optional[CapacityReservation]
+    DestinationCapacityReservation: Optional[CapacityReservation]
+    InstanceCount: Optional[Integer]
+
+
 class ReservationFleetInstanceSpecification(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     InstancePlatform: Optional[CapacityReservationInstancePlatform]
@@ -11303,6 +11317,20 @@ class DescribeInstanceStatusRequest(ServiceRequest):
     IncludeAllInstances: Optional[Boolean]
 
 
+class EbsStatusDetails(TypedDict, total=False):
+    ImpairedSince: Optional[MillisecondDateTime]
+    Name: Optional[StatusName]
+    Status: Optional[StatusType]
+
+
+EbsStatusDetailsList = List[EbsStatusDetails]
+
+
+class EbsStatusSummary(TypedDict, total=False):
+    Details: Optional[EbsStatusDetailsList]
+    Status: Optional[SummaryStatus]
+
+
 class InstanceStatusDetails(TypedDict, total=False):
     ImpairedSince: Optional[DateTime]
     Name: Optional[StatusName]
@@ -11342,6 +11370,7 @@ class InstanceStatus(TypedDict, total=False):
     InstanceState: Optional[InstanceState]
     InstanceStatus: Optional[InstanceStatusSummary]
     SystemStatus: Optional[InstanceStatusSummary]
+    AttachedEbsStatus: Optional[EbsStatusSummary]
 
 
 InstanceStatusList = List[InstanceStatus]
@@ -16529,6 +16558,7 @@ class ModifyCapacityReservationRequest(ServiceRequest):
     Accept: Optional[Boolean]
     DryRun: Optional[Boolean]
     AdditionalInfo: Optional[String]
+    InstanceMatchCriteria: Optional[InstanceMatchCriteria]
 
 
 class ModifyCapacityReservationResult(TypedDict, total=False):
@@ -17519,6 +17549,20 @@ class MoveByoipCidrToIpamRequest(ServiceRequest):
 
 class MoveByoipCidrToIpamResult(TypedDict, total=False):
     ByoipCidr: Optional[ByoipCidr]
+
+
+class MoveCapacityReservationInstancesRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    ClientToken: Optional[String]
+    SourceCapacityReservationId: CapacityReservationId
+    DestinationCapacityReservationId: CapacityReservationId
+    InstanceCount: Integer
+
+
+class MoveCapacityReservationInstancesResult(TypedDict, total=False):
+    SourceCapacityReservation: Optional[CapacityReservation]
+    DestinationCapacityReservation: Optional[CapacityReservation]
+    InstanceCount: Optional[Integer]
 
 
 class PrivateDnsNameOptionsRequest(TypedDict, total=False):
@@ -19187,6 +19231,19 @@ class Ec2Api:
         placement_group_arn: PlacementGroupArn = None,
         **kwargs,
     ) -> CreateCapacityReservationResult:
+        raise NotImplementedError
+
+    @handler("CreateCapacityReservationBySplitting")
+    def create_capacity_reservation_by_splitting(
+        self,
+        context: RequestContext,
+        source_capacity_reservation_id: CapacityReservationId,
+        instance_count: Integer,
+        dry_run: Boolean = None,
+        client_token: String = None,
+        tag_specifications: TagSpecificationList = None,
+        **kwargs,
+    ) -> CreateCapacityReservationBySplittingResult:
         raise NotImplementedError
 
     @handler("CreateCapacityReservationFleet")
@@ -24383,6 +24440,7 @@ class Ec2Api:
         accept: Boolean = None,
         dry_run: Boolean = None,
         additional_info: String = None,
+        instance_match_criteria: InstanceMatchCriteria = None,
         **kwargs,
     ) -> ModifyCapacityReservationResult:
         raise NotImplementedError
@@ -25256,6 +25314,19 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> MoveByoipCidrToIpamResult:
+        raise NotImplementedError
+
+    @handler("MoveCapacityReservationInstances")
+    def move_capacity_reservation_instances(
+        self,
+        context: RequestContext,
+        source_capacity_reservation_id: CapacityReservationId,
+        destination_capacity_reservation_id: CapacityReservationId,
+        instance_count: Integer,
+        dry_run: Boolean = None,
+        client_token: String = None,
+        **kwargs,
+    ) -> MoveCapacityReservationInstancesResult:
         raise NotImplementedError
 
     @handler("ProvisionByoipCidr")

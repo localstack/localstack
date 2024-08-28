@@ -21,7 +21,7 @@ from localstack.services.stepfunctions.asl.component.state.state_wait.wait_funct
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class TimestampPath(WaitFunction):
@@ -47,7 +47,7 @@ class TimestampPath(WaitFunction):
 
     def _get_wait_seconds(self, env: Environment) -> int:
         inp = env.stack[-1]
-        timestamp_str: str = JSONPathUtils.extract_json(self.path, inp)
+        timestamp_str: str = extract_json(self.path, inp)
         try:
             if not re.match(Timestamp.TIMESTAMP_PATTERN, timestamp_str):
                 raise FailureEventException(self._create_failure_event(env, timestamp_str))

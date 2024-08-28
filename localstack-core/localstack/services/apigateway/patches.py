@@ -11,7 +11,8 @@ from moto.apigateway.exceptions import (
 from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
 
-from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID, apply_json_patch_safe
+from localstack.constants import TAG_KEY_CUSTOM_ID
+from localstack.services.apigateway.helpers import apply_json_patch_safe
 from localstack.utils.common import str_to_bool
 from localstack.utils.patch import patch
 

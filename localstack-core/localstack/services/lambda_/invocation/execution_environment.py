@@ -25,7 +25,7 @@ from localstack.services.lambda_.invocation.runtime_executor import (
 )
 from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
     DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
-    is_lambda_debug_timeout_for,
+    is_lambda_debug_timeout_enabled_for,
 )
 from localstack.utils.strings import to_str
 
@@ -400,7 +400,7 @@ class ExecutionEnvironment:
         # Returns the timeout value in seconds to be enforced during the execution of the
         # lambda function. This is the configured value or the DEBUG MODE default if this
         # is enabled.
-        if is_lambda_debug_timeout_for(self.function_version.qualified_arn):
+        if is_lambda_debug_timeout_enabled_for(self.function_version.qualified_arn):
             return DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
         return self.function_version.config.timeout
 

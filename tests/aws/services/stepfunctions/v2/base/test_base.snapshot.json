@@ -1108,5 +1108,293 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[0]]": {
+    "recorded-date": "16-08-2024, 15:52:50",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "items": [
+                  {
+                    "item_key": 0
+                  },
+                  {
+                    "item_key": 1
+                  },
+                  {
+                    "item_key": 2
+                  },
+                  {
+                    "item_key": 3
+                  },
+                  {
+                    "item_key": 4
+                  },
+                  {
+                    "item_key": 5
+                  },
+                  {
+                    "item_key": 6
+                  },
+                  {
+                    "item_key": 7
+                  },
+                  {
+                    "item_key": 8
+                  },
+                  {
+                    "item_key": 9
+                  },
+                  {
+                    "item_key": 10
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "items": [
+                  {
+                    "item_key": 0
+                  },
+                  {
+                    "item_key": 1
+                  },
+                  {
+                    "item_key": 2
+                  },
+                  {
+                    "item_key": 3
+                  },
+                  {
+                    "item_key": 4
+                  },
+                  {
+                    "item_key": 5
+                  },
+                  {
+                    "item_key": 6
+                  },
+                  {
+                    "item_key": 7
+                  },
+                  {
+                    "item_key": 8
+                  },
+                  {
+                    "item_key": 9
+                  },
+                  {
+                    "item_key": 10
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": {
+                  "item_key": 0
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": {
+                  "item_key": 0
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[10]]": {
+    "recorded-date": "16-08-2024, 15:53:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "items": [
+                  {
+                    "item_key": 0
+                  },
+                  {
+                    "item_key": 1
+                  },
+                  {
+                    "item_key": 2
+                  },
+                  {
+                    "item_key": 3
+                  },
+                  {
+                    "item_key": 4
+                  },
+                  {
+                    "item_key": 5
+                  },
+                  {
+                    "item_key": 6
+                  },
+                  {
+                    "item_key": 7
+                  },
+                  {
+                    "item_key": 8
+                  },
+                  {
+                    "item_key": 9
+                  },
+                  {
+                    "item_key": 10
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "items": [
+                  {
+                    "item_key": 0
+                  },
+                  {
+                    "item_key": 1
+                  },
+                  {
+                    "item_key": 2
+                  },
+                  {
+                    "item_key": 3
+                  },
+                  {
+                    "item_key": 4
+                  },
+                  {
+                    "item_key": 5
+                  },
+                  {
+                    "item_key": 6
+                  },
+                  {
+                    "item_key": 7
+                  },
+                  {
+                    "item_key": 8
+                  },
+                  {
+                    "item_key": 9
+                  },
+                  {
+                    "item_key": 10
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": {
+                  "item_key": 10
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": {
+                  "item_key": 10
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -1243,6 +1243,72 @@
         "documentation": "<p>The Encryption request you specified is not valid.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/Header",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/additionalMessage",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NotImplemented",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Header": {
+            "shape": "Header"
+          },
+          "additionalMessage": {
+            "shape": "additionalMessage"
+          }
+        },
+        "error": {
+          "httpStatusCode": 501
+        },
+        "documentation": "<p>A header you provided implies functionality that is not implemented.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ConditionalRequestConflict",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Condition": {
+            "shape": "IfCondition"
+          },
+          "Key": {
+            "shape": "ObjectKey"
+          }
+        },
+        "error": {
+          "httpStatusCode": 409
+        },
+        "documentation": "<p>The conditional request cannot succeed due to a conflicting operation against this resource.</p>",
+        "exception": true
+      }
+    }
+  ],
+  "apigatewayv2/2018-11-29/service-2": [
+    {
+      "op": "add",
+      "path": "/operations/UpdateDeployment/http/responseCode",
+      "value": 201
+    },
+    {
+      "op": "add",
+      "path": "/operations/UpdateApi/http/responseCode",
+      "value": 201
     }
   ]
 }

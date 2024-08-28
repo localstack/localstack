@@ -11,6 +11,7 @@ from urllib.request import Request, urlopen
 
 import pytest
 import requests
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
@@ -2601,6 +2602,45 @@ class TestCloudwatch:
 
         sort_dimensions(list_metrics_res)
         snapshot.match("list-metrics", list_metrics_res)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
+    def test_invalid_amount_of_datapoints(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+        utc_now = datetime.now(tz=timezone.utc)
+        with pytest.raises(ClientError) as ex:
+            aws_client.cloudwatch.get_metric_statistics(
+                Namespace="namespace",
+                MetricName="metric_name",
+                StartTime=utc_now,
+                EndTime=utc_now + timedelta(days=1),
+                Period=1,
+                Statistics=["SampleCount"],
+            )
+
+        snapshot.match("error-invalid-amount-datapoints", ex.value.response)
+        with pytest.raises(ClientError) as ex:
+            aws_client.cloudwatch.get_metric_statistics(
+                Namespace="namespace",
+                MetricName="metric_name",
+                StartTime=utc_now,
+                EndTime=utc_now,
+                Period=1,
+                Statistics=["SampleCount"],
+            )
+
+        snapshot.match("error-invalid-time-frame", ex.value.response)
+
+        response = aws_client.cloudwatch.get_metric_statistics(
+            Namespace=f"namespace_{short_uid()}",
+            MetricName="metric_name",
+            StartTime=utc_now,
+            EndTime=utc_now + timedelta(days=1),
+            Period=60,
+            Statistics=["SampleCount"],
+        )
+
+        snapshot.match("get-metric-statitics", response)
 
 
 def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):

@@ -1083,9 +1083,6 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
-# Allow fallback to previous template deployer implementation
-CFN_LEGACY_TEMPLATE_DEPLOYER = is_env_true("CFN_LEGACY_TEMPLATE_DEPLOYER")
-
 # The CFN_STRING_REPLACEMENT_DENY_LIST env variable is a comma separated list of strings that are not allowed to be
 # replaced in CloudFormation templates (e.g. AWS URLs that are usually edited by Localstack to point to itself if found
 # in a CFN template). They are extracted to a list of strings if the env variable is set.
@@ -1159,7 +1156,6 @@ CONFIG_ENV_VARS = [
     "BOTO_WAITER_MAX_ATTEMPTS",
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
-    "CFN_LEGACY_TEMPLATE_DEPLOYER",
     "CFN_PER_RESOURCE_TIMEOUT",
     "CFN_STRING_REPLACEMENT_DENY_LIST",
     "CFN_VERBOSE_ERRORS",
@@ -1210,6 +1206,8 @@ CONFIG_ENV_VARS = [
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "KINESIS_PERSISTENCE",
+    "LAMBDA_DEBUG_MODE",
+    "LAMBDA_DEBUG_MODE_CONFIG",
     "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",

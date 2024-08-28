@@ -7,7 +7,7 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.component.state.state_fail.error_decl import ErrorDecl
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.parse.intrinsic.intrinsic_parser import IntrinsicParser
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 _STRING_RETURN_FUNCTIONS: Final[set[str]] = {
     typ.name()
@@ -29,7 +29,7 @@ class ErrorPath(ErrorDecl): ...
 class ErrorPathJsonPath(ErrorPath):
     def _eval_body(self, env: Environment) -> None:
         current_output = env.stack[-1]
-        cause = JSONPathUtils.extract_json(self.value, current_output)
+        cause = extract_json(self.value, current_output)
         env.stack.append(cause)
 
 

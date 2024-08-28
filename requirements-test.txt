@@ -33,25 +33,27 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.151.0
+aws-cdk-cloud-assembly-schema==36.0.18
+    # via aws-cdk-lib
+aws-cdk-lib==2.154.1
     # via localstack-core (pyproject.toml)
-aws-sam-translator==1.89.0
+aws-sam-translator==1.91.0
     # via
     #   cfn-lint
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.33.40
+awscli==1.34.5
     # via localstack-core
 awscrt==0.21.2
     # via localstack-core
-boto3==1.34.158
+boto3==1.35.5
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.34.158
+botocore==1.35.5
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +66,7 @@ build==1.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.4.0
+cachetools==5.5.0
     # via
     #   airspeed-ext
     #   localstack-core
@@ -81,7 +83,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.17.0
     # via cryptography
-cfn-lint==1.10.0
+cfn-lint==1.10.3
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -157,14 +159,14 @@ hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-idna==3.7
+idna==3.8
     # via
     #   anyio
     #   httpx
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.4.0
+importlib-resources==6.4.4
     # via jsii
 incremental==24.7.2
     # via localstack-twisted
@@ -185,6 +187,7 @@ jsii==1.102.0
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
     #   aws-cdk-asset-node-proxy-agent-v6
+    #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
 json5==0.9.25
@@ -229,7 +232,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.11.post1
+moto-ext==5.0.13.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -241,7 +244,7 @@ openapi-schema-validator==0.6.2
     # via openapi-spec-validator
 openapi-spec-validator==0.7.1
     # via moto-ext
-opensearch-py==2.6.0
+opensearch-py==2.7.1
     # via localstack-core
 ordered-set==4.1.0
     # via deepdiff
@@ -279,6 +282,7 @@ publication==0.0.3
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
     #   aws-cdk-asset-node-proxy-agent-v6
+    #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
     #   jsii
@@ -300,7 +304,7 @@ pyopenssl==24.2.1
     # via
     #   localstack-core
     #   localstack-twisted
-pyparsing==3.1.2
+pyparsing==3.1.4
     # via moto-ext
 pyproject-hooks==1.1.0
     # via build
@@ -365,7 +369,7 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.7.1
+rich==13.8.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -389,7 +393,6 @@ six==1.16.0
     # via
     #   airspeed-ext
     #   jsonpath-rw
-    #   opensearch-py
     #   python-dateutil
     #   rfc3339-validator
 sniffio==1.3.1
@@ -407,6 +410,7 @@ typeguard==2.13.3
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
     #   aws-cdk-asset-node-proxy-agent-v6
+    #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
     #   jsii
@@ -429,7 +433,7 @@ urllib3==2.2.2
     #   responses
 websocket-client==1.8.0
     # via localstack-core (pyproject.toml)
-werkzeug==3.0.3
+werkzeug==3.0.4
     # via
     #   localstack-core
     #   moto-ext
@@ -443,7 +447,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==7.0.1
+zope-interface==7.0.2
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
