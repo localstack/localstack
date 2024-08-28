@@ -6,12 +6,13 @@ from localstack.constants import API_ENDPOINT, ARTIFACTS_ENDPOINT
 from localstack.utils.crypto import generate_ssl_cert
 from localstack.utils.http import download, download_github_artifact
 from localstack.utils.time import now
+from localstack.version import __version__ as version
 
 LOG = logging.getLogger(__name__)
 
 # Download URLs
-SSL_CERT_URL = f"{ARTIFACTS_ENDPOINT}/local-certs/server.key"
-SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
+SSL_CERT_URL = f"{ARTIFACTS_ENDPOINT}/local-certs/server.key?version={version}"
+SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key?version={version}"
 
 # path for test certificate
 _SERVER_CERT_PEM_FILE = "server.test.pem"
@@ -32,7 +33,7 @@ def setup_ssl_cert():
 
     # cache file for 6 hours (non-enterprise) or forever (enterprise)
     if os.path.exists(target_file):
-        cache_duration_secs = 6 * 60 * 60
+        cache_duration_secs = 24 * 60 * 60
         mod_time = os.path.getmtime(target_file)
         if mod_time > (now() - cache_duration_secs):
             LOG.debug("Using cached SSL certificate (less than 6hrs since last update).")
@@ -48,7 +49,7 @@ def setup_ssl_cert():
         return download_github_artifact(SSL_CERT_URL, target_file, timeout=timeout_gh)
     except Exception:
         # try fallback URL, directly from our API proxy
-        url = SSL_CERT_URL_FALLBACK.format(api_endpoint=API_ENDPOINT)
+        url = SSL_CERT_URL_FALLBACK.format(api_endpoint=API_ENDPOINT, version=version)
         try:
             return download(url, target_file, timeout=timeout_proxy)
         except Exception as e:
