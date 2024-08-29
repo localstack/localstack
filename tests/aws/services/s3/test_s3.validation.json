@@ -35,6 +35,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
     "last_validated_date": "2023-11-06T15:32:57+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_via_host_name": {
+    "last_validated_date": "2024-08-29T12:18:40+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
     "last_validated_date": "2023-08-03T02:19:02+00:00"
   },

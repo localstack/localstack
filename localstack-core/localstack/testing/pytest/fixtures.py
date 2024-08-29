@@ -114,8 +114,10 @@ def aws_http_client_factory(aws_session):
 
 
 @pytest.fixture(scope="class")
-def s3_vhost_client(aws_client_factory):
-    return aws_client_factory(config=botocore.config.Config(s3={"addressing_style": "virtual"})).s3
+def s3_vhost_client(aws_client_factory, region_name):
+    return aws_client_factory(
+        config=botocore.config.Config(s3={"addressing_style": "virtual"}), region_name=region_name
+    ).s3
 
 
 @pytest.fixture
