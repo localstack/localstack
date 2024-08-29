@@ -1763,7 +1763,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
-    "recorded-date": "03-08-2023, 04:19:02",
+    "recorded-date": "29-08-2024, 16:19:26",
     "recorded-content": {
       "create-bucket-us-west-1": {
         "Error": {
