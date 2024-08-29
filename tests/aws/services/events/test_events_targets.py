@@ -806,6 +806,7 @@ class TestEventsTargetSqs:
 
 class TestEventsTargetStepFunctions:
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_put_events_with_target_statefunction_machine(self, infrastructure_setup, aws_client):
         infra = infrastructure_setup(namespace="EventsTests")
         stack_name = "stack-events-target-stepfunctions"
