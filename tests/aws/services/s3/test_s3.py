@@ -2934,17 +2934,20 @@ class TestS3:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,
-        paths=["$..Error.LocationConstraint"],  # not returned by Moto
+        paths=["$.create-bucket-constraint-us-east-1.Error.LocationConstraint"],
     )
     def test_different_location_constraint(
         self,
         s3_create_bucket,
         aws_client_factory,
         s3_create_bucket_with_client,
-        region_name,
         snapshot,
         aws_client,
     ):
+        region_us_east_1 = "us-east-1"
+        region_us_east_2 = "us-east-2"
+        region_us_west_1 = "us-west-1"
+
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformers_list(
             [
@@ -2952,70 +2955,81 @@ class TestS3:
                 snapshot.transform.key_value(
                     "LocationConstraint", "<location-constraint>", reference_replacement=False
                 ),
+                snapshot.transform.regex(region_us_east_1, "<region-1>"),
+                snapshot.transform.regex(region_us_east_2, "<region-2>"),
+                snapshot.transform.regex(region_us_west_1, "<region-3>"),
             ]
         )
-        bucket_1_name = f"bucket-{short_uid()}"
-        region_us_east_1 = "us-east-1"
-        client_1 = aws_client_factory(
+        bucket_us_east_1 = f"bucket-{short_uid()}"
+        client_us_east_1 = aws_client_factory(
             region_name=region_us_east_1, config=Config(parameter_validation=False)
         ).s3
         s3_create_bucket_with_client(
-            client_1,
-            Bucket=bucket_1_name,
+            client_us_east_1,
+            Bucket=bucket_us_east_1,
         )
-        response = client_1.get_bucket_location(Bucket=bucket_1_name)
-        snapshot.match("get_bucket_location_bucket_1", response)
+        response = client_us_east_1.get_bucket_location(Bucket=bucket_us_east_1)
+        snapshot.match("get-bucket-location-bucket-us-east-1", response)
 
         # assert creation fails with location constraint for us-east-1 region
-        with pytest.raises(Exception) as exc:
-            client_1.create_bucket(
+        with pytest.raises(ClientError) as exc:
+            client_us_east_1.create_bucket(
                 Bucket=f"bucket-{short_uid()}",
                 CreateBucketConfiguration={"LocationConstraint": region_us_east_1},
             )
         snapshot.match("create-bucket-constraint-us-east-1", exc.value.response)
-        if is_aws_cloud() or not is_v2_provider():
-            assert exc.value.response["Error"]["LocationConstraint"] == region_us_east_1
 
         # assert creation fails with location constraint with the region unset
-        with pytest.raises(Exception) as exc:
-            client_1.create_bucket(
+        with pytest.raises(ClientError) as exc:
+            client_us_east_1.create_bucket(
                 Bucket=f"bucket-{short_uid()}",
                 CreateBucketConfiguration={"LocationConstraint": None},
             )
         snapshot.match("create-bucket-constraint-us-east-1-with-None", exc.value.response)
 
-        region_2 = "us-east-2"
-        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
-        client_2 = aws_client_factory(region_name=region_2).s3
-        bucket_2_name = f"bucket-{short_uid()}"
+        client_us_east_2 = aws_client_factory(region_name=region_us_east_2).s3
+        bucket_us_east_2 = f"bucket-{short_uid()}"
         s3_create_bucket_with_client(
-            client_2,
-            Bucket=bucket_2_name,
-            CreateBucketConfiguration={"LocationConstraint": region_2},
+            client_us_east_2,
+            Bucket=bucket_us_east_2,
+            CreateBucketConfiguration={"LocationConstraint": region_us_east_2},
         )
-        response = client_2.get_bucket_location(Bucket=bucket_2_name)
-        snapshot.match("get_bucket_location_bucket_2", response)
+        response = client_us_east_2.get_bucket_location(Bucket=bucket_us_east_2)
+        snapshot.match("get-bucket-location-bucket-us-east-2", response)
 
         # assert creation fails without location constraint for us-east-2 region
-        with pytest.raises(Exception) as exc:
-            client_2.create_bucket(Bucket=f"bucket-{short_uid()}")
-        snapshot.match("create_bucket_constraint_exc", exc.value.response)
+        with pytest.raises(ClientError) as exc:
+            client_us_east_2.create_bucket(Bucket=f"bucket-{short_uid()}")
+        snapshot.match("create-bucket-us-east-2-no-constraint-exc", exc.value.response)
 
-        bucket_3_name = f"bucket-{short_uid()}"
-        response = s3_create_bucket_with_client(
-            client_2,
-            Bucket=bucket_3_name,
-            CreateBucketConfiguration={"LocationConstraint": region_2},
-        )
-        snapshot.match("create_bucket_bucket_3", response)
+        # assert creation fails with wrong location constraint from us-east-2 region to us-west-1 region
+        with pytest.raises(ClientError) as exc:
+            client_us_east_2.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": region_us_west_1},
+            )
+        snapshot.match("create-bucket-us-east-2-constraint-to-us-west-1", exc.value.response)
 
-        response = client_2.get_bucket_location(Bucket=bucket_3_name)
-        snapshot.match("get_bucket_location_bucket_3", response)
+        client_us_west_1 = aws_client_factory(region_name=region_us_west_1).s3
+
+        with pytest.raises(ClientError) as exc:
+            client_us_west_1.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": region_us_east_2},
+            )
+        snapshot.match("create-bucket-us-west-1-constraint-to-us-east-2", exc.value.response)
+
+        with pytest.raises(ClientError) as exc:
+            client_us_west_1.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": region_us_east_1},
+            )
+        snapshot.match("create-bucket-us-west-1-constraint-to-us-east-1", exc.value.response)
 
         with pytest.raises(ClientError) as exc:
             aws_client.s3.get_bucket_location(Bucket=f"random-bucket-test-{short_uid()}")
 
-        snapshot.match("get_bucket_location_non_existent_bucket", exc.value.response)
+        snapshot.match("get-bucket-location-non-existent-bucket", exc.value.response)
 
     @markers.aws.validated
     def test_bucket_operation_between_regions(
