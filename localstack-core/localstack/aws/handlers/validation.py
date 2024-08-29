@@ -3,7 +3,8 @@ Handlers for validating request and response schema against OpenAPI specs.
 """
 
 import logging
-from importlib.resources import as_file, files
+import os
+from pathlib import Path
 
 from openapi_core import OpenAPI
 from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest, WerkzeugOpenAPIResponse
@@ -21,6 +22,11 @@ from localstack.http import Response
 LOG = logging.getLogger(__name__)
 
 
+# TODO: replace with from importlib.resources.files when https://github.com/python/importlib_resources/issues/311 is
+#   resolved. Import from a namespace package is broken when installing in editable mode.
+oas_path = os.path.join(os.path.dirname(__file__), "..", "..", "openapi.yaml")
+
+
 class OpenAPIRequestValidator(Handler):
     """
     Validates the requests to the LocalStack public endpoints (the ones with a _localstack or _aws prefix) against
@@ -28,9 +34,7 @@ class OpenAPIRequestValidator(Handler):
     """
 
     def __init__(self):
-        oas = files("localstack.spec").joinpath("openapi.yaml")
-        with as_file(oas) as oas_path:
-            self.openapi = OpenAPI.from_path(oas_path)
+        self.openapi = OpenAPI.from_path(Path(oas_path))
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if not config.OPENAPI_VALIDATE_REQUEST:
@@ -55,9 +59,7 @@ class OpenAPIRequestValidator(Handler):
 
 class OpenAPIResponseValidator(Handler):
     def __init__(self):
-        oas = files("localstack.spec").joinpath("openapi.yaml")
-        with as_file(oas) as oas_path:
-            self.openapi = OpenAPI.from_path(oas_path)
+        self.openapi = OpenAPI.from_path(Path(oas_path))
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # We are more lenient in validating the responses. The use of this flag is intended for test.
