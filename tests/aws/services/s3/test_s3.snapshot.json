@@ -1,29 +1,4 @@
 {
-  "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "recorded-date": "29-08-2024, 12:13:18",
-    "recorded-content": {
-      "head_bucket": {
-        "AccessPointAlias": false,
-        "BucketRegion": "<region>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_objects_v2": {
-        "EncodingType": "url",
-        "IsTruncated": false,
-        "KeyCount": 0,
-        "MaxKeys": 1000,
-        "Name": "<bucket-name:1>",
-        "Prefix": "",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_with_content": {
     "recorded-date": "03-08-2023, 04:13:20",
     "recorded-content": {
@@ -1901,9 +1876,9 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_name_with_dots": {
-    "recorded-date": "03-08-2023, 17:13:12",
+    "recorded-date": "29-08-2024, 15:35:02",
     "recorded-content": {
-      "list_objects": {
+      "list-objects": {
         "Contents": [
           {
             "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
@@ -1928,34 +1903,39 @@
           "HTTPStatusCode": 200
         }
       },
-      "list_objects_headers": {
-        "content-type": "application/xml",
-        "date": "date",
-        "server": "AmazonS3",
-        "transfer-encoding": "chunked",
-        "x-amz-bucket-region": "<region>",
-        "x-amz-id-2": "x-amz-id-2",
-        "x-amz-request-id": "x-amz-request-id"
+      "request-vhost-url-content": {
+        "ListBucketResult": {
+          "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+          "Contents": {
+            "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+            "Key": "my-content",
+            "LastModified": "date",
+            "Size": "9",
+            "StorageClass": "STANDARD"
+          },
+          "IsTruncated": "false",
+          "Marker": null,
+          "MaxKeys": "1000",
+          "Name": "<bucket-name:1>",
+          "Prefix": null
+        }
       },
-      "request_vhost_url_content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Name><bucket-name:1></Name><Prefix></Prefix><Marker></Marker><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated><Contents><Key>my-content</Key><LastModified>date</LastModified><ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag><Size>9</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>",
-      "request_vhost_headers": {
-        "Content-Type": "application/xml",
-        "Date": "date",
-        "Server": "AmazonS3",
-        "Transfer-Encoding": "chunked",
-        "x-amz-bucket-region": "<region>",
-        "x-amz-id-2": "x-amz-id-2",
-        "x-amz-request-id": "x-amz-request-id"
-      },
-      "request_path_url_content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Name><bucket-name:1></Name><Prefix></Prefix><Marker></Marker><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated><Contents><Key>my-content</Key><LastModified>date</LastModified><ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag><Size>9</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>",
-      "request_path_headers": {
-        "Content-Type": "application/xml",
-        "Date": "date",
-        "Server": "AmazonS3",
-        "Transfer-Encoding": "chunked",
-        "x-amz-bucket-region": "<region>",
-        "x-amz-id-2": "x-amz-id-2",
-        "x-amz-request-id": "x-amz-request-id"
+      "request-path-url-content": {
+        "ListBucketResult": {
+          "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+          "Contents": {
+            "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+            "Key": "my-content",
+            "LastModified": "date",
+            "Size": "9",
+            "StorageClass": "STANDARD"
+          },
+          "IsTruncated": "false",
+          "Marker": null,
+          "MaxKeys": "1000",
+          "Name": "<bucket-name:1>",
+          "Prefix": null
+        }
       }
     }
   },
@@ -11248,7 +11228,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_cross_locations": {
-    "recorded-date": "29-08-2024, 14:17:52",
+    "recorded-date": "29-08-2024, 15:58:14",
     "recorded-content": {
       "put-bucket-logging-cross-us-east-1": {
         "Error": {
@@ -13181,6 +13161,31 @@
           }
         ],
         "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists_outside_us_east_1": {
+    "recorded-date": "29-08-2024, 15:20:15",
+    "recorded-content": {
+      "head_bucket": {
+        "AccessPointAlias": false,
+        "BucketRegion": "<region>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_objects_v2": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 0,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

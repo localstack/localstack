@@ -9,7 +9,7 @@
     "last_validated_date": "2023-08-03T02:17:20+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_name_with_dots": {
-    "last_validated_date": "2023-08-03T15:13:12+00:00"
+    "last_validated_date": "2024-08-29T15:35:02+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_operation_between_regions": {
     "last_validated_date": "2023-09-12T12:35:39+00:00"
@@ -239,8 +239,8 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_range_key_not_exists": {
     "last_validated_date": "2023-08-03T02:14:18+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "last_validated_date": "2024-08-29T12:13:18+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists_outside_us_east_1": {
+    "last_validated_date": "2024-08-29T15:20:15+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure": {
     "last_validated_date": "2024-05-15T16:13:26+00:00"
@@ -492,7 +492,7 @@
     "last_validated_date": "2023-08-03T02:26:11+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_cross_locations": {
-    "last_validated_date": "2024-08-29T14:17:52+00:00"
+    "last_validated_date": "2024-08-29T15:58:14+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_wrong_target": {
     "last_validated_date": "2023-11-23T11:50:13+00:00"

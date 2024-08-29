@@ -446,18 +446,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if not (bucket_region := create_bucket_configuration.get("LocationConstraint")):
                 raise MalformedXML()
 
-            if context.region == "us-east-1" and bucket_region == "us-east-1":
-                raise InvalidLocationConstraint(
-                    "The specified location-constraint is not valid",
-                    LocationConstraint=bucket_region,
-                )
+            if context.region == AWS_REGION_US_EAST_1:
+                if bucket_region == "us-east-1":
+                    raise InvalidLocationConstraint(
+                        "The specified location-constraint is not valid",
+                        LocationConstraint=bucket_region,
+                    )
             elif context.region != bucket_region:
                 raise CommonServiceException(
                     code="IllegalLocationConstraintException",
                     message=f"The {bucket_region} location constraint is incompatible for the region specific endpoint this request was sent to.",
                 )
         else:
-            bucket_region = "us-east-1"
+            bucket_region = AWS_REGION_US_EAST_1
             if context.region != bucket_region:
                 raise CommonServiceException(
                     code="IllegalLocationConstraintException",
