@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "recorded-date": "21-03-2024, 08:05:13",
+    "recorded-date": "29-08-2024, 12:13:18",
     "recorded-content": {
       "head_bucket": {
         "AccessPointAlias": false,

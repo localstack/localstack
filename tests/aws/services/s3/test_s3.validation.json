@@ -237,7 +237,7 @@
     "last_validated_date": "2023-08-03T02:14:18+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "last_validated_date": "2024-03-21T08:05:13+00:00"
+    "last_validated_date": "2024-08-29T12:13:18+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure": {
     "last_validated_date": "2024-05-15T16:13:26+00:00"
