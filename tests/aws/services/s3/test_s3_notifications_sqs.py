@@ -431,6 +431,7 @@ class TestS3NotificationsToSQS:
     def test_object_created_put_with_presigned_url_upload(
         self,
         s3_create_bucket,
+        s3_create_bucket_with_client,
         sqs_create_queue,
         sqs_create_queue_with_client,
         s3_create_sqs_bucket_notification,
@@ -465,9 +466,14 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == key
 
         # test with the bucket in a different region than the client
-        bucket_name_region_2 = s3_create_bucket(
+        s3_client_region_2 = aws_client_factory(region_name=secondary_region_name).s3
+        bucket_name_region_2 = f'test-bucket-{short_uid()}'
+        s3_create_bucket_with_client(
+            s3_client=s3_client_region_2,
+            Bucket=bucket_name_region_2,
             CreateBucketConfiguration={"LocationConstraint": secondary_region_name},
         )
+
         # the SQS queue needs to be in the same region as the S3 bucket
         sqs_client_region_2 = aws_client_factory(region_name=secondary_region_name).sqs
         queue_url_region_2 = sqs_create_queue_with_client(sqs_client_region_2)
@@ -476,9 +482,10 @@ class TestS3NotificationsToSQS:
             queue_url=queue_url_region_2,
             events=["s3:ObjectCreated:*"],
             sqs_client=sqs_client_region_2,
+            s3_client=s3_client_region_2,
         )
         # still generate the presign URL with the default client, with the default region
-        url_bucket_region_2 = s3_client.generate_presigned_url(
+        url_bucket_region_2 = s3_client_region_2.generate_presigned_url(
             "put_object", Params={"Bucket": bucket_name_region_2, "Key": key}
         )
         requests.put(url_bucket_region_2, data="something", verify=False)

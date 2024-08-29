@@ -150,28 +150,6 @@ def patch_s3_skip_signature_validation_false(monkeypatch):
     monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
 
 
-@pytest.fixture
-def s3_create_bucket_with_client(s3_empty_bucket, aws_client):
-    buckets = []
-
-    def factory(s3_client, **kwargs) -> str:
-        if "Bucket" not in kwargs:
-            kwargs["Bucket"] = f"test-bucket-{short_uid()}"
-
-        response = s3_client.create_bucket(**kwargs)
-        buckets.append(kwargs["Bucket"])
-        return response
-
-    yield factory
-
-    # cleanup
-    for bucket in buckets:
-        try:
-            s3_empty_bucket(bucket)
-            aws_client.s3.delete_bucket(Bucket=bucket)
-        except Exception as e:
-            LOG.debug(f"error cleaning up bucket {bucket}: {e}")
-
 
 @pytest.fixture
 def s3_multipart_upload(aws_client):
