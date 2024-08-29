@@ -1004,6 +1004,10 @@ class TestS3:
 
         snapshot.match("exc", e.value.response)
 
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Cannot create buckets in other region when client is us-east-1, moto regression",
+    )
     @markers.aws.validated
     def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client, region_name):
         # TODO check redirection (happens in AWS because of region name), should it happen in LS?
@@ -4233,6 +4237,10 @@ class TestS3:
             s3_create_bucket(Bucket=bucket_name)
         snapshot.match("uppercase-bucket", e.value.response)
 
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Cannot create buckets in other region when client is us-east-1, moto regression",
+    )
     @markers.aws.validated
     def test_create_bucket_with_existing_name(
         self, s3_create_bucket_with_client, snapshot, aws_client_factory
@@ -4325,7 +4333,7 @@ class TestS3:
     @markers.aws.validated
     @pytest.mark.skipif(
         condition=is_v2_provider(),
-        reason="Cannot create buckets in other region when client is us-east-1",
+        reason="Cannot create buckets in other region when client is us-east-1, moto regression",
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..x-amz-access-point-alias", "$..x-amz-id-2", "$..AccessPointAlias"],
