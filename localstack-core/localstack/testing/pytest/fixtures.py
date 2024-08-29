@@ -240,7 +240,6 @@ def s3_create_bucket_with_client(s3_empty_bucket, aws_client):
             LOG.debug(f"error cleaning up bucket {bucket}: {e}")
 
 
-
 @pytest.fixture
 def s3_bucket(s3_create_bucket, aws_client) -> str:
     region = aws_client.s3.meta.region_name
