@@ -10462,7 +10462,13 @@ class TestS3BucketReplication:
 
     @markers.aws.validated
     def test_replication_config(
-        self, s3_create_bucket, create_iam_role_with_policy, snapshot, aws_client
+        self,
+        s3_create_bucket,
+        s3_create_bucket_with_client,
+        create_iam_role_with_policy,
+        snapshot,
+        aws_client,
+        aws_client_factory,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(
@@ -10491,7 +10497,9 @@ class TestS3BucketReplication:
         )
         s3_create_bucket(Bucket=bucket_src)
 
-        s3_create_bucket(
+        s3_client_secondary = aws_client_factory(region_name="us-west-2").s3
+        s3_create_bucket_with_client(
+            s3_client=s3_client_secondary,
             Bucket=bucket_dst, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
         )
         aws_client.s3.put_bucket_versioning(

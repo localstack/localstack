@@ -498,7 +498,7 @@
     "last_validated_date": "2023-11-23T11:50:13+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketReplication::test_replication_config": {
-    "last_validated_date": "2023-08-12T18:11:46+00:00"
+    "last_validated_date": "2024-08-29T14:09:55+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketReplication::test_replication_config_without_filter": {
     "last_validated_date": "2023-08-03T02:13:02+00:00"

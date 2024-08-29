@@ -4070,7 +4070,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketReplication::test_replication_config": {
-    "recorded-date": "12-08-2023, 20:11:46",
+    "recorded-date": "29-08-2024, 14:09:55",
     "recorded-content": {
       "expected_error_no_replication_set": {
         "Error": {
