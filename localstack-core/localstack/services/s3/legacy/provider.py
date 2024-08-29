@@ -2013,20 +2013,3 @@ def apply_moto_patches():
             return PermissionResult.PERMITTED
 
         return fn(self, *args, **kwargs)
-
-    def key_is_locked(self):
-        """
-        Apply a patch to check if a key is locked
-        """
-        if self.lock_legal_status == "ON":
-            return True
-
-        if self.lock_mode in ["GOVERNANCE", "COMPLIANCE"]:
-            now = datetime.datetime.utcnow()
-            until = parse_timestamp(self.lock_until)
-            if until > now:
-                return True
-
-        return False
-
-    moto_s3_models.FakeKey.is_locked = property(key_is_locked)
