@@ -53,7 +53,12 @@ class OpenAPIRequestValidator(Handler):
                 LOG.debug("OpenAPI validation exception: (%s): %s", e.__class__.__name__, str(e))
 
 
-class OpenAPIResponseValidator(OpenAPIRequestValidator):
+class OpenAPIResponseValidator(Handler):
+    def __init__(self):
+        oas = files("localstack.spec").joinpath("openapi.yaml")
+        with as_file(oas) as oas_path:
+            self.openapi = OpenAPI.from_path(oas_path)
+
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # We are more lenient in validating the responses. The use of this flag is intended for test.
         if not config.OPENAPI_VALIDATE_RESPONSE:
