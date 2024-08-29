@@ -11232,7 +11232,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_cross_locations": {
-    "recorded-date": "27-11-2023, 16:40:53",
+    "recorded-date": "29-08-2024, 14:17:52",
     "recorded-content": {
       "put-bucket-logging-cross-us-east-1": {
         "Error": {

@@ -150,7 +150,6 @@ def patch_s3_skip_signature_validation_false(monkeypatch):
     monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
 
 
-
 @pytest.fixture
 def s3_multipart_upload(aws_client):
     def perform_multipart_upload(
@@ -10344,13 +10343,24 @@ class TestS3BucketLogging:
         snapshot.add_transformer(RegexTransformer(region_3, "<region_3>"))
 
         bucket_name_region_1 = f"bucket-{short_uid()}"
-        client = aws_client_factory(region_name=region_1).s3
-        s3_create_bucket_with_client(client, Bucket=bucket_name_region_1)
+        client_1 = aws_client_factory(region_name=region_1).s3
+        s3_create_bucket_with_client(s3_client=client_1, Bucket=bucket_name_region_1)
 
-        bucket_name_region_2 = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": region_2}
+        bucket_name_region_2 = f"bucket-{short_uid()}"
+        client_2 = aws_client_factory(region_name=region_2).s3
+        s3_create_bucket_with_client(
+            s3_client=client_2,
+            Bucket=bucket_name_region_2,
+            CreateBucketConfiguration={"LocationConstraint": region_2},
         )
-        target_bucket = s3_create_bucket(CreateBucketConfiguration={"LocationConstraint": region_3})
+
+        target_bucket = f"bucket-{short_uid()}"
+        client_3 = aws_client_factory(region_name=region_3).s3
+        s3_create_bucket_with_client(
+            s3_client=client_3,
+            Bucket=target_bucket,
+            CreateBucketConfiguration={"LocationConstraint": region_3},
+        )
 
         with pytest.raises(ClientError) as e:
             bucket_logging_status = {
@@ -10359,7 +10369,7 @@ class TestS3BucketLogging:
                     "TargetPrefix": "log",
                 },
             }
-            client.put_bucket_logging(
+            client_1.put_bucket_logging(
                 Bucket=bucket_name_region_1, BucketLoggingStatus=bucket_logging_status
             )
         snapshot.match("put-bucket-logging-cross-us-east-1", e.value.response)
@@ -10500,7 +10510,8 @@ class TestS3BucketReplication:
         s3_client_secondary = aws_client_factory(region_name="us-west-2").s3
         s3_create_bucket_with_client(
             s3_client=s3_client_secondary,
-            Bucket=bucket_dst, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+            Bucket=bucket_dst,
+            CreateBucketConfiguration={"LocationConstraint": "us-west-2"},
         )
         aws_client.s3.put_bucket_versioning(
             Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
