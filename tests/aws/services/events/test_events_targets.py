@@ -808,7 +808,7 @@ class TestEventsTargetStepFunctions:
     @markers.aws.validated
     def test_put_events_with_target_statefunction_machine(self, infrastructure_setup, aws_client):
         infra = infrastructure_setup(namespace="EventsTests")
-        stack_name = f"stack-events-target-stepfunctions"
+        stack_name = "stack-events-target-stepfunctions"
         stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
 
         bus_name = "MyEventBus"
@@ -857,17 +857,24 @@ class TestEventsTargetStepFunctions:
                 }
                 for i in range(5)
             ]
-            aws_client.events.put_events(Entries=entries)
+            put_events = aws_client.events.put_events(Entries=entries)
 
             state_machine_arn = outputs["MachineArn"]
 
             def _assert_executions():
-                exec = (
+                executions = (
                     aws_client.stepfunctions.get_paginator("list_executions")
                     .paginate(stateMachineArn=state_machine_arn)
                     .build_full_result()
                 )
-                assert len(exec["executions"]) > 0
+                assert len(executions["executions"]) > 0
+
+                matched_executions = [
+                    e
+                    for e in executions["executions"]
+                    if e["name"].startswith(put_events["Entries"][0]["EventId"])
+                ]
+                assert len(matched_executions) > 0
 
             retry_config = {
                 "retries": (20 if is_aws_cloud() else 5),
