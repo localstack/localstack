@@ -11,17 +11,15 @@ from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 @pytest.fixture
 def basic_event_bridge_rule_to_sqs_queue(
-    s3_create_bucket, events_create_rule, sqs_create_queue, sqs_get_queue_arn, aws_client
+    s3_bucket, events_create_rule, sqs_create_queue, sqs_get_queue_arn, aws_client
 ):
     bus_name = "default"
     queue_name = f"test-queue-{short_uid()}"
-    bucket_name = f"test-bucket-{short_uid()}"
     rule_name = f"test-rule-{short_uid()}"
     target_id = f"test-target-{short_uid()}"
 
-    s3_create_bucket(Bucket=bucket_name)
     aws_client.s3.put_bucket_notification_configuration(
-        Bucket=bucket_name, NotificationConfiguration={"EventBridgeConfiguration": {}}
+        Bucket=s3_bucket, NotificationConfiguration={"EventBridgeConfiguration": {}}
     )
 
     pattern = {
@@ -38,7 +36,7 @@ def basic_event_bridge_rule_to_sqs_queue(
             "Object Storage Class Changed",
             "Object Access Tier Changed",
         ],
-        "detail": {"bucket": {"name": [bucket_name]}},
+        "detail": {"bucket": {"name": [s3_bucket]}},
     }
     rule_arn = events_create_rule(Name=rule_name, EventBusName=bus_name, EventPattern=pattern)
 
@@ -62,7 +60,7 @@ def basic_event_bridge_rule_to_sqs_queue(
     )
     aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": queue_arn}])
 
-    return bucket_name, queue_url
+    return s3_bucket, queue_url
 
 
 @pytest.fixture(autouse=True)
