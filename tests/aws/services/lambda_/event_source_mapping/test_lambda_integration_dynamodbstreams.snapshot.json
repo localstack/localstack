@@ -295,7 +295,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
-    "recorded-date": "08-08-2024, 20:50:27",
+    "recorded-date": "26-08-2024, 13:18:23",
     "recorded-content": {
       "update_table_response": {
         "TableDescription": {

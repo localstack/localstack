@@ -21,13 +21,15 @@ LOG = logging.getLogger(__name__)
 
 class EsmEventProcessor(EventProcessor):
     sender: Sender
+    # TODO: Why have a pipe logger here if pipes is not implemented in community?
     logger: PipeLogger
 
     def __init__(self, sender, logger):
         self.sender = sender
         self.logger = logger
 
-    def process_events_batch(self, input_events: list[dict]) -> None:
+    # TODO: This error handling can be simplified
+    def process_events_batch(self, input_events: list[dict]) -> dict | None:
         execution_id = uuid.uuid4()
         # Create a copy of the original input events
         events = input_events.copy()
@@ -44,11 +46,13 @@ class EsmEventProcessor(EventProcessor):
                 logLevel=LogLevel.TRACE,
             )
             # Target Stage
-            self.process_target_stage(events)
+            payload = self.process_target_stage(events)
             self.logger.log(
                 messageType="ExecutionSucceeded",
                 logLevel=LogLevel.INFO,
             )
+            return payload
+
         except PartialFailureSenderError as e:
             self.logger.log(
                 messageType="ExecutionFailed",
@@ -65,7 +69,7 @@ class EsmEventProcessor(EventProcessor):
                 logLevel=LogLevel.ERROR,
                 error=e.error,
             )
-            raise BatchFailureError from e
+            raise BatchFailureError(error=e.error) from e
         except Exception as e:
             LOG.error(
                 "Unhandled exception while processing Lambda event source mapping (ESM) events %s for ESM with execution id %s",
@@ -75,7 +79,9 @@ class EsmEventProcessor(EventProcessor):
             )
             raise e
 
-    def process_target_stage(self, events: list[dict]) -> None:
+    def process_target_stage(self, events: list[dict]) -> dict | None:
+        payload = {}
+
         try:
             self.logger.log(
                 messageType="TargetStageEntered",
@@ -88,12 +94,10 @@ class EsmEventProcessor(EventProcessor):
                     logLevel=LogLevel.TRACE,
                 )
                 # TODO: handle and log target invocation + stage skipped (when no records present)
-                payload = self.sender.send_events(events)
-                if payload:
+                if response_payload := self.sender.send_events(events):
                     # TODO: test unserializable content (e.g., byte strings)
-                    payload = json.dumps(payload)
-                else:
-                    payload = ""
+                    payload = response_payload
+
                 self.logger.log(
                     messageType="TargetInvocationSucceeded",
                     logLevel=LogLevel.TRACE,
@@ -115,7 +119,7 @@ class EsmEventProcessor(EventProcessor):
             self.logger.log(
                 messageType="TargetStageSucceeded",
                 logLevel=LogLevel.INFO,
-                payload=payload,
+                payload=json.dumps(payload),
             )
         except PartialFailureSenderError as e:
             self.logger.log(
@@ -131,3 +135,26 @@ class EsmEventProcessor(EventProcessor):
                 error=e.error,
             )
             raise e
+
+        return payload
+
+    def generate_event_failure_context(self, abort_condition: str, **kwargs) -> dict:
+        error_payload: dict = kwargs.get("error")
+        if not error_payload:
+            return {}
+        # TODO: Should 'requestContext' and 'responseContext' be defined as models?
+        context = {
+            "requestContext": {
+                "requestId": error_payload.get("requestId"),
+                "functionArn": self.sender.target_arn,  # get the target ARN from the sender (always LambdaSender)
+                "condition": abort_condition,
+                "approximateInvokeCount": kwargs.get("attempts_count"),
+            },
+            "responseContext": {
+                "statusCode": error_payload.get("httpStatusCode"),
+                "executedVersion": error_payload.get("executedVersion"),
+                "functionError": error_payload.get("functionError"),
+            },
+        }
+
+        return context

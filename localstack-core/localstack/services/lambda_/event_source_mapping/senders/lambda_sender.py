@@ -63,8 +63,10 @@ class LambdaSender(Sender):
                 "awsService": "lambda",
                 "requestId": invoke_result["ResponseMetadata"]["RequestId"],
                 # TODO: fix hardcoded value by figuring out what other exception types exist
-                "exceptionType": "BadRequest",
+                "exceptionType": "BadRequest",  # TODO: Is this actually used anywhere?
                 "resourceArn": self.target_arn,
+                "functionError": function_error,
+                "executedVersion": invoke_result.get("ExecutedVersion", "$LATEST"),
             }
             raise SenderError(
                 f"Error during sending events {events} due to FunctionError {function_error}.",
@@ -83,6 +85,8 @@ class LambdaSender(Sender):
                 "requestId": invoke_result["ResponseMetadata"]["RequestId"],
                 "exceptionType": "BadRequest",
                 "resourceArn": self.target_arn,
+                "functionError": function_error,
+                "executedVersion": invoke_result.get("ExecutedVersion", "$LATEST"),
             }
             raise PartialFailureSenderError(error=error, partial_failure_payload=payload)
 

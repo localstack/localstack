@@ -60,7 +60,7 @@
     "last_validated_date": "2023-02-27T16:03:26+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_report_batch_item_failures": {
-    "last_validated_date": "2023-11-10T18:17:37+00:00"
+    "last_validated_date": "2024-08-27T14:55:51+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_report_batch_item_failures_empty_json_batch_succeeds": {
     "last_validated_date": "2023-02-27T16:09:08+00:00"

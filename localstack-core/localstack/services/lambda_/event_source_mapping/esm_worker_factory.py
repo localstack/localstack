@@ -41,6 +41,7 @@ class EsmWorkerFactory:
         self.function_role_arn = function_role
         self.enabled = enabled
 
+    # TODO Should we split up each Poller creation to a separate static function?
     def get_esm_worker(self) -> EsmWorker:
         # Sender (always Lambda)
         function_arn = self.esm_config["FunctionArn"]

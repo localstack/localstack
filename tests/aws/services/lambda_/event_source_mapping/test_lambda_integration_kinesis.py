@@ -445,12 +445,6 @@ class TestKinesisSource:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_esm,
         paths=[
-            # Pipe uses "context" (extra)
-            "$..context",
-            # ESM uses "requestContext" and "responseContext" (not implemented yet)
-            "$..requestContext",
-            "$..responseContext",
-            # uuid ordering issue because the missing requestContext contains a uuid
             "$..Messages..MessageId",
         ],
     )
