@@ -1817,7 +1817,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
-    "recorded-date": "06-12-2023, 16:45:33",
+    "recorded-date": "30-08-2024, 11:28:52",
     "recorded-content": {
       "create_bucket": {
         "Location": "/<bucket-name:1>",
@@ -7844,7 +7844,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_wrong_target": {
-    "recorded-date": "23-11-2023, 12:50:13",
+    "recorded-date": "30-08-2024, 11:31:48",
     "recorded-content": {
       "put-bucket-logging-different-regions": {
         "Error": {

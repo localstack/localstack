@@ -33,7 +33,7 @@
     "last_validated_date": "2024-01-04T13:48:40+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
-    "last_validated_date": "2023-11-06T15:32:57+00:00"
+    "last_validated_date": "2024-08-30T11:28:52+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_via_host_name": {
     "last_validated_date": "2024-08-29T12:18:40+00:00"
@@ -495,7 +495,7 @@
     "last_validated_date": "2024-08-29T15:58:14+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_wrong_target": {
-    "last_validated_date": "2023-11-23T11:50:13+00:00"
+    "last_validated_date": "2024-08-30T11:31:48+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketReplication::test_replication_config": {
     "last_validated_date": "2024-08-29T14:09:55+00:00"

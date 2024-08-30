@@ -4359,12 +4359,12 @@ class TestS3:
             ]
         )
 
+        client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
         try:
-            client = aws_client_factory(region_name="us-east-1").s3
-            response = client.create_bucket(Bucket=bucket_1)
+            response = client_us_east_1.create_bucket(Bucket=bucket_1)
             snapshot.match("create_bucket", response)
 
-            response = aws_client.s3.create_bucket(
+            response = client_us_east_1.create_bucket(
                 Bucket=bucket_2,
                 CreateBucketConfiguration={
                     "LocationConstraint": secondary_region_name,
@@ -4372,7 +4372,7 @@ class TestS3:
             )
             snapshot.match("create_bucket_location_constraint", response)
 
-            response = client.head_bucket(Bucket=bucket_1)
+            response = client_us_east_1.head_bucket(Bucket=bucket_1)
             snapshot.match("head_bucket", response)
             snapshot.match(
                 "head_bucket_filtered_header",
@@ -4390,8 +4390,8 @@ class TestS3:
                 aws_client.s3.head_bucket(Bucket=f"does-not-exist-{long_uid()}")
             snapshot.match("head_bucket_not_exist", e.value.response)
         finally:
-            client.delete_bucket(Bucket=bucket_1)
-            aws_client.s3.delete_bucket(Bucket=bucket_2)
+            client_us_east_1.delete_bucket(Bucket=bucket_1)
+            client_us_east_1.delete_bucket(Bucket=bucket_2)
 
     @pytest.mark.skipif(
         condition=is_v2_provider(),
@@ -10303,40 +10303,43 @@ class TestS3BucketLogging:
     @markers.aws.validated
     def test_put_bucket_logging_wrong_target(
         self,
-        aws_client,
         aws_client_factory,
-        s3_create_bucket,
         s3_create_bucket_with_client,
         snapshot,
     ):
-        region_us_east_1 = "us-east-1"
         region_us_west_2 = "us-west-2"
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("TargetBucket"),
-                snapshot.transform.regex(region_us_east_1, "<region_1>"),
+                snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region_1>"),
                 snapshot.transform.regex(region_us_west_2, "<region_2>"),
             ]
         )
 
-        bucket_name = f"bucket-{short_uid()}"
-        client = aws_client_factory(region_name=region_us_east_1).s3
+        bucket_name_us_east_1 = f"bucket-{short_uid()}"
+        target_bucket_us_west_2 = f"bucket-{short_uid()}"
+
+        client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
         s3_create_bucket_with_client(
-            client,
-            Bucket=bucket_name,
+            client_us_east_1,
+            Bucket=bucket_name_us_east_1,
         )
-        target_bucket = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": region_us_west_2}
+        s3_create_bucket_with_client(
+            client_us_east_1,
+            Bucket=target_bucket_us_west_2,
+            CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
         )
 
         with pytest.raises(ClientError) as e:
             bucket_logging_status = {
                 "LoggingEnabled": {
-                    "TargetBucket": target_bucket,
+                    "TargetBucket": target_bucket_us_west_2,
                     "TargetPrefix": "log",
                 },
             }
-            client.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status)
+            client_us_east_1.put_bucket_logging(
+                Bucket=bucket_name_us_east_1, BucketLoggingStatus=bucket_logging_status
+            )
         snapshot.match("put-bucket-logging-different-regions", e.value.response)
 
         nonexistent_target_bucket = f"target-bucket-{long_uid()}"
@@ -10347,7 +10350,9 @@ class TestS3BucketLogging:
                     "TargetPrefix": "log",
                 },
             }
-            client.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status)
+            client_us_east_1.put_bucket_logging(
+                Bucket=bucket_name_us_east_1, BucketLoggingStatus=bucket_logging_status
+            )
         snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
         assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
 
