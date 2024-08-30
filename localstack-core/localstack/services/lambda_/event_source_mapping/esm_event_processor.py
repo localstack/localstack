@@ -21,15 +21,13 @@ LOG = logging.getLogger(__name__)
 
 class EsmEventProcessor(EventProcessor):
     sender: Sender
-    # TODO: Why have a pipe logger here if pipes is not implemented in community?
     logger: PipeLogger
 
     def __init__(self, sender, logger):
         self.sender = sender
         self.logger = logger
 
-    # TODO: This error handling can be simplified
-    def process_events_batch(self, input_events: list[dict]) -> dict | None:
+    def process_events_batch(self, input_events: list[dict]) -> None:
         execution_id = uuid.uuid4()
         # Create a copy of the original input events
         events = input_events.copy()
@@ -46,12 +44,11 @@ class EsmEventProcessor(EventProcessor):
                 logLevel=LogLevel.TRACE,
             )
             # Target Stage
-            payload = self.process_target_stage(events)
+            self.process_target_stage(events)
             self.logger.log(
                 messageType="ExecutionSucceeded",
                 logLevel=LogLevel.INFO,
             )
-            return payload
 
         except PartialFailureSenderError as e:
             self.logger.log(
@@ -79,7 +76,7 @@ class EsmEventProcessor(EventProcessor):
             )
             raise e
 
-    def process_target_stage(self, events: list[dict]) -> dict | None:
+    def process_target_stage(self, events: list[dict]) -> None:
         payload = {}
 
         try:
@@ -135,8 +132,6 @@ class EsmEventProcessor(EventProcessor):
                 error=e.error,
             )
             raise e
-
-        return payload
 
     def generate_event_failure_context(self, abort_condition: str, **kwargs) -> dict:
         error_payload: dict = kwargs.get("error")

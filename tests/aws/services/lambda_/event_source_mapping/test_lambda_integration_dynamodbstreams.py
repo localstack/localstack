@@ -19,7 +19,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
+from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm, is_v2_esm
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
@@ -330,17 +330,19 @@ class TestDynamoDBEventSourceMapping:
         list_esm = aws_client.lambda_.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
-    # FIXME last three skip verification entries are purely due to numbering mismatches
+    # FIXME UpdateTable is not returning a TableID
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Messages..Body.requestContext.approximateInvokeCount",
-            "$..Messages..Body.requestContext.functionArn",
-            "$..Messages..Body.requestContext.requestId",
-            "$..Messages..Body.responseContext.statusCode",
-            "$..Messages..MessageId",
             "$..TableDescription.TableId",
-            "$..FunctionArn",
-            "$..UUID",
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_esm,
+        paths=[
+            "$..Messages..Body.DDBStreamBatchInfo.approximateArrivalOfFirstRecord",  # Incorrect timestamp formatting
+            "$..Messages..Body.DDBStreamBatchInfo.approximateArrivalOfLastRecord",
+            "$..Messages..Body.requestContext.approximateInvokeCount",
+            "$..Messages..Body.responseContext.statusCode",
         ],
     )
     @markers.aws.validated
@@ -358,6 +360,7 @@ class TestDynamoDBEventSourceMapping:
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
         snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
         function_name = f"lambda_func-{short_uid()}"
         role = f"test-lambda-role-{short_uid()}"
         policy_name = f"test-lambda-policy-{short_uid()}"
@@ -378,8 +381,12 @@ class TestDynamoDBEventSourceMapping:
             runtime=Runtime.python3_12,
             role=role_arn,
         )
-        dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+        create_table_response = dynamodb_create_table(
+            table_name=table_name, partition_key=partition_key
+        )
         _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        snapshot.match("create_table_response", create_table_response)
+
         update_table_response = aws_client.dynamodb.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},

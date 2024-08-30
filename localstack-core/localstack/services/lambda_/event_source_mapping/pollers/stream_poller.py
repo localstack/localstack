@@ -18,7 +18,6 @@ from localstack.services.lambda_.event_source_mapping.event_processor import (
     PipeInternalError,
 )
 from localstack.services.lambda_.event_source_mapping.pipe_utils import (
-    format_time_iso_8601_z,
     get_current_time,
     get_datetime_from_timestamp,
     get_internal_client,
@@ -90,6 +89,11 @@ class StreamPoller(Poller):
 
     @abstractmethod
     def get_approximate_arrival_time(self, record: dict) -> float:
+        pass
+
+    @abstractmethod
+    def format_datetime(self, time: datetime) -> str:
+        """Formats a datetime in the correct format for DynamoDB (with ms) or Kinesis (without ms)"""
         pass
 
     @abstractmethod
@@ -198,21 +202,15 @@ class StreamPoller(Poller):
                     )
                 error_payload = ex.partial_failure_payload
                 # let entire batch fail (ideally raise BatchFailureError)
-            except (SenderError, PartialFailureSenderError, BatchFailureError) as ex:
-                error_payload = ex.error
-                LOG.warning(
-                    f"Attempt {attempts} failed while processing {self.partner_resource_arn} with events: {events}"
-                )
-                attempts += 1
-                # Retry polling until the record expires at the source
-                if self.stream_parameters.get("MaximumRetryAttempts", -1) == -1:
-                    # TODO: handle iterator expired scenario
-                    return
-            except Exception:
-                LOG.warning(
-                    "Attempt %s failed unexpectedly while processing %s with events: %s",
+            except (SenderError, PartialFailureSenderError, BatchFailureError, Exception) as ex:
+                if isinstance(ex, (SenderError, PartialFailureSenderError, BatchFailureError)):
+                    error_payload = ex.error
+
+                # FIXME partner_resource_arn is not defined in ESM
+                LOG.debug(
+                    "Attempt %d failed while processing %s with events: %s",
                     attempts,
-                    self.partner_resource_arn,
+                    self.partner_resource_arn or self.source_arn,
                     events,
                 )
                 attempts += 1
@@ -229,7 +227,6 @@ class StreamPoller(Poller):
             attempts_count=attempts,
             partner_resource_arn=self.partner_resource_arn,
         )
-        LOG.warning(f"failure context: {failure_context}")
         self.send_events_to_dlq(events, context=failure_context)
         # Update shard iterator if the execution failed but the events are sent to a DLQ
         self.shards[shard_id] = get_records_response["NextShardIterator"]
@@ -308,15 +305,17 @@ class StreamPoller(Poller):
         return {
             **context,
             self.failure_payload_details_field_name(): {
-                "approximateArrivalOfFirstRecord": format_time_iso_8601_z(first_record_arrival),
-                "approximateArrivalOfLastRecord": format_time_iso_8601_z(last_record_arrival),
+                "approximateArrivalOfFirstRecord": self.format_datetime(first_record_arrival),
+                "approximateArrivalOfLastRecord": self.format_datetime(last_record_arrival),
                 "batchSize": len(events),
                 "endSequenceNumber": self.get_sequence_number(last_record),
                 "shardId": shard_id,
                 "startSequenceNumber": self.get_sequence_number(first_record),
                 "streamArn": self.source_arn,
             },
-            "timestamp": format_time_iso_8601_z(datetime.utcnow()),
+            "timestamp": get_current_time()
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z"),
             "version": "1.0",
         }
 
