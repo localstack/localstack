@@ -4309,13 +4309,13 @@ class TestS3:
         response = requests.get(bucket_url)
         assert response.status_code == 404
 
-        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-west-2")
-        assert "us-west-2" in bucket_vhost_url
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="eu-central-1")
+        assert "eu-central-1" in bucket_vhost_url
         response = requests.get(bucket_vhost_url)
         assert response.status_code == 404
 
-        bucket_url = _bucket_url(bucket_name, region="us-west-2")
-        assert "us-west-2" in bucket_url
+        bucket_url = _bucket_url(bucket_name, region="eu-central-1")
+        assert "eu-central-1" in bucket_url
         response = requests.get(bucket_url)
         assert response.status_code == 404
 
