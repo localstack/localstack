@@ -806,7 +806,7 @@ class TestEventsTargetSqs:
 
 class TestEventsTargetStepFunctions:
     @markers.aws.validated
-    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    # @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_put_events_with_target_statefunction_machine(self, infrastructure_setup, aws_client):
         infra = infrastructure_setup(namespace="EventsTests")
         stack_name = "stack-events-target-stepfunctions"
@@ -895,3 +895,82 @@ class TestEventsTargetStepFunctions:
                 assert len(messages) > 0
 
             retry(_assert_messages, **retry_config)
+
+
+class TestEventsTargetLogs:
+    @markers.aws.validated
+    # @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    def test_envents_to_log_group_target(self, infrastructure_setup, aws_client):
+        infra = infrastructure_setup(namespace="EventsTests", force_synth=True)
+        stack_name = "stack-events-target-logs"
+        stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
+
+        bus_name = "MyEventLogsBus"
+        cdk.aws_events.EventBus(stack, "MyEventLogsBus", event_bus_name=bus_name)
+
+        # Create CloudWatch log group
+        log_group_name = "/aws/events/MyEventsLogGroup"
+        log_group = cdk.aws_logs.LogGroup(
+            stack,
+            "MyLogGroup",
+            log_group_name=log_group_name,
+            retention=cdk.aws_logs.RetentionDays.INFINITE,
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+        )
+
+        cdk.aws_logs.ResourcePolicy(
+            stack,
+            "logallpolicy",
+            resource_policy_name="TrustEventsToStoreLogEvents",
+            policy_statements=[
+                cdk.aws_iam.PolicyStatement(
+                    actions=["logs:*"],
+                    resources=[
+                        cdk.Fn.join(
+                            ":",
+                            [
+                                "arn:aws:logs",
+                                stack.region,
+                                stack.account,
+                                "log-group:/aws/events/*:*",
+                            ],
+                        )
+                    ],
+                    principals=[
+                        cdk.aws_iam.ServicePrincipal("delivery.logs.amazonaws.com"),
+                        cdk.aws_iam.ServicePrincipal("events.amazonaws.com"),
+                    ],
+                    effect=cdk.aws_iam.Effect.ALLOW,
+                )
+            ],
+        )
+
+        cdk.aws_events.CfnRule(
+            stack,
+            "LogAllRule",
+            event_bus_name=bus_name,
+            event_pattern={"source": ["com.sample.resource"]},
+            targets=[
+                cdk.aws_events.CfnRule.TargetProperty(
+                    id="log_to_group", arn=log_group.log_group_arn
+                )
+            ],
+        )
+
+        with infra.provisioner():
+            entries = [
+                {
+                    "Source": "com.sample.resource",
+                    "DetailType": "random-detail-type",
+                    "Detail": json.dumps({"Key1": "Value"}),
+                    "EventBusName": bus_name,
+                }
+                for i in range(5)
+            ]
+            aws_client.events.put_events(Entries=entries)
+
+            def _assert_logs_exist():
+                events = aws_client.logs.filter_log_events(logGroupName=log_group_name)["events"]
+                assert len(events) > 0
+
+            retry(_assert_logs_exist, retries=10)
