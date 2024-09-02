@@ -142,6 +142,10 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
+          name: Install global python dependencies
+          command: |
+            pip install --upgrade setuptools setuptools_scm
+      - run:
           name: Build community docker image
           command: ./bin/docker-helper.sh build
       - run:
@@ -770,6 +774,10 @@ jobs:
       - prepare-acceptance-tests
       - attach_workspace:
           at: /tmp/workspace
+      - run:
+          name: Install global python dependencies
+          command: |
+            pip install --upgrade setuptools setuptools_scm
       - run:
           name: Load docker image - amd64
           working_directory: target
