@@ -2165,6 +2165,7 @@ class IpamPoolAllocationResourceType(StrEnum):
     ec2_public_ipv4_pool = "ec2-public-ipv4-pool"
     custom = "custom"
     subnet = "subnet"
+    eip = "eip"
 
 
 class IpamPoolAwsService(StrEnum):
@@ -2232,6 +2233,7 @@ class IpamPublicAddressType(StrEnum):
     service_managed_ip = "service-managed-ip"
     service_managed_byoip = "service-managed-byoip"
     amazon_owned_eip = "amazon-owned-eip"
+    amazon_owned_contig = "amazon-owned-contig"
     byoip = "byoip"
     ec2_public_ip = "ec2-public-ip"
 
@@ -4145,6 +4147,7 @@ class AllocateAddressRequest(ServiceRequest):
     CustomerOwnedIpv4Pool: Optional[String]
     DryRun: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
+    IpamPoolId: Optional[IpamPoolId]
 
 
 class AllocateAddressResult(TypedDict, total=False):
@@ -18640,6 +18643,7 @@ class Ec2Api:
         customer_owned_ipv4_pool: String = None,
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        ipam_pool_id: IpamPoolId = None,
         **kwargs,
     ) -> AllocateAddressResult:
         raise NotImplementedError
