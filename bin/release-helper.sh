@@ -44,7 +44,7 @@ function usage() {
 function get_current_version() {
     # check if setuptools_scm is installed, if not prompt to install. python3 is expected to be present
     if ! python3 -m pip -qqq show setuptools_scm > /dev/null ; then
-      echo "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'"
+      echo "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'" >&2
       exit 1
     fi
     python3 -m setuptools_scm

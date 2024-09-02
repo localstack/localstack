@@ -22,9 +22,24 @@ setup_file() {
   }
   export -f git
 
-  # mock python3 / setuptools
+  # mock python3 / pip + setuptools_scm
   function python3() {
-    echo "$TEST_SPECIFIC_VERSION"
+    case $2 in
+    "setuptools_scm")
+      # setuptools_scm returns out test version
+      echo "$TEST_SPECIFIC_VERSION"
+      ;;
+    "pip")
+      # pip exits with $TEST_PIP_EXIT_CODE
+      echo "python3 $@"
+      if [ -n "${TEST_PIP_FAIL-}" ]; then
+        return 1
+      fi
+      ;;
+    *)
+      # everything else just prints the command
+      echo "python3 $@"
+    esac
   }
   export -f python3
 }
@@ -240,4 +255,14 @@ setup_file() {
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:4" ]]
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:4.0" ]]
   [[ "$output" =~ "docker manifest push $IMAGE_NAME:4.0.0" ]]
+}
+
+
+@test "cmd-build throws error when setuptools-scm is not installed" {
+  export TEST_PIP_FAIL=1
+  export IMAGE_NAME="localstack/test"
+
+  run bin/docker-helper.sh build
+  [ "$status" -eq 1 ]
+  [[ "$output" =~ "ERROR" ]]
 }
