@@ -1,4 +1,4 @@
-"""Handlers for fallback logic, e.g., populating empty requests or defaulting with default exceptions."""
+"""Handlers for fallback logic, e.g., populating empty requests or defauling with default exceptions."""
 
 import logging
 

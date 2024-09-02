@@ -36,8 +36,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
                 handlers.enforce_cors,
                 handlers.content_decoder,
-                handlers.validate_request_schema,  # validate request schema for public LS endpoints
-                handlers.serve_localstack_resources,  # try to serve endpoints in /_localstack
+                handlers.serve_localstack_resources,  # try to serve internal resources in /_localstack first
                 handlers.serve_edge_router_rules,
                 # start aws handler chain
                 handlers.parse_pre_signed_url_request,
@@ -68,7 +67,6 @@ class LocalstackAwsGateway(Gateway):
         # response post-processing
         self.response_handlers.extend(
             [
-                handlers.validate_response_schema,  # validate response schema for public LS endpoints
                 handlers.modify_service_response,
                 handlers.parse_service_response,
                 handlers.run_custom_response_handlers,
