@@ -14,6 +14,13 @@ setup_file() {
       # setuptools_scm returns out test version
       echo "$TEST_SPECIFIC_VERSION"
       ;;
+    "pip")
+      # pip exits with $TEST_PIP_EXIT_CODE
+      echo "python3 $@"
+      if [ -n "${TEST_PIP_FAIL-}" ]; then
+        exit 1
+      fi
+      ;;
     *)
       # everything else just prints the command
       echo "python3 $@"
@@ -98,4 +105,13 @@ _setup_tmp_dependency_file() {
 
   [ "$status" -eq 0 ]
   [[ "$output" =~ "git commit --allow-empty -m prepare next development iteration" ]]
+}
+
+@test "get-ver throws error when setuptools-scm is not installed" {
+  export TEST_PIP_FAIL=1
+
+  run bin/release-helper.sh get-ver
+  echo "output = ${output}"
+  [ "$status" -eq 1 ]
+  [[ "$output" =~ "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'" ]]
 }
