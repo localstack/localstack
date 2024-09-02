@@ -8,9 +8,9 @@ attrs==24.2.0
     # via localstack-twisted
 awscrt==0.21.2
     # via localstack-core (pyproject.toml)
-boto3==1.35.5
+boto3==1.35.10
     # via localstack-core (pyproject.toml)
-botocore==1.35.5
+botocore==1.35.10
     # via
     #   boto3
     #   localstack-core (pyproject.toml)

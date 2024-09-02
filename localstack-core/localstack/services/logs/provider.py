@@ -18,6 +18,7 @@ from localstack.aws.api.logs import (
     DescribeLogGroupsResponse,
     DescribeLogStreamsRequest,
     DescribeLogStreamsResponse,
+    Entity,
     InputLogEvents,
     InvalidParameterException,
     KmsKeyId,
@@ -60,6 +61,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_stream_name: LogStreamName,
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
+        entity: Entity = None,
         **kwargs,
     ) -> PutLogEventsResponse:
         logs_backend = get_moto_logs_backend(context.account_id, context.region)
