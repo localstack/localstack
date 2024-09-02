@@ -722,6 +722,9 @@ SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
 # Absolute path to a custom certificate (pem file)
 CUSTOM_SSL_CERT_PATH = os.environ.get("CUSTOM_SSL_CERT_PATH", "").strip()
 
+# Whether delete the cached signed SSL certificate at startup
+REMOVE_SSL_CERT = is_env_true("REMOVE_SSL_CERT")
+
 # Allow non-standard AWS regions
 ALLOW_NONSTANDARD_REGIONS = is_env_true("ALLOW_NONSTANDARD_REGIONS")
 if ALLOW_NONSTANDARD_REGIONS:
@@ -1258,6 +1261,7 @@ CONFIG_ENV_VARS = [
     "PERSISTENCE",
     "PORTS_CHECK_DOCKER_IMAGE",
     "REQUESTS_CA_BUNDLE",
+    "REMOVE_SSL_CERT",
     "S3_SKIP_SIGNATURE_VALIDATION",
     "S3_SKIP_KMS_KEY_VALIDATION",
     "SERVICES",
