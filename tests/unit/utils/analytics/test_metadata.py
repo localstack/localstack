@@ -64,9 +64,9 @@ def test_get_session_id_cache_not_process_local():
         ("pro", ".pro-version"),
         ("community", ".community-version"),
         ("azure-alpha", ".azure-alpha-version"),
-        (None, "non-hidden-version"),
-        (None, ".hidden-file"),
-        (None, "not-a-version-file"),
+        ("unknown", "non-hidden-version"),
+        ("unknown", ".hidden-file"),
+        ("unknown", "not-a-version-file"),
     ],
 )
 def test_get_localstack_edition(expected_edition, version_file):

@@ -106,7 +106,7 @@ def get_machine_id() -> str:
     return doc["machine_id"]
 
 
-def get_localstack_edition() -> Optional[str]:
+def get_localstack_edition() -> str:
     # Generator expression to find the first hidden file ending with '-version'
     version_file = next(
         (
@@ -117,8 +117,8 @@ def get_localstack_edition() -> Optional[str]:
         None,
     )
 
-    # Return the base name of the version file, or None if no file is found
-    return version_file.removesuffix("-version").removeprefix(".") if version_file else None
+    # Return the base name of the version file, or unknown if no file is found
+    return version_file.removesuffix("-version").removeprefix(".") if version_file else "unknown"
 
 
 def is_license_activated() -> bool:
