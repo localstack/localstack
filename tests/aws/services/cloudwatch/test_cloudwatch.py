@@ -658,7 +658,10 @@ class TestCloudwatch:
         snapshot.match("describe_alarms", describe_alarms)
         alarm = describe_alarms["MetricAlarms"][0]
         alarm_arn = alarm["AlarmArn"]
+        list_tags_for_resource = aws_client.cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        snapshot.match("list_tags_for_resource_empty ", list_tags_for_resource)
 
+        # add tags
         tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
         response = aws_client.cloudwatch.tag_resource(ResourceARN=alarm_arn, Tags=tags)
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
