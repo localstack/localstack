@@ -107,7 +107,7 @@ class CustomEntryPointConfigurator:
 
 class SourceVolumeMountConfigurator:
     """
-    Mounts source code of localstack, localstack_ext, and moto into the container. It does this by assuming
+    Mounts source code of localstack, localsack_ext, and moto into the container. It does this by assuming
     that there is a "workspace" directory in which the source repositories are checked out into.
     Depending on whether we want to start the pro container, the source paths for localstack are different.
     """
