@@ -30,6 +30,10 @@ DimensionsKey = str
 DimensionsValue = str
 DynamicTokenPosition = int
 EncryptionKey = str
+EntityAttributesKey = str
+EntityAttributesValue = str
+EntityKeyAttributesKey = str
+EntityKeyAttributesValue = str
 EventId = str
 EventMessage = str
 EventsLimit = int
@@ -122,6 +126,16 @@ class DeliveryDestinationType(StrEnum):
 class Distribution(StrEnum):
     Random = "Random"
     ByLogStream = "ByLogStream"
+
+
+class EntityRejectionErrorType(StrEnum):
+    InvalidEntity = "InvalidEntity"
+    InvalidTypeValue = "InvalidTypeValue"
+    InvalidKeyAttributes = "InvalidKeyAttributes"
+    InvalidAttributes = "InvalidAttributes"
+    EntitySizeTooLarge = "EntitySizeTooLarge"
+    UnsupportedLogGroupType = "UnsupportedLogGroupType"
+    MissingRequiredFields = "MissingRequiredFields"
 
 
 class EvaluationFrequency(StrEnum):
@@ -928,6 +942,15 @@ class DisassociateKmsKeyRequest(ServiceRequest):
     resourceIdentifier: Optional[ResourceIdentifier]
 
 
+EntityAttributes = Dict[EntityAttributesKey, EntityAttributesValue]
+EntityKeyAttributes = Dict[EntityKeyAttributesKey, EntityKeyAttributesValue]
+
+
+class Entity(TypedDict, total=False):
+    keyAttributes: Optional[EntityKeyAttributes]
+    attributes: Optional[EntityAttributes]
+
+
 EventNumber = int
 ExtractedValues = Dict[Token, Value]
 InputLogStreamNames = List[LogStreamName]
@@ -1282,6 +1305,11 @@ class PutLogEventsRequest(ServiceRequest):
     logStreamName: LogStreamName
     logEvents: InputLogEvents
     sequenceToken: Optional[SequenceToken]
+    entity: Optional[Entity]
+
+
+class RejectedEntityInfo(TypedDict, total=False):
+    errorType: EntityRejectionErrorType
 
 
 class RejectedLogEventsInfo(TypedDict, total=False):
@@ -1293,6 +1321,7 @@ class RejectedLogEventsInfo(TypedDict, total=False):
 class PutLogEventsResponse(TypedDict, total=False):
     nextSequenceToken: Optional[SequenceToken]
     rejectedLogEventsInfo: Optional[RejectedLogEventsInfo]
+    rejectedEntityInfo: Optional[RejectedEntityInfo]
 
 
 class PutMetricFilterRequest(ServiceRequest):
@@ -1992,6 +2021,7 @@ class LogsApi:
         log_stream_name: LogStreamName,
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
+        entity: Entity = None,
         **kwargs,
     ) -> PutLogEventsResponse:
         raise NotImplementedError
