@@ -2470,6 +2470,13 @@ class TestS3:
         snapshot.match("obj-success", get_obj_all_positive)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=[
+            # moto adds AllUsers READ, inherits from the bucket, wrong behavior
+            "$.permission-acl-key0.Grants",
+        ],
+    )
     def test_s3_multipart_upload_acls(
         self, s3_bucket, allow_bucket_acl, s3_multipart_upload, snapshot, aws_client
     ):
@@ -2678,7 +2685,11 @@ class TestS3:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,
-        paths=["$..ServerSideEncryption"],
+        paths=[
+            "$..ServerSideEncryption",
+            # moto does not add LogDelivery WRITE
+            "$.get-object-acp-acl.Grants",
+        ],
     )
     def test_s3_object_acl(self, s3_bucket, allow_bucket_acl, snapshot, aws_client):
         # loosely based on
