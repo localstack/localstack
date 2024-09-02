@@ -751,7 +751,7 @@ ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
 # Feature flag to enable validation of internal endpoint responses in the handler chain. For test use only.
 OPENAPI_VALIDATE_RESPONSE = is_env_true("OPENAPI_VALIDATE_RESPONSE")
 # Flag to enable the validation of the requests made to the LocalStack internal endpoints. Active by default.
-OPENAPI_VALIDATE_REQUEST = is_env_not_false("OPENAPI_VALIDATE_REQUEST")
+OPENAPI_VALIDATE_REQUEST = is_env_true("OPENAPI_VALIDATE_REQUEST")
 
 # Fallback partition to use if not possible to determine from ARN region.
 # Applicable only when ARN partition rewriting is enabled.
