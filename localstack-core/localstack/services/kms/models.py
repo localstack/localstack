@@ -313,6 +313,20 @@ class KmsKey:
             self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv, ciphertext.tag, aad
         )
 
+    def decrypt_rsa(self, encrypted: bytes) -> bytes:
+        private_key = crypto_serialization.load_der_private_key(
+            self.crypto_key.private_key, password=None, backend=default_backend()
+        )
+        decrypted = private_key.decrypt(
+            encrypted,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+        return decrypted
+
     def sign(
         self, data: bytes, message_type: MessageType, signing_algorithm: SigningAlgorithmSpec
     ) -> bytes:

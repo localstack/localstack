@@ -584,6 +584,41 @@ class TestKMS:
         )["Plaintext"]
         assert base64.b64decode(plaintext) == message
 
+    @pytest.mark.parametrize(
+        "key_spec,algo",
+        [
+            ("RSA_2048", "RSAES_OAEP_SHA_1"),
+            ("RSA_2048", "RSAES_OAEP_SHA_256"),
+            ("RSA_3072", "RSAES_OAEP_SHA_1"),
+            ("RSA_3072", "RSAES_OAEP_SHA_256"),
+            ("RSA_4096", "RSAES_OAEP_SHA_1"),
+            ("RSA_4096", "RSAES_OAEP_SHA_256"),
+        ],
+    )
+    @markers.aws.validated
+    def test_symmetric_encrypt_offline_decrypt_online(
+        self, kms_create_key, key_spec, algo, aws_client
+    ):
+        key = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)
+        response = aws_client.kms.get_public_key(KeyId=key["KeyId"])
+
+        pub_key = response.get("PublicKey")
+
+        public_key = load_der_public_key(pub_key)
+        message = b"test message 123 !%$@ 1234567890"
+        ciphertext = public_key.encrypt(
+            base64.b64encode(message),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+        plaintext = aws_client.kms.decrypt(
+            KeyId=key["KeyId"], CiphertextBlob=ciphertext, EncryptionAlgorithm=algo
+        )["Plaintext"]
+        assert base64.b64decode(plaintext) == message
+
     @markers.aws.validated
     @pytest.mark.parametrize(
         "key_spec,algo",
