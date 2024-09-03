@@ -17355,5 +17355,112 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_name_and_qualifier_validation[function_name_and_qualifier_too_long-create_function]": {
     "recorded-date": "22-08-2024, 15:10:45",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_self_managed": {
+    "recorded-date": "03-09-2024, 20:58:29",
+    "recorded-content": {
+      "missing-source-access-configuration": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Required 'sourceAccessConfigurations' parameter is missing."
+        },
+        "Type": "User",
+        "message": "Required 'sourceAccessConfigurations' parameter is missing.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "event-source-mapping-default": {
+        "BatchSize": 100,
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "SelfManagedEventSource": {
+          "Endpoints": {
+            "KAFKA_BOOTSTRAP_SERVERS": [
+              "kafka:1000"
+            ]
+          }
+        },
+        "SelfManagedKafkaEventSourceConfig": {
+          "ConsumerGroupId": "<uuid:1>"
+        },
+        "SourceAccessConfigurations": [
+          {
+            "Type": "BASIC_AUTH",
+            "URI": "arn:<partition>:secretsmanager:<region>:111111111111:secret:<resource:2>"
+          }
+        ],
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "Topics": [
+          "topic"
+        ],
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "duplicate-source": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "An event source mapping with event source (\"kafka:1000\"), function (\"arn:<partition>:lambda:<region>:111111111111:function:<resource:1>\"), topics (\"topic\") already exists. Please update or delete the existing mapping with UUID <uuid:1>"
+        },
+        "Type": "User",
+        "message": "An event source mapping with event source (\"kafka:1000\"), function (\"arn:<partition>:lambda:<region>:111111111111:function:<resource:1>\"), topics (\"topic\") already exists. Please update or delete the existing mapping with UUID <uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "event-source-mapping-values": {
+        "BatchSize": 1,
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "SelfManagedEventSource": {
+          "Endpoints": {
+            "KAFKA_BOOTSTRAP_SERVERS": [
+              "kafka:1000"
+            ]
+          }
+        },
+        "SelfManagedKafkaEventSourceConfig": {
+          "ConsumerGroupId": "random_id"
+        },
+        "SourceAccessConfigurations": [
+          {
+            "Type": "BASIC_AUTH",
+            "URI": "arn:<partition>:secretsmanager:<region>:111111111111:secret:<resource:2>"
+          }
+        ],
+        "StartingPosition": "LATEST",
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "Topics": [
+          "topic_2"
+        ],
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "multiple-duplicate-source": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "An event source mapping with event source (\"kafka:1000,kafka:2000\"), function (\"arn:<partition>:lambda:<region>:111111111111:function:<resource:1>\"), topics (\"topic\") already exists. Please update or delete the existing mapping with UUID <uuid:1>"
+        },
+        "Type": "User",
+        "message": "An event source mapping with event source (\"kafka:1000,kafka:2000\"), function (\"arn:<partition>:lambda:<region>:111111111111:function:<resource:1>\"), topics (\"topic\") already exists. Please update or delete the existing mapping with UUID <uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
   }
 }
