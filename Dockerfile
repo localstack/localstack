@@ -164,11 +164,6 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # Set up Java
 ENV JAVA_HOME /usr/lib/localstack/java/11
-RUN { \
-        echo '#!/bin/sh'; echo 'set -e'; echo; \
-        echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
-    } > /usr/local/bin/docker-java-home \
-    && chmod +x /usr/local/bin/docker-java-home
 RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
 ENV PATH="${PATH}:${JAVA_HOME}/bin"
 
