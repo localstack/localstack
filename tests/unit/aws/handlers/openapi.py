@@ -1,11 +1,18 @@
 import json
 
+import pytest
 from rolo import Request, Response
 from rolo.gateway import RequestContext
 from rolo.gateway.handlers import EmptyResponseHandler
 
+from localstack import config
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.validation import OpenAPIRequestValidator
+
+
+@pytest.fixture(autouse=True)
+def enable_validation_flag(monkeypatch):
+    monkeypatch.setattr(config, "OPENAPI_VALIDATE_REQUEST", "1")
 
 
 class TestOpenAPIRequestValidator:
@@ -56,6 +63,27 @@ class TestOpenAPIRequestValidator:
         # We leave this case to the last handler in the request handler chain.
         assert response.status_code == 404
         assert response.data == b'{"message": "Not Found"}'
+
+    def test_both_validation_and_server_error(self):
+        # Request with invalid host and body validation error
+        chain = HandlerChain([OpenAPIRequestValidator()])
+        context = RequestContext(
+            Request(
+                path="/_localstack/config",
+                method="POST",
+                body=json.dumps({"variable": "", "value": "BAZ"}),
+                scheme="http",
+                headers={
+                    "Host": "unknown:4566",
+                    "Content-Type": "application/json",
+                },
+            )
+        )
+        response = Response()
+        chain.handle(context=context, response=response)
+        assert response.status_code == 400
+        assert response.json["error"] == "Bad Request"
+        assert response.json["message"] == "Request body validation error"
 
     def test_body_validation_errors(self):
         body = {"variable": "FOO", "value": "BAZ"}

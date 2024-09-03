@@ -27,14 +27,20 @@ LOG = logging.getLogger(__name__)
 oas_path = os.path.join(os.path.dirname(__file__), "..", "..", "openapi.yaml")
 
 
-class OpenAPIRequestValidator(Handler):
+class OpenAPIValidator(Handler):
+    openapi: "OpenAPI"
+
+    def __init__(self) -> None:
+        path = Path(oas_path)
+        assert path.exists()
+        self.openapi = OpenAPI.from_path(path)
+
+
+class OpenAPIRequestValidator(OpenAPIValidator):
     """
     Validates the requests to the LocalStack public endpoints (the ones with a _localstack or _aws prefix) against
     a OpenAPI specification.
     """
-
-    def __init__(self):
-        self.openapi = OpenAPI.from_path(Path(oas_path))
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if not config.OPENAPI_VALIDATE_REQUEST:
@@ -50,17 +56,16 @@ class OpenAPIRequestValidator(Handler):
                 response.status_code = 400
                 response.set_json({"error": "Bad Request", "message": str(e)})
                 chain.stop()
-            except OpenAPIError as e:
+            except OpenAPIError:
                 # Other errors can be raised when validating a request against the OpenAPI specification.
                 #   The most common are: ServerNotFound, OperationNotFound, or PathNotFound.
                 #   We explicitly do not check any other error but RequestValidationError ones.
-                LOG.debug("OpenAPI validation exception: (%s): %s", e.__class__.__name__, str(e))
+                #   We shallow the exception to avoid excessive logging (e.g., a lot of ServerNotFound), as the only
+                #   purpose of this handler is to check for request validation errors.
+                pass
 
 
-class OpenAPIResponseValidator(Handler):
-    def __init__(self):
-        self.openapi = OpenAPI.from_path(Path(oas_path))
-
+class OpenAPIResponseValidator(OpenAPIValidator):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # We are more lenient in validating the responses. The use of this flag is intended for test.
         if not config.OPENAPI_VALIDATE_RESPONSE:
@@ -68,7 +73,7 @@ class OpenAPIResponseValidator(Handler):
 
         path = context.request.path
 
-        if path.startswith(INTERNAL_RESOURCE_PATH) or path.startswith("/_aws/"):
+        if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
             try:
                 self.openapi.validate_response(
                     WerkzeugOpenAPIRequest(context.request),

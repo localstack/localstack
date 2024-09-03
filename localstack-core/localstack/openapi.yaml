@@ -13,10 +13,12 @@ externalDocs:
   description: LocalStack Documentation
   url: https://docs.localstack.cloud
 servers:
-  - url: http://localhost.localstack.cloud:{port}
+  - url: http://{host}:{port}
     variables:
       port:
         default: '4566'
+      host:
+        default: 'localhost.localstack.cloud'
 components:
   parameters:
     SesMessageId:
