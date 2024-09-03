@@ -135,7 +135,7 @@ class InfoResource:
 
         return {
             "version": client_metadata.version,
-            "edition": get_localstack_edition(),
+            "edition": get_localstack_edition() or "unknown",
             "is_license_activated": is_license_activated(),
             "session_id": client_metadata.session_id,
             "machine_id": client_metadata.machine_id,
