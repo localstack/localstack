@@ -58,13 +58,13 @@ cachetools==5.5.0
     #   localstack-core (pyproject.toml)
 cbor2==5.6.4
     # via localstack-core
-certifi==2024.7.4
+certifi==2024.8.30
     # via
     #   opensearch-py
     #   requests
 cffi==1.17.0
     # via cryptography
-cfn-lint==1.10.3
+cfn-lint==1.11.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -145,7 +145,7 @@ jpype1==1.5.0
     # via localstack-core (pyproject.toml)
 json5==0.9.25
     # via localstack-core (pyproject.toml)
-jsondiff==2.2.0
+jsondiff==2.2.1
     # via moto-ext
 jsonpatch==1.33
     # via
@@ -348,7 +348,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==7.0.2
+zope-interface==7.0.3
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
