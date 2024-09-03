@@ -631,7 +631,7 @@ def map_alias_out(alias: "VersionAlias", function: "Function") -> AliasConfigura
     )
 
 
-def validate_and_set_batch_size(event_source_arn: str, batch_size: Optional[int] = None) -> int:
+def validate_and_set_batch_size(service: str, batch_size: Optional[int] = None) -> int:
     min_batch_size = 1
 
     BATCH_SIZE_RANGES = {
@@ -642,10 +642,7 @@ def validate_and_set_batch_size(event_source_arn: str, batch_size: Optional[int]
         "sqs": (10, 10_000),
         "mq": (100, 10_000),
     }
-    svc = event_source_arn.split(":")[2]  # arn:<parition>:<svc>:<region>:...
-    if svc == "sqs" and "fifo" in event_source_arn:
-        svc = "sqs-fifo"
-    svc_range = BATCH_SIZE_RANGES.get(svc)
+    svc_range = BATCH_SIZE_RANGES.get(service)
 
     if svc_range:
         default_batch_size, max_batch_size = svc_range

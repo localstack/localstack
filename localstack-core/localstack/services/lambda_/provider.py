@@ -8,7 +8,7 @@ import os
 import re
 import threading
 import time
-from typing import IO, Optional, Tuple
+from typing import IO, Any, Optional, Tuple
 
 from localstack import config
 from localstack.aws.api import RequestContext, ServiceException, handler
@@ -1805,9 +1805,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: find a better abstraction to create these
         params = request.copy()
         params.pop("FunctionName")
-        batch_size = api_utils.validate_and_set_batch_size(
-            request["EventSourceArn"], request.get("BatchSize")
-        )
+        if not (service_type := self.get_source_type_from_request(request)):
+            raise InvalidParameterValueException("Unrecognized event source.")
+
+        batch_size = api_utils.validate_and_set_batch_size(service_type, request.get("BatchSize"))
         params["FunctionArn"] = fn_arn
         params["BatchSize"] = batch_size
         params["UUID"] = new_uuid
@@ -1815,13 +1816,30 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         params["LastModified"] = api_utils.generate_lambda_date()
         params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
         params["State"] = "Enabled"
-        if "sqs" in request["EventSourceArn"]:
+        if "sqs" in service_type:
             params["StateTransitionReason"] = "USER_INITIATED"
             if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
                 raise InvalidParameterValueException(
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
                     Type="User",
                 )
+        elif service_type == "kafka":
+            params["StartingPosition"] = request.get("StartingPosition", "TRIM_HORIZON")
+            params["StateTransitionReason"] = "USER_INITIATED"
+            params["LastProcessingResult"] = "No records processed"
+            consumer_group = {"ConsumerGroupId": new_uuid}
+            if request.get("SelfManagedEventSource"):
+                params["SelfManagedKafkaEventSourceConfig"] = request.get(
+                    "SelfManagedKafkaEventSourceConfig", consumer_group
+                )
+            else:
+                params["AmazonManagedKafkaEventSourceConfig"] = request.get(
+                    "AmazonManagedKafkaEventSourceConfig", consumer_group
+                )
+
+            params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds")
+            # Not available for kafka
+            del params["FunctionResponseTypes"]
         else:
             # afaik every other one currently is a stream
             params["StateTransitionReason"] = "User action"
@@ -1858,11 +1876,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         service = None
         if "SelfManagedEventSource" in request:
             service = "kafka"
+            if "SourceAccessConfigurations" not in request:
+                raise InvalidParameterValueException(
+                    "Required 'sourceAccessConfigurations' parameter is missing.", Type="User"
+                )
         if service is None and "EventSourceArn" not in request:
             raise InvalidParameterValueException("Unrecognized event source.", Type="User")
         if service is None:
             service = extract_service_from_arn(request["EventSourceArn"])
-        if service in ["dynamodb", "kinesis", "kafka"] and "StartingPosition" not in request:
+        if service in ["dynamodb", "kinesis"] and "StartingPosition" not in request:
             raise InvalidParameterValueException(
                 "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
                 Type="User",
@@ -1897,13 +1919,24 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         else:
             fn_arn = api_utils.unqualified_lambda_arn(function_name, account, region)
+
+        def _get_mapping_sources(mapping: dict[str, Any]) -> list[str]:
+            if event_source_arn := mapping.get("EventSourceArn"):
+                return [event_source_arn]
+            return (
+                mapping.get("SelfManagedEventSource", {})
+                .get("Endpoints", {})
+                .get("KAFKA_BOOTSTRAP_SERVERS", [])
+            )
+
         # check for event source duplicates
         # TODO: currently validated for sqs, kinesis, and dynamodb
         service_id = load_service(service).service_id
         for uuid, mapping in state.event_source_mappings.items():
-            if (
-                mapping["FunctionArn"] == fn_arn
-                and mapping["EventSourceArn"] == request["EventSourceArn"]
+            mapping_sources = _get_mapping_sources(mapping)
+            request_sources = _get_mapping_sources(request)
+            if mapping["FunctionArn"] == fn_arn and (
+                set(mapping_sources).intersection(request_sources)
             ):
                 if service == "sqs":
                     # *shakes fist at SQS*
@@ -1913,6 +1946,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         f"existing mapping with UUID {uuid}",
                         Type="User",
                     )
+                elif service == "kafka":
+                    if set(mapping["Topics"]).intersection(request["Topics"]):
+                        raise ResourceConflictException(
+                            f'An event source mapping with event source ("{",".join(request_sources)}"), '
+                            f'function ("{fn_arn}"), '
+                            f'topics ("{",".join(request["Topics"])}") already exists. Please update or delete the '
+                            f"existing mapping with UUID {uuid}",
+                            Type="User",
+                        )
                 else:
                     raise ResourceConflictException(
                         f'The event source arn (" {mapping["EventSourceArn"]} ") and function '
@@ -1957,6 +1999,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # normalize values to overwrite
         event_source_mapping = old_event_source_mapping | request_data
 
+        if not (service_type := self.get_source_type_from_request(event_source_mapping)):
+            # TODO validate this error
+            raise InvalidParameterValueException("Unrecognized event source.")
+
         if function_name_or_arn:
             # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
             account_id, region = api_utils.get_account_and_region(function_name_or_arn, context)
@@ -1978,9 +2024,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             event_source_mapping["State"] = esm_state
 
         if request.get("BatchSize"):
-            batch_size = api_utils.validate_and_set_batch_size(
-                event_source_mapping["EventSourceArn"], request["BatchSize"]
-            )
+            batch_size = api_utils.validate_and_set_batch_size(service_type, request["BatchSize"])
             if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
                 raise InvalidParameterValueException(
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
@@ -2113,6 +2157,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             max_items,
         )
         return ListEventSourceMappingsResponse(EventSourceMappings=page, NextMarker=token)
+
+    def get_source_type_from_request(self, request: dict[str, Any]) -> str:
+        if event_source_arn := request.get("EventSourceArn", ""):
+            service = extract_service_from_arn(event_source_arn)
+            if service == "sqs" and "fifo" in event_source_arn:
+                service = "sqs-fifo"
+            return service
+        elif request.get("SelfManagedEventSource"):
+            return "kafka"
 
     # =======================================
     # ============ FUNCTION URLS ============
