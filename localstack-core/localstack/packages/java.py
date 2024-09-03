@@ -2,6 +2,8 @@ import logging
 import os
 from typing import List
 
+import requests
+
 from localstack.packages import InstallTarget, Package
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
 from localstack.utils.files import rm_rf
@@ -28,28 +30,16 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def __init__(self, version: str):
         super().__init__("java", version, extract_single_directory=True)
 
-        self.semver = JAVA_VERSIONS[version]
-
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(install_dir, self._get_archive_subdir())
 
     def _get_download_url(self) -> str:
-        os = "linux" if is_linux() else "mac" if is_mac_os() else None
-        arch = (
-            "x64" if get_arch() == Arch.amd64 else "aarch64" if get_arch() == Arch.arm64 else None
-        )
-
-        tag_slug = f"jdk-{self.semver}"
-        semver_safe = self.semver.replace("+", "_")
-
-        # v8 uses a different tag and version scheme
-        if self.version == "8":
-            semver_safe = semver_safe.replace("-", "")
-            tag_slug = f"jdk{self.semver}"
-
-        return JDK_DOWNLOAD_URL.format(
-            version=self.version, tag_slug=tag_slug, os=os, arch=arch, semver_safe=semver_safe
-        )
+        try:
+            LOG.debug("Determining the latest Java version")
+            return self.download_url_latest_release()
+        except Exception as exc:  # noqa
+            LOG.debug("Unable to determine the latest Java version. Using pinned versions: %s", exc)
+            return self.download_url_fallback()
 
     def _get_archive_subdir(self) -> str | None:
         return ""
@@ -94,6 +84,36 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
     def get_java_home(self) -> str:
         return self.get_installed_dir()
+
+    def download_url_latest_release(self) -> str:
+        """
+        Return the download URL for latest stable JDK build.
+        """
+        endpoint = f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?os=linux&architecture=x64&image_type=jdk"
+        response = requests.get(endpoint, headers={"user-agent": "example/0.0.0"}).json()
+        return response[0]["binary"]["package"]["link"]
+
+    def download_url_fallback(self) -> str:
+        """
+        Return the download URL for pinned JDK build.
+        """
+        os = "linux" if is_linux() else "mac" if is_mac_os() else None
+        arch = (
+            "x64" if get_arch() == Arch.amd64 else "aarch64" if get_arch() == Arch.arm64 else None
+        )
+
+        semver = JAVA_VERSIONS[self.version]
+        tag_slug = f"jdk-{semver}"
+        semver_safe = semver.replace("+", "_")
+
+        # v8 uses a different tag and version scheme
+        if self.version == "8":
+            semver_safe = semver_safe.replace("-", "")
+            tag_slug = f"jdk{semver}"
+
+        return JDK_DOWNLOAD_URL.format(
+            version=self.version, tag_slug=tag_slug, os=os, arch=arch, semver_safe=semver_safe
+        )
 
 
 class JavaPackage(Package):
