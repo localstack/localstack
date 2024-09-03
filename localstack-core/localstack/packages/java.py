@@ -31,7 +31,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         super().__init__("java", version, extract_single_directory=True)
 
     def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, self._get_archive_subdir())
+        return os.path.join(install_dir, "bin/java")
 
     def _get_download_url(self) -> str:
         try:
@@ -40,9 +40,6 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         except Exception as exc:  # noqa
             LOG.debug("Unable to determine the latest Java version. Using pinned versions: %s", exc)
             return self.download_url_fallback()
-
-    def _get_archive_subdir(self) -> str | None:
-        return ""
 
     def _post_process(self, target: InstallTarget) -> None:
         target_directory = self._get_install_dir(target)
