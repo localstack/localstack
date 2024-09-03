@@ -7,7 +7,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -15,7 +15,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -27,7 +27,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -45,7 +45,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -200,7 +200,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -208,7 +208,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -220,7 +220,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -238,7 +238,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -393,7 +393,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -401,7 +401,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -413,7 +413,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -431,7 +431,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -586,7 +586,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -594,7 +594,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -606,7 +606,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -624,7 +624,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -779,7 +779,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -787,7 +787,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -799,7 +799,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -817,7 +817,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -972,7 +972,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -980,7 +980,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -992,7 +992,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -1010,7 +1010,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -1165,7 +1165,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "HelloWorld!",
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -1173,7 +1173,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1185,7 +1185,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "HelloWorld!",
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -1213,7 +1213,7 @@
                     "StringValue": "World!"
                   }
                 },
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "HelloWorld!"
               },
               "region": "<region>",
@@ -1366,7 +1366,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -1374,7 +1374,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1386,7 +1386,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -1404,7 +1404,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -1464,7 +1464,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "HelloWorld",
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -1472,7 +1472,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1484,7 +1484,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "HelloWorld",
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -1512,7 +1512,7 @@
                     "StringValue": "World!"
                   }
                 },
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "HelloWorld"
               },
               "region": "<region>",
@@ -1671,13 +1671,13 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "HelloWorld",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
           "MessageAttributes": {
             "my_attribute_no_2": {
               "Type": "String",
@@ -1700,7 +1700,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "\"HelloWorld\"",
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -1708,7 +1708,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1720,7 +1720,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "\"HelloWorld\"",
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -1748,7 +1748,7 @@
                     "StringValue": "World!"
                   }
                 },
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "\"HelloWorld\""
               },
               "region": "<region>",
@@ -1907,13 +1907,13 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "\"HelloWorld\"",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
           "MessageAttributes": {
             "my_attribute_no_2": {
               "Type": "String",
@@ -1936,7 +1936,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "{}",
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -1944,7 +1944,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1956,7 +1956,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "{}",
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -1984,7 +1984,7 @@
                     "StringValue": "World!"
                   }
                 },
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": "{}"
               },
               "region": "<region>",
@@ -2143,13 +2143,13 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": {},
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
           "MessageAttributes": {
             "my_attribute_no_2": {
               "Type": "String",
@@ -2172,7 +2172,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {},
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -2180,7 +2180,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2192,7 +2192,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {},
                 "MessageAttributeValue1": "Hello",
                 "MessageAttributeValue2": "World!"
@@ -2220,7 +2220,7 @@
                     "StringValue": "World!"
                   }
                 },
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {}
               },
               "region": "<region>",
@@ -2379,13 +2379,13 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": {},
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
           "MessageAttributes": {
             "my_attribute_no_2": {
               "Type": "String",
@@ -2411,12 +2411,12 @@
                 "Message": {
                   "Message": "HelloWorld!"
                 },
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
               },
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2431,7 +2431,7 @@
                 "Message": {
                   "Message": "HelloWorld!"
                 },
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
               },
               "inputDetails": {
                 "truncated": false
@@ -2446,7 +2446,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 }
@@ -2511,12 +2511,12 @@
                 },
                 "MessageGroupId": "a-group",
                 "MessageDeduplicationId": "dedup-1",
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
               },
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -2533,7 +2533,7 @@
                 },
                 "MessageGroupId": "a-group",
                 "MessageDeduplicationId": "dedup-1",
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
               },
               "inputDetails": {
                 "truncated": false
@@ -2548,7 +2548,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
                 "Message": {
                   "Message": "HelloWorld!"
                 },

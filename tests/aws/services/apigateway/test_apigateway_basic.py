@@ -16,13 +16,14 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.apigateway.helpers import (
-    TAG_KEY_CUSTOM_ID,
     get_resource_for_path,
     get_rest_api_paths,
     host_based_url,
     path_based_url,
 )
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.config import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
@@ -1514,6 +1515,9 @@ def test_apigw_call_api_with_aws_endpoint_url(aws_client, region_name):
     assert isinstance(content.get("item"), list)
 
 
+@pytest.mark.skipif(
+    not in_default_partition(), reason="Test not applicable in non-default partitions"
+)
 @pytest.mark.parametrize("method", ["GET", "ANY"])
 @pytest.mark.parametrize("url_type", [path_based_url, UrlType.HOST_BASED])
 @markers.aws.validated

@@ -7,7 +7,7 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
     Operator,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class BooleanEquals(Operator):
@@ -34,7 +34,7 @@ class BooleanEqualsPath(Operator):
         variable = env.stack.pop()
 
         inp = env.stack[-1]
-        comp_value: bool = JSONPathUtils.extract_json(value, inp)
+        comp_value: bool = extract_json(value, inp)
         if not isinstance(comp_value, bool):
             raise TypeError(f"Expected type bool, but got '{comp_value}' from path '{value}'.")
 

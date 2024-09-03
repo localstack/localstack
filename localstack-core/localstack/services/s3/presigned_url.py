@@ -52,6 +52,7 @@ from localstack.services.s3.utils import (
     is_presigned_url_request,
     uses_host_addressing,
 )
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
@@ -219,7 +220,7 @@ class S3PreSignedURLRequestHandler:
             return self._service.operation_model("GetObject")
 
 
-def get_credentials_from_parameters(parameters: dict) -> PreSignedCredentials:
+def get_credentials_from_parameters(parameters: dict, region: str) -> PreSignedCredentials:
     """
     Extract and retrieves the credentials from the passed signed requests parameters (can be from the query string or
     the form for POST requests)
@@ -239,7 +240,7 @@ def get_credentials_from_parameters(parameters: dict) -> PreSignedCredentials:
         # fallback to the hardcoded value
         access_key_id = DEFAULT_PRE_SIGNED_ACCESS_KEY_ID
 
-    if not (secret_access_key := get_secret_access_key_from_access_key_id(access_key_id)):
+    if not (secret_access_key := get_secret_access_key_from_access_key_id(access_key_id, region)):
         # if we could not retrieve the secret access key, it means the access key was not registered in LocalStack,
         # fallback to hardcoded necessary secret access key
         secret_access_key = DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
@@ -249,19 +250,25 @@ def get_credentials_from_parameters(parameters: dict) -> PreSignedCredentials:
 
 
 @cache
-def get_secret_access_key_from_access_key_id(access_key_id: str) -> Optional[str]:
+def get_secret_access_key_from_access_key_id(access_key_id: str, region: str) -> Optional[str]:
     """
     We need to retrieve the internal secret access key in order to also sign the request on our side to validate it
     For now, we need to access Moto internals, as they are no public APIs to retrieve it for obvious reasons.
     If the AccessKey is not registered, use the default `test` value that was historically used for pre-signed URLs, in
     order to support default use cases
     :param access_key_id: the provided AccessKeyID in the Credentials parameter
+    :param region: the region from the credentials
     :return: the linked secret_access_key to the access_key
     """
-    from moto.iam.models import AccessKey, iam_backends
+    try:
+        from moto.iam.models import AccessKey, iam_backends
+    except ImportError:
+        return
 
     account_id = get_account_id_from_access_key_id(access_key_id)
-    moto_access_key: AccessKey = iam_backends[account_id]["global"].access_keys.get(access_key_id)
+    moto_access_key: AccessKey = iam_backends[account_id][get_partition(region)].access_keys.get(
+        access_key_id
+    )
     if not moto_access_key:
         return
 
@@ -316,7 +323,7 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
     """
     query_parameters = context.request.args
     method = context.request.method
-    credentials = get_credentials_from_parameters(query_parameters)
+    credentials = get_credentials_from_parameters(query_parameters, "us-east-1")
     signing_credentials = Credentials(
         access_key=credentials.access_key_id,
         secret_key=credentials.secret_access_key,
@@ -533,14 +540,14 @@ class S3SigV4SignatureContext:
         self._request_method = context.request.method
         self.missing_signed_headers = []
 
-        credentials = get_credentials_from_parameters(self._query_parameters)
+        region = self._get_region_from_x_amz_credential(self._query_parameters["X-Amz-Credential"])
+        credentials = get_credentials_from_parameters(self._query_parameters, region)
         signing_credentials = ReadOnlyCredentials(
             credentials.access_key_id,
             credentials.secret_access_key,
             credentials.security_token,
         )
         self.credentials = credentials
-        region = self._get_region_from_x_amz_credential(self._query_parameters["X-Amz-Credential"])
         expires = int(self._query_parameters["X-Amz-Expires"])
         self.signature_date = self._query_parameters["X-Amz-Date"]
 
@@ -549,6 +556,9 @@ class S3SigV4SignatureContext:
         self.signed_headers = sig_headers
         self.request_query_string = qs
         self.headers_in_qs = headers_in_qs | sig_headers
+        self.headers_in_qs["Authorization"] = self._get_authorization_header_from_qs(
+            self._query_parameters
+        )
 
         if forwarded_from_virtual_host_addressed_request(self._headers):
             # FIXME: maybe move this so it happens earlier in the chain when using virtual host?
@@ -694,6 +704,18 @@ class S3SigV4SignatureContext:
 
         return split_creds[2]
 
+    @staticmethod
+    def _get_authorization_header_from_qs(parameters: dict) -> str:
+        # See https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html
+        # Recreating the Authorization header from the query string parameters of a pre-signed request
+        authorization_keys = ["X-Amz-Credential", "X-Amz-SignedHeaders", "X-Amz-Signature"]
+        values = [
+            f'{param.removeprefix("X-Amz-")}={parameters[param]}' for param in authorization_keys
+        ]
+
+        authorization = f'{parameters["X-Amz-Algorithm"]}{",".join(values)}'
+        return authorization
+
 
 def add_headers_to_original_request(context: RequestContext, headers: Mapping[str, str]):
     for header, value in headers.items():
@@ -759,7 +781,7 @@ def validate_post_policy(
     except ValueError:
         # this means the policy has been tampered with
         signature = request_form.get("signature") if is_v2 else request_form.get("x-amz-signature")
-        credentials = get_credentials_from_parameters(request_form)
+        credentials = get_credentials_from_parameters(request_form, "us-east-1")
         ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v2(
             request_signature=signature,
             string_to_sign=policy,

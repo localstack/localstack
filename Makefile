@@ -7,6 +7,13 @@ TEST_PATH ?= .
 TEST_EXEC ?= python -m
 PYTEST_LOGLEVEL ?= warning
 
+uname_m := $(shell uname -m)
+ifeq ($(uname_m),x86_64)
+platform = amd64
+else
+platform = arm64
+endif
+
 ifeq ($(OS), Windows_NT)
 	VENV_ACTIVATE = $(VENV_DIR)/Scripts/activate
 else
@@ -65,7 +72,7 @@ install-s3: venv     ## Install dependencies for the localstack runtime for s3-o
 install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run plux to build entry points
-	$(VENV_RUN); python3 -m setup plugins egg_info
+	$(VENV_RUN); python3 -c "from setuptools import setup; setup()" plugins egg_info
 	@# make sure that the entrypoints were correctly created and are non-empty
 	@test -s localstack-core/localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
 
@@ -84,16 +91,16 @@ start:             		  ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
 
 docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
-	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/requirements-test.txt:/opt/code/localstack/requirements-test.txt -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
+	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/.git:/opt/code/localstack/.git -v `pwd`/requirements-test.txt:/opt/code/localstack/requirements-test.txt -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
 		$(IMAGE_NAME):$(DEFAULT_TAG) \
 	    bash -c "make install-test && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=$(PYTEST_LOGLEVEL) PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' LAMBDA_IGNORE_ARCHITECTURE=1 LAMBDA_INIT_POST_INVOKE_WAIT_MS=50 TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' CI='$(CI)' TEST_AWS_REGION_NAME='${TEST_AWS_REGION_NAME}' TEST_AWS_ACCESS_KEY_ID='${TEST_AWS_ACCESS_KEY_ID}' TEST_AWS_ACCOUNT_ID='${TEST_AWS_ACCOUNT_ID}' make test-coverage"
 
 docker-run-tests-s3-only:		  ## Initializes the test environment and runs the tests in a docker container for the S3 only image
 	# TODO: We need node as it's a dependency of the InfraProvisioner at import time, remove when we do not need it anymore
 	# g++ is a workaround to fix the JPype1 compile error on ARM Linux "gcc: fatal error: cannot execute ‘cc1plus’" because the test dependencies include the runtime dependencies.
-	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/requirements-test.txt:/opt/code/localstack/requirements-test.txt -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
+	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/.git:/opt/code/localstack/.git -v `pwd`/requirements-test.txt:/opt/code/localstack/requirements-test.txt -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
 		$(IMAGE_NAME):$(DEFAULT_TAG) \
-	    bash -c "apt-get update && apt-get install -y g++ && make install-test && apt-get install -y --no-install-recommends gnupg && mkdir -p /etc/apt/keyrings && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && echo \"deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main\" > /etc/apt/sources.list.d/nodesource.list && apt-get update && apt-get install -y --no-install-recommends nodejs && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=$(PYTEST_LOGLEVEL) PYTEST_ARGS='$(PYTEST_ARGS)' TEST_PATH='$(TEST_PATH)' TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' CI='$(CI)' make test"
+	    bash -c "apt-get update && apt-get install -y g++ git && make install-test && apt-get install -y --no-install-recommends gnupg && mkdir -p /etc/apt/keyrings && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && echo \"deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main\" > /etc/apt/sources.list.d/nodesource.list && apt-get update && apt-get install -y --no-install-recommends nodejs && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=$(PYTEST_LOGLEVEL) PYTEST_ARGS='$(PYTEST_ARGS)' TEST_PATH='$(TEST_PATH)' TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' CI='$(CI)' make test"
 
 
 docker-cp-coverage:
@@ -129,6 +136,9 @@ format-modified:          ## Run ruff to format only modified code
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
+
+docker-build:
+	IMAGE_NAME=$(IMAGE_NAME) PLATFORM=$(platform) ./bin/docker-helper.sh build
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf .filesystem

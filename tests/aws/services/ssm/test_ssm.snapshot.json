@@ -3,7 +3,7 @@
     "recorded-date": "16-07-2024, 17:17:40",
     "recorded-content": {
       "Parameter": {
-        "ARN": "arn:aws:ssm:<region>:111111111111:parameter/<name:1>",
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<name:1>",
         "DataType": "text",
         "LastModifiedDate": "<datetime>",
         "Name": "<name:1>",

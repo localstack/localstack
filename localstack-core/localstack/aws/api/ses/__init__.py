@@ -29,6 +29,7 @@ FromAddress = str
 HeaderName = str
 HeaderValue = str
 HtmlPart = str
+IAMRoleARN = str
 Identity = str
 MailFromDomainName = str
 Max24HourSend = float
@@ -633,6 +634,7 @@ class S3Action(TypedDict, total=False):
     BucketName: S3BucketName
     ObjectKeyPrefix: Optional[S3KeyPrefix]
     KmsKeyArn: Optional[AmazonResourceName]
+    IamRoleArn: Optional[IAMRoleARN]
 
 
 class ReceiptAction(TypedDict, total=False):
@@ -1144,7 +1146,7 @@ class SendBulkTemplatedEmailRequest(ServiceRequest):
     DefaultTags: Optional[MessageTagList]
     Template: TemplateName
     TemplateArn: Optional[AmazonResourceName]
-    DefaultTemplateData: Optional[TemplateData]
+    DefaultTemplateData: TemplateData
     Destinations: BulkEmailDestinationList
 
 
@@ -1731,6 +1733,7 @@ class SesApi:
         context: RequestContext,
         source: Address,
         template: TemplateName,
+        default_template_data: TemplateData,
         destinations: BulkEmailDestinationList,
         source_arn: AmazonResourceName = None,
         reply_to_addresses: AddressList = None,
@@ -1739,7 +1742,6 @@ class SesApi:
         configuration_set_name: ConfigurationSetName = None,
         default_tags: MessageTagList = None,
         template_arn: AmazonResourceName = None,
-        default_template_data: TemplateData = None,
         **kwargs,
     ) -> SendBulkTemplatedEmailResponse:
         raise NotImplementedError

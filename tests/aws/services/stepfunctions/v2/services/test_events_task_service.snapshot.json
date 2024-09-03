@@ -221,8 +221,8 @@
           "time": "date",
           "region": "<region>",
           "resources": [
-            "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
           ],
           "detail": {
             "Message": "HelloWorld0"
@@ -237,8 +237,8 @@
           "time": "date",
           "region": "<region>",
           "resources": [
-            "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
           ],
           "detail": {
             "Message": "HelloWorld1"
@@ -254,8 +254,8 @@
           "region": "<region>",
           "resources": [
             "<sqs_queue_url>",
-            "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
           ],
           "detail": {
             "Message": "HelloWorld2"
@@ -549,8 +549,8 @@
           "time": "date",
           "region": "<region>",
           "resources": [
-            "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
           ],
           "detail": {
             "Message": "HelloWorld1"
@@ -565,8 +565,8 @@
           "time": "date",
           "region": "<region>",
           "resources": [
-            "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
           ],
           "detail": {
             "Message": "HelloWorld1"

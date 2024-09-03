@@ -4,7 +4,7 @@
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -31,7 +31,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -55,7 +55,7 @@
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -71,7 +71,7 @@
           }
         },
         "event_timestamp": "timestamp",
-        "execution_arn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
         "id": "4",
         "previous_event_id": "3",
         "redrive_count": "0",
@@ -128,7 +128,7 @@
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -139,7 +139,7 @@
           "billedDurationInMilliseconds": 100,
           "billedMemoryUsedInMB": 64
         },
-        "executionArn": "arn:aws:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
         "input": {},
         "inputDetails": {
           "included": true
@@ -152,7 +152,7 @@
           "included": true
         },
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "SUCCEEDED",
         "stopDate": "datetime",
         "ResponseMetadata": {

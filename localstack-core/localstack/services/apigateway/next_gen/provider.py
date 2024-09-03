@@ -40,27 +40,38 @@ from .execute_api.router import ApiGatewayEndpoint, ApiGatewayRouter
 
 class ApigatewayNextGenProvider(ApigatewayProvider):
     router: ApiGatewayRouter
-    route_handler: ApiGatewayEndpoint
 
     def __init__(self, router: ApiGatewayRouter = None):
         # we initialize the route handler with a global store with default account and region, because it only ever
         # access values with CrossAccount attributes
-        store = apigateway_stores[DEFAULT_AWS_ACCOUNT_ID][AWS_REGION_US_EAST_1]
-        route_handler = ApiGatewayEndpoint(store=store)
-        super().__init__(router=router or ApiGatewayRouter(ROUTER, handler=route_handler))
-        self.route_handler = route_handler
+        if not router:
+            store = apigateway_stores[DEFAULT_AWS_ACCOUNT_ID][AWS_REGION_US_EAST_1]
+            route_handler = ApiGatewayEndpoint(store=store)
+            router = ApiGatewayRouter(ROUTER, handler=route_handler)
+
+        super().__init__(router=router)
 
     def on_after_init(self):
         apply_patches()
         self.router.register_routes()
 
+    @handler("DeleteRestApi")
+    def delete_rest_api(self, context: RequestContext, rest_api_id: String, **kwargs) -> None:
+        super().delete_rest_api(context, rest_api_id, **kwargs)
+        store = get_apigateway_store(context=context)
+        api_id_lower = rest_api_id.lower()
+        store.active_deployments.pop(api_id_lower, None)
+        store.internal_deployments.pop(api_id_lower, None)
+
     @handler("CreateStage", expand=False)
     def create_stage(self, context: RequestContext, request: CreateStageRequest) -> Stage:
         response = super().create_stage(context, request)
         store = get_apigateway_store(context=context)
-        store.active_deployments[(request["restApiId"].lower(), request["stageName"])] = request[
-            "deploymentId"
-        ]
+
+        rest_api_id = request["restApiId"].lower()
+        store.active_deployments.setdefault(rest_api_id, {})
+        store.active_deployments[rest_api_id][request["stageName"]] = request["deploymentId"]
+
         return response
 
     @handler("UpdateStage")
@@ -82,7 +93,9 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             if patch_path == "/deploymentId" and patch_operation["op"] == "replace":
                 if deployment_id := patch_operation.get("value"):
                     store = get_apigateway_store(context=context)
-                    store.active_deployments[(rest_api_id.lower(), stage_name)] = deployment_id
+                    store.active_deployments.setdefault(rest_api_id.lower(), {})[stage_name] = (
+                        deployment_id
+                    )
 
         return response
 
@@ -91,7 +104,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     ) -> None:
         call_moto(context)
         store = get_apigateway_store(context=context)
-        store.active_deployments.pop((rest_api_id.lower(), stage_name), None)
+        store.active_deployments[rest_api_id.lower()].pop(stage_name, None)
 
     def create_deployment(
         self,
@@ -122,10 +135,12 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             localstack_rest_api=rest_api_container,
         )
         router_api_id = rest_api_id.lower()
-        store.internal_deployments[(router_api_id, deployment["id"])] = frozen_deployment
+        store.internal_deployments.setdefault(router_api_id, {})[deployment["id"]] = (
+            frozen_deployment
+        )
 
         if stage_name:
-            store.active_deployments[(router_api_id, stage_name)] = deployment["id"]
+            store.active_deployments.setdefault(router_api_id, {})[stage_name] = deployment["id"]
 
         return deployment
 
@@ -134,7 +149,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     ) -> None:
         call_moto(context)
         store = get_apigateway_store(context=context)
-        store.internal_deployments.pop((rest_api_id.lower(), deployment_id), None)
+        store.internal_deployments.get(rest_api_id.lower(), {}).pop(deployment_id, None)
 
     def put_gateway_response(
         self,

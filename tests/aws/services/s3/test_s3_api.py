@@ -1832,3 +1832,160 @@ class TestS3BucketAccelerateConfiguration:
                 AccelerateConfiguration={"Status": "random"},
             )
         snapshot.match("put-bucket-accelerate-config-dot-bucket", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=config.LEGACY_V2_S3_PROVIDER,
+    reason="Not implemented in legacy",
+)
+class TestS3ObjectWritePrecondition:
+    @pytest.fixture(autouse=True)
+    def add_snapshot_transformers(self, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("Bucket"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("VersionId"),
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID"),
+                snapshot.transform.key_value("Name"),
+            ]
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("Location"), priority=-1)
+
+    @markers.aws.validated
+    def test_put_object_if_none_match(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*")
+        snapshot.match("put-obj", put_obj)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*")
+        snapshot.match("put-obj-if-none-match", e.value.response)
+
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("del-obj", del_obj)
+
+        put_obj_after_del = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*")
+        snapshot.match("put-obj-after-del", put_obj_after_del)
+
+    @markers.aws.validated
+    def test_put_object_if_none_match_validation(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition-validation"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("put-obj", put_obj)
+        obj_etag = put_obj["ETag"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch=obj_etag)
+        snapshot.match("put-obj-if-none-match-bad-value", e.value.response)
+
+    @markers.aws.validated
+    def test_multipart_if_none_match_with_delete(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*")
+        snapshot.match("put-obj", put_obj)
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfNoneMatch="*",
+            )
+        snapshot.match("complete-multipart-if-none-match", e.value.response)
+
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("del-obj", del_obj)
+
+        # the previous DeleteObject request was done between the CreateMultipartUpload and completion, so it takes
+        # precedence
+        # you need to restart the whole multipart for it to work
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfNoneMatch="*",
+            )
+        snapshot.match("complete-multipart-after-del", e.value.response)
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+        complete_multipart = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key,
+            MultipartUpload={"Parts": parts},
+            UploadId=upload_id,
+            IfNoneMatch="*",
+        )
+        snapshot.match("complete-multipart-after-del-restart", complete_multipart)
+
+    @markers.aws.validated
+    def test_multipart_if_none_match_with_put(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*")
+        snapshot.match("put-obj", put_obj)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfNoneMatch="*",
+            )
+        snapshot.match("complete-multipart-if-none-match-put-during", e.value.response)
+
+    @markers.aws.validated
+    def test_put_object_if_none_match_versioned_bucket(self, s3_bucket, aws_client, snapshot):
+        #  For buckets with versioning enabled, S3 checks for the presence of a current object version with the same
+        #  name as part of the conditional evaluation. If there is no current object version with the same name, or
+        #  if the current object version is a delete marker, then the write operation succeeds.
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*")
+        snapshot.match("put-obj", put_obj)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*")
+        snapshot.match("put-obj-if-none-match", e.value.response)
+
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("del-obj", del_obj)
+
+        # if the last object is a delete marker, then we can use IfNoneMatch
+        put_obj_after_del = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*")
+        snapshot.match("put-obj-after-del", put_obj_after_del)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-object-versions", list_object_versions)

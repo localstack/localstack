@@ -101,9 +101,17 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
             params["VpcId"] = vpc_id
 
         params["Description"] = model.get("GroupDescription", "")
-        if model.get("Tags"):
-            tags = [{"ResourceType": "security-group", "Tags": model.get("Tags")}]
-            params["TagSpecifications"] = tags
+
+        tags = [
+            {"Key": "aws:cloudformation:logical-id", "Value": request.logical_resource_id},
+            {"Key": "aws:cloudformation:stack-id", "Value": request.stack_id},
+            {"Key": "aws:cloudformation:stack-name", "Value": request.stack_name},
+        ]
+
+        if model_tags := model.get("Tags"):
+            tags += model_tags
+
+        params["TagSpecifications"] = [{"ResourceType": "security-group", "Tags": tags}]
 
         response = ec2.create_security_group(**params)
         model["GroupId"] = response["GroupId"]

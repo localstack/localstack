@@ -5,10 +5,10 @@
       "list_map_runs": {
         "mapRuns": [
           {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-            "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>",
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>",
             "startDate": "start-date",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>/<MapRunArnPart0_0idx>",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>/<MapRunArnPart0_0idx>",
             "stopDate": "stop-date"
           }
         ],
@@ -18,7 +18,7 @@
         }
       },
       "describe_map_run": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
         "executionCounts": {
           "aborted": 0,
           "failed": 0,
@@ -39,7 +39,7 @@
           "timedOut": 0,
           "total": 2
         },
-        "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>",
+        "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>",
         "maxConcurrency": 1,
         "startDate": "start-date",
         "status": "SUCCEEDED",

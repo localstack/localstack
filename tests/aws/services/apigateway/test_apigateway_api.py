@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.apigateway import PutMode
-from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -2498,3 +2498,77 @@ class TestApigatewayIntegration:
                 restApiId=api_id, resourceId=root_resource_id, httpMethod="GET", type="HTTPS_PROXY"
             )
         snapshot.match("put-integration-wrong-type", e.value.response)
+
+    @markers.aws.validated
+    def test_put_integration_response_validation(
+        self, aws_client, apigw_create_rest_api, aws_client_factory, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing PutIntegrationResponse method exc"
+        )
+        api_id = response["id"]
+        root_id = response["rootResourceId"]
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="GET",
+                integrationHttpMethod="GET",
+                type="MOCK",
+                requestTemplates={"application/json": '{"statusCode": 200}'},
+            )
+        snapshot.match("put-integration-wrong-method", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId="badresource",
+                httpMethod="GET",
+                integrationHttpMethod="GET",
+                type="MOCK",
+                requestTemplates={"application/json": '{"statusCode": 200}'},
+            )
+        snapshot.match("put-integration-wrong-resource", e.value.response)
+
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            integrationHttpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=root_id,
+                # put the integrationHttpMethod instead of the `httpMethod` should result in an error
+                httpMethod="GET",
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": json.dumps({})},
+            )
+
+        snapshot.match("put-integration-response-wrong-method", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId="badresource",
+                # put the integrationHttpMethod instead of the `httpMethod` should result in an error
+                httpMethod="GET",
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": json.dumps({})},
+            )
+
+        snapshot.match("put-integration-response-wrong-resource", e.value.response)

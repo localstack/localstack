@@ -13,6 +13,7 @@ from localstack.aws.api.events import (
     TagList,
 )
 from localstack.services.events.models import EventBus, ResourcePolicy, RuleDict, Statement
+from localstack.utils.aws.arns import get_partition
 
 
 class EventBusService:
@@ -106,7 +107,7 @@ class EventBusService:
         if condition and principal != "*":
             raise ValueError("Condition can only be set when principal is '*'")
         if principal != "*":
-            principal = {"AWS": f"arn:aws:iam::{principal}:root"}
+            principal = {"AWS": f"arn:{get_partition(self.event_bus.region)}:iam::{principal}:root"}
         statement = Statement(
             Sid=statement_id,
             Effect="Allow",

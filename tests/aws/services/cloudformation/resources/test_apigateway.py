@@ -295,12 +295,18 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$.resources.items..resourceMethods.GET"  # TODO: this is really weird, after importing, AWS returns them empty?
+        "$.resources.items..resourceMethods.GET",  # TODO: after importing, AWS returns them empty?
+        # TODO: missing from LS response
+        "$.get-stage.createdDate",
+        "$.get-stage.lastUpdatedDate",
+        "$.get-stage.methodSettings",
+        "$.get-stage.tags",
     ]
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(
     deploy_cfn_template, snapshot, aws_client, s3_bucket
 ):
+    snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
     # put the swagger file in S3
     swagger_template = load_file(
         os.path.join(os.path.dirname(__file__), "../../../files/pets.json")
@@ -332,6 +338,9 @@ def test_cfn_deploy_apigateway_from_s3_swagger(
     resources = aws_client.apigateway.get_resources(restApiId=rest_api_id)
     resources["items"] = sorted(resources["items"], key=itemgetter("path"))
     snapshot.match("resources", resources)
+
+    get_stage = aws_client.apigateway.get_stage(restApiId=rest_api_id, stageName="local")
+    snapshot.match("get-stage", get_stage)
 
 
 @markers.aws.validated

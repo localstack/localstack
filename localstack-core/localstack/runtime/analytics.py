@@ -12,6 +12,8 @@ TRACKED_ENV_VAR = [
     "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DISABLE_CORS_CHECK",
     "DISABLE_CORS_HEADERS",
+    "DMS_SERVERLESS_DEPROVISIONING_DELAY",
+    "DMS_SERVERLESS_STATUS_CHANGE_WAITING_TIME",
     "DNS_ADDRESS",
     "DYNAMODB_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
@@ -21,6 +23,8 @@ TRACKED_ENV_VAR = [
     "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "KINESIS_ERROR_PROBABILITY",
     "KMS_PROVIDER",
+    "LAMBDA_DEBUG_MODE",
+    "LAMBDA_DEBUG_MODE_CONFIG_PATH",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
     "LAMBDA_EXECUTOR",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "LAMBDA_STAY_OPEN_MODE",  # Not functional; deprecated in 2.0.0, removed in 3.0.0

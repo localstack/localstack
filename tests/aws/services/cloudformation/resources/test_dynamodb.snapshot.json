@@ -24,7 +24,7 @@
             "ReadCapacityUnits": 5,
             "WriteCapacityUnits": 5
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -73,7 +73,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -84,7 +84,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -121,7 +121,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -132,7 +132,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -174,7 +174,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -240,7 +240,7 @@
             "SSEType": "KMS",
             "Status": "ENABLED"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -284,7 +284,7 @@
           "DeletionProtectionEnabled": false,
           "GlobalSecondaryIndexes": [
             {
-              "IndexArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/index/GSI1",
+              "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/index/GSI1",
               "IndexName": "GSI1",
               "IndexSizeBytes": 0,
               "IndexStatus": "ACTIVE",
@@ -330,7 +330,7 @@
             "SSEType": "KMS",
             "Status": "ENABLED"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableClassSummary": {
             "TableClass": "STANDARD"
           },

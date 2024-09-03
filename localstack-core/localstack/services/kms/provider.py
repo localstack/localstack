@@ -117,7 +117,7 @@ from localstack.services.kms.models import (
 )
 from localstack.services.kms.utils import is_valid_key_arn, parse_key_arn, validate_alias_name
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.arns import kms_alias_arn, parse_arn
+from localstack.utils.aws.arns import get_partition, kms_alias_arn, parse_arn
 from localstack.utils.collections import PaginatedList
 from localstack.utils.common import select_attributes
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -255,7 +255,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         if key_id not in store.keys:
             if not key_arn:
-                key_arn = f"arn:aws:kms:{region_name}:{account_id}:key/{key_id}"
+                key_arn = (
+                    f"arn:{get_partition(region_name)}:kms:{region_name}:{account_id}:key/{key_id}"
+                )
             raise NotFoundException(f"Key '{key_arn}' does not exist")
 
         return key_id
@@ -356,6 +358,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             return account_id, region_name, key_id
 
         return context.account_id, context.region, key_id_or_arn
+
+    @staticmethod
+    def _is_rsa_spec(key_spec: str) -> bool:
+        return key_spec in [KeySpec.RSA_2048, KeySpec.RSA_3072, KeySpec.RSA_4096]
 
     #
     # Operation Handlers
@@ -972,16 +978,25 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # Since LocalStack doesn't currently do asymmetrical encryption, there is a question of modeling here: we
         # currently expect data to be only encrypted with symmetric encryption, so having key_id inside. It might not
         # always be what customers expect.
-        try:
-            ciphertext = deserialize_ciphertext_blob(ciphertext_blob=ciphertext_blob)
-        except Exception:
-            raise InvalidCiphertextException(
-                "LocalStack is unable to deserialize the ciphertext blob. Perhaps the "
-                "blob didn't come from LocalStack"
-            )
-        account_id, region_name, key_id = self._parse_key_id(key_id or ciphertext.key_id, context)
+        if key_id:
+            account_id, region_name, key_id = self._parse_key_id(key_id, context)
+            try:
+                ciphertext = deserialize_ciphertext_blob(ciphertext_blob=ciphertext_blob)
+            except Exception:
+                ciphertext = None
+                pass
+        else:
+            try:
+                ciphertext = deserialize_ciphertext_blob(ciphertext_blob=ciphertext_blob)
+                account_id, region_name, key_id = self._parse_key_id(ciphertext.key_id, context)
+            except Exception:
+                raise InvalidCiphertextException(
+                    "LocalStack is unable to deserialize the ciphertext blob. Perhaps the "
+                    "blob didn't come from LocalStack"
+                )
+
         key = self._get_kms_key(account_id, region_name, key_id)
-        if key.metadata["KeyId"] != ciphertext.key_id:
+        if ciphertext and key.metadata["KeyId"] != ciphertext.key_id:
             raise IncorrectKeyException(
                 "The key ID in the request does not identify a CMK that can perform this operation."
             )
@@ -990,7 +1005,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self._validate_key_state_not_pending_import(key)
 
         try:
-            plaintext = key.decrypt(ciphertext, encryption_context)
+            # TODO: Extend the implementation to handle additional encryption/decryption scenarios
+            # beyond the current support for offline encryption and online decryption using RSA keys if key id exists in
+            # parameters, where `ciphertext_blob` will not be deserializable.
+            if self._is_rsa_spec(key.crypto_key.key_spec) and not ciphertext:
+                plaintext = key.decrypt_rsa(ciphertext_blob)
+            else:
+                plaintext = key.decrypt(ciphertext, encryption_context)
         except InvalidTag:
             raise InvalidCiphertextException()
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always

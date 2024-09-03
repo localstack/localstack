@@ -41,10 +41,11 @@ from localstack.aws.api.kms import (
     SigningAlgorithmSpec,
     UnsupportedOperationException,
 )
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.kms.exceptions import ValidationException
 from localstack.services.kms.utils import is_valid_key_arn
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn
+from localstack.utils.aws.arns import get_partition, kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid, to_bytes, to_str
 
@@ -107,8 +108,6 @@ RESERVED_ALIASES = [
 # list of key names that should be skipped when serializing the encryption context
 IGNORED_CONTEXT_KEYS = ["aws-crypto-public-key"]
 
-# special tag name to allow specifying a custom ID for created keys
-TAG_KEY_CUSTOM_ID = "_custom_id_"
 # special tag name to allow specifying a custom key material for created keys
 TAG_KEY_CUSTOM_KEY_MATERIAL = "_custom_key_material_"
 
@@ -259,7 +258,9 @@ class KmsKey:
         self.tags = {}
         self.add_tags(create_key_request.get("Tags"))
         # Same goes for the policy. It is in the request, but not in the metadata.
-        self.policy = create_key_request.get("Policy") or self._get_default_key_policy(account_id)
+        self.policy = create_key_request.get("Policy") or self._get_default_key_policy(
+            account_id, region
+        )
         # https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html
         # "Automatic key rotation is disabled by default on customer managed keys but authorized users can enable and
         # disable it."
@@ -311,6 +312,20 @@ class KmsKey:
         return decrypt(
             self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv, ciphertext.tag, aad
         )
+
+    def decrypt_rsa(self, encrypted: bytes) -> bytes:
+        private_key = crypto_serialization.load_der_private_key(
+            self.crypto_key.private_key, password=None, backend=default_backend()
+        )
+        decrypted = private_key.decrypt(
+            encrypted,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+        return decrypted
 
     def sign(
         self, data: bytes, message_type: MessageType, signing_algorithm: SigningAlgorithmSpec
@@ -533,7 +548,7 @@ class KmsKey:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
     # The default statement is here:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-default.html#key-policy-default-allow-root-enable-iam
-    def _get_default_key_policy(self, account_id: str) -> str:
+    def _get_default_key_policy(self, account_id: str, region: str) -> str:
         return json.dumps(
             {
                 "Version": "2012-10-17",
@@ -542,7 +557,7 @@ class KmsKey:
                     {
                         "Sid": "Enable IAM User Permissions",
                         "Effect": "Allow",
-                        "Principal": {"AWS": f"arn:aws:iam::{account_id}:root"},
+                        "Principal": {"AWS": f"arn:{get_partition(region)}:iam::{account_id}:root"},
                         "Action": "kms:*",
                         "Resource": "*",
                     }

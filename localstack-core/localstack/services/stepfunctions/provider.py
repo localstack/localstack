@@ -138,6 +138,7 @@ from localstack.services.stepfunctions.stepfunctions_utils import (
 )
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
+    ARN_PARTITION_REGEX,
     stepfunctions_activity_arn,
     stepfunctions_express_execution_arn,
     stepfunctions_standard_execution_arn,
@@ -160,15 +161,15 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         visitor.visit(sfn_stores)
 
     _STATE_MACHINE_ARN_REGEX: Final[re.Pattern] = re.compile(
-        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:stateMachine:[a-zA-Z0-9-_.]+(:\d+)?$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMachine:[a-zA-Z0-9-_.]+(:\d+)?$"
     )
 
     _STATE_MACHINE_EXECUTION_ARN_REGEX: Final[re.Pattern] = re.compile(
-        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:(stateMachine|execution|express):[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)*$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:(stateMachine|execution|express):[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)*$"
     )
 
     _ACTIVITY_ARN_REGEX: Final[re.Pattern] = re.compile(
-        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:activity:[a-zA-Z0-9-_]+$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:activity:[a-zA-Z0-9-_]+$"
     )
 
     @staticmethod
@@ -282,6 +283,36 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             if check:
                 return state_machine
         return None
+
+    def _idempotent_start_execution(
+        self,
+        execution: Optional[Execution],
+        state_machine: StateMachineInstance,
+        name: Name,
+        input_data: SensitiveData,
+    ) -> Optional[Execution]:
+        # StartExecution is idempotent for STANDARD workflows. For a STANDARD workflow,
+        # if you call StartExecution with the same name and input as a running execution,
+        # the call succeeds and return the same response as the original request.
+        # If the execution is closed or if the input is different,
+        # it returns a 400 ExecutionAlreadyExists error. You can reuse names after 90 days.
+
+        if not execution:
+            return None
+
+        match (name, input_data, execution.exec_status, state_machine.sm_type):
+            case (
+                execution.name,
+                execution.input_data,
+                ExecutionStatus.RUNNING,
+                StateMachineType.STANDARD,
+            ):
+                return execution
+
+        raise CommonServiceException(
+            code="ExecutionAlreadyExists",
+            message=f"Execution Already Exists: '{execution.exec_arn}'",
+        )
 
     def _revision_by_name(
         self, context: RequestContext, name: str
@@ -569,8 +600,17 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             # Exhaustive check on STANDARD and EXPRESS type, validated on creation.
             exec_arn = stepfunctions_express_execution_arn(normalised_state_machine_arn, exec_name)
 
-        if exec_arn in self.get_store(context).executions:
-            raise InvalidName()  # TODO
+        if execution := self.get_store(context).executions.get(exec_arn):
+            # Return already running execution if name and input match
+            existing_execution = self._idempotent_start_execution(
+                execution=execution,
+                state_machine=state_machine_clone,
+                name=name,
+                input_data=input_data,
+            )
+
+            if existing_execution:
+                return existing_execution.to_start_output()
 
         # Create the execution logging session, if logging is configured.
         cloud_watch_logging_session = None
@@ -594,6 +634,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             trace_header=trace_header,
             activity_store=self.get_store(context).activities,
         )
+
         self.get_store(context).executions[exec_arn] = execution
 
         execution.start()

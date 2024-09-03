@@ -7,7 +7,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -26,7 +26,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -44,7 +44,7 @@
             "taskScheduledEventDetails": {
               "parameters": {
                 "Input": null,
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
                 "Name": "TestStartTarget"
               },
               "region": "<region>",
@@ -68,7 +68,7 @@
             "id": 5,
             "previousEventId": 4,
             "taskFailedEventDetails": {
-              "cause": "State Machine Does Not Exist: 'arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>' (Service: AWSStepFunctions; Status Code: 400; Error Code: StateMachineDoesNotExist; Request ID: <request_id>; Proxy: null)",
+              "cause": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>' (Service: AWSStepFunctions; Status Code: 400; Error Code: StateMachineDoesNotExist; Request ID: <request_id>; Proxy: null)",
               "error": "StepFunctions.StateMachineDoesNotExistException",
               "resource": "startExecution",
               "resourceType": "states"
@@ -78,7 +78,7 @@
           },
           {
             "executionFailedEventDetails": {
-              "cause": "State Machine Does Not Exist: 'arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>' (Service: AWSStepFunctions; Status Code: 400; Error Code: StateMachineDoesNotExist; Request ID: <request_id>; Proxy: null)",
+              "cause": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>' (Service: AWSStepFunctions; Status Code: 400; Error Code: StateMachineDoesNotExist; Request ID: <request_id>; Proxy: null)",
               "error": "StepFunctions.StateMachineDoesNotExistException"
             },
             "id": 6,

@@ -52,7 +52,7 @@ class Poller(ABC):
         self.aws_region = parse_arn(source_arn)["region"]
         self.source_parameters = source_parameters or {}
         filters = self.source_parameters.get("FilterCriteria", {}).get("Filters", [])
-        self.filter_patterns = [json.loads(filter["Pattern"]) for filter in filters]
+        self.filter_patterns = [json.loads(event_filter["Pattern"]) for event_filter in filters]
         self.source_client = source_client or get_internal_client(source_arn)
 
         # Target processor

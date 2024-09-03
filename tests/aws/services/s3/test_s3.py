@@ -44,7 +44,7 @@ from localstack.services.s3.utils import (
     parse_expiration_header,
     rfc_1123_datetime,
 )
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.util import in_default_partition, is_aws_cloud
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -53,6 +53,7 @@ from localstack.testing.config import (
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
@@ -1000,20 +1001,28 @@ class TestS3:
         snapshot.match("exc", e.value.response)
 
     @markers.aws.validated
-    def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client):
+    def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client, region_name):
         # TODO check redirection (happens in AWS because of region name), should it happen in LS?
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingBackwardsCompatibility
         bucket_name = f"test-{short_uid()}"
         try:
             response = s3_vhost_client.create_bucket(
                 Bucket=bucket_name,
-                CreateBucketConfiguration={"LocationConstraint": "eu-central-1"},
+                CreateBucketConfiguration={
+                    "LocationConstraint": region_name
+                    if region_name != "us-east-1"
+                    else "eu-central-1"
+                },
             )
             assert "Location" in response
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
             response = s3_vhost_client.get_bucket_location(Bucket=bucket_name)
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-            assert response["LocationConstraint"] == "eu-central-1"
+            assert (
+                response["LocationConstraint"] == region_name
+                if region_name != "us-east-1"
+                else "eu-central-1"
+            )
         finally:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
@@ -1502,6 +1511,95 @@ class TestS3:
             Bucket=s3_bucket, Key=object_key_copy_tag_empty
         )
         snapshot.match("get-copy-object-tag-empty", get_object_tags)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..ServerSideEncryption"],
+    )
+    @pytest.mark.parametrize("tagging_directive", ["COPY", "REPLACE", None])
+    def test_s3_copy_tagging_directive_versioned(
+        self, s3_bucket, snapshot, aws_client, tagging_directive
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        object_key = "source-object"
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="test", Tagging="key1=value1"
+        )
+        snapshot.match("put-object", resp)
+        version_1 = resp["VersionId"]
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="test-v2", Tagging="key1=value1-v2"
+        )
+        snapshot.match("put-object-v2", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tag", get_object_tags)
+
+        get_object_tags_v1 = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_1
+        )
+        snapshot.match("get-object-tag-v1", get_object_tags_v1)
+
+        kwargs = {"TaggingDirective": tagging_directive} if tagging_directive else {}
+
+        object_key_copy = f"{object_key}-copy"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key_copy,
+            Tagging="key2=value2",
+            **kwargs,
+        )
+        snapshot.match("copy-object", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key_copy)
+        snapshot.match("get-copy-object-tag", get_object_tags)
+
+        object_key_copy_tag_empty = f"{object_key}-copy-tag-empty"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key_copy_tag_empty,
+            **kwargs,
+        )
+        snapshot.match("copy-object-tag-empty", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key_copy_tag_empty
+        )
+        snapshot.match("get-copy-object-tag-empty", get_object_tags)
+
+        object_key_copy_v1 = f"{object_key}-copy-v1"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}?versionId={version_1}",
+            Key=object_key_copy_v1,
+            Tagging="key2=value2",
+            **kwargs,
+        )
+        snapshot.match("copy-object-v1", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key_copy_v1)
+        snapshot.match("get-copy-object-tag-v1", get_object_tags)
+
+        object_key_copy_tag_empty_v1 = f"{object_key}-copy-tag-empty-v1"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}?versionId={version_1}",
+            Key=object_key_copy_tag_empty_v1,
+            **kwargs,
+        )
+        snapshot.match("copy-object-tag-empty-v1", resp)
+
+        get_object_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key_copy_tag_empty_v1
+        )
+        snapshot.match("get-copy-object-tag-empty-v1", get_object_tags)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -4211,13 +4309,13 @@ class TestS3:
         response = requests.get(bucket_url)
         assert response.status_code == 404
 
-        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-west-2")
-        assert "us-west-2" in bucket_vhost_url
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="eu-central-1")
+        assert "eu-central-1" in bucket_vhost_url
         response = requests.get(bucket_vhost_url)
         assert response.status_code == 404
 
-        bucket_url = _bucket_url(bucket_name, region="us-west-2")
-        assert "us-west-2" in bucket_url
+        bucket_url = _bucket_url(bucket_name, region="eu-central-1")
+        assert "eu-central-1" in bucket_url
         response = requests.get(bucket_url)
         assert response.status_code == 404
 
@@ -4762,6 +4860,9 @@ class TestS3:
         assert len(proxied_response.headers["server"].split(",")) == 1
         assert len(proxied_response.headers["date"].split(",")) == 2  # coma in the date
 
+    @pytest.mark.skipif(
+        not in_default_partition(), reason="Test not applicable in non-default partitions"
+    )
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
     def test_s3_sse_validate_kms_key(
@@ -6015,7 +6116,7 @@ class TestS3:
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
     @markers.aws.validated
-    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot):
+    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot, region_name):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
         dest_bucket = s3_create_bucket()
@@ -6028,7 +6129,7 @@ class TestS3:
                     "Effect": "Allow",
                     "Principal": {"Service": "s3.amazonaws.com"},
                     "Action": "s3:PutObject",
-                    "Resource": [f"arn:aws:s3:::{dest_bucket}/*"],
+                    "Resource": [f"arn:{get_partition(region_name)}:s3:::{dest_bucket}/*"],
                     "Condition": {
                         "ArnLike": {"aws:SourceArn": f"arn:aws:s3:::{src_bucket}"},
                     },
@@ -6041,7 +6142,7 @@ class TestS3:
             "Id": "test-inventory",
             "Destination": {
                 "S3BucketDestination": {
-                    "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                    "Bucket": f"arn:{get_partition(region_name)}:s3:::{dest_bucket}",
                     "Format": "CSV",
                 }
             },
@@ -6156,7 +6257,9 @@ class TestS3:
         snapshot.match("wrong-optional-field", e.value.response)
 
     @markers.aws.validated
-    def test_put_bucket_inventory_config_order(self, aws_client, s3_create_bucket, snapshot):
+    def test_put_bucket_inventory_config_order(
+        self, aws_client, s3_create_bucket, snapshot, region_name
+    ):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
         dest_bucket = s3_create_bucket()
@@ -6166,7 +6269,7 @@ class TestS3:
                 "Id": config_id,
                 "Destination": {
                     "S3BucketDestination": {
-                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Bucket": f"arn:{get_partition(region_name)}:s3:::{dest_bucket}",
                         "Format": "CSV",
                     }
                 },
@@ -7159,6 +7262,8 @@ class TestS3PresignedUrl:
         account_id,
         wait_and_assume_role,
         patch_s3_skip_signature_validation_false,
+        region_name,
+        aws_client_factory,
     ):
         bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
@@ -7192,6 +7297,7 @@ class TestS3PresignedUrl:
 
         client = boto3.client(
             "s3",
+            region_name=region_name,
             config=Config(signature_version="s3v4"),
             endpoint_url=_endpoint_url(),
             aws_access_key_id=credentials["AccessKeyId"],
@@ -7199,8 +7305,13 @@ class TestS3PresignedUrl:
             aws_session_token=credentials["SessionToken"],
         )
 
+        kwargs = (
+            {"CreateBucketConfiguration": {"LocationConstraint": region_name}}
+            if region_name != "us-east-1"
+            else {}
+        )
         retry(
-            lambda: s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name),
+            lambda: s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name, **kwargs),
             sleep=3 if is_aws_cloud() else 0.5,
         )
 
@@ -11553,6 +11664,582 @@ class TestS3PresignedPost:
 
         get_obj = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get-obj", get_obj)
+
+
+# LocalStack does not apply encryption, so the ETag is different
+@pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="Not implemented")
+@markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
+class TestS3SSECEncryption:
+    # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html
+    ENCRYPTION_KEY = b"1234567890abcdef1234567890abcdef"
+    ENCRYPTION_KEY_2 = b"abcdef1234567890abcdef1234567890"
+
+    @staticmethod
+    def get_encryption_key_b64_and_md5(encryption_key: bytes) -> tuple[str, str]:
+        sse_customer_key_base64 = base64.b64encode(encryption_key).decode("utf-8")
+        sse_customer_key_md5 = base64.b64encode(hashlib.md5(encryption_key).digest()).decode(
+            "utf-8"
+        )
+        return sse_customer_key_base64, sse_customer_key_md5
+
+    @markers.aws.validated
+    def test_put_object_lifecycle_with_sse_c(self, aws_client, s3_bucket, snapshot):
+        body = "test_data"
+        key_name = "test-sse-c"
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+        put_obj = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=body,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("put-obj-sse-c", put_obj)
+
+        head_obj = aws_client.s3.head_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("head-obj-sse-c", head_obj)
+
+        get_obj = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("get-obj-sse-c", get_obj)
+
+        get_obj_attr = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["ETag", "ObjectSize"],
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("get-obj-attrs-sse-c", get_obj_attr)
+
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("del-obj-sse-c", del_obj)
+
+    @markers.aws.validated
+    def test_put_object_validation_sse_c(self, aws_client, s3_bucket, snapshot):
+        body = "test_data"
+        key_name = "test-sse-c"
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                ServerSideEncryption="AES256",
+                SSECustomerAlgorithm="KMS",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("put-obj-sse-c-both-encryption", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                SSECustomerAlgorithm="KMS",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("put-obj-sse-c-wrong-algo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("put-obj-sse-c-no-algo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("put-obj-sse-c-no-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+            )
+        snapshot.match("put-obj-sse-c-no-md5", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            bad_key_size = base64.b64encode(self.ENCRYPTION_KEY[:10]).decode("utf-8")
+            bad_key_size_md5 = base64.b64encode(
+                hashlib.md5(self.ENCRYPTION_KEY[:10]).digest()
+            ).decode("utf-8")
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=bad_key_size,
+                SSECustomerKeyMD5=bad_key_size_md5,
+            )
+        snapshot.match("put-obj-sse-c-wrong-key-size", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            bad_char = "a" if cus_key_md5[0] != "a" else "b"
+            bad_md5 = bad_char + cus_key_md5[1:]
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=bad_md5,
+            )
+        snapshot.match("put-obj-sse-c-bad-md5", e.value.response)
+
+    @markers.aws.validated
+    def test_object_retrieval_sse_c(self, aws_client, s3_bucket, snapshot):
+        body = "test_data"
+        key_name = "test-sse-c"
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+        put_obj = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=body,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("put-obj-sse-c", put_obj)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("get-obj-no-sse-c", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            key_2, key_2_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY_2)
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=key_2,
+                SSECustomerKeyMD5=key_2_md5,
+            )
+        snapshot.match("get-obj-sse-c-wrong-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="KMS",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("get-obj-sse-c-wrong-algo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.head_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="KMS",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("head-obj-sse-c-wrong-algo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_attributes(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="KMS",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+                ObjectAttributes=["ETag"],
+            )
+        snapshot.match("get-obj-attrs-sse-c-wrong-algo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+            )
+        snapshot.match("get-obj-sse-c-no-md5", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            bad_key_size = base64.b64encode(self.ENCRYPTION_KEY[:10]).decode("utf-8")
+            bad_key_size_md5 = base64.b64encode(
+                hashlib.md5(self.ENCRYPTION_KEY[:10]).digest()
+            ).decode("utf-8")
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=bad_key_size,
+                SSECustomerKeyMD5=bad_key_size_md5,
+            )
+        snapshot.match("get-obj-sse-c-wrong-key-size", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            bad_char = "a" if cus_key_md5[0] != "a" else "b"
+            bad_md5 = bad_char + cus_key_md5[1:]
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=bad_md5,
+            )
+        snapshot.match("get-obj-sse-c-bad-md5", e.value.response)
+
+    @markers.aws.validated
+    def test_copy_object_with_sse_c(self, aws_client, s3_bucket, snapshot):
+        body = "test_data"
+        key_name_src = "test-sse-c-src"
+        key_name_target = "test-sse-c-target"
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+        put_obj = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=key_name_src,
+            Body=body,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("put-obj-sse-c", put_obj)
+
+        # successful copy without encrypting the target
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            Key=key_name_target,
+            CopySource=f"{s3_bucket}/{key_name_src}",
+            CopySourceSSECustomerAlgorithm="AES256",
+            CopySourceSSECustomerKey=cus_key,
+            CopySourceSSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("copy-obj-sse-c-target-no-sse-c", copy_obj)
+
+        # successful copy while encrypting the target
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            Key=key_name_target,
+            CopySource=f"{s3_bucket}/{key_name_src}",
+            CopySourceSSECustomerAlgorithm="AES256",
+            CopySourceSSECustomerKey=cus_key,
+            CopySourceSSECustomerKeyMD5=cus_key_md5,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("copy-obj-sse-c", copy_obj)
+
+        # assert the encryption is successful by trying to get object it without SSE-C
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name_target)
+        snapshot.match("get-obj-no-sse-c-param", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                Key=key_name_target,
+                CopySource=f"{s3_bucket}/{key_name_src}",
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("copy-obj-no-src-sse-c", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                Key=key_name_target,
+                CopySource=f"{s3_bucket}/{key_name_src}",
+                CopySourceSSECustomerAlgorithm="KMS",
+                CopySourceSSECustomerKey=cus_key,
+                CopySourceSSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("copy-obj-wrong-src-sse-c-algo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                Key=key_name_target,
+                CopySource=f"{s3_bucket}/{key_name_src}",
+                CopySourceSSECustomerAlgorithm="AES256",
+                CopySourceSSECustomerKey=cus_key,
+                CopySourceSSECustomerKeyMD5=cus_key_md5,
+                SSECustomerAlgorithm="KMS",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("copy-obj-wrong-target-sse-c-algo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                Key=key_name_target,
+                CopySource=f"{s3_bucket}/{key_name_src}",
+                CopySourceSSECustomerAlgorithm="AES256",
+                CopySourceSSECustomerKey=cus_key,
+                CopySourceSSECustomerKeyMD5=cus_key_md5,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+                ServerSideEncryption="AES256",
+            )
+        snapshot.match("copy-obj-target-double-encryption", e.value.response)
+
+    @markers.aws.validated
+    def test_multipart_upload_sse_c(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+        key_name = "test-sse-c-multipart"
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("create-mpu-sse-c", response)
+        upload_id = response["UploadId"]
+
+        # data must be at least 5MiB
+        part_data = "a" * (5_242_880 + 1)
+        part_data = to_bytes(part_data)
+
+        parts = 3
+        multipart_upload_parts = []
+        for part in range(parts):
+            # Write contents to memory rather than a file.
+            part_number = part + 1
+            upload_file_object = BytesIO(part_data)
+            response = aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=upload_file_object,
+                PartNumber=part_number,
+                UploadId=upload_id,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+            snapshot.match(f"upload-part-{part}", response)
+            multipart_upload_parts.append(
+                {
+                    "ETag": response["ETag"],
+                    "PartNumber": part_number,
+                }
+            )
+
+        response = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
+        snapshot.match("list-parts", response)
+
+        # no need to add the SSE-C on complete (from the documentation, but you still can?? weird?) TODO check
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-checksum", response)
+
+        # assert the encryption is successful by trying to get object it without SSE-C
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("get-obj-no-sse-c-param", e.value.response)
+
+        get_obj = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        # object is big, so we remove the body
+        get_obj["Body"].read()
+        snapshot.match("get-obj-sse-c", get_obj)
+
+    @markers.aws.validated
+    def test_multipart_upload_sse_c_validation(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+        body = "testbody"
+        key_name = "test-sse-c-multipart"
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+
+        # create a multipart without SSE-C
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        snapshot.match("create-mpu-no-sse-c", response)
+        upload_id = response["UploadId"]
+
+        # assert that if the multipart isnt created with SSE-C, you cannot upload with SSE-C
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                PartNumber=1,
+                UploadId=upload_id,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+                SSECustomerKeyMD5=cus_key_md5,
+            )
+        snapshot.match("mpu-no-sse-c-upload-part-with-sse-c", e.value.response)
+        # remove the multipart
+        aws_client.s3.abort_multipart_upload(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
+
+        # create a multipart with SSE-C
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("create-mpu-sse-c", response)
+        upload_id = response["UploadId"]
+
+        # assert that if the multipart is created with SSE-C, you cannot upload without SSE-C
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                PartNumber=1,
+                UploadId=upload_id,
+            )
+        snapshot.match("mpu-sse-c-upload-part-no-sse-c", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            key_2, key_2_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY_2)
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=body,
+                PartNumber=1,
+                UploadId=upload_id,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=key_2,
+                SSECustomerKeyMD5=key_2_md5,
+            )
+        snapshot.match("mpu-sse-c-upload-part-wrong-sse-c", e.value.response)
+        # TODO: check complete with wrong parameters, even though it is not required to give them?
+
+    @markers.aws.validated
+    def test_sse_c_with_versioning(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        # enable versioning on the bucket
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        # assert that you can use different encryption keys for different versions
+        key_name = "test-versioning-sse-c"
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+        put_obj = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body="version1",
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("put-obj-sse-c-version-1", put_obj)
+        version_1 = put_obj["VersionId"]
+
+        cus_key_2, cus_key_2_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY_2)
+
+        put_obj_version_2 = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body="version2",
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key_2,
+            SSECustomerKeyMD5=cus_key_2_md5,
+        )
+        snapshot.match("put-obj-sse-c-version-2", put_obj_version_2)
+        version_2 = put_obj_version_2["VersionId"]
+
+        # last version should be what we call version-2, try getting it with Key 2
+        get_current_obj = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key_2,
+            SSECustomerKeyMD5=cus_key_2_md5,
+        )
+        snapshot.match("get-obj-sse-c-last-version", get_current_obj)
+
+        # access directly version 2
+        get_obj_2 = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key_2,
+            SSECustomerKeyMD5=cus_key_2_md5,
+            VersionId=version_2,
+        )
+        snapshot.match("get-obj-sse-c-version-2", get_obj_2)
+
+        # try getting the version 1 with Key 2
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key_2,
+                SSECustomerKeyMD5=cus_key_2_md5,
+                VersionId=version_1,
+            )
+        snapshot.match("get-obj-sse-c-last-version-wrong-key", e.value.response)
+
+        get_version_1_obj = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+            VersionId=version_1,
+        )
+        snapshot.match("get-obj-sse-c-version-1", get_version_1_obj)
 
 
 def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):

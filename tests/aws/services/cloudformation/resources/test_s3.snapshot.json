@@ -122,8 +122,8 @@
               "s3:List*"
             ],
             "Resource": [
-              "arn:aws:s3:::<bucket-name:1>",
-              "arn:aws:s3:::<bucket-name:1>/*"
+              "arn:<partition>:s3:::<bucket-name:1>",
+              "arn:<partition>:s3:::<bucket-name:1>/*"
             ]
           }
         ]

@@ -885,7 +885,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # getting the bucket from moto to raise an error if the bucket does not exist
         get_bucket_from_moto(moto_backend=moto_backend, bucket=bucket)
 
-        multiparts = list(moto_backend.get_all_multiparts(bucket).values())
+        multiparts = list(moto_backend.list_multipart_uploads(bucket).values())
         if (prefix := request.get("Prefix")) is not None:
             multiparts = [upload for upload in multiparts if upload.key_name.startswith(prefix)]
 
@@ -1916,10 +1916,10 @@ def apply_moto_patches():
 
         return status_code, resp_headers, key_value
 
-    @patch(moto_s3_responses.S3Response._bucket_response_head)
-    def _fix_bucket_response_head(fn, self, bucket_name, *args, **kwargs):
-        code, headers, body = fn(self, bucket_name, *args, **kwargs)
-        bucket = self.backend.get_bucket(bucket_name)
+    @patch(moto_s3_responses.S3Response.head_bucket)
+    def _fix_bucket_response_head(fn, self, *args, **kwargs):
+        code, headers, body = fn(self, *args, **kwargs)
+        bucket = self.backend.get_bucket(self.bucket_name)
         headers["x-amz-bucket-region"] = bucket.region_name
         headers["content-type"] = "application/xml"
         return code, headers, body

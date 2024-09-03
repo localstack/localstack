@@ -3,13 +3,14 @@ import logging
 
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.pipes import PipeTargetInvocationType
+from localstack.services.lambda_.api_utils import function_locators_from_arn
+from localstack.services.lambda_.event_source_mapping.pipe_utils import to_json_str
 from localstack.services.lambda_.event_source_mapping.pollers.poller import has_batch_item_failures
 from localstack.services.lambda_.event_source_mapping.senders.sender import (
     PartialFailureSenderError,
     Sender,
     SenderError,
 )
-from localstack.utils.aws.arns import parse_arn
 
 LOG = logging.getLogger(__name__)
 
@@ -25,10 +26,11 @@ class LambdaSender(Sender):
     def send_events(self, events: list[dict]) -> dict:
         if self.payload_dict:
             events = {"Records": events}
-        parsed_arn = parse_arn(self.target_arn)
-        # TODO: test qualified Lambda invoke
+        # TODO: test qualified + unqualified Lambda invoke
+        # According to Pipe trace logs, the internal awsRequest contains a qualifier, even if "null"
+        _, qualifier, _, _ = function_locators_from_arn(self.target_arn)
         optional_qualifier = {}
-        if qualifier := parsed_arn.get("qualifier"):
+        if qualifier is not None:
             optional_qualifier["Qualifier"] = qualifier
         invocation_type = InvocationType.RequestResponse
         if (
@@ -37,9 +39,12 @@ class LambdaSender(Sender):
         ):
             invocation_type = InvocationType.Event
 
+        # TODO: test special payloads (e.g., None, str, empty str, bytes)
+        #  see "to_bytes(json.dumps(payload or {}, cls=BytesEncoder))" in legacy invoke adapter
+        #  localstack.services.lambda_.event_source_listeners.adapters.EventSourceAsfAdapter.invoke_with_statuscode
         invoke_result = self.target_client.invoke(
             FunctionName=self.target_arn,
-            Payload=json.dumps(events),
+            Payload=to_json_str(events),
             InvocationType=invocation_type,
             **optional_qualifier,
         )

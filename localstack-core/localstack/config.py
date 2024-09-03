@@ -266,13 +266,23 @@ def is_linux() -> bool:
     return platform.system() == "Linux"
 
 
+def is_macos() -> bool:
+    return platform.system() == "Darwin"
+
+
+def is_windows() -> bool:
+    return platform.system().lower() == "windows"
+
+
 def ping(host):
     """Returns True if host responds to a ping request"""
-    is_windows = platform.system().lower() == "windows"
-    ping_opts = "-n 1 -w 2000" if is_windows else "-c 1 -W 2"
+    is_in_windows = is_windows()
+    ping_opts = "-n 1 -w 2000" if is_in_windows else "-c 1 -W 2"
     args = "ping %s %s" % (ping_opts, host)
     return (
-        subprocess.call(args, shell=not is_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.call(
+            args, shell=not is_in_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         == 0
     )
 
@@ -370,6 +380,7 @@ OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
 is_in_linux = is_linux()
+is_in_macos = is_macos()
 default_ip = "0.0.0.0" if is_in_docker else "127.0.0.1"
 
 # CLI specific: the configuration profile to load
@@ -417,6 +428,13 @@ if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
 DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
+
+# PUBLIC PREVIEW: 0 (default), 1 (preview)
+# When enabled it triggers specialised workflows for the debugging.
+LAMBDA_DEBUG_MODE = is_env_true("LAMBDA_DEBUG_MODE")
+
+# path to the lambda debug mode configuration file.
+LAMBDA_DEBUG_MODE_CONFIG_PATH = os.environ.get("LAMBDA_DEBUG_MODE_CONFIG_PATH")
 
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")
@@ -704,6 +722,9 @@ SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
 # Absolute path to a custom certificate (pem file)
 CUSTOM_SSL_CERT_PATH = os.environ.get("CUSTOM_SSL_CERT_PATH", "").strip()
 
+# Whether delete the cached signed SSL certificate at startup
+REMOVE_SSL_CERT = is_env_true("REMOVE_SSL_CERT")
+
 # Allow non-standard AWS regions
 ALLOW_NONSTANDARD_REGIONS = is_env_true("ALLOW_NONSTANDARD_REGIONS")
 if ALLOW_NONSTANDARD_REGIONS:
@@ -726,6 +747,11 @@ OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 
 # Whether to enable the partition adjustment listener (in order to support other partitions that the default)
 ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
+
+# Feature flag to enable validation of internal endpoint responses in the handler chain. For test use only.
+OPENAPI_VALIDATE_RESPONSE = is_env_true("OPENAPI_VALIDATE_RESPONSE")
+# Flag to enable the validation of the requests made to the LocalStack internal endpoints. Active by default.
+OPENAPI_VALIDATE_REQUEST = is_env_true("OPENAPI_VALIDATE_REQUEST")
 
 # Fallback partition to use if not possible to determine from ARN region.
 # Applicable only when ARN partition rewriting is enabled.
@@ -877,6 +903,9 @@ LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 # Additional flags passed to Docker run|create commands.
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
+# PUBLIC: v1 (default), v2 (preview) Version of the Lambda Event Source Mapping implementation
+LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v1").strip()
+
 # PUBLIC: 0 (default)
 # Enable this flag to run cross-platform compatible lambda functions natively (i.e., Docker selects architecture) and
 # ignore the AWS architectures (i.e., x86_64, arm64) configured for the lambda function.
@@ -958,11 +987,16 @@ LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
     os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
 )
 
-# DEV: 0 (default) For LS developers only. Only applies to Docker mode.
+# DEV: 0 (default unless in host mode on macOS) For LS developers only. Only applies to Docker mode.
 # Whether to explicitly expose a free TCP port in lambda containers when invoking functions in host mode for
 # systems that cannot reach the container via its IPv4. For example, macOS cannot reach Docker containers:
 # https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers
-LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
+LAMBDA_DEV_PORT_EXPOSE = (
+    # Enable this dev flag by default on macOS in host mode (i.e., non-Docker environment)
+    is_env_not_false("LAMBDA_DEV_PORT_EXPOSE")
+    if not is_in_docker and is_in_macos
+    else is_env_true("LAMBDA_DEV_PORT_EXPOSE")
+)
 
 # DEV: only applies to new lambda provider. All LAMBDA_INIT_* configuration are for LS developers only.
 # There are NO stability guarantees, and they may break at any time.
@@ -1057,9 +1091,6 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
-# Allow fallback to previous template deployer implementation
-CFN_LEGACY_TEMPLATE_DEPLOYER = is_env_true("CFN_LEGACY_TEMPLATE_DEPLOYER")
-
 # The CFN_STRING_REPLACEMENT_DENY_LIST env variable is a comma separated list of strings that are not allowed to be
 # replaced in CloudFormation templates (e.g. AWS URLs that are usually edited by Localstack to point to itself if found
 # in a CFN template). They are extracted to a list of strings if the env variable is set.
@@ -1133,7 +1164,7 @@ CONFIG_ENV_VARS = [
     "BOTO_WAITER_MAX_ATTEMPTS",
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
-    "CFN_LEGACY_TEMPLATE_DEPLOYER",
+    "CFN_PER_RESOURCE_TIMEOUT",
     "CFN_STRING_REPLACEMENT_DENY_LIST",
     "CFN_VERBOSE_ERRORS",
     "CI",
@@ -1183,11 +1214,14 @@ CONFIG_ENV_VARS = [
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "KINESIS_PERSISTENCE",
+    "LAMBDA_DEBUG_MODE",
+    "LAMBDA_DEBUG_MODE_CONFIG",
     "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
     "LAMBDA_EVENTS_INTERNAL_SQS",
+    "LAMBDA_EVENT_SOURCE_MAPPING",
     "LAMBDA_IGNORE_ARCHITECTURE",
     "LAMBDA_INIT_DEBUG",
     "LAMBDA_INIT_BIN_PATH",
@@ -1198,14 +1232,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_INIT_USER",
     "LAMBDA_INIT_RELEASE_VERSION",
     "LAMBDA_KEEPALIVE_MS",
-    "LAMBDA_RUNTIME_IMAGE_MAPPING",
-    "LAMBDA_REMOVE_CONTAINERS",
-    "LAMBDA_RUNTIME_EXECUTOR",
-    "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
-    "LAMBDA_RUNTIME_VALIDATION",
-    "LAMBDA_TRUNCATE_STDOUT",
-    "LAMBDA_RETRY_BASE_DELAY_SECONDS",
-    "LAMBDA_SYNCHRONOUS_CREATE",
     "LAMBDA_LIMITS_CONCURRENT_EXECUTIONS",
     "LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY",
     "LAMBDA_LIMITS_TOTAL_CODE_SIZE",
@@ -1214,7 +1240,16 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE",
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
     "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES",
+    "LAMBDA_PREBUILD_IMAGES",
+    "LAMBDA_RUNTIME_IMAGE_MAPPING",
+    "LAMBDA_REMOVE_CONTAINERS",
+    "LAMBDA_RETRY_BASE_DELAY_SECONDS",
+    "LAMBDA_RUNTIME_EXECUTOR",
+    "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
+    "LAMBDA_RUNTIME_VALIDATION",
+    "LAMBDA_SYNCHRONOUS_CREATE",
     "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
+    "LAMBDA_TRUNCATE_STDOUT",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
@@ -1231,6 +1266,7 @@ CONFIG_ENV_VARS = [
     "PERSISTENCE",
     "PORTS_CHECK_DOCKER_IMAGE",
     "REQUESTS_CA_BUNDLE",
+    "REMOVE_SSL_CERT",
     "S3_SKIP_SIGNATURE_VALIDATION",
     "S3_SKIP_KMS_KEY_VALIDATION",
     "SERVICES",

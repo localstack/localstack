@@ -2101,6 +2101,12 @@ class IpAddressType(StrEnum):
     ipv6 = "ipv6"
 
 
+class IpSource(StrEnum):
+    amazon = "amazon"
+    byoip = "byoip"
+    none = "none"
+
+
 class IpamAddressHistoryResourceType(StrEnum):
     eip = "eip"
     vpc = "vpc"
@@ -2159,6 +2165,7 @@ class IpamPoolAllocationResourceType(StrEnum):
     ec2_public_ipv4_pool = "ec2-public-ipv4-pool"
     custom = "custom"
     subnet = "subnet"
+    eip = "eip"
 
 
 class IpamPoolAwsService(StrEnum):
@@ -2226,8 +2233,15 @@ class IpamPublicAddressType(StrEnum):
     service_managed_ip = "service-managed-ip"
     service_managed_byoip = "service-managed-byoip"
     amazon_owned_eip = "amazon-owned-eip"
+    amazon_owned_contig = "amazon-owned-contig"
     byoip = "byoip"
     ec2_public_ip = "ec2-public-ip"
+
+
+class IpamResourceCidrIpSource(StrEnum):
+    amazon = "amazon"
+    byoip = "byoip"
+    none = "none"
 
 
 class IpamResourceDiscoveryAssociationState(StrEnum):
@@ -2304,6 +2318,11 @@ class IpamState(StrEnum):
 class IpamTier(StrEnum):
     free = "free"
     advanced = "advanced"
+
+
+class Ipv6AddressAttribute(StrEnum):
+    public = "public"
+    private = "private"
 
 
 class Ipv6SupportValue(StrEnum):
@@ -4128,6 +4147,7 @@ class AllocateAddressRequest(ServiceRequest):
     CustomerOwnedIpv4Pool: Optional[String]
     DryRun: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
+    IpamPoolId: Optional[IpamPoolId]
 
 
 class AllocateAddressResult(TypedDict, total=False):
@@ -4523,6 +4543,8 @@ class SubnetIpv6CidrBlockAssociation(TypedDict, total=False):
     AssociationId: Optional[SubnetCidrAssociationId]
     Ipv6CidrBlock: Optional[String]
     Ipv6CidrBlockState: Optional[SubnetCidrBlockState]
+    Ipv6AddressAttribute: Optional[Ipv6AddressAttribute]
+    IpSource: Optional[IpSource]
 
 
 class AssociateSubnetCidrBlockResult(TypedDict, total=False):
@@ -4634,6 +4656,8 @@ class VpcIpv6CidrBlockAssociation(TypedDict, total=False):
     Ipv6CidrBlockState: Optional[VpcCidrBlockState]
     NetworkBorderGroup: Optional[String]
     Ipv6Pool: Optional[String]
+    Ipv6AddressAttribute: Optional[Ipv6AddressAttribute]
+    IpSource: Optional[IpSource]
 
 
 class AssociateVpcCidrBlockResult(TypedDict, total=False):
@@ -5843,6 +5867,20 @@ class CpuOptionsRequest(TypedDict, total=False):
     AmdSevSnp: Optional[AmdSevSnpSpecification]
 
 
+class CreateCapacityReservationBySplittingRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    ClientToken: Optional[String]
+    SourceCapacityReservationId: CapacityReservationId
+    InstanceCount: Integer
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class CreateCapacityReservationBySplittingResult(TypedDict, total=False):
+    SourceCapacityReservation: Optional[CapacityReservation]
+    DestinationCapacityReservation: Optional[CapacityReservation]
+    InstanceCount: Optional[Integer]
+
+
 class ReservationFleetInstanceSpecification(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     InstancePlatform: Optional[CapacityReservationInstancePlatform]
@@ -6702,6 +6740,7 @@ class CreateIpamRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     Tier: Optional[IpamTier]
+    EnablePrivateGua: Optional[Boolean]
 
 
 class CreateIpamResourceDiscoveryRequest(ServiceRequest):
@@ -6752,6 +6791,7 @@ class Ipam(TypedDict, total=False):
     ResourceDiscoveryAssociationCount: Optional[Integer]
     StateMessage: Optional[String]
     Tier: Optional[IpamTier]
+    EnablePrivateGua: Optional[Boolean]
 
 
 class CreateIpamResult(TypedDict, total=False):
@@ -11280,6 +11320,20 @@ class DescribeInstanceStatusRequest(ServiceRequest):
     IncludeAllInstances: Optional[Boolean]
 
 
+class EbsStatusDetails(TypedDict, total=False):
+    ImpairedSince: Optional[MillisecondDateTime]
+    Name: Optional[StatusName]
+    Status: Optional[StatusType]
+
+
+EbsStatusDetailsList = List[EbsStatusDetails]
+
+
+class EbsStatusSummary(TypedDict, total=False):
+    Details: Optional[EbsStatusDetailsList]
+    Status: Optional[SummaryStatus]
+
+
 class InstanceStatusDetails(TypedDict, total=False):
     ImpairedSince: Optional[DateTime]
     Name: Optional[StatusName]
@@ -11319,6 +11373,7 @@ class InstanceStatus(TypedDict, total=False):
     InstanceState: Optional[InstanceState]
     InstanceStatus: Optional[InstanceStatusSummary]
     SystemStatus: Optional[InstanceStatusSummary]
+    AttachedEbsStatus: Optional[EbsStatusSummary]
 
 
 InstanceStatusList = List[InstanceStatus]
@@ -15541,6 +15596,7 @@ class IpamDiscoveredResourceCidr(TypedDict, total=False):
     ResourceId: Optional[String]
     ResourceOwnerId: Optional[String]
     ResourceCidr: Optional[String]
+    IpSource: Optional[IpamResourceCidrIpSource]
     ResourceType: Optional[IpamResourceType]
     ResourceTags: Optional[IpamResourceTagList]
     IpUsage: Optional[BoxedDouble]
@@ -16505,6 +16561,7 @@ class ModifyCapacityReservationRequest(ServiceRequest):
     Accept: Optional[Boolean]
     DryRun: Optional[Boolean]
     AdditionalInfo: Optional[String]
+    InstanceMatchCriteria: Optional[InstanceMatchCriteria]
 
 
 class ModifyCapacityReservationResult(TypedDict, total=False):
@@ -16802,6 +16859,7 @@ class ModifyIpamRequest(ServiceRequest):
     AddOperatingRegions: Optional[AddIpamOperatingRegionSet]
     RemoveOperatingRegions: Optional[RemoveIpamOperatingRegionSet]
     Tier: Optional[IpamTier]
+    EnablePrivateGua: Optional[Boolean]
 
 
 class ModifyIpamResourceCidrRequest(ServiceRequest):
@@ -17494,6 +17552,20 @@ class MoveByoipCidrToIpamRequest(ServiceRequest):
 
 class MoveByoipCidrToIpamResult(TypedDict, total=False):
     ByoipCidr: Optional[ByoipCidr]
+
+
+class MoveCapacityReservationInstancesRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    ClientToken: Optional[String]
+    SourceCapacityReservationId: CapacityReservationId
+    DestinationCapacityReservationId: CapacityReservationId
+    InstanceCount: Integer
+
+
+class MoveCapacityReservationInstancesResult(TypedDict, total=False):
+    SourceCapacityReservation: Optional[CapacityReservation]
+    DestinationCapacityReservation: Optional[CapacityReservation]
+    InstanceCount: Optional[Integer]
 
 
 class PrivateDnsNameOptionsRequest(TypedDict, total=False):
@@ -18571,6 +18643,7 @@ class Ec2Api:
         customer_owned_ipv4_pool: String = None,
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        ipam_pool_id: IpamPoolId = None,
         **kwargs,
     ) -> AllocateAddressResult:
         raise NotImplementedError
@@ -19164,6 +19237,19 @@ class Ec2Api:
     ) -> CreateCapacityReservationResult:
         raise NotImplementedError
 
+    @handler("CreateCapacityReservationBySplitting")
+    def create_capacity_reservation_by_splitting(
+        self,
+        context: RequestContext,
+        source_capacity_reservation_id: CapacityReservationId,
+        instance_count: Integer,
+        dry_run: Boolean = None,
+        client_token: String = None,
+        tag_specifications: TagSpecificationList = None,
+        **kwargs,
+    ) -> CreateCapacityReservationBySplittingResult:
+        raise NotImplementedError
+
     @handler("CreateCapacityReservationFleet")
     def create_capacity_reservation_fleet(
         self,
@@ -19419,6 +19505,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         tier: IpamTier = None,
+        enable_private_gua: Boolean = None,
         **kwargs,
     ) -> CreateIpamResult:
         raise NotImplementedError
@@ -24357,6 +24444,7 @@ class Ec2Api:
         accept: Boolean = None,
         dry_run: Boolean = None,
         additional_info: String = None,
+        instance_match_criteria: InstanceMatchCriteria = None,
         **kwargs,
     ) -> ModifyCapacityReservationResult:
         raise NotImplementedError
@@ -24626,6 +24714,7 @@ class Ec2Api:
         add_operating_regions: AddIpamOperatingRegionSet = None,
         remove_operating_regions: RemoveIpamOperatingRegionSet = None,
         tier: IpamTier = None,
+        enable_private_gua: Boolean = None,
         **kwargs,
     ) -> ModifyIpamResult:
         raise NotImplementedError
@@ -25229,6 +25318,19 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> MoveByoipCidrToIpamResult:
+        raise NotImplementedError
+
+    @handler("MoveCapacityReservationInstances")
+    def move_capacity_reservation_instances(
+        self,
+        context: RequestContext,
+        source_capacity_reservation_id: CapacityReservationId,
+        destination_capacity_reservation_id: CapacityReservationId,
+        instance_count: Integer,
+        dry_run: Boolean = None,
+        client_token: String = None,
+        **kwargs,
+    ) -> MoveCapacityReservationInstancesResult:
         raise NotImplementedError
 
     @handler("ProvisionByoipCidr")

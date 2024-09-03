@@ -94,6 +94,7 @@ LocationPrefix = str
 MFA = str
 Marker = str
 MaxAgeSeconds = int
+MaxBuckets = int
 MaxDirectoryBuckets = int
 MaxKeys = int
 MaxParts = int
@@ -184,6 +185,8 @@ HttpMethod = str
 ResourceType = str
 MissingHeaderName = str
 KeyLength = str
+Header = str
+additionalMessage = str
 
 
 class AnalyticsS3ExportFileFormat(StrEnum):
@@ -942,6 +945,30 @@ class EntityTooLarge(ServiceException):
     ProposedSize: Optional[ProposedSize]
 
 
+class InvalidEncryptionAlgorithmError(ServiceException):
+    code: str = "InvalidEncryptionAlgorithmError"
+    sender_fault: bool = False
+    status_code: int = 400
+    ArgumentName: Optional[ArgumentName]
+    ArgumentValue: Optional[ArgumentValue]
+
+
+class NotImplemented(ServiceException):
+    code: str = "NotImplemented"
+    sender_fault: bool = False
+    status_code: int = 501
+    Header: Optional[Header]
+    additionalMessage: Optional[additionalMessage]
+
+
+class ConditionalRequestConflict(ServiceException):
+    code: str = "ConditionalRequestConflict"
+    sender_fault: bool = False
+    status_code: int = 409
+    Condition: Optional[IfCondition]
+    Key: Optional[ObjectKey]
+
+
 AbortDate = datetime
 
 
@@ -1269,6 +1296,7 @@ class CompleteMultipartUploadRequest(ServiceRequest):
     ChecksumSHA256: Optional[ChecksumSHA256]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    IfNoneMatch: Optional[IfNoneMatch]
     SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
     SSECustomerKey: Optional[SSECustomerKey]
     SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
@@ -2511,7 +2539,13 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
 
 class ListBucketsOutput(TypedDict, total=False):
     Owner: Optional[Owner]
+    ContinuationToken: Optional[NextToken]
     Buckets: Optional[Buckets]
+
+
+class ListBucketsRequest(ServiceRequest):
+    MaxBuckets: Optional[MaxBuckets]
+    ContinuationToken: Optional[Token]
 
 
 class ListDirectoryBucketsOutput(TypedDict, total=False):
@@ -3088,6 +3122,7 @@ class PutObjectRequest(ServiceRequest):
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
     Expires: Optional[Expires]
+    IfNoneMatch: Optional[IfNoneMatch]
     GrantFullControl: Optional[GrantFullControl]
     GrantRead: Optional[GrantRead]
     GrantReadACP: Optional[GrantReadACP]
@@ -3405,6 +3440,7 @@ class S3Api:
         checksum_sha256: ChecksumSHA256 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_none_match: IfNoneMatch = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
@@ -4143,7 +4179,13 @@ class S3Api:
         raise NotImplementedError
 
     @handler("ListBuckets")
-    def list_buckets(self, context: RequestContext, **kwargs) -> ListBucketsOutput:
+    def list_buckets(
+        self,
+        context: RequestContext,
+        max_buckets: MaxBuckets = None,
+        continuation_token: Token = None,
+        **kwargs,
+    ) -> ListBucketsOutput:
         raise NotImplementedError
 
     @handler("ListDirectoryBuckets")
@@ -4526,6 +4568,7 @@ class S3Api:
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
         expires: Expires = None,
+        if_none_match: IfNoneMatch = None,
         grant_full_control: GrantFullControl = None,
         grant_read: GrantRead = None,
         grant_read_acp: GrantReadACP = None,

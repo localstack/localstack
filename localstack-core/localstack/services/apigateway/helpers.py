@@ -47,7 +47,7 @@ from localstack.services.apigateway.models import (
 )
 from localstack.utils import common
 from localstack.utils.aws import resources as resource_utils
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import get_partition, parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.json import try_json
 from localstack.utils.numbers import is_number
@@ -94,9 +94,6 @@ INVOKE_TEST_LOG_TEMPLATE = """Execution log for request {request_id}
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
     "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 )
-
-# special tag name to allow specifying a custom ID for new REST APIs
-TAG_KEY_CUSTOM_ID = "_custom_id_"
 
 EMPTY_MODEL = "Empty"
 ERROR_MODEL = "Error"
@@ -865,6 +862,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
         sqs_account = account_id
         sqs_region = region_name
 
+    partition = get_partition(region_name)
     resources[resource_path] = [
         {
             "httpMethod": "POST",
@@ -872,8 +870,8 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
             "integrations": [
                 {
                     "type": "AWS",
-                    "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                    % (sqs_region, sqs_account, queue_name),
+                    "uri": "arn:%s:apigateway:%s:sqs:path/%s/%s"
+                    % (partition, sqs_region, sqs_account, queue_name),
                     "requestTemplates": {"application/json": template},
                     "requestParameters": {
                         "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
@@ -1256,12 +1254,10 @@ def import_api_from_openapi_spec(
                 case "AWS_PROXY":
                     # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
                     integration_method = "POST"
-                case "AWS":
+                case _:
                     integration_method = (
                         method_integration.get("httpMethod") or method_name
                     ).upper()
-                case _:
-                    integration_method = method_name
 
             connection_type = (
                 ConnectionType.INTERNET
@@ -1502,11 +1498,14 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     resource_id = invocation_context.resource_id
 
     set_api_id_stage_invocation_path(invocation_context)
-    relative_path, query_string_params = extract_query_string_params(
-        path=invocation_context.path_with_query_string
-    )
     api_id = invocation_context.api_id
     stage = invocation_context.stage
+
+    if "_user_request_" in invocation_context.raw_uri:
+        full_path = invocation_context.raw_uri.partition("_user_request_")[2]
+    else:
+        full_path = invocation_context.raw_uri.removeprefix(f"/{stage}")
+    relative_path, query_string_params = extract_query_string_params(path=full_path)
 
     source_ip = invocation_context.auth_identity.get("sourceIp")
     integration_uri = integration_uri or ""

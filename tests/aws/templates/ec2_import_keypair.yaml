@@ -1,0 +1,33 @@
+Parameters:
+  GeneratedKeyName:
+    Type: String
+  ImportedKeyName:
+    Type: String
+
+Resources:
+
+  GeneratedKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Ref GeneratedKeyName
+      KeyFormat: pem
+      KeyType: rsa
+
+  ImportedKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Ref ImportedKeyName
+      KeyFormat: pem
+      KeyType: rsa
+      # generated from a throwaway key
+      PublicKeyMaterial: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILR+zNQbYY5ORuhYXGMTSnjRLzS9C5dUdWRKdlqi20q2
+
+Outputs:
+  GeneratedKeyPairName:
+    Value: !Ref GeneratedKeyPair
+  GeneratedKeyPairFingerprint:
+    Value: !GetAtt GeneratedKeyPair.KeyFingerprint
+  ImportedKeyPairName:
+    Value: !Ref ImportedKeyPair
+  ImportedKeyPairFingerprint:
+    Value: !GetAtt ImportedKeyPair.KeyFingerprint

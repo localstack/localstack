@@ -4231,7 +4231,7 @@
     "recorded-content": {
       "create-kms-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region_2>:111111111111:key/<uuid:1>",
+        "Arn": "arn:<partition>:kms:<region_2>:111111111111:key/<uuid:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "<description:1>",
@@ -4260,7 +4260,7 @@
       "put-obj-wrong-kms-key-real-uuid": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
+          "Message": "Key 'arn:<partition>:kms:<region_1>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4270,7 +4270,7 @@
       "put-obj-wrong-kms-key-real-uuid-arn": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
+          "Message": "Key 'arn:<partition>:kms:<region_1>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4290,7 +4290,7 @@
       "put-obj-different-region-kms-key-no-arn": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/<uuid:1>' does not exist"
+          "Message": "Key 'arn:<partition>:kms:<region_1>:111111111111:key/<uuid:1>' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5057,7 +5057,7 @@
     "recorded-content": {
       "create-kms-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "<description:1>",
@@ -5075,7 +5075,7 @@
       },
       "success-put-object-sse": {
         "ETag": "\"b81a68cd58c9371a4b5ddce85a8c50d1\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5090,7 +5090,7 @@
         "ETag": "\"b81a68cd58c9371a4b5ddce85a8c50d1\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5100,7 +5100,7 @@
       "get-obj-disabled-key": {
         "Error": {
           "Code": "KMS.DisabledException",
-          "Message": "arn:aws:kms:<region>:111111111111:key/<uuid:1> is disabled."
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1> is disabled."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5110,7 +5110,7 @@
       "put-obj-disabled-key": {
         "Error": {
           "Code": "KMS.DisabledException",
-          "Message": "arn:aws:kms:<region>:111111111111:key/<uuid:1> is disabled."
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1> is disabled."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5120,7 +5120,7 @@
       "get-obj-pending-deletion-key": {
         "Error": {
           "Code": "KMS.KMSInvalidStateException",
-          "Message": "arn:aws:kms:<region>:111111111111:key/<uuid:1> is pending deletion."
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1> is pending deletion."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5558,7 +5558,7 @@
         "Bucket": "<bucket>",
         "BucketKeyEnabled": true,
         "Key": "test-sse-field-multipart",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "UploadId": "<upload-id:1>",
         "ResponseMetadata": {
@@ -5569,7 +5569,7 @@
       "multi-sse-upload-part": {
         "BucketKeyEnabled": true,
         "ETag": "\"65784ca4497d11e297a2fb55807714b2\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5582,7 +5582,7 @@
         "ETag": "\"4582461eadfccba25baeccf1dff3685f-1\"",
         "Key": "test-sse-field-multipart",
         "Location": "<location:1>",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5598,7 +5598,7 @@
         "ETag": "\"4582461eadfccba25baeccf1dff3685f-1\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5672,7 +5672,7 @@
       "put-obj-after-setting": {
         "BucketKeyEnabled": true,
         "ETag": "\"0974150952f40577037f6474c338ceea\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5688,7 +5688,7 @@
         "ETag": "\"0974150952f40577037f6474c338ceea\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5702,7 +5702,7 @@
     "recorded-content": {
       "put-obj-default-kms-s3-key": {
         "ETag": "\"dbcc38f7b88c4c92ee5f9484d181ff51\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5717,7 +5717,7 @@
         "ETag": "\"dbcc38f7b88c4c92ee5f9484d181ff51\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5726,7 +5726,7 @@
       },
       "put-obj-default-kms-s3-key-bucket-2": {
         "ETag": "\"9c8f3cc18cd06e60966725b1c5996554\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5741,7 +5741,7 @@
         "ETag": "\"9c8f3cc18cd06e60966725b1c5996554\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5773,7 +5773,7 @@
       "put-obj-default-kms-s3-key-from-bucket": {
         "BucketKeyEnabled": true,
         "ETag": "\"671ef6aeba0f69c2391cf0a1b094d0aa\"",
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5789,7 +5789,7 @@
         "ETag": "\"671ef6aeba0f69c2391cf0a1b094d0aa\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8460,7 +8460,7 @@
           {
             "Destination": {
               "S3BucketDestination": {
-                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Bucket": "arn:<partition>:s3:::<resource:1>",
                 "Format": "CSV"
               }
             },
@@ -8486,7 +8486,7 @@
         "InventoryConfiguration": {
           "Destination": {
             "S3BucketDestination": {
-              "Bucket": "arn:aws:s3:::<resource:1>",
+              "Bucket": "arn:<partition>:s3:::<resource:1>",
               "Format": "CSV"
             }
           },
@@ -8604,7 +8604,7 @@
           {
             "Destination": {
               "S3BucketDestination": {
-                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Bucket": "arn:<partition>:s3:::<resource:1>",
                 "Format": "CSV"
               }
             },
@@ -8618,7 +8618,7 @@
           {
             "Destination": {
               "S3BucketDestination": {
-                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Bucket": "arn:<partition>:s3:::<resource:1>",
                 "Format": "CSV"
               }
             },
@@ -8632,7 +8632,7 @@
           {
             "Destination": {
               "S3BucketDestination": {
-                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Bucket": "arn:<partition>:s3:::<resource:1>",
                 "Format": "CSV"
               }
             },
@@ -8661,7 +8661,7 @@
           {
             "Destination": {
               "S3BucketDestination": {
-                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Bucket": "arn:<partition>:s3:::<resource:1>",
                 "Format": "CSV"
               }
             },
@@ -8675,7 +8675,7 @@
           {
             "Destination": {
               "S3BucketDestination": {
-                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Bucket": "arn:<partition>:s3:::<resource:1>",
                 "Format": "CSV"
               }
             },
@@ -12115,6 +12115,1056 @@
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_put_object_validation_sse_c": {
+    "recorded-date": "14-08-2024, 18:09:54",
+    "recorded-content": {
+      "put-obj-sse-c-both-encryption": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "AES256",
+          "Code": "InvalidArgument",
+          "Message": "Server Side Encryption with Customer provided key is incompatible with the encryption method specified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-sse-c-wrong-algo": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "KMS",
+          "Code": "InvalidEncryptionAlgorithmError",
+          "Message": "The Encryption request you specified is not valid. Supported value: AES256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-sse-c-no-algo": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "null",
+          "Code": "InvalidArgument",
+          "Message": "Requests specifying Server Side Encryption with Customer provided keys must provide a valid encryption algorithm."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-sse-c-no-key": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "null",
+          "Code": "InvalidArgument",
+          "Message": "Requests specifying Server Side Encryption with Customer provided keys must provide an appropriate secret key."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-sse-c-no-md5": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "null",
+          "Code": "InvalidArgument",
+          "Message": "The secret key was invalid for the specified algorithm."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-sse-c-wrong-key-size": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "null",
+          "Code": "InvalidArgument",
+          "Message": "The secret key was invalid for the specified algorithm."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-sse-c-bad-md5": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "null",
+          "Code": "InvalidArgument",
+          "Message": "The calculated MD5 hash of the key did not match the hash that was provided."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_object_retrieval_sse_c": {
+    "recorded-date": "14-08-2024, 17:16:18",
+    "recorded-content": {
+      "put-obj-sse-c": {
+        "ETag": "\"6e1dd38f1774369f29f29865959f470f\"",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-sse-c": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-obj-sse-c-wrong-key": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "get-obj-sse-c-wrong-algo": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "KMS",
+          "Code": "InvalidEncryptionAlgorithmError",
+          "Message": "The Encryption request you specified is not valid. Supported value: AES256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "head-obj-sse-c-wrong-algo": {
+        "Error": {
+          "Code": "400",
+          "Message": "Bad Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-obj-attrs-sse-c-wrong-algo": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "KMS",
+          "Code": "InvalidEncryptionAlgorithmError",
+          "Message": "The Encryption request you specified is not valid. Supported value: AES256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-obj-sse-c-no-md5": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "get-obj-sse-c-wrong-key-size": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "null",
+          "Code": "InvalidArgument",
+          "Message": "The secret key was invalid for the specified algorithm."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-obj-sse-c-bad-md5": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "null",
+          "Code": "InvalidArgument",
+          "Message": "The calculated MD5 hash of the key did not match the hash that was provided."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_copy_object_with_sse_c": {
+    "recorded-date": "14-08-2024, 18:24:33",
+    "recorded-content": {
+      "put-obj-sse-c": {
+        "ETag": "\"92fb632f684d80423159ba897667fd57\"",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj-sse-c-target-no-sse-c": {
+        "CopyObjectResult": {
+          "ETag": "\"6af8307c2460f2d208ad254f04be4b0d\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj-sse-c": {
+        "CopyObjectResult": {
+          "ETag": "\"3bea172833358f13bb322acea379c087\"",
+          "LastModified": "datetime"
+        },
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-sse-c-param": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-obj-no-src-sse-c": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-obj-wrong-src-sse-c-algo": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "KMS",
+          "Code": "InvalidEncryptionAlgorithmError",
+          "Message": "The Encryption request you specified is not valid. Supported value: AES256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-obj-wrong-target-sse-c-algo": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "KMS",
+          "Code": "InvalidEncryptionAlgorithmError",
+          "Message": "The Encryption request you specified is not valid. Supported value: AES256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-obj-target-double-encryption": {
+        "Error": {
+          "ArgumentName": "x-amz-server-side-encryption",
+          "ArgumentValue": "AES256",
+          "Code": "InvalidArgument",
+          "Message": "Server Side Encryption with Customer provided key is incompatible with the encryption method specified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_multipart_upload_sse_c": {
+    "recorded-date": "14-08-2024, 17:17:30",
+    "recorded-content": {
+      "create-mpu-sse-c": {
+        "Bucket": "bucket",
+        "Key": "test-sse-c-multipart",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-0": {
+        "ETag": "\"d1a74530ea27e17609ab0f7ba95f4498\"",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-1": {
+        "ETag": "\"d72af240c64a953f679f4611fca532df\"",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-2": {
+        "ETag": "\"61a9eeda93b38aea8abfddd51b4c3cef\"",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-sse-c-multipart",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 3,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "\"d1a74530ea27e17609ab0f7ba95f4498\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 5242881
+          },
+          {
+            "ETag": "\"d72af240c64a953f679f4611fca532df\"",
+            "LastModified": "datetime",
+            "PartNumber": 2,
+            "Size": 5242881
+          },
+          {
+            "ETag": "\"61a9eeda93b38aea8abfddd51b4c3cef\"",
+            "LastModified": "datetime",
+            "PartNumber": 3,
+            "Size": 5242881
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart-checksum": {
+        "Bucket": "bucket",
+        "ETag": "\"2e8e089c9b6734ded1545d08dbf5b88c-3\"",
+        "Key": "test-sse-c-multipart",
+        "Location": "<location:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-sse-c-param": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-obj-sse-c": {
+        "AcceptRanges": "bytes",
+        "Body": "",
+        "ContentLength": 15728643,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"2e8e089c9b6734ded1545d08dbf5b88c-3\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_multipart_upload_sse_c_validation": {
+    "recorded-date": "14-08-2024, 18:46:26",
+    "recorded-content": {
+      "create-mpu-no-sse-c": {
+        "Bucket": "bucket",
+        "Key": "test-sse-c-multipart",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "mpu-no-sse-c-upload-part-with-sse-c": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The multipart upload initiate requested encryption. Subsequent part requests must include the appropriate encryption parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-mpu-sse-c": {
+        "Bucket": "bucket",
+        "Key": "test-sse-c-multipart",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "UploadId": "<upload-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "mpu-sse-c-upload-part-no-sse-c": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The multipart upload initiate requested encryption. Subsequent part requests must include the appropriate encryption parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "mpu-sse-c-upload-part-wrong-sse-c": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The provided encryption parameters did not match the ones used originally."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_put_object_lifecycle_with_sse_c": {
+    "recorded-date": "14-08-2024, 17:16:11",
+    "recorded-content": {
+      "put-obj-sse-c": {
+        "ETag": "\"c064b33e9ee3f003d3066b620a0158dc\"",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj-sse-c": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"c064b33e9ee3f003d3066b620a0158dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-sse-c": {
+        "AcceptRanges": "bytes",
+        "Body": "test_data",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"c064b33e9ee3f003d3066b620a0158dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-attrs-sse-c": {
+        "ETag": "c064b33e9ee3f003d3066b620a0158dc",
+        "LastModified": "datetime",
+        "ObjectSize": 9,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-obj-sse-c": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_sse_c_with_versioning": {
+    "recorded-date": "14-08-2024, 18:38:47",
+    "recorded-content": {
+      "put-obj-sse-c-version-1": {
+        "ETag": "\"ad407de6a7cc4cea54fb43c329dcb32d\"",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-sse-c-version-2": {
+        "ETag": "\"a10681b6f0bd60688a37bd45ffc4b326\"",
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "KoitZ78ZSAQHz4+gxDpJqQ==",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-sse-c-last-version": {
+        "AcceptRanges": "bytes",
+        "Body": "version2",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"a10681b6f0bd60688a37bd45ffc4b326\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "KoitZ78ZSAQHz4+gxDpJqQ==",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-sse-c-version-2": {
+        "AcceptRanges": "bytes",
+        "Body": "version2",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"a10681b6f0bd60688a37bd45ffc4b326\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "KoitZ78ZSAQHz4+gxDpJqQ==",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-sse-c-last-version-wrong-key": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "get-obj-sse-c-version-1": {
+        "AcceptRanges": "bytes",
+        "Body": "version1",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"ad407de6a7cc4cea54fb43c329dcb32d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[COPY]": {
+    "recorded-date": "22-08-2024, 01:55:44",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-v2": {
+        "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[REPLACE]": {
+    "recorded-date": "22-08-2024, 01:55:48",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-v2": {
+        "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key2",
+            "Value": "value2"
+          }
+        ],
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty": {
+        "TagSet": [],
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key2",
+            "Value": "value2"
+          }
+        ],
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty-v1": {
+        "TagSet": [],
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive_versioned[None]": {
+    "recorded-date": "22-08-2024, 01:55:52",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-v2": {
+        "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty": {
+        "CopyObjectResult": {
+          "ETag": "\"c814444dd0b31747f0a59e12a5351daa\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1-v2"
+          }
+        ],
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-tag-empty-v1": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copy-object-tag-empty-v1": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          }
+        ],
+        "VersionId": "<version-id:6>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

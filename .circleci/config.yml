@@ -577,6 +577,36 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-lambda-event-source-mapping-v2-feature:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test Lambda Event Source Mapping v2 feature
+          environment:
+            LAMBDA_EVENT_SOURCE_MAPPING: "v2"
+            TEST_PATH: "tests/aws/services/lambda_/event_source_mapping"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.lambda_event_source_mappingV2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/lambda_event_source_mapping_v2.xml -o junit_suite_name='lambda_event_source_mapping_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
 
   #########################
   ## Parity Metrics Jobs ##
@@ -784,9 +814,12 @@ jobs:
       - run:
           name: Publish a dev release
           command: |
-            source .venv/bin/activate
-            bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
-            make publish
+            if git describe --exact-match --tags >/dev/null 2>&1; then
+              echo "not publishing a dev release as this is a tagged commit"
+            else
+              source .venv/bin/activate
+              make publish || echo "dev release failed (maybe it is already published)"
+            fi
 
   push-to-tinybird:
     executor: ubuntu-machine-amd64
@@ -947,6 +980,10 @@ workflows:
           requires:
             - preflight
             - test-selection
+      - itest-lambda-event-source-mapping-v2-feature:
+          requires:
+            - preflight
+            - test-selection
       - unit-tests:
           requires:
             - preflight
@@ -1010,6 +1047,7 @@ workflows:
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
+            - itest-lambda-event-source-mapping-v2-feature
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
@@ -1026,6 +1064,7 @@ workflows:
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
+            - itest-lambda-event-source-mapping-v2-feature
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64

@@ -124,7 +124,7 @@ class SourceVolumeMountConfigurator:
 
     def __call__(self, cfg: ContainerConfiguration):
         # localstack source code if available
-        source = self.host_paths.localstack_project_dir / "localstack-core" / "localstack"
+        source = self.host_paths.aws_community_package_dir
         if source.exists():
             cfg.volumes.add(
                 # read_only=False is a temporary workaround to make the mounting of the pro source work
@@ -134,13 +134,7 @@ class SourceVolumeMountConfigurator:
 
         # ext source code if available
         if self.pro:
-            source = (
-                self.host_paths.localstack_pro_project_dir
-                / "localstack-pro-core"
-                / "localstack"
-                / "pro"
-                / "core"
-            )
+            source = self.host_paths.aws_pro_package_dir
             if source.exists():
                 cfg.volumes.add(
                     VolumeBind(
@@ -220,11 +214,7 @@ class EntryPointMountConfigurator:
     def __call__(self, cfg: ContainerConfiguration):
         # special case for community code
         if not self.pro:
-            host_path = (
-                self.host_paths.localstack_project_dir
-                / "localstack_core.egg-info"
-                / "entry_points.txt"
-            )
+            host_path = self.host_paths.aws_community_package_dir
             if host_path.exists():
                 cfg.volumes.append(
                     VolumeBind(
@@ -243,6 +233,38 @@ class EntryPointMountConfigurator:
             dep_path = container_path.parent.name.removesuffix(".dist-info")
             dep, ver = dep_path.split("-")
 
+            if dep == "localstack_core":
+                host_path = (
+                    self.host_paths.localstack_project_dir
+                    / "localstack-core"
+                    / "localstack_core.egg-info"
+                    / "entry_points.txt"
+                )
+                if host_path.is_file():
+                    cfg.volumes.add(
+                        VolumeBind(
+                            str(host_path),
+                            str(container_path),
+                            read_only=True,
+                        )
+                    )
+                    continue
+            elif dep == "localstack_ext":
+                host_path = (
+                    self.host_paths.localstack_pro_project_dir
+                    / "localstack-pro-core"
+                    / "localstack_ext.egg-info"
+                    / "entry_points.txt"
+                )
+                if host_path.is_file():
+                    cfg.volumes.add(
+                        VolumeBind(
+                            str(host_path),
+                            str(container_path),
+                            read_only=True,
+                        )
+                    )
+                    continue
             for host_path in self.host_paths.workspace_dir.glob(
                 f"*/{dep}.egg-info/entry_points.txt"
             ):

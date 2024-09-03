@@ -101,7 +101,7 @@ class TestEvents:
         response = aws_client.events.put_events(Entries=entries)
         snapshot.match("put-events", response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
         reason="V1 provider does not support this feature",
@@ -189,7 +189,8 @@ class TestEvents:
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
         snapshot.match("put-events-exceed-limit-error", e.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
+    # tests for legacy v1 provider delete once v1 provider is removed
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, aws_client
@@ -223,8 +224,8 @@ class TestEvents:
 
         assert [json.loads(event["Detail"]) for event in sorted_events] == event_details_to_publish
 
-    @markers.aws.unknown
-    # TODO move to schedule
+    @markers.aws.only_localstack
+    # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_scheduled_expression_events(
         self,
@@ -244,7 +245,7 @@ class TestEvents:
         queue_name = f"queue-{short_uid()}"
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         rule_name = f"rule-{short_uid()}"
-        sm_role_arn = arns.iam_role_arn("sfn_role", account_id=account_id)
+        sm_role_arn = arns.iam_role_arn("sfn_role", account_id=account_id, region_name=region_name)
         sm_name = f"state-machine-{short_uid()}"
         topic_target_id = f"target-{short_uid()}"
         sm_target_id = f"target-{short_uid()}"
@@ -363,7 +364,8 @@ class TestEvents:
         clean_up(rule_name=rule_name, target_ids=target_ids, queue_url=queue_url)
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
+    # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_api_destinations(self, httpserver: HTTPServer, auth, aws_client, clean_up):
@@ -523,7 +525,8 @@ class TestEvents:
                 assert oauth_request.headers["oauthheader"] == "value2"
                 assert oauth_request.args["oauthquery"] == "value3"
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
+    # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_create_connection_validations(self, aws_client):
         connection_name = "This should fail with two errors 123467890123412341234123412341234"

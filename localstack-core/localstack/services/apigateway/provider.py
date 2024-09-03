@@ -428,7 +428,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         # find matching hosted zone
         zone_id = None
-        route53 = connect_to().route53
+        # TODO check if this call is IAM enforced
+        route53 = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).route53
         hosted_zones = route53.list_hosted_zones().get("HostedZones", [])
         hosted_zones = [hz for hz in hosted_zones if domain_name.endswith(hz["Name"].strip("."))]
         zone_id = hosted_zones[0]["Id"].replace("/hostedzone/", "") if hosted_zones else zone_id
@@ -1918,6 +1921,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Integrations of type 'AWS_PROXY' currently only supports "
                     "Lambda function and Firehose stream invocations."
                 )
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
+        resource = moto_rest_api.resources.get(request.get("resourceId"))
+        if not resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        method = resource.resource_methods.get(request.get("httpMethod"))
+        if not method:
+            raise NotFoundException("Invalid Method identifier specified")
 
         # TODO: if the IntegrationType is AWS, `credentials` is mandatory
         moto_request = copy.copy(request)
@@ -2003,11 +2014,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutIntegrationResponseRequest,
     ) -> IntegrationResponse:
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
+        moto_resource = moto_rest_api.resources.get(request.get("resourceId"))
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        method = moto_resource.resource_methods.get(request.get("httpMethod"))
+        if not method:
+            raise NotFoundException("Invalid Method identifier specified")
+
         response = call_moto(context)
         # Moto has a specific case where it will set a None to an empty dict, but AWS does not behave the same
         if request.get("responseTemplates") is None:
-            moto_rest_api = get_moto_rest_api(context, request.get("restApiId"))
-            moto_resource = moto_rest_api.resources.get(request["resourceId"])
             method_integration = moto_resource.resource_methods[
                 request["httpMethod"]
             ].method_integration

@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
 from localstack.services.kms.utils import get_hash_algorithm
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
@@ -174,6 +175,9 @@ class TestKMS:
     def test_get_key_in_different_region(
         self, kms_client_for_region, kms_create_key, snapshot, region_name, secondary_region_name
     ):
+        snapshot.add_transformer(
+            snapshot.transform.regex(secondary_region_name, "<secondary-region>")
+        )
         client_region = region_name
         key_region = secondary_region_name
         us_east_1_kms_client = kms_client_for_region(client_region)
@@ -580,6 +584,41 @@ class TestKMS:
         )["Plaintext"]
         assert base64.b64decode(plaintext) == message
 
+    @pytest.mark.parametrize(
+        "key_spec,algo",
+        [
+            ("RSA_2048", "RSAES_OAEP_SHA_1"),
+            ("RSA_2048", "RSAES_OAEP_SHA_256"),
+            ("RSA_3072", "RSAES_OAEP_SHA_1"),
+            ("RSA_3072", "RSAES_OAEP_SHA_256"),
+            ("RSA_4096", "RSAES_OAEP_SHA_1"),
+            ("RSA_4096", "RSAES_OAEP_SHA_256"),
+        ],
+    )
+    @markers.aws.validated
+    def test_symmetric_encrypt_offline_decrypt_online(
+        self, kms_create_key, key_spec, algo, aws_client
+    ):
+        key = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)
+        response = aws_client.kms.get_public_key(KeyId=key["KeyId"])
+
+        pub_key = response.get("PublicKey")
+
+        public_key = load_der_public_key(pub_key)
+        message = b"test message 123 !%$@ 1234567890"
+        ciphertext = public_key.encrypt(
+            base64.b64encode(message),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+        plaintext = aws_client.kms.decrypt(
+            KeyId=key["KeyId"], CiphertextBlob=ciphertext, EncryptionAlgorithm=algo
+        )["Plaintext"]
+        assert base64.b64decode(plaintext) == message
+
     @markers.aws.validated
     @pytest.mark.parametrize(
         "key_spec,algo",
@@ -803,6 +842,9 @@ class TestKMS:
         assert not key["KeyId"].startswith("mrk-")
         snapshot.match("non_multi_region_keys_should_not_have_multi_region_properties", key)
 
+    @pytest.mark.skipif(
+        not in_default_partition(), reason="Test not applicable in non-default partitions"
+    )
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

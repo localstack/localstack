@@ -229,7 +229,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/LoanBrokerBanksTable",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/LoanBrokerBanksTable",
           "TableId": "<uuid:1>",
           "TableName": "LoanBrokerBanksTable",
           "TableSizeBytes": 0,

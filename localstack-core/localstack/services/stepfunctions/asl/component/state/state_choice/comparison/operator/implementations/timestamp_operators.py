@@ -10,7 +10,7 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
     Operator,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class TimestampEquals(Operator):
@@ -44,7 +44,7 @@ class TimestampEqualsPath(TimestampEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = TimestampEqualsPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -80,7 +80,7 @@ class TimestampGreaterThanPath(TimestampGreaterThan):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = TimestampGreaterThanPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -116,7 +116,7 @@ class TimestampGreaterThanEqualsPath(TimestampGreaterThanEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = TimestampGreaterThanEqualsPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -152,7 +152,7 @@ class TimestampLessThanPath(TimestampLessThan):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = TimestampLessThanPath._compare(variable, comp_value)
         env.stack.append(res)
 
@@ -188,6 +188,6 @@ class TimestampLessThanEqualsPath(TimestampLessThanEquals):
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
         inp = env.stack[-1]
-        comp_value = JSONPathUtils.extract_json(value, inp)
+        comp_value = extract_json(value, inp)
         res = TimestampLessThanEqualsPath._compare(variable, comp_value)
         env.stack.append(res)

@@ -72,6 +72,7 @@ from localstack.utils.aws.arns import (
     ArnData,
     extract_account_id_from_arn,
     extract_region_from_arn,
+    get_partition,
     parse_arn,
 )
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
@@ -162,6 +163,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 moto_response["Attributes"][key] = getattr(moto_topic_model, attr)
             elif attr == "signature_version":
                 moto_response["Attributes"]["SignatureVersion"] = moto_topic_model.signature_version
+            elif attr == "archive_policy":
+                moto_response["Attributes"]["ArchivePolicy"] = moto_topic_model.archive_policy
         return moto_response
 
     def publish_batch(
@@ -692,8 +695,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
                 return SubscribeResponse(SubscriptionArn=sub["SubscriptionArn"])
 
-        principal = sns_constants.DUMMY_SUBSCRIPTION_PRINCIPAL.replace(
-            "{{account_id}}", context.account_id
+        principal = sns_constants.DUMMY_SUBSCRIPTION_PRINCIPAL.format(
+            partition=get_partition(context.region), account_id=context.account_id
         )
         subscription_arn = create_subscription_arn(topic_arn)
         subscription = SnsSubscription(

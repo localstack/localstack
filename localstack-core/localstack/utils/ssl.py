@@ -2,13 +2,17 @@ import logging
 import os
 
 from localstack import config
-from localstack.constants import API_ENDPOINT, SSL_CERT_URL, SSL_CERT_URL_FALLBACK
+from localstack.constants import API_ENDPOINT, ASSETS_ENDPOINT
 from localstack.utils.crypto import generate_ssl_cert
-from localstack.utils.http import download, download_github_artifact
+from localstack.utils.http import download
 from localstack.utils.time import now
+from localstack.version import __version__ as version
 
 LOG = logging.getLogger(__name__)
 
+# Download URLs
+SSL_CERT_URL = f"{ASSETS_ENDPOINT}/local-certs/localstack.cert.key?version={version}"
+SSL_CERT_URL_FALLBACK = f"{API_ENDPOINT}/proxy/localstack.cert.key?version={version}"
 
 # path for test certificate
 _SERVER_CERT_PEM_FILE = "server.test.pem"
@@ -29,7 +33,7 @@ def setup_ssl_cert():
 
     # cache file for 6 hours (non-enterprise) or forever (enterprise)
     if os.path.exists(target_file):
-        cache_duration_secs = 6 * 60 * 60
+        cache_duration_secs = 24 * 60 * 60
         mod_time = os.path.getmtime(target_file)
         if mod_time > (now() - cache_duration_secs):
             LOG.debug("Using cached SSL certificate (less than 6hrs since last update).")
@@ -39,19 +43,17 @@ def setup_ssl_cert():
     LOG.debug("Attempting to download local SSL certificate file")
 
     # apply timeout (and fall back to using self-signed certs)
-    timeout_gh = 3  # short timeout for GitHub (default download)
-    timeout_proxy = 5  # slightly higher timeout for our proxy
+    timeout = 5  # slightly higher timeout for our proxy
     try:
-        return download_github_artifact(SSL_CERT_URL, target_file, timeout=timeout_gh)
+        return download(SSL_CERT_URL, target_file, timeout=timeout)
     except Exception:
         # try fallback URL, directly from our API proxy
-        url = SSL_CERT_URL_FALLBACK.format(api_endpoint=API_ENDPOINT)
         try:
-            return download(url, target_file, timeout=timeout_proxy)
+            return download(SSL_CERT_URL_FALLBACK, target_file, timeout=timeout)
         except Exception as e:
             LOG.info(
                 "Unable to download local test SSL certificate from %s to %s (using self-signed cert as fallback): %s",
-                url,
+                SSL_CERT_URL_FALLBACK,
                 target_file,
                 e,
             )

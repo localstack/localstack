@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import json
 import logging
+import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, TypedDict, Union
@@ -38,7 +39,7 @@ from localstack.config import LEGACY_V2_S3_PROVIDER
 from localstack.services.s3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.services.s3.utils import _create_invalid_argument_exc
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition, parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import short_uid
@@ -241,6 +242,7 @@ class BucketVerificationContext:
 
     request_id: str
     bucket_name: str
+    region: str
     configuration: Dict
     skip_destination_validation: bool
 
@@ -320,6 +322,7 @@ class BaseNotifier:
                 BucketVerificationContext(
                     configuration=configuration,
                     bucket_name=bucket_name,
+                    region=context.region,
                     request_id=context.request_id,
                     skip_destination_validation=skip_destination_validation,
                 )
@@ -346,7 +349,7 @@ class BaseNotifier:
 
         arn, argument_name = self._get_arn_value_and_name(configuration)
 
-        if not arn.startswith(f"arn:aws:{self.service_name}:"):
+        if not re.match(f"{ARN_PARTITION_REGEX}:{self.service_name}:", arn):
             raise _create_invalid_argument_exc(
                 "The ARN could not be parsed", name=argument_name, value=arn
             )
@@ -385,6 +388,7 @@ class BaseNotifier:
         # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
         # TODO: think about caching or generating the payload only once, because only the config_id changes
         #  except if it is EventBridge. Check that.
+        partition = get_partition(ctx.region)
         record = EventRecord(
             eventVersion="2.1",
             eventSource="aws:s3",
@@ -408,7 +412,7 @@ class BaseNotifier:
                     "ownerIdentity": {
                         "principalId": "A3NL1KOZZKExample"
                     },  # TODO: use proper principal?
-                    "arn": f"arn:aws:s3:::{ctx.bucket_name}",
+                    "arn": f"arn:{partition}:s3:::{ctx.bucket_name}",
                 },
                 object={
                     "key": ctx.key_name,
@@ -483,7 +487,7 @@ class SqsNotifier(BaseNotifier):
         # send test event with the request metadata for permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
         sqs_client = connect_to(region_name=arn_data["region"]).sqs.request_metadata(
-            source_arn=s3_bucket_arn(verification_ctx.bucket_name),
+            source_arn=s3_bucket_arn(verification_ctx.bucket_name, region=verification_ctx.region),
             service_principal=ServicePrincipal.s3,
         )
         test_payload = self._get_test_payload(verification_ctx)
@@ -508,7 +512,8 @@ class SqsNotifier(BaseNotifier):
 
         parsed_arn = parse_arn(queue_arn)
         sqs_client = connect_to(region_name=parsed_arn["region"]).sqs.request_metadata(
-            source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
+            source_arn=s3_bucket_arn(ctx.bucket_name, region=ctx.region),
+            service_principal=ServicePrincipal.s3,
         )
         try:
             queue_url = arns.sqs_queue_url_for_arn(queue_arn)
@@ -560,7 +565,7 @@ class SnsNotifier(BaseNotifier):
             )
 
         sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
-            source_arn=s3_bucket_arn(verification_ctx.bucket_name),
+            source_arn=s3_bucket_arn(verification_ctx.bucket_name, region=verification_ctx.region),
             service_principal=ServicePrincipal.s3,
         )
         test_payload = self._get_test_payload(verification_ctx)
@@ -596,7 +601,8 @@ class SnsNotifier(BaseNotifier):
 
         arn_data = parse_arn(topic_arn)
         sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
-            source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
+            source_arn=s3_bucket_arn(ctx.bucket_name, region=ctx.region),
+            service_principal=ServicePrincipal.s3,
         )
         try:
             sns_client.publish(
@@ -642,7 +648,7 @@ class LambdaNotifier(BaseNotifier):
                 value="The destination Lambda does not exist",
             )
         lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
-            source_arn=s3_bucket_arn(verification_ctx.bucket_name),
+            source_arn=s3_bucket_arn(verification_ctx.bucket_name, region=verification_ctx.region),
             service_principal=ServicePrincipal.s3,
         )
         try:
@@ -662,7 +668,8 @@ class LambdaNotifier(BaseNotifier):
         arn_data = parse_arn(lambda_arn)
 
         lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
-            source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
+            source_arn=s3_bucket_arn(ctx.bucket_name, region=ctx.region),
+            service_principal=ServicePrincipal.s3,
         )
 
         try:
@@ -688,9 +695,10 @@ class EventBridgeNotifier(BaseNotifier):
     ) -> PutEventsRequestEntry:
         # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html
         # see also https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+        partition = get_partition(ctx.region)
         entry: PutEventsRequestEntry = {
             "Source": "aws.s3",
-            "Resources": [f"arn:aws:s3:::{ctx.bucket_name}"],
+            "Resources": [f"arn:{partition}:s3:::{ctx.bucket_name}"],
             "Time": ctx.event_time,
         }
 

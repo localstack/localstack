@@ -19,6 +19,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
+from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
@@ -54,6 +55,13 @@ def get_lambda_logs_event(aws_client):
     return _get_lambda_logs_event
 
 
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_v2_esm,
+    paths=[
+        # Lifecycle updates not yet implemented in ESM v2
+        "$..LastProcessingResult",
+    ],
+)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # dynamodb issues, not related to lambda
@@ -323,6 +331,16 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("list_event_source_mapping_result", list_esm)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_esm,
+        paths=[
+            # Pipe uses "context" (extra)
+            "$..context",
+            # ESM uses "requestContext" and "responseContext" (not implemented yet)
+            "$..requestContext",
+            "$..responseContext",
+        ],
+    )
     # FIXME last three skip verification entries are purely due to numbering mismatches
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -406,7 +424,7 @@ class TestDynamoDBEventSourceMapping:
             return res
 
         # It can take ~3 min against AWS until the message is received
-        sleep = 10 if is_aws_cloud() else 5
+        sleep = 15 if is_aws_cloud() else 5
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 
@@ -536,6 +554,8 @@ class TestDynamoDBEventSourceMapping:
         Test assumption: The first item MUST always match the filter and the second item CAN match the filter.
         => This enables two-step testing (i.e., snapshots between inserts) but is unreliable and should be revised.
         """
+        if is_v2_esm() and filter == {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]}:
+            pytest.skip(reason="content_multiple_filters failing for ESM v2 (needs investigation)")
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         max_retries = 50
@@ -618,6 +638,9 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("lambda-multiple-log-events", events)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_v2_esm(), reason="Invalid filter detection not yet implemented in ESM v2"
+    )
     @pytest.mark.parametrize(
         "filter",
         [

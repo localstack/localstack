@@ -82,7 +82,7 @@ def test_lambda_aws_proxy_integration(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):
     function_name = f"test-function-{short_uid()}"
-    stage_name = "test"
+    stage_name = "stage"
     snapshot.add_transformer(snapshot.transform.apigateway_api())
     snapshot.add_transformer(snapshot.transform.apigateway_proxy_event())
     # TODO: update global transformers, but we will need to regenerate all snapshots at once
@@ -129,39 +129,44 @@ def test_lambda_aws_proxy_integration(
     )
     # use a regex transform as create_rest_apigw fixture does not return the original response
     snapshot.add_transformer(snapshot.transform.regex(api_id, replacement="<api-id>"), priority=-1)
-    resource_id = aws_client.apigateway.create_resource(
+    resource_id_proxy = aws_client.apigateway.create_resource(
         restApiId=api_id, parentId=root, pathPart="{proxy+}"
     )["id"]
-    aws_client.apigateway.put_method(
-        restApiId=api_id,
-        resourceId=resource_id,
-        httpMethod="ANY",
-        authorizationType="NONE",
-    )
+    resource_id_hardcoded = aws_client.apigateway.create_resource(
+        restApiId=api_id, parentId=root, pathPart="hardcoded"
+    )["id"]
+    for resource_id in (resource_id_proxy, resource_id_hardcoded):
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+        )
 
-    # Lambda AWS_PROXY integration
-    aws_client.apigateway.put_integration(
-        restApiId=api_id,
-        resourceId=resource_id,
-        httpMethod="ANY",
-        type="AWS_PROXY",
-        integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
-        credentials=role_arn,
-    )
+        # Lambda AWS_PROXY integration
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            type="AWS_PROXY",
+            integrationHttpMethod="POST",
+            uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+            credentials=role_arn,
+        )
+
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
-    # invoke rest api
-    invocation_url = api_invoke_url(
-        api_id=api_id,
-        stage=stage_name,
-        path="/test-path",
-    )
+    def get_invoke_url(path: str) -> str:
+        return api_invoke_url(
+            api_id=api_id,
+            stage=stage_name,
+            path=path,
+        )
 
     def invoke_api(url):
         # use test header with different casing to check if it is preserved in the proxy payload
         # authorization is a weird case, it will get Pascal cased by default
-        response = requests.get(
+        _response = requests.get(
             url,
             headers={
                 "User-Agent": "python-requests/testing",
@@ -170,48 +175,46 @@ def test_lambda_aws_proxy_integration(
             },
             verify=False,
         )
-        assert 200 == response.status_code
-        return response
+        if not _response.ok:
+            print(f"{_response.content=}")
+        assert _response.status_code == 200
+        return _response
 
+    invocation_url = get_invoke_url(path="/proxy-value")
     # retry is necessary against AWS, probably IAM permission delay
     response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
     snapshot.match("invocation-payload-without-trailing-slash", response.json())
 
     # invoke rest api with trailing slash
-    response_trailing_slash = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/")
+    invocation_url = get_invoke_url(path="/proxy-value/")
+    response_trailing_slash = invoke_api(url=invocation_url)
     snapshot.match("invocation-payload-with-trailing-slash", response_trailing_slash.json())
 
     # invoke rest api with double slash in proxy param
-    response_double_slash = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}//test-path"
-    )
+    invocation_url = get_invoke_url(path="/proxy-value//double-slash")
+    response_double_slash = invoke_api(url=invocation_url)
     snapshot.match("invocation-payload-with-double-slash", response_double_slash.json())
 
     # invoke rest api with prepended slash to the stage (//<stage>/<path>)
+    invocation_url = get_invoke_url(path="/proxy-value")
     double_slash_before_stage = invocation_url.replace(f"/{stage_name}/", f"//{stage_name}/")
-    response_prepend_slash = retry(invoke_api, sleep=2, retries=10, url=double_slash_before_stage)
+    response_prepend_slash = invoke_api(url=double_slash_before_stage)
     snapshot.match(
         "invocation-payload-with-prepended-slash-to-stage", response_prepend_slash.json()
     )
 
     # invoke rest api with prepended slash
-    slash_between_stage_and_path = invocation_url.replace("/test-path", "//test-path")
-    response_prepend_slash = retry(
-        invoke_api, sleep=2, retries=10, url=slash_between_stage_and_path
-    )
+    slash_between_stage_and_path = get_invoke_url(path="//proxy-value")
+    response_prepend_slash = invoke_api(url=slash_between_stage_and_path)
     snapshot.match("invocation-payload-with-prepended-slash", response_prepend_slash.json())
 
-    response_no_trailing_slash = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test"
-    )
+    response_no_trailing_slash = invoke_api(url=f"{invocation_url}?urlparam=test")
     snapshot.match(
         "invocation-payload-without-trailing-slash-and-query-params",
         response_no_trailing_slash.json(),
     )
 
-    response_trailing_slash_param = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test"
-    )
+    response_trailing_slash_param = invoke_api(url=f"{invocation_url}/?urlparam=test")
     snapshot.match(
         "invocation-payload-with-trailing-slash-and-query-params",
         response_trailing_slash_param.json(),
@@ -219,12 +222,7 @@ def test_lambda_aws_proxy_integration(
 
     # invoke rest api with encoded information in URL path
     path_encoded_emails = "user/test%2Balias@gmail.com/plus/test+alias@gmail.com"
-    response_path_encoding = retry(
-        invoke_api,
-        sleep=2,
-        retries=10,
-        url=f"{invocation_url}/api/{path_encoded_emails}",
-    )
+    response_path_encoding = invoke_api(url=f"{invocation_url}/api/{path_encoded_emails}")
     snapshot.match(
         "invocation-payload-with-path-encoded-email",
         response_path_encoding.json(),
@@ -242,12 +240,7 @@ def test_lambda_aws_proxy_integration(
             "ignored=this-does-not-appear-after-the-hash",
         ]
     )
-    response_params_encoding = retry(
-        invoke_api,
-        sleep=2,
-        retries=10,
-        url=f"{invocation_url}/api?{url_params}",
-    )
+    response_params_encoding = invoke_api(url=f"{invocation_url}/api?{url_params}")
     snapshot.match(
         "invocation-payload-with-params-encoding",
         response_params_encoding.json(),
@@ -273,6 +266,15 @@ def test_lambda_aws_proxy_integration(
 
     responses = retry(invoke_api_with_multi_value_header, sleep=2, retries=10, url=invocation_url)
     snapshot.match("invocation-payload-with-params-encoding-multi", responses.json())
+
+    # invoke the hardcoded path with prepended slashes
+    invocation_url_hardcoded = api_invoke_url(
+        api_id=api_id,
+        stage=stage_name,
+        path="//hardcoded",
+    )
+    response_hardcoded = retry(invoke_api, sleep=2, retries=10, url=invocation_url_hardcoded)
+    snapshot.match("invocation-hardcoded", response_hardcoded.json())
 
 
 @markers.aws.validated

@@ -1,11 +1,14 @@
 import copy
 import logging
 import re
+import time
+from secrets import token_hex
 from typing import Type, TypedDict
 
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
 from localstack.services.apigateway.models import MergedRestApi, RestApiContainer, RestApiDeployment
+from localstack.utils.aws.arns import get_partition
 
 from .context import RestApiInvocationContext
 from .moto_helpers import get_resources_from_moto_rest_api
@@ -36,7 +39,9 @@ def freeze_rest_api(
     )
 
 
-def render_uri_with_stage_variables(uri: str | None, stage_variables: dict[str, str]) -> str | None:
+def render_uri_with_stage_variables(
+    uri: str | None, stage_variables: dict[str, str] | None
+) -> str | None:
     """
     https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html#stage-variables-in-integration-HTTP-uris
     URI=https://${stageVariables.<variable_name>}
@@ -45,9 +50,10 @@ def render_uri_with_stage_variables(uri: str | None, stage_variables: dict[str, 
     """
     if not uri:
         return uri
+    stage_vars = stage_variables or {}
 
     def replace_match(match_obj: re.Match) -> str:
-        return stage_variables.get(match_obj.group("varName"), "")
+        return stage_vars.get(match_obj.group("varName"), "")
 
     return _stage_variable_pattern.sub(replace_match, uri)
 
@@ -85,7 +91,7 @@ def get_source_arn(context: RestApiInvocationContext):
     method = context.resource_method["httpMethod"]
     path = context.resource["path"]
     return (
-        "arn:aws:execute-api"
+        f"arn:{get_partition(context.region)}:execute-api"
         f":{context.region}"
         f":{context.account_id}"
         f":{context.api_id}"
@@ -112,3 +118,27 @@ def validate_sub_dict_of_typed_dict(typed_dict: Type[TypedDict], obj: dict) -> b
     typed_dict_keys = {*typed_dict.__required_keys__, *typed_dict.__optional_keys__}
 
     return not bool(set(obj) - typed_dict_keys)
+
+
+def generate_trace_id():
+    """https://docs.aws.amazon.com/xray/latest/devguide/xray-api-sendingdata.html#xray-api-traceids"""
+    original_request_epoch = int(time.time())
+    timestamp_hex = hex(original_request_epoch)[2:]
+    version_number = "1"
+    unique_id = token_hex(12)
+    return f"{version_number}-{timestamp_hex}-{unique_id}"
+
+
+def generate_trace_parent():
+    return token_hex(8)
+
+
+def parse_trace_id(trace_id: str) -> dict[str, str]:
+    split_trace = trace_id.split(";")
+    trace_values = {}
+    for trace_part in split_trace:
+        key_value = trace_part.split("=")
+        if len(key_value) == 2:
+            trace_values[key_value[0].capitalize()] = key_value[1]
+
+    return trace_values

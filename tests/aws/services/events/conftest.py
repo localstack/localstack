@@ -4,6 +4,7 @@ from typing import Tuple
 
 import pytest
 
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.events.helper_functions import put_entries_assert_results_sqs
@@ -71,7 +72,7 @@ def events_create_default_or_custom_event_bus(events_create_event_bus, region_na
     def _create_default_or_custom_event_bus(event_bus_type: str = "default"):
         if event_bus_type == "default":
             event_bus_name = "default"
-            event_bus_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+            event_bus_arn = f"arn:{get_partition(region_name)}:events:{region_name}:{account_id}:event-bus/default"
         else:
             event_bus_name = f"test-bus-{short_uid()}"
             response = events_create_event_bus(Name=event_bus_name)

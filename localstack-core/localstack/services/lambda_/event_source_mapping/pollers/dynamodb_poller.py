@@ -1,9 +1,12 @@
 import logging
+from datetime import datetime
 
 from botocore.client import BaseClient
 
 from localstack.aws.api.dynamodbstreams import StreamStatus
-from localstack.services.lambda_.event_source_mapping.event_processor import EventProcessor
+from localstack.services.lambda_.event_source_mapping.event_processor import (
+    EventProcessor,
+)
 from localstack.services.lambda_.event_source_mapping.pollers.stream_poller import StreamPoller
 
 LOG = logging.getLogger(__name__)
@@ -58,6 +61,11 @@ class DynamoDBPoller(StreamPoller):
             shards[shard_id] = get_shard_iterator_response["ShardIterator"]
         return shards
 
+    def stream_arn_param(self) -> dict:
+        # Not supported for GetRecords:
+        # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_GetRecords.html
+        return {}
+
     def event_source(self) -> str:
         return "aws:dynamodb"
 
@@ -74,9 +82,11 @@ class DynamoDBPoller(StreamPoller):
             dynamodb = record["dynamodb"]
 
             if creation_time := dynamodb.get("ApproximateCreationDateTime"):
-                dynamodb["ApproximateCreationDateTime"] = int(creation_time.timestamp())
+                # Float conversion validated by TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
+                dynamodb["ApproximateCreationDateTime"] = float(creation_time.timestamp())
             event = {
                 # TODO: add this metadata after filtering (these are based on the original record!)
+                #  This requires some design adjustment because the eventId and eventName depend on the record.
                 "eventID": record["eventID"],
                 "eventName": record["eventName"],
                 # record content
@@ -84,3 +94,16 @@ class DynamoDBPoller(StreamPoller):
             }
             events.append(event)
         return events
+
+    def failure_payload_details_field_name(self) -> str:
+        return "DDBStreamBatchInfo"
+
+    def get_approximate_arrival_time(self, record: dict) -> float:
+        # TODO: validate whether the default should be now
+        # Optional according to AWS docs:
+        # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_StreamRecord.html
+        # TODO: parse float properly if present from ApproximateCreationDateTime -> now works, compare via debug!
+        return record["dynamodb"].get("todo", datetime.utcnow().timestamp())
+
+    def get_sequence_number(self, record: dict) -> str:
+        return record["dynamodb"]["SequenceNumber"]
