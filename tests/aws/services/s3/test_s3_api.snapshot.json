@@ -3625,5 +3625,19 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_object_version_id_format": {
+    "recorded-date": "03-09-2024, 13:17:03",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
