@@ -2145,7 +2145,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: update and test State and StateTransitionReason for ESM v2
 
         if event_source_arn:  # TODO: validate pattern
-            esms = [e for e in esms if e["EventSourceArn"] == event_source_arn]
+            esms = [e for e in esms if e.get("EventSourceArn") == event_source_arn]
 
         if function_name:
             esms = [e for e in esms if function_name in e["FunctionArn"]]
