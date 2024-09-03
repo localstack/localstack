@@ -35,10 +35,12 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
     def _get_download_url(self) -> str:
         try:
-            LOG.debug("Determining the latest Java version")
+            LOG.debug("Determining the latest Java build version")
             return self.download_url_latest_release()
         except Exception as exc:  # noqa
-            LOG.debug("Unable to determine the latest Java version. Using pinned versions: %s", exc)
+            LOG.debug(
+                "Unable to determine the latest Java build version. Using pinned versions: %s", exc
+            )
             return self.download_url_fallback()
 
     def _post_process(self, target: InstallTarget) -> None:
@@ -82,11 +84,17 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def get_java_home(self) -> str:
         return self.get_installed_dir()
 
+    @property
+    def arch(self) -> str:
+        return (
+            "x64" if get_arch() == Arch.amd64 else "aarch64" if get_arch() == Arch.arm64 else None
+        )
+
     def download_url_latest_release(self) -> str:
         """
         Return the download URL for latest stable JDK build.
         """
-        endpoint = f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?os=linux&architecture=x64&image_type=jdk"
+        endpoint = f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?os=linux&architecture={self.arch}&image_type=jdk"
         response = requests.get(endpoint, headers={"user-agent": "example/0.0.0"}).json()
         return response[0]["binary"]["package"]["link"]
 
@@ -95,9 +103,6 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         Return the download URL for pinned JDK build.
         """
         os = "linux" if is_linux() else "mac" if is_mac_os() else None
-        arch = (
-            "x64" if get_arch() == Arch.amd64 else "aarch64" if get_arch() == Arch.arm64 else None
-        )
 
         semver = JAVA_VERSIONS[self.version]
         tag_slug = f"jdk-{semver}"
@@ -109,7 +114,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             tag_slug = f"jdk{semver}"
 
         return JDK_DOWNLOAD_URL.format(
-            version=self.version, tag_slug=tag_slug, os=os, arch=arch, semver_safe=semver_safe
+            version=self.version, tag_slug=tag_slug, os=os, arch=self.arch, semver_safe=semver_safe
         )
 
 
