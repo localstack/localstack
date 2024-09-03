@@ -14,7 +14,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from tests.aws.services.s3.conftest import TEST_S3_IMAGE
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE, is_v2_provider
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -143,6 +143,7 @@ def sqs_collect_s3_events(
 
             doc = json.loads(body)
             events.extend(doc["Records"])
+            sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"])
 
         assert len(events) >= min_events
 
@@ -192,12 +193,8 @@ class TestS3NotificationsToSQS:
         queue_url = sqs_create_queue()
         s3_create_sqs_bucket_notification(s3_bucket, queue_url, ["s3:ObjectCreated:Put"])
 
-        aws_client.s3.put_bucket_versioning(
-            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
-        )
-
-        obj0 = aws_client.s3.put_object(Bucket=s3_bucket, Key="my_key_0", Body="something")
-        obj1 = aws_client.s3.put_object(Bucket=s3_bucket, Key="my_key_1", Body="something else")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="my_key_0", Body="something")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="my_key_1", Body="something else")
 
         # collect s3 events from SQS queue
         events = sqs_collect_s3_events(aws_client.sqs, queue_url, min_events=2)
@@ -206,22 +203,6 @@ class TestS3NotificationsToSQS:
         # order seems not be guaranteed - sort so we can rely on the order
         events.sort(key=lambda x: x["s3"]["object"]["size"])
         snapshot.match("receive_messages", {"messages": events})
-        # assert
-        assert events[0]["eventSource"] == "aws:s3"
-        assert events[0]["eventName"] == "ObjectCreated:Put"
-        assert events[0]["s3"]["bucket"]["name"] == s3_bucket
-        assert events[0]["s3"]["object"]["key"] == "my_key_0"
-        assert events[0]["s3"]["object"]["size"] == 9
-        assert events[0]["s3"]["object"]["versionId"]
-        assert obj0["VersionId"] == events[0]["s3"]["object"]["versionId"]
-
-        assert events[1]["eventSource"] == "aws:s3"
-        assert events[0]["eventName"] == "ObjectCreated:Put"
-        assert events[1]["s3"]["bucket"]["name"] == s3_bucket
-        assert events[1]["s3"]["object"]["key"] == "my_key_1"
-        assert events[1]["s3"]["object"]["size"] == 14
-        assert events[1]["s3"]["object"]["versionId"]
-        assert obj1["VersionId"] == events[1]["s3"]["object"]["versionId"]
 
     @markers.aws.validated
     def test_object_created_copy(
@@ -1065,3 +1046,70 @@ class TestS3NotificationsToSQS:
         # order seems not be guaranteed - sort, so we can rely on the order
         events.sort(key=lambda x: x["eventTime"])
         snapshot.match("receive_messages", {"messages": events})
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Not implemented in Legacy provider",
+    )
+    def test_object_created_put_versioned(
+        self, s3_bucket, sqs_create_queue, s3_create_sqs_bucket_notification, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # setup fixture
+        queue_url = sqs_create_queue()
+        s3_create_sqs_bucket_notification(
+            s3_bucket, queue_url, ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"]
+        )
+
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        test_key = "test-key"
+        # We snapshot all objects to snapshot their VersionId, to be sure the events correspond well to what we think
+        # create first version
+        obj_ver1 = aws_client.s3.put_object(Bucket=s3_bucket, Key=test_key, Body=b"data")
+        snapshot.match("obj-ver1", obj_ver1)
+        # create second version
+        obj_ver2 = aws_client.s3.put_object(Bucket=s3_bucket, Key=test_key, Body=b"data-version2")
+        snapshot.match("obj-ver2", obj_ver2)
+        # delete the top most version, creating a DeleteMarker
+        delete_marker = aws_client.s3.delete_object(Bucket=s3_bucket, Key=test_key)
+        snapshot.match("delete-marker", delete_marker)
+        # delete a specific version (Version1)
+        delete_version = aws_client.s3.delete_object(
+            Bucket=s3_bucket, Key=test_key, VersionId=obj_ver1["VersionId"]
+        )
+        snapshot.match("delete-version", delete_version)
+
+        def _sort_events(_events: list[dict]) -> list[dict]:
+            return sorted(
+                _events,
+                key=lambda x: (
+                    x["eventName"],
+                    x["s3"]["object"].get("eTag", ""),
+                ),
+            )
+
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, min_events=4)
+        snapshot.match("message-versioning-active", _sort_events(events))
+
+        # suspend the versioning
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Suspended"}
+        )
+        # add a new object, which will have versionId = null
+        add_null_version = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=test_key, Body=b"data-version3"
+        )
+        snapshot.match("add-null-version", add_null_version)
+        # delete the DeleteMarker
+        del_delete_marker = aws_client.s3.delete_object(
+            Bucket=s3_bucket, Key=test_key, VersionId=delete_marker["VersionId"]
+        )
+        snapshot.match("del-delete-marker", del_delete_marker)
+
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, min_events=2)
+        snapshot.match("message-versioning-suspended", _sort_events(events))

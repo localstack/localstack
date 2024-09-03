@@ -11,20 +11,14 @@ from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid, short_uid
-from tests.aws.services.s3.conftest import TEST_S3_IMAGE
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE, is_v2_provider
 
 
-def is_legacy_v2_provider():
-    return config.LEGACY_V2_S3_PROVIDER
-
-
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
-)
+@markers.snapshot.skip_snapshot_verify(condition=is_v2_provider, paths=["$..ServerSideEncryption"])
 class TestS3BucketCRUD:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_legacy_v2_provider, paths=["$.delete-with-obj.Error.BucketName"]
+        condition=is_v2_provider, paths=["$.delete-with-obj.Error.BucketName"]
     )
     def test_delete_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -44,7 +38,7 @@ class TestS3BucketCRUD:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_legacy_v2_provider,
+        condition=is_v2_provider,
         paths=[
             "$..Error.BucketName",
             "$..Error.Message",
@@ -86,9 +80,7 @@ class TestS3BucketCRUD:
         snapshot.match("success-delete-bucket", delete_bucket)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
-)
+@markers.snapshot.skip_snapshot_verify(condition=is_v2_provider, paths=["$..ServerSideEncryption"])
 class TestS3ObjectCRUD:
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -449,7 +441,7 @@ class TestS3ObjectCRUD:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_legacy_v2_provider,
+        condition=is_v2_provider,
         paths=[
             "$..Delimiter",
             "$..EncodingType",
@@ -540,9 +532,7 @@ class TestS3ObjectCRUD:
         snapshot.match("get-100-200", e.value.response)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
-)
+@markers.snapshot.skip_snapshot_verify(condition=is_v2_provider, paths=["$..ServerSideEncryption"])
 class TestS3Multipart:
     # TODO: write a validated test for UploadPartCopy preconditions
 
@@ -872,9 +862,7 @@ class TestS3BucketEncryption:
     @markers.aws.validated
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_legacy_v2_provider, paths=["$..BucketKeyEnabled"]
-    )
+    @markers.snapshot.skip_snapshot_verify(condition=is_v2_provider, paths=["$..BucketKeyEnabled"])
     def test_s3_bucket_encryption_sse_kms(self, s3_bucket, kms_key, aws_client, snapshot):
         put_bucket_enc = aws_client.s3.put_bucket_encryption(
             Bucket=s3_bucket,
@@ -981,13 +969,11 @@ class TestS3BucketEncryption:
         snapshot.match("get-object-encrypted", get_object_encrypted)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
-)
+@markers.snapshot.skip_snapshot_verify(condition=is_v2_provider, paths=["$..ServerSideEncryption"])
 class TestS3BucketObjectTagging:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_legacy_v2_provider, paths=["$.get-bucket-tags.TagSet[1].Value"]
+        condition=is_v2_provider, paths=["$.get-bucket-tags.TagSet[1].Value"]
     )
     def test_bucket_tagging_crud(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
@@ -1453,7 +1439,7 @@ class TestS3ObjectLock:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_legacy_v2_provider,
+        condition=is_v2_provider,
         paths=["$.get-lock-config.ObjectLockConfiguration.Rule.DefaultRetention.Years"],
     )
     def test_get_put_object_lock_configuration(self, s3_create_bucket, aws_client, snapshot):
@@ -1565,9 +1551,7 @@ class TestS3ObjectLock:
         snapshot.match("put-lock-config-both-days-years", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_legacy_v2_provider, paths=["$..Error.BucketName"]
-    )
+    @markers.snapshot.skip_snapshot_verify(condition=is_v2_provider, paths=["$..Error.BucketName"])
     def test_get_object_lock_configuration_exc(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -1825,7 +1809,7 @@ class TestS3BucketAccelerateConfiguration:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_legacy_v2_provider,
+        condition=is_v2_provider,
         paths=[
             "$.put-bucket-accelerate-config-dot-bucket.Error.Code",
             "$.put-bucket-accelerate-config-dot-bucket.Error.Message",

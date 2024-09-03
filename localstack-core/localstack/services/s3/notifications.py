@@ -198,6 +198,7 @@ class S3EventNotificationContext:
         :return: S3EventNotificationContext
         """
         bucket_name = request_context.service_request["Bucket"]
+        event_type = EVENT_OPERATION_MAP.get(request_context.operation.wire_name, "")
 
         # TODO: test notification format when the concerned key is FakeDeleteMarker
         # it might not send notification, or s3:ObjectRemoved:DeleteMarkerCreated which we don't support yet
@@ -207,6 +208,7 @@ class S3EventNotificationContext:
             key_expiry = None
             storage_class = ""
         else:
+            # if event_type == Event.s3_LifecycleExpiration_Delete and obj
             etag = s3_object.etag.strip('"')
             key_size = s3_object.size
             key_expiry = s3_object.expires
@@ -214,7 +216,7 @@ class S3EventNotificationContext:
 
         return cls(
             request_id=request_context.request_id,
-            event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
+            event_type=event_type,
             event_time=datetime.datetime.now(),
             account_id=request_context.account_id,
             region=request_context.region,
@@ -421,14 +423,18 @@ class BaseNotifier:
             ),
         )
 
-        if ctx.key_version_id:
+        if ctx.key_version_id and ctx.key_version_id != "null":
             # object version if bucket is versioning-enabled, otherwise null
             record["s3"]["object"]["versionId"] = ctx.key_version_id
 
         event_type = ctx.event_type.lower()
         if any(e in event_type for e in ("created", "restore")):
-            record["s3"]["object"]["size"] = ctx.key_size
-            record["s3"]["object"]["eTag"] = ctx.key_etag
+            if "deletemarker" not in event_type:
+                record["s3"]["object"]["eTag"] = ctx.key_etag
+                record["s3"]["object"]["size"] = ctx.key_size
+            else:
+                record["s3"]["object"]["eTag"] = "d41d8cd98f00b204e9800998ecf8427e"
+
         if "ObjectTagging" in ctx.event_type or "ObjectAcl" in ctx.event_type:
             record["eventVersion"] = "2.3"
             record["s3"]["object"]["eTag"] = ctx.key_etag
@@ -719,6 +725,8 @@ class EventBridgeNotifier(BaseNotifier):
             "source-ip-address": "127.0.0.1",
             # TODO previously headers.get("X-Forwarded-For", "127.0.0.1").split(",")[0]
         }
+        if ctx.key_version_id and ctx.key_version_id != "null":
+            event_details["object"]["version-id"] = ctx.key_version_id
 
         if "ObjectCreated" in ctx.event_type:
             entry["DetailType"] = "Object Created"
@@ -732,10 +740,13 @@ class EventBridgeNotifier(BaseNotifier):
         elif "ObjectRemoved" in ctx.event_type:
             entry["DetailType"] = "Object Deleted"
             event_details["reason"] = "DeleteObject"
-            event_details["deletion-type"] = (
-                "Permanently Deleted"  # TODO: check with versioned bucket?
-            )
-            event_details["object"].pop("etag")
+            if "DeleteMarkerCreated" in ctx.event_type:
+                delete_type = "Delete Marker Created"
+            else:
+                delete_type = "Permanently Deleted"
+                event_details["object"].pop("etag")
+
+            event_details["deletion-type"] = delete_type
             event_details["object"].pop("size")
 
         elif "ObjectTagging" in ctx.event_type:

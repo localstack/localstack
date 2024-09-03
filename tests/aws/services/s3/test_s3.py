@@ -71,7 +71,7 @@ from localstack.utils.strings import (
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from localstack.utils.urls import localstack_host as get_localstack_host
-from tests.aws.services.s3.conftest import TEST_S3_IMAGE
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE, is_v2_provider
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -116,14 +116,6 @@ S3_POLICY = {
         }
     ],
 }
-
-
-def is_v3_provider():
-    return not LEGACY_V2_S3_PROVIDER
-
-
-def is_v2_provider():
-    return LEGACY_V2_S3_PROVIDER
 
 
 @pytest.fixture

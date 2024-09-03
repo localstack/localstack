@@ -30,7 +30,10 @@
     "last_validated_date": "2023-08-04T22:55:27+00:00"
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put": {
-    "last_validated_date": "2023-08-04T22:55:23+00:00"
+    "last_validated_date": "2024-09-03T14:22:07+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_versioned": {
+    "last_validated_date": "2024-09-03T14:30:59+00:00"
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_with_presigned_url_upload": {
     "last_validated_date": "2024-08-29T14:05:28+00:00"
