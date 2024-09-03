@@ -114,8 +114,10 @@ def aws_http_client_factory(aws_session):
 
 
 @pytest.fixture(scope="class")
-def s3_vhost_client(aws_client_factory):
-    return aws_client_factory(config=botocore.config.Config(s3={"addressing_style": "virtual"})).s3
+def s3_vhost_client(aws_client_factory, region_name):
+    return aws_client_factory(
+        config=botocore.config.Config(s3={"addressing_style": "virtual"}), region_name=region_name
+    ).s3
 
 
 @pytest.fixture
@@ -213,6 +215,29 @@ def s3_create_bucket(s3_empty_bucket, aws_client):
             aws_client.s3.delete_bucket(Bucket=bucket)
         except Exception as e:
             LOG.debug("error cleaning up bucket %s: %s", bucket, e)
+
+
+@pytest.fixture
+def s3_create_bucket_with_client(s3_empty_bucket, aws_client):
+    buckets = []
+
+    def factory(s3_client, **kwargs) -> str:
+        if "Bucket" not in kwargs:
+            kwargs["Bucket"] = f"test-bucket-{short_uid()}"
+
+        response = s3_client.create_bucket(**kwargs)
+        buckets.append(kwargs["Bucket"])
+        return response
+
+    yield factory
+
+    # cleanup
+    for bucket in buckets:
+        try:
+            s3_empty_bucket(bucket)
+            aws_client.s3.delete_bucket(Bucket=bucket)
+        except Exception as e:
+            LOG.debug(f"error cleaning up bucket {bucket}: {e}")
 
 
 @pytest.fixture

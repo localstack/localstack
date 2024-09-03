@@ -105,7 +105,7 @@ class TestS3NotificationsToSns:
     @markers.aws.validated
     def test_object_created_put(
         self,
-        s3_create_bucket,
+        s3_bucket,
         sqs_create_queue,
         sns_create_topic,
         sns_create_sqs_subscription,
@@ -116,7 +116,6 @@ class TestS3NotificationsToSns:
         snapshot.add_transformer(snapshot.transform.sns_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
 
-        bucket_name = s3_create_bucket()
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         key_name = "bucket-key"
@@ -124,12 +123,12 @@ class TestS3NotificationsToSns:
         # connect topic to queue
         sns_create_sqs_subscription(topic_arn, queue_url)
         create_sns_bucket_notification(
-            aws_client.s3, aws_client.sns, bucket_name, topic_arn, ["s3:ObjectCreated:*"]
+            aws_client.s3, aws_client.sns, s3_bucket, topic_arn, ["s3:ObjectCreated:*"]
         )
 
         # trigger the events
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key_name, Body="first event")
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key_name, Body="second event")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="first event")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="second event")
 
         # collect messages
         messages = sqs_collect_sns_messages(aws_client.sqs, queue_url, 2)
@@ -146,7 +145,7 @@ class TestS3NotificationsToSns:
         event = json.loads(message["Message"])["Records"][0]
         assert event["eventSource"] == "aws:s3"
         assert event["eventName"] == "ObjectCreated:Put"
-        assert event["s3"]["bucket"]["name"] == bucket_name
+        assert event["s3"]["bucket"]["name"] == s3_bucket
         assert event["s3"]["object"]["key"] == key_name
         assert event["s3"]["object"]["size"] == len("first event")
 
@@ -159,7 +158,7 @@ class TestS3NotificationsToSns:
         event = json.loads(message["Message"])["Records"][0]
         assert event["eventSource"] == "aws:s3"
         assert event["eventName"] == "ObjectCreated:Put"
-        assert event["s3"]["bucket"]["name"] == bucket_name
+        assert event["s3"]["bucket"]["name"] == s3_bucket
         assert event["s3"]["object"]["key"] == key_name
         assert event["s3"]["object"]["size"] == len("second event")
 
@@ -168,7 +167,7 @@ class TestS3NotificationsToSns:
         self,
         sqs_create_queue,
         sns_create_topic,
-        s3_create_bucket,
+        s3_bucket,
         sns_create_sqs_subscription,
         snapshot,
         aws_client,
@@ -176,7 +175,6 @@ class TestS3NotificationsToSns:
         # Tests s3->sns->sqs notifications
         #
         queue_name = f"queue-{short_uid()}"
-        bucket_name = s3_create_bucket()
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue(QueueName=queue_name)
 
@@ -187,10 +185,10 @@ class TestS3NotificationsToSns:
         # connect topic to queue
         sns_create_sqs_subscription(topic_arn, queue_url)
         create_sns_bucket_notification(
-            aws_client.s3, aws_client.sns, bucket_name, topic_arn, ["s3:ObjectCreated:*"]
+            aws_client.s3, aws_client.sns, s3_bucket, topic_arn, ["s3:ObjectCreated:*"]
         )
         aws_client.s3.put_bucket_notification_configuration(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             NotificationConfiguration={
                 "TopicConfigurations": [
                     {
@@ -208,8 +206,8 @@ class TestS3NotificationsToSns:
         test_key2 = "testupload/dir1/testfile.txt"
         test_data = b'{"test": "bucket_notification one"}'
 
-        aws_client.s3.upload_fileobj(BytesIO(test_data), bucket_name, test_key1)
-        aws_client.s3.upload_fileobj(BytesIO(test_data), bucket_name, test_key2)
+        aws_client.s3.upload_fileobj(BytesIO(test_data), s3_bucket, test_key1)
+        aws_client.s3.upload_fileobj(BytesIO(test_data), s3_bucket, test_key2)
 
         messages = sqs_collect_sns_messages(aws_client.sqs, queue_url, 1)
         assert len(messages) == 1
@@ -222,7 +220,7 @@ class TestS3NotificationsToSns:
         event = json.loads(message["Message"])["Records"][0]
         assert event["eventSource"] == "aws:s3"
         assert event["eventName"] == "ObjectCreated:Put"
-        assert event["s3"]["bucket"]["name"] == bucket_name
+        assert event["s3"]["bucket"]["name"] == s3_bucket
         assert event["s3"]["object"]["key"] == test_key2
 
     @markers.aws.validated
@@ -251,10 +249,7 @@ class TestS3NotificationsToSns:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Error.ArgumentName", "$..Error.ArgumentValue"],
     )
-    def test_invalid_topic_arn(
-        self, s3_create_bucket, account_id, region_name, snapshot, aws_client
-    ):
-        bucket_name = s3_create_bucket()
+    def test_invalid_topic_arn(self, s3_bucket, account_id, region_name, snapshot, aws_client):
         config = {
             "TopicConfigurations": [
                 {
@@ -267,7 +262,7 @@ class TestS3NotificationsToSns:
         config["TopicConfigurations"][0]["TopicArn"] = "invalid-topic"
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
-                Bucket=bucket_name,
+                Bucket=s3_bucket,
                 NotificationConfiguration=config,
                 SkipDestinationValidation=False,
             )
@@ -275,7 +270,7 @@ class TestS3NotificationsToSns:
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
-                Bucket=bucket_name,
+                Bucket=s3_bucket,
                 NotificationConfiguration=config,
                 SkipDestinationValidation=True,
             )
@@ -287,14 +282,14 @@ class TestS3NotificationsToSns:
         )
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
-                Bucket=bucket_name,
+                Bucket=s3_bucket,
                 NotificationConfiguration=config,
             )
         # TODO cannot snapshot as AWS seems to check permission first -> as it does not exist, we cannot set permissions here
         assert e.match("InvalidArgument")
 
         aws_client.s3.put_bucket_notification_configuration(
-            Bucket=bucket_name, NotificationConfiguration=config, SkipDestinationValidation=True
+            Bucket=s3_bucket, NotificationConfiguration=config, SkipDestinationValidation=True
         )
-        config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
+        config = aws_client.s3.get_bucket_notification_configuration(Bucket=s3_bucket)
         snapshot.match("skip_destination_validation", config)
