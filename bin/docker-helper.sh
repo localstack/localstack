@@ -49,9 +49,10 @@ function _fail {
 }
 
 function _get_current_version() {
-    # setuptools_scm will be installed transparently if not available, Python3 is expected to be present
-    if ! python3 -m pip -qqq list | grep -F "setuptools_scm"; then
-      python3 -m pip install -qqq setuptools_scm > /dev/null 2>&1
+    # check if setuptools_scm is installed, if not prompt to install. python3 is expected to be present
+    if ! python3 -m pip -qqq show setuptools_scm > /dev/null ; then
+      echo "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'" >&2
+      exit 1
     fi
     python3 -m setuptools_scm
 }

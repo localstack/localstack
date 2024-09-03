@@ -113,6 +113,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install docker build dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
       - name: Build S3 Docker Image
         env:
           DOCKERFILE: "./Dockerfile.s3"
@@ -199,6 +207,14 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install docker build dependencies
+        run: pip install --upgrade setuptools setuptools_scm
 
       - name: Download AMD64 image
         uses: actions/download-artifact@v4

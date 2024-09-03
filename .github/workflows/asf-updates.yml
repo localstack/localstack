@@ -25,6 +25,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install release helper dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
       - name: Cache LocalStack community dependencies (venv)
         uses: actions/cache@v4
         with:
