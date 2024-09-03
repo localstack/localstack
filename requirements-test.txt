@@ -20,7 +20,7 @@ apispec==6.6.1
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
-attrs==23.2.0
+attrs==24.2.0
     # via
     #   cattrs
     #   jsii
@@ -33,9 +33,9 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==36.0.18
+aws-cdk-cloud-assembly-schema==36.0.24
     # via aws-cdk-lib
-aws-cdk-lib==2.154.1
+aws-cdk-lib==2.155.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.91.0
     # via
@@ -75,7 +75,7 @@ cattrs==23.2.3
     # via jsii
 cbor2==5.6.4
     # via localstack-core
-certifi==2024.7.4
+certifi==2024.8.30
     # via
     #   httpcore
     #   httpx
@@ -83,7 +83,7 @@ certifi==2024.7.4
     #   requests
 cffi==1.17.0
     # via cryptography
-cfn-lint==1.10.3
+cfn-lint==1.11.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -110,7 +110,7 @@ cryptography==42.0.8
     #   pyopenssl
 decorator==5.1.1
     # via jsonpath-rw
-deepdiff==7.0.1
+deepdiff==8.0.1
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-snapshot
@@ -151,7 +151,7 @@ hpack==4.0.0
     # via h2
 httpcore==1.0.5
     # via httpx
-httpx==0.27.0
+httpx==0.27.2
     # via localstack-core (pyproject.toml)
 hypercorn==0.17.3
     # via localstack-core
@@ -182,7 +182,7 @@ joserfc==1.0.0
     # via moto-ext
 jpype1==1.5.0
     # via localstack-core
-jsii==1.102.0
+jsii==1.103.1
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -192,7 +192,7 @@ jsii==1.102.0
     #   constructs
 json5==0.9.25
     # via localstack-core
-jsondiff==2.2.0
+jsondiff==2.2.1
     # via moto-ext
 jsonpatch==1.33
     # via
@@ -246,7 +246,7 @@ openapi-spec-validator==0.7.1
     # via moto-ext
 opensearch-py==2.7.1
     # via localstack-core
-ordered-set==4.1.0
+orderly-set==5.2.2
     # via deepdiff
 packaging==24.1
     # via
@@ -320,7 +320,7 @@ pytest-rerunfailures==14.0
     # via localstack-core (pyproject.toml)
 pytest-split==0.9.0
     # via localstack-core (pyproject.toml)
-pytest-tinybird==0.2.0
+pytest-tinybird==0.3.0
     # via localstack-core (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via
@@ -447,7 +447,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==7.0.2
+zope-interface==7.0.3
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

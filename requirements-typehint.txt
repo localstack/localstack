@@ -20,7 +20,7 @@ apispec==6.6.1
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
-attrs==23.2.0
+attrs==24.2.0
     # via
     #   cattrs
     #   jsii
@@ -33,9 +33,9 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==36.0.18
+aws-cdk-cloud-assembly-schema==36.0.24
     # via aws-cdk-lib
-aws-cdk-lib==2.154.1
+aws-cdk-lib==2.155.0
     # via localstack-core
 aws-sam-translator==1.91.0
     # via
@@ -53,7 +53,7 @@ boto3==1.35.10
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.35.6
+boto3-stubs==1.35.10
     # via localstack-core (pyproject.toml)
 botocore==1.35.10
     # via
@@ -64,7 +64,7 @@ botocore==1.35.10
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.35.6
+botocore-stubs==1.35.10
     # via boto3-stubs
 build==1.2.1
     # via
@@ -79,7 +79,7 @@ cattrs==23.2.3
     # via jsii
 cbor2==5.6.4
     # via localstack-core
-certifi==2024.7.4
+certifi==2024.8.30
     # via
     #   httpcore
     #   httpx
@@ -89,7 +89,7 @@ cffi==1.17.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.10.3
+cfn-lint==1.11.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -122,7 +122,7 @@ cython==3.0.11
     # via localstack-core
 decorator==5.1.1
     # via jsonpath-rw
-deepdiff==7.0.1
+deepdiff==8.0.1
     # via
     #   localstack-core
     #   localstack-snapshot
@@ -169,7 +169,7 @@ hpack==4.0.0
     # via h2
 httpcore==1.0.5
     # via httpx
-httpx==0.27.0
+httpx==0.27.2
     # via localstack-core
 hypercorn==0.17.3
     # via localstack-core
@@ -202,7 +202,7 @@ joserfc==1.0.0
     # via moto-ext
 jpype1==1.5.0
     # via localstack-core
-jsii==1.102.0
+jsii==1.103.1
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -212,7 +212,7 @@ jsii==1.102.0
     #   constructs
 json5==0.9.25
     # via localstack-core
-jsondiff==2.2.0
+jsondiff==2.2.1
     # via moto-ext
 jsonpatch==1.33
     # via
@@ -268,7 +268,7 @@ mypy-boto3-apigateway==1.35.0
     # via boto3-stubs
 mypy-boto3-apigatewayv2==1.35.0
     # via boto3-stubs
-mypy-boto3-appconfig==1.35.0
+mypy-boto3-appconfig==1.35.8
     # via boto3-stubs
 mypy-boto3-appconfigdata==1.35.0
     # via boto3-stubs
@@ -280,7 +280,7 @@ mypy-boto3-athena==1.35.0
     # via boto3-stubs
 mypy-boto3-autoscaling==1.35.4
     # via boto3-stubs
-mypy-boto3-backup==1.35.0
+mypy-boto3-backup==1.35.10
     # via boto3-stubs
 mypy-boto3-batch==1.35.0
     # via boto3-stubs
@@ -310,7 +310,7 @@ mypy-boto3-dynamodb==1.35.0
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.35.0
     # via boto3-stubs
-mypy-boto3-ec2==1.35.3
+mypy-boto3-ec2==1.35.8
     # via boto3-stubs
 mypy-boto3-ecr==1.35.0
     # via boto3-stubs
@@ -368,7 +368,7 @@ mypy-boto3-lakeformation==1.35.0
     # via boto3-stubs
 mypy-boto3-lambda==1.35.3
     # via boto3-stubs
-mypy-boto3-logs==1.35.0
+mypy-boto3-logs==1.35.10
     # via boto3-stubs
 mypy-boto3-managedblockchain==1.35.0
     # via boto3-stubs
@@ -400,7 +400,7 @@ mypy-boto3-rds-data==1.35.0
     # via boto3-stubs
 mypy-boto3-redshift==1.35.0
     # via boto3-stubs
-mypy-boto3-redshift-data==1.35.0
+mypy-boto3-redshift-data==1.35.10
     # via boto3-stubs
 mypy-boto3-resource-groups==1.35.0
     # via boto3-stubs
@@ -436,7 +436,7 @@ mypy-boto3-ssm==1.35.0
     # via boto3-stubs
 mypy-boto3-sso-admin==1.35.0
     # via boto3-stubs
-mypy-boto3-stepfunctions==1.35.0
+mypy-boto3-stepfunctions==1.35.9
     # via boto3-stubs
 mypy-boto3-sts==1.35.0
     # via boto3-stubs
@@ -446,7 +446,7 @@ mypy-boto3-timestream-write==1.35.0
     # via boto3-stubs
 mypy-boto3-transcribe==1.35.0
     # via boto3-stubs
-mypy-boto3-wafv2==1.35.0
+mypy-boto3-wafv2==1.35.9
     # via boto3-stubs
 mypy-boto3-xray==1.35.0
     # via boto3-stubs
@@ -462,7 +462,7 @@ openapi-spec-validator==0.7.1
     # via moto-ext
 opensearch-py==2.7.1
     # via localstack-core
-ordered-set==4.1.0
+orderly-set==5.2.2
     # via deepdiff
 packaging==24.1
     # via
@@ -547,7 +547,7 @@ pytest-rerunfailures==14.0
     # via localstack-core
 pytest-split==0.9.0
     # via localstack-core
-pytest-tinybird==0.2.0
+pytest-tinybird==0.3.0
     # via localstack-core
 python-dateutil==2.9.0.post0
     # via
@@ -612,7 +612,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.6.2
+ruff==0.6.3
     # via localstack-core
 s3transfer==0.10.2
     # via
@@ -649,7 +649,7 @@ typeguard==2.13.3
     #   jsii
 types-awscrt==0.21.2
     # via botocore-stubs
-types-s3transfer==0.10.1
+types-s3transfer==0.10.2
     # via boto3-stubs
 typing-extensions==4.12.2
     # via
@@ -783,7 +783,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==7.0.2
+zope-interface==7.0.3
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
