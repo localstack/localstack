@@ -648,7 +648,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags": {
-    "recorded-date": "12-09-2023, 11:54:46",
+    "recorded-date": "02-09-2024, 14:03:31",
     "recorded-content": {
       "put_metric_alarm": {
         "ResponseMetadata": {
@@ -681,6 +681,13 @@
             "Threshold": 30.0
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
