@@ -200,15 +200,13 @@ class S3EventNotificationContext:
         bucket_name = request_context.service_request["Bucket"]
         event_type = EVENT_OPERATION_MAP.get(request_context.operation.wire_name, "")
 
-        # TODO: test notification format when the concerned key is FakeDeleteMarker
-        # it might not send notification, or s3:ObjectRemoved:DeleteMarkerCreated which we don't support yet
         if isinstance(s3_object, S3DeleteMarker):
-            etag = ""
+            # AWS sets the etag of a DeleteMarker to the etag of an empty object
+            etag = "d41d8cd98f00b204e9800998ecf8427e"
             key_size = 0
             key_expiry = None
             storage_class = ""
         else:
-            # if event_type == Event.s3_LifecycleExpiration_Delete and obj
             etag = s3_object.etag.strip('"')
             key_size = s3_object.size
             key_expiry = s3_object.expires
@@ -429,11 +427,10 @@ class BaseNotifier:
 
         event_type = ctx.event_type.lower()
         if any(e in event_type for e in ("created", "restore")):
+            record["s3"]["object"]["eTag"] = ctx.key_etag
+            # if we created a DeleteMarker, AWS does not set the `size` field
             if "deletemarker" not in event_type:
-                record["s3"]["object"]["eTag"] = ctx.key_etag
                 record["s3"]["object"]["size"] = ctx.key_size
-            else:
-                record["s3"]["object"]["eTag"] = "d41d8cd98f00b204e9800998ecf8427e"
 
         if "ObjectTagging" in ctx.event_type or "ObjectAcl" in ctx.event_type:
             record["eventVersion"] = "2.3"
