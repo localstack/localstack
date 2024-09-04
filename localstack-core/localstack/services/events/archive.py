@@ -109,11 +109,11 @@ class ArchiveService:
                 Rule=self.rule_name, EventBusName=self.event_bus_name, Ids=[self.target_id]
             )
         except Exception as e:
-            LOG.debug(f"Target {self.target_id} could not be removed, {e}")
+            LOG.debug("Target %s could not be removed, %s", self.target_id, e)
         try:
             self.client.delete_rule(Name=self.rule_name, EventBusName=self.event_bus_name)
         except Exception as e:
-            LOG.debug(f"Rule {self.rule_name} could not be deleted, {e}")
+            LOG.debug("Rule %s could not be deleted, %s", self.rule_name, e)
 
     def put_events(self, events: FormattedEventList) -> None:
         for event in events:

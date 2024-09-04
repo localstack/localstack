@@ -284,7 +284,7 @@ def lambda_function_or_layer_arn(
 
         except Exception as e:
             msg = f"Alias {alias} of {entity_name} not found"
-            LOG.info(f"{msg}: {e}")
+            LOG.info("%s: %s", msg, e)
             raise Exception(msg)
 
     result = (

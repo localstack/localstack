@@ -107,12 +107,14 @@ class AlarmScheduler:
         for param in required_parameters:
             if param not in alarm_details.keys():
                 LOG.debug(
-                    f"Currently only simple MetricAlarm are supported. Alarm is missing '{param}'. ExtendedStatistic is not yet supported."
+                    "Currently only simple MetricAlarm are supported. Alarm is missing '%s'. ExtendedStatistic is not yet supported.",
+                    param,
                 )
                 return False
         if alarm_details["ComparisonOperator"] not in COMPARISON_OPS.keys():
             LOG.debug(
-                f"ComparisonOperator '{alarm_details['ComparisonOperator']}' not yet supported."
+                "ComparisonOperator '%s' not yet supported.",
+                alarm_details["ComparisonOperator"],
             )
             return False
         return True

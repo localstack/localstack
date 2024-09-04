@@ -207,7 +207,7 @@ ignore = [
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
 ]
-select = ["B", "C", "E", "F", "I", "W", "T", "B9"]
+select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G"]
 
 [tool.coverage.run]
 relative_files = true

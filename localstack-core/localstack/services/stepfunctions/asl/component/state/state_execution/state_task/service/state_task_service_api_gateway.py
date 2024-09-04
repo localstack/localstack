@@ -201,7 +201,11 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         given_api_endpoint = parameters["ApiEndpoint"]
         api_endpoint = StateTaskServiceApiGateway._path_based_url_of(given_api_endpoint)
         if given_api_endpoint != api_endpoint:
-            LOG.warning(f"ApiEndpoint '{given_api_endpoint}' ignored in favour of {api_endpoint}")
+            LOG.warning(
+                "ApiEndpoint '%s' ignored in favour of %s",
+                given_api_endpoint,
+                api_endpoint,
+            )
 
         url_base = api_endpoint + "/"
         # http://localhost:4566/restapis/<api-id>/<stage>/_user_request_/<path>(?<query-parameters>)?

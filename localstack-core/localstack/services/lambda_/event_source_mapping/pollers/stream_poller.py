@@ -193,7 +193,10 @@ class StreamPoller(Poller):
 
                 # let entire batch fail (ideally raise BatchFailureError)
                 LOG.debug(
-                    f"Attempt {attempts} failed while processing {self.partner_resource_arn} with events: {events}"
+                    "Attempt %s failed while processing %s with events: %s",
+                    attempts,
+                    self.partner_resource_arn,
+                    events,
                 )
                 attempts += 1
                 # Retry polling until the record expires at the source
@@ -202,7 +205,10 @@ class StreamPoller(Poller):
                     return
             except Exception:
                 LOG.warning(
-                    f"Attempt {attempts} failed unexpectedly while processing {self.partner_resource_arn} with events: {events}"
+                    "Attempt %s failed unexpectedly while processing %s with events: %s",
+                    attempts,
+                    self.partner_resource_arn,
+                    events,
                 )
                 attempts += 1
                 # Retry polling until the record expires at the source

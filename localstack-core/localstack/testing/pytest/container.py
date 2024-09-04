@@ -93,7 +93,8 @@ class ContainerFactory:
         if failures:
             for container, ex in failures:
                 LOG.error(
-                    f"Failed to remove container {container.running_container.id}",
+                    "Failed to remove container %s",
+                    container.running_container.id,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 

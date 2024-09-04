@@ -282,7 +282,7 @@ class TranscribeProvider(TranscribeApi):
                 )
             )
             format = ffprobe_output["format"]["format_name"]
-            LOG.debug(f"Media format detected as: {format}")
+            LOG.debug("Media format detected as: %s", format)
             job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
 
             # Determine the sample rate of input audio if possible

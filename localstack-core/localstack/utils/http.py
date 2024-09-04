@@ -2,7 +2,6 @@ import logging
 import math
 import os
 import re
-import traceback
 from typing import Dict, Optional, Union
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
@@ -291,9 +290,11 @@ def download_github_artifact(url: str, target_file: str, timeout: int = None):
             return True
         except Exception as e:
             if print_error:
-                LOG.info(
-                    "Unable to download Github artifact from %s to %s: %s %s"
-                    % (url, target_file, e, traceback.format_exc())
+                LOG.exception(
+                    "Unable to download Github artifact from %s to %s: %s %s",
+                    url,
+                    target_file,
+                    e,
                 )
 
     # if a GitHub API token is set, use it to avoid rate limiting issues

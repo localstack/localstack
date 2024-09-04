@@ -435,7 +435,7 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
                     # cluster already restored in previous call to on_after_state_load
                     continue
 
-                LOG.info(f"Restoring domain {domain_name} in region {region}.")
+                LOG.info("Restoring domain %s in region %s.", domain_name, region)
                 try:
                     preferred_port = None
                     if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
@@ -457,7 +457,11 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
                         preferred_port=preferred_port,
                     )
                 except Exception:
-                    LOG.exception(f"Could not restore domain {domain_name} in region {region}.")
+                    LOG.exception(
+                        "Could not restore domain %s in region %s.",
+                        domain_name,
+                        region,
+                    )
 
     def on_before_state_reset(self):
         self._stop_clusters()

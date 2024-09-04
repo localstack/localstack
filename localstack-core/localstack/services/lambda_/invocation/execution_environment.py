@@ -293,7 +293,9 @@ class ExecutionEnvironment:
         )
         if LOG.isEnabledFor(logging.DEBUG):
             LOG.debug(
-                f"Logs from the execution environment {self.id} after startup timeout:\n{self.get_prefixed_logs()}"
+                "Logs from the execution environment %s after startup timeout:\n%s",
+                self.id,
+                self.get_prefixed_logs(),
             )
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
@@ -317,7 +319,9 @@ class ExecutionEnvironment:
         )
         if LOG.isEnabledFor(logging.DEBUG):
             LOG.debug(
-                f"Logs from the execution environment {self.id} after startup error:\n{self.get_prefixed_logs()}"
+                "Logs from the execution environment %s after startup error:\n%s",
+                self.id,
+                self.get_prefixed_logs(),
             )
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:

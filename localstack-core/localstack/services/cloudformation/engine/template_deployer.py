@@ -87,7 +87,10 @@ def get_attr_from_model_instance(
     valid_atts = VALID_GETATT_PROPERTIES.get(resource_type)
     if valid_atts is not None and attribute_name not in valid_atts:
         LOG.warning(
-            f"Invalid attribute in Fn::GetAtt for {resource_type}:  | {resource_id}.{attribute_name}"
+            "Invalid attribute in Fn::GetAtt for %s:  | %s.%s",
+            resource_type,
+            resource_id,
+            attribute_name,
         )
         raise Exception(
             f"Resource type {resource_type} does not support attribute {{{attribute_name}}}"
@@ -285,7 +288,9 @@ def resolve_refs_recursively(
                 else:
                     return secret_value
             else:
-                LOG.warning(f"Unsupported service for dynamic parameter: {service_name=}")
+                LOG.warning(
+                    "Unsupported service for dynamic parameter: service_name=%s", service_name
+                )
 
     return result
 
@@ -1358,7 +1363,7 @@ class TemplateDeployer:
                 return self.stack.resource_status(r_id).get("ResourceStatus") == "DELETE_COMPLETE"
             except Exception:
                 if config.CFN_VERBOSE_ERRORS:
-                    LOG.exception(f"failed to lookup if resource {r_id} is deleted")
+                    LOG.exception("failed to lookup if resource %s is deleted", r_id)
                 return True  # just an assumption
 
         ordered_resource_ids = list(
@@ -1499,7 +1504,7 @@ class TemplateDeployer:
                     status_reason=str(e),
                 )
                 if config.CFN_VERBOSE_ERRORS:
-                    LOG.exception(f"Failed to deploy resource {resource_id}, stack deploy failed")
+                    LOG.exception("Failed to deploy resource %s, stack deploy failed", resource_id)
                 raise
 
         # clean up references to deleted resources in stack

@@ -876,7 +876,9 @@ def send_message_to_gcm(
     )
     if response.status_code != 200:
         LOG.warning(
-            f"Platform GCM returned response {response.status_code} with content {response.content}"
+            "Platform GCM returned response %s with content %s",
+            response.status_code,
+            response.content,
         )
 
 

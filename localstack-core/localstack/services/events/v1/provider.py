@@ -311,7 +311,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
         if job_id:
-            LOG.debug("Removing scheduled Events: {} | job_id: {}".format(name, job_id))
+            LOG.debug("Removing scheduled Events: %s | job_id: %s", name, job_id)
             JobScheduler.instance().cancel_job(job_id=job_id)
         call_moto(context)
 
@@ -325,7 +325,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
         if job_id:
-            LOG.debug("Disabling Rule: {} | job_id: {}".format(name, job_id))
+            LOG.debug("Disabling Rule: %s | job_id: %s", name, job_id)
             JobScheduler.instance().disable_job(job_id=job_id)
         call_moto(context)
 
@@ -488,7 +488,12 @@ def process_events(event: Dict, targets: list[Dict]):
                 source_arn=target.get("RuleArn"),
             )
         except Exception as e:
-            LOG.info(f"Unable to send event notification {truncate(event)} to target {target}: {e}")
+            LOG.info(
+                "Unable to send event notification %s to target %s: %s",
+                truncate(event),
+                target,
+                e,
+            )
 
 
 def get_event_bus_name(event_bus_name_or_arn: Optional[EventBusNameOrArn] = None) -> str:

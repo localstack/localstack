@@ -2926,7 +2926,7 @@ class TestLambdaVersions:
                 assert payload["function_variant"] == "variant-2"
                 assert payload["function_version"] == "$LATEST"
             except Exception:
-                LOG.exception(f"Updating lambda function {function_name} failed.")
+                LOG.exception("Updating lambda function %s failed.", function_name)
                 errored = True
 
         # Start thread with upcoming function update (slightly delayed)

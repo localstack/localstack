@@ -1331,7 +1331,7 @@ class Util:
                 hard_limit = int(hard) if hard else int(soft)
                 new_ulimit = Ulimit(name=name, soft_limit=int(soft), hard_limit=hard_limit)
                 if ulimits_dict.get(name):
-                    LOG.warning(f"Overwriting Docker ulimit {new_ulimit}")
+                    LOG.warning("Overwriting Docker ulimit %s", new_ulimit)
                 ulimits_dict[name] = new_ulimit
             ulimits = list(ulimits_dict.values())
 

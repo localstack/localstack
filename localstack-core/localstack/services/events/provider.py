@@ -1077,7 +1077,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 try:
                     del self._target_sender_store[target_arn]
                 except KeyError:
-                    LOG.error(f"Error deleting target service {target_arn}.")
+                    LOG.error("Error deleting target service %s.", target_arn)
 
     def _get_limited_dict_and_next_token(
         self, input_dict: dict, next_token: NextToken | None, limit: LimitMax100 | None

@@ -40,7 +40,7 @@ class CloudwatchDatabase:
     def __init__(self):
         self.DATABASE_LOCK = threading.RLock()
         if os.path.exists(self.METRICS_DB):
-            LOG.debug(f"database for metrics already exists ({self.METRICS_DB})")
+            LOG.debug("database for metrics already exists (%s)", self.METRICS_DB)
             return
 
         mkdir(self.CLOUDWATCH_DATA_ROOT)

@@ -102,7 +102,8 @@ class SqsPoller(Poller):
                 event["body"] = json.loads(event["body"])
             except json.JSONDecodeError:
                 LOG.debug(
-                    f"Unable to convert event body '{event['body']}' to json... Event might be dropped."
+                    "Unable to convert event body '%s' to json... Event might be dropped.",
+                    event["body"],
                 )
         matching_events = self.filter_events(polled_events)
         # convert them back (HACK for fixing parity with v1 and getting regression tests passing)

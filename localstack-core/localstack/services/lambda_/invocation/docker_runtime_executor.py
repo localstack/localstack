@@ -179,7 +179,8 @@ class RuntimeImageResolver:
 
         except Exception:
             LOG.error(
-                f"Failed to load config from LAMBDA_RUNTIME_IMAGE_MAPPING={custom_image_mapping}"
+                "Failed to load config from LAMBDA_RUNTIME_IMAGE_MAPPING=%s",
+                custom_image_mapping,
             )
             raise  # TODO: validate config at start and prevent startup
 
