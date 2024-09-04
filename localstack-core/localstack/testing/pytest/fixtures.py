@@ -237,7 +237,7 @@ def s3_create_bucket_with_client(s3_empty_bucket, aws_client):
             s3_empty_bucket(bucket)
             aws_client.s3.delete_bucket(Bucket=bucket)
         except Exception as e:
-            LOG.debug(f"error cleaning up bucket {bucket}: {e}")
+            LOG.debug("error cleaning up bucket %s: %s", bucket, e)
 
 
 @pytest.fixture
@@ -456,7 +456,7 @@ def sns_subscription(aws_client):
         try:
             aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
         except Exception as e:
-            LOG.debug(f"error cleaning up subscription {sub_arn}: {e}")
+            LOG.debug("error cleaning up subscription %s: %s", sub_arn, e)
 
 
 @pytest.fixture
@@ -600,7 +600,7 @@ def route53_hosted_zone(aws_client):
         try:
             aws_client.route53.delete_hosted_zone(Id=zone)
         except Exception as e:
-            LOG.debug(f"error cleaning up route53 HostedZone {zone}: {e}")
+            LOG.debug("error cleaning up route53 HostedZone %s: %s", zone, e)
 
 
 @pytest.fixture
@@ -914,7 +914,7 @@ def cleanup_stacks(aws_client):
                 aws_client.cloudformation.delete_stack(StackName=stack)
                 aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack)
             except Exception:
-                LOG.debug(f"Failed to cleanup stack '{stack}'")
+                LOG.debug("Failed to cleanup stack '%s'", stack)
 
     return _cleanup_stacks
 
@@ -927,7 +927,7 @@ def cleanup_changesets(aws_client):
             try:
                 aws_client.cloudformation.delete_change_set(ChangeSetName=cs)
             except Exception:
-                LOG.debug(f"Failed to cleanup changeset '{cs}'")
+                LOG.debug("Failed to cleanup changeset '%s'", cs)
 
     return _cleanup_changesets
 
@@ -1089,7 +1089,7 @@ def deploy_cfn_template(
         try:
             teardown()
         except Exception as e:
-            LOG.debug(f"Failed cleaning up stack {stack_id=}: {e}")
+            LOG.debug("Failed cleaning up stack stack_id=%s: %s", stack_id, e)
 
 
 @pytest.fixture
@@ -1186,7 +1186,7 @@ def wait_until_lambda_ready(aws_client):
                     client.get_function(FunctionName=function_name)["Configuration"]["State"]
                     != "Pending"
                 )
-                LOG.debug(f"lambda state result: {result=}")
+                LOG.debug("lambda state result: result=%s", result)
                 return result
             except Exception as e:
                 LOG.error(e)
@@ -1267,7 +1267,7 @@ def create_lambda_function_aws(aws_client):
         try:
             aws_client.lambda_.delete_function(FunctionName=arn)
         except Exception:
-            LOG.debug(f"Unable to delete function {arn=} in cleanup")
+            LOG.debug("Unable to delete function arn=%s in cleanup", arn)
 
 
 @pytest.fixture
@@ -1307,13 +1307,13 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
         try:
             client.delete_function(FunctionName=arn)
         except Exception:
-            LOG.debug(f"Unable to delete function {arn=} in cleanup")
+            LOG.debug("Unable to delete function arn=%s in cleanup", arn)
 
     for log_group_name in log_groups:
         try:
             logs_client.delete_log_group(logGroupName=log_group_name)
         except Exception:
-            LOG.debug(f"Unable to delete log group {log_group_name} in cleanup")
+            LOG.debug("Unable to delete log group %s in cleanup", log_group_name)
 
 
 @pytest.fixture
@@ -1408,7 +1408,7 @@ def create_event_source_mapping(aws_client):
         try:
             aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
         except Exception:
-            LOG.debug(f"Unable to delete event source mapping {uuid} in cleanup")
+            LOG.debug("Unable to delete event source mapping %s in cleanup", uuid)
 
 
 @pytest.fixture
@@ -2051,7 +2051,7 @@ def appsync_create_api(aws_client):
         try:
             aws_client.appsync.delete_graphql_api(apiId=api)
         except Exception as e:
-            LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")
+            LOG.debug("Error cleaning up AppSync API: %s, %s", api, e)
 
 
 @pytest.fixture

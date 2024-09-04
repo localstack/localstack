@@ -34,7 +34,7 @@ def get_all_expected_messages_from_s3(
         for input_string in bucket_data.values():
             json_array_string = "[" + input_string.replace("}{", "},{") + "]"
             message = json.loads(json_array_string)
-            LOG.debug(f"Received messages: {message}")
+            LOG.debug("Received messages: %s", message)
             messages.extend(message)
         if expected_message_count is not None and len(messages) != expected_message_count:
             raise Exception(f"Failed to receive all sent messages: {messages}")

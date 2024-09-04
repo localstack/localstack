@@ -161,7 +161,8 @@ class KinesisPoller(StreamPoller):
                     parsed_events.append(parsed_event)
                 except json.JSONDecodeError:
                     LOG.warning(
-                        f"Unable to convert event data '{raw_data}' to json... Record will be dropped.",
+                        "Unable to convert event data '%s' to json... Record will be dropped.",
+                        raw_data,
                         exc_info=LOG.isEnabledFor(logging.DEBUG),
                     )
             return parsed_events

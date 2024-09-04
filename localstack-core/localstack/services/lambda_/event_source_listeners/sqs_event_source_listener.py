@@ -200,7 +200,9 @@ class SQSEventSourceListener(EventSourceListener):
             except Exception as e:
                 LOG.info(
                     "Unable to delete Lambda events from SQS queue "
-                    + "(please check SQS visibility timeout settings): %s - %s" % (entries, e)
+                    "(please check SQS visibility timeout settings): %s - %s",
+                    entries,
+                    e,
                 )
 
         for msg in messages:
@@ -230,7 +232,8 @@ class SQSEventSourceListener(EventSourceListener):
                     record["body"] = json.loads(record["body"])
                 except json.JSONDecodeError:
                     LOG.warning(
-                        f"Unable to convert record '{record['body']}' to json... Record might be dropped."
+                        "Unable to convert record '%s' to json... Record might be dropped.",
+                        record["body"],
                     )
             records = filter_stream_records(records, event_filter_criterias)
             # convert them back

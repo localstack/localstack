@@ -67,7 +67,7 @@ def does_match_event(event_pattern: dict[str, any], event: dict[str, any]) -> bo
                     if isinstance(value[0], dict):
                         does_pattern_match = verify_dict_filter(event_value, value[0])
                 else:
-                    LOG.warning(f"Empty lambda filter: {key}")
+                    LOG.warning("Empty lambda filter: %s", key)
             elif isinstance(value, dict):
                 does_pattern_match = does_match_event(value, event_value)
         else:
@@ -113,7 +113,7 @@ def verify_dict_filter(record_value: any, dict_filter: dict[str, any]) -> bool:
             )  # exists means that the key exists in the event record
         elif key == "prefix":
             if not isinstance(record_value, str):
-                LOG.warning(f"Record Value {record_value} does not seem to be a valid string.")
+                LOG.warning("Record Value %s does not seem to be a valid string.", record_value)
             does_match_filter = isinstance(record_value, str) and record_value.startswith(
                 str(filter_value)
             )

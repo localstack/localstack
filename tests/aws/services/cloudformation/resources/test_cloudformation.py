@@ -36,7 +36,7 @@ class SignalSuccess(Thread):
                 LOG.debug("fetching parameter")
                 res = self.client.get_parameter(Name=PARAMETER_NAME)
                 url = res["Parameter"]["Value"]
-                LOG.info(f"signalling url {url}")
+                LOG.info("signalling url %s", url)
 
                 payload = {
                     "Status": "SUCCESS",
@@ -45,7 +45,7 @@ class SignalSuccess(Thread):
                     "Data": "Application has completed configuration.",
                 }
                 r = self.session.put(url, json=payload)
-                LOG.debug(f"status from signalling: {r.status_code}")
+                LOG.debug("status from signalling: %s", r.status_code)
                 r.raise_for_status()
                 LOG.debug("status signalled")
                 break

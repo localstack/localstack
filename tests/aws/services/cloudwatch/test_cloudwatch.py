@@ -2464,7 +2464,7 @@ class TestCloudwatch:
                         EndTime=end_time,
                     )
             except Exception as e:
-                LOG.exception(f"runner {runner} failed: {e}")
+                LOG.exception("runner %s failed: %s", runner, e)
                 exception_caught = True
 
         thread_list = []

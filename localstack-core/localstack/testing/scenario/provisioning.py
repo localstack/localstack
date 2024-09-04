@@ -34,19 +34,20 @@ CFN_MAX_TEMPLATE_SIZE = 51_200
 
 # TODO: move/unify with utils
 def cleanup_s3_bucket(s3_client: "S3Client", bucket_name: str, delete_bucket: bool = False):
-    LOG.debug(f"Cleaning provisioned S3 Bucket {bucket_name=}")
+    LOG.debug("Cleaning provisioned S3 Bucket %s", bucket_name)
     try:
         objs = s3_client.list_objects_v2(Bucket=bucket_name)
         objs_num = objs["KeyCount"]
         if objs_num > 0:
-            LOG.debug(f"Deleting {objs_num} objects from {bucket_name=}")
+            LOG.debug("Deleting %s objects from bucket_name=%s", objs_num, bucket_name)
             obj_keys = [{"Key": o["Key"]} for o in objs["Contents"]]
             s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": obj_keys})
         if delete_bucket:
             s3_client.delete_bucket(Bucket=bucket_name)
     except Exception:
         LOG.warning(
-            f"Failed to clean provisioned S3 Bucket {bucket_name=}",
+            "Failed to clean provisioned S3 Bucket bucket_name=%s",
+            bucket_name,
             exc_info=LOG.isEnabledFor(logging.DEBUG),
         )
 

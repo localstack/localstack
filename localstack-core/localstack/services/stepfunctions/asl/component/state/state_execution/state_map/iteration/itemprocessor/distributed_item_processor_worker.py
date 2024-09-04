@@ -98,19 +98,25 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
 
         except EvalTimeoutError as timeout_error:
             LOG.debug(
-                f"MapRun worker Timeout Error '{timeout_error}' for input '{to_json_str(job.job_input)}'."
+                "MapRun worker Timeout Error '%s' for input '%s'.",
+                timeout_error,
+                to_json_str(job.job_input),
             )
             self._map_run_record.item_counter.timed_out.count()
 
         except FailureEventException as failure_event_ex:
             LOG.debug(
-                f"MapRun worker Event Exception '{to_json_str(failure_event_ex.failure_event)}' for input '{to_json_str(job.job_input)}'."
+                "MapRun worker Event Exception '%s' for input '%s'.",
+                to_json_str(failure_event_ex.failure_event),
+                to_json_str(job.job_input),
             )
             self._map_run_record.item_counter.failed.count()
 
         except Exception as exception:
             LOG.debug(
-                f"MapRun worker Error '{exception}' for input '{to_json_str(job.job_input)}'."
+                "MapRun worker Error '%s' for input '%s'.",
+                exception,
+                to_json_str(job.job_input),
             )
             self._map_run_record.item_counter.failed.count()
 

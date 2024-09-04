@@ -451,8 +451,10 @@ class LambdaEventManager:
             sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=message_body)
         except Exception:
             LOG.error(
-                f"Failed to enqueue Lambda event into queue {self.event_queue_url}."
-                f" Invocation: request_id={invocation.request_id}, invoked_arn={invocation.invoked_arn}",
+                "Failed to enqueue Lambda event into queue %s. Invocation: request_id=%s, invoked_arn=%s",
+                self.event_queue_url,
+                invocation.request_id,
+                invocation.invoked_arn,
             )
             raise
 

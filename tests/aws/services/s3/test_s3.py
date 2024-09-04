@@ -257,7 +257,7 @@ def create_tmp_folder_lambda():
         try:
             shutil.rmtree(folder)
         except Exception:
-            LOG.warning(f"could not delete folder {folder}")
+            LOG.warning("could not delete folder %s", folder)
 
 
 @pytest.fixture

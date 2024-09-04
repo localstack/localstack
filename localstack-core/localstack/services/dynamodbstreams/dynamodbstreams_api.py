@@ -164,7 +164,8 @@ def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
                 kinesis_client.get_waiter("stream_not_exists").wait(StreamName=stream_name)
             except Exception:
                 LOG.warning(
-                    f"Failed to delete underlying kinesis stream for dynamodb table {table_arn=}",
+                    "Failed to delete underlying kinesis stream for dynamodb table table_arn=%s",
+                    table_arn,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 

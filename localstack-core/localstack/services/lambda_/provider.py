@@ -778,9 +778,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if runtime in DEPRECATED_RUNTIMES:
             LOG.warning(
-                f"The Lambda runtime {runtime} is deprecated. "
-                f"Please upgrade the runtime for the function {function_name}: "
-                f"https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html"
+                "The Lambda runtime %s} is deprecated. "
+                "Please upgrade the runtime for the function %s: "
+                "https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html",
+                runtime,
+                function_name,
             )
         if snap_start := request.get("SnapStart"):
             self._validate_snapstart(snap_start, runtime)
@@ -1045,9 +1047,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             if runtime in DEPRECATED_RUNTIMES:
                 LOG.warning(
-                    f"The Lambda runtime {runtime} is deprecated. "
-                    f"Please upgrade the runtime for the function {function_name}: "
-                    f"https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html"
+                    "The Lambda runtime %s is deprecated. "
+                    "Please upgrade the runtime for the function %s: "
+                    "https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html",
+                    runtime,
+                    function_name,
                 )
             replace_kwargs["runtime"] = request["Runtime"]
 
@@ -1695,7 +1699,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if version_alias and name in function.function_url_configs:
             url_config = function.function_url_configs.pop(name)
             LOG.debug(
-                f"Stopping aliased Lambda Function URL {url_config.url} for {url_config.function_arn}"
+                "Stopping aliased Lambda Function URL %s for %s",
+                url_config.url,
+                url_config.function_name,
             )
 
     def get_alias(
@@ -2202,7 +2208,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 # strict parity with AWS over the localstack-only custom_id
                 LOG.warning(
                     "Invalid custom ID tag value for lambda URL (%s=%s). "
-                    + "Replaced with default (random id)",
+                    "Replaced with default (random id)",
                     TAG_KEY_CUSTOM_URL,
                     custom_id_tag_value,
                 )

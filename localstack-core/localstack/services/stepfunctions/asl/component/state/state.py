@@ -96,7 +96,7 @@ class CommonStateField(EvalComponent, ABC):
         elif isinstance(self.continue_with, ContinueWithEnd):  # This includes ContinueWithSuccess
             env.set_ended()
         else:
-            LOG.error(f"Could not handle ContinueWith type of '{type(self.continue_with)}'.")
+            LOG.error("Could not handle ContinueWith type of '%s'.", type(self.continue_with))
 
     def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:
         return StateEnteredEventDetails(

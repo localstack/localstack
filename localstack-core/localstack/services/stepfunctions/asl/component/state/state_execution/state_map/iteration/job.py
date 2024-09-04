@@ -82,7 +82,9 @@ class JobPool:
 
             if job in self._closed_jobs:
                 LOG.warning(
-                    f"Duplicate execution of Job with index '{job.job_index}' and input '{to_json_str(job.job_input)}'"
+                    "Duplicate execution of Job with index '%s' and input '%s'",
+                    job.job_index,
+                    to_json_str(job.job_input),
                 )
 
             if isinstance(job.job_output, Exception):

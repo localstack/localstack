@@ -28,9 +28,10 @@ class StateTaskServiceUnsupported(StateTaskServiceCallback):
         service_name = self._get_boto_service_name()
         resource_arn = self.resource.resource_arn
         LOG.warning(
-            f"Unsupported Optimised service integration for service_name '{service_name}' "
-            f"in resource: '{resource_arn}'."
-            "Attempting to forward request to service."
+            "Unsupported Optimised service integration for service_name '%s' in resource: '%s'. "
+            "Attempting to forward request to service.",
+            service_name,
+            resource_arn,
         )
 
     def _eval_service_task(

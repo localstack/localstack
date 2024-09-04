@@ -328,7 +328,9 @@ class Execution:
             self._get_events_client().put_events(Entries=[entry])
         except Exception:
             LOG.exception(
-                f"Unable to send notification of Entry='{entry}' for Step Function execution with Arn='{self.exec_arn}' to EventBridge."
+                "Unable to send notification of Entry='%s' for Step Function execution with Arn='%s' to EventBridge.",
+                entry,
+                self.exec_arn,
             )
 
 
