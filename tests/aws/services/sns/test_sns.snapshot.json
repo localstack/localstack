@@ -4154,5 +4154,32 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_batch_too_long_message": {
+    "recorded-date": "04-09-2024, 00:48:01",
+    "recorded-content": {
+      "error-no-attrs": {
+        "Error": {
+          "Code": "BatchRequestTooLong",
+          "Message": "The length of all the messages put together is more than the limit.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-with-attrs": {
+        "Error": {
+          "Code": "BatchRequestTooLong",
+          "Message": "The length of all the messages put together is more than the limit.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
