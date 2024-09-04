@@ -1053,7 +1053,7 @@ def _get_byte_size(payload: str | bytes) -> int:
 def get_total_publish_size(
     message_body: str, message_attributes: MessageAttributeMap | None
 ) -> int:
-    size = len(to_bytes(message_body))
+    size = _get_byte_size(message_body)
     if message_attributes:
         # https://docs.aws.amazon.com/sns/latest/dg/sns-message-attributes.html
         # All parts of the message attribute, including name, type, and value, are included in the message size
