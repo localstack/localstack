@@ -2087,5 +2087,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_dashboard_name": {
+    "recorded-date": "04-09-2024, 16:28:05",
+    "recorded-content": {
+      "error-invalid-dashboardname": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The value for field DashboardName contains invalid characters. It can only contain alphanumerics, dash (-) and underscore (_).\n",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
