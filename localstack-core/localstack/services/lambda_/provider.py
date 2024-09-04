@@ -1817,6 +1817,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
         params["State"] = "Enabled"
         if "sqs" in service_type:
+            # can be "sqs" or "sqs-fifo"
             params["StateTransitionReason"] = "USER_INITIATED"
             if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
                 raise InvalidParameterValueException(
