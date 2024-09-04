@@ -179,9 +179,6 @@ function cmd-push() {
       # create explicitly set image tag (via $IMAGE_TAG)
       docker tag $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM $TARGET_IMAGE_NAME:$IMAGE_TAG-$PLATFORM
 
-      # always create "latest" tag on version push
-      docker tag $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM $TARGET_IMAGE_NAME:latest-$PLATFORM
-
       # create "stable" tag
       docker tag $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM $TARGET_IMAGE_NAME:stable-$PLATFORM
 
@@ -196,7 +193,6 @@ function cmd-push() {
 
       # push all the created tags
       docker push $TARGET_IMAGE_NAME:stable-$PLATFORM
-      docker push $TARGET_IMAGE_NAME:latest-$PLATFORM
       docker push $TARGET_IMAGE_NAME:$IMAGE_TAG-$PLATFORM
       docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION-$PLATFORM
       docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION-$PLATFORM
@@ -232,11 +228,6 @@ function cmd-push-manifests() {
       docker manifest create $IMAGE_NAME:$IMAGE_TAG \
         --amend $IMAGE_NAME:$IMAGE_TAG-amd64 \
         --amend $IMAGE_NAME:$IMAGE_TAG-arm64
-
-      # always create "latest" tag on version push
-      docker manifest create $IMAGE_NAME:latest \
-        --amend $IMAGE_NAME:latest-amd64 \
-        --amend $IMAGE_NAME:latest-arm64
 
       # create "stable" tag
       docker manifest create $IMAGE_NAME:stable \
