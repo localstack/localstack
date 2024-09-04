@@ -1092,9 +1092,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             delete_marker_id = generate_version_id(s3_bucket.versioning_status)
             delete_marker = S3DeleteMarker(key=key, version_id=delete_marker_id)
             s3_bucket.objects.set(key, delete_marker)
-            # TODO: make a proper difference between DeleteMarker and S3Object, not done yet
-            #  s3:ObjectRemoved:DeleteMarkerCreated
-            self._notify(context, s3_bucket=s3_bucket, s3_object=delete_marker)
+            s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+                context,
+                s3_bucket=s3_bucket,
+                s3_object=delete_marker,
+            )
+            s3_notif_ctx.event_type = f"{s3_notif_ctx.event_type}MarkerCreated"
+            self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx)
 
             return DeleteObjectOutput(VersionId=delete_marker.version_id, DeleteMarker=True)
 
@@ -1118,8 +1122,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["DeleteMarker"] = True
         else:
             self._storage_backend.remove(bucket, s3_object)
-            self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
             store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
         return response
 
@@ -1191,8 +1195,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 delete_marker_id = generate_version_id(s3_bucket.versioning_status)
                 delete_marker = S3DeleteMarker(key=object_key, version_id=delete_marker_id)
                 s3_bucket.objects.set(object_key, delete_marker)
-                # TODO: make a difference between DeleteMarker and S3Object
-                self._notify(context, s3_bucket=s3_bucket, s3_object=delete_marker)
+                s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+                    context,
+                    s3_bucket=s3_bucket,
+                    s3_object=delete_marker,
+                )
+                s3_notif_ctx.event_type = f"{s3_notif_ctx.event_type}MarkerCreated"
+                self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx)
+
                 if not quiet:
                     deleted.append(
                         DeletedObject(
