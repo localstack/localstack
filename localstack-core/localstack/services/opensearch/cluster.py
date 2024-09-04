@@ -16,6 +16,7 @@ from localstack.aws.api.opensearch import (
 )
 from localstack.http.client import SimpleRequestsClient
 from localstack.http.proxy import ProxyHandler
+from localstack.packages.java import java_package
 from localstack.services.edge import ROUTER
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -465,7 +466,10 @@ class OpensearchCluster(Server):
         return cmd
 
     def _create_env_vars(self, directories: Directories) -> Dict:
+        elasticsearch_installer = elasticsearch_package.get_installer(self.version)
+        java_home = java_package.get_installer(elasticsearch_installer.java_version).get_java_home()
         env_vars = {
+            "JAVA_HOME": java_home,
             "OPENSEARCH_JAVA_OPTS": os.environ.get("OPENSEARCH_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "OPENSEARCH_TMPDIR": directories.tmp,
         }
@@ -688,7 +692,10 @@ class ElasticsearchCluster(OpensearchCluster):
         return settings
 
     def _create_env_vars(self, directories: Directories) -> Dict:
+        opensearch_installer = opensearch_package.get_installer(self.version)
+        java_home = java_package.get_installer(opensearch_installer.java_version).get_java_home()
         return {
+            "JAVA_HOME": java_home,
             "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "ES_TMPDIR": directories.tmp,
         }
