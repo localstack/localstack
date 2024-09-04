@@ -520,8 +520,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 f"Invalid parameter: PhoneNumber Reason: {phone_number} is not valid to publish to"
             )
 
-        if len(message) > MAXIMUM_MESSAGE_LENGTH:
-            raise InvalidParameterException("Invalid parameter: Message too long")
+        validate_publish_size(message, message_attributes)
 
         # for compatibility reasons, AWS allows users to use either TargetArn or TopicArn for publishing to a topic
         # use any of them for topic validation
@@ -1033,6 +1032,30 @@ def get_region_from_subscription_token(token: str) -> str:
 
 def get_next_page_token_from_arn(resource_arn: str) -> str:
     return to_str(base64.b64encode(to_bytes(resource_arn)))
+
+
+def _get_byte_size(payload: str | bytes) -> int:
+    # Calculate the real length of the byte object if the object is a string
+    return len(to_bytes(payload))
+
+
+def validate_publish_size(
+    message_body: str, message_attributes: MessageAttributeMap | None
+) -> None:
+    size = len(to_bytes(message_body))
+    if message_attributes:
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-attributes.html
+        # All parts of the message attribute, including name, type, and value, are included in the message size
+        # restriction, which is 256 KB.
+        # iterate over the Keys and Attributes, adding the length of the Key to the length of all Attributes values
+        # (DataType and StringValue or BinaryValue)
+        size += sum(
+            _get_byte_size(key) + sum(_get_byte_size(attr_value) for attr_value in attr.values())
+            for key, attr in message_attributes.items()
+        )
+
+    if size > MAXIMUM_MESSAGE_LENGTH:
+        raise InvalidParameterException("Invalid parameter: Message too long")
 
 
 def register_sns_api_resource(router: Router):

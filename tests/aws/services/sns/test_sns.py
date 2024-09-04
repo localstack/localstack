@@ -491,9 +491,25 @@ class TestSNSPublishCrud:
 
         snapshot.match("error", e.value.response)
 
-        assert e.value.response["Error"]["Code"] == "InvalidParameter"
-        assert e.value.response["Error"]["Message"] == "Invalid parameter: Message too long"
-        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        # maximum size: 262144
+        # craft a message body that is under the limit, but goes over with the message attributes
+        message_attrs = {"attr1": {"DataType": "Number", "StringValue": "1"}}
+        counted_values = [*message_attrs.keys(), *message_attrs["attr1"].values()]
+        message_attrs_len = sum(len(to_bytes(value)) for value in counted_values)
+        message_with_attrs = (262144 - message_attrs_len + 1) * "a"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish(
+                TopicArn=topic_arn, Message=message_with_attrs, MessageAttributes=message_attrs
+            )
+
+        snapshot.match("error-with-attrs", e.value.response)
+
+        # assert that it goes through with the right size, remove the last char
+        publish = aws_client.sns.publish(
+            TopicArn=topic_arn, Message=message_with_attrs[:-1], MessageAttributes=message_attrs
+        )
+        assert publish["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
     def test_message_structure_json_exc(self, sns_create_topic, snapshot, aws_client):
