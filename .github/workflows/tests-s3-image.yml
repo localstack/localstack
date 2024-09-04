@@ -20,6 +20,7 @@ on:
       - Makefile
     branches:
       - master
+      - release/*
   pull_request:
     paths:
       - .github/workflows/tests-s3-image.yml
