@@ -23,8 +23,6 @@ JAVA_VERSIONS = {
     "21": "21.0.4+7",
 }
 
-JDK_DOWNLOAD_URL = "https://github.com/adoptium/temurin{version}-binaries/releases/download/{tag_slug}/OpenJDK{version}U-jdk_{arch}_{os}_hotspot_{semver_safe}.tar.gz"
-
 
 class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def __init__(self, version: str):
@@ -36,16 +34,17 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def _get_download_url(self) -> str:
         try:
             LOG.debug("Determining the latest Java build version")
-            return self.download_url_latest_release()
+            return self._download_url_latest_release()
         except Exception as exc:  # noqa
             LOG.debug(
                 "Unable to determine the latest Java build version. Using pinned versions: %s", exc
             )
-            return self.download_url_fallback()
+            return self._download_url_fallback()
 
     def _post_process(self, target: InstallTarget) -> None:
         target_directory = self._get_install_dir(target)
-        minimal_jre_path = os.path.join(target.value, self.name, "jre-{self.version}-minimal")
+        minimal_jre_path = os.path.join(target.value, self.name, "{self.version}.minimal")
+        rm_rf(minimal_jre_path)
 
         # If jlink is not available, use the environment as is
         if not os.path.exists(os.path.join(target_directory, "bin/jlink")):
@@ -82,6 +81,9 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         os.rename(minimal_jre_path, target_directory)
 
     def get_java_home(self) -> str:
+        """
+        Get JAVA_HOME for this installation of Java.
+        """
         return self.get_installed_dir()
 
     @property
@@ -90,15 +92,18 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             "x64" if get_arch() == Arch.amd64 else "aarch64" if get_arch() == Arch.arm64 else None
         )
 
-    def download_url_latest_release(self) -> str:
+    def _download_url_latest_release(self) -> str:
         """
         Return the download URL for latest stable JDK build.
         """
-        endpoint = f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?os=linux&architecture={self.arch}&image_type=jdk"
+        endpoint = (
+            f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?"
+            f"os=linux&architecture={self.arch}&image_type=jdk"
+        )
         response = requests.get(endpoint, headers={"user-agent": "example/0.0.0"}).json()
         return response[0]["binary"]["package"]["link"]
 
-    def download_url_fallback(self) -> str:
+    def _download_url_fallback(self) -> str:
         """
         Return the download URL for pinned JDK build.
         """
@@ -113,8 +118,9 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             semver_safe = semver_safe.replace("-", "")
             tag_slug = f"jdk{semver}"
 
-        return JDK_DOWNLOAD_URL.format(
-            version=self.version, tag_slug=tag_slug, os=os, arch=self.arch, semver_safe=semver_safe
+        return (
+            f"https://github.com/adoptium/temurin{self.version}-binaries/releases/download/{tag_slug}/"
+            f"OpenJDK{self.version}U-jdk_{self.arch}_{os}_hotspot_{semver_safe}.tar.gz"
         )
 
 
