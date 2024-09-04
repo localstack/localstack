@@ -1,9 +1,11 @@
 import logging
+import os
 import threading
 from typing import Any, Dict
 
 from localstack import config
-from localstack.services.stepfunctions.packages import stepfunctions_local_package
+from localstack.packages.java import java_package
+from localstack.services.stepfunctions.packages import SFN_JAVA_VERSION, stepfunctions_local_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.net import get_free_tcp_port, port_can_be_bound
 from localstack.utils.run import ShellCommandThread
@@ -42,11 +44,17 @@ class StepFunctionsServer(Server):
         return t
 
     def generate_env_vars(self) -> Dict[str, Any]:
+        java_home = java_package.get_installer(SFN_JAVA_VERSION).get_java_home()
+
+        path = f"{java_home}/bin:{os.getenv('PATH')}"
+
         return {
             "EDGE_PORT": config.GATEWAY_LISTEN[0].port,
             "EDGE_PORT_HTTP": config.GATEWAY_LISTEN[0].port,
             "DATA_DIR": config.dirs.data,
+            "JAVA_HOME": java_home,
             "PORT": self._port,
+            "PATH": path,
         }
 
     def generate_shell_command(self) -> str:

@@ -9,6 +9,7 @@ import requests
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.core import ExecutableInstaller
+from localstack.packages.java import java_package
 from localstack.utils.archives import add_file_to_jar, untar, update_jar_manifest
 from localstack.utils.files import file_exists_not_empty, mkdir, new_tmp_file, rm_rf
 from localstack.utils.http import download
@@ -17,6 +18,8 @@ from localstack.utils.http import download
 URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
 URL_ASPECTJWEAVER = f"{MAVEN_REPO_URL}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
 JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
+
+SFN_JAVA_VERSION = "11"
 
 SFN_PATCH_URL_PREFIX = (
     f"{ARTIFACTS_REPO}/raw/ac84739adc87ff4b5553478f6849134bcd259672/stepfunctions-local-patch"
@@ -76,6 +79,9 @@ class StepFunctionsLocalPackage(Package):
 class StepFunctionsLocalPackageInstaller(ExecutableInstaller):
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(install_dir, "StepFunctionsLocal.jar")
+
+    def _prepare_installation(self, target: InstallTarget) -> None:
+        java_package.get_installer(SFN_JAVA_VERSION).install()
 
     def _install(self, target: InstallTarget) -> None:
         """
