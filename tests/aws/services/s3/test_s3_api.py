@@ -1,4 +1,5 @@
 import json
+import string
 from operator import itemgetter
 from urllib.parse import urlencode
 
@@ -728,6 +729,28 @@ class TestS3BucketVersioning:
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_bucket_versioning(Bucket=fake_bucket)
         snapshot.match("get-versioning-no-bucket", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=config.LEGACY_V2_S3_PROVIDER,
+        reason="Moto implementation is not the right format",
+    )
+    def test_object_version_id_format(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key="test-version-id")
+        snapshot.match("put-object", put_object)
+        version_id = put_object["VersionId"]
+
+        # example version id
+        # gS53zabD7XTvkrwbjMnXlBylVWetO8ym
+        # the conditions under have been tested against more than 100 AWS VersionIds
+        assert len(version_id) == 32
+        letters_and_digits_and_dot = string.ascii_letters + string.digits + "._"
+        assert all(char in letters_and_digits_and_dot for char in version_id)
 
 
 class TestS3BucketEncryption:

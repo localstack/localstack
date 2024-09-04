@@ -6,7 +6,6 @@ import logging
 from collections import defaultdict
 from io import BytesIO
 from operator import itemgetter
-from secrets import token_urlsafe
 from typing import IO, Optional, Union
 from urllib import parse as urlparse
 
@@ -252,6 +251,7 @@ from localstack.services.s3.utils import (
     create_s3_kms_managed_key_for_region,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
+    generate_safe_version_id,
     get_canned_acl,
     get_class_attrs_from_spec_class,
     get_failed_precondition_copy_source,
@@ -4109,8 +4109,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 def generate_version_id(bucket_versioning_status: str) -> str | None:
     if not bucket_versioning_status:
         return None
-    # TODO: check VersionID format, could it be base64 urlsafe encoded?
-    return token_urlsafe(16) if bucket_versioning_status.lower() == "enabled" else "null"
+    elif bucket_versioning_status.lower() == "enabled":
+        return generate_safe_version_id()
+    else:
+        return "null"
 
 
 def add_encryption_to_response(response: dict, s3_object: S3Object):
