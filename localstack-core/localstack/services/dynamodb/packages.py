@@ -34,7 +34,9 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
     def __init__(self):
         super().__init__("dynamodb-local", "latest")
 
-        self.java_version = "11"
+        # DDBLocal is compatible with JRE 17+
+        # See: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
+        self.java_version = "21"
 
     def _prepare_installation(self, target: InstallTarget) -> None:
         from localstack.packages.java import java_package
