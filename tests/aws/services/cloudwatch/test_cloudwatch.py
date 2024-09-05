@@ -1394,9 +1394,7 @@ class TestCloudwatch:
         snapshot.match("get_metric_data_2", response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=not is_aws_cloud(), reason="Old provider is not raising exception"
-    )
+    @pytest.mark.skipif(condition=is_old_provider(), reason="Old provider is not raising exception")
     def test_invalid_dashboard_name(self, aws_client, region_name, snapshot):
         dashboard_name = f"test-{short_uid()}:invalid"
         dashboard_body = {
