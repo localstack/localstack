@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import re
 import threading
 import uuid
 from typing import List
@@ -555,6 +556,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         dashboard_body: DashboardBody,
         **kwargs,
     ) -> PutDashboardOutput:
+        pattern = r"^[a-zA-Z0-9_-]+$"
+        if not re.match(pattern, dashboard_name):
+            raise InvalidParameterValueException(
+                "The value for field DashboardName contains invalid characters. "
+                "It can only contain alphanumerics, dash (-) and underscore (_).\n"
+            )
+
         store = self.get_store(context.account_id, context.region)
         store.dashboards[dashboard_name] = LocalStackDashboard(
             context.account_id, context.region, dashboard_name, dashboard_body
