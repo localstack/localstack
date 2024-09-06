@@ -92,6 +92,25 @@ class TestCloudWatchLogs:
         assert len(log_groups_after) == len(log_groups_before)
 
     @markers.aws.validated
+    def test_resource_does_not_exist(self, aws_client, snapshot, cleanups):
+        log_group_name = f"log-group-{short_uid()}"
+        log_stream_name = f"log-stream-{short_uid()}"
+        with pytest.raises(Exception) as ctx:
+            aws_client.logs.get_log_events(
+                logGroupName=log_group_name, logStreamName=log_stream_name
+            )
+        snapshot.match("error-log-group-does-not-exist", ctx.value.response)
+
+        aws_client.logs.create_log_group(logGroupName=log_group_name)
+        cleanups.append(lambda: aws_client.logs.delete_log_group(logGroupName=log_group_name))
+
+        with pytest.raises(Exception) as ctx:
+            aws_client.logs.get_log_events(
+                logGroupName=log_group_name, logStreamName=log_stream_name
+            )
+        snapshot.match("error-log-stream-does-not-exist", ctx.value.response)
+
+    @markers.aws.validated
     def test_list_tags_log_group(self, snapshot, aws_client):
         test_name = f"test-log-group-{short_uid()}"
         try:
