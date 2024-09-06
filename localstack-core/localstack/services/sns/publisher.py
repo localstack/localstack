@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
 from localstack import config
+from localstack.aws.api import RequestContext
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.sns import MessageAttributeMap
 from localstack.aws.connect import connect_to
@@ -1168,7 +1169,9 @@ class PublishDispatcher:
                     message_body=message_ctx.message_content(subscriber["Protocol"]),
                 )
 
-    def publish_to_topic(self, ctx: SnsPublishContext, topic_arn: str) -> None:
+    def publish_to_topic(
+        self, ctx: SnsPublishContext, topic_arn: str, context: RequestContext
+    ) -> None:  # context required by eventstudio
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
         for subscriber in subscriptions:
             if self._should_publish(ctx.store.subscription_filter_policy, ctx.message, subscriber):
@@ -1183,7 +1186,9 @@ class PublishDispatcher:
                 )
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
-    def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
+    def publish_batch_to_topic(
+        self, ctx: SnsBatchPublishContext, topic_arn: str, context: RequestContext
+    ) -> None:  # context required by eventstudio
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
         for subscriber in subscriptions:
             protocol = subscriber["Protocol"]

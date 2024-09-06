@@ -252,7 +252,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             request_headers=context.request.headers,
             topic_attributes=vars(moto_topic),
         )
-        self._publisher.publish_batch_to_topic(publish_ctx, topic_arn)
+        self._publisher.publish_batch_to_topic(publish_ctx, topic_arn, context)
 
         return response
 
@@ -613,7 +613,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # 2 quick call to this method in succession might not be executed in order in the executor?
             # TODO: test how this behaves in a FIFO context with a lot of threads.
             publish_ctx.topic_attributes |= vars(topic_model)
-            self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
+            self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn, context)
 
         if is_fifo:
             return PublishResponse(
