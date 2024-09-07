@@ -46,15 +46,16 @@ class LambdaDebugModeSession:
         if not self._configuration_file_path:
             return
 
+        # A configuration file path is given: initialised the resources to load and watch the file.
+
         # Signal and block on first loading to ensure this is enforced from the very first
         # invocation, as this module is not loaded at startup. The LambdaDebugModeConfigWatch
         # thread will then take care of updating the configuration periodically and asynchronously.
         # This may somewhat slow down the first upstream thread loading this module, but not
-        # future calls. On the other hand, avoiding this mechanisms means that first lambda calls
+        # future calls. On the other hand, avoiding this mechanism means that first Lambda calls
         # occur with no Debug configuration.
         self._initialised_event = Event()
 
-        # A configuration file path is given: initialised the resources to load and watch the file.
         self._watch_thread = Thread(
             target=self._watch_logic, args=(), daemon=True, name="LambdaDebugModeConfigWatch"
         )
