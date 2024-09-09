@@ -71,10 +71,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles(inputs.requirements-file) }}
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles(inputs.requirements-file || 'requirements-dev.txt') }}
 
       - name: Install build dependencies (if needed)
-        if: ${{ inputs.project-name != 'localstack' }}
+        if: ${{ inputs.project-name }}
         run: |
           sudo apt-get update
           sudo apt-get install -y libsnappy-dev jq libvirt-dev
@@ -88,24 +88,24 @@ jobs:
           fi
 
       - name: Upgrade localstack-core to the latest dev release
-        if: ${{ inputs.project-name == 'localstack-ext' }}
+        if: ${{ inputs.project-name }}
         run: |
           source .venv/bin/activate
           pip install --upgrade --pre localstack-core[test]
 
       - name: Collect marker report
-        working-directory: ${{ inputs.target-repo }}
+        working-directory: ${{ inputs.target-repo }} || '.'
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
-          MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name }}
+          MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name }} || 'localstack'
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ inputs.project-name }}" == "localstack" ]; then
-            echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}" >> $GITHUB_ENV
-          else
+          if [ -n "${{ inputs.project-name }}" ]; then
             echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN }}" >> $GITHUB_ENV
+          else
+            echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}" >> $GITHUB_ENV
           fi
           . ./.venv/bin/activate
           python -m pytest tests/aws/
