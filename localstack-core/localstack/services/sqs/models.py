@@ -232,6 +232,8 @@ class MessageMoveTask:
     destination_arn: str | None = None
     """If the DestinationArn is not specified, the original source arn will be used as target."""
     max_number_of_messages_per_second: int | None = None
+    """An optional RequestContext we can pass from the StartMessageMoveTask request"""
+    submitted_request_context: Optional[RequestContext]
 
     # dynamic fields
     task_id: str
@@ -244,13 +246,18 @@ class MessageMoveTask:
     cancel_event: threading.Event
 
     def __init__(
-        self, source_arn: str, destination_arn: str, max_number_of_messages_per_second: int = None
+        self,
+        source_arn: str,
+        destination_arn: str,
+        max_number_of_messages_per_second: int = None,
+        context: RequestContext = None,
     ):
         self.task_id = long_uid()
         self.source_arn = source_arn
         self.destination_arn = destination_arn
         self.max_number_of_messages_per_second = max_number_of_messages_per_second
         self.cancel_event = threading.Event()
+        self.submitted_request_context = context
 
     def mark_started(self):
         self.started_timestamp = datetime.utcnow()

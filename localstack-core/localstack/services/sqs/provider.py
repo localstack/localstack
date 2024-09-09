@@ -507,7 +507,7 @@ class MessageMoveTaskManager:
 
                 target_queue.put(
                     message=message.message,
-                    context=None,  # TODO how to add context here?
+                    context=move_task.submitted_request_context,
                     message_group_id=message.message_group_id,
                     message_deduplication_id=message.message_deduplication_id,
                 )
@@ -1513,6 +1513,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 source_arn,
                 destination_arn,
                 max_number_of_messages_per_second,
+                context=context,
             )
             store.move_tasks[task.task_id] = task
 
