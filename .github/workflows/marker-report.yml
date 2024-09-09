@@ -15,18 +15,17 @@ on:
         description: "Target repository to check out and generate the marker report."
         required: false
         type: string
-        default: "."
+        default: '.'
       requirements-file:
         description: "Path to the requirements file to use for caching dependencies."
         required: false
         type: string
-        default: "requirements-dev.txt"
+        default: 'requirements-dev.txt'
       project-name:
         description: "Name of the project to use for the marker report."
         required: false
         type: string
-        default: "localstack"
-
+        default: 'localstack'
     secrets:
       TINYBIRD_PARITY_ANALYTICS_TOKEN:
         description: "Tinybird token to upload test data to the dashboard."
@@ -85,7 +84,7 @@ jobs:
           fi
 
       - name: Upgrade localstack-core to the latest dev release
-        if: ${{ inputs.project-name != 'localstack' }}
+        if: ${{ inputs.project-name == 'localstack-ext' }}
         run: |
           source .venv/bin/activate
           pip install --upgrade --pre localstack-core[test]
