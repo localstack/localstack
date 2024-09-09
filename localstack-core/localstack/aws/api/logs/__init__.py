@@ -6,6 +6,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 AccessPolicy = str
 AccountId = str
 AccountPolicyDocument = str
+AllowedActionForAllowVendedLogsDeliveryForResource = str
 AmazonResourceName = str
 AnomalyDetectorArn = str
 AnomalyId = str
@@ -19,6 +20,7 @@ DeliveryDestinationName = str
 DeliveryDestinationPolicy = str
 DeliveryId = str
 DeliverySourceName = str
+DeliverySuffixPath = str
 Descending = bool
 DescribeLimit = int
 DescribeQueriesMaxResults = int
@@ -43,6 +45,8 @@ ExportTaskId = str
 ExportTaskName = str
 ExportTaskStatusMessage = str
 Field = str
+FieldDelimiter = str
+FieldHeader = str
 FilterCount = int
 FilterName = str
 FilterPattern = str
@@ -83,6 +87,7 @@ QueryListMaxResults = int
 QueryString = str
 RequestId = str
 ResourceIdentifier = str
+ResourceType = str
 RoleArn = str
 SelectionCriteria = str
 SequenceToken = str
@@ -392,6 +397,15 @@ class AccountPolicy(TypedDict, total=False):
 
 
 AccountPolicies = List[AccountPolicy]
+AllowedFieldDelimiters = List[FieldDelimiter]
+
+
+class RecordField(TypedDict, total=False):
+    name: Optional[FieldHeader]
+    mandatory: Optional[Boolean]
+
+
+AllowedFields = List[RecordField]
 EpochMillis = int
 LogGroupArnList = List[LogGroupArn]
 TokenValue = int
@@ -470,12 +484,46 @@ class CancelExportTaskRequest(ServiceRequest):
     taskId: ExportTaskId
 
 
+RecordFields = List[FieldHeader]
+OutputFormats = List[OutputFormat]
+
+
+class S3DeliveryConfiguration(TypedDict, total=False):
+    suffixPath: Optional[DeliverySuffixPath]
+    enableHiveCompatiblePath: Optional[Boolean]
+
+
+class ConfigurationTemplateDeliveryConfigValues(TypedDict, total=False):
+    recordFields: Optional[RecordFields]
+    fieldDelimiter: Optional[FieldDelimiter]
+    s3DeliveryConfiguration: Optional[S3DeliveryConfiguration]
+
+
+class ConfigurationTemplate(TypedDict, total=False):
+    service: Optional[Service]
+    logType: Optional[LogType]
+    resourceType: Optional[ResourceType]
+    deliveryDestinationType: Optional[DeliveryDestinationType]
+    defaultDeliveryConfigValues: Optional[ConfigurationTemplateDeliveryConfigValues]
+    allowedFields: Optional[AllowedFields]
+    allowedOutputFormats: Optional[OutputFormats]
+    allowedActionForAllowVendedLogsDeliveryForResource: Optional[
+        AllowedActionForAllowVendedLogsDeliveryForResource
+    ]
+    allowedFieldDelimiters: Optional[AllowedFieldDelimiters]
+    allowedSuffixPathFields: Optional[RecordFields]
+
+
+ConfigurationTemplates = List[ConfigurationTemplate]
 Tags = Dict[TagKey, TagValue]
 
 
 class CreateDeliveryRequest(ServiceRequest):
     deliverySourceName: DeliverySourceName
     deliveryDestinationArn: Arn
+    recordFields: Optional[RecordFields]
+    fieldDelimiter: Optional[FieldDelimiter]
+    s3DeliveryConfiguration: Optional[S3DeliveryConfiguration]
     tags: Optional[Tags]
 
 
@@ -485,6 +533,9 @@ class Delivery(TypedDict, total=False):
     deliverySourceName: Optional[DeliverySourceName]
     deliveryDestinationArn: Optional[Arn]
     deliveryDestinationType: Optional[DeliveryDestinationType]
+    recordFields: Optional[RecordFields]
+    fieldDelimiter: Optional[FieldDelimiter]
+    s3DeliveryConfiguration: Optional[S3DeliveryConfiguration]
     tags: Optional[Tags]
 
 
@@ -621,6 +672,7 @@ class DeliveryDestination(TypedDict, total=False):
     tags: Optional[Tags]
 
 
+DeliveryDestinationTypes = List[DeliveryDestinationType]
 DeliveryDestinations = List[DeliveryDestination]
 ResourceArns = List[Arn]
 
@@ -645,6 +697,24 @@ class DescribeAccountPoliciesRequest(ServiceRequest):
 
 class DescribeAccountPoliciesResponse(TypedDict, total=False):
     accountPolicies: Optional[AccountPolicies]
+
+
+ResourceTypes = List[ResourceType]
+LogTypes = List[LogType]
+
+
+class DescribeConfigurationTemplatesRequest(ServiceRequest):
+    service: Optional[Service]
+    logTypes: Optional[LogTypes]
+    resourceTypes: Optional[ResourceTypes]
+    deliveryDestinationTypes: Optional[DeliveryDestinationTypes]
+    nextToken: Optional[NextToken]
+    limit: Optional[DescribeLimit]
+
+
+class DescribeConfigurationTemplatesResponse(TypedDict, total=False):
+    configurationTemplates: Optional[ConfigurationTemplates]
+    nextToken: Optional[NextToken]
 
 
 class DescribeDeliveriesRequest(ServiceRequest):
@@ -1455,6 +1525,17 @@ class UpdateAnomalyRequest(ServiceRequest):
     suppressionPeriod: Optional[SuppressionPeriod]
 
 
+class UpdateDeliveryConfigurationRequest(ServiceRequest):
+    id: DeliveryId
+    recordFields: Optional[RecordFields]
+    fieldDelimiter: Optional[FieldDelimiter]
+    s3DeliveryConfiguration: Optional[S3DeliveryConfiguration]
+
+
+class UpdateDeliveryConfigurationResponse(TypedDict, total=False):
+    pass
+
+
 class UpdateLogAnomalyDetectorRequest(ServiceRequest):
     anomalyDetectorArn: AnomalyDetectorArn
     evaluationFrequency: Optional[EvaluationFrequency]
@@ -1488,6 +1569,9 @@ class LogsApi:
         context: RequestContext,
         delivery_source_name: DeliverySourceName,
         delivery_destination_arn: Arn,
+        record_fields: RecordFields = None,
+        field_delimiter: FieldDelimiter = None,
+        s3_delivery_configuration: S3DeliveryConfiguration = None,
         tags: Tags = None,
         **kwargs,
     ) -> CreateDeliveryResponse:
@@ -1645,6 +1729,20 @@ class LogsApi:
         account_identifiers: AccountIds = None,
         **kwargs,
     ) -> DescribeAccountPoliciesResponse:
+        raise NotImplementedError
+
+    @handler("DescribeConfigurationTemplates")
+    def describe_configuration_templates(
+        self,
+        context: RequestContext,
+        service: Service = None,
+        log_types: LogTypes = None,
+        resource_types: ResourceTypes = None,
+        delivery_destination_types: DeliveryDestinationTypes = None,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs,
+    ) -> DescribeConfigurationTemplatesResponse:
         raise NotImplementedError
 
     @handler("DescribeDeliveries")
@@ -2165,6 +2263,18 @@ class LogsApi:
         suppression_period: SuppressionPeriod = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateDeliveryConfiguration")
+    def update_delivery_configuration(
+        self,
+        context: RequestContext,
+        id: DeliveryId,
+        record_fields: RecordFields = None,
+        field_delimiter: FieldDelimiter = None,
+        s3_delivery_configuration: S3DeliveryConfiguration = None,
+        **kwargs,
+    ) -> UpdateDeliveryConfigurationResponse:
         raise NotImplementedError
 
     @handler("UpdateLogAnomalyDetector")
