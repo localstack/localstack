@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 from copy import deepcopy
+from datetime import datetime
 
 from botocore.client import BaseClient
 
@@ -135,6 +136,9 @@ class KinesisPoller(StreamPoller):
             return record["kinesis"]["approximateArrivalTimestamp"]
         else:
             return record["approximateArrivalTimestamp"]
+
+    def format_datetime(self, time: datetime) -> str:
+        return f"{time.isoformat(timespec='milliseconds')}Z"
 
     def get_sequence_number(self, record: dict) -> str:
         if self.kinesis_namespace:

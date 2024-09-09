@@ -105,5 +105,8 @@ class DynamoDBPoller(StreamPoller):
         # TODO: parse float properly if present from ApproximateCreationDateTime -> now works, compare via debug!
         return record["dynamodb"].get("todo", datetime.utcnow().timestamp())
 
+    def format_datetime(self, time: datetime) -> str:
+        return f"{time.isoformat(timespec='seconds')}Z"
+
     def get_sequence_number(self, record: dict) -> str:
         return record["dynamodb"]["SequenceNumber"]

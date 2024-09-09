@@ -65,7 +65,7 @@ class EsmEventProcessor(EventProcessor):
                 logLevel=LogLevel.ERROR,
                 error=e.error,
             )
-            raise BatchFailureError from e
+            raise BatchFailureError(error=e.error) from e
         except Exception as e:
             LOG.error(
                 "Unhandled exception while processing Lambda event source mapping (ESM) events %s for ESM with execution id %s",
@@ -131,3 +131,24 @@ class EsmEventProcessor(EventProcessor):
                 error=e.error,
             )
             raise e
+
+    def generate_event_failure_context(self, abort_condition: str, **kwargs) -> dict:
+        error_payload: dict = kwargs.get("error")
+        if not error_payload:
+            return {}
+        # TODO: Should 'requestContext' and 'responseContext' be defined as models?
+        context = {
+            "requestContext": {
+                "requestId": error_payload.get("requestId"),
+                "functionArn": self.sender.target_arn,  # get the target ARN from the sender (always LambdaSender)
+                "condition": abort_condition,
+                "approximateInvokeCount": kwargs.get("attempts_count"),
+            },
+            "responseContext": {
+                "statusCode": error_payload.get("httpStatusCode"),
+                "executedVersion": error_payload.get("executedVersion"),
+                "functionError": error_payload.get("functionError"),
+            },
+        }
+
+        return context
