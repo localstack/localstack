@@ -52,6 +52,11 @@ jobs:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
 
+      - name: Echo inputs
+        run: |
+          echo "target-repo: ${{ inputs.target-repo }}"
+          echo "requirements-file: ${{ inputs.requirements-file }}"
+          echo "project-name: ${{ inputs.project-name }}"
 
       - name: Set up Python
         id: setup-python
@@ -66,21 +71,21 @@ jobs:
           key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles(inputs.requirements-file) }}
 
       - name: Install build dependencies (if needed)
-        if: ${{ inputs.project_name == 'localstack-ext' }}
+        if: ${{ inputs.project-name != 'localstack' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y libsnappy-dev jq libvirt-dev
 
       - name: Install dependencies
         run: |
-          if [ "${{ inputs.project_name }}" == "localstack" ]; then
-            make install-dev
-          else
+          if [ "${{ inputs.project-name }}" != 'localstack' ]; then
             make install-ci
+          else
+            make install-dev
           fi
 
       - name: Upgrade localstack-core to the latest dev release
-        if: ${{ inputs.project_name == 'localstack-ext' }}
+        if: ${{ inputs.project-name != 'localstack' }}
         run: |
           source .venv/bin/activate
           pip install --upgrade --pre localstack-core[test]
@@ -89,12 +94,12 @@ jobs:
         working-directory: ${{ inputs.target-repo }}
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
-          MARKER_REPORT_PROJECT_NAME: ${{ inputs.project_name }}
+          MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name }}
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ inputs.project_name }}" == "localstack" ]; then
+          if [ "${{ inputs.project-name }}" == "localstack" ]; then
             echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}" >> $GITHUB_ENV
           else
             echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN }}" >> $GITHUB_ENV
