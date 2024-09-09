@@ -139,13 +139,16 @@ class TargetSender(ABC):
     def send_event(self, event: FormattedEvent | TransformedEvent):
         pass
 
-    def proxy_send_event(self, event: FormattedEvent | TransformedEvent, context: RequestContext):
+    def proxy_send_event(
+        self, event: FormattedEvent | TransformedEvent, context: RequestContext
+    ):  # context required by eventstudio
         """Proxy method to process the event and send it to the target,
         in addition it removes the field event-bus-name from the event,
         required for EventStudio extension"""
         self.send_event(event)
 
     def process_event(self, event: FormattedEvent, context: RequestContext):
+        # context required by eventstudio
         """Processes the event and send it to the target."""
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
