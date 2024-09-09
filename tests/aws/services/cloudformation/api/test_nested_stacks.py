@@ -7,7 +7,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry
+from localstack.utils.sync import retry, wait_until
 
 
 @markers.aws.needs_fixing
@@ -81,7 +81,7 @@ def test_nested_stack_output_refs(deploy_cfn_template, s3_create_bucket, aws_cli
     assert f"{nested_bucket_name}-suffix" == result.outputs["CustomOutput"]
 
 
-@pytest.mark.skip(reason="Nested stacks don't work properly")
+@pytest.mark.skip(reason="Nested rtacks don't work properly")
 @markers.aws.validated
 def test_nested_with_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     bucket_name = s3_create_bucket()
@@ -291,3 +291,55 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
         StackName=stack.outputs["NestedStackArn"]
     )
     assert ":" not in nested_stack["Stacks"][0]["StackName"]
+
+
+@markers.aws.validated
+def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client):
+    """
+    This test confirms that after deleting a stack parent with a failed nested stack. The nested stack is also deleted
+    """
+
+    bucket_name = s3_create_bucket()
+    aws_client.s3.upload_file(
+        os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_failed_nested_stack_child.yml"
+        ),
+        Bucket=bucket_name,
+        Key="child.yml",
+    )
+
+    stack_name = f"stack-{short_uid()}"
+
+    aws_client.cloudformation.create_stack(
+        StackName=stack_name,
+        TemplateBody=load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/cfn_failed_nested_stack_parent.yml"
+            ),
+        ),
+        Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
+        Parameters=[
+            {"ParameterKey": "BucketName", "ParameterValue": "Invalid!@#$"},
+            {"ParameterKey": "TemplateUri", "ParameterValue": f"s3://{bucket_name}/child.yml"},
+        ],
+    )
+
+    def _status_is_complete():
+        status = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0][
+            "StackStatus"
+        ]
+        assert status in [
+            "ROLLBACK_COMPLETE",
+            "CREATE_FAILED",
+        ]  # LS doesn't implement the ROLLBACK yet
+
+    wait_until(_status_is_complete)
+
+    aws_client.cloudformation.delete_stack(StackName=stack_name)
+
+    def _stack_and_child_deleted():
+        stacks = aws_client.cloudformation.describe_stacks()["Stacks"]
+        stacks_with_name = [s for s in stacks if stack_name in s["StackName"]]
+        assert len(stacks_with_name) == 0
+
+    retry(_stack_and_child_deleted, sleep=2 if is_aws_cloud() else 1)

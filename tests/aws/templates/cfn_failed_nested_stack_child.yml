@@ -1,0 +1,9 @@
+Parameters:
+  BucketName:
+    Type: string
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
