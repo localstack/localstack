@@ -49,7 +49,6 @@ class EsmEventProcessor(EventProcessor):
                 messageType="ExecutionSucceeded",
                 logLevel=LogLevel.INFO,
             )
-
         except PartialFailureSenderError as e:
             self.logger.log(
                 messageType="ExecutionFailed",
@@ -77,8 +76,6 @@ class EsmEventProcessor(EventProcessor):
             raise e
 
     def process_target_stage(self, events: list[dict]) -> None:
-        payload = {}
-
         try:
             self.logger.log(
                 messageType="TargetStageEntered",
@@ -91,10 +88,12 @@ class EsmEventProcessor(EventProcessor):
                     logLevel=LogLevel.TRACE,
                 )
                 # TODO: handle and log target invocation + stage skipped (when no records present)
-                if response_payload := self.sender.send_events(events):
+                payload = self.sender.send_events(events)
+                if payload:
                     # TODO: test unserializable content (e.g., byte strings)
-                    payload = response_payload
-
+                    payload = json.dumps(payload)
+                else:
+                    payload = ""
                 self.logger.log(
                     messageType="TargetInvocationSucceeded",
                     logLevel=LogLevel.TRACE,
@@ -116,7 +115,7 @@ class EsmEventProcessor(EventProcessor):
             self.logger.log(
                 messageType="TargetStageSucceeded",
                 logLevel=LogLevel.INFO,
-                payload=json.dumps(payload),
+                payload=payload,
             )
         except PartialFailureSenderError as e:
             self.logger.log(
