@@ -14,6 +14,7 @@ from threading import RLock
 from typing import TYPE_CHECKING, Optional
 
 from localstack import config
+from localstack.aws.api import RequestContext
 from localstack.aws.api.lambda_ import (
     InvalidParameterValueException,
     InvalidRequestContentException,
@@ -220,6 +221,7 @@ class LambdaService:
         qualifier: str,
         region: str,
         account_id: str,
+        context: RequestContext,  # context required by eventstudio
         invocation_type: InvocationType | None,
         client_context: Optional[str],
         request_id: str,
