@@ -12,6 +12,7 @@ from openapi_core.exceptions import OpenAPIError
 from openapi_core.validation.request.exceptions import (
     RequestValidationError,
 )
+from openapi_core.validation.response.exceptions import ResponseValidationError
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -67,7 +68,8 @@ class OpenAPIRequestValidator(OpenAPIValidator):
 
 class OpenAPIResponseValidator(OpenAPIValidator):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-        # We are more lenient in validating the responses. The use of this flag is intended for test.
+        # The use of this flag is intended for test only. Eventual errors are due to LocalStack implementation and not
+        #   to improper user usage of the endpoints.
         if not config.OPENAPI_VALIDATE_RESPONSE:
             return
 
@@ -79,7 +81,7 @@ class OpenAPIResponseValidator(OpenAPIValidator):
                     WerkzeugOpenAPIRequest(context.request),
                     WerkzeugOpenAPIResponse(response),
                 )
-            except OpenAPIError as exc:
+            except ResponseValidationError as exc:
                 LOG.error("Response validation failed for %s: $s", path, exc)
                 response.status_code = 500
                 response.set_json({"error": exc.__class__.__name__, "message": str(exc)})
