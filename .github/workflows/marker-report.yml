@@ -56,6 +56,10 @@ jobs:
           echo "target-repo: ${{ inputs.target-repo }}"
           echo "requirements-file: ${{ inputs.requirements-file }}"
           echo "project-name: ${{ inputs.project-name }}"
+          echo "target-repo: my-repo"
+          echo "requirements-file: requirements-dev.txt"
+          echo "project-name: localstack"
+          echo "${{ toJson(github.event.inputs) }}"
 
       - name: Set up Python
         id: setup-python
