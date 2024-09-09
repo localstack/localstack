@@ -719,8 +719,10 @@ class S3Integration(BackendIntegration):
         action = None
         invoke_args = {"Bucket": bucket, "Key": object_key}
         integration_method = integration.get("httpMethod") or invocation_context.method
-        if integration_method == HTTPMethod.ANY:
+        LOG.debug("Integration method: %s", integration_method)
+        if integration_method == "ANY":
             integration_method = invocation_context.method
+        LOG.debug("Integration method: %s", integration_method)
 
         match integration_method:
             case HTTPMethod.GET:
