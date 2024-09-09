@@ -507,6 +507,7 @@ class SqsQueue:
     def put(
         self,
         message: Message,
+        context: RequestContext,
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
@@ -738,11 +739,12 @@ class StandardQueue(SqsQueue):
     def put(
         self,
         message: Message,
+        context: RequestContext,
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
         delay_seconds: int = None,
-    ):
+    ):  # context required by eventstudio
         if message_deduplication_id:
             raise InvalidParameterValueException(
                 f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The "
@@ -994,11 +996,12 @@ class FifoQueue(SqsQueue):
     def put(
         self,
         message: Message,
+        context: RequestContext,
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
         delay_seconds: int = None,
-    ):
+    ):  # context required by eventstudio
         if delay_seconds:
             # in fifo queues, delay is only applied on queue level. However, explicitly setting delay_seconds=0 is valid
             raise InvalidParameterValueException(

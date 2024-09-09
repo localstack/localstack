@@ -507,6 +507,7 @@ class MessageMoveTaskManager:
 
                 target_queue.put(
                     message=message.message,
+                    context=None,  # TODO how to add context here?
                     message_group_id=message.message_group_id,
                     message_deduplication_id=message.message_deduplication_id,
                 )
@@ -1174,6 +1175,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         return queue.put(
             message=message,
+            context=context,
             message_deduplication_id=message_deduplication_id,
             message_group_id=message_group_id,
             delay_seconds=int(delay_seconds) if delay_seconds is not None else None,
@@ -1229,6 +1231,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
                 dl_queue.put(
                     message=message,
+                    context=context,
                     message_deduplication_id=standard_message.message_deduplication_id,
                     message_group_id=standard_message.message_group_id,
                 )
