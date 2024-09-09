@@ -25,9 +25,9 @@ on:
         type: string
         default: "localstack"
     secrets:
-      GITHUB_TOKEN:
-        description: "A GitHub personal access token with write access to the project."
-        required: false
+#      GITHUB_TOKEN:
+#        description: "A GitHub personal access token with write access to the project."
+#        required: false
       TINYBIRD_PARITY_ANALYTICS_TOKEN:
         description: "Tinybird token to upload test data to the dashboard."
         required: false
@@ -96,7 +96,8 @@ jobs:
             ${{ inputs.project_name == 'localstack' ? secrets.MARKER_REPORT_TINYBIRD_TOKEN : secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN}}
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
           LOCALSTACK_API_KEY: ${{ inputs.project_name != 'localstack' && secrets.TEST_LOCALSTACK_API_KEY || '' }}
-          GITHUB_TOKEN: ${{ inputs.project_name != 'localstack' && secrets.GITHUB_TOKEN || '' }}
+#          GITHUB_TOKEN: ${{ inputs.project_name != 'localstack' && secrets.GITHUB_TOKEN || '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           . ./.venv/bin/activate
           python -m pytest tests/aws/
