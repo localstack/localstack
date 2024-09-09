@@ -721,7 +721,7 @@ class S3Integration(BackendIntegration):
         integration_method = integration.get("httpMethod") or invocation_context.method
         if integration_method == HTTPMethod.ANY:
             integration_method = invocation_context.method
-            
+
         match integration_method:
             case HTTPMethod.GET:
                 action = s3.get_object
