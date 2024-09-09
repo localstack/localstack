@@ -2,10 +2,40 @@ name: Generate pytest marker report
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "tests/**"
+#    paths:
+#      - "tests/**"
+#    branches:
+#      - master
     branches:
-      - master
+      - reusable-workflow-markers
+
+  workflow_call:
+    inputs:
+      target-repo:
+        description: "Target repository to check out and generate the marker report."
+        required: true
+        type: string
+      requirements-file:
+        description: "Path to the requirements file to use for caching dependencies."
+        required: true
+        type: string
+      project-name:
+        description: "Name of the project to use for the marker report."
+        required: true
+        type: string
+        default: "localstack"
+    secrets:
+      GITHUB_TOKEN:
+        description: "A GitHub personal access token with write access to the project."
+        required: false
+      TINYBIRD_PARITY_ANALYTICS_TOKEN:
+        description: "Tinybird token to upload test data to the dashboard."
+        required: false
+      TEST_LOCALSTACK_API_KEY:
+        description: "LocalStack API key for running tests."
+        required: false
+
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -18,6 +48,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
 
       - name: Set up Python
         id: setup-python
@@ -25,21 +59,44 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Cache LocalStack community dependencies (venv)
+      - name: Cache LocalStack dependencies (venv)
         uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('requirements-dev.txt') }}
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles(inputs.requirements-file) }}
+
+      - name: Install build dependencies (if needed)
+        if: ${{ inputs.project_name == 'localstack-ext' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsnappy-dev jq libvirt-dev
 
       - name: Install dependencies
-        run: make install-dev
+        run: |
+          if [ "${{ inputs.project_name }}" == "localstack" ]; then
+            make install-dev
+          else
+            make install-ci
+          fi
+
+      - name: Upgrade localstack-core to the latest dev release
+        if: ${{ inputs.project_name == 'localstack-ext' }}
+        run: |
+          source .venv/bin/activate
+          pip install --upgrade --pre localstack-core[test]
+
 
       - name: Collect marker report
+        working-directory:
+          ${{ inputs.project_name == 'localstack-ext' ? 'localstack-pro-core' : '.' }}
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
-          MARKER_REPORT_PROJECT_NAME: localstack
-          MARKER_REPORT_TINYBIRD_TOKEN: ${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}
+          MARKER_REPORT_PROJECT_NAME: ${{ inputs.project_name }}
+          MARKER_REPORT_TINYBIRD_TOKEN:
+            ${{ inputs.project_name == 'localstack' ? secrets.MARKER_REPORT_TINYBIRD_TOKEN : secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN}}
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
+          LOCALSTACK_API_KEY: ${{ inputs.project_name != 'localstack' && secrets.TEST_LOCALSTACK_API_KEY || '' }}
+          GITHUB_TOKEN: ${{ inputs.project_name != 'localstack' && secrets.GITHUB_TOKEN || '' }}
         run: |
           . ./.venv/bin/activate
           python -m pytest tests/aws/
