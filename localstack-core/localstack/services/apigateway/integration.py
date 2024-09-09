@@ -691,20 +691,6 @@ class S3Integration(BackendIntegration):
     TARGET_REGEX_PATH_S3_URI = rf"{ARN_PARTITION_REGEX}:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
     TARGET_REGEX_ACTION_S3_URI = rf"{ARN_PARTITION_REGEX}:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
 
-    def apply_integration_request_parameters(uri: str, integration: Dict[str, Any], invocation_context: ApiInvocationContext):
-        groups = re.findall(r"({[a-zA-Z]+})", uri)
-        request_parameters = integration.get("requestParameters", {})
-        for group in groups:
-            key = group.replace("{", "").replace("}", "")
-            request_param_key = f"integration.request.path.{key}"
-            associatedValueKey = request_parameters.get(request_param_key)
-            if associatedValueKey:
-                value = invocation_context.context.get(associatedValueKey.replace("context.", ""))
-                if (value):
-                    uri = uri.replace(group, value)
-        return uri
-
-
     def invoke(self, invocation_context: ApiInvocationContext):
         invocation_path = invocation_context.path_with_query_string
         integration = invocation_context.integration
@@ -712,7 +698,11 @@ class S3Integration(BackendIntegration):
         relative_path, query_string_params = extract_query_string_params(path=invocation_path)
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
-        uri = self.apply_integration_request_parameters(uri, integration, invocation_context)
+        uri = apply_integration_request_parameters(
+            uri,
+            integration=integration,
+            invocation_context=invocation_context
+        )
 
         s3 = connect_to().s3
         uri = apply_request_parameters(
@@ -1138,3 +1128,16 @@ class EventBridgeIntegration(BackendIntegration):
         self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
+
+def apply_integration_request_parameters(uri: str, integration: Dict[str, Any], invocation_context: ApiInvocationContext):
+    groups = re.findall(r"({[a-zA-Z]+})", uri)
+    request_parameters = integration.get("requestParameters", {})
+    for group in groups:
+        key = group.replace("{", "").replace("}", "")
+        request_param_key = f"integration.request.path.{key}"
+        associatedValueKey = request_parameters.get(request_param_key)
+        if associatedValueKey:
+            value = invocation_context.context.get(associatedValueKey.replace("context.", ""))
+            if (value):
+                uri = uri.replace(group, value)
+    return uri
