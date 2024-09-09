@@ -51,16 +51,6 @@ jobs:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
 
-      - name: Echo inputs
-        run: |
-          echo "target-repo: ${{ inputs.target-repo }}"
-          echo "requirements-file: ${{ inputs.requirements-file }}"
-          echo "project-name: ${{ inputs.project-name }}"
-          echo "target-repo: my-repo"
-          echo "requirements-file: requirements-dev.txt"
-          echo "project-name: localstack"
-          echo "${{ toJson(github.event.inputs) }}"
-
       - name: Set up Python
         id: setup-python
         uses: actions/setup-python@v5
@@ -97,7 +87,6 @@ jobs:
         working-directory: ${{ inputs.target-repo }}
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
-#          MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name }} || 'localstack'
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
