@@ -407,7 +407,10 @@ class StatesTargetSender(TargetSender):
     """Step Functions Target Sender"""
 
     def send_event(self, event):
-        self.client.start_execution(stateMachineArn=self.target["Arn"], input=to_json_str(event))
+        self.service = "stepfunctions"
+        self.client.start_execution(
+            stateMachineArn=self.target["Arn"], name=event["id"], input=to_json_str(event)
+        )
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
@@ -456,6 +459,7 @@ class TargetSenderFactory:
         "sqs": SqsTargetSender,
         "sagemaker": SagemakerTargetSender,
         "ssm": SystemsManagerSender,
+        "states": StatesTargetSender,
         # TODO custom endpoints via http target
     }
 
