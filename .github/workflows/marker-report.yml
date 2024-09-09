@@ -81,7 +81,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ "${{ inputs.project-name }}" != 'localstack' ]; then
+          if [ -n "${{ inputs.project-name }}" ]; then
             make install-ci
           else
             make install-dev
