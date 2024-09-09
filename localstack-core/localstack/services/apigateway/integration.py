@@ -699,9 +699,7 @@ class S3Integration(BackendIntegration):
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
         uri = apply_integration_request_parameters(
-            uri,
-            integration=integration,
-            invocation_context=invocation_context
+            uri, integration=integration, invocation_context=invocation_context
         )
 
         s3 = connect_to().s3
@@ -1129,6 +1127,7 @@ class EventBridgeIntegration(BackendIntegration):
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
 
+
 def apply_integration_request_parameters(
     uri: str, integration: Dict[str, Any], invocation_context: ApiInvocationContext
 ):
@@ -1140,6 +1139,6 @@ def apply_integration_request_parameters(
         associatedValueKey = request_parameters.get(request_param_key)
         if associatedValueKey:
             value = invocation_context.context.get(associatedValueKey.replace("context.", ""))
-            if (value):
+            if value:
                 uri = uri.replace(group, value)
     return uri
