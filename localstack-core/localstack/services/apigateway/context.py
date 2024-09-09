@@ -1,5 +1,6 @@
 import base64
 import json
+import time
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
@@ -80,7 +81,7 @@ class ApiInvocationContext:
         self._path = path
         self.data = data
         self.headers = headers
-        self.context = {"requestId": short_uid()} if context is None else context
+        self.context = {"requestId": short_uid(), "requestTimeEpoch": str(time.time()).replace('.', '')} if context is None else context
         self.auth_context = {} if auth_context is None else auth_context
         self.apigw_version = None
         self.api_id = api_id
