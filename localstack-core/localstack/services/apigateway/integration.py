@@ -1129,7 +1129,9 @@ class EventBridgeIntegration(BackendIntegration):
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
 
-def apply_integration_request_parameters(uri: str, integration: Dict[str, Any], invocation_context: ApiInvocationContext):
+def apply_integration_request_parameters(
+    uri: str, integration: Dict[str, Any], invocation_context: ApiInvocationContext
+):
     groups = re.findall(r"({[a-zA-Z]+})", uri)
     request_parameters = integration.get("requestParameters", {})
     for group in groups:
