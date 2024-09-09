@@ -5,6 +5,8 @@
   "scripts": {
     "deploy": "serverless deploy --stage local",
     "undeploy": "serverless remove --stage local",
+    "deploy-aws": "serverless deploy --stage dev",
+    "undeploy-aws": "serverless remove --stage dev",
     "version": "serverless --version"
   },
   "devDependencies": {

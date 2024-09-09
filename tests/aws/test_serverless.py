@@ -30,7 +30,11 @@ class TestServerless:
         mkypatch.undo()
 
     @pytest.fixture(scope="class")
-    def setup_and_teardown(self, aws_client, region_name, delenv):
+    def get_deployed_stage(self):
+        return "dev" if is_aws_cloud() else "local"
+
+    @pytest.fixture(scope="class")
+    def setup_and_teardown(self, aws_client, region_name, delenv, get_deployed_stage):
         if not is_aws_cloud():
             delenv("AWS_PROFILE", raising=False)
         base_dir = get_base_dir()
@@ -43,22 +47,40 @@ class TestServerless:
         existing_api_ids = [api["id"] for api in apis]
 
         # deploy serverless app
-        run(
-            ["npm", "run", "deploy", "--", f"--region={region_name}"],
-            cwd=base_dir,
-            env_vars={"AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID},
-        )
+        if is_aws_cloud():
+            run(
+                ["npm", "run", "deploy-aws", "--", f"--region={region_name}"],
+                cwd=base_dir,
+            )
+        else:
+            run(
+                ["npm", "run", "deploy", "--", f"--region={region_name}"],
+                cwd=base_dir,
+                env_vars={"AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID},
+            )
 
         yield existing_api_ids
 
         try:
+            # cleanup s3 bucket content
+            bucket_name = f"testing-bucket-sls-test-{get_deployed_stage}-{region_name}"
+            response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
+            objects = [{"Key": obj["Key"]} for obj in response.get("Contents", [])]
+            if objects:
+                aws_client.s3.delete_objects(
+                    Bucket=bucket_name,
+                    Delete={"Objects": objects},
+                )
             # TODO the cleanup still fails due to inability to find ECR service in community
-            run(["npm", "run", "undeploy", "--", f"--region={region_name}"], cwd=base_dir)
+            if is_aws_cloud():
+                run(["npm", "run", "undeploy-aws", "--", f"--region={region_name}"], cwd=base_dir)
+            else:
+                run(["npm", "run", "undeploy", "--", f"--region={region_name}"], cwd=base_dir)
         except Exception:
             LOG.error("Unable to clean up serverless stack")
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_event_rules_deployed(self, aws_client, setup_and_teardown):
         events = aws_client.events
         rules = events.list_rules()["Rules"]
@@ -76,9 +98,11 @@ class TestServerless:
         assert {"source": ["customSource"]} == json.loads(rule["EventPattern"])
 
     @markers.skip_offline
-    @markers.aws.unknown
-    def test_dynamodb_stream_handler_deployed(self, aws_client, setup_and_teardown):
-        function_name = "sls-test-local-dynamodbStreamHandler"
+    @markers.aws.validated
+    def test_dynamodb_stream_handler_deployed(
+        self, aws_client, setup_and_teardown, get_deployed_stage
+    ):
+        function_name = f"sls-test-{get_deployed_stage}-dynamodbStreamHandler"
         table_name = "Test"
 
         lambda_client = aws_client.lambda_
@@ -97,11 +121,13 @@ class TestServerless:
         assert event_source_arn == resp["Table"]["LatestStreamArn"]
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.validated
     @pytest.mark.skip(reason="flaky")
-    def test_kinesis_stream_handler_deployed(self, aws_client, setup_and_teardown):
-        function_name = "sls-test-local-kinesisStreamHandler"
-        function_name2 = "sls-test-local-kinesisConsumerHandler"
+    def test_kinesis_stream_handler_deployed(
+        self, aws_client, setup_and_teardown, get_deployed_stage
+    ):
+        function_name = f"sls-test-{get_deployed_stage}-kinesisStreamHandler"
+        function_name2 = f"sls-test-{get_deployed_stage}-kinesisConsumerHandler"
         stream_name = "KinesisTestStream"
 
         lambda_client = aws_client.lambda_
@@ -128,10 +154,12 @@ class TestServerless:
         retry(assert_invocations, sleep=2, retries=20)
 
     @markers.skip_offline
-    @markers.aws.unknown
-    def test_queue_handler_deployed(self, aws_client, account_id, region_name, setup_and_teardown):
-        function_name = "sls-test-local-queueHandler"
-        queue_name = "sls-test-local-CreateQueue"
+    @markers.aws.needs_fixing
+    def test_queue_handler_deployed(
+        self, aws_client, account_id, region_name, setup_and_teardown, get_deployed_stage
+    ):
+        function_name = f"sls-test-{get_deployed_stage}-queueHandler"
+        queue_name = f"sls-test-{get_deployed_stage}-CreateQueue"
 
         lambda_client = aws_client.lambda_
         sqs_client = aws_client.sqs
@@ -148,8 +176,12 @@ class TestServerless:
         queue_arn = arns.sqs_queue_arn(queue_name, account_id=account_id, region_name=region_name)
 
         assert event_source_arn == queue_arn
+        queue_url = sqs_client.get_queue_url(
+            QueueName=queue_name, QueueOwnerAWSAccountId=account_id
+        )["QueueUrl"]
+
         result = sqs_client.get_queue_attributes(
-            QueueUrl=arns.sqs_queue_url_for_arn(queue_arn),
+            QueueUrl=queue_url,
             AttributeNames=[
                 "RedrivePolicy",
             ],
@@ -158,9 +190,9 @@ class TestServerless:
         assert 3 == redrive_policy["maxReceiveCount"]
 
     @markers.skip_offline
-    @markers.aws.unknown
-    def test_lambda_with_configs_deployed(self, aws_client, setup_and_teardown):
-        function_name = "sls-test-local-test"
+    @markers.aws.validated
+    def test_lambda_with_configs_deployed(self, aws_client, setup_and_teardown, get_deployed_stage):
+        function_name = f"sls-test-{get_deployed_stage}-test"
 
         lambda_client = aws_client.lambda_
 
@@ -176,9 +208,11 @@ class TestServerless:
         assert 7200 == resp.get("MaximumEventAgeInSeconds")
 
     @markers.skip_offline
-    @markers.aws.unknown
-    def test_apigateway_deployed(self, aws_client, account_id, region_name, setup_and_teardown):
-        function_name = "sls-test-local-router"
+    @markers.aws.needs_fixing
+    def test_apigateway_deployed(
+        self, aws_client, account_id, region_name, setup_and_teardown, get_deployed_stage
+    ):
+        function_name = f"sls-test-{get_deployed_stage}-router"
         existing_api_ids = setup_and_teardown
 
         lambda_client = aws_client.lambda_
@@ -200,15 +234,19 @@ class TestServerless:
         for method in ["DELETE", "POST", "PUT"]:
             assert method in proxy_resource["resourceMethods"]
             resource_method = proxy_resource["resourceMethods"][method]
+            # TODO - needs fixing: this assertion doesn't hold for AWS, as there is no "methodIntegration" key
+            # on AWS -> "resourceMethods": {'DELETE': {}, 'POST': {}, 'PUT': {}}
             assert (
                 arns.lambda_function_arn(function_name, account_id, region_name)
                 in resource_method["methodIntegration"]["uri"]
             )
 
     @markers.skip_offline
-    @markers.aws.unknown
-    def test_s3_bucket_deployed(self, aws_client, setup_and_teardown):
+    @markers.aws.validated
+    def test_s3_bucket_deployed(
+        self, aws_client, setup_and_teardown, region_name, get_deployed_stage
+    ):
         s3_client = aws_client.s3
-        bucket_name = "testing-bucket"
+        bucket_name = f"testing-bucket-sls-test-{get_deployed_stage}-{region_name}"
         response = s3_client.head_bucket(Bucket=bucket_name)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
