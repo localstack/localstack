@@ -6,7 +6,7 @@ on:
 #      - "tests/**"
 #    branches:
 #      - master
-    branches:
+    branches: # TODO: remove this before merge and uncomment the above
       - reusable-workflow-markers
 
   workflow_call:
@@ -87,7 +87,7 @@ jobs:
 
 
       - name: Collect marker report
-        working-directory:
+        working-directory: |
           ${{ inputs.project_name == 'localstack-ext' ? 'localstack-pro-core' : '.' }}
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
