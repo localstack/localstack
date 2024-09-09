@@ -24,6 +24,11 @@ on:
         required: true
         type: string
         default: "localstack"
+      work-directory:
+        description: "Working directory to use for the marker report."
+        required: false
+        type: string
+        default: "."
     secrets:
 #      GITHUB_TOKEN:
 #        description: "A GitHub personal access token with write access to the project."
@@ -87,8 +92,8 @@ jobs:
 
 
       - name: Collect marker report
-        working-directory: |
-          ${{ inputs.project_name == 'localstack-ext' ? 'localstack-pro-core' : '.' }}
+        working-directory: ${{ inputs.work-directory }}
+#          ${{ inputs.project_name == 'localstack-ext' ? 'localstack-pro-core' : '.' }}
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
           MARKER_REPORT_PROJECT_NAME: ${{ inputs.project_name }}
