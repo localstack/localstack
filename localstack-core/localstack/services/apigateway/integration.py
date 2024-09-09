@@ -712,7 +712,7 @@ class S3Integration(BackendIntegration):
         relative_path, query_string_params = extract_query_string_params(path=invocation_path)
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
-        uri = apply_integration_request_parameters(uri, integration, invocation_context)
+        uri = self.apply_integration_request_parameters(uri, integration, invocation_context)
 
         s3 = connect_to().s3
         uri = apply_request_parameters(
