@@ -72,10 +72,8 @@ class TestServerless:
                     Delete={"Objects": objects},
                 )
             # TODO the cleanup still fails due to inability to find ECR service in community
-            if is_aws_cloud():
-                run(["npm", "run", "undeploy-aws", "--", f"--region={region_name}"], cwd=base_dir)
-            else:
-                run(["npm", "run", "undeploy", "--", f"--region={region_name}"], cwd=base_dir)
+            command = "undeploy-aws" if is_aws_cloud() else "undeploy"
+            run(["npm", "run", command, "--", f"--region={region_name}"], cwd=base_dir)
         except Exception:
             LOG.error("Unable to clean up serverless stack")
 
