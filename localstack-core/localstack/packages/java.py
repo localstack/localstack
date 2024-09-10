@@ -43,7 +43,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
     def _post_process(self, target: InstallTarget) -> None:
         target_directory = self._get_install_dir(target)
-        minimal_jre_path = os.path.join(target.value, self.name, "{self.version}.minimal")
+        minimal_jre_path = os.path.join(target.value, self.name, f"{self.version}.minimal")
         rm_rf(minimal_jre_path)
 
         # If jlink is not available, use the environment as is
