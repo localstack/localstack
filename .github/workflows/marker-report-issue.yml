@@ -96,7 +96,6 @@ jobs:
           path: localstack
 
       - name: Enrich and render marker report
-#        working-directory: ${{ inputs.target-repo }}
         env:
           MARKER_REPORT_PATH: ./target/marker-report.json
           CODEOWNERS_PATH: ./CODEOWNERS
@@ -105,6 +104,7 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
+          python scripts/render_marker_report.py
 #          if [ -n "${{ inputs.project-name }}" ]; then
 #            cd ${{ inputs.target-repo }}
 #            . ../.venv/bin/activate
@@ -116,7 +116,6 @@ jobs:
 #            pip install codeowners
 #            python scripts/render_marker_report.py
 #          fi
-          python scripts/render_marker_report.py
 
       - name: Print generated markdown
         run: |
