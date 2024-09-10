@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from localstack.services.cloudformation.engine.template_deployer import MOCK_REFERENCE
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
@@ -99,4 +100,4 @@ def test_reference_unsupported_resource(deploy_cfn_template, aws_client):
     )
 
     ref_of_unsupported = deployment.outputs["reference"]
-    assert ref_of_unsupported is None
+    assert ref_of_unsupported == MOCK_REFERENCE

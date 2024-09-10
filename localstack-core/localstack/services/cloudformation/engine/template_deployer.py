@@ -63,6 +63,9 @@ LOG = logging.getLogger(__name__)
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ["AWS::Region", "AWS::Partition", "AWS::StackName", "AWS::AccountId"]
 
+# Mock value for unsupported type references
+MOCK_REFERENCE = "unknown"
+
 
 class NoStackUpdates(Exception):
     """Exception indicating that no actions are to be performed in a stack update (which is not allowed)"""
@@ -324,7 +327,7 @@ def _resolve_refs_recursively(
                     resource_type
                 )
                 if resource_provider is None:
-                    return ""
+                    return MOCK_REFERENCE
 
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
 
@@ -360,7 +363,7 @@ def _resolve_refs_recursively(
             )
             resource = resources.get(resource_logical_id)
 
-            resource_type = (get_resource_type(resource),)
+            resource_type = get_resource_type(resource)
             resolved_getatt = get_attr_from_model_instance(
                 resource,
                 attribute_name,
@@ -375,7 +378,7 @@ def _resolve_refs_recursively(
                     resource_type
                 )
                 if resource_provider is None:
-                    return ""
+                    return MOCK_REFERENCE
 
                 raise DependencyNotYetSatisfied(
                     resource_ids=resource_logical_id,

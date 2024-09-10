@@ -6,5 +6,5 @@ Resources:
 
 Outputs:
   reference:
-    Value: !Ref Application
+    Value: !Ref CodeDeployApplication
 
