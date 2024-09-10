@@ -81,7 +81,7 @@ class StepFunctionsLocalPackageInstaller(ExecutableInstaller):
         return os.path.join(install_dir, "StepFunctionsLocal.jar")
 
     def _prepare_installation(self, target: InstallTarget) -> None:
-        java_package.get_installer(SFN_JAVA_VERSION).install()
+        java_package.get_installer(SFN_JAVA_VERSION).install(target)
 
     def _install(self, target: InstallTarget) -> None:
         """

@@ -57,7 +57,7 @@ class OpensearchPackageInstaller(PackageInstaller):
 
     def _prepare_installation(self, target: InstallTarget) -> None:
         # OpenSearch ships with a bundled JRE, but we still use LocalStack's JRE for predictability
-        java_package.get_installer(self.java_version).install()
+        java_package.get_installer(self.java_version).install(target)
 
     def _install(self, target: InstallTarget):
         # locally import to avoid having a dependency on ASF when starting the CLI
@@ -233,7 +233,7 @@ class ElasticsearchPackageInstaller(PackageInstaller):
 
     def _prepare_installation(self, target: InstallTarget) -> None:
         # ElasticSearch ships with a bundled JRE, but we still use LocalStack's JRE for predictability
-        java_package.get_installer(self.java_version).install()
+        java_package.get_installer(self.java_version).install(target)
 
     def _install(self, target: InstallTarget):
         # locally import to avoid having a dependency on ASF when starting the CLI

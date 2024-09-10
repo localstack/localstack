@@ -45,7 +45,7 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
         self.java_version = "11"
 
     def _prepare_installation(self, target: InstallTarget) -> None:
-        java_package.get_installer(self.java_version).install()
+        java_package.get_installer(self.java_version).install(target)
 
     def _install(self, target: InstallTarget):
         # download and extract archive
