@@ -216,5 +216,30 @@
         }
       ]
     }
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_resource_does_not_exist": {
+    "recorded-date": "05-09-2024, 16:43:20",
+    "recorded-content": {
+      "error-log-group-does-not-exist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log group does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-log-stream-does-not-exist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log stream does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

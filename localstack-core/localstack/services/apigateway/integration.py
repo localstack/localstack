@@ -519,7 +519,9 @@ class KinesisIntegration(BackendIntegration):
             target = "Kinesis_20131202.ListStreams"
         else:
             LOG.info(
-                f"Unexpected API Gateway integration URI '{uri}' for integration type {integration_type}",
+                "Unexpected API Gateway integration URI '%s' for integration type %s",
+                uri,
+                integration_type,
             )
             target = ""
 

@@ -37,7 +37,11 @@ class S3VirtualHostProxyHandler:
         # TODO region pattern currently not working -> removing it from url
         rewritten_url = self._rewrite_url(request=request, **kwargs)
 
-        LOG.debug(f"Rewritten original host url: {request.url} to path-style url: {rewritten_url}")
+        LOG.debug(
+            "Rewritten original host url: %s to path-style url: %s",
+            request.url,
+            rewritten_url,
+        )
 
         forward_to_url = urlsplit(rewritten_url)
         copied_headers = copy.copy(request.headers)

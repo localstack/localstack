@@ -217,7 +217,9 @@ class RecordConverter:
 
         # no best solution found
         LOG.warning(
-            f"could not determine subnet-matched IP address for {self.request.q.qname}, falling back to {LOCALHOST_IP}"
+            "could not determine subnet-matched IP address for %s, falling back to %s",
+            self.request.q.qname,
+            LOCALHOST_IP,
         )
         return LOCALHOST_IP
 
@@ -874,7 +876,7 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
         LOG.debug("DNS servers are already started. Avoid starting again.")
         return
 
-    LOG.debug("Starting DNS servers (tcp/udp port %s on %s)..." % (port, host))
+    LOG.debug("Starting DNS servers (tcp/udp port %s on %s)...", port, host)
     dns_server = DnsServer(port, protocols=["tcp", "udp"], host=host, upstream_dns=upstream_dns)
 
     for name in NAME_PATTERNS_POINTING_TO_LOCALSTACK:

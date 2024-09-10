@@ -64,8 +64,9 @@ class ServiceLoader(Handler):
                 request_router.add_skeleton(service_plugin.skeleton)
             else:
                 LOG.warning(
-                    f"found plugin for '{service_name}', "
-                    f"but cannot attach service plugin of type '{type(service_plugin)}'",
+                    "found plugin for '%s', but cannot attach service plugin of type '%s'",
+                    service_name,
+                    type(service_plugin),
                 )
 
 

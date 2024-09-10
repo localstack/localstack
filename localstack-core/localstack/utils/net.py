@@ -186,7 +186,7 @@ def port_can_be_bound(port: IntOrPort, address: str = "") -> bool:
         # either the port is used or we don't have permission to bind it
         return False
     except Exception:
-        LOG.error(f"cannot bind port {port}", exc_info=LOG.isEnabledFor(logging.DEBUG))
+        LOG.error("cannot bind port %s", port, exc_info=LOG.isEnabledFor(logging.DEBUG))
         return False
 
 

@@ -88,7 +88,7 @@ def publish_sqs_metric_batch(
         try:
             cw_client.put_metric_data(Namespace="AWS/SQS", MetricData=metric_data)
         except Exception as e:
-            LOG.info(f"Unable to put metric data for metrics to CloudWatch: {e}")
+            LOG.info("Unable to put metric data for metrics to CloudWatch: %s", e)
 
         # Update for the next batch
         metric_data.clear()
@@ -130,7 +130,7 @@ def publish_sqs_metric(
             ],
         )
     except Exception as e:
-        LOG.info(f'Unable to put metric data for metric "{metric}" to CloudWatch: {e}')
+        LOG.info('Unable to put metric data for metric "%s" to CloudWatch: %s', metric, e)
 
 
 def publish_lambda_duration(time_before, kwargs):

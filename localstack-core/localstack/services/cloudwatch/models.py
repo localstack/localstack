@@ -9,6 +9,7 @@ from localstack.services.stores import (
     LocalAttribute,
 )
 from localstack.utils.aws import arns
+from localstack.utils.tagging import TaggingService
 
 
 class LocalStackMetricAlarm:
@@ -81,7 +82,7 @@ LocalStackAlarm = LocalStackMetricAlarm | LocalStackCompositeAlarm
 
 class CloudWatchStore(BaseStore):
     # maps resource ARN to tags
-    TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
+    TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
     # maps resource ARN to alarms
     alarms: Dict[str, LocalStackAlarm] = LocalAttribute(default=dict)

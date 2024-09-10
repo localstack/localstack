@@ -565,9 +565,20 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_too_long_message": {
-    "recorded-date": "24-08-2023, 22:31:49",
+    "recorded-date": "04-09-2024, 00:38:07",
     "recorded-content": {
       "error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Message too long",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-with-attrs": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Message too long",
@@ -4140,6 +4151,33 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_batch_too_long_message": {
+    "recorded-date": "04-09-2024, 00:48:01",
+    "recorded-content": {
+      "error-no-attrs": {
+        "Error": {
+          "Code": "BatchRequestTooLong",
+          "Message": "The length of all the messages put together is more than the limit.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-with-attrs": {
+        "Error": {
+          "Code": "BatchRequestTooLong",
+          "Message": "The length of all the messages put together is more than the limit.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

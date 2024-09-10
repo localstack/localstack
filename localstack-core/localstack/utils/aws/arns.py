@@ -195,13 +195,15 @@ def dynamodb_stream_arn(
 
 
 def cloudwatch_alarm_arn(alarm_name: str, account_id: str, region_name: str) -> str:
-    pattern = "arn:%s:cloudwatch:%s:%s:alarm:%s"
-    return _resource_arn(alarm_name, pattern, account_id=account_id, region_name=region_name)
+    # format pattern directly as alarm_name can include ":" and this is not supported by the helper _resource_arn
+    return (
+        f"arn:{get_partition(region_name)}:cloudwatch:{region_name}:{account_id}:alarm:{alarm_name}"
+    )
 
 
-def cloudwatch_dashboard_arn(alarm_name: str, account_id: str, region_name: str) -> str:
+def cloudwatch_dashboard_arn(dashboard_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:%s:cloudwatch::%s:dashboard/%s"
-    return _resource_arn(alarm_name, pattern, account_id=account_id, region_name=region_name)
+    return _resource_arn(dashboard_name, pattern, account_id=account_id, region_name=region_name)
 
 
 #
@@ -284,7 +286,7 @@ def lambda_function_or_layer_arn(
 
         except Exception as e:
             msg = f"Alias {alias} of {entity_name} not found"
-            LOG.info(f"{msg}: {e}")
+            LOG.info("%s: %s", msg, e)
             raise Exception(msg)
 
     result = (

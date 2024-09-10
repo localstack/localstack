@@ -6,6 +6,7 @@ import logging
 import re
 import zlib
 from enum import StrEnum
+from secrets import token_bytes
 from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Union
 from urllib import parse as urlparser
 
@@ -95,6 +96,8 @@ _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
 _gmt_zone_info = ZoneInfo("GMT")
+
+_version_id_safe_encode_translation = bytes.maketrans(b"+/", b"._")
 
 
 def s3_response_handler(chain: HandlerChain, context: RequestContext, response: Response):
@@ -1052,3 +1055,16 @@ def parse_post_object_tagging_xml(tagging: str) -> Optional[dict]:
 
     except Exception:
         raise MalformedXML()
+
+
+def generate_safe_version_id() -> str:
+    # the safe b64 encoding is inspired by the stdlib base64.urlsafe_b64encode
+    # and also using stdlib secrets.token_urlsafe, but with a different alphabet adapted for S3
+    # VersionId cannot have `-` in it, as it fails in XML
+    tok = token_bytes(24)
+    return (
+        base64.b64encode(tok)
+        .translate(_version_id_safe_encode_translation)
+        .rstrip(b"=")
+        .decode("ascii")
+    )

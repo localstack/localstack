@@ -89,7 +89,7 @@ def await_state_machine_not_listed(stepfunctions_client, state_machine_arn: str)
         interval=1,
     )
     if not success:
-        LOG.warning(f"Timed out whilst awaiting for listing to exclude '{state_machine_arn}'.")
+        LOG.warning("Timed out whilst awaiting for listing to exclude '%s'.", state_machine_arn)
 
 
 def await_state_machine_listed(stepfunctions_client, state_machine_arn: str):
@@ -99,7 +99,7 @@ def await_state_machine_listed(stepfunctions_client, state_machine_arn: str):
         interval=1,
     )
     if not success:
-        LOG.warning(f"Timed out whilst awaiting for listing to include '{state_machine_arn}'.")
+        LOG.warning("Timed out whilst awaiting for listing to include '%s'.", state_machine_arn)
 
 
 def await_state_machine_version_not_listed(
@@ -114,7 +114,9 @@ def await_state_machine_version_not_listed(
     )
     if not success:
         LOG.warning(
-            f"Timed out whilst awaiting for version of {state_machine_arn} to exclude '{state_machine_version_arn}'."
+            "Timed out whilst awaiting for version of %s to exclude '%s'.",
+            state_machine_arn,
+            state_machine_version_arn,
         )
 
 
@@ -130,7 +132,9 @@ def await_state_machine_version_listed(
     )
     if not success:
         LOG.warning(
-            f"Timed out whilst awaiting for version of {state_machine_arn} to include '{state_machine_version_arn}'."
+            "Timed out whilst awaiting for version of %s to include '%s'.",
+            state_machine_arn,
+            state_machine_version_arn,
         )
 
 
@@ -186,7 +190,9 @@ def await_list_execution_status(
     success = poll_condition(condition=_run_check, timeout=120, interval=1)
     if not success:
         LOG.warning(
-            f"Timed out whilst awaiting for execution status {status} to satisfy condition for execution '{execution_arn}'."
+            "Timed out whilst awaiting for execution status %s to satisfy condition for execution '%s'.",
+            status,
+            execution_arn,
         )
 
 
@@ -225,7 +231,8 @@ def await_execution_lists_terminated(
     success = poll_condition(condition=_check_last_is_terminal, timeout=120, interval=1)
     if not success:
         LOG.warning(
-            f"Timed out whilst awaiting for execution events to satisfy condition for execution '{execution_arn}'."
+            "Timed out whilst awaiting for execution events to satisfy condition for execution '%s'.",
+            execution_arn,
         )
 
 
@@ -250,7 +257,7 @@ def await_execution_aborted(stepfunctions_client, execution_arn: str):
 
     success = poll_condition(condition=_run_check, timeout=120, interval=1)
     if not success:
-        LOG.warning(f"Timed out whilst awaiting for execution '{execution_arn}' to abort.")
+        LOG.warning("Timed out whilst awaiting for execution '%s' to abort.", execution_arn)
 
 
 def get_expected_execution_logs(
@@ -710,7 +717,10 @@ class SfnNoneRecursiveParallelTransformer:
         for i, event in enumerate(events):
             event_type = event.get("type")
             if event_type is None:
-                LOG.debug(f"No 'type' in event item '{event}'.")
+                LOG.debug(
+                    "No 'type' in event item '%s'.",
+                    event,
+                )
                 in_sublist = False
 
             elif event_type in {
@@ -735,7 +745,7 @@ class SfnNoneRecursiveParallelTransformer:
         pattern = parse("$..events")
         events = pattern.find(input_data)
         if not events:
-            LOG.debug(f"No Stepfunctions 'events' for jsonpath '{self.events_jsonpath}'.")
+            LOG.debug("No Stepfunctions 'events' for jsonpath '%s'.", self.events_jsonpath)
             return input_data
 
         for events_data in events:

@@ -120,7 +120,8 @@ class TestStateExecution(Execution):
         else:
             # TODO: handle other statuses
             LOG.warning(
-                f"Unsupported StateMachine exit type for TestState '{type(exit_program_state)}'"
+                "Unsupported StateMachine exit type for TestState '%s'",
+                type(exit_program_state),
             )
             output_str = to_json_str(self.output)
             test_state_output = TestStateOutput(

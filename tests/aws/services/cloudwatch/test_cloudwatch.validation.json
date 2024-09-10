@@ -20,6 +20,9 @@
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_delete_alarm": {
     "last_validated_date": "2024-01-12T14:06:42+00:00"
   },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_describe_alarms_converts_date_format_correctly": {
+    "last_validated_date": "2024-09-04T15:59:17+00:00"
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_enable_disable_alarm_actions": {
     "last_validated_date": "2023-09-12T10:00:45+00:00"
   },
@@ -47,6 +50,9 @@
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_amount_of_datapoints": {
     "last_validated_date": "2024-08-23T14:16:44+00:00"
   },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_dashboard_name": {
+    "last_validated_date": "2024-09-04T16:28:05+00:00"
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_multiple_dimensions_statistics": {
     "last_validated_date": "2024-07-29T07:56:05+00:00"
   },
@@ -60,6 +66,6 @@
     "last_validated_date": "2024-01-19T15:30:05+00:00"
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags": {
-    "last_validated_date": "2023-09-12T09:54:46+00:00"
+    "last_validated_date": "2024-09-02T14:03:31+00:00"
   }
 }

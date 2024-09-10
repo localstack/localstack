@@ -691,7 +691,7 @@ class FirehoseProvider(FirehoseApi):
                 try:
                     requests.post(url, json=record_to_send, headers=headers)
                 except Exception as e:
-                    LOG.exception(f"Unable to put Firehose records to HTTP endpoint {url}.")
+                    LOG.exception("Unable to put Firehose records to HTTP endpoint %s.", url)
                     raise e
             if "RedshiftDestinationDescription" in destination:
                 s3_dest_desc = destination["RedshiftDestinationDescription"][
@@ -755,18 +755,19 @@ class FirehoseProvider(FirehoseApi):
             try:
                 body = json.loads(data)
             except Exception as e:
-                LOG.warning(f"{db_flavor} only allows json input data!")
+                LOG.warning("%s only allows json input data!", db_flavor)
                 raise e
 
-            LOG.debug(
-                "Publishing to {} destination. Data: {}".format(
-                    db_flavor, truncate(data, max_length=300)
+            if LOG.isEnabledFor(logging.DEBUG):
+                LOG.debug(
+                    "Publishing to %s destination. Data: %s",
+                    db_flavor,
+                    truncate(data, max_length=300),
                 )
-            )
             try:
                 db_connection.create(index=search_db_index, id=obj_id, body=body)
             except Exception as e:
-                LOG.exception(f"Unable to put record to stream {delivery_stream_name}.")
+                LOG.exception("Unable to put record to stream %s.", delivery_stream_name)
                 raise e
 
     def _add_missing_record_attributes(self, records: List[Dict]) -> None:
@@ -844,7 +845,10 @@ class FirehoseProvider(FirehoseApi):
             LOG.debug("Publishing to S3 destination: %s. Data: %s", bucket, batched_data)
             s3.put_object(Bucket=bucket, Key=obj_path, Body=batched_data)
         except Exception as e:
-            LOG.exception(f"Unable to put records {records} to s3 bucket.")
+            LOG.exception(
+                "Unable to put records %s to s3 bucket.",
+                records,
+            )
             raise e
 
     def _get_s3_object_path(self, stream_name, prefix, file_extension):
@@ -898,7 +902,10 @@ class FirehoseProvider(FirehoseApi):
                 )
                 redshift_data.execute_statement(Parameters=row_to_insert, **execute_statement)
             except Exception as e:
-                LOG.exception(f"Unable to put records {row_to_insert} to redshift cluster.")
+                LOG.exception(
+                    "Unable to put records %s to redshift cluster.",
+                    row_to_insert,
+                )
                 raise e
 
     def _get_cluster_id_from_jdbc_url(self, jdbc_url: str) -> str:

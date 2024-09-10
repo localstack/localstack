@@ -77,7 +77,7 @@ def is_logging_enabled_for(log_level: LogLevel, history_event_type: HistoryEvent
     elif log_level == LogLevel.FATAL:
         return history_event_type in _FATAL_LOG_EVENT_TYPES
     else:
-        LOG.error(f"Unknown LogLevel '{log_level}'")
+        LOG.error("Unknown LogLevel '%s'", log_level)
 
 
 class CloudWatchLoggingConfiguration:
@@ -229,7 +229,9 @@ class CloudWatchLoggingSession:
         message = to_json_str(history_log)
         log_events = [InputLogEvent(timestamp=timestamp_value, message=message)]
         LOG.debug(
-            f"New CloudWatch Log for execution '{self.execution_arn}' with message: '{message}'"
+            "New CloudWatch Log for execution '%s' with message: '%s'",
+            self.execution_arn,
+            message,
         )
         self._publish_history_log_or_setup(log_events=log_events)
 
@@ -244,7 +246,8 @@ class CloudWatchLoggingSession:
         if not is_setup:
             LOG.debug(
                 "CloudWatch Log was not published due to setup errors encountered "
-                f"while creating the LogStream for execution '{self.execution_arn}'."
+                "while creating the LogStream for execution '%s'.",
+                self.execution_arn,
             )
             return
 
@@ -265,7 +268,8 @@ class CloudWatchLoggingSession:
                 return False
         except Exception as ignored:
             LOG.warning(
-                f"State Machine execution log event could not be published due to an error: '{ignored}'"
+                "State Machine execution log event could not be published due to an error: '%s'",
+                ignored,
             )
         return True
 
@@ -282,7 +286,9 @@ class CloudWatchLoggingSession:
             error_code = error.response["Error"]["Code"]
             if error_code != "ResourceAlreadyExistsException":
                 LOG.error(
-                    f"Could not create execution log stream for execution '{self.execution_arn}' due to {error}"
+                    "Could not create execution log stream for execution '%s' due to %s",
+                    self.execution_arn,
+                    error,
                 )
                 return False
         return True

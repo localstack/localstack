@@ -276,7 +276,7 @@ def create_state_machine(aws_client):
                     aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
             aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
-            LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")
+            LOG.debug("Unable to delete state machine '%s' during cleanup.", state_machine_arn)
 
 
 @pytest.fixture
@@ -295,7 +295,7 @@ def create_activity(aws_client):
         try:
             aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
         except Exception:
-            LOG.debug(f"Unable to delete Activity '{activity_arn}' during cleanup.")
+            LOG.debug("Unable to delete Activity '%s' during cleanup.", activity_arn)
 
 
 @pytest.fixture
@@ -705,7 +705,7 @@ def sfn_glue_create_job(aws_client, create_role, create_policy, wait_and_assume_
             aws_client.glue.delete_job(JobName=job_name)
         except Exception as ex:
             # TODO: the glue provider should not fail on deletion of deleted job, however this is currently the case.
-            LOG.warning(f"Could not delete job '{job_name}': {ex}")
+            LOG.warning("Could not delete job '%s': %s", job_name, ex)
 
 
 @pytest.fixture
@@ -726,4 +726,4 @@ def sfn_create_log_group(aws_client, snapshot):
         try:
             aws_client.logs.delete_log_group(logGroupName=log_group_name)
         except Exception:
-            LOG.debug(f"Cannot delete log group {log_group_name}")
+            LOG.debug("Cannot delete log group %s", log_group_name)

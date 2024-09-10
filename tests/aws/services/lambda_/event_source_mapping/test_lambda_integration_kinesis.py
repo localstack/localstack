@@ -18,7 +18,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
-from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
+from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm, is_v2_esm
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON,
@@ -34,6 +34,13 @@ def _snapshot_transformers(snapshot):
     # manual transformers since we are passing SQS attributes through lambdas and back again
     snapshot.add_transformer(snapshot.transform.key_value("sequenceNumber"))
     snapshot.add_transformer(snapshot.transform.resource_name())
+    snapshot.add_transformer(
+        KeyValueBasedTransformer(
+            lambda k, v: str(v) if k == "approximateArrivalTimestamp" else None,
+            "<approximate-arrival-timestamp>",
+            replace_reference=False,
+        )
+    )
     snapshot.add_transformer(
         KeyValueBasedTransformer(
             lambda k, v: str(v) if k == "executionStart" else None,
@@ -443,23 +450,16 @@ class TestKinesisSource:
         )
 
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_esm,
         paths=[
-            # Pipe uses "context" (extra)
-            "$..context",
-            # ESM uses "requestContext" and "responseContext" (not implemented yet)
-            "$..requestContext",
-            "$..responseContext",
-            # uuid ordering issue because the missing requestContext contains a uuid
-            "$..Messages..MessageId",
+            "$..Messages..Body.KinesisBatchInfo.shardId",
+            "$..Messages..Body.KinesisBatchInfo.streamArn",
         ],
     )
     @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_esm,
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfLastRecord",
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-            "$..Messages..Body.KinesisBatchInfo.streamArn",
             "$..Messages..Body.requestContext.approximateInvokeCount",
             "$..Messages..Body.responseContext.statusCode",
         ],
@@ -480,6 +480,7 @@ class TestKinesisSource:
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
         snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
         function_name = f"lambda_func-{short_uid()}"
         role = f"test-lambda-role-{short_uid()}"
         policy_name = f"test-lambda-policy-{short_uid()}"
@@ -555,12 +556,8 @@ class TestKinesisEventFiltering:
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
-            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfLastRecord",
             "$..Messages..Body.KinesisBatchInfo.shardId",
             "$..Messages..Body.KinesisBatchInfo.streamArn",
-            "$..Messages..Body.requestContext.approximateInvokeCount",
-            "$..Messages..Body.responseContext.statusCode",
         ],
     )
     @markers.aws.validated

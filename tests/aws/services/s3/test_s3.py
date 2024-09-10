@@ -71,7 +71,7 @@ from localstack.utils.strings import (
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from localstack.utils.urls import localstack_host as get_localstack_host
-from tests.aws.services.s3.conftest import TEST_S3_IMAGE
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE, is_v2_provider
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -118,14 +118,6 @@ S3_POLICY = {
 }
 
 
-def is_v3_provider():
-    return not LEGACY_V2_S3_PROVIDER
-
-
-def is_v2_provider():
-    return LEGACY_V2_S3_PROVIDER
-
-
 @pytest.fixture
 def anonymous_client(aws_client_factory, region_name):
     """
@@ -148,29 +140,6 @@ def anonymous_client(aws_client_factory, region_name):
 @pytest.fixture(scope="function")
 def patch_s3_skip_signature_validation_false(monkeypatch):
     monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
-
-
-@pytest.fixture
-def s3_create_bucket_with_client(s3_empty_bucket, aws_client):
-    buckets = []
-
-    def factory(s3_client, **kwargs) -> str:
-        if "Bucket" not in kwargs:
-            kwargs["Bucket"] = f"test-bucket-{short_uid()}"
-
-        response = s3_client.create_bucket(**kwargs)
-        buckets.append(kwargs["Bucket"])
-        return response
-
-    yield factory
-
-    # cleanup
-    for bucket in buckets:
-        try:
-            s3_empty_bucket(bucket)
-            aws_client.s3.delete_bucket(Bucket=bucket)
-        except Exception as e:
-            LOG.debug(f"error cleaning up bucket {bucket}: {e}")
 
 
 @pytest.fixture
@@ -280,7 +249,7 @@ def create_tmp_folder_lambda():
         try:
             shutil.rmtree(folder)
         except Exception:
-            LOG.warning(f"could not delete folder {folder}")
+            LOG.warning("could not delete folder %s", folder)
 
 
 @pytest.fixture
@@ -339,21 +308,48 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key="copiedkey")
         snapshot.match("get-copied-object", response)
 
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Issue in how us-east-1 client cannot create bucket in every region",
+    )
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..AccessPointAlias"])
-    def test_region_header_exists(self, s3_create_bucket, snapshot, aws_client):
+    def test_region_header_exists_outside_us_east_1(
+        self, s3_create_bucket_with_client, snapshot, aws_client_factory
+    ):
+        """
+        We need the region to be hardcoded to something else than `us-east-1`, as you cannot create a bucket with
+        a LocationConstraint in that region
+        """
         snapshot.add_transformer(snapshot.transform.s3_api())
-        region = "eu-west-1"
-        snapshot.add_transformer(RegexTransformer(region, "<region>"))
-        bucket_name = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": region},
+        region_us_west_2 = "us-west-2"
+        snapshot.add_transformer(RegexTransformer(region_us_west_2, "<region>"))
+        client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
+        bucket_us_west_2 = f"test-bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_us_east_1,
+            Bucket=bucket_us_west_2,
+            CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
         )
-        response = aws_client.s3.head_bucket(Bucket=bucket_name)
-        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == region
+
+        response = client_us_east_1.head_bucket(Bucket=bucket_us_west_2)
+        assert (
+            response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == region_us_west_2
+        )
         snapshot.match("head_bucket", response)
-        response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
-        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == region
+        response = client_us_east_1.list_objects_v2(Bucket=bucket_us_west_2)
+        assert (
+            response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == region_us_west_2
+        )
         snapshot.match("list_objects_v2", response)
+
+        bucket_us_east_1 = f"test-bucket-{short_uid()}"
+        s3_create_bucket_with_client(client_us_east_1, Bucket=bucket_us_east_1)
+        response = client_us_east_1.head_bucket(Bucket=bucket_us_east_1)
+        assert (
+            response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"]
+            == AWS_REGION_US_EAST_1
+        )
 
     @markers.aws.validated
     # TODO list-buckets contains other buckets when running in CI
@@ -1000,6 +996,10 @@ class TestS3:
 
         snapshot.match("exc", e.value.response)
 
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Cannot create buckets in other region when client is us-east-1, moto regression",
+    )
     @markers.aws.validated
     def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client, region_name):
         # TODO check redirection (happens in AWS because of region name), should it happen in LS?
@@ -1123,13 +1123,12 @@ class TestS3:
         # don't use HTTPS when testing, the issue does not happen, so we skip the flag
         paths=["$..ContentEncoding"],
     )
-    def test_put_object_checksum(self, s3_create_bucket, algorithm, snapshot, aws_client):
-        bucket = s3_create_bucket()
+    def test_put_object_checksum(self, s3_bucket, algorithm, snapshot, aws_client):
         key = f"file-{short_uid()}"
         data = b"test data.."
 
         params = {
-            "Bucket": bucket,
+            "Bucket": s3_bucket,
             "Key": key,
             "Body": data,
             "ChecksumAlgorithm": algorithm,
@@ -1164,7 +1163,7 @@ class TestS3:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         # get_object_attributes is not implemented in moto
         object_attrs = aws_client.s3.get_object_attributes(
-            Bucket=bucket,
+            Bucket=s3_bucket,
             Key=key,
             ObjectAttributes=["ETag", "Checksum"],
         )
@@ -1177,13 +1176,13 @@ class TestS3:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         # get_object_attributes is not implemented in moto
         object_attrs = aws_client.s3.get_object_attributes(
-            Bucket=bucket,
+            Bucket=s3_bucket,
             Key=key,
             ObjectAttributes=["ETag", "Checksum"],
         )
         snapshot.match("get-object-attrs-auto-generated", object_attrs)
         get_object_with_checksum = aws_client.s3.head_object(
-            Bucket=bucket, Key=key, ChecksumMode="ENABLED"
+            Bucket=s3_bucket, Key=key, ChecksumMode="ENABLED"
         )
         snapshot.match("head-object-with-checksum", get_object_with_checksum)
 
@@ -1396,13 +1395,12 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    def test_s3_copy_metadata_replace(self, s3_create_bucket, snapshot, aws_client):
+    def test_s3_copy_metadata_replace(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         object_key = "source-object"
-        bucket_name = s3_create_bucket()
         resp = aws_client.s3.put_object(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             Key=object_key,
             Body='{"key": "value"}',
             ContentType="application/json",
@@ -1411,13 +1409,13 @@ class TestS3:
         )
         snapshot.match("put_object", resp)
 
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head_object", head_object)
 
         object_key_copy = f"{object_key}-copy"
         resp = aws_client.s3.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
             Key=object_key_copy,
             Metadata={"another-key": "value"},
             ContentType="image/jpg",
@@ -1425,7 +1423,7 @@ class TestS3:
         )
         snapshot.match("copy_object", resp)
 
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_copy)
         snapshot.match("head_object_copy", head_object)
 
     @markers.aws.validated
@@ -1433,13 +1431,12 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    def test_s3_copy_metadata_directive_copy(self, s3_create_bucket, snapshot, aws_client):
+    def test_s3_copy_metadata_directive_copy(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         object_key = "source-object"
-        bucket_name = s3_create_bucket()
         resp = aws_client.s3.put_object(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             Key=object_key,
             Body="test",
             Metadata={"key": "value"},
@@ -1447,13 +1444,13 @@ class TestS3:
         )
         snapshot.match("put-object", resp)
 
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head-object", head_object)
 
         object_key_copy = f"{object_key}-copy"
         resp = aws_client.s3.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
             Key=object_key_copy,
             Metadata={"another-key": "value"},  # this will be ignored
             ContentLanguage="en-GB",
@@ -1462,7 +1459,7 @@ class TestS3:
         )
         snapshot.match("copy-object", resp)
 
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_copy)
         snapshot.match("head-object-copy", head_object)
 
     @markers.aws.validated
@@ -1606,12 +1603,11 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    def test_s3_copy_content_type_and_metadata(self, s3_create_bucket, snapshot, aws_client):
+    def test_s3_copy_content_type_and_metadata(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
-        bucket_name = s3_create_bucket()
         resp = aws_client.s3.put_object(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             Key=object_key,
             Body='{"key": "value"}',
             ContentType="application/json",
@@ -1619,34 +1615,34 @@ class TestS3:
         )
         snapshot.match("put_object", resp)
 
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head_object", head_object)
 
         object_key_copy = f"{object_key}-copy"
         resp = aws_client.s3.copy_object(
-            Bucket=bucket_name, CopySource=f"{bucket_name}/{object_key}", Key=object_key_copy
+            Bucket=s3_bucket, CopySource=f"{s3_bucket}/{object_key}", Key=object_key_copy
         )
         snapshot.match("copy_object", resp)
 
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_copy)
         snapshot.match("head_object_copy", head_object)
 
         aws_client.s3.delete_objects(
-            Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]}
+            Bucket=s3_bucket, Delete={"Objects": [{"Key": object_key_copy}]}
         )
 
         # does not set MetadataDirective=REPLACE, so the original metadata should be kept
         object_key_copy = f"{object_key}-second-copy"
         resp = aws_client.s3.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
             Key=object_key_copy,
             Metadata={"another-key": "value"},
             ContentType="application/javascript",
         )
         snapshot.match("copy_object_second", resp)
 
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_copy)
         snapshot.match("head_object_second_copy", head_object)
 
     @markers.aws.validated
@@ -2199,13 +2195,12 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client, algorithm):
+    def test_s3_copy_object_with_checksum(self, s3_bucket, snapshot, aws_client, algorithm):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
-        bucket_name = s3_create_bucket()
         # create key with no checksum
         resp = aws_client.s3.put_object(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             Key=object_key,
             Body='{"key": "value"}',
             ContentType="application/json",
@@ -2214,7 +2209,7 @@ class TestS3:
         snapshot.match("put-object-no-checksum", resp)
 
         object_attrs = aws_client.s3.get_object_attributes(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             Key=object_key,
             ObjectAttributes=["Checksum"],
         )
@@ -2222,8 +2217,8 @@ class TestS3:
 
         # copy the object in place with some metadata and replacing it, but with a checksum
         resp = aws_client.s3.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
             Key=object_key,
             ChecksumAlgorithm=algorithm,
             Metadata={"key1": "value1"},
@@ -2231,7 +2226,7 @@ class TestS3:
         )
         snapshot.match("copy-object-in-place-with-checksum", resp)
         object_attrs = aws_client.s3.get_object_attributes(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             Key=object_key,
             ObjectAttributes=["Checksum"],
         )
@@ -2240,8 +2235,8 @@ class TestS3:
         dest_key = "dest-object"
         # copy the object to check if the new object has the checksum too
         resp = aws_client.s3.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
             Key=dest_key,
         )
         snapshot.match("copy-object-to-dest-keep-checksum", resp)
@@ -2467,6 +2462,13 @@ class TestS3:
         snapshot.match("obj-success", get_obj_all_positive)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=[
+            # moto adds AllUsers READ, inherits from the bucket, wrong behavior
+            "$.permission-acl-key0.Grants",
+        ],
+    )
     def test_s3_multipart_upload_acls(
         self, s3_bucket, allow_bucket_acl, s3_multipart_upload, snapshot, aws_client
     ):
@@ -2675,7 +2677,11 @@ class TestS3:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,
-        paths=["$..ServerSideEncryption"],
+        paths=[
+            "$..ServerSideEncryption",
+            # moto does not add LogDelivery WRITE
+            "$.get-object-acp-acl.Grants",
+        ],
     )
     def test_s3_object_acl(self, s3_bucket, allow_bucket_acl, snapshot, aws_client):
         # loosely based on
@@ -2930,16 +2936,14 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    def test_upload_file_with_xml_preamble(self, s3_create_bucket, snapshot, aws_client):
+    def test_upload_file_with_xml_preamble(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
         object_key = f"key-{short_uid()}"
         body = '<?xml version="1.0" encoding="UTF-8"?><test/>'
 
-        s3_create_bucket(Bucket=bucket_name)
-        aws_client.s3.put_object(Bucket=bucket_name, Key=object_key, Body=body)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=body)
 
-        response = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("get_object", response)
 
     @markers.aws.validated
@@ -2958,17 +2962,19 @@ class TestS3:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,
-        paths=["$..Error.LocationConstraint"],  # not returned by Moto
+        paths=["$.create-bucket-constraint-us-east-1.Error.LocationConstraint"],
     )
     def test_different_location_constraint(
         self,
         s3_create_bucket,
         aws_client_factory,
         s3_create_bucket_with_client,
-        region_name,
         snapshot,
         aws_client,
     ):
+        region_us_east_2 = "us-east-2"
+        region_us_west_1 = "us-west-1"
+
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformers_list(
             [
@@ -2976,92 +2982,101 @@ class TestS3:
                 snapshot.transform.key_value(
                     "LocationConstraint", "<location-constraint>", reference_replacement=False
                 ),
+                snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region-1>"),
+                snapshot.transform.regex(region_us_east_2, "<region-2>"),
+                snapshot.transform.regex(region_us_west_1, "<region-3>"),
             ]
         )
-        bucket_1_name = f"bucket-{short_uid()}"
-        region_us_east_1 = "us-east-1"
-        client_1 = aws_client_factory(
-            region_name=region_us_east_1, config=Config(parameter_validation=False)
+        bucket_us_east_1 = f"bucket-{short_uid()}"
+        client_us_east_1 = aws_client_factory(
+            region_name=AWS_REGION_US_EAST_1, config=Config(parameter_validation=False)
         ).s3
         s3_create_bucket_with_client(
-            client_1,
-            Bucket=bucket_1_name,
+            client_us_east_1,
+            Bucket=bucket_us_east_1,
         )
-        response = client_1.get_bucket_location(Bucket=bucket_1_name)
-        snapshot.match("get_bucket_location_bucket_1", response)
+        response = client_us_east_1.get_bucket_location(Bucket=bucket_us_east_1)
+        snapshot.match("get-bucket-location-bucket-us-east-1", response)
 
         # assert creation fails with location constraint for us-east-1 region
-        with pytest.raises(Exception) as exc:
-            client_1.create_bucket(
+        with pytest.raises(ClientError) as exc:
+            client_us_east_1.create_bucket(
                 Bucket=f"bucket-{short_uid()}",
-                CreateBucketConfiguration={"LocationConstraint": region_us_east_1},
+                CreateBucketConfiguration={"LocationConstraint": AWS_REGION_US_EAST_1},
             )
         snapshot.match("create-bucket-constraint-us-east-1", exc.value.response)
-        if is_aws_cloud() or not is_v2_provider():
-            assert exc.value.response["Error"]["LocationConstraint"] == region_us_east_1
 
         # assert creation fails with location constraint with the region unset
-        with pytest.raises(Exception) as exc:
-            client_1.create_bucket(
+        with pytest.raises(ClientError) as exc:
+            client_us_east_1.create_bucket(
                 Bucket=f"bucket-{short_uid()}",
                 CreateBucketConfiguration={"LocationConstraint": None},
             )
         snapshot.match("create-bucket-constraint-us-east-1-with-None", exc.value.response)
 
-        region_2 = "us-east-2"
-        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
-        client_2 = aws_client_factory(region_name=region_2).s3
-        bucket_2_name = f"bucket-{short_uid()}"
+        client_us_east_2 = aws_client_factory(region_name=region_us_east_2).s3
+        bucket_us_east_2 = f"bucket-{short_uid()}"
         s3_create_bucket_with_client(
-            client_2,
-            Bucket=bucket_2_name,
-            CreateBucketConfiguration={"LocationConstraint": region_2},
+            client_us_east_2,
+            Bucket=bucket_us_east_2,
+            CreateBucketConfiguration={"LocationConstraint": region_us_east_2},
         )
-        response = client_2.get_bucket_location(Bucket=bucket_2_name)
-        snapshot.match("get_bucket_location_bucket_2", response)
+        response = client_us_east_2.get_bucket_location(Bucket=bucket_us_east_2)
+        snapshot.match("get-bucket-location-bucket-us-east-2", response)
 
         # assert creation fails without location constraint for us-east-2 region
-        with pytest.raises(Exception) as exc:
-            client_2.create_bucket(Bucket=f"bucket-{short_uid()}")
-        snapshot.match("create_bucket_constraint_exc", exc.value.response)
+        with pytest.raises(ClientError) as exc:
+            client_us_east_2.create_bucket(Bucket=f"bucket-{short_uid()}")
+        snapshot.match("create-bucket-us-east-2-no-constraint-exc", exc.value.response)
 
-        bucket_3_name = f"bucket-{short_uid()}"
-        response = s3_create_bucket_with_client(
-            client_2,
-            Bucket=bucket_3_name,
-            CreateBucketConfiguration={"LocationConstraint": region_2},
-        )
-        snapshot.match("create_bucket_bucket_3", response)
+        # assert creation fails with wrong location constraint from us-east-2 region to us-west-1 region
+        with pytest.raises(ClientError) as exc:
+            client_us_east_2.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": region_us_west_1},
+            )
+        snapshot.match("create-bucket-us-east-2-constraint-to-us-west-1", exc.value.response)
 
-        response = client_2.get_bucket_location(Bucket=bucket_3_name)
-        snapshot.match("get_bucket_location_bucket_3", response)
+        client_us_west_1 = aws_client_factory(region_name=region_us_west_1).s3
+
+        with pytest.raises(ClientError) as exc:
+            client_us_west_1.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": region_us_east_2},
+            )
+        snapshot.match("create-bucket-us-west-1-constraint-to-us-east-2", exc.value.response)
+
+        with pytest.raises(ClientError) as exc:
+            client_us_west_1.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": AWS_REGION_US_EAST_1},
+            )
+        snapshot.match("create-bucket-us-west-1-constraint-to-us-east-1", exc.value.response)
 
         with pytest.raises(ClientError) as exc:
             aws_client.s3.get_bucket_location(Bucket=f"random-bucket-test-{short_uid()}")
 
-        snapshot.match("get_bucket_location_non_existent_bucket", exc.value.response)
+        snapshot.match("get-bucket-location-non-existent-bucket", exc.value.response)
 
     @markers.aws.validated
     def test_bucket_operation_between_regions(
         self,
-        s3_create_bucket,
         aws_client_factory,
         s3_create_bucket_with_client,
         snapshot,
-        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
-        region_1 = "us-west-2"
-        client_1 = aws_client_factory(region_name=region_1).s3
+        region_us_west_2 = "us-west-2"
+        client_us_west_2 = aws_client_factory(region_name=region_us_west_2).s3
         bucket_name = f"bucket-{short_uid()}"
         s3_create_bucket_with_client(
-            client_1,
+            client_us_west_2,
             Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": region_1},
+            CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
         )
 
-        put_website_config = client_1.put_bucket_website(
+        put_website_config = client_us_west_2.put_bucket_website(
             Bucket=bucket_name,
             WebsiteConfiguration={
                 "IndexDocument": {"Suffix": "index.html"},
@@ -3077,18 +3092,17 @@ class TestS3:
                 }
             ]
         }
-        put_cors_config = client_1.put_bucket_cors(
+        put_cors_config = client_us_west_2.put_bucket_cors(
             Bucket=bucket_name, CORSConfiguration=bucket_cors_config
         )
         snapshot.match("put-cors-config-region-1", put_cors_config)
 
-        region_2 = "us-east-1"
-        client_2 = aws_client_factory(region_name=region_2).s3
+        client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
 
-        get_website_config = client_2.get_bucket_website(Bucket=bucket_name)
+        get_website_config = client_us_east_1.get_bucket_website(Bucket=bucket_name)
         snapshot.match("get-website-config-region-2", get_website_config)
 
-        get_cors_config = client_2.get_bucket_cors(Bucket=bucket_name)
+        get_cors_config = client_us_east_1.get_bucket_cors(Bucket=bucket_name)
         snapshot.match("get-cors-config-region-2", get_cors_config)
 
     @markers.aws.validated
@@ -3121,15 +3135,12 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    def test_putobject_with_multiple_keys(self, s3_create_bucket, snapshot, aws_client):
+    def test_putobject_with_multiple_keys(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
-
-        bucket = f"bucket-{short_uid()}"
         key_by_path = "aws/key1/key2/key3"
 
-        s3_create_bucket(Bucket=bucket)
-        aws_client.s3.put_object(Body=b"test", Bucket=bucket, Key=key_by_path)
-        result = aws_client.s3.get_object(Bucket=bucket, Key=key_by_path)
+        aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_by_path)
+        result = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_by_path)
         snapshot.match("get_object", result)
 
     @markers.aws.validated
@@ -3885,14 +3896,12 @@ class TestS3:
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
     @markers.aws.validated
     def test_s3_download_object_with_lambda(
-        self, s3_create_bucket, create_lambda_function, lambda_su_role, aws_client
+        self, s3_bucket, create_lambda_function, lambda_su_role, aws_client
     ):
-        bucket_name = f"bucket-{short_uid()}"
         function_name = f"func-{short_uid()}"
         key = f"key-{short_uid()}"
 
-        s3_create_bucket(Bucket=bucket_name)
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body="something..")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="something..")
 
         create_lambda_function(
             handler_file=os.path.join(
@@ -3905,7 +3914,7 @@ class TestS3:
             role=lambda_su_role,
             runtime=Runtime.python3_12,
             envvars={
-                "BUCKET_NAME": bucket_name,
+                "BUCKET_NAME": s3_bucket,
                 "OBJECT_NAME": key,
                 "LOCAL_FILE_NAME": "/tmp/" + key,
             },
@@ -3924,14 +3933,11 @@ class TestS3:
         )
 
     @markers.aws.validated
-    def test_precondition_failed_error(self, s3_create_bucket, snapshot, aws_client):
-        bucket = f"bucket-{short_uid()}"
-
-        s3_create_bucket(Bucket=bucket)
-        aws_client.s3.put_object(Bucket=bucket, Key="foo", Body=b'{"foo": "bar"}')
+    def test_precondition_failed_error(self, s3_bucket, snapshot, aws_client):
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="foo", Body=b'{"foo": "bar"}')
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.get_object(Bucket=bucket, Key="foo", IfMatch='"not good etag"')
+            aws_client.s3.get_object(Bucket=s3_bucket, Key="foo", IfMatch='"not good etag"')
 
         snapshot.match("get-object-if-match", e.value.response)
 
@@ -4234,18 +4240,26 @@ class TestS3:
             s3_create_bucket(Bucket=bucket_name)
         snapshot.match("uppercase-bucket", e.value.response)
 
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Cannot create buckets in other region when client is us-east-1, moto regression",
+    )
     @markers.aws.validated
-    def test_create_bucket_with_existing_name(self, s3_create_bucket, snapshot, aws_client):
+    def test_create_bucket_with_existing_name(
+        self, s3_create_bucket_with_client, snapshot, aws_client_factory
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-{short_uid()}"
-        s3_create_bucket(
+        us_east_1_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
+        s3_create_bucket_with_client(
+            us_east_1_client,
             Bucket=bucket_name,
             CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
         )
 
         for loc_constraint in ["us-west-1", "us-east-2"]:
             with pytest.raises(ClientError) as e:
-                aws_client.s3.create_bucket(
+                us_east_1_client.create_bucket(
                     Bucket=bucket_name,
                     CreateBucketConfiguration={"LocationConstraint": loc_constraint},
                 )
@@ -4289,12 +4303,12 @@ class TestS3:
         bucket_name = f"bucket-does-not-exist-{short_uid()}"
 
         with pytest.raises(ClientError) as e:
-            response = aws_client.s3.list_objects(Bucket=bucket_name)
+            aws_client.s3.list_objects(Bucket=bucket_name)
         e.match("NoSuchBucket")
         snapshot.match("list_object", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            response = s3_vhost_client.list_objects(Bucket=bucket_name)
+            s3_vhost_client.list_objects(Bucket=bucket_name)
         e.match("NoSuchBucket")
         snapshot.match("list_object_vhost", e.value.response)
 
@@ -4320,6 +4334,10 @@ class TestS3:
         assert response.status_code == 404
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Cannot create buckets in other region when client is us-east-1, moto regression",
+    )
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..x-amz-access-point-alias", "$..x-amz-id-2", "$..AccessPointAlias"],
     )
@@ -4344,12 +4362,12 @@ class TestS3:
             ]
         )
 
+        client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
         try:
-            client = aws_client_factory(region_name="us-east-1").s3
-            response = client.create_bucket(Bucket=bucket_1)
+            response = client_us_east_1.create_bucket(Bucket=bucket_1)
             snapshot.match("create_bucket", response)
 
-            response = aws_client.s3.create_bucket(
+            response = client_us_east_1.create_bucket(
                 Bucket=bucket_2,
                 CreateBucketConfiguration={
                     "LocationConstraint": secondary_region_name,
@@ -4357,7 +4375,7 @@ class TestS3:
             )
             snapshot.match("create_bucket_location_constraint", response)
 
-            response = client.head_bucket(Bucket=bucket_1)
+            response = client_us_east_1.head_bucket(Bucket=bucket_1)
             snapshot.match("head_bucket", response)
             snapshot.match(
                 "head_bucket_filtered_header",
@@ -4375,22 +4393,20 @@ class TestS3:
                 aws_client.s3.head_bucket(Bucket=f"does-not-exist-{long_uid()}")
             snapshot.match("head_bucket_not_exist", e.value.response)
         finally:
-            client.delete_bucket(Bucket=bucket_1)
-            aws_client.s3.delete_bucket(Bucket=bucket_2)
+            client_us_east_1.delete_bucket(Bucket=bucket_1)
+            client_us_east_1.delete_bucket(Bucket=bucket_2)
 
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="wrong behavior",
+    )
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify
+    @markers.snapshot.skip_snapshot_verify(
+        # TODO: it seems that we should not return the Owner when the request is public, but we dont have that concept
+        paths=["$..ListBucketResult.Contents.Owner"],
+    )
     def test_bucket_name_with_dots(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(snapshot.transform.key_value("Date", reference_replacement=False))
-        snapshot.add_transformer(snapshot.transform.key_value("date", reference_replacement=False))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("x-amz-id-2", reference_replacement=False)
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("x-amz-request-id", reference_replacement=False)
-        )
-
         bucket_name = f"my.bucket.name.{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name)
@@ -4399,36 +4415,17 @@ class TestS3:
         aws_client.s3.put_bucket_acl(Bucket=bucket_name, ACL="public-read")
         aws_client.s3.put_object(Bucket=bucket_name, Key="my-content", Body="something")
         response = aws_client.s3.list_objects(Bucket=bucket_name)
-        assert response["Contents"][0]["Key"] == "my-content"
-        assert response["Contents"][0]["ETag"] == '"437b930db84b8079c2dd804a71936b5f"'
-        assert response["Contents"][0]["Size"] == 9
-
-        snapshot.match("list_objects", response)
-        snapshot.match("list_objects_headers", response["ResponseMetadata"]["HTTPHeaders"])
+        snapshot.match("list-objects", response)
 
         # will result in a host-name-match if we use https, as the bucket contains dots
         response_vhost = requests.get(_bucket_url_vhost(bucket_name).replace("https://", "http://"))
-        content_vhost = response_vhost.content.decode("utf-8")
-        assert "<Key>my-content</Key>" in content_vhost
-        # TODO aws contains <ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag>
-        # assert '<ETag>"437b930db84b8079c2dd804a71936b5f"</ETag>' in content_vhost
-        assert "<Size>9</Size>" in content_vhost
-
-        snapshot.match("request_vhost_url_content", content_vhost)
-        # TODO headers different; raw response on AWS returns 'ListBucketResult', on LS 'ListObjectsOutput'
-        snapshot.match("request_vhost_headers", dict(response_vhost.headers))
+        vhost_xml_response = xmltodict.parse(response_vhost.content)
+        snapshot.match("request-vhost-url-content", vhost_xml_response)
 
         response_path_style = requests.get(_bucket_url(bucket_name))
-        content_path_style = response_path_style.content.decode("utf-8")
+        path_xml_response = xmltodict.parse(response_path_style.content)
 
-        assert "<Key>my-content</Key>" in content_path_style
-        # TODO aws contains <ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag>
-        # assert '<ETag>"437b930db84b8079c2dd804a71936b5f"</ETag>' in content_path_style
-        assert "<Size>9</Size>" in content_path_style
-
-        snapshot.match("request_path_url_content", content_path_style)
-        snapshot.match("request_path_headers", dict(response_path_style.headers))
-        assert content_vhost == content_path_style
+        snapshot.match("request-path-url-content", path_xml_response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -4507,27 +4504,24 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
     )
-    def test_get_bucket_versioning_order(self, s3_create_bucket, snapshot, aws_client):
+    def test_get_bucket_versioning_order(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
-
-        bucket_name = f"bucket-{short_uid()}"
-        s3_create_bucket(Bucket=bucket_name)
-        rs = aws_client.s3.list_object_versions(Bucket=bucket_name, EncodingType="url")
+        rs = aws_client.s3.list_object_versions(Bucket=s3_bucket, EncodingType="url")
         snapshot.match("list_object_versions_before", rs)
 
         rs = aws_client.s3.put_bucket_versioning(
-            Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
         )
         snapshot.match("put_bucket_versioning", rs)
 
-        rs = aws_client.s3.get_bucket_versioning(Bucket=bucket_name)
+        rs = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
         snapshot.match("get_bucket_versioning", rs)
 
-        aws_client.s3.put_object(Bucket=bucket_name, Key="test", Body="body")
-        aws_client.s3.put_object(Bucket=bucket_name, Key="test", Body="body")
-        aws_client.s3.put_object(Bucket=bucket_name, Key="test2", Body="body")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test", Body="body")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test", Body="body")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test2", Body="body")
         rs = aws_client.s3.list_object_versions(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
         )
 
         snapshot.match("list_object_versions", rs)
@@ -4537,20 +4531,18 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    def test_etag_on_get_object_call(self, s3_create_bucket, snapshot, aws_client):
+    def test_etag_on_get_object_call(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
         object_key = "my-key"
-        s3_create_bucket(Bucket=bucket_name)
 
         body = "Lorem ipsum dolor sit amet, ... " * 30
-        rs = aws_client.s3.put_object(Bucket=bucket_name, Key=object_key, Body=body)
+        rs = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=body)
 
-        rs = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
+        rs = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("get_object", rs)
 
         rs = aws_client.s3.get_object(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             Key=object_key,
             Range="bytes=0-16",
         )
@@ -4560,31 +4552,29 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
     )
-    def test_s3_delete_object_with_version_id(self, s3_create_bucket, snapshot, aws_client):
+    def test_s3_delete_object_with_version_id(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
 
         test_1st_key = "aws/s3/testkey1.txt"
         test_2nd_key = "aws/s3/testkey2.txt"
 
         body = "Lorem ipsum dolor sit amet, ... " * 30
 
-        s3_create_bucket(Bucket=bucket_name)
         aws_client.s3.put_bucket_versioning(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             VersioningConfiguration={"Status": "Enabled"},
         )
-        rs = aws_client.s3.get_bucket_versioning(Bucket=bucket_name)
+        rs = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
         snapshot.match("get_bucket_versioning", rs)
 
         # put 2 objects
-        rs = aws_client.s3.put_object(Bucket=bucket_name, Key=test_1st_key, Body=body)
-        aws_client.s3.put_object(Bucket=bucket_name, Key=test_2nd_key, Body=body)
+        rs = aws_client.s3.put_object(Bucket=s3_bucket, Key=test_1st_key, Body=body)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=test_2nd_key, Body=body)
         version_id = rs["VersionId"]
 
         # delete 1st object with version
         rs = aws_client.s3.delete_objects(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             Delete={"Objects": [{"Key": test_1st_key, "VersionId": version_id}]},
         )
 
@@ -4593,7 +4583,7 @@ class TestS3:
         assert version_id == deleted["VersionId"]
         snapshot.match("delete_objects", rs)
 
-        rs = aws_client.s3.list_object_versions(Bucket=bucket_name)
+        rs = aws_client.s3.list_object_versions(Bucket=s3_bucket)
         object_versions = [object["VersionId"] for object in rs["Versions"]]
         snapshot.match("list_object_versions_after_delete", rs)
 
@@ -4601,10 +4591,10 @@ class TestS3:
 
         # disable versioning
         aws_client.s3.put_bucket_versioning(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             VersioningConfiguration={"Status": "Suspended"},
         )
-        rs = aws_client.s3.get_bucket_versioning(Bucket=bucket_name)
+        rs = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
         snapshot.match("get_bucket_versioning_suspended", rs)
 
     @markers.aws.validated
@@ -4872,28 +4862,35 @@ class TestS3:
         kms_create_key,
         monkeypatch,
         snapshot,
-        aws_client,
     ):
-        snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        region_us_east_2 = "us-east-2"
+        region_us_west_2 = "us-west-2"
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("Description"),
+                snapshot.transform.regex(region_us_east_2, "<region_1>"),
+                snapshot.transform.regex(region_us_west_2, "<region_2>"),
+            ]
+        )
+
         data = b"test-sse"
         bucket_name = f"bucket-test-kms-{short_uid()}"
-        region_1 = "us-east-2"
-        snapshot.add_transformer(RegexTransformer(region_1, "<region_1>"))
-        client = aws_client_factory(region_name=region_1).s3
+
+        us_east_2_client = aws_client_factory(region_name=region_us_east_2).s3
         s3_create_bucket_with_client(
-            client, Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": region_1}
+            us_east_2_client,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": region_us_east_2},
         )
         # create key in a different region than the bucket
-        region_2 = "us-west-2"
-        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
-        kms_key = kms_create_key(region_name=region_2)
+        create_kms_key = kms_create_key(region_name=region_us_west_2)
         # snapshot the KMS key to save the UUID for replacement in Error message.
-        snapshot.match("create-kms-key", kms_key)
+        snapshot.match("create-kms-key", create_kms_key)
 
         # test whether the validation is skipped when not disabling the validation
         if not is_aws_cloud():
             key_name = "test-sse-validate-kms-key-no-check"
-            response = client.put_object(
+            response = us_east_2_client.put_object(
                 Bucket=bucket_name,
                 Key=key_name,
                 Body=data,
@@ -4902,7 +4899,7 @@ class TestS3:
             )
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-            response = client.create_multipart_upload(
+            response = us_east_2_client.create_multipart_upload(
                 Bucket=bucket_name,
                 Key="multipart-test-sse-validate-kms-key-no-check",
                 ServerSideEncryption="aws:kms",
@@ -4910,7 +4907,7 @@ class TestS3:
             )
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-            response = client.copy_object(
+            response = us_east_2_client.copy_object(
                 Bucket=bucket_name,
                 Key="copy-test-sse-validate-kms-key-no-check",
                 CopySource={"Bucket": bucket_name, "Key": key_name},
@@ -4925,7 +4922,7 @@ class TestS3:
         # activating the validation, for AWS parity
         monkeypatch.setattr(config, "S3_SKIP_KMS_KEY_VALIDATION", False)
         with pytest.raises(ClientError) as e:
-            client.put_object(
+            us_east_2_client.put_object(
                 Bucket=bucket_name,
                 Key=key_name,
                 Body=data,
@@ -4935,7 +4932,7 @@ class TestS3:
         snapshot.match("put-obj-wrong-kms-key", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            client.put_object(
+            us_east_2_client.put_object(
                 Bucket=bucket_name,
                 Key=key_name,
                 Body=data,
@@ -4946,10 +4943,12 @@ class TestS3:
 
         # we create a wrong arn but with the right region to test error message
         wrong_id_arn = (
-            kms_key["Arn"].replace(region_2, region_1).replace(kms_key["KeyId"], fake_key_uuid)
+            create_kms_key["Arn"]
+            .replace(region_us_west_2, region_us_east_2)
+            .replace(create_kms_key["KeyId"], fake_key_uuid)
         )
         with pytest.raises(ClientError) as e:
-            client.put_object(
+            us_east_2_client.put_object(
                 Bucket=bucket_name,
                 Key=key_name,
                 Body=data,
@@ -4959,27 +4958,27 @@ class TestS3:
         snapshot.match("put-obj-wrong-kms-key-real-uuid-arn", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            client.put_object(
+            us_east_2_client.put_object(
                 Bucket=bucket_name,
                 Key="test-sse-validate-kms-key-no-check-region",
                 Body=data,
                 ServerSideEncryption="aws:kms",
-                SSEKMSKeyId=kms_key["Arn"],
+                SSEKMSKeyId=create_kms_key["Arn"],
             )
         snapshot.match("put-obj-different-region-kms-key", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            client.put_object(
+            us_east_2_client.put_object(
                 Bucket=bucket_name,
                 Key="test-sse-validate-kms-key-different-region-no-arn",
                 Body=data,
                 ServerSideEncryption="aws:kms",
-                SSEKMSKeyId=kms_key["KeyId"],
+                SSEKMSKeyId=create_kms_key["KeyId"],
             )
         snapshot.match("put-obj-different-region-kms-key-no-arn", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            client.create_multipart_upload(
+            us_east_2_client.create_multipart_upload(
                 Bucket=bucket_name,
                 Key="multipart-test-sse-validate-kms-key-no-check",
                 ServerSideEncryption="aws:kms",
@@ -4989,9 +4988,9 @@ class TestS3:
 
         # create a object to be copied
         src_key = "key-to-be-copied"
-        client.put_object(Bucket=bucket_name, Key=src_key, Body=b"test-data")
+        us_east_2_client.put_object(Bucket=bucket_name, Key=src_key, Body=b"test-data")
         with pytest.raises(ClientError) as e:
-            client.copy_object(
+            us_east_2_client.copy_object(
                 Bucket=bucket_name,
                 Key="copy-test-sse-validate-kms-key-no-check",
                 CopySource={"Bucket": bucket_name, "Key": src_key},
@@ -5989,8 +5988,7 @@ class TestS3:
         snapshot.match("list_config_with_storage_analysis_2", response)
 
     @markers.aws.validated
-    def test_s3_intelligent_tier_config(self, aws_client, s3_create_bucket, snapshot):
-        bucket = s3_create_bucket()
+    def test_s3_intelligent_tier_config(self, aws_client, s3_bucket, snapshot):
         intelligent_tier_configuration = {
             "Id": "test1",
             "Filter": {
@@ -6005,7 +6003,7 @@ class TestS3:
         # different id in tiering config and in put request
         with pytest.raises(ClientError) as put_err_1:
             aws_client.s3.put_bucket_intelligent_tiering_configuration(
-                Bucket=bucket,
+                Bucket=s3_bucket,
                 Id="incorrect_id",
                 IntelligentTieringConfiguration=intelligent_tier_configuration,
             )
@@ -6015,7 +6013,7 @@ class TestS3:
 
         # put tiering config
         response = aws_client.s3.put_bucket_intelligent_tiering_configuration(
-            Bucket=bucket,
+            Bucket=s3_bucket,
             Id=intelligent_tier_configuration["Id"],
             IntelligentTieringConfiguration=intelligent_tier_configuration,
         )
@@ -6023,7 +6021,7 @@ class TestS3:
 
         # get tiering config and snapshot match
         response = aws_client.s3.get_bucket_intelligent_tiering_configuration(
-            Bucket=bucket,
+            Bucket=s3_bucket,
             Id=intelligent_tier_configuration["Id"],
         )
         snapshot.match("get_bucket_intelligent_tiering_configuration_1", response)
@@ -6033,12 +6031,12 @@ class TestS3:
         intelligent_tier_configuration["Filter"]["Prefix"] = "test2"
 
         aws_client.s3.put_bucket_intelligent_tiering_configuration(
-            Bucket=bucket,
+            Bucket=s3_bucket,
             Id=intelligent_tier_configuration["Id"],
             IntelligentTieringConfiguration=intelligent_tier_configuration,
         )
 
-        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=s3_bucket)
         snapshot.match("list_bucket_intelligent_tiering_configurations_1", response)
 
         # update the config by adding config with same id
@@ -6046,12 +6044,12 @@ class TestS3:
         intelligent_tier_configuration["Filter"]["Prefix"] = "testupdate"
 
         aws_client.s3.put_bucket_intelligent_tiering_configuration(
-            Bucket=bucket,
+            Bucket=s3_bucket,
             Id=intelligent_tier_configuration["Id"],
             IntelligentTieringConfiguration=intelligent_tier_configuration,
         )
 
-        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=s3_bucket)
         snapshot.match("list_bucket_intelligent_tiering_configurations_2", response)
 
         # delete the config with non-existing bucket
@@ -6067,7 +6065,7 @@ class TestS3:
         # delete the config with non-existing id
         with pytest.raises(ClientError) as delete_err_2:
             aws_client.s3.delete_bucket_intelligent_tiering_configuration(
-                Bucket=bucket,
+                Bucket=s3_bucket,
                 Id="non-existing-id",
             )
         snapshot.match(
@@ -6076,43 +6074,42 @@ class TestS3:
 
         # delete the config
         aws_client.s3.delete_bucket_intelligent_tiering_configuration(
-            Bucket=bucket,
+            Bucket=s3_bucket,
             Id=intelligent_tier_configuration["Id"],
         )
 
-        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=s3_bucket)
         snapshot.match("list_bucket_intelligent_tiering_configurations_3", response)
 
     @markers.aws.validated
-    def test_s3_get_object_headers(self, aws_client, s3_create_bucket, snapshot):
-        bucket = s3_create_bucket()
+    def test_s3_get_object_headers(self, aws_client, s3_bucket, snapshot):
         key = "en-gb.wav"
         file_path = os.path.join(os.path.dirname(__file__), f"../../files/{key}")
 
-        aws_client.s3.upload_file(file_path, bucket, key)
-        objects = aws_client.s3.list_objects(Bucket=bucket)
+        aws_client.s3.upload_file(file_path, s3_bucket, key)
+        objects = aws_client.s3.list_objects(Bucket=s3_bucket)
         etag = objects["Contents"][0]["ETag"]
 
         # TODO: some of the headers missing in the get object response
         with pytest.raises(ClientError) as e:
-            aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag)
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, IfNoneMatch=etag)
         snapshot.match("if_none_match_err_1", e.value.response["Error"])
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag.strip('"'))
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, IfNoneMatch=etag.strip('"'))
         snapshot.match("if_none_match_err_2", e.value.response["Error"])
 
-        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch="etag")
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, IfNoneMatch="etag")
         snapshot.match("if_none_match_1", response["ResponseMetadata"]["HTTPStatusCode"])
 
-        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch=etag)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, IfMatch=etag)
         snapshot.match("if_match_1", response["ResponseMetadata"]["HTTPStatusCode"])
 
-        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch=etag.strip('"'))
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, IfMatch=etag.strip('"'))
         snapshot.match("if_match_2", response["ResponseMetadata"]["HTTPStatusCode"])
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, IfMatch="etag")
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
     @markers.aws.validated
@@ -6844,7 +6841,7 @@ class TestS3PresignedUrl:
     )
     def test_put_object_with_md5_and_chunk_signature_bad_headers(
         self,
-        s3_create_bucket,
+        s3_bucket,
         signature_version,
         verify_signature,
         monkeypatch,
@@ -6859,7 +6856,6 @@ class TestS3PresignedUrl:
         else:
             monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", True)
 
-        bucket_name = f"bucket-{short_uid()}"
         object_key = "test-runtime.properties"
         content_md5 = "pX8KKuGXS1f2VTcuJpqjkw=="
         headers = {
@@ -6873,7 +6869,6 @@ class TestS3PresignedUrl:
             "Expect": "100-continue",
         }
 
-        s3_create_bucket(Bucket=bucket_name)
         presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version),
             endpoint_url=_endpoint_url(),
@@ -6881,7 +6876,7 @@ class TestS3PresignedUrl:
         url = presigned_client.generate_presigned_url(
             "put_object",
             Params={
-                "Bucket": bucket_name,
+                "Bucket": s3_bucket,
                 "Key": object_key,
                 "ContentType": "application/octet-stream",
                 "ContentMD5": content_md5,
@@ -7221,7 +7216,11 @@ class TestS3PresignedUrl:
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="STS not enabled in S3 image")
     @markers.aws.validated
     def test_presigned_url_with_session_token(
-        self, s3_create_bucket_with_client, patch_s3_skip_signature_validation_false, aws_client
+        self,
+        s3_create_bucket_with_client,
+        patch_s3_skip_signature_validation_false,
+        aws_client,
+        region_name,
     ):
         bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
@@ -7237,6 +7236,7 @@ class TestS3PresignedUrl:
         client = boto3.client(
             "s3",
             config=Config(signature_version="s3v4"),
+            region_name=AWS_REGION_US_EAST_1,
             endpoint_url=_endpoint_url(),
             aws_access_key_id=response["Credentials"]["AccessKeyId"],
             aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
@@ -7307,7 +7307,7 @@ class TestS3PresignedUrl:
 
         kwargs = (
             {"CreateBucketConfiguration": {"LocationConstraint": region_name}}
-            if region_name != "us-east-1"
+            if region_name != AWS_REGION_US_EAST_1
             else {}
         )
         retry(
@@ -10299,39 +10299,50 @@ class TestS3BucketLogging:
         resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
         snapshot.match("get-bucket-logging", resp)
 
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Issue in how us-east-1 client cannot create bucket in every region",
+    )
     @markers.aws.validated
     def test_put_bucket_logging_wrong_target(
         self,
-        aws_client,
         aws_client_factory,
-        s3_create_bucket,
         s3_create_bucket_with_client,
         snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
-
-        region_1 = "us-east-1"
-        region_2 = "us-west-2"
-
-        snapshot.add_transformer(RegexTransformer(region_1, "<region_1>"))
-        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
-
-        bucket_name = f"bucket-{short_uid()}"
-        client = aws_client_factory(region_name=region_1).s3
-        s3_create_bucket_with_client(
-            client,
-            Bucket=bucket_name,
+        region_us_west_2 = "us-west-2"
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("TargetBucket"),
+                snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region_1>"),
+                snapshot.transform.regex(region_us_west_2, "<region_2>"),
+            ]
         )
-        target_bucket = s3_create_bucket(CreateBucketConfiguration={"LocationConstraint": region_2})
+
+        bucket_name_us_east_1 = f"bucket-{short_uid()}"
+        target_bucket_us_west_2 = f"bucket-{short_uid()}"
+
+        client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
+        s3_create_bucket_with_client(
+            client_us_east_1,
+            Bucket=bucket_name_us_east_1,
+        )
+        s3_create_bucket_with_client(
+            client_us_east_1,
+            Bucket=target_bucket_us_west_2,
+            CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
+        )
 
         with pytest.raises(ClientError) as e:
             bucket_logging_status = {
                 "LoggingEnabled": {
-                    "TargetBucket": target_bucket,
+                    "TargetBucket": target_bucket_us_west_2,
                     "TargetPrefix": "log",
                 },
             }
-            client.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status)
+            client_us_east_1.put_bucket_logging(
+                Bucket=bucket_name_us_east_1, BucketLoggingStatus=bucket_logging_status
+            )
         snapshot.match("put-bucket-logging-different-regions", e.value.response)
 
         nonexistent_target_bucket = f"target-bucket-{long_uid()}"
@@ -10342,10 +10353,16 @@ class TestS3BucketLogging:
                     "TargetPrefix": "log",
                 },
             }
-            client.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status)
+            client_us_east_1.put_bucket_logging(
+                Bucket=bucket_name_us_east_1, BucketLoggingStatus=bucket_logging_status
+            )
         snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
         assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
 
+    @pytest.mark.skipif(
+        condition=is_v2_provider(),
+        reason="Issue in how us-east-1 client cannot create bucket in every region",
+    )
     @markers.aws.validated
     def test_put_bucket_logging_cross_locations(
         self,
@@ -10357,45 +10374,56 @@ class TestS3BucketLogging:
     ):
         # The aim of the test is to check the behavior of the CrossLocationLoggingProhibitions
         # exception for us-east-1 and regions other than us-east-1.
-        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
-        region_1 = "us-east-1"
-        region_2 = "us-east-2"
-        region_3 = "us-west-2"
-
-        snapshot.add_transformer(RegexTransformer(region_1, "<region_1>"))
-        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
-        snapshot.add_transformer(RegexTransformer(region_3, "<region_3>"))
-
-        bucket_name_region_1 = f"bucket-{short_uid()}"
-        client = aws_client_factory(region_name=region_1).s3
-        s3_create_bucket_with_client(client, Bucket=bucket_name_region_1)
-
-        bucket_name_region_2 = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": region_2}
+        region_us_east_2 = "us-east-2"
+        region_us_west_2 = "us-west-2"
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("TargetBucket"),
+                snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region_1>"),
+                snapshot.transform.regex(region_us_east_2, "<region_2>"),
+                snapshot.transform.regex(region_us_west_2, "<region_3>"),
+            ]
         )
-        target_bucket = s3_create_bucket(CreateBucketConfiguration={"LocationConstraint": region_3})
+
+        bucket_name_us_east_1 = f"bucket-{short_uid()}"
+        client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
+        s3_create_bucket_with_client(s3_client=client_us_east_1, Bucket=bucket_name_us_east_1)
+
+        bucket_name_us_east_2 = f"bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            s3_client=client_us_east_1,
+            Bucket=bucket_name_us_east_2,
+            CreateBucketConfiguration={"LocationConstraint": region_us_east_2},
+        )
+
+        target_bucket_us_west_2 = f"bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            s3_client=client_us_east_1,
+            Bucket=target_bucket_us_west_2,
+            CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
+        )
 
         with pytest.raises(ClientError) as e:
             bucket_logging_status = {
                 "LoggingEnabled": {
-                    "TargetBucket": target_bucket,
+                    "TargetBucket": target_bucket_us_west_2,
                     "TargetPrefix": "log",
                 },
             }
-            client.put_bucket_logging(
-                Bucket=bucket_name_region_1, BucketLoggingStatus=bucket_logging_status
+            client_us_east_1.put_bucket_logging(
+                Bucket=bucket_name_us_east_1, BucketLoggingStatus=bucket_logging_status
             )
         snapshot.match("put-bucket-logging-cross-us-east-1", e.value.response)
 
         with pytest.raises(ClientError) as e:
             bucket_logging_status = {
                 "LoggingEnabled": {
-                    "TargetBucket": target_bucket,
+                    "TargetBucket": target_bucket_us_west_2,
                     "TargetPrefix": "log",
                 },
             }
-            aws_client.s3.put_bucket_logging(
-                Bucket=bucket_name_region_2, BucketLoggingStatus=bucket_logging_status
+            client_us_east_1.put_bucket_logging(
+                Bucket=bucket_name_us_east_2, BucketLoggingStatus=bucket_logging_status
             )
         snapshot.match("put-bucket-logging-different-regions", e.value.response)
 
@@ -10485,7 +10513,13 @@ class TestS3BucketReplication:
 
     @markers.aws.validated
     def test_replication_config(
-        self, s3_create_bucket, create_iam_role_with_policy, snapshot, aws_client
+        self,
+        s3_create_bucket,
+        s3_create_bucket_with_client,
+        create_iam_role_with_policy,
+        snapshot,
+        aws_client,
+        aws_client_factory,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(
@@ -10514,8 +10548,11 @@ class TestS3BucketReplication:
         )
         s3_create_bucket(Bucket=bucket_src)
 
-        s3_create_bucket(
-            Bucket=bucket_dst, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        s3_client_secondary = aws_client_factory(region_name="us-west-2").s3
+        s3_create_bucket_with_client(
+            s3_client=s3_client_secondary,
+            Bucket=bucket_dst,
+            CreateBucketConfiguration={"LocationConstraint": "us-west-2"},
         )
         aws_client.s3.put_bucket_versioning(
             Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}

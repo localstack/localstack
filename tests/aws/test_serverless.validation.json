@@ -1,0 +1,20 @@
+{
+  "tests/aws/test_serverless.py::TestServerless::test_dynamodb_stream_handler_deployed": {
+    "last_validated_date": "2024-09-10T07:58:51+00:00"
+  },
+  "tests/aws/test_serverless.py::TestServerless::test_event_rules_deployed": {
+    "last_validated_date": "2024-09-10T07:58:50+00:00"
+  },
+  "tests/aws/test_serverless.py::TestServerless::test_kinesis_stream_handler_deployed": {
+    "last_validated_date": "2024-09-09T14:19:10+00:00"
+  },
+  "tests/aws/test_serverless.py::TestServerless::test_lambda_with_configs_deployed": {
+    "last_validated_date": "2024-09-10T07:58:53+00:00"
+  },
+  "tests/aws/test_serverless.py::TestServerless::test_queue_handler_deployed": {
+    "last_validated_date": "2024-09-10T07:58:52+00:00"
+  },
+  "tests/aws/test_serverless.py::TestServerless::test_s3_bucket_deployed": {
+    "last_validated_date": "2024-09-10T07:58:54+00:00"
+  }
+}

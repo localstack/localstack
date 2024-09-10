@@ -786,11 +786,11 @@ def get_resource_for_path(
 
     # if there are no matches, it's not worth to proceed, bail here!
     if not matches:
-        LOG.debug(f"No match found for path: '{path}' and method: '{method}'")
+        LOG.debug("No match found for path: '%s' and method: '%s'", path, method)
         return None, None
 
     if len(matches) == 1:
-        LOG.debug(f"Match found for path: '{path}' and method: '{method}'")
+        LOG.debug("Match found for path: '%s' and method: '%s'", path, method)
         return matches[0]
 
     # so we have more than one match
@@ -816,7 +816,7 @@ def get_resource_for_path(
     if param_matches:
         # count the amount of parameters, return the one with the least which is the most precise
         sorted_matches = sorted(param_matches, key=lambda x: x[0].count("{"))
-        LOG.debug(f"Match found for path: '{path}' and method: '{method}'")
+        LOG.debug("Match found for path: '%s' and method: '%s'", path, method)
         return sorted_matches[0]
 
     if proxy_matches:
@@ -824,11 +824,11 @@ def get_resource_for_path(
         # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length, only if they have a method
         # that could match
         sorted_matches = sorted(proxy_matches, key=lambda x: len(x[0]), reverse=True)
-        LOG.debug(f"Match found for path: '{path}' and method: '{method}'")
+        LOG.debug("Match found for path: '%s' and method: '%s'", path, method)
         return sorted_matches[0]
 
     # if there are no matches with a method that would match, return
-    LOG.debug(f"No match found for method: '{method}' for matched path: {path}")
+    LOG.debug("No match found for method: '%s' for matched path: %s", method, path)
     return None, None
 
 

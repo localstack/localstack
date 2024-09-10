@@ -13,7 +13,7 @@ class NoExitArgumentParser(argparse.ArgumentParser):
     """
 
     def exit(self, status: int = ..., message: Optional[str] = ...) -> NoReturn:
-        LOG.warning(f"Error in argument parser but preventing exit: {message}")
+        LOG.warning("Error in argument parser but preventing exit: %s", message)
 
     def error(self, message: str) -> NoReturn:
         raise NotImplementedError(f"Unsupported flag by this Docker client: {message}")

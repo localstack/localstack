@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
 PUBLICATION_RETRIES = 5
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -580,7 +579,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_describe_alarms_converts_date_format_correctly(self, aws_client, cleanups):
-        alarm_name = f"a-{short_uid()}"
+        alarm_name = f"a-{short_uid()}:test"
         metric_name = f"test-metric-{short_uid()}"
         namespace = f"test-ns-{short_uid()}"
         aws_client.cloudwatch.put_metric_alarm(
@@ -658,7 +657,10 @@ class TestCloudwatch:
         snapshot.match("describe_alarms", describe_alarms)
         alarm = describe_alarms["MetricAlarms"][0]
         alarm_arn = alarm["AlarmArn"]
+        list_tags_for_resource = aws_client.cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        snapshot.match("list_tags_for_resource_empty ", list_tags_for_resource)
 
+        # add tags
         tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
         response = aws_client.cloudwatch.tag_resource(ResourceARN=alarm_arn, Tags=tags)
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
@@ -1071,7 +1073,8 @@ class TestCloudwatch:
             AlarmActions=[topic_arn_alarm],
             EvaluationPeriods=1,
             ComparisonOperator="GreaterThanThreshold",
-            TreatMissingData="ignore",  # notBreaching had some downsides, as depending on the alarm evaluation interval it would first go into OK
+            TreatMissingData="ignore",
+            # notBreaching had some downsides, as depending on the alarm evaluation interval it would first go into OK
         )
         cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
         response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
@@ -1389,6 +1392,35 @@ class TestCloudwatch:
         )
 
         snapshot.match("get_metric_data_2", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=is_old_provider(), reason="Old provider is not raising exception")
+    def test_invalid_dashboard_name(self, aws_client, region_name, snapshot):
+        dashboard_name = f"test-{short_uid()}:invalid"
+        dashboard_body = {
+            "widgets": [
+                {
+                    "type": "metric",
+                    "x": 0,
+                    "y": 0,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
+                        "region": region_name,
+                        "view": "timeSeries",
+                        "stacked": False,
+                    },
+                }
+            ]
+        }
+
+        with pytest.raises(Exception) as ex:
+            aws_client.cloudwatch.put_dashboard(
+                DashboardName=dashboard_name, DashboardBody=json.dumps(dashboard_body)
+            )
+
+        snapshot.match("error-invalid-dashboardname", ex.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -2196,6 +2228,7 @@ class TestCloudwatch:
                 {"MetricName": "metric1", "Value": val, "Unit": "Seconds"} for val in values
             ],
         )
+
         # get_metric_data
 
         def _get_metric_data():
@@ -2439,7 +2472,7 @@ class TestCloudwatch:
                                 "MetricStat": {
                                     "Metric": {
                                         "Namespace": namespace,
-                                        "MetricName": f"metric-{runner-1}-1",
+                                        "MetricName": f"metric-{runner - 1}-1",
                                     },
                                     "Period": 60,
                                     "Stat": "Sum",
@@ -2450,7 +2483,7 @@ class TestCloudwatch:
                                 "MetricStat": {
                                     "Metric": {
                                         "Namespace": namespace,
-                                        "MetricName": f"metric-{runner-1}-2",
+                                        "MetricName": f"metric-{runner - 1}-2",
                                     },
                                     "Period": 60,
                                     "Stat": "Sum",
@@ -2461,7 +2494,7 @@ class TestCloudwatch:
                         EndTime=end_time,
                     )
             except Exception as e:
-                LOG.exception(f"runner {runner} failed: {e}")
+                LOG.exception("runner %s failed: %s", runner, e)
                 exception_caught = True
 
         thread_list = []

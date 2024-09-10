@@ -53,9 +53,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.35.10",
+    "boto3==1.35.14",
     # pinned / updated by ASF update action
-    "botocore==1.35.10",
+    "botocore==1.35.14",
     "awscrt>=0.13.14",
     "cbor2>=5.2.0",
     "dnspython>=1.16.0",
@@ -63,6 +63,7 @@ base-runtime = [
     "jsonpatch>=1.24",
     "hypercorn>=0.14.4",
     "localstack-twisted>=23.0",
+    "openapi-core>=0.19.2",
     "pyopenssl>=23.0.0",
     "readerwriterlock>=1.0.7",
     "requests-aws4auth>=1.0",
@@ -92,7 +93,7 @@ runtime = [
     "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
-    "moto-ext[all]==5.0.13.post1",
+    "moto-ext[all]==5.0.13.post3",
     "opensearch-py>=2.4.1",
     "pymongo>=4.2.0",
     "pyopenssl>=23.0.0",
@@ -123,6 +124,7 @@ dev = [
     "coveralls>=3.3.1",
     "Cython",
     "networkx>=2.8.4",
+    "openapi-spec-validator>=0.7.1",
     "pandoc",
     "pre-commit>=3.5.0",
     "pypandoc",
@@ -167,6 +169,7 @@ exclude = ["tests*"]
     "services/**/*.html",
     "services/**/resource_providers/*.schema.json",
     "utils/kinesis/java/cloud/localstack/*.*",
+    "openapi.yaml"
 ]
 
 [tool.ruff]
@@ -207,7 +210,7 @@ ignore = [
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
 ]
-select = ["B", "C", "E", "F", "I", "W", "T", "B9"]
+select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G"]
 
 [tool.coverage.run]
 relative_files = true

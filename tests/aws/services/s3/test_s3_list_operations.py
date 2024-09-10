@@ -17,10 +17,7 @@ from localstack.config import LEGACY_V2_S3_PROVIDER, S3_VIRTUAL_HOSTNAME
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST_HOSTNAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-
-
-def is_v2_provider():
-    return LEGACY_V2_S3_PROVIDER
+from tests.aws.services.s3.conftest import is_v2_provider
 
 
 def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:

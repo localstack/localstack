@@ -239,7 +239,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(
             try:
                 aws_client.lambda_.delete_function(FunctionName=arn)
             except Exception:
-                LOG.debug(f"Unable to delete function {arn=} in cleanup")
+                LOG.debug("Unable to delete function %s in cleanup", arn)
 
 
 @pytest.fixture

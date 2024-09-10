@@ -28,7 +28,7 @@ def install_predefined_cert_if_available():
         pass
 
 
-def setup_ssl_cert():
+def setup_ssl_cert() -> None:
     target_file = get_cert_pem_file_path()
 
     # cache file for 6 hours (non-enterprise) or forever (enterprise)
@@ -45,11 +45,13 @@ def setup_ssl_cert():
     # apply timeout (and fall back to using self-signed certs)
     timeout = 5  # slightly higher timeout for our proxy
     try:
-        return download(SSL_CERT_URL, target_file, timeout=timeout)
+        download(SSL_CERT_URL, target_file, timeout=timeout, quiet=True)
+        LOG.debug("SSL certificate downloaded successfully")
     except Exception:
         # try fallback URL, directly from our API proxy
         try:
-            return download(SSL_CERT_URL_FALLBACK, target_file, timeout=timeout)
+            download(SSL_CERT_URL_FALLBACK, target_file, timeout=timeout, quiet=True)
+            LOG.debug("SSL certificate downloaded successfully")
         except Exception as e:
             LOG.info(
                 "Unable to download local test SSL certificate from %s to %s (using self-signed cert as fallback): %s",

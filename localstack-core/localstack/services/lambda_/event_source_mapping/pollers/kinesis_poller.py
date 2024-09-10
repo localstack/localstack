@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 from copy import deepcopy
+from datetime import datetime
 
 from botocore.client import BaseClient
 
@@ -136,6 +137,9 @@ class KinesisPoller(StreamPoller):
         else:
             return record["approximateArrivalTimestamp"]
 
+    def format_datetime(self, time: datetime) -> str:
+        return f"{time.isoformat(timespec='milliseconds')}Z"
+
     def get_sequence_number(self, record: dict) -> str:
         if self.kinesis_namespace:
             return record["kinesis"]["sequenceNumber"]
@@ -161,7 +165,8 @@ class KinesisPoller(StreamPoller):
                     parsed_events.append(parsed_event)
                 except json.JSONDecodeError:
                     LOG.warning(
-                        f"Unable to convert event data '{raw_data}' to json... Record will be dropped.",
+                        "Unable to convert event data '%s' to json... Record will be dropped.",
+                        raw_data,
                         exc_info=LOG.isEnabledFor(logging.DEBUG),
                     )
             return parsed_events
