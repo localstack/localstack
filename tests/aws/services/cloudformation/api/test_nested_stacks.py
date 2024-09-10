@@ -3,6 +3,7 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -294,7 +295,7 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
 
 
 @markers.aws.validated
-def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client):
+def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_name):
     """
     This test confirms that after deleting a stack parent with a failed nested stack. The nested stack is also deleted
     """
@@ -309,6 +310,11 @@ def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client):
     )
 
     stack_name = f"stack-{short_uid()}"
+    child_template_url = (
+        f"https://{bucket_name}.s3.{config.LOCALSTACK_HOST.host_and_port()}/child.yml"
+    )
+    if is_aws_cloud():
+        child_template_url = f"https://{bucket_name}.s3.{region_name}.amazonaws.com/child.yml"
 
     aws_client.cloudformation.create_stack(
         StackName=stack_name,
@@ -317,10 +323,9 @@ def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client):
                 os.path.dirname(__file__), "../../../templates/cfn_failed_nested_stack_parent.yml"
             ),
         ),
-        Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
         Parameters=[
             {"ParameterKey": "BucketName", "ParameterValue": "Invalid!@#$"},
-            {"ParameterKey": "TemplateUri", "ParameterValue": f"s3://{bucket_name}/child.yml"},
+            {"ParameterKey": "TemplateUri", "ParameterValue": child_template_url},
         ],
     )
 
@@ -328,12 +333,12 @@ def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client):
         status = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0][
             "StackStatus"
         ]
-        assert status in [
+        return status in [
             "ROLLBACK_COMPLETE",
             "CREATE_FAILED",
         ]  # LS doesn't implement the ROLLBACK yet
 
-    wait_until(_status_is_complete)
+    wait_until(_status_is_complete, strategy="static")
 
     aws_client.cloudformation.delete_stack(StackName=stack_name)
 
