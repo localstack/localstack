@@ -91,7 +91,7 @@ jobs:
           mv ./target/marker-report*.json ./target/marker-report.json
 
       - name: Enrich and render marker report
-        working-directory: ${{ inputs.target-repo }}
+#        working-directory: ${{ inputs.target-repo }}
         env:
           MARKER_REPORT_PATH: ./target/marker-report.json
           CODEOWNERS_PATH: ./CODEOWNERS
@@ -101,8 +101,10 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: |
           if [ -n "${{ inputs.project-name }}" ]; then
+            cd ${{ inputs.target-repo }}
             . ../.venv/bin/activate
             pip install codeowners
+            cd ..
             curl -o render_marker_report.py -L https://raw.githubusercontent.com/localstack/localstack/master/scripts/render_marker_report.py -H 'Accept: application/vnd.github.v3.raw'
             chmod +x render_marker_report.py
             curl -o MARKER_REPORT_ISSUE.md.j2 -L https://raw.githubusercontent.com/localstack/localstack/master/.github/bot_templates/MARKER_REPORT_ISSUE.md.j2 -H 'Accept: application/vnd.github.v3.raw'
