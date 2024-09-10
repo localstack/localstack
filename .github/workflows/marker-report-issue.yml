@@ -112,7 +112,7 @@ jobs:
       - name: "Determine Companion Ref"
         if: ${{ inputs.project-name }}
         id: determine-companion-ref
-        uses: ./localstack-ext/.github/actions/companion-ref
+        uses: ./.github/actions/companion-ref
         with:
           targetRef: ${{ inputs.targetRef }}
           token: ${{ secrets.GITHUB_TOKEN }}
