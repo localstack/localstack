@@ -73,10 +73,11 @@ jobs:
         run: |
           if [ -n "${{ inputs.project-name }}" ]; then
             echo "MARKER_REPORT_PROJECT_NAME=${{ inputs.project-name }}" >> $GITHUB_ENV
+            . ../.venv/bin/activate
           else
             echo "MARKER_REPORT_PROJECT_NAME=localstack" >> $GITHUB_ENV
+            . ./.venv/bin/activate
           fi
-          . ./.venv/bin/activate
           pip install codeowners
           python -m pytest tests/aws/
           mv ./target/marker-report*.json ./target/marker-report.json
@@ -90,7 +91,11 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
-          . ./.venv/bin/activate
+          if [ -n "${{ inputs.project-name }}" ]; then
+            . ../.venv/bin/activate
+          else
+            . ./.venv/bin/activate
+          fi
           pip install codeowners
           python scripts/render_marker_report.py
 
