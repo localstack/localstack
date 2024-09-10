@@ -93,7 +93,7 @@ jobs:
       - name: Enrich and render marker report
 #        working-directory: ${{ inputs.target-repo }}
         env:
-          MARKER_REPORT_PATH: ./target/marker-report.json
+#          MARKER_REPORT_PATH: ./target/marker-report.json
           CODEOWNERS_PATH: ./CODEOWNERS
 #          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2
 #          OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
@@ -114,8 +114,10 @@ jobs:
             chmod +x MARKER_REPORT_ISSUE.md.j2
             python render_marker_report.py
           else
+            echo "MARKER_REPORT_PATH=./target/marker-report.json" >> $GITHUB_ENV
             echo "value of MARKER_REPORT_PATH:"
             echo ${MARKER_REPORT_PATH}
+            echo "${{ GITHUB_ENV }}"
             echo "end of value of MARKER_REPORT_PATH"
             echo "TEMPLATE_PATH=./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2" >> $GITHUB_ENV
             echo "OUTPUT_PATH=./target/MARKER_REPORT_ISSUE.md" >> $GITHUB_ENV
