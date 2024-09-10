@@ -29,7 +29,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         super().__init__("java", version, extract_single_directory=True)
 
     def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, "bin/java")
+        return os.path.join(install_dir, "bin", "java")
 
     def _get_download_url(self) -> str:
         try:
@@ -47,7 +47,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         rm_rf(minimal_jre_path)
 
         # If jlink is not available, use the environment as is
-        if not os.path.exists(os.path.join(target_directory, "bin/jlink")):
+        if not os.path.exists(os.path.join(target_directory, "bin", "jlink")):
             LOG.warning("Skipping JRE optimisation because jlink is not available")
             return
 
