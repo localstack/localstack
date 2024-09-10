@@ -105,6 +105,8 @@ jobs:
             . ../.venv/bin/activate
             pip install codeowners
             cd ..
+            echo "MARKER_REPORT_PATH=${{ inputs.target-repo }}/target/marker-report.json" >> $GITHUB_ENV
+            echo "TEMPLATE_PATH=MARKER_REPORT_ISSUE.md.j2" >> $GITHUB_ENV
             curl -o render_marker_report.py -L https://raw.githubusercontent.com/localstack/localstack/master/scripts/render_marker_report.py -H 'Accept: application/vnd.github.v3.raw'
             chmod +x render_marker_report.py
             curl -o MARKER_REPORT_ISSUE.md.j2 -L https://raw.githubusercontent.com/localstack/localstack/master/.github/bot_templates/MARKER_REPORT_ISSUE.md.j2 -H 'Accept: application/vnd.github.v3.raw'
