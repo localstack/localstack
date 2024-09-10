@@ -107,6 +107,23 @@ jobs:
 
       - name: Checkout Community
         if: ${{ inputs.project-name }}
+#        env:
+#          MARKER_REPORT_PATH: ./target/marker-report.json
+#          CODEOWNERS_PATH: ./CODEOWNERS
+#          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2
+#          OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
+#          GITHUB_REPO: ${{ github.repository }}
+#          COMMIT_SHA: ${{ github.sha }}
+        uses: actions/checkout@v4
+        with:
+          repository: localstack/localstack
+          path: localstack
+          fetch-depth: 0
+#        run: |
+#          python scripts/render_marker_report.py
+
+      - name: Render report for Pro
+        if: ${{ inputs.project-name }}
         env:
           MARKER_REPORT_PATH: ./target/marker-report.json
           CODEOWNERS_PATH: ./CODEOWNERS
@@ -114,13 +131,8 @@ jobs:
           OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
-        uses: actions/checkout@v4
-        with:
-          repository: localstack/localstack
-          fetch-depth: 0
-          path: localstack
         run: |
-          python scripts/render_marker_report.py
+            python scripts/render_marker_report.py
 
       - name: Print generated markdown
         run: |
