@@ -1,0 +1,10 @@
+Resources:
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ComputePlatform: Lambda
+
+Outputs:
+  reference:
+    Value: !Ref Application
+

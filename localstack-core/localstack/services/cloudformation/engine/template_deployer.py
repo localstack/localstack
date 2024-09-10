@@ -318,7 +318,16 @@ def _resolve_refs_recursively(
             if ref is None:
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
+
+                resource_type = get_resource_type(resources.get(value["Ref"]))
+                resource_provider = ResourceProviderExecutor.try_load_resource_provider(
+                    resource_type
+                )
+                if resource_provider is None:
+                    return ""
+
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
+
             ref = resolve_refs_recursively(
                 account_id,
                 region_name,
@@ -351,20 +360,28 @@ def _resolve_refs_recursively(
             )
             resource = resources.get(resource_logical_id)
 
+            resource_type = (get_resource_type(resource),)
             resolved_getatt = get_attr_from_model_instance(
                 resource,
                 attribute_name,
-                get_resource_type(resource),
+                resource_type,
                 resource_logical_id,
                 attribute_sub_name,
             )
 
             # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
             if resolved_getatt is None:
+                resource_provider = ResourceProviderExecutor.try_load_resource_provider(
+                    resource_type
+                )
+                if resource_provider is None:
+                    return ""
+
                 raise DependencyNotYetSatisfied(
                     resource_ids=resource_logical_id,
                     message=f"Could not resolve attribute '{attribute_name}' on resource '{resource_logical_id}'",
                 )
+
             return resolved_getatt
 
         if stripped_fn_lower == "join":
