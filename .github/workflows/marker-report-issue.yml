@@ -31,6 +31,10 @@ on:
         required: false
         type: string
         default: 'localstack'
+      targetRef:
+        description: 'LocalStack (Community) Ref'
+        required: false
+        type: string
     secrets:
       TEST_LOCALSTACK_API_KEY:
         description: "LocalStack API key for running tests."
@@ -105,6 +109,14 @@ jobs:
             python scripts/render_marker_report.py
           fi
 
+      - name: "Determine Companion Ref"
+        if: ${{ inputs.project-name }}
+        id: determine-companion-ref
+        uses: ./localstack-ext/.github/actions/companion-ref
+        with:
+          targetRef: ${{ inputs.targetRef }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout Community
         if: ${{ inputs.project-name }}
 #        env:
@@ -119,6 +131,7 @@ jobs:
           repository: localstack/localstack
           path: localstack
           fetch-depth: 0
+          ref: ${{ steps.determine-companion-ref.outputs.ref }}
 #        run: |
 #          python scripts/render_marker_report.py
 
