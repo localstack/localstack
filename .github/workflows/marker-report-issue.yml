@@ -1,5 +1,8 @@
 name: Open marker report GH issue
 on:
+  push:
+    branches: # TODO: remove this before merge
+      - reusable-workflow-markers
   # only manual for now
   workflow_dispatch:
     inputs:
@@ -17,6 +20,21 @@ on:
           - ''
           - 'false'
           - 'true'
+  workflow_call:
+    inputs:
+      project-name:
+        description: "Name of the project to use for the marker report."
+        required: false
+        type: string
+        default: 'localstack'
+    secrets:
+      TINYBIRD_PARITY_ANALYTICS_TOKEN:
+        description: "Tinybird token to upload test data to the dashboard."
+        required: false
+      TEST_LOCALSTACK_API_KEY:
+        description: "LocalStack API key for running tests."
+        required: false
+
 
 jobs:
   marker-report-issue:
@@ -35,16 +53,32 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install build dependencies (if needed)
+        if: ${{ inputs.project-name }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsnappy-dev jq libvirt-dev
+
       - name: Install dependencies
-        run: make install-dev
+        run: |
+          if [ -n "${{ inputs.project-name }}" ]; then
+            make install-ci
+          else
+            make install-dev
+          fi
 
         # makes use of the marker report plugin localstack.testing.pytest.marker_report
       - name: Generate marker report
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-path './target'"
-          MARKER_REPORT_PROJECT_NAME: localstack
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
+          LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
         run: |
+          if [ -n "${{ inputs.project-name }}" ]; then
+            echo "MARKER_REPORT_PROJECT_NAME=${{ inputs.project-name }}" >> $GITHUB_ENV
+          else
+            echo "MARKER_REPORT_PROJECT_NAME=localstack" >> $GITHUB_ENV
+          fi
           . ./.venv/bin/activate
           pip install codeowners
           python -m pytest tests/aws/
@@ -72,16 +106,17 @@ jobs:
         with:
           path: ./target/MARKER_REPORT_ISSUE.md
 
-      - name: Create GH issue from template
-        if: inputs.dryRun != true
-        uses: JasonEtco/create-an-issue@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}
-        with:
-          # `update_existing` actually has 3 possible values:
-          # 1. not set => will always open duplicates
-          # 2. false => will not update and will not open duplicates (NOOP if title conflict detected)
-          # 3. true => will update an existing one if conflict detected
-          update_existing: ${{ inputs.updateExistingIssue || '' }}
-#          search_existing: open
-          filename: ./target/MARKER_REPORT_ISSUE.md
+# TODO: enable before merge
+#      - name: Create GH issue from template
+#        if: inputs.dryRun != true
+#        uses: JasonEtco/create-an-issue@v2
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}
+#        with:
+#          # `update_existing` actually has 3 possible values:
+#          # 1. not set => will always open duplicates
+#          # 2. false => will not update and will not open duplicates (NOOP if title conflict detected)
+#          # 3. true => will update an existing one if conflict detected
+#          update_existing: ${{ inputs.updateExistingIssue || '' }}
+##          search_existing: open
+#          filename: ./target/MARKER_REPORT_ISSUE.md
