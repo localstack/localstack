@@ -114,7 +114,6 @@ jobs:
             chmod +x MARKER_REPORT_ISSUE.md.j2
             python render_marker_report.py
           else
-#            echo "MARKER_REPORT_PATH=./target/marker-report.json" >> $GITHUB_ENV
             echo "value of MARKER_REPORT_PATH:"
             echo ${MARKER_REPORT_PATH}
             echo "end of value of MARKER_REPORT_PATH"
