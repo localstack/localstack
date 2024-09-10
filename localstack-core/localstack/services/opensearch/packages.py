@@ -18,6 +18,7 @@ from localstack.constants import (
     OPENSEARCH_PLUGIN_LIST,
 )
 from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.packages.java import java_package
 from localstack.services.opensearch import versions
 from localstack.utils.archives import download_and_extract_with_retry
 from localstack.utils.files import chmod_r, load_file, mkdir, rm_rf, save_file
@@ -55,8 +56,6 @@ class OpensearchPackageInstaller(PackageInstaller):
         self.java_version = "11"
 
     def _prepare_installation(self, target: InstallTarget) -> None:
-        from localstack.packages.java import java_package
-
         # OpenSearch ships with a bundled JRE, but we still use LocalStack's JRE for predictability
         java_package.get_installer(self.java_version).install()
 
@@ -233,8 +232,6 @@ class ElasticsearchPackageInstaller(PackageInstaller):
         self.java_version = "8"
 
     def _prepare_installation(self, target: InstallTarget) -> None:
-        from localstack.packages.java import java_package
-
         # ElasticSearch ships with a bundled JRE, but we still use LocalStack's JRE for predictability
         java_package.get_installer(self.java_version).install()
 

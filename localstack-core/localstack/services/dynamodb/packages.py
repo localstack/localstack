@@ -4,6 +4,7 @@ from typing import List
 from localstack import config
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.packages.java import java_package
 from localstack.utils.archives import (
     download_and_extract_with_retry,
     update_jar_manifest,
@@ -44,8 +45,6 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
         self.java_version = "11"
 
     def _prepare_installation(self, target: InstallTarget) -> None:
-        from localstack.packages.java import java_package
-
         java_package.get_installer(self.java_version).install()
 
     def _install(self, target: InstallTarget):

@@ -1,5 +1,6 @@
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.core import MavenPackageInstaller
+from localstack.packages.java import java_package
 
 # https://central.sonatype.com/artifact/software.amazon.event.ruler/event-ruler
 EVENT_RULER_VERSION = "1.7.3"
@@ -30,8 +31,6 @@ class EventRulerPackageInstaller(MavenPackageInstaller):
         self.java_version = "11"
 
     def _prepare_installation(self, target: InstallTarget) -> None:
-        from localstack.packages.java import java_package
-
         java_package.get_installer(self.java_version).install()
 
 
