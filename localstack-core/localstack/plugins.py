@@ -1,4 +1,9 @@
 import logging
+import os
+from pathlib import Path
+
+import yaml
+from plux import Plugin
 
 from localstack import config
 from localstack.runtime import hooks
@@ -21,3 +26,17 @@ def delete_cached_certificate():
     LOG.debug("Removing the cached local SSL certificate")
     target_file = get_cert_pem_file_path()
     rm_rf(target_file)
+
+
+class OASPlugin(Plugin):
+    namespace = "localstack.openapi.spec"
+
+    def __init__(self, spec_path: os.PathLike | str) -> None:
+        if isinstance(spec_path, str):
+            spec_path = Path(spec_path)
+        self.spec_path = spec_path
+        self.spec = {}
+
+    def load(self):
+        with self.spec_path.open("r") as f:
+            self.spec = yaml.safe_load(f)

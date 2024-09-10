@@ -4,7 +4,6 @@ Handlers for validating request and response schema against OpenAPI specs.
 
 import logging
 import os
-from pathlib import Path
 
 from openapi_core import OpenAPI
 from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest, WerkzeugOpenAPIResponse
@@ -13,28 +12,34 @@ from openapi_core.validation.request.exceptions import (
     RequestValidationError,
 )
 from openapi_core.validation.response.exceptions import ResponseValidationError
+from plux import PluginManager
 
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 from localstack.constants import INTERNAL_RESOURCE_PATH
 from localstack.http import Response
+from localstack.plugins import OASPlugin
 
 LOG = logging.getLogger(__name__)
 
 
-# TODO: replace with from importlib.resources.files when https://github.com/python/importlib_resources/issues/311 is
-#   resolved. Import from a namespace package is broken when installing in editable mode.
-oas_path = os.path.join(os.path.dirname(__file__), "..", "..", "openapi.yaml")
+class CoreOASPlugin(OASPlugin):
+    name = "localstack.core"
+
+    def __init__(self):
+        path = os.path.join(os.path.dirname(__file__), "..", "..", "openapi.yaml")
+        super().__init__(path)
 
 
 class OpenAPIValidator(Handler):
-    openapi: "OpenAPI"
+    open_apis: list["OpenAPI"]
 
     def __init__(self) -> None:
-        path = Path(oas_path)
-        assert path.exists()
-        self.openapi = OpenAPI.from_path(path)
+        specs = PluginManager("localstack.openapi.spec").load_all()
+        self.open_apis = []
+        for spec in specs:
+            self.open_apis.append(OpenAPI.from_path(spec.spec_path))
 
 
 class OpenAPIRequestValidator(OpenAPIValidator):
@@ -51,7 +56,8 @@ class OpenAPIRequestValidator(OpenAPIValidator):
 
         if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
             try:
-                self.openapi.validate_request(WerkzeugOpenAPIRequest(context.request))
+                for openapi in self.open_apis:
+                    openapi.validate_request(WerkzeugOpenAPIRequest(context.request))
             except RequestValidationError as e:
                 # Note: in this handler we only check validation errors, e.g., wrong body, missing required in the body.
                 response.status_code = 400
@@ -77,10 +83,11 @@ class OpenAPIResponseValidator(OpenAPIValidator):
 
         if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
             try:
-                self.openapi.validate_response(
-                    WerkzeugOpenAPIRequest(context.request),
-                    WerkzeugOpenAPIResponse(response),
-                )
+                for openapi in self.open_apis:
+                    openapi.validate_response(
+                        WerkzeugOpenAPIRequest(context.request),
+                        WerkzeugOpenAPIResponse(response),
+                    )
             except ResponseValidationError as exc:
                 LOG.error("Response validation failed for %s: $s", path, exc)
                 response.status_code = 500
