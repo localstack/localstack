@@ -87,6 +87,14 @@ jobs:
           python -m pytest tests/aws/
           mv ./target/marker-report*.json ./target/marker-report.json
 
+      - name: Checkout localstack (community)
+        if: ${{ inputs.project-name }}
+        uses: actions/checkout@v4
+        with:
+          repository: localstack/localstack
+          fetch-depth: 0
+          path: localstack
+
       - name: Enrich and render marker report
 #        working-directory: ${{ inputs.target-repo }}
         env:
@@ -97,17 +105,18 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
-          if [ -n "${{ inputs.project-name }}" ]; then
-            cd ${{ inputs.target-repo }}
-            . ../.venv/bin/activate
-            pip install codeowners
-            . ../../localstack/.venv/bin/activate
-            ../../.venv/bin/python ../../localstack/scripts/render_marker_report.py
-          else
-            . ./.venv/bin/activate
-            pip install codeowners
-            python scripts/render_marker_report.py
-          fi
+#          if [ -n "${{ inputs.project-name }}" ]; then
+#            cd ${{ inputs.target-repo }}
+#            . ../.venv/bin/activate
+#            pip install codeowners
+#            . ../../localstack/.venv/bin/activate
+#            ../../.venv/bin/python ../../localstack/scripts/render_marker_report.py
+#          else
+#            . ./.venv/bin/activate
+#            pip install codeowners
+#            python scripts/render_marker_report.py
+#          fi
+          python scripts/render_marker_report.py
 
       - name: Print generated markdown
         run: |
