@@ -105,7 +105,7 @@ jobs:
             python scripts/render_marker_report.py
           fi
 
-      - name: Checkout localstack (community)
+      - name: Checkout localstack community
         if: ${{ inputs.project-name }}
         env:
           MARKER_REPORT_PATH: ./target/marker-report.json
