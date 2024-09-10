@@ -99,6 +99,7 @@ jobs:
           if [ -n "${{ inputs.project-name }}" ]; then
             . ../.venv/bin/activate
             pip install codeowners
+            python scripts/render_marker_report.py
           else
             . ./.venv/bin/activate
             pip install codeowners
@@ -107,6 +108,7 @@ jobs:
 
       - name: Checkout localstack community
         if: ${{ inputs.project-name }}
+        working-directory: localstack
         env:
           MARKER_REPORT_PATH: ./target/marker-report.json
           CODEOWNERS_PATH: ./CODEOWNERS
@@ -114,11 +116,11 @@ jobs:
           OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
-        uses: actions/checkout@v4
-        with:
-          repository: localstack/localstack
-          fetch-depth: 0
-          path: localstack
+#        uses: actions/checkout@v4
+#        with:
+#          repository: localstack/localstack
+#          fetch-depth: 0
+#          path: localstack
         run: |
           python scripts/render_marker_report.py
 
