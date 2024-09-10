@@ -99,7 +99,6 @@ jobs:
           if [ -n "${{ inputs.project-name }}" ]; then
             . ../.venv/bin/activate
             pip install codeowners
-            python scripts/render_marker_report.py
           else
             . ./.venv/bin/activate
             pip install codeowners
