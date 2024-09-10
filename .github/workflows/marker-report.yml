@@ -91,9 +91,10 @@ jobs:
           if [ -n "${{ inputs.project-name }}" ]; then
             echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN }}" >> $GITHUB_ENV
             echo "MARKER_REPORT_PROJECT_NAME=${{ inputs.project-name }}" >> $GITHUB_ENV
+            . ../.venv/bin/activate
           else
             echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}" >> $GITHUB_ENV
             echo "MARKER_REPORT_PROJECT_NAME=localstack" >> $GITHUB_ENV
+            . ./.venv/bin/activate
           fi
-          . ./.venv/bin/activate
           python -m pytest tests/aws/

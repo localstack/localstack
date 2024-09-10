@@ -28,9 +28,6 @@ on:
         type: string
         default: 'localstack'
     secrets:
-      TINYBIRD_PARITY_ANALYTICS_TOKEN:
-        description: "Tinybird token to upload test data to the dashboard."
-        required: false
       TEST_LOCALSTACK_API_KEY:
         description: "LocalStack API key for running tests."
         required: false
