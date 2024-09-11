@@ -455,6 +455,7 @@ class ResourceProviderExecutor:
 
             match event.status:
                 case OperationStatus.FAILED:
+                    resource["Properties"] = event.resource_model
                     return event
                 case OperationStatus.SUCCESS:
                     if not hasattr(resource_provider, "SCHEMA"):
