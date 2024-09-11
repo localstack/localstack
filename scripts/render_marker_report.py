@@ -76,13 +76,20 @@ def normalize_path(file_path: str) -> str:
     return normalized_path
 
 
+def add_path_prefix(file_path: str) -> str:
+    if "localstack-pro-core" in file_path and "/pro/core/" not in file_path:
+        # Insert '/pro/core/' after 'localstack-pro-core'
+        return file_path.replace("localstack/", "localstack/pro/core/")
+    return file_path
+
+
 def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github_repo: str):
     rel_path = "".join(entry["file_path"].partition("tests/")[1:])
-    normalized_path = normalize_path(rel_path)
+    rel_path = add_path_prefix(rel_path)
     return TestEntry(
         pytest_node_id=entry["node_id"],
         file_path=rel_path,
-        owners=[o[1] for o in code_owners.of(normalized_path)] or ["?"],
+        owners=[o[1] for o in code_owners.of(rel_path)] or ["?"],
         file_url=f"https://github.com/{github_repo}/blob/{commit_sha}/{rel_path}",
     )
 
