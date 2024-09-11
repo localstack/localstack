@@ -22,6 +22,7 @@ import dataclasses
 import datetime
 import json
 import os
+import re
 
 import jinja2
 from codeowners import CodeOwners
@@ -65,14 +66,26 @@ def render_template(*, template: str, enriched_report: EnrichedReport) -> str:
     return jinja2.Template(source=template).render(data=enriched_report)
 
 
+def normalize_path(file_path: str) -> str:
+    """
+    Normalize paths to match those in CODEOWNERS files by adjusting known prefixes
+    and making them compatible with code owner patterns.
+    """
+    # Define potential path prefixes that need normalization
+    normalized_path = re.sub(r"^(localstack-core|localstack-pro-core)/", "", file_path)
+    normalized_path = normalized_path.replace(
+        "pro/core/", ""
+    )  # Remove extra segments for pro paths
+    return normalized_path
+
+
 def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github_repo: str):
     rel_path = "".join(entry["file_path"].partition("tests/")[1:])
-    print("rel_path", rel_path)
-    print("owners", code_owners.of(rel_path))
+    normalized_path = normalize_path(rel_path)
     return TestEntry(
         pytest_node_id=entry["node_id"],
         file_path=rel_path,
-        owners=[o[1] for o in code_owners.of(rel_path)] or ["?"],
+        owners=[o[1] for o in code_owners.of(normalized_path)] or ["?"],
         file_url=f"https://github.com/{github_repo}/blob/{commit_sha}/{rel_path}",
     )
 
