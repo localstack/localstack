@@ -398,6 +398,15 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
     "last_validated_date": "2024-04-10T08:59:30+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_put_function_recursion_config_allow": {
+    "last_validated_date": "2024-09-11T18:37:59+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_put_function_recursion_config_default_terminate": {
+    "last_validated_date": "2024-09-11T18:38:01+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_put_function_recursion_config_invalid_value": {
+    "last_validated_date": "2024-09-11T18:38:03+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_redundant_updates": {
     "last_validated_date": "2024-04-10T08:59:28+00:00"
   },

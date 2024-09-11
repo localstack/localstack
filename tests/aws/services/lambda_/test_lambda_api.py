@@ -321,6 +321,87 @@ class TestLambdaFunction:
         paths=["$..RuntimeVersionConfig.RuntimeVersionArn"]
     )
     @markers.aws.validated
+    def test_put_function_recursion_config_allow(
+        self, create_lambda_function, account_id, snapshot, aws_client
+    ):
+        """Tests Lambda recursion configuration with allowance."""
+        # Arrange: Create a Lambda function
+        function_name = f"recursion-test-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            Description="Lambda with recursion test",
+        )
+
+        # Act: Put recursion configuration to Allow
+        put_response = aws_client.lambda_.put_function_recursion_config(
+            FunctionName=function_name, RecursiveLoop="Allow"
+        )
+
+        # Assert: Validate the recursion config is set to Allow
+        snapshot.match("put_recursion_config_response", put_response)
+
+        get_response = aws_client.lambda_.get_function_recursion_config(
+            FunctionName=function_name,
+        )
+        snapshot.match("get_recursion_config_response", get_response)
+        assert get_response["RecursiveLoop"] == "Allow"
+
+    @markers.aws.validated
+    def test_put_function_recursion_config_default_terminate(
+        self, create_lambda_function, account_id, snapshot, aws_client
+    ):
+        """Tests Lambda recursion config with default termination behavior."""
+        # Arrange: Create a Lambda function
+        function_name = f"recursion-test-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            Description="Lambda with recursion test",
+        )
+
+        # Act: Get recursion configuration without setting it (default behavior)
+        get_response = aws_client.lambda_.get_function_recursion_config(
+            FunctionName=function_name,
+        )
+
+        # Assert: Default should be "Terminate"
+        snapshot.match("get_recursion_default_terminate_response", get_response)
+        assert get_response["RecursiveLoop"] == "Terminate"
+
+    @markers.aws.validated
+    def test_put_function_recursion_config_invalid_value(
+        self, create_lambda_function, account_id, snapshot, aws_client
+    ):
+        """Tests Lambda recursion configuration with invalid value."""
+        # Arrange: Create a Lambda function
+        function_name = f"recursion-test-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            Description="Lambda with recursion test",
+        )
+
+        # Act and Assert: Set an invalid RecursiveLoop value and expect ClientError
+        invalid_value = "InvalidValue"
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.put_function_recursion_config(
+                FunctionName=function_name, RecursiveLoop=invalid_value
+            )
+
+        # Match the error response for the invalid value
+        snapshot.match("put_recursion_invalid_value_error", e.value.response)
+
+    @markers.aws.validated
     def test_function_lifecycle(self, snapshot, create_lambda_function, lambda_su_role, aws_client):
         """Tests CRUD for the lifecycle of a Lambda function and its config"""
         function_name = f"fn-{short_uid()}"

@@ -17462,5 +17462,51 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_put_function_recursion_config_allow": {
+    "recorded-date": "11-09-2024, 18:37:59",
+    "recorded-content": {
+      "put_recursion_config_response": {
+        "RecursiveLoop": "Allow",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_recursion_config_response": {
+        "RecursiveLoop": "Allow",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_put_function_recursion_config_default_terminate": {
+    "recorded-date": "11-09-2024, 18:38:02",
+    "recorded-content": {
+      "get_recursion_default_terminate_response": {
+        "RecursiveLoop": "Terminate",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_put_function_recursion_config_invalid_value": {
+    "recorded-date": "11-09-2024, 18:38:04",
+    "recorded-content": {
+      "put_recursion_invalid_value_error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'InvalidValue' at 'recursiveLoop' failed to satisfy constraint: Member must satisfy enum value set: [Terminate, Allow]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
