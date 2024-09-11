@@ -1,5 +1,6 @@
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
+    FunctionResponseType,
 )
 from localstack.aws.api.pipes import (
     DynamoDBStreamStartPosition,
@@ -59,6 +60,8 @@ class EsmWorkerFactory:
             ),
             target_client=lambda_client,
             payload_dict=True,
+            report_batch_item_failures=self.esm_config.get("FunctionResponseTypes")
+            == [FunctionResponseType.ReportBatchItemFailures],
         )
 
         # Logger
