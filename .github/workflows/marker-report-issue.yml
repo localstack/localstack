@@ -77,13 +77,14 @@ jobs:
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-path './target'"
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
+          MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name || 'localstack' }}
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
         run: |
           if [ -n "${{ inputs.project-name }}" ]; then
-            echo "MARKER_REPORT_PROJECT_NAME=${{ inputs.project-name }}" >> $GITHUB_ENV
+#            echo "MARKER_REPORT_PROJECT_NAME=${{ inputs.project-name }}" >> $GITHUB_ENV
             . ../.venv/bin/activate
           else
-            echo "MARKER_REPORT_PROJECT_NAME=localstack" >> $GITHUB_ENV
+#            echo "MARKER_REPORT_PROJECT_NAME=localstack" >> $GITHUB_ENV
             . ./.venv/bin/activate
           fi
           pip install codeowners
@@ -93,7 +94,7 @@ jobs:
       - name: Enrich and render marker report
         env:
           MARKER_REPORT_PATH: ${{ inputs.target-repo || '.'}}/target/marker-report.json
-          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2
+          TEMPLATE_PATH: ${{ !inputs.target-repo && './.github/bot_templates/MARKER_REPORT_ISSUE.md.j2' || 'MARKER_REPORT_ISSUE.md.j2' }}
           OUTPUT_PATH: ${{ inputs.target-repo || '.'}}/target/MARKER_REPORT_ISSUE.md
           CODEOWNERS_PATH: ./CODEOWNERS
           GITHUB_REPO: ${{ github.repository }}
