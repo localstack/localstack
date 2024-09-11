@@ -455,7 +455,6 @@ class ResourceProviderExecutor:
 
             match event.status:
                 case OperationStatus.FAILED:
-                    resource["Properties"] = event.resource_model
                     return event
                 case OperationStatus.SUCCESS:
                     if not hasattr(resource_provider, "SCHEMA"):
@@ -478,6 +477,7 @@ class ResourceProviderExecutor:
                     context = {**payload["callbackContext"], **event.custom_context}
                     payload["callbackContext"] = context
                     payload["requestData"]["resourceProperties"] = event.resource_model
+                    resource["Properties"] = event.resource_model
 
                     if current_iteration == 0:
                         time.sleep(0)
