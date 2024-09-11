@@ -22,7 +22,6 @@ import dataclasses
 import datetime
 import json
 import os
-import re
 
 import jinja2
 from codeowners import CodeOwners
@@ -72,10 +71,8 @@ def normalize_path(file_path: str) -> str:
     and making them compatible with code owner patterns.
     """
     # Define potential path prefixes that need normalization
-    normalized_path = re.sub(r"^(localstack-core|localstack-pro-core)/", "", file_path)
-    normalized_path = normalized_path.replace(
-        "pro/core/", ""
-    )  # Remove extra segments for pro paths
+    # normalized_path = re.sub(r"^(localstack-core|localstack-pro-core)/", "", file_path)
+    normalized_path = file_path.replace("pro/core/", "")  # Remove extra segments for pro paths
     return normalized_path
 
 
