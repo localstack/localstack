@@ -80,11 +80,7 @@ jobs:
           MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name || 'localstack' }}
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
         run: |
-          if [ -n "${{ inputs.project-name }}" ]; then
-            . ../.venv/bin/activate
-          else
-            . ./.venv/bin/activate
-          fi
+          ${{ inputs.project-name && '. ../.venv/bin/activate' || '. ./.venv/bin/activate' }}
           pip install codeowners
           python -m pytest tests/aws/
           mv ./target/marker-report*.json ./target/marker-report.json
@@ -92,7 +88,7 @@ jobs:
       - name: Enrich and render marker report
         env:
           MARKER_REPORT_PATH: ${{ inputs.target-repo || '.'}}/target/marker-report.json
-          TEMPLATE_PATH: ${{ !inputs.target-repo && './.github/bot_templates/MARKER_REPORT_ISSUE.md.j2' || 'MARKER_REPORT_ISSUE.md.j2' }}
+          TEMPLATE_PATH: ${{ inputs.target-repo && 'MARKER_REPORT_ISSUE.md.j2' || './.github/bot_templates/MARKER_REPORT_ISSUE.md.j2' }}
           OUTPUT_PATH: ${{ inputs.target-repo || '.'}}/target/MARKER_REPORT_ISSUE.md
           CODEOWNERS_PATH: ./CODEOWNERS
           GITHUB_REPO: ${{ github.repository }}
@@ -104,9 +100,8 @@ jobs:
             pip install codeowners
             cd ..
             curl -o render_marker_report.py -L https://raw.githubusercontent.com/localstack/localstack/master/scripts/render_marker_report.py -H 'Accept: application/vnd.github.v3.raw'
-            chmod +x render_marker_report.py
             curl -o MARKER_REPORT_ISSUE.md.j2 -L https://raw.githubusercontent.com/localstack/localstack/master/.github/bot_templates/MARKER_REPORT_ISSUE.md.j2 -H 'Accept: application/vnd.github.v3.raw'
-            chmod +x MARKER_REPORT_ISSUE.md.j2
+            chmod +x render_marker_report.py MARKER_REPORT_ISSUE.md.j2
             python render_marker_report.py
           else
             . ./.venv/bin/activate
@@ -116,7 +111,7 @@ jobs:
 
       - name: Print generated markdown
         run: |
-          cat ./target/MARKER_REPORT_ISSUE.md
+          cat ${{ inputs.target-repo || '.'}}/target/MARKER_REPORT_ISSUE.md
 
       - name: Upload generated markdown
         uses: actions/upload-artifact@v4
