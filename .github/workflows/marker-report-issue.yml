@@ -94,8 +94,6 @@ jobs:
         env:
           MARKER_REPORT_PATH: ./target/marker-report.json
           CODEOWNERS_PATH: ./CODEOWNERS
-#          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2
-#          OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
