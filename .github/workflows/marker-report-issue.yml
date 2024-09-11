@@ -76,7 +76,7 @@ jobs:
           MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name || 'localstack' }}
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
         run: |
-          ${{ inputs.project-name && '. ../.venv/bin/activate' || '. ./.venv/bin/activate' }}
+          . ${{ inputs.project-name && '..' || '.' }}/.venv/bin/activate
           pip install codeowners
           python -m pytest tests/aws/
           mv ./target/marker-report*.json ./target/marker-report.json
@@ -91,22 +91,21 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
+          . ${{ inputs.project-name && '..' || '.' }}/.venv/bin/activate
+          pip install codeowners
           if [ -n "${{ inputs.project-name }}" ]; then
-            . ../.venv/bin/activate
-            pip install codeowners
             curl -o render_marker_report.py -L https://raw.githubusercontent.com/localstack/localstack/master/scripts/render_marker_report.py -H 'Accept: application/vnd.github.v3.raw'
             curl -o MARKER_REPORT_ISSUE.md.j2 -L https://raw.githubusercontent.com/localstack/localstack/master/.github/bot_templates/MARKER_REPORT_ISSUE.md.j2 -H 'Accept: application/vnd.github.v3.raw'
             chmod +x render_marker_report.py MARKER_REPORT_ISSUE.md.j2
             python render_marker_report.py
           else
-            . ./.venv/bin/activate
-            pip install codeowners
             python scripts/render_marker_report.py
           fi
 
       - name: Print generated markdown
+        working-directory: ${{ inputs.target-repo }}
         run: |
-          cat ${{ inputs.target-repo || '.'}}/target/MARKER_REPORT_ISSUE.md
+          cat ./target/MARKER_REPORT_ISSUE.md
 
       - name: Upload generated markdown
         uses: actions/upload-artifact@v4
