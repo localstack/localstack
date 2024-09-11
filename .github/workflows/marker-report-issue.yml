@@ -92,7 +92,9 @@ jobs:
 
       - name: Enrich and render marker report
         env:
-          MARKER_REPORT_PATH: ./target/marker-report.json
+          MARKER_REPORT_PATH: ${{ inputs.target-repo || '.'}}/target/marker-report.json
+          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2"
+          OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
           CODEOWNERS_PATH: ./CODEOWNERS
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
