@@ -67,6 +67,8 @@ def render_template(*, template: str, enriched_report: EnrichedReport) -> str:
 
 def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github_repo: str):
     rel_path = "".join(entry["file_path"].partition("tests/")[1:])
+    print("rel_path", rel_path)
+    print("owners", code_owners.of(rel_path))
     return TestEntry(
         pytest_node_id=entry["node_id"],
         file_path=rel_path,
