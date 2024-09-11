@@ -86,13 +86,9 @@ jobs:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
           MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name || 'localstack' }}
-          MARKER_REPORT_TINYBIRD_TOKEN: ${{ !inputs.project-name && secrets.MARKER_REPORT_TINYBIRD_TOKEN || secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN }}
+          MARKER_REPORT_TINYBIRD_TOKEN: ${{ inputs.project-name && secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN || secrets.MARKER_REPORT_TINYBIRD_TOKEN }}
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -n "${{ inputs.project-name }}" ]; then
-            . ../.venv/bin/activate
-          else
-            . ./.venv/bin/activate
-          fi
+          ${{ inputs.project-name && '. ../.venv/bin/activate' || '. ./.venv/bin/activate' }}
           python -m pytest tests/aws/
