@@ -84,9 +84,9 @@ jobs:
       - name: Enrich and render marker report
         working-directory: ${{ inputs.target-repo }}
         env:
-          MARKER_REPORT_PATH: ${{ inputs.target-repo || '.'}}/target/marker-report.json
+          MARKER_REPORT_PATH: ./target/marker-report.json
           TEMPLATE_PATH: ${{ inputs.target-repo && 'MARKER_REPORT_ISSUE.md.j2' || './.github/bot_templates/MARKER_REPORT_ISSUE.md.j2' }}
-          OUTPUT_PATH: ${{ inputs.target-repo || '.'}}/target/MARKER_REPORT_ISSUE.md
+          OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
           CODEOWNERS_PATH:  ${{ inputs.target-repo && '..' || '.'}}/CODEOWNERS
           GITHUB_REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
