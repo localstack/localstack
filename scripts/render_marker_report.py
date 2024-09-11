@@ -85,11 +85,11 @@ def add_path_prefix(file_path: str) -> str:
 
 def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github_repo: str):
     rel_path = "".join(entry["file_path"].partition("tests/")[1:])
-    code_owners_path = add_path_prefix(rel_path)
+    # code_owners_path = add_path_prefix(rel_path)
     return TestEntry(
         pytest_node_id=entry["node_id"],
         file_path=rel_path,
-        owners=[o[1] for o in code_owners.of(code_owners_path)] or ["?"],
+        owners=[o[1] for o in code_owners.of(rel_path)] or ["?"],
         file_url=f"https://github.com/{github_repo}/blob/{commit_sha}/{rel_path}",
     )
 
