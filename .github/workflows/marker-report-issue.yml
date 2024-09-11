@@ -93,7 +93,7 @@ jobs:
       - name: Enrich and render marker report
         env:
           MARKER_REPORT_PATH: ${{ inputs.target-repo || '.'}}/target/marker-report.json
-          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2"
+          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2
           OUTPUT_PATH: ${{ inputs.target-repo || '.'}}/target/MARKER_REPORT_ISSUE.md
           CODEOWNERS_PATH: ./CODEOWNERS
           GITHUB_REPO: ${{ github.repository }}
@@ -114,36 +114,6 @@ jobs:
             pip install codeowners
             python scripts/render_marker_report.py
           fi
-
-#      - name: "Determine Companion Ref"
-#        if: ${{ inputs.project-name }}
-#        id: determine-companion-ref
-#        uses: ./.github/actions/companion-ref
-#        with:
-#          targetRef: ${{ inputs.targetRef }}
-#          token: ${{ secrets.GITHUB_TOKEN }}
-
-#      - name: Checkout Community
-#        if: ${{ inputs.project-name }}
-#        uses: actions/checkout@v4
-#        with:
-#          repository: localstack/localstack
-#          path: localstack
-#          fetch-depth: 0
-
-#      - name: Render report for Pro
-#        if: ${{ inputs.project-name }}
-#        env:
-#          MARKER_REPORT_PATH: ./target/marker-report.json
-#          CODEOWNERS_PATH: ./CODEOWNERS
-#          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2
-#          OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
-#          GITHUB_REPO: ${{ github.repository }}
-#          COMMIT_SHA: ${{ github.sha }}
-#        run: |
-#            curl
-#
-#            python scripts/render_marker_report.py
 
       - name: Print generated markdown
         run: |
