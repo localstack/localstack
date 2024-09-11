@@ -103,9 +103,8 @@ jobs:
           fi
 
       - name: Print generated markdown
-        working-directory: ${{ inputs.target-repo }}
         run: |
-          cat ./target/MARKER_REPORT_ISSUE.md
+          cat ${{ inputs.target-repo || '.'}}/target/MARKER_REPORT_ISSUE.md
 
       - name: Upload generated markdown
         uses: actions/upload-artifact@v4
