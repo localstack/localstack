@@ -85,16 +85,14 @@ jobs:
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
+          MARKER_REPORT_PROJECT_NAME: ${{ inputs.project-name || 'localstack' }}
+          MARKER_REPORT_TINYBIRD_TOKEN: ${{ !inputs.project-name && secrets.MARKER_REPORT_TINYBIRD_TOKEN || secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN }}
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -n "${{ inputs.project-name }}" ]; then
-            echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN }}" >> $GITHUB_ENV
-            echo "MARKER_REPORT_PROJECT_NAME=${{ inputs.project-name }}" >> $GITHUB_ENV
             . ../.venv/bin/activate
           else
-            echo "MARKER_REPORT_TINYBIRD_TOKEN=${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}" >> $GITHUB_ENV
-            echo "MARKER_REPORT_PROJECT_NAME=localstack" >> $GITHUB_ENV
             . ./.venv/bin/activate
           fi
           python -m pytest tests/aws/
