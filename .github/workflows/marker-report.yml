@@ -90,5 +90,5 @@ jobs:
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          . ${{ inputs.project-name && '..' || '.'}/.venv/bin/activate
+          . ${{ inputs.project-name && '..' || '.' }}/.venv/bin/activate
           python -m pytest tests/aws/
