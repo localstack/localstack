@@ -20,7 +20,7 @@ on:
         description: 'Open marker report GH issue'
         required: false
         type: boolean
-        default: false
+        default: true # TODO: set to false before merge
 
   push:
 #    paths:
