@@ -117,7 +117,6 @@ jobs:
             echo "end of value of MARKER_REPORT_PATH"
             echo "TEMPLATE_PATH=./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2" >> $GITHUB_ENV
             echo "OUTPUT_PATH=./target/MARKER_REPORT_ISSUE.md" >> $GITHUB_ENV
-            echo "${{ GITHUB_ENV }}"
             . ./.venv/bin/activate
             pip install codeowners
             python scripts/render_marker_report.py
