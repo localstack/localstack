@@ -1,4 +1,4 @@
-name: Generate pytest marker report
+name: Generate pytest marker report / Open marker report GH issue
 on:
   workflow_dispatch:
     inputs:
@@ -82,7 +82,7 @@ jobs:
           mv ./target/marker-report*.json ./target/marker-report.json
 
       - name: Enrich and render marker report
-        if: inputs.createIssue == true
+        if: ${{ inputs.createIssue }}
         env:
           MARKER_REPORT_PATH: ./target/marker-report.json
           CODEOWNERS_PATH: ./CODEOWNERS
@@ -96,7 +96,7 @@ jobs:
           python scripts/render_marker_report.py
 
       - name: Print generated markdown
-        if: inputs.createIssue == true
+        if: ${{ inputs.createIssue }}
         run: |
           cat ./target/MARKER_REPORT_ISSUE.md
 
@@ -107,7 +107,7 @@ jobs:
 
 # TODO: enable before merge
 #      - name: Create GH issue from template
-#        if: inputs.dryRun != true && inputs.createIssue == true
+#        if: inputs.dryRun != true && ${{ inputs.createIssue }}
 #        uses: JasonEtco/create-an-issue@v2
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}
