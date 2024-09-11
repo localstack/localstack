@@ -30,9 +30,18 @@ from localstack.services.stepfunctions.asl.component.common.flow.end import End
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
-from localstack.services.stepfunctions.asl.component.common.path.input_path import InputPath
-from localstack.services.stepfunctions.asl.component.common.path.items_path import ItemsPath
-from localstack.services.stepfunctions.asl.component.common.path.output_path import OutputPath
+from localstack.services.stepfunctions.asl.component.common.path.input_path import (
+    InputPath,
+    InputPathContextObject,
+)
+from localstack.services.stepfunctions.asl.component.common.path.items_path import (
+    ItemsPath,
+    ItemsPathContextObject,
+)
+from localstack.services.stepfunctions.asl.component.common.path.output_path import (
+    OutputPath,
+    OutputPathContextObject,
+)
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payload_value import (
     PayloadValue,
@@ -129,6 +138,7 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.variable import (
     Variable,
+    VariableContextObject,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.default_decl import (
     DefaultDecl,
@@ -308,13 +318,25 @@ class Preprocessor(ASLParserVisitor):
         inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return ResultPath(result_path_src=inner_str)
 
-    def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
+    def visitInput_path_decl_path(self, ctx: ASLParser.Input_path_decl_pathContext) -> InputPath:
         inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return InputPath(input_path_src=inner_str)
+        return InputPath(path=inner_str)
 
-    def visitOutput_path_decl(self, ctx: ASLParser.Output_path_declContext):
+    def visitInput_path_decl_path_context_object(
+        self, ctx: ASLParser.Input_path_decl_path_context_objectContext
+    ) -> InputPathContextObject:
+        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
+        return InputPathContextObject(path=inner_str)
+
+    def visitOutput_path_decl_path(self, ctx: ASLParser.Output_path_decl_pathContext) -> OutputPath:
         inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return OutputPath(output_path=inner_str)
+
+    def visitOutput_path_decl_path_context_object(
+        self, ctx: ASLParser.Output_path_decl_path_context_objectContext
+    ) -> OutputPathContextObject:
+        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
+        return OutputPathContextObject(output_path=inner_str)
 
     def visitResult_decl(self, ctx: ASLParser.Result_declContext) -> Result:
         json_decl = ctx.json_value_decl()
@@ -407,9 +429,15 @@ class Preprocessor(ASLParserVisitor):
         state.from_state_props(state_props)
         return state
 
-    def visitVariable_decl(self, ctx: ASLParser.Variable_declContext) -> Variable:
-        value: str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+    def visitVariable_decl_path(self, ctx: ASLParser.Variable_decl_pathContext) -> Variable:
+        value: str = self._inner_string_of(parse_tree=ctx.children[-1])
         return Variable(value=value)
+
+    def visitVariable_decl_path_context_object(
+        self, ctx: ASLParser.Variable_decl_path_context_objectContext
+    ) -> VariableContextObject:
+        value: str = self._inner_string_of(parse_tree=ctx.children[-1])
+        return VariableContextObject(value=value)
 
     def visitComparison_op(self, ctx: ASLParser.Comparison_opContext) -> ComparisonOperatorType:
         try:
@@ -484,7 +512,7 @@ class Preprocessor(ASLParserVisitor):
     def visitChoice_rule_comparison_variable(
         self, ctx: ASLParser.Choice_rule_comparison_variableContext
     ) -> ChoiceRule:
-        comparison_stmts = TypedProps()
+        comparison_stmts = StateProps()
         for child in ctx.children:
             cmp: Optional[Component] = self.visit(child)
             comparison_stmts.add(cmp)
@@ -550,9 +578,15 @@ class Preprocessor(ASLParserVisitor):
         path = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return SecondsPath(path=path)
 
-    def visitItems_path_decl(self, ctx: ASLParser.Items_path_declContext) -> ItemsPath:
+    def visitItems_path_decl_path(self, ctx: ASLParser.Items_path_decl_pathContext) -> ItemsPath:
         path = self._inner_string_of(parse_tree=ctx.keyword_or_string())
-        return ItemsPath(items_path_src=path)
+        return ItemsPath(path=path)
+
+    def visitItems_path_decl_path_context_object(
+        self, ctx: ASLParser.Items_path_decl_path_context_objectContext
+    ) -> ItemsPathContextObject:
+        path = self._inner_string_of(parse_tree=ctx.children[-1])
+        return ItemsPathContextObject(path=path)
 
     def visitMax_concurrency_decl(
         self, ctx: ASLParser.Max_concurrency_declContext

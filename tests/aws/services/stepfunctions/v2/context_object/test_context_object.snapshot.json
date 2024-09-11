@@ -1,0 +1,876 @@
+{
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_input_path[$$]": {
+    "recorded-date": "11-09-2024, 12:46:59",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "TestState",
+              "output": {
+                "Execution": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "Input": {
+                    "input-value": 0
+                  },
+                  "StartTime": "date",
+                  "Name": "<ExecArnPart_0idx>",
+                  "RoleArn": "snf_role_arn",
+                  "RedriveCount": 0
+                },
+                "StateMachine": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "Name": "<ArnPart_0idx>"
+                },
+                "State": {
+                  "Name": "TestState",
+                  "EnteredTime": "date"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Execution": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "Input": {
+                    "input-value": 0
+                  },
+                  "StartTime": "date",
+                  "Name": "<ExecArnPart_0idx>",
+                  "RoleArn": "snf_role_arn",
+                  "RedriveCount": 0
+                },
+                "StateMachine": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "Name": "<ArnPart_0idx>"
+                },
+                "State": {
+                  "Name": "TestState",
+                  "EnteredTime": "date"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_input_path[$$.Execution.Input]": {
+    "recorded-date": "11-09-2024, 12:47:13",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "TestState",
+              "output": {
+                "input-value": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "input-value": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_output_path[$$]": {
+    "recorded-date": "11-09-2024, 12:47:28",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "TestState",
+              "output": {
+                "Execution": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "Input": {
+                    "input-value": 0
+                  },
+                  "StartTime": "date",
+                  "Name": "<ExecArnPart_0idx>",
+                  "RoleArn": "snf_role_arn",
+                  "RedriveCount": 0
+                },
+                "StateMachine": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "Name": "<ArnPart_0idx>"
+                },
+                "State": {
+                  "Name": "TestState",
+                  "EnteredTime": "date"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Execution": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "Input": {
+                    "input-value": 0
+                  },
+                  "StartTime": "date",
+                  "Name": "<ExecArnPart_0idx>",
+                  "RoleArn": "snf_role_arn",
+                  "RedriveCount": 0
+                },
+                "StateMachine": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "Name": "<ArnPart_0idx>"
+                },
+                "State": {
+                  "Name": "TestState",
+                  "EnteredTime": "date"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_output_path[$$.Execution.Input]": {
+    "recorded-date": "11-09-2024, 12:47:42",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "TestState",
+              "output": {
+                "input-value": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "input-value": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_result_selector": {
+    "recorded-date": "11-09-2024, 12:48:08",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": {
+                  "input-value": 0
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": {
+                  "input-value": 0
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestState"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "Input": {
+                    "FunctionName": "<lambda_function_name>",
+                    "Payload": {
+                      "input-value": 0
+                    }
+                  }
+                },
+                "FunctionName": "<lambda_function_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": {
+                  "Input": {
+                    "FunctionName": "<lambda_function_name>",
+                    "Payload": {
+                      "input-value": 0
+                    }
+                  }
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "82"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "82",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "<uuid:1>",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "TestState",
+              "output": {
+                "ContextObjectValue": {
+                  "FunctionName": "<lambda_function_name>",
+                  "Payload": {
+                    "input-value": 0
+                  }
+                },
+                "LambdaOutput": {
+                  "ExecutedVersion": "$LATEST",
+                  "Payload": {
+                    "Input": {
+                      "FunctionName": "<lambda_function_name>",
+                      "Payload": {
+                        "input-value": 0
+                      }
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "X-Amz-Executed-Version": [
+                        "$LATEST"
+                      ],
+                      "x-amzn-Remapped-Content-Length": [
+                        "0"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "<uuid:1>"
+                      ],
+                      "Content-Length": [
+                        "82"
+                      ],
+                      "Date": "date",
+                      "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                      "Content-Type": [
+                        "application/json"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "82",
+                      "Content-Type": "application/json",
+                      "Date": "date",
+                      "X-Amz-Executed-Version": "$LATEST",
+                      "x-amzn-Remapped-Content-Length": "0",
+                      "x-amzn-RequestId": "<uuid:1>",
+                      "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "<uuid:1>"
+                  },
+                  "StatusCode": 200
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ContextObjectValue": {
+                  "FunctionName": "<lambda_function_name>",
+                  "Payload": {
+                    "input-value": 0
+                  }
+                },
+                "LambdaOutput": {
+                  "ExecutedVersion": "$LATEST",
+                  "Payload": {
+                    "Input": {
+                      "FunctionName": "<lambda_function_name>",
+                      "Payload": {
+                        "input-value": 0
+                      }
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "X-Amz-Executed-Version": [
+                        "$LATEST"
+                      ],
+                      "x-amzn-Remapped-Content-Length": [
+                        "0"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "<uuid:1>"
+                      ],
+                      "Content-Length": [
+                        "82"
+                      ],
+                      "Date": "date",
+                      "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                      "Content-Type": [
+                        "application/json"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "82",
+                      "Content-Type": "application/json",
+                      "Date": "date",
+                      "X-Amz-Executed-Version": "$LATEST",
+                      "x-amzn-Remapped-Content-Length": "0",
+                      "x-amzn-RequestId": "<uuid:1>",
+                      "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "<uuid:1>"
+                  },
+                  "StatusCode": 200
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_variable": {
+    "recorded-date": "11-09-2024, 12:48:23",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestState"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "TestState",
+              "output": {
+                "input-value": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input-value": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "QuitChoiceMatched"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "QuitChoiceMatched",
+              "output": {
+                "input-value": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "input-value": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_items_path": {
+    "recorded-date": "11-09-2024, 12:48:37",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input-values": [
+                  "item-0"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input-values": [
+                  "item-0"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "TestState"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": "\"item-0\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": "\"item-0\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 7,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "TestState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "TestState",
+              "output": "[\"item-0\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[\"item-0\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -78,13 +78,19 @@ next_decl: NEXT COLON keyword_or_string;
 
 resource_decl: RESOURCE COLON keyword_or_string;
 
-input_path_decl: INPUTPATH COLON (NULL | keyword_or_string);
+input_path_decl:
+    INPUTPATH COLON STRINGPATHCONTEXTOBJ         # input_path_decl_path_context_object
+    | INPUTPATH COLON (NULL | keyword_or_string) # input_path_decl_path
+;
 
 result_decl: RESULT COLON json_value_decl;
 
 result_path_decl: RESULTPATH COLON (NULL | keyword_or_string);
 
-output_path_decl: OUTPUTPATH COLON (NULL | keyword_or_string);
+output_path_decl:
+    OUTPUTPATH COLON STRINGPATHCONTEXTOBJ         # output_path_decl_path_context_object
+    | OUTPUTPATH COLON (NULL | keyword_or_string) # output_path_decl_path
+;
 
 end_decl: END COLON (TRUE | FALSE);
 
@@ -112,7 +118,10 @@ timestamp_decl: TIMESTAMP COLON keyword_or_string;
 
 timestamp_path_decl: TIMESTAMPPATH COLON keyword_or_string;
 
-items_path_decl: ITEMSPATH COLON keyword_or_string;
+items_path_decl:
+    ITEMSPATH COLON STRINGPATHCONTEXTOBJ # items_path_decl_path_context_object
+    | ITEMSPATH COLON keyword_or_string  # items_path_decl_path
+;
 
 max_concurrency_decl: MAXCONCURRENCY COLON INT;
 
@@ -170,7 +179,10 @@ comparison_composite
     // TODO: this allows for Next definitions in nested choice_rules, is this supported at parse time?
     : choice_operator COLON ( choice_rule | LBRACK choice_rule (COMMA choice_rule)* RBRACK);
 
-variable_decl: VARIABLE COLON keyword_or_string;
+variable_decl:
+    VARIABLE COLON STRINGPATH             # variable_decl_path
+    | VARIABLE COLON STRINGPATHCONTEXTOBJ # variable_decl_path_context_object
+;
 
 comparison_func: comparison_op COLON json_value_decl;
 
