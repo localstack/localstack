@@ -321,6 +321,63 @@ class TestLambdaFunction:
         paths=["$..RuntimeVersionConfig.RuntimeVersionArn"]
     )
     @markers.aws.validated
+    def test_function_lifecycle(self, snapshot, create_lambda_function, lambda_su_role, aws_client):
+        """Tests CRUD for the lifecycle of a Lambda function and its config"""
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+            MemorySize=256,
+            Timeout=5,
+        )
+
+        snapshot.match("create_response", create_response)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response", get_function_response)
+
+        update_func_conf_response = aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name,
+            Runtime=Runtime.python3_11,
+            Description="Changed-Description",
+            MemorySize=512,
+            Timeout=10,
+            Environment={"Variables": {"ENV_A": "a"}},
+        )
+        snapshot.match("update_func_conf_response", update_func_conf_response)
+
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response_postupdate = aws_client.lambda_.get_function(
+            FunctionName=function_name
+        )
+        snapshot.match("get_function_response_postupdate", get_function_response_postupdate)
+
+        zip_f = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True)
+        update_code_response = aws_client.lambda_.update_function_code(
+            FunctionName=function_name,
+            ZipFile=zip_f,
+        )
+        snapshot.match("update_code_response", update_code_response)
+
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response_postcodeupdate = aws_client.lambda_.get_function(
+            FunctionName=function_name
+        )
+        snapshot.match("get_function_response_postcodeupdate", get_function_response_postcodeupdate)
+
+        delete_response = aws_client.lambda_.delete_function(FunctionName=function_name)
+        snapshot.match("delete_response", delete_response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.delete_function(FunctionName=function_name)
+        snapshot.match("delete_postdelete", e.value.response)
+
+    @markers.aws.validated
     def test_put_function_recursion_config_allow(
         self, create_lambda_function, account_id, snapshot, aws_client
     ):
@@ -400,63 +457,6 @@ class TestLambdaFunction:
 
         # Match the error response for the invalid value
         snapshot.match("put_recursion_invalid_value_error", e.value.response)
-
-    @markers.aws.validated
-    def test_function_lifecycle(self, snapshot, create_lambda_function, lambda_su_role, aws_client):
-        """Tests CRUD for the lifecycle of a Lambda function and its config"""
-        function_name = f"fn-{short_uid()}"
-        create_response = create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=function_name,
-            runtime=Runtime.python3_12,
-            role=lambda_su_role,
-            MemorySize=256,
-            Timeout=5,
-        )
-
-        snapshot.match("create_response", create_response)
-        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
-
-        get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
-        snapshot.match("get_function_response", get_function_response)
-
-        update_func_conf_response = aws_client.lambda_.update_function_configuration(
-            FunctionName=function_name,
-            Runtime=Runtime.python3_11,
-            Description="Changed-Description",
-            MemorySize=512,
-            Timeout=10,
-            Environment={"Variables": {"ENV_A": "a"}},
-        )
-        snapshot.match("update_func_conf_response", update_func_conf_response)
-
-        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
-
-        get_function_response_postupdate = aws_client.lambda_.get_function(
-            FunctionName=function_name
-        )
-        snapshot.match("get_function_response_postupdate", get_function_response_postupdate)
-
-        zip_f = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True)
-        update_code_response = aws_client.lambda_.update_function_code(
-            FunctionName=function_name,
-            ZipFile=zip_f,
-        )
-        snapshot.match("update_code_response", update_code_response)
-
-        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
-
-        get_function_response_postcodeupdate = aws_client.lambda_.get_function(
-            FunctionName=function_name
-        )
-        snapshot.match("get_function_response_postcodeupdate", get_function_response_postcodeupdate)
-
-        delete_response = aws_client.lambda_.delete_function(FunctionName=function_name)
-        snapshot.match("delete_response", delete_response)
-
-        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
-            aws_client.lambda_.delete_function(FunctionName=function_name)
-        snapshot.match("delete_postdelete", e.value.response)
 
     @markers.aws.validated
     def test_redundant_updates(self, create_lambda_function, snapshot, aws_client):
