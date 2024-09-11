@@ -81,10 +81,8 @@ jobs:
           LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
         run: |
           if [ -n "${{ inputs.project-name }}" ]; then
-#            echo "MARKER_REPORT_PROJECT_NAME=${{ inputs.project-name }}" >> $GITHUB_ENV
             . ../.venv/bin/activate
           else
-#            echo "MARKER_REPORT_PROJECT_NAME=localstack" >> $GITHUB_ENV
             . ./.venv/bin/activate
           fi
           pip install codeowners
