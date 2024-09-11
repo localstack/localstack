@@ -13,7 +13,10 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm, is_v2_esm
+from tests.aws.services.lambda_.event_source_mapping.utils import (
+    is_old_esm,
+    is_v2_esm,
+)
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON,
@@ -28,20 +31,6 @@ LAMBDA_SLEEP_FILE = FUNCTIONS_PATH / "lambda_sleep.py"
 # https://docs.aws.amazon.com/lambda/latest/dg/API_CreateEventSourceMapping.html#SSS-CreateEventSourceMapping-request-BatchSize
 DEFAULT_SQS_BATCH_SIZE = 10
 MAX_SQS_BATCH_SIZE_FIFO = 10
-
-
-def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
-    # wait for all items to appear in the queue
-    def _verify_event_queue_size():
-        attr = "ApproximateNumberOfMessages"
-        _approx = int(
-            sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=[attr])[
-                "Attributes"
-            ][attr]
-        )
-        assert _approx >= qsize
-
-    retry(_verify_event_queue_size, retries=retries, sleep=sleep)
 
 
 @pytest.fixture(autouse=True)
@@ -78,7 +67,6 @@ def _snapshot_transformers(snapshot):
         "$..Topics",
         "$..MaximumRetryAttempts",
         "$..MaximumBatchingWindowInSeconds",
-        "$..FunctionResponseTypes",
         "$..StartingPosition",
         "$..StateTransitionReason",
     ]
@@ -265,7 +253,6 @@ def test_message_body_and_attributes_passed_correctly(
         "$..Topics",
         "$..MaximumRetryAttempts",
         "$..MaximumBatchingWindowInSeconds",
-        "$..FunctionResponseTypes",
         "$..StartingPosition",
         "$..StateTransitionReason",
     ]
@@ -429,7 +416,6 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
 
 
 # TODO: flaky against AWS
-@pytest.mark.skipif(is_v2_esm(), reason="FunctionResponseTypes not yet implemented in ESM v2")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # FIXME: we don't seem to be returning SQS FIFO sequence numbers correctly
@@ -445,7 +431,6 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
         "$..create_event_source_mapping.Topics",
         "$..create_event_source_mapping.MaximumRetryAttempts",
         "$..create_event_source_mapping.MaximumBatchingWindowInSeconds",
-        "$..create_event_source_mapping.FunctionResponseTypes",
         "$..create_event_source_mapping.StartingPosition",
         "$..create_event_source_mapping.StateTransitionReason",
         "$..create_event_source_mapping.State",
@@ -578,7 +563,7 @@ def test_report_batch_item_failures(
     )
     snapshot.match("first_invocation", first_invocation)
 
-    # check that the DQL is empty
+    # check that the DLQ is empty
     dlq_messages = aws_client.sqs.receive_message(QueueUrl=event_dlq_url)
     assert "Messages" not in dlq_messages or dlq_messages["Messages"] == []
 
@@ -693,7 +678,6 @@ def test_report_batch_item_failures_on_lambda_error(
     snapshot.match("dlq_messages", messages)
 
 
-@pytest.mark.skipif(is_v2_esm(), reason="FunctionResponseTypes not yet implemented in ESM v2")
 @markers.aws.validated
 def test_report_batch_item_failures_invalid_result_json_batch_fails(
     create_lambda_function,
@@ -1432,3 +1416,17 @@ class TestSQSEventSourceMapping:
             FunctionName=function_name_2,
             EventSourceArn=event_source_arn,
         )
+
+
+def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
+    # wait for all items to appear in the queue
+    def _verify_event_queue_size():
+        attr = "ApproximateNumberOfMessages"
+        _approx = int(
+            sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=[attr])[
+                "Attributes"
+            ][attr]
+        )
+        assert _approx >= qsize
+
+    retry(_verify_event_queue_size, retries=retries, sleep=sleep)

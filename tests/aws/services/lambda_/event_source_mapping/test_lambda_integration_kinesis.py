@@ -11,6 +11,7 @@ from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
     _get_lambda_invocation_events,
+    get_lambda_log_events,
     lambda_role,
     s3_lambda_permission,
 )
@@ -18,7 +19,12 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
-from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm, is_v2_esm
+from tests.aws.services.lambda_.event_source_mapping.utils import (
+    LAMBDA_KINESIS_BATCH_ITEM_FAILURE,
+    create_lambda_with_response,
+    is_old_esm,
+    is_v2_esm,
+)
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON,
@@ -55,7 +61,6 @@ def _snapshot_transformers(snapshot):
         "$..Records..eventID",
         "$..BisectBatchOnFunctionError",
         "$..DestinationConfig",
-        "$..FunctionResponseTypes",
         "$..LastProcessingResult",
         "$..MaximumBatchingWindowInSeconds",
         "$..MaximumRecordAgeInSeconds",
@@ -537,11 +542,222 @@ class TestKinesisSource:
 
         def verify_failure_received():
             result = aws_client.sqs.receive_message(QueueUrl=queue_event_source_mapping)
-            assert result["Messages"]
+            assert result.get("Messages")
             return result
 
-        sqs_payload = retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
+        sleep = 15 if is_aws_cloud() else 5
+        sqs_payload = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
+
+    @pytest.mark.skipif(
+        is_old_esm(),
+        reason="ReportBatchItemFailures: Partial batch failure handling not implemented in ESM v1",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.KinesisBatchInfo.shardId",
+            "$..Messages..Body.KinesisBatchInfo.streamArn",
+            "$..Records",  # FIXME Figure out why there is an extra log record
+        ],
+    )
+    @markers.aws.needs_fixing
+    def test_kinesis_report_batch_item_failures(
+        self,
+        create_lambda_function,
+        sqs_get_queue_arn,
+        sqs_create_queue,
+        create_iam_role_with_policy,
+        wait_for_stream_ready,
+        cleanups,
+        snapshot,
+        aws_client,
+    ):
+        # snapshot setup
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
+        function_name = f"lambda_func-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        kinesis_name = f"test-kinesis-{short_uid()}"
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=s3_lambda_permission,
+        )
+
+        create_lambda_function(
+            handler_file=LAMBDA_KINESIS_BATCH_ITEM_FAILURE,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=role_arn,
+        )
+        aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)
+        cleanups.append(
+            lambda: aws_client.kinesis.delete_stream(
+                StreamName=kinesis_name, EnforceConsumerDeletion=True
+            )
+        )
+        result = aws_client.kinesis.describe_stream(StreamName=kinesis_name)["StreamDescription"]
+        kinesis_arn = result["StreamARN"]
+        wait_for_stream_ready(stream_name=kinesis_name)
+
+        # Use OnFailure config with a DLQ to minimise flakiness instead of relying on Cloudwatch logs
+        queue_event_source_mapping = sqs_create_queue()
+        destination_queue = sqs_get_queue_arn(queue_event_source_mapping)
+        destination_config = {"OnFailure": {"Destination": destination_queue}}
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=3,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=kinesis_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=3,
+            DestinationConfig=destination_config,
+            FunctionResponseTypes=["ReportBatchItemFailures"],
+        )
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
+
+        kinesis_records = [
+            {"Data": json.dumps({"should_fail": i == 5}), "PartitionKey": f"test_{i}"}
+            for i in range(6)
+        ]
+
+        aws_client.kinesis.put_records(
+            Records=kinesis_records,
+            StreamName=kinesis_name,
+        )
+
+        def verify_failure_received():
+            result = aws_client.sqs.receive_message(QueueUrl=queue_event_source_mapping)
+            assert result.get("Messages")
+            return result
+
+        sleep = 15 if is_aws_cloud() else 5
+        sqs_payload = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
+        snapshot.match("sqs_payload", sqs_payload)
+
+        batched_records = get_lambda_log_events(function_name, logs_client=aws_client.logs)
+        flattened_records = [
+            record for batch in batched_records for record in batch.get("Records", [])
+        ]
+        sorted_records = sorted(flattened_records, key=lambda item: item["kinesis"]["partitionKey"])
+
+        snapshot.match("kinesis_records", {"Records": sorted_records})
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_esm(), reason="ReportBatchItemFailures: Total batch fails not implemented in ESM v1"
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.KinesisBatchInfo.shardId",
+        ],
+    )
+    @pytest.mark.parametrize(
+        "set_lambda_response",
+        [
+            # Failures
+            {"batchItemFailures": [{"itemIdentifier": ""}]},
+            {"batchItemFailures": [{"itemIdentifier": None}]},
+            {"batchItemFailures": [{"foo": 123}]},
+            {"batchItemFailures": [{"foo": None}]},
+            # Unhandled Exceptions
+            "(lambda: 1 / 0)()",  # This will (lazily) evaluate, raise an exception, and re-trigger the whole batch
+        ],
+        ids=[
+            # Failures
+            "empty_string_item_identifier_failure",
+            "null_item_identifier_failure",
+            "invalid_key_foo_failure",
+            "invalid_key_foo_null_value_failure",
+            # Unhandled Exceptions
+            "unhandled_exception_in_function",
+        ],
+    )
+    def test_kinesis_report_batch_item_failure_scenarios(
+        self,
+        create_lambda_function,
+        kinesis_create_stream,
+        lambda_su_role,
+        wait_for_stream_ready,
+        cleanups,
+        snapshot,
+        aws_client,
+        set_lambda_response,
+        sqs_get_queue_arn,
+        sqs_create_queue,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-foobar-{short_uid()}"
+        record_data = "hello"
+
+        create_lambda_function(
+            handler_file=create_lambda_with_response(set_lambda_response),
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name=stream_name)
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        queue_event_source_mapping = sqs_create_queue()
+        destination_queue = sqs_get_queue_arn(queue_event_source_mapping)
+        destination_config = {"OnFailure": {"Destination": destination_queue}}
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            BatchSize=1,
+            MaximumBatchingWindowInSeconds=1,
+            FunctionResponseTypes=["ReportBatchItemFailures"],
+            MaximumRetryAttempts=2,
+            DestinationConfig=destination_config,
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        aws_client.kinesis.put_record(
+            Data=record_data,
+            PartitionKey="test",
+            StreamName=stream_name,
+        )
+
+        def verify_failure_received():
+            result = aws_client.sqs.receive_message(QueueUrl=queue_event_source_mapping)
+            assert result.get("Messages")
+            return result
+
+        sleep = 15 if is_aws_cloud() else 5
+        sqs_payload = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
+        snapshot.match("sqs_payload", sqs_payload)
+
+        events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
+
+        # This will filter out exception messages being added to the log stream
+        invocation_events = [event for event in events if "Records" in event]
+        snapshot.match("kinesis_events", invocation_events)
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -663,6 +879,93 @@ class TestKinesisSource:
         failure_sns_message = json.loads(failure_sns_body_json)
 
         snapshot.match("failure_sns_message", failure_sns_message)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.KinesisBatchInfo.shardId",
+        ],
+    )
+    @pytest.mark.parametrize(
+        "set_lambda_response",
+        [
+            # Successes
+            [],
+            None,
+            {},
+            {"batchItemFailures": []},
+            {"batchItemFailures": None},
+        ],
+        ids=[
+            # Successes
+            "empty_list_success",
+            "null_success",
+            "empty_dict_success",
+            "empty_batch_item_failure_success",
+            "null_batch_item_failure_success",
+        ],
+    )
+    def test_kinesis_report_batch_item_success_scenarios(
+        self,
+        create_lambda_function,
+        kinesis_create_stream,
+        lambda_su_role,
+        wait_for_stream_ready,
+        cleanups,
+        snapshot,
+        aws_client,
+        set_lambda_response,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-foobar-{short_uid()}"
+        record_data = "hello"
+
+        create_lambda_function(
+            handler_file=create_lambda_with_response(set_lambda_response),
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name=stream_name)
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            BatchSize=1,
+            MaximumBatchingWindowInSeconds=1,
+            FunctionResponseTypes=["ReportBatchItemFailures"],
+            MaximumRetryAttempts=2,
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        aws_client.kinesis.put_record(
+            Data=record_data,
+            PartitionKey="test",
+            StreamName=stream_name,
+        )
+
+        def _verify_messages_received():
+            events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
+
+            # This will filter out exception messages being added to the log stream
+            record_events = [event for event in events if "Records" in event]
+
+            assert len(record_events) >= 1
+            return record_events
+
+        invocation_events = retry(_verify_messages_received, retries=30, sleep=5)
+        snapshot.match("kinesis_events", invocation_events)
 
 
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
