@@ -70,9 +70,9 @@ def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github
     import logging
 
     logger = logging.getLogger(__name__)
-    logger.info("rel_path", rel_path)
-    logger.info("code_owners", code_owners)
-    logger.info("entry file path", entry["file_path"])
+    logger.debug("rel_path", rel_path)
+    logger.debug("code_owners", code_owners)
+    logger.debug("entry file path", entry["file_path"])
     return TestEntry(
         pytest_node_id=entry["node_id"],
         file_path=rel_path,
