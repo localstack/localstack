@@ -40,6 +40,7 @@ from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttr
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.strings import long_uid
 from localstack.utils.time import now
+from localstack.utils.tracing import TraceContext
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -514,7 +515,7 @@ class SqsQueue:
     def put(
         self,
         message: Message,
-        context: RequestContext = None,  # context required by eventstudio, not enforced due to lambda FakeSqsClient
+        trace_context: TraceContext = None,  # context data required by eventstudio, not enforced due to lambda FakeSqsClient
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
@@ -746,7 +747,7 @@ class StandardQueue(SqsQueue):
     def put(
         self,
         message: Message,
-        context: RequestContext = None,  # context required by eventstudio, not enforced due to lambda FakeSqsClient
+        trace_context: TraceContext = None,  # context data required by eventstudio, not enforced due to lambda FakeSqsClient
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
@@ -1003,7 +1004,7 @@ class FifoQueue(SqsQueue):
     def put(
         self,
         message: Message,
-        context: RequestContext = None,  # context required by eventstudio, not enforced due to lambda FakeSqsClient
+        trace_context: TraceContext = None,  # context data required by eventstudio, not enforced due to lambda FakeSqsClient
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,

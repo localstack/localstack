@@ -107,6 +107,7 @@ from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5
 from localstack.utils.threads import start_thread
 from localstack.utils.time import now
+from localstack.utils.tracing import get_trace_context
 
 LOG = logging.getLogger(__name__)
 
@@ -1173,9 +1174,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 queue=queue, message_body_size=len(message_body.encode("utf-8"))
             )
 
+        trace_context = get_trace_context(context)
+
         return queue.put(
             message=message,
-            context=context,
+            trace_context=trace_context,
             message_deduplication_id=message_deduplication_id,
             message_group_id=message_group_id,
             delay_seconds=int(delay_seconds) if delay_seconds is not None else None,
@@ -1223,6 +1226,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if result.dead_letter_messages:
             dead_letter_target_arn = queue.redrive_policy["deadLetterTargetArn"]
             dl_queue = self._require_queue_by_arn(context, dead_letter_target_arn)
+            trace_context = get_trace_context(context)
             # TODO: does this need to be atomic?
             for standard_message in result.dead_letter_messages:
                 message = standard_message.message
@@ -1231,7 +1235,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
                 dl_queue.put(
                     message=message,
-                    context=context,
+                    trace_context=trace_context,
                     message_deduplication_id=standard_message.message_deduplication_id,
                     message_group_id=standard_message.message_group_id,
                 )
