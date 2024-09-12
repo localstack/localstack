@@ -1,0 +1,810 @@
+openapi: 3.1.0
+info:
+  contact:
+    email: info@localstack.cloud
+    name: LocalStack Support
+    url: https://www.localstack.cloud/contact
+  summary: The LocalStack REST API exposes functionality related to diagnostics, health
+    checks, plugins, initialisation hooks, service introspection, and more.
+  termsOfService: https://www.localstack.cloud/legal/tos
+  title: LocalStack REST API for Community
+  version: 3.6.1.dev
+externalDocs:
+  description: LocalStack Documentation
+  url: https://docs.localstack.cloud
+servers:
+  - url: http://{host}:{port}
+    variables:
+      port:
+        default: '4566'
+      host:
+        default: 'localhost.localstack.cloud'
+components:
+  parameters:
+    SesMessageId:
+      description: ID of the message (`id` field of SES message)
+      in: query
+      name: id
+      required: false
+      schema:
+        type: string
+    SnsAccountId:
+      description: '`accountId` field of the resource'
+      in: query
+      name: accountId
+      required: false
+      schema:
+        default: '000000000000'
+        type: string
+    SnsEndpointArn:
+      description: '`endpointArn` field of the resource'
+      in: query
+      name: endpointArn
+      required: false
+      schema:
+        type: string
+    SnsPhoneNumber:
+      description: '`phoneNumber` field of the resource'
+      in: query
+      name: phoneNumber
+      required: false
+      schema:
+        type: string
+    SnsRegion:
+      description: '`region` field of the resource'
+      in: query
+      name: region
+      required: false
+      schema:
+        default: us-east-1
+        type: string
+  schemas:
+    InitScripts:
+      additionalProperties: false
+      properties:
+        completed:
+          additionalProperties: false
+          properties:
+            BOOT:
+              type: boolean
+            READY:
+              type: boolean
+            SHUTDOWN:
+              type: boolean
+            START:
+              type: boolean
+          required:
+          - BOOT
+          - START
+          - READY
+          - SHUTDOWN
+          type: object
+        scripts:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              stage:
+                type: string
+              state:
+                type: string
+            required:
+            - stage
+            - name
+            - state
+            type: object
+          type: array
+      required:
+      - completed
+      - scripts
+      type: object
+    SesSentEmail:
+      additionalProperties: false
+      properties:
+        Body:
+          additionalProperties: false
+          properties:
+            html_part:
+              type: string
+            text_part:
+              type: string
+          required:
+          - html_part
+          - text_part
+          type: object
+        Destination:
+          type: string
+        Id:
+          type: string
+        RawData:
+          type: string
+        Region:
+          type: string
+        Source:
+          type: string
+        Subject:
+          type: string
+        Template:
+          type: string
+        TemplateData:
+          type: string
+        Timestamp:
+          type: string
+      required:
+      - Id
+      - Region
+      - Timestamp
+      - Destination
+      - RawData
+      - Source
+      - Subject
+      - Template
+      - TemplateData
+      - Body
+      type: object
+    SessionInfo:
+      additionalProperties: false
+      properties:
+        edition:
+          type: string
+        is_docker:
+          type: boolean
+        is_license_activated:
+          type: boolean
+        machine_id:
+          type: string
+        server_time_utc:
+          type: string
+        session_id:
+          type: string
+        system:
+          type: string
+        uptime:
+          type: integer
+        version:
+          type: string
+      required:
+      - version
+      - edition
+      - is_license_activated
+      - session_id
+      - machine_id
+      - system
+      - is_docker
+      - server_time_utc
+      - uptime
+      type: object
+    SnsSubscriptionTokenError:
+      additionalProperties: false
+      properties:
+        error:
+          type: string
+        subscription_arn:
+          type: string
+      required:
+      - error
+      - subscription_arn
+      type: object
+paths:
+  /_aws/cloudwatch/metrics/raw:
+    get:
+      description: Retrieve CloudWatch metrics
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  metrics:
+                    items:
+                      additionalProperties: false
+                      properties:
+                        account:
+                          description: Account ID
+                          type: string
+                        d:
+                          description: Dimensions
+                          items:
+                            additionalProperties: false
+                            properties:
+                              n:
+                                description: Dimension name
+                                type: string
+                              v:
+                                description: Dimension value
+                                type: string
+                            required:
+                            - n
+                            - v
+                            type: object
+                          type: array
+                        n:
+                          description: Metric name
+                          type: string
+                        ns:
+                          description: Namespace
+                          type: string
+                        region:
+                          description: Region name
+                          type: string
+                        t:
+                          description: Timestamp
+                          type: number
+                        v:
+                          description: Metric value
+                          type: string
+                      required:
+                      - ns
+                      - n
+                      - v
+                      - t
+                      - d
+                      - account
+                      - region
+                      type: object
+                    type: array
+                required:
+                - metrics
+                type: object
+          description: CloudWatch metrics
+  /_aws/dynamodb/expired:
+    delete:
+      description: Delete expired items from TTL-enabled DynamoDB tables
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  ExpiredItems:
+                    description: Number of expired items that were deleted
+                    type: integer
+                required:
+                - ExpiredItems
+                type: object
+          description: Operation was successful
+  /_aws/events/rules/{rule_arn}/trigger:
+    get:
+      description: Trigger a scheduled EventBridge rule
+      parameters:
+      - description: EventBridge rule ARN
+        in: path
+        name: rule_arn
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: EventBridge rule was triggered
+        '404':
+          description: Not found
+  /_aws/lambda/init:
+    get:
+      description: Retrieve Lambda runtime init binary
+      responses:
+        '200':
+          content:
+            application/octet-stream: {}
+          description: Lambda runtime init binary
+  /_aws/lambda/runtimes:
+    get:
+      description: List available Lambda runtimes
+      parameters:
+      - in: query
+        name: filter
+        required: false
+        schema:
+          default: supported
+          enum:
+          - all
+          - deprecated
+          - supported
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  Runtimes:
+                    items:
+                      type: string
+                    type: array
+                required:
+                - Runtimes
+                type: object
+          description: Available Lambda runtimes
+  /_aws/ses:
+    delete:
+      description: Discard sent SES messages
+      parameters:
+      - $ref: '#/components/parameters/SesMessageId'
+      responses:
+        '204':
+          description: Message was successfully discarded
+    get:
+      description: Retrieve sent SES messages
+      parameters:
+      - $ref: '#/components/parameters/SesMessageId'
+      - description: Source of the message (`source` field of SES message)
+        in: query
+        name: email
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  messages:
+                    items:
+                      $ref: '#/components/schemas/SesSentEmail'
+                    type: array
+                required:
+                - messages
+                type: object
+          description: List of sent messages
+  /_aws/sns/platform-endpoint-messages:
+    delete:
+      description: Discard SNS platform endpoint messages
+      parameters:
+      - $ref: '#/components/parameters/SnsAccountId'
+      - $ref: '#/components/parameters/SnsRegion'
+      - $ref: '#/components/parameters/SnsEndpointArn'
+      responses:
+        '204':
+          description: Platform endpoint message was discarded
+    get:
+      description: Retrieve SNS platform endpoint messages
+      parameters:
+      - $ref: '#/components/parameters/SnsAccountId'
+      - $ref: '#/components/parameters/SnsRegion'
+      - $ref: '#/components/parameters/SnsEndpointArn'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  platform_endpoint_messages:
+                    type: object
+                  region:
+                    type: string
+                required:
+                - platform_endpoint_messages
+                - region
+                type: object
+          description: Platform endpoint messages
+  /_aws/sns/sms-messages:
+    delete:
+      description: Discard SNS SMS messages
+      parameters:
+      - $ref: '#/components/parameters/SnsAccountId'
+      - $ref: '#/components/parameters/SnsRegion'
+      - $ref: '#/components/parameters/SnsPhoneNumber'
+      responses:
+        '204':
+          content:
+            text/plain: {}
+          description: SMS message was discarded
+    get:
+      description: Retrieve SNS SMS messages
+      parameters:
+      - $ref: '#/components/parameters/SnsAccountId'
+      - $ref: '#/components/parameters/SnsRegion'
+      - $ref: '#/components/parameters/SnsPhoneNumber'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  region:
+                    type: string
+                  sms_messages:
+                    type: object
+                required:
+                - sms_messages
+                - region
+                type: object
+          description: SNS SMS messages
+  /_aws/sns/subscription-tokens/{subscription_arn}:
+    get:
+      description: Retrieve SNS subscription token for confirmation
+      parameters:
+      - description: '`subscriptionArn` resource of subscription token'
+        in: path
+        name: subscription_arn
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  subscription_arn:
+                    type: string
+                  subscription_token:
+                    type: string
+                required:
+                - subscription_token
+                - subscription_arn
+                type: object
+          description: Subscription token
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnsSubscriptionTokenError'
+          description: Bad request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnsSubscriptionTokenError'
+          description: Not found
+  /_aws/sqs/messages:
+    get:
+      description: List SQS queue messages without side effects
+      parameters:
+      - description: SQS queue URL
+        in: query
+        name: QueueUrl
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            text/xml: {}
+          description: SQS queue messages
+        '400':
+          content:
+            text/xml: {}
+          description: Bad request
+        '404':
+          content:
+            text/xml: {}
+          description: Not found
+  /_aws/sqs/messages/{region}/{account_id}/{queue_name}:
+    get:
+      description: List SQS messages without side effects
+      parameters:
+      - description: SQS queue region
+        in: path
+        name: region
+        required: true
+        schema:
+          type: string
+      - description: SQS queue account ID
+        in: path
+        name: account_id
+        required: true
+        schema:
+          type: string
+      - description: SQS queue name
+        in: path
+        name: queue_name
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            text/xml: {}
+          description: SQS queue messages
+        '400':
+          content:
+            text/xml: {}
+          description: Bad request
+        '404':
+          content:
+            text/xml: {}
+          description: Not found
+  /_localstack/config:
+    get:
+      description: Get current LocalStack configuration
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: Current LocalStack configuration
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              properties:
+                value:
+                  type:
+                  - number
+                  - string
+                variable:
+                  pattern: ^[_a-zA-Z0-9]+$
+                  type: string
+              required:
+              - variable
+              - value
+              type: object
+        description: Configuration option to update with new value
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  value:
+                    type:
+                    - number
+                    - string
+                  variable:
+                    type: string
+                required:
+                - variable
+                - value
+                type: object
+          description: Configuration option is updated
+        '400':
+          content:
+            application/json: {}
+          description: Bad request
+  /_localstack/diagnose:
+    get:
+      description: Get diagnostics report
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  config:
+                    type: object
+                  docker-dependent-image-hosts:
+                    type: object
+                  docker-inspect:
+                    type: object
+                  file-tree:
+                    type: object
+                  important-endpoints:
+                    type: object
+                  info:
+                    $ref: '#/components/schemas/SessionInfo'
+                  logs:
+                    additionalProperties: false
+                    properties:
+                      docker:
+                        type: string
+                    required:
+                    - docker
+                    type: object
+                  services:
+                    type: object
+                  usage:
+                    type: object
+                  version:
+                    additionalProperties: false
+                    properties:
+                      host:
+                        additionalProperties: false
+                        properties:
+                          kernel:
+                            type: string
+                        required:
+                        - kernel
+                        type: object
+                      image-version:
+                        additionalProperties: false
+                        properties:
+                          created:
+                            type: string
+                          id:
+                            type: string
+                          sha256:
+                            type: string
+                          tag:
+                            type: string
+                        required:
+                        - id
+                        - sha256
+                        - tag
+                        - created
+                        type: object
+                      localstack-version:
+                        additionalProperties: false
+                        properties:
+                          build-date:
+                            type:
+                            - string
+                            - 'null'
+                          build-git-hash:
+                            type:
+                            - string
+                            - 'null'
+                          build-version:
+                            type:
+                            - string
+                            - 'null'
+                        required:
+                        - build-date
+                        - build-git-hash
+                        - build-version
+                        type: object
+                    required:
+                    - image-version
+                    - localstack-version
+                    - host
+                    type: object
+                required:
+                - version
+                - info
+                - services
+                - config
+                - docker-inspect
+                - docker-dependent-image-hosts
+                - file-tree
+                - important-endpoints
+                - logs
+                - usage
+                type: object
+          description: Diagnostics report
+  /_localstack/health:
+    get:
+      description: Get available LocalStack features and AWS services
+      parameters:
+      - allowEmptyValue: true
+        in: query
+        name: reload
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  edition:
+                    enum:
+                    - community
+                    - pro
+                    - enterprise
+                    - unknown
+                    type: string
+                  features:
+                    type: object
+                  services:
+                    type: object
+                  version:
+                    type: string
+                required:
+                - edition
+                - features
+                - services
+                - version
+                type: object
+          description: Available LocalStack features and AWS services
+    head:
+      responses:
+        '200':
+          content:
+            text/plain: {}
+          description: ''
+    post:
+      description: Restart or terminate LocalStack session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              properties:
+                action:
+                  enum:
+                  - restart
+                  - kill
+                  type: string
+              required:
+              - action
+              type: object
+        description: Action to perform
+        required: true
+      responses:
+        '200':
+          content:
+            text/plain: {}
+          description: Action was successful
+        '400':
+          content:
+            text/plain: {}
+          description: Bad request
+    put:
+      description: Store arbitrary data to in-memory state
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+        description: Data to save
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                properties:
+                  status:
+                    type: string
+                required:
+                - status
+                type: object
+          description: Data was saved
+  /_localstack/info:
+    get:
+      description: Get information about the current LocalStack session
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionInfo'
+          description: Information about the current LocalStack session
+  /_localstack/init:
+    get:
+      description: Get information about init scripts
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitScripts'
+          description: Information about init scripts
+  /_localstack/init/{stage}:
+    get:
+      description: Get information about init scripts in a specific stage
+      parameters:
+      - in: path
+        name: stage
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitScripts'
+          description: Information about init scripts in a specific stage
+  /_localstack/plugins:
+    get:
+      description: ''
+      responses:
+        '200':
+          content:
+            application/json: {}
+          description: ''
+  /_localstack/usage:
+    get:
+      description: ''
+      responses:
+        '200':
+          content:
+            application/json: {}
+          description: ''

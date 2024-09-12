@@ -49,8 +49,7 @@ class LambdaSender(Sender):
             **optional_qualifier,
         )
         payload = json.load(invoke_result["Payload"])
-        if "FunctionError" in invoke_result:
-            function_error = invoke_result["FunctionError"]
+        if function_error := invoke_result.get("FunctionError"):
             LOG.debug(
                 "Pipe target function %s failed with FunctionError %s. Payload: %s",
                 self.target_arn,
@@ -63,8 +62,10 @@ class LambdaSender(Sender):
                 "awsService": "lambda",
                 "requestId": invoke_result["ResponseMetadata"]["RequestId"],
                 # TODO: fix hardcoded value by figuring out what other exception types exist
-                "exceptionType": "BadRequest",
+                "exceptionType": "BadRequest",  # Currently only used in Pipes
                 "resourceArn": self.target_arn,
+                "functionError": function_error,
+                "executedVersion": invoke_result.get("ExecutedVersion", "$LATEST"),
             }
             raise SenderError(
                 f"Error during sending events {events} due to FunctionError {function_error}.",

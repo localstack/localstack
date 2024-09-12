@@ -49,7 +49,7 @@ resources:
   Resources:
     TestTable:
       Type: AWS::DynamoDB::Table
-      DeletionPolicy: Retain
+      DeletionPolicy: Delete
       Properties:
         TableName: 'Test'
         AttributeDefinitions:
@@ -66,11 +66,13 @@ resources:
 
     KinesisStream:
       Type: AWS::Kinesis::Stream
+      DeletionPolicy: Delete
       Properties:
         Name: KinesisTestStream
         ShardCount: 1
     KinesisStreamConsumer:
       Type: AWS::Kinesis::StreamConsumer
+      DeletionPolicy: Delete
       Properties:
         ConsumerName: stream-consumer1
         StreamARN: !GetAtt 'KinesisStream.Arn'
@@ -78,6 +80,7 @@ resources:
     # DynamoDB configuration
     loginsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Delete
       Properties:
         TableName: "jizo.${opt:stage}.loginsTable"
         AttributeDefinitions:
@@ -91,6 +94,7 @@ resources:
           WriteCapacityUnits: 1
     authAuditTrailTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Delete
       Properties:
         TableName: "jizo.${opt:stage}.authAuditTrailTable"
         AttributeDefinitions:
@@ -106,6 +110,7 @@ resources:
     # incoming SQS configuration
     CreateQueue:
       Type: AWS::SQS::Queue
+      DeletionPolicy: Delete
       Properties:
         QueueName: "${self:service}-${opt:stage}-CreateQueue"
         VisibilityTimeout: 1080
@@ -123,8 +128,10 @@ resources:
 
     TestBucket:
       Type: AWS::S3::Bucket
+      DeletionPolicy: Delete
       Properties:
-        BucketName: 'testing-bucket'
+        BucketName:
+          !Sub "testing-bucket-${AWS::StackName}-${AWS::Region}"
 
 functions:
   tests:

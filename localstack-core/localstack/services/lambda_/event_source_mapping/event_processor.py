@@ -27,7 +27,8 @@ class CustomerInvocationError(EventProcessorError):
 class BatchFailureError(EventProcessorError):
     """The entire batch failed."""
 
-    pass
+    def __init__(self, error=None) -> None:
+        self.error = error
 
 
 class PartialFailurePayload(TypedDict, total=False):
@@ -57,3 +58,14 @@ class EventProcessor(ABC):
         """Processes a batch of `input_events`.
         Throws an error upon full or partial batch failure.
         """
+
+    @abstractmethod
+    def generate_event_failure_context(self, abort_condition: str, **kwargs) -> dict:
+        """
+        Generates a context object for a failed event processing invocation.
+
+        This method is used to create a standardized failure context for both
+        event source mapping and pipes processing scenarios. The resulting
+        context will be passed to a Dead Letter Queue (DLQ).
+        """
+        pass

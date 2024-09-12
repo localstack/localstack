@@ -3,6 +3,7 @@ import time
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
@@ -56,6 +57,17 @@ def _snapshot_transformers(snapshot):
     # lower-case for when messages are rendered in lambdas
     snapshot.add_transformer(snapshot.transform.key_value("receiptHandle"))
     snapshot.add_transformer(snapshot.transform.key_value("md5OfBody"))
+    # transform UNIX timestamps
+    snapshot.add_transformer(
+        snapshot.transform.key_value("SentTimestamp", reference_replacement=False)
+    )
+    snapshot.add_transformer(
+        KeyValueBasedTransformer(
+            lambda k, v: str(v) if k == "ApproximateFirstReceiveTimestamp" else None,
+            "<approximate-first-receive-timestamp>",
+            replace_reference=False,
+        )
+    )
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -409,8 +421,9 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
         assert len(result["Messages"]) > 0
         return result
 
-    sleep = 3 if is_aws_cloud() else 1
-    messages = retry(receive_dlq, retries=30, sleep=sleep)
+    # It can take ~3 min against AWS until the message is received
+    sleep = 15 if is_aws_cloud() else 5
+    messages = retry(receive_dlq, retries=15, sleep=sleep, sleep_before=5)
 
     snapshot.match("messages", messages)
 
@@ -858,7 +871,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_old_esm(),
+    condition=is_old_esm,
     paths=[
         # hardcoded extra field in old ESM
         "$..LastProcessingResult",
@@ -1349,6 +1362,10 @@ class TestSQSEventSourceMapping:
         #   Not sure yet how we could prevent this
         if is_aws_cloud():
             time.sleep(10)
+
+        # Verify that the ESM we get actually points to the latest version of Lambda function.
+        get_updated_esm = aws_client.lambda_.get_event_source_mapping(UUID=mapping_uuid)
+        snapshot.match("updated_event_source_mapping", get_updated_esm)
 
         # verify function v2 was called, not latest and not v1
         aws_client.sqs.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({"foo": "bar2"}))

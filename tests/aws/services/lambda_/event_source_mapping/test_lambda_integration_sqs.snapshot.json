@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_failing_lambda_retries_after_visibility_timeout": {
-    "recorded-date": "27-02-2023, 17:02:53",
+    "recorded-date": "06-09-2024, 13:40:40",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -14,7 +14,7 @@
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Enabled",
         "StateTransitionReason": "USER_INITIATED",
@@ -37,9 +37,9 @@
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 1}",
                     "attributes": {
                       "ApproximateReceiveCount": "1",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SenderId": "sender-id",
-                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                     },
                     "messageAttributes": {},
                     "md5OfBody": "<md5-of-body:1>",
@@ -73,9 +73,9 @@
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 1}",
                     "attributes": {
                       "ApproximateReceiveCount": "2",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SenderId": "sender-id",
-                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                     },
                     "messageAttributes": {},
                     "md5OfBody": "<md5-of-body:1>",
@@ -99,7 +99,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_redrive_policy_with_failing_lambda": {
-    "recorded-date": "27-02-2023, 17:03:26",
+    "recorded-date": "06-09-2024, 13:41:24",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -121,9 +121,9 @@
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 2}",
                     "attributes": {
                       "ApproximateReceiveCount": "1",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SenderId": "sender-id",
-                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                     },
                     "messageAttributes": {},
                     "md5OfBody": "<m-d5-of-body:3>",
@@ -157,9 +157,9 @@
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 2}",
                     "attributes": {
                       "ApproximateReceiveCount": "2",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SenderId": "sender-id",
-                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                     },
                     "messageAttributes": {},
                     "md5OfBody": "<m-d5-of-body:3>",
@@ -200,7 +200,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_sqs_queue_as_lambda_dead_letter_queue": {
-    "recorded-date": "09-08-2023, 15:06:36",
+    "recorded-date": "06-09-2024, 13:41:38",
     "recorded-content": {
       "lambda-response-dlq-config": {
         "TargetArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
@@ -239,7 +239,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_report_batch_item_failures": {
-    "recorded-date": "07-12-2023, 12:55:26",
+    "recorded-date": "06-09-2024, 13:42:09",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -287,7 +287,7 @@
         "FunctionResponseTypes": [
           "ReportBatchItemFailures"
         ],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -305,12 +305,12 @@
                 "Records": [
                   {
                     "attributes": {
-                      "ApproximateFirstReceiveTimestamp": "timestamp",
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>",
                       "ApproximateReceiveCount": "1",
                       "MessageDeduplicationId": "dedup-1",
                       "MessageGroupId": "1",
                       "SenderId": "sender-id",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SequenceNumber": "<sequence-number:1>"
                     },
                     "awsRegion": "<region>",
@@ -327,12 +327,12 @@
                   },
                   {
                     "attributes": {
-                      "ApproximateFirstReceiveTimestamp": "timestamp",
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>",
                       "ApproximateReceiveCount": "1",
                       "MessageDeduplicationId": "dedup-2",
                       "MessageGroupId": "1",
                       "SenderId": "sender-id",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SequenceNumber": "<sequence-number:2>"
                     },
                     "awsRegion": "<region>",
@@ -349,12 +349,12 @@
                   },
                   {
                     "attributes": {
-                      "ApproximateFirstReceiveTimestamp": "timestamp",
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>",
                       "ApproximateReceiveCount": "1",
                       "MessageDeduplicationId": "dedup-3",
                       "MessageGroupId": "1",
                       "SenderId": "sender-id",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SequenceNumber": "<sequence-number:3>"
                     },
                     "awsRegion": "<region>",
@@ -371,12 +371,12 @@
                   },
                   {
                     "attributes": {
-                      "ApproximateFirstReceiveTimestamp": "timestamp",
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>",
                       "ApproximateReceiveCount": "1",
                       "MessageDeduplicationId": "dedup-4",
                       "MessageGroupId": "1",
                       "SenderId": "sender-id",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SequenceNumber": "<sequence-number:4>"
                     },
                     "awsRegion": "<region>",
@@ -425,12 +425,12 @@
                 "Records": [
                   {
                     "attributes": {
-                      "ApproximateFirstReceiveTimestamp": "timestamp",
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>",
                       "ApproximateReceiveCount": "2",
                       "MessageDeduplicationId": "dedup-2",
                       "MessageGroupId": "1",
                       "SenderId": "sender-id",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SequenceNumber": "<sequence-number:2>"
                     },
                     "awsRegion": "<region>",
@@ -447,12 +447,12 @@
                   },
                   {
                     "attributes": {
-                      "ApproximateFirstReceiveTimestamp": "timestamp",
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>",
                       "ApproximateReceiveCount": "2",
                       "MessageDeduplicationId": "dedup-3",
                       "MessageGroupId": "1",
                       "SenderId": "sender-id",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SequenceNumber": "<sequence-number:3>"
                     },
                     "awsRegion": "<region>",
@@ -469,12 +469,12 @@
                   },
                   {
                     "attributes": {
-                      "ApproximateFirstReceiveTimestamp": "timestamp",
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>",
                       "ApproximateReceiveCount": "2",
                       "MessageDeduplicationId": "dedup-4",
                       "MessageGroupId": "1",
                       "SenderId": "sender-id",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SequenceNumber": "<sequence-number:4>"
                     },
                     "awsRegion": "<region>",
@@ -529,7 +529,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_report_batch_item_failures_on_lambda_error": {
-    "recorded-date": "27-02-2023, 17:08:09",
+    "recorded-date": "06-09-2024, 13:42:29",
     "recorded-content": {
       "dlq_messages": [
         {
@@ -551,7 +551,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_report_batch_item_failures_invalid_result_json_batch_fails": {
-    "recorded-date": "27-02-2023, 17:08:39",
+    "recorded-date": "06-09-2024, 13:42:52",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -572,9 +572,9 @@
                     "body": "{\"message\": 1, \"fail_attempts\": 0}",
                     "attributes": {
                       "ApproximateReceiveCount": "1",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SenderId": "sender-id",
-                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                     },
                     "messageAttributes": {},
                     "md5OfBody": "<m-d5-of-body:3>",
@@ -614,9 +614,9 @@
                     "body": "{\"message\": 1, \"fail_attempts\": 0}",
                     "attributes": {
                       "ApproximateReceiveCount": "2",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SenderId": "sender-id",
-                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                     },
                     "messageAttributes": {},
                     "md5OfBody": "<m-d5-of-body:3>",
@@ -664,7 +664,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_report_batch_item_failures_empty_json_batch_succeeds": {
-    "recorded-date": "27-02-2023, 17:09:08",
+    "recorded-date": "06-09-2024, 13:43:29",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -685,9 +685,9 @@
                     "body": "{\"message\": 1, \"fail_attempts\": 0}",
                     "attributes": {
                       "ApproximateReceiveCount": "1",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SenderId": "sender-id",
-                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                     },
                     "messageAttributes": {},
                     "md5OfBody": "<md5-of-body:1>",
@@ -712,14 +712,14 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_event_source_mapping_default_batch_size": {
-    "recorded-date": "27-02-2023, 17:09:20",
+    "recorded-date": "06-09-2024, 13:45:16",
     "recorded-content": {
       "create-event-source-mapping": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -756,14 +756,14 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping": {
-    "recorded-date": "27-02-2023, 17:10:13",
+    "recorded-date": "06-09-2024, 13:46:02",
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -784,9 +784,9 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
               "md5OfMessageAttributes": null,
@@ -801,7 +801,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter0-item_matching0-item_not_matching0]": {
-    "recorded-date": "27-02-2023, 17:10:46",
+    "recorded-date": "06-09-2024, 13:46:44",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -821,7 +821,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -842,13 +842,13 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
-              "md5OfBody": "<md5-of-body:1>",
               "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
               "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
@@ -859,7 +859,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter1-item_matching1-item_not_matching1]": {
-    "recorded-date": "27-02-2023, 17:11:32",
+    "recorded-date": "06-09-2024, 13:47:18",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -880,7 +880,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -901,13 +901,13 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
-              "md5OfMessageAttributes": null,
               "md5OfBody": "<md5-of-body:1>",
+              "md5OfMessageAttributes": null,
               "eventSource": "aws:sqs",
               "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
@@ -918,7 +918,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter2-item_matching2-item_not_matching2]": {
-    "recorded-date": "27-02-2023, 17:12:15",
+    "recorded-date": "06-09-2024, 13:48:07",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -942,7 +942,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -964,9 +964,9 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
               "md5OfMessageAttributes": null,
@@ -981,7 +981,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter3-item_matching3-item_not_matching3]": {
-    "recorded-date": "27-02-2023, 17:12:57",
+    "recorded-date": "06-09-2024, 13:48:45",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1003,7 +1003,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -1024,9 +1024,9 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
               "md5OfMessageAttributes": null,
@@ -1041,7 +1041,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter4-item_matching4-this is a test string]": {
-    "recorded-date": "27-02-2023, 17:13:42",
+    "recorded-date": "06-09-2024, 13:49:17",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1066,7 +1066,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -1087,9 +1087,9 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
               "md5OfMessageAttributes": null,
@@ -1104,7 +1104,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter5-item_matching5-item_not_matching5]": {
-    "recorded-date": "27-02-2023, 17:14:29",
+    "recorded-date": "06-09-2024, 13:49:57",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1129,7 +1129,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -1150,13 +1150,13 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
-              "md5OfBody": "<md5-of-body:1>",
               "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
               "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
@@ -1167,7 +1167,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter6-item_matching6-item_not_matching6]": {
-    "recorded-date": "27-02-2023, 17:15:15",
+    "recorded-date": "06-09-2024, 13:50:34",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1194,7 +1194,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -1215,9 +1215,9 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
               "md5OfMessageAttributes": null,
@@ -1232,7 +1232,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter7-item_matching7-item_not_matching7]": {
-    "recorded-date": "27-02-2023, 17:16:04",
+    "recorded-date": "06-09-2024, 13:51:23",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1254,7 +1254,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -1275,9 +1275,9 @@
               },
               "attributes": {
                 "ApproximateReceiveCount": "1",
-                "SentTimestamp": "timestamp",
+                "SentTimestamp": "sent-timestamp",
                 "SenderId": "sender-id",
-                "ApproximateFirstReceiveTimestamp": "timestamp"
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
               },
               "messageAttributes": {},
               "md5OfMessageAttributes": null,
@@ -1292,7 +1292,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_invalid_event_filter[None]": {
-    "recorded-date": "27-02-2023, 17:16:07",
+    "recorded-date": "06-09-2024, 13:51:28",
     "recorded-content": {
       "create_event_source_mapping_exception": {
         "Error": {
@@ -1309,7 +1309,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_invalid_event_filter[simple string]": {
-    "recorded-date": "27-02-2023, 17:16:11",
+    "recorded-date": "06-09-2024, 13:51:33",
     "recorded-content": {
       "create_event_source_mapping_exception": {
         "Error": {
@@ -1326,7 +1326,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_invalid_event_filter[invalid_filter2]": {
-    "recorded-date": "27-02-2023, 17:16:15",
+    "recorded-date": "06-09-2024, 13:51:39",
     "recorded-content": {
       "create_event_source_mapping_exception": {
         "Error": {
@@ -1343,7 +1343,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_invalid_event_filter[invalid_filter3]": {
-    "recorded-date": "27-02-2023, 17:16:18",
+    "recorded-date": "06-09-2024, 13:51:44",
     "recorded-content": {
       "create_event_source_mapping_exception": {
         "Error": {
@@ -1360,7 +1360,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_message_body_and_attributes_passed_correctly": {
-    "recorded-date": "17-03-2023, 17:04:06",
+    "recorded-date": "06-09-2024, 13:40:58",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -1382,9 +1382,9 @@
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 0}",
                     "attributes": {
                       "ApproximateReceiveCount": "1",
-                      "SentTimestamp": "timestamp",
+                      "SentTimestamp": "sent-timestamp",
                       "SenderId": "sender-id",
-                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                      "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                     },
                     "messageAttributes": {
                       "WeeksOn": {
@@ -1406,8 +1406,8 @@
                         "dataType": "String"
                       }
                     },
-                    "md5OfMessageAttributes": "d25a6aea97eb8f585bfa92d314504a92",
                     "md5OfBody": "<md5-of-body:1>",
+                    "md5OfMessageAttributes": "d25a6aea97eb8f585bfa92d314504a92",
                     "eventSource": "aws:sqs",
                     "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
@@ -1428,14 +1428,14 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_update": {
-    "recorded-date": "31-10-2023, 15:18:45",
+    "recorded-date": "06-09-2024, 13:53:43",
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -1459,9 +1459,9 @@
                 },
                 "attributes": {
                   "ApproximateReceiveCount": "1",
-                  "SentTimestamp": "timestamp",
+                  "SentTimestamp": "sent-timestamp",
                   "SenderId": "sender-id",
-                  "ApproximateFirstReceiveTimestamp": "timestamp"
+                  "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                 },
                 "messageAttributes": {},
                 "md5OfMessageAttributes": null,
@@ -1479,7 +1479,7 @@
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 1,
         "State": "Updating",
         "StateTransitionReason": "USER_INITIATED",
@@ -1487,6 +1487,21 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
+        }
+      },
+      "updated_event_source_mapping": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Enabled",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "events_postupdate": [
@@ -1503,9 +1518,9 @@
                 },
                 "attributes": {
                   "ApproximateReceiveCount": "1",
-                  "SentTimestamp": "timestamp",
+                  "SentTimestamp": "sent-timestamp",
                   "SenderId": "sender-id",
-                  "ApproximateFirstReceiveTimestamp": "timestamp"
+                  "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                 },
                 "messageAttributes": {},
                 "md5OfMessageAttributes": null,
@@ -1530,9 +1545,9 @@
                 },
                 "attributes": {
                   "ApproximateReceiveCount": "1",
-                  "SentTimestamp": "timestamp",
+                  "SentTimestamp": "sent-timestamp",
                   "SenderId": "sender-id",
-                  "ApproximateFirstReceiveTimestamp": "timestamp"
+                  "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
                 },
                 "messageAttributes": {},
                 "md5OfMessageAttributes": null,
@@ -1548,14 +1563,14 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_duplicate_event_source_mappings": {
-    "recorded-date": "04-01-2024, 17:10:43",
+    "recorded-date": "06-09-2024, 13:53:54",
     "recorded-content": {
       "create": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
@@ -1580,14 +1595,14 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_fifo_message_group_parallelism": {
-    "recorded-date": "02-08-2024, 14:48:56",
+    "recorded-date": "06-09-2024, 13:44:51",
     "recorded-content": {
       "create_esm_disabled": {
         "BatchSize": 1,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Disabled",
         "StateTransitionReason": "USER_INITIATED",
@@ -1602,7 +1617,7 @@
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Enabling",
         "StateTransitionReason": "USER_INITIATED",
@@ -1617,7 +1632,7 @@
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Enabled",
         "StateTransitionReason": "USER_INITIATED",

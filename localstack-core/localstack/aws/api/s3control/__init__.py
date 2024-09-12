@@ -505,6 +505,8 @@ class ListAccessGrantsInstanceEntry(TypedDict, total=False):
     AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
     CreatedAt: Optional[CreationTimestamp]
     IdentityCenterArn: Optional[IdentityCenterArn]
+    IdentityCenterInstanceArn: Optional[IdentityCenterArn]
+    IdentityCenterApplicationArn: Optional[IdentityCenterApplicationArn]
 
 
 AccessGrantsInstancesList = List[ListAccessGrantsInstanceEntry]
@@ -706,6 +708,15 @@ class AwsLambdaTransformation(TypedDict, total=False):
 Buckets = List[S3BucketArnString]
 
 
+class ListCallerAccessGrantsEntry(TypedDict, total=False):
+    Permission: Optional[Permission]
+    GrantScope: Optional[S3Prefix]
+    ApplicationArn: Optional[IdentityCenterApplicationArn]
+
+
+CallerAccessGrantsList = List[ListCallerAccessGrantsEntry]
+
+
 class CloudWatchMetrics(TypedDict, total=False):
     IsEnabled: IsEnabled
 
@@ -752,6 +763,8 @@ class CreateAccessGrantsInstanceResult(TypedDict, total=False):
     AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
     AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
     IdentityCenterArn: Optional[IdentityCenterArn]
+    IdentityCenterInstanceArn: Optional[IdentityCenterArn]
+    IdentityCenterApplicationArn: Optional[IdentityCenterApplicationArn]
 
 
 class CreateAccessGrantsLocationRequest(ServiceRequest):
@@ -1450,6 +1463,8 @@ class GetAccessGrantsInstanceResult(TypedDict, total=False):
     AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
     AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
     IdentityCenterArn: Optional[IdentityCenterArn]
+    IdentityCenterInstanceArn: Optional[IdentityCenterArn]
+    IdentityCenterApplicationArn: Optional[IdentityCenterApplicationArn]
     CreatedAt: Optional[CreationTimestamp]
 
 
@@ -1978,6 +1993,19 @@ class ListAccessPointsRequest(ServiceRequest):
 class ListAccessPointsResult(TypedDict, total=False):
     AccessPointList: Optional[AccessPointList]
     NextToken: Optional[NonEmptyMaxLength1024String]
+
+
+class ListCallerAccessGrantsRequest(ServiceRequest):
+    AccountId: AccountId
+    GrantScope: Optional[S3Prefix]
+    NextToken: Optional[ContinuationToken]
+    MaxResults: Optional[MaxResults]
+    AllowedByApplication: Optional[Boolean]
+
+
+class ListCallerAccessGrantsResult(TypedDict, total=False):
+    NextToken: Optional[ContinuationToken]
+    CallerAccessGrantsList: Optional[CallerAccessGrantsList]
 
 
 class ListJobsRequest(ServiceRequest):
@@ -2837,6 +2865,19 @@ class S3ControlApi:
         max_results: MaxResults = None,
         **kwargs,
     ) -> ListAccessPointsForObjectLambdaResult:
+        raise NotImplementedError
+
+    @handler("ListCallerAccessGrants")
+    def list_caller_access_grants(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        grant_scope: S3Prefix = None,
+        next_token: ContinuationToken = None,
+        max_results: MaxResults = None,
+        allowed_by_application: Boolean = None,
+        **kwargs,
+    ) -> ListCallerAccessGrantsResult:
         raise NotImplementedError
 
     @handler("ListJobs")
