@@ -72,34 +72,38 @@ class PipeLogger(ABC):
         ```
         """
         # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-logs.html#eb-pipes-logs-execution-data
-        execution_data_fields = [
+        execution_data_fields = {
             "payload",
             "awsRequest",
             "awsResponse",
-        ]
-        fields_to_include = [
+        }
+        fields_to_include = {
             "resourceArn",
             "timestamp",
             "executionId",
             "messageType",
             "logLevel",
-        ]
-        error_fields_to_include = [
+        }
+        error_fields_to_include = {
             "message",
             "httpStatusCode",
             "awsService",
             "requestId",
             "exceptionType",
             "resourceArn",
-        ]
+        }
 
         if self.include_execution_data == [IncludeExecutionDataOption.ALL]:
-            fields_to_include.extend(execution_data_fields)
+            fields_to_include.update(execution_data_fields)
 
-        filtered_message = {key: message[key] for key in fields_to_include if key in message}
+        filtered_message = {
+            key: value for key, value in message.items() if key in fields_to_include
+        }
 
         if error := message.get("error"):
-            filtered_error = {key: error[key] for key in error_fields_to_include if key in error}
+            filtered_error = {
+                key: value for key, value in error.items() if key in error_fields_to_include
+            }
             filtered_message["error"] = filtered_error
 
         return filtered_message
