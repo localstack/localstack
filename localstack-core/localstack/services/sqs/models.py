@@ -251,14 +251,14 @@ class MessageMoveTask:
         source_arn: str,
         destination_arn: str,
         max_number_of_messages_per_second: int = None,
-        context: RequestContext = None,
+        trace_context: TraceContext | None = None,
     ):
         self.task_id = long_uid()
         self.source_arn = source_arn
         self.destination_arn = destination_arn
         self.max_number_of_messages_per_second = max_number_of_messages_per_second
         self.cancel_event = threading.Event()
-        self.submitted_request_context = context
+        self.submitted_request_trace_context = trace_context
 
     def mark_started(self):
         self.started_timestamp = datetime.utcnow()
