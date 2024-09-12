@@ -69,7 +69,7 @@ def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github
     base_dir = github_repo.split("/")[-1]
     # rel_path = "".join(entry["file_path"].partition(base_dir + "/")[2:])
     # append the relevant info to ./target/logs.txt for debugging
-    rel_path = entry["file_path"].split(base_dir)[-1]
+    rel_path = entry["file_path"].split(base_dir)[-1].removeprefix("/")
 
     with open("./target/logs.txt", "a") as f:
         f.write(f"rel path: {rel_path}\n")
