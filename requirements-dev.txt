@@ -355,7 +355,7 @@ pyparsing==3.1.4
     # via moto-ext
 pyproject-hooks==1.1.0
     # via build
-pytest==8.3.2
+pytest==8.3.3
     # via
     #   localstack-core
     #   pytest-rerunfailures
@@ -418,7 +418,7 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.8.0
+rich==13.8.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
