@@ -722,6 +722,9 @@ SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
 # Absolute path to a custom certificate (pem file)
 CUSTOM_SSL_CERT_PATH = os.environ.get("CUSTOM_SSL_CERT_PATH", "").strip()
 
+# Whether delete the cached signed SSL certificate at startup
+REMOVE_SSL_CERT = is_env_true("REMOVE_SSL_CERT")
+
 # Allow non-standard AWS regions
 ALLOW_NONSTANDARD_REGIONS = is_env_true("ALLOW_NONSTANDARD_REGIONS")
 if ALLOW_NONSTANDARD_REGIONS:
@@ -742,12 +745,10 @@ OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
 # Equivalent to HTTPS_PROXY, but only applicable for external connections
 OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 
-# Whether to enable the partition adjustment listener (in order to support other partitions that the default)
-ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
-
-# Fallback partition to use if not possible to determine from ARN region.
-# Applicable only when ARN partition rewriting is enabled.
-ARN_PARTITION_FALLBACK = os.environ.get("ARN_PARTITION_FALLBACK", "") or "aws"
+# Feature flag to enable validation of internal endpoint responses in the handler chain. For test use only.
+OPENAPI_VALIDATE_RESPONSE = is_env_true("OPENAPI_VALIDATE_RESPONSE")
+# Flag to enable the validation of the requests made to the LocalStack internal endpoints. Active by default.
+OPENAPI_VALIDATE_REQUEST = is_env_true("OPENAPI_VALIDATE_REQUEST")
 
 # whether to skip waiting for the infrastructure to shut down, or exit immediately
 FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
@@ -1251,6 +1252,8 @@ CONFIG_ENV_VARS = [
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
     "MAIN_DOCKER_NETWORK",
+    "OPENAPI_VALIDATE_REQUEST",
+    "OPENAPI_VALIDATE_RESPONSE",
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
@@ -1258,6 +1261,7 @@ CONFIG_ENV_VARS = [
     "PERSISTENCE",
     "PORTS_CHECK_DOCKER_IMAGE",
     "REQUESTS_CA_BUNDLE",
+    "REMOVE_SSL_CERT",
     "S3_SKIP_SIGNATURE_VALIDATION",
     "S3_SKIP_KMS_KEY_VALIDATION",
     "SERVICES",

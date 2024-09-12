@@ -228,7 +228,7 @@ class SdkDockerClient(ContainerClient):
                         }
                     )
                 except Exception as e:
-                    LOG.error(f"Error checking container {container}: {e}")
+                    LOG.error("Error checking container %s: %s", container, e)
             return result
         except APIError as e:
             raise ContainerException() from e
@@ -574,7 +574,8 @@ class SdkDockerClient(ContainerClient):
                     stdout, stderr = self._read_from_sock(sock, False)
                 except socket.timeout:
                     LOG.debug(
-                        f"Socket timeout when talking to the I/O streams of Docker container '{container_name_or_id}'"
+                        "Socket timeout when talking to the I/O streams of Docker container '%s'",
+                        container_name_or_id,
                     )
                 finally:
                     sock.close()

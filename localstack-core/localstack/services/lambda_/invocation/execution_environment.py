@@ -194,7 +194,8 @@ class ExecutionEnvironment:
                 )
             self.status = RuntimeStatus.STARTING
 
-        self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
+        startup_time_seconds: int = self._get_startup_timeout_seconds()
+        self.startup_timer = Timer(startup_time_seconds, self.timed_out)
         self.startup_timer.start()
 
         try:
@@ -292,7 +293,9 @@ class ExecutionEnvironment:
         )
         if LOG.isEnabledFor(logging.DEBUG):
             LOG.debug(
-                f"Logs from the execution environment {self.id} after startup timeout:\n{self.get_prefixed_logs()}"
+                "Logs from the execution environment %s after startup timeout:\n%s",
+                self.id,
+                self.get_prefixed_logs(),
             )
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
@@ -316,7 +319,9 @@ class ExecutionEnvironment:
         )
         if LOG.isEnabledFor(logging.DEBUG):
             LOG.debug(
-                f"Logs from the execution environment {self.id} after startup error:\n{self.get_prefixed_logs()}"
+                "Logs from the execution environment %s after startup error:\n%s",
+                self.id,
+                self.get_prefixed_logs(),
             )
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
@@ -402,3 +407,11 @@ class ExecutionEnvironment:
         if is_lambda_debug_timeout_enabled_for(self.function_version.qualified_arn):
             return DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
         return self.function_version.config.timeout
+
+    def _get_startup_timeout_seconds(self) -> int:
+        # Returns the timeout value in seconds to be enforced during lambda container startups.
+        # This is the value defined through LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT or the LAMBDA
+        # DEBUG MODE default if this is enabled.
+        if is_lambda_debug_timeout_enabled_for(self.function_version.qualified_arn):
+            return DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
+        return STARTUP_TIMEOUT_SEC

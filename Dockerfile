@@ -1,35 +1,7 @@
-# java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:49b4274c068004fd73efb56fdb0f8890a6e17a7b2bdfa2be43341de9e1176d66 AS java-builder
-
-# create a custom, minimized JRE via jlink
-RUN jlink --add-modules \
-# include required modules
-java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
-# jdk.unsupported contains sun.misc.Unsafe which is required by certain dependencies
-jdk.unsupported,\
-# add additional cipher suites
-jdk.crypto.cryptoki,\
-# add ability to open ZIP/JAR files
-jdk.zipfs,\
-# OpenSearch needs some jdk modules
-jdk.httpserver,jdk.management,\
-# MQ Broker requires management agent
-jdk.management.agent,\
-# required for Spark/Hadoop
-java.security.jgss,jdk.security.auth,\
-# Elasticsearch 7+ crashes without Thai Segmentation support
-jdk.localedata --include-locales en,th \
-    --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
-  cp ${JAVA_HOME}/bin/javac /usr/lib/jvm/java-11/bin/javac && \
-  cp -r ${JAVA_HOME}/include /usr/lib/jvm/java-11/include && \
-  mv /usr/lib/jvm/java-11/lib/modules /usr/lib/jvm/java-11/lib/modules.bk; \
-  cp -r ${JAVA_HOME}/lib/* /usr/lib/jvm/java-11/lib/; \
-  mv /usr/lib/jvm/java-11/lib/modules.bk /usr/lib/jvm/java-11/lib/modules; \
-  rm -rf /usr/bin/java ${JAVA_HOME} && ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
-
-
+#
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.9-slim-bookworm@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaab85b2d361210b AS base
+#
+FROM python:3.11.10-slim-bookworm@sha256:50ec89bdac0a845ec1751f91cb6187a3d8adb2b919d6e82d17acf48d1a9743fc AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -38,7 +10,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2 xz-utils libatomic1
+            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2 xz-utils libatomic1 binutils
 
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
 # Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
@@ -84,18 +56,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && test ! $(which python3.9)
 
 SHELL [ "/bin/bash", "-c" ]
-
-# Install Java 11
-ENV LANG=C.UTF-8
-RUN { \
-        echo '#!/bin/sh'; echo 'set -e'; echo; \
-        echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
-    } > /usr/local/bin/docker-java-home \
-    && chmod +x /usr/local/bin/docker-java-home
-ENV JAVA_HOME=/usr/lib/jvm/java-11
-COPY --from=java-builder /usr/lib/jvm/java-11 $JAVA_HOME
-RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
-ENV PATH="${PATH}:${JAVA_HOME}/bin"
+ENV LANG C.UTF-8
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
@@ -137,8 +98,9 @@ RUN --mount=type=cache,target=/root/.cache \
     pip3 install --upgrade awscli awscli-local requests
 
 
-
+#
 # builder: Stage which installs the dependencies of LocalStack Community
+#
 FROM base AS builder
 ARG TARGETARCH
 
@@ -163,8 +125,9 @@ RUN --mount=type=cache,target=/root/.cache\
     . .venv/bin/activate && pip3 install -r requirements-runtime.txt
 
 
-
+#
 # final stage: Builds upon base stage and copies resources from builder stages
+#
 FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 # The build version is set in the docker-helper.sh script to be the output of setuptools_scm
@@ -192,11 +155,17 @@ RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSIO
 RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/var/lib/localstack/cache \
     source .venv/bin/activate && \
+    python -m localstack.cli.lpm install java --version 11 && \
     python -m localstack.cli.lpm install \
       lambda-runtime \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
+
+# Set up Java
+ENV JAVA_HOME /usr/lib/localstack/java/11
+RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
+ENV PATH="${PATH}:${JAVA_HOME}/bin"
 
 # link the python package installer virtual environments into the localstack venv
 RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \

@@ -12,10 +12,9 @@ from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 
 @markers.aws.validated
 def test_apigateway_s3_any(
-    aws_client, create_rest_apigw, s3_create_bucket, region_name, create_role_with_policy, snapshot
+    aws_client, create_rest_apigw, s3_bucket, region_name, create_role_with_policy, snapshot
 ):
     api_id, api_name, root_id = create_rest_apigw()
-    bucket = s3_create_bucket()
     stage_name = "test"
     object_name = "test.json"
 
@@ -47,7 +46,7 @@ def test_apigateway_s3_any(
         httpMethod="ANY",
         integrationHttpMethod="ANY",
         type="AWS",
-        uri=f"arn:aws:apigateway:{region_name}:s3:path/{bucket}/{{object_path}}",
+        uri=f"arn:aws:apigateway:{region_name}:s3:path/{s3_bucket}/{{object_path}}",
         requestParameters={
             "integration.request.path.object_path": "method.request.path.object_path",
             "integration.request.header.Content-Type": "method.request.header.Content-Type",
@@ -99,7 +98,7 @@ def test_apigateway_s3_any(
 
     # TODO We can remove this part when we get the empty bucket response on parity
     with pytest.raises(Exception) as exc_info:
-        aws_client.s3.get_object(Bucket=bucket, Key=object_name)
+        aws_client.s3.get_object(Bucket=s3_bucket, Key=object_name)
     snapshot.match("get-object-s3", exc_info.value.response)
 
     # Make a POST request
@@ -111,14 +110,13 @@ def test_apigateway_s3_any(
 @pytest.mark.skip(reason="Need to implement a solution for method mapping")
 @markers.aws.validated
 def test_apigateway_s3_method_mapping(
-    aws_client, create_rest_apigw, s3_create_bucket, region_name, create_role_with_policy, snapshot
+    aws_client, create_rest_apigw, s3_bucket, region_name, create_role_with_policy, snapshot
 ):
     snapshot.add_transformers_list(
         [snapshot.transform.key_value("HostId"), snapshot.transform.key_value("RequestId")]
     )
 
     api_id, api_name, root_id = create_rest_apigw()
-    bucket = s3_create_bucket()
     stage_name = "test"
     object_name = "test.json"
 
@@ -171,7 +169,7 @@ def test_apigateway_s3_method_mapping(
         httpMethod="GET",
         integrationHttpMethod="GET",
         type="AWS",
-        uri=f"arn:aws:apigateway:{region_name}:s3:path/{bucket}/{object_name}",
+        uri=f"arn:aws:apigateway:{region_name}:s3:path/{s3_bucket}/{object_name}",
         credentials=role_arn,
     )
     aws_client.apigateway.put_integration(
@@ -180,7 +178,7 @@ def test_apigateway_s3_method_mapping(
         httpMethod="GET",
         integrationHttpMethod="PUT",
         type="AWS",
-        uri=f"arn:aws:apigateway:{region_name}:s3:path/{bucket}/{object_name}",
+        uri=f"arn:aws:apigateway:{region_name}:s3:path/{s3_bucket}/{object_name}",
         requestParameters={
             "integration.request.header.Content-Type": "'application/json'",
         },
@@ -193,7 +191,7 @@ def test_apigateway_s3_method_mapping(
         httpMethod="GET",
         integrationHttpMethod="DELETE",
         type="AWS",
-        uri=f"arn:aws:apigateway:{region_name}:s3:path/{bucket}/{object_name}",
+        uri=f"arn:aws:apigateway:{region_name}:s3:path/{s3_bucket}/{object_name}",
         credentials=role_arn,
     )
 

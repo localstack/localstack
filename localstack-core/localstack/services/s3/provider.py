@@ -6,7 +6,6 @@ import logging
 from collections import defaultdict
 from io import BytesIO
 from operator import itemgetter
-from secrets import token_urlsafe
 from typing import IO, Optional, Union
 from urllib import parse as urlparse
 
@@ -252,6 +251,7 @@ from localstack.services.s3.utils import (
     create_s3_kms_managed_key_for_region,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
+    generate_safe_version_id,
     get_canned_acl,
     get_class_attrs_from_spec_class,
     get_failed_precondition_copy_source,
@@ -446,13 +446,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if not (bucket_region := create_bucket_configuration.get("LocationConstraint")):
                 raise MalformedXML()
 
-            if bucket_region == "us-east-1":
-                raise InvalidLocationConstraint(
-                    "The specified location-constraint is not valid",
-                    LocationConstraint=bucket_region,
+            if context.region == AWS_REGION_US_EAST_1:
+                if bucket_region == "us-east-1":
+                    raise InvalidLocationConstraint(
+                        "The specified location-constraint is not valid",
+                        LocationConstraint=bucket_region,
+                    )
+            elif context.region != bucket_region:
+                raise CommonServiceException(
+                    code="IllegalLocationConstraintException",
+                    message=f"The {bucket_region} location constraint is incompatible for the region specific endpoint this request was sent to.",
                 )
         else:
-            bucket_region = "us-east-1"
+            bucket_region = AWS_REGION_US_EAST_1
             if context.region != bucket_region:
                 raise CommonServiceException(
                     code="IllegalLocationConstraintException",
@@ -1086,9 +1092,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             delete_marker_id = generate_version_id(s3_bucket.versioning_status)
             delete_marker = S3DeleteMarker(key=key, version_id=delete_marker_id)
             s3_bucket.objects.set(key, delete_marker)
-            # TODO: make a proper difference between DeleteMarker and S3Object, not done yet
-            #  s3:ObjectRemoved:DeleteMarkerCreated
-            self._notify(context, s3_bucket=s3_bucket, s3_object=delete_marker)
+            s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+                context,
+                s3_bucket=s3_bucket,
+                s3_object=delete_marker,
+            )
+            s3_notif_ctx.event_type = f"{s3_notif_ctx.event_type}MarkerCreated"
+            self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx)
 
             return DeleteObjectOutput(VersionId=delete_marker.version_id, DeleteMarker=True)
 
@@ -1112,8 +1122,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["DeleteMarker"] = True
         else:
             self._storage_backend.remove(bucket, s3_object)
-            self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
             store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
         return response
 
@@ -1185,8 +1195,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 delete_marker_id = generate_version_id(s3_bucket.versioning_status)
                 delete_marker = S3DeleteMarker(key=object_key, version_id=delete_marker_id)
                 s3_bucket.objects.set(object_key, delete_marker)
-                # TODO: make a difference between DeleteMarker and S3Object
-                self._notify(context, s3_bucket=s3_bucket, s3_object=delete_marker)
+                s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+                    context,
+                    s3_bucket=s3_bucket,
+                    s3_object=delete_marker,
+                )
+                s3_notif_ctx.event_type = f"{s3_notif_ctx.event_type}MarkerCreated"
+                self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx)
+
                 if not quiet:
                     deleted.append(
                         DeletedObject(
@@ -4103,8 +4119,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 def generate_version_id(bucket_versioning_status: str) -> str | None:
     if not bucket_versioning_status:
         return None
-    # TODO: check VersionID format, could it be base64 urlsafe encoded?
-    return token_urlsafe(16) if bucket_versioning_status.lower() == "enabled" else "null"
+    elif bucket_versioning_status.lower() == "enabled":
+        return generate_safe_version_id()
+    else:
+        return "null"
 
 
 def add_encryption_to_response(response: dict, s3_object: S3Object):

@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import re
 import threading
 import uuid
 from typing import List
@@ -89,7 +90,6 @@ from localstack.utils.collections import PaginatedList
 from localstack.utils.json import CustomEncoder as JSONEncoder
 from localstack.utils.strings import camel_to_snake_case
 from localstack.utils.sync import poll_condition
-from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
 from localstack.utils.time import timestamp_millis
 
@@ -147,7 +147,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     """
 
     def __init__(self):
-        self.tags = TaggingService()
         self.alarm_scheduler: AlarmScheduler = None
         self.store = None
         self.cloudwatch_database = CloudwatchDatabase()
@@ -528,7 +527,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceOutput:
-        tags = self.tags.list_tags_for_resource(resource_arn)
+        store = self.get_store(context.account_id, context.region)
+        tags = store.TAGS.list_tags_for_resource(resource_arn)
         return ListTagsForResourceOutput(Tags=tags.get("Tags", []))
 
     def untag_resource(
@@ -538,13 +538,15 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         tag_keys: TagKeyList,
         **kwargs,
     ) -> UntagResourceOutput:
-        self.tags.untag_resource(resource_arn, tag_keys)
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.untag_resource(resource_arn, tag_keys)
         return UntagResourceOutput()
 
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
     ) -> TagResourceOutput:
-        self.tags.tag_resource(resource_arn, tags)
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.tag_resource(resource_arn, tags)
         return TagResourceOutput()
 
     def put_dashboard(
@@ -554,6 +556,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         dashboard_body: DashboardBody,
         **kwargs,
     ) -> PutDashboardOutput:
+        pattern = r"^[a-zA-Z0-9_-]+$"
+        if not re.match(pattern, dashboard_name):
+            raise InvalidParameterValueException(
+                "The value for field DashboardName contains invalid characters. "
+                "It can only contain alphanumerics, dash (-) and underscore (_).\n"
+            )
+
         store = self.get_store(context.account_id, context.region)
         store.dashboards[dashboard_name] = LocalStackDashboard(
             context.account_id, context.region, dashboard_name, dashboard_body

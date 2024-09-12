@@ -1,0 +1,175 @@
+{
+  "Resources": {
+    "MyEventBus251E60F8": {
+      "Type": "AWS::Events::EventBus",
+      "Properties": {
+        "Name": "MyEventBus"
+      }
+    },
+    "MyQueueE6CA6235": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "MyQueue"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "MyStateMachineRoleD59FFEBC": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "MyStateMachineRoleDefaultPolicyE468EB18": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:SendMessage",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "MyQueueE6CA6235",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "MyStateMachineRoleDefaultPolicyE468EB18",
+        "Roles": [
+          {
+            "Ref": "MyStateMachineRoleD59FFEBC"
+          }
+        ]
+      }
+    },
+    "MyStateMachine6C968CA5": {
+      "Type": "AWS::StepFunctions::StateMachine",
+      "Properties": {
+        "DefinitionString": {
+          "Fn::Join": [
+            "",
+            [
+              "{\"StartAt\":\"SendToQueue\",\"States\":{\"SendToQueue\":{\"End\":true,\"Type\":\"Task\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::sqs:sendMessage\",\"Parameters\":{\"QueueUrl\":\"",
+              {
+                "Ref": "MyQueueE6CA6235"
+              },
+              "\",\"MessageBody\":{\"message.$\":\"$\"}}}}}"
+            ]
+          ]
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "MyStateMachineRoleD59FFEBC",
+            "Arn"
+          ]
+        },
+        "StateMachineName": "MyStateMachine"
+      },
+      "DependsOn": [
+        "MyStateMachineRoleDefaultPolicyE468EB18",
+        "MyStateMachineRoleD59FFEBC"
+      ],
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "MyStateMachineEventsRole7C46BBB5": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "MyStateMachineEventsRoleDefaultPolicy6422AE18": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "MyStateMachine6C968CA5"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "MyStateMachineEventsRoleDefaultPolicy6422AE18",
+        "Roles": [
+          {
+            "Ref": "MyStateMachineEventsRole7C46BBB5"
+          }
+        ]
+      }
+    },
+    "MyRuleA44AB831": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventBusName": {
+          "Ref": "MyEventBus251E60F8"
+        },
+        "EventPattern": {
+          "detail-type": [
+            "myDetailType"
+          ]
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Ref": "MyStateMachine6C968CA5"
+            },
+            "Id": "Target0",
+            "RoleArn": {
+              "Fn::GetAtt": [
+                "MyStateMachineEventsRole7C46BBB5",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "MachineArn": {
+      "Value": {
+        "Ref": "MyStateMachine6C968CA5"
+      }
+    },
+    "QueueUrl": {
+      "Value": {
+        "Ref": "MyQueueE6CA6235"
+      }
+    }
+  }
+}

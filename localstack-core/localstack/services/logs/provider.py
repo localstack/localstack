@@ -18,6 +18,7 @@ from localstack.aws.api.logs import (
     DescribeLogGroupsResponse,
     DescribeLogStreamsRequest,
     DescribeLogStreamsResponse,
+    Entity,
     InputLogEvents,
     InvalidParameterException,
     KmsKeyId,
@@ -60,6 +61,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_stream_name: LogStreamName,
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
+        entity: Entity = None,
         **kwargs,
     ) -> PutLogEventsResponse:
         logs_backend = get_moto_logs_backend(context.account_id, context.region)
@@ -453,3 +455,12 @@ def moto_to_describe_dict(target, self):
     if self.kms_key_id:
         log_group["kmsKeyId"] = self.kms_key_id
     return log_group
+
+
+@patch(MotoLogGroup.get_log_events)
+def moto_get_log_events(
+    target, self, log_stream_name, start_time, end_time, limit, next_token, start_from_head
+):
+    if log_stream_name not in self.streams:
+        raise ResourceNotFoundException("The specified log stream does not exist.")
+    return target(self, log_stream_name, start_time, end_time, limit, next_token, start_from_head)

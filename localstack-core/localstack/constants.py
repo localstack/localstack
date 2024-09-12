@@ -20,6 +20,9 @@ LOCALHOST = "localhost"
 LOCALHOST_IP = "127.0.0.1"
 LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 
+# User-agent string used in outgoing HTTP requests made by LocalStack
+USER_AGENT_STRING = f"localstack/{VERSION}"
+
 # version of the Maven dependency with Java utility code
 LOCALSTACK_MAVEN_VERSION = "0.2.21"
 MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
@@ -27,9 +30,8 @@ MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
 # URL of localstack's artifacts repository on GitHub
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 
-# Download URLs
-SSL_CERT_URL = f"{ARTIFACTS_REPO}/raw/master/local-certs/server.key"
-SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
+# Artifacts endpoint
+ASSETS_ENDPOINT = "https://assets.localstack.cloud"
 
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"

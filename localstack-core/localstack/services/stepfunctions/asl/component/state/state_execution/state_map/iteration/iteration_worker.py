@@ -150,7 +150,8 @@ class IterationWorker(abc.ABC):
         except Exception as ex:
             # Error case.
             LOG.warning(
-                f"Unhandled termination error in item processor worker for job '{job.job_index}'."
+                "Unhandled termination error in item processor worker for job '%s'.",
+                job.job_index,
             )
 
             # Pass the exception upstream leading to evaluation halt.

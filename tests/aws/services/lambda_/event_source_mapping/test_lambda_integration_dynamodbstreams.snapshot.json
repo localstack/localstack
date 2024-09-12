@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
-    "recorded-date": "26-04-2023, 10:48:20",
+    "recorded-date": "03-09-2024, 14:52:49",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -13,7 +13,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -47,7 +47,7 @@
         "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -99,7 +99,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_disabled_dynamodb_event_source_mapping": {
-    "recorded-date": "27-02-2023, 18:34:59",
+    "recorded-date": "03-09-2024, 15:51:32",
     "recorded-content": {
       "dynamodb_create_table_result": {
         "TableDescription": {
@@ -112,7 +112,8 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -151,7 +152,7 @@
         "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -176,7 +177,7 @@
         "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "OK",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -195,7 +196,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_deletion_event_source_mapping_with_dynamodb": {
-    "recorded-date": "27-02-2023, 18:35:29",
+    "recorded-date": "03-09-2024, 14:55:15",
     "recorded-content": {
       "create_dynamodb_table_response": {
         "TableDescription": {
@@ -208,7 +209,8 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -247,7 +249,7 @@
         "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 0,
         "MaximumRecordAgeInSeconds": -1,
@@ -274,7 +276,7 @@
             "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
             "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
             "FunctionResponseTypes": [],
-            "LastModified": "datetime",
+            "LastModified": "<datetime>",
             "LastProcessingResult": "No records processed",
             "MaximumBatchingWindowInSeconds": 0,
             "MaximumRecordAgeInSeconds": -1,
@@ -295,8 +297,44 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
-    "recorded-date": "08-08-2024, 20:50:27",
+    "recorded-date": "03-09-2024, 14:58:10",
     "recorded-content": {
+      "create_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "update_table_response": {
         "TableDescription": {
           "AttributeDefinitions": [
@@ -307,9 +345,9 @@
           ],
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST",
-            "LastUpdateToPayPerRequestDateTime": "datetime"
+            "LastUpdateToPayPerRequestDateTime": "<datetime>"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -318,8 +356,8 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-          "LatestStreamLabel": "<resource:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+          "LatestStreamLabel": "<resource:2>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
             "ReadCapacityUnits": 0,
@@ -329,9 +367,9 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_IMAGE"
           },
-          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
-          "TableName": "<resource:2>",
+          "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "UPDATING"
         },
@@ -348,10 +386,10 @@
             "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
           }
         },
-        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -383,15 +421,15 @@
                 "functionError": "Unhandled"
               },
               "version": "1.0",
-              "timestamp": "date",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
               "DDBStreamBatchInfo": {
                 "shardId": "<shard-id:1>",
                 "startSequenceNumber": "<start-sequence-number:1>",
                 "endSequenceNumber": "<start-sequence-number:1>",
-                "approximateArrivalOfFirstRecord": "date",
-                "approximateArrivalOfLastRecord": "date",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
                 "batchSize": 1,
-                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>"
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
               }
             },
             "MD5OfBody": "<m-d5-of-body:1>",
@@ -407,7 +445,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
-    "recorded-date": "27-02-2023, 18:44:12",
+    "recorded-date": "03-09-2024, 15:10:19",
     "recorded-content": {
       "exception_event_source_creation": {
         "Error": {
@@ -424,7 +462,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
-    "recorded-date": "27-02-2023, 18:44:25",
+    "recorded-date": "03-09-2024, 15:10:37",
     "recorded-content": {
       "exception_event_source_creation": {
         "Error": {
@@ -441,7 +479,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_duplicate_event_source_mappings": {
-    "recorded-date": "04-01-2024, 17:25:30",
+    "recorded-date": "03-09-2024, 14:53:08",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -454,7 +492,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -488,7 +526,7 @@
         "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -519,7 +557,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[insert_same_entry_twice]": {
-    "recorded-date": "31-07-2024, 12:38:15",
+    "recorded-date": "03-09-2024, 14:59:51",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -532,7 +570,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -577,7 +615,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -662,7 +700,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_or_filter]": {
-    "recorded-date": "31-07-2024, 12:39:42",
+    "recorded-date": "03-09-2024, 15:01:39",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -675,7 +713,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -721,7 +759,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -836,7 +874,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_multiple_filters]": {
-    "recorded-date": "31-07-2024, 12:41:06",
+    "recorded-date": "03-09-2024, 15:03:30",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -849,7 +887,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -897,7 +935,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -976,7 +1014,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_filter_type]": {
-    "recorded-date": "31-07-2024, 12:42:14",
+    "recorded-date": "03-09-2024, 15:05:31",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -989,7 +1027,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -1040,7 +1078,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -1125,7 +1163,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter_type]": {
-    "recorded-date": "31-07-2024, 12:44:08",
+    "recorded-date": "03-09-2024, 15:06:46",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1138,7 +1176,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -1191,7 +1229,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -1607,7 +1645,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[prefix_filter]": {
-    "recorded-date": "31-07-2024, 12:45:08",
+    "recorded-date": "03-09-2024, 15:08:36",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1620,7 +1658,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -1673,7 +1711,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,
@@ -1758,7 +1796,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[date_time_conversion]": {
-    "recorded-date": "31-07-2024, 12:47:15",
+    "recorded-date": "03-09-2024, 15:10:02",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1771,7 +1809,7 @@
           "BillingModeSummary": {
             "BillingMode": "PAY_PER_REQUEST"
           },
-          "CreationDateTime": "datetime",
+          "CreationDateTime": "<datetime>",
           "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
@@ -1816,7 +1854,7 @@
         },
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 1,
         "MaximumRecordAgeInSeconds": -1,

@@ -1,29 +1,4 @@
 {
-  "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "recorded-date": "21-03-2024, 08:05:13",
-    "recorded-content": {
-      "head_bucket": {
-        "AccessPointAlias": false,
-        "BucketRegion": "<region>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_objects_v2": {
-        "EncodingType": "url",
-        "IsTruncated": false,
-        "KeyCount": 0,
-        "MaxKeys": 1000,
-        "Name": "<bucket-name:1>",
-        "Prefix": "",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_with_content": {
     "recorded-date": "03-08-2023, 04:13:20",
     "recorded-content": {
@@ -1088,9 +1063,9 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "recorded-date": "04-04-2024, 17:13:12",
+    "recorded-date": "29-08-2024, 14:59:45",
     "recorded-content": {
-      "get_bucket_location_bucket_1": {
+      "get-bucket-location-bucket-us-east-1": {
         "LocationConstraint": null,
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1118,14 +1093,14 @@
           "HTTPStatusCode": 400
         }
       },
-      "get_bucket_location_bucket_2": {
+      "get-bucket-location-bucket-us-east-2": {
         "LocationConstraint": "<location-constraint>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "create_bucket_constraint_exc": {
+      "create-bucket-us-east-2-no-constraint-exc": {
         "Error": {
           "Code": "IllegalLocationConstraintException",
           "Message": "The unspecified location constraint is incompatible for the region specific endpoint this request was sent to."
@@ -1135,21 +1110,37 @@
           "HTTPStatusCode": 400
         }
       },
-      "create_bucket_bucket_3": {
-        "Location": "<location>",
+      "create-bucket-us-east-2-constraint-to-us-west-1": {
+        "Error": {
+          "Code": "IllegalLocationConstraintException",
+          "Message": "The <region-3> location constraint is incompatible for the region specific endpoint this request was sent to."
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 400
         }
       },
-      "get_bucket_location_bucket_3": {
-        "LocationConstraint": "<location-constraint>",
+      "create-bucket-us-west-1-constraint-to-us-east-2": {
+        "Error": {
+          "Code": "IllegalLocationConstraintException",
+          "Message": "The <region-2> location constraint is incompatible for the region specific endpoint this request was sent to."
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 400
         }
       },
-      "get_bucket_location_non_existent_bucket": {
+      "create-bucket-us-west-1-constraint-to-us-east-1": {
+        "Error": {
+          "Code": "IllegalLocationConstraintException",
+          "Message": "The <region-1> location constraint is incompatible for the region specific endpoint this request was sent to."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-bucket-location-non-existent-bucket": {
         "Error": {
           "BucketName": "<bucket-name:1>",
           "Code": "NoSuchBucket",
@@ -1772,7 +1763,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
-    "recorded-date": "03-08-2023, 04:19:02",
+    "recorded-date": "29-08-2024, 16:19:26",
     "recorded-content": {
       "create-bucket-us-west-1": {
         "Error": {
@@ -1826,7 +1817,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
-    "recorded-date": "06-12-2023, 16:45:33",
+    "recorded-date": "30-08-2024, 11:28:52",
     "recorded-content": {
       "create_bucket": {
         "Location": "/<bucket-name:1>",
@@ -1885,9 +1876,9 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_name_with_dots": {
-    "recorded-date": "03-08-2023, 17:13:12",
+    "recorded-date": "29-08-2024, 15:35:02",
     "recorded-content": {
-      "list_objects": {
+      "list-objects": {
         "Contents": [
           {
             "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
@@ -1912,34 +1903,39 @@
           "HTTPStatusCode": 200
         }
       },
-      "list_objects_headers": {
-        "content-type": "application/xml",
-        "date": "date",
-        "server": "AmazonS3",
-        "transfer-encoding": "chunked",
-        "x-amz-bucket-region": "<region>",
-        "x-amz-id-2": "x-amz-id-2",
-        "x-amz-request-id": "x-amz-request-id"
+      "request-vhost-url-content": {
+        "ListBucketResult": {
+          "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+          "Contents": {
+            "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+            "Key": "my-content",
+            "LastModified": "date",
+            "Size": "9",
+            "StorageClass": "STANDARD"
+          },
+          "IsTruncated": "false",
+          "Marker": null,
+          "MaxKeys": "1000",
+          "Name": "<bucket-name:1>",
+          "Prefix": null
+        }
       },
-      "request_vhost_url_content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Name><bucket-name:1></Name><Prefix></Prefix><Marker></Marker><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated><Contents><Key>my-content</Key><LastModified>date</LastModified><ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag><Size>9</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>",
-      "request_vhost_headers": {
-        "Content-Type": "application/xml",
-        "Date": "date",
-        "Server": "AmazonS3",
-        "Transfer-Encoding": "chunked",
-        "x-amz-bucket-region": "<region>",
-        "x-amz-id-2": "x-amz-id-2",
-        "x-amz-request-id": "x-amz-request-id"
-      },
-      "request_path_url_content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Name><bucket-name:1></Name><Prefix></Prefix><Marker></Marker><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated><Contents><Key>my-content</Key><LastModified>date</LastModified><ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag><Size>9</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>",
-      "request_path_headers": {
-        "Content-Type": "application/xml",
-        "Date": "date",
-        "Server": "AmazonS3",
-        "Transfer-Encoding": "chunked",
-        "x-amz-bucket-region": "<region>",
-        "x-amz-id-2": "x-amz-id-2",
-        "x-amz-request-id": "x-amz-request-id"
+      "request-path-url-content": {
+        "ListBucketResult": {
+          "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+          "Contents": {
+            "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+            "Key": "my-content",
+            "LastModified": "date",
+            "Size": "9",
+            "StorageClass": "STANDARD"
+          },
+          "IsTruncated": "false",
+          "Marker": null,
+          "MaxKeys": "1000",
+          "Name": "<bucket-name:1>",
+          "Prefix": null
+        }
       }
     }
   },
@@ -4070,7 +4066,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketReplication::test_replication_config": {
-    "recorded-date": "12-08-2023, 20:11:46",
+    "recorded-date": "29-08-2024, 14:09:55",
     "recorded-content": {
       "expected_error_no_replication_set": {
         "Error": {
@@ -7848,7 +7844,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_wrong_target": {
-    "recorded-date": "23-11-2023, 12:50:13",
+    "recorded-date": "30-08-2024, 11:31:48",
     "recorded-content": {
       "put-bucket-logging-different-regions": {
         "Error": {
@@ -11232,7 +11228,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_cross_locations": {
-    "recorded-date": "27-11-2023, 16:40:53",
+    "recorded-date": "29-08-2024, 15:58:14",
     "recorded-content": {
       "put-bucket-logging-cross-us-east-1": {
         "Error": {
@@ -13165,6 +13161,31 @@
           }
         ],
         "VersionId": "<version-id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists_outside_us_east_1": {
+    "recorded-date": "29-08-2024, 15:20:15",
+    "recorded-content": {
+      "head_bucket": {
+        "AccessPointAlias": false,
+        "BucketRegion": "<region>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_objects_v2": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 0,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

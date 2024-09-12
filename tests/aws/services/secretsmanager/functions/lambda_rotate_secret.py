@@ -66,18 +66,20 @@ def handler(event, context):
     metadata = service_client.describe_secret(SecretId=arn)
 
     if not metadata["RotationEnabled"]:
-        logger.error(f"Secret {arn} is not enabled for rotation")
+        logger.error("Secret %s is not enabled for rotation", arn)
         raise ValueError(f"Secret {arn} is not enabled for rotation")
     #
     versions = metadata["VersionIdsToStages"]
     if token not in versions:
-        logger.error(f"Secret version {token} has no stage for rotation of secret {arn}.")
+        logger.error("Secret version %s has no stage for rotation of secret %s.", token, arn)
         raise ValueError(f"Secret version {token} has no stage for rotation of secret {arn}.")
     if "AWSCURRENT" in versions[token]:
-        logger.info(f"Secret version {token} already set as AWSCURRENT for secret {arn}.")
+        logger.info("Secret version %s already set as AWSCURRENT for secret %s.", token, arn)
         return
     elif "AWSPENDING" not in versions[token]:
-        logger.error(f"Secret version {token} not set as AWSPENDING for rotation of secret {arn}.")
+        logger.error(
+            "Secret version %s not set as AWSPENDING for rotation of secret %s.", token, arn
+        )
         raise ValueError(
             f"Secret version {token} not set as AWSPENDING for rotation of secret {arn}."
         )
@@ -121,7 +123,7 @@ def create_secret(service_client, arn, token):
     # Now try to get the secret version, if that fails, put a new secret
     try:
         service_client.get_secret_value(SecretId=arn, VersionId=token, VersionStage="AWSPENDING")
-        logger.info(f"createSecret: Successfully retrieved secret for {arn}.")
+        logger.info("createSecret: Successfully retrieved secret for %s.", arn)
     except service_client.exceptions.ResourceNotFoundException:
         # Signal the correct exception was triggered during create_secret stage.
         sig_exception = secret_signal_resource_not_found_exception_on_create(token)
@@ -138,7 +140,10 @@ def create_secret(service_client, arn, token):
             VersionStages=["AWSPENDING"],
         )
         logger.info(
-            f"createSecret: Successfully put secret for ARN {arn} and version {token} with passwd {passwd}."
+            "createSecret: Successfully put secret for ARN %s and version %s with passwd %s.",
+            arn,
+            token,
+            passwd,
         )
 
 
@@ -201,7 +206,7 @@ def finish_secret(service_client, arn, token):
             if version == token:
                 # The correct version is already marked as current, return
                 logger.info(
-                    f"finishSecret: Version {version} already marked as AWSCURRENT for {arn}"
+                    "finishSecret: Version %s already marked as AWSCURRENT for %s", version, arn
                 )
                 return
             current_version = version
@@ -215,5 +220,7 @@ def finish_secret(service_client, arn, token):
         RemoveFromVersionId=current_version,
     )
     logger.info(
-        f"finishSecret: Successfully set AWSCURRENT stage to version {token} for secret {arn}."
+        "finishSecret: Successfully set AWSCURRENT stage to version %s for secret %s.",
+        token,
+        arn,
     )

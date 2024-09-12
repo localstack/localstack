@@ -97,7 +97,8 @@ class TestSecretsManager:
         success = poll_condition(condition=_is_secret_deleted, timeout=120, interval=30)
         if not success:
             LOG.warning(
-                f"Timed out whilst awaiting for force deletion of secret '{secret_id}' to complete."
+                "Timed out whilst awaiting for force deletion of secret '%s' to complete.",
+                secret_id,
             )
 
     @staticmethod
@@ -114,7 +115,8 @@ class TestSecretsManager:
         success = poll_condition(condition=_is_secret_rotated, timeout=120, interval=5)
         if not success:
             LOG.warning(
-                f"Timed out whilst awaiting for secret '{secret_id}' to be rotated to new version."
+                "Timed out whilst awaiting for secret '%s' to be rotated to new version.",
+                secret_id,
             )
 
     @pytest.mark.parametrize(

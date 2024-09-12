@@ -48,7 +48,11 @@ def events_create_event_bus(aws_client, region_name, account_id):
 
                     aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
                 except Exception as e:
-                    LOG.warning(f"Failed to delete rule {rule}: {e}")
+                    LOG.warning(
+                        "Failed to delete rule %s: %s",
+                        rule,
+                        e,
+                    )
 
             # Delete archives for event bus
             event_source_arn = (
@@ -60,11 +64,19 @@ def events_create_event_bus(aws_client, region_name, account_id):
                 try:
                     aws_client.events.delete_archive(ArchiveName=archive)
                 except Exception as e:
-                    LOG.warning(f"Failed to delete archive {archive}: {e}")
+                    LOG.warning(
+                        "Failed to delete archive %s: %s",
+                        archive,
+                        e,
+                    )
 
             aws_client.events.delete_event_bus(Name=event_bus_name)
         except Exception as e:
-            LOG.warning(f"Failed to delete event bus {event_bus_name}: {e}")
+            LOG.warning(
+                "Failed to delete event bus %s: %s",
+                event_bus_name,
+                e,
+            )
 
 
 @pytest.fixture
@@ -148,7 +160,11 @@ def events_put_rule(aws_client):
 
             aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
         except Exception as e:
-            LOG.warning(f"Failed to delete rule {rule}: {e}")
+            LOG.warning(
+                "Failed to delete rule %s: %s",
+                rule,
+                e,
+            )
 
 
 @pytest.fixture
@@ -174,7 +190,11 @@ def events_create_archive(aws_client, region_name, account_id):
         try:
             aws_client.events.delete_archive(ArchiveName=archive)
         except Exception as e:
-            LOG.warning(f"Failed to delete archive {archive}: {e}")
+            LOG.warning(
+                "Failed to delete archive %s: %s",
+                archive,
+                e,
+            )
 
 
 @pytest.fixture

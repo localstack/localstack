@@ -121,7 +121,8 @@ class TestTranscribe:
 
         if not poll_condition(condition=is_transcription_done, timeout=60, interval=2):
             LOG.warning(
-                f"Timed out while awaiting for transcription of job with transcription job name:'{transcribe_job_name}'."
+                "Timed out while awaiting for transcription of job with transcription job name:'%s'.",
+                transcribe_job_name,
             )
             return False
         else:

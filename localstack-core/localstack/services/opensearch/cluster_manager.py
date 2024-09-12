@@ -111,7 +111,8 @@ def build_cluster_endpoint(
                 assigned_port = external_service_ports.reserve_port(preferred_port)
             except PortNotAvailableException:
                 LOG.warning(
-                    f"Preferred port {preferred_port} is not available, trying to reserve another port."
+                    "Preferred port %s is not available, trying to reserve another port.",
+                    preferred_port,
                 )
                 assigned_port = external_service_ports.reserve_port()
         else:

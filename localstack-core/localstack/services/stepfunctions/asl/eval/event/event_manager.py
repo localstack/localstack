@@ -166,7 +166,10 @@ class EventManager:
         )
         if event_details:
             if len(event_details) > 1:
-                LOG.warning(f"Event details with multiple bindings: {to_json_str(event_details)}")
+                LOG.warning(
+                    "Event details with multiple bindings: %s",
+                    to_json_str(event_details),
+                )
             details_body = next(iter(event_details.values()))
             if not include_execution_data:
                 # clone the object before modifying it as the change is limited to the history log value.

@@ -10,7 +10,7 @@ from moto.sns import sns_backends
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
     BatchEntryIdsNotDistinctException,
@@ -195,9 +195,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: find a scenario where we can fail to send a message synchronously to be able to report it
         # right now, it seems that AWS fails the whole publish if something is wrong in the format of 1 message
 
+        total_batch_size = 0
         message_contexts = []
         for entry in publish_batch_request_entries:
+            message_payload = entry.get("Message")
             message_attributes = entry.get("MessageAttributes", {})
+            total_batch_size += get_total_publish_size(message_payload, message_attributes)
             if message_attributes:
                 # if a message contains non-valid message attributes
                 # will fail for the first non-valid message encountered, and raise ParameterValueInvalid
@@ -206,7 +209,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # TODO: WRITE AWS VALIDATED
             if entry.get("MessageStructure") == "json":
                 try:
-                    message = json.loads(entry.get("Message"))
+                    message = json.loads(message_payload)
                     # Keys in the JSON object that correspond to supported transport protocols must have
                     # simple JSON string values.
                     # Non-string values will cause the key to be ignored.
@@ -245,6 +248,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             if is_fifo:
                 success["SequenceNumber"] = msg_ctx.sequencer_number
             response["Successful"].append(success)
+
+        if total_batch_size > MAXIMUM_MESSAGE_LENGTH:
+            raise CommonServiceException(
+                code="BatchRequestTooLong",
+                message="The length of all the messages put together is more than the limit.",
+                sender_fault=True,
+            )
 
         publish_ctx = SnsBatchPublishContext(
             messages=message_contexts,
@@ -520,7 +530,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 f"Invalid parameter: PhoneNumber Reason: {phone_number} is not valid to publish to"
             )
 
-        if len(message) > MAXIMUM_MESSAGE_LENGTH:
+        if get_total_publish_size(message, message_attributes) > MAXIMUM_MESSAGE_LENGTH:
             raise InvalidParameterException("Invalid parameter: Message too long")
 
         # for compatibility reasons, AWS allows users to use either TargetArn or TopicArn for publishing to a topic
@@ -1033,6 +1043,29 @@ def get_region_from_subscription_token(token: str) -> str:
 
 def get_next_page_token_from_arn(resource_arn: str) -> str:
     return to_str(base64.b64encode(to_bytes(resource_arn)))
+
+
+def _get_byte_size(payload: str | bytes) -> int:
+    # Calculate the real length of the byte object if the object is a string
+    return len(to_bytes(payload))
+
+
+def get_total_publish_size(
+    message_body: str, message_attributes: MessageAttributeMap | None
+) -> int:
+    size = _get_byte_size(message_body)
+    if message_attributes:
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-attributes.html
+        # All parts of the message attribute, including name, type, and value, are included in the message size
+        # restriction, which is 256 KB.
+        # iterate over the Keys and Attributes, adding the length of the Key to the length of all Attributes values
+        # (DataType and StringValue or BinaryValue)
+        size += sum(
+            _get_byte_size(key) + sum(_get_byte_size(attr_value) for attr_value in attr.values())
+            for key, attr in message_attributes.items()
+        )
+
+    return size
 
 
 def register_sns_api_resource(router: Router):

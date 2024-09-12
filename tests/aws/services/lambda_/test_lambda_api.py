@@ -5173,6 +5173,83 @@ class TestLambdaEventSourceMappings:
         response = e.value.response
         snapshot.match("error", response)
 
+    @markers.aws.validated
+    def test_create_event_source_self_managed(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        snapshot,
+        aws_client,
+        create_secret,
+        create_event_source_mapping,
+    ):
+        function_name = f"function-{short_uid()}"
+        secret_name = f"secret-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+        secret = create_secret(
+            Name=secret_name,
+            SecretString=json.dumps({"username": "someUsername", "password": "somePassword"}),
+        )
+
+        # Missing SourceAccessConfigurations
+        with pytest.raises(ClientError) as e:
+            create_event_source_mapping(
+                Topics=["topic"],
+                FunctionName=function_name,
+                SelfManagedEventSource={"Endpoints": {"KAFKA_BOOTSTRAP_SERVERS": ["kafka:1000"]}},
+            )
+        snapshot.match("missing-source-access-configuration", e.value.response)
+
+        # default values
+        event_source_mapping = create_event_source_mapping(
+            Topics=["topic"],
+            FunctionName=function_name,
+            SourceAccessConfigurations=[{"Type": "BASIC_AUTH", "URI": secret["ARN"]}],
+            SelfManagedEventSource={"Endpoints": {"KAFKA_BOOTSTRAP_SERVERS": ["kafka:1000"]}},
+        )
+        snapshot.match("event-source-mapping-default", event_source_mapping)
+
+        # Duplicate source
+        with pytest.raises(ClientError) as e:
+            create_event_source_mapping(
+                Topics=["topic"],
+                FunctionName=function_name,
+                SourceAccessConfigurations=[{"Type": "BASIC_AUTH", "URI": secret["ARN"]}],
+                SelfManagedEventSource={"Endpoints": {"KAFKA_BOOTSTRAP_SERVERS": ["kafka:1000"]}},
+            )
+        snapshot.match("duplicate-source", e.value.response)
+
+        # override default
+        event_source_mapping = create_event_source_mapping(
+            Topics=["topic_2"],
+            FunctionName=function_name,
+            SourceAccessConfigurations=[{"Type": "BASIC_AUTH", "URI": secret["ARN"]}],
+            SelfManagedEventSource={"Endpoints": {"KAFKA_BOOTSTRAP_SERVERS": ["kafka:1000"]}},
+            BatchSize=1,
+            SelfManagedKafkaEventSourceConfig={"ConsumerGroupId": "random_id"},
+            StartingPosition="LATEST",
+        )
+        snapshot.match("event-source-mapping-values", event_source_mapping)
+
+        # Multiple Duplicate source
+        with pytest.raises(ClientError) as e:
+            create_event_source_mapping(
+                Topics=["topic"],
+                FunctionName=function_name,
+                SourceAccessConfigurations=[{"Type": "BASIC_AUTH", "URI": secret["ARN"]}],
+                SelfManagedEventSource={
+                    "Endpoints": {"KAFKA_BOOTSTRAP_SERVERS": ["kafka:1000", "kafka:2000"]}
+                },
+                BatchSize=1,
+                SelfManagedKafkaEventSourceConfig={"ConsumerGroupId": "random_id"},
+            )
+        snapshot.match("multiple-duplicate-source", e.value.response)
+
 
 class TestLambdaTags:
     @markers.aws.validated

@@ -31,6 +31,14 @@ jobs:
           cd "$HOME"/bats-core
           sudo ./install.sh /usr/local
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install helper script dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
       - name: Run bats tests
         run: |
           bats --report-formatter junit -r tests/bin/ --output .

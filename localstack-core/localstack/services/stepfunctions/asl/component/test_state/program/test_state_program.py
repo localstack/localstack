@@ -52,7 +52,7 @@ class TestStateProgram(EvalComponent):
             env.set_error(error=ex.get_execution_failed_event_details())
         except Exception as ex:
             cause = f"{type(ex).__name__}({str(ex)})"
-            LOG.error(f"Stepfunctions computation ended with exception '{cause}'.")
+            LOG.error("Stepfunctions computation ended with exception '%s'.", cause)
             env.set_error(
                 ExecutionFailedEventDetails(
                     error=StatesErrorName(typ=StatesErrorNameType.StatesRuntime).error_name,

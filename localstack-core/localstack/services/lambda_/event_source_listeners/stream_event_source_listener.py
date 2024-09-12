@@ -128,7 +128,7 @@ class StreamEventSourceListener(EventSourceListener):
         if self._COORDINATOR_THREAD is not None:
             return
 
-        LOG.debug(f"Starting {self.source_type()} event source listener coordinator thread")
+        LOG.debug("Starting %s event source listener coordinator thread", self.source_type())
         self._invoke_adapter = invoke_adapter
         if self._invoke_adapter is None:
             LOG.error("Invoke adapter needs to be set for new Lambda provider. Aborting.")

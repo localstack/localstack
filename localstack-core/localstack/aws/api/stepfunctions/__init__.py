@@ -49,7 +49,9 @@ URL = str
 UnsignedInteger = int
 ValidateStateMachineDefinitionCode = str
 ValidateStateMachineDefinitionLocation = str
+ValidateStateMachineDefinitionMaxResult = int
 ValidateStateMachineDefinitionMessage = str
+ValidateStateMachineDefinitionTruncated = bool
 VersionDescription = str
 VersionWeight = int
 includedDetails = bool
@@ -208,6 +210,7 @@ class ValidateStateMachineDefinitionResultCode(StrEnum):
 
 class ValidateStateMachineDefinitionSeverity(StrEnum):
     ERROR = "ERROR"
+    WARNING = "WARNING"
 
 
 class ValidationExceptionReason(StrEnum):
@@ -1337,6 +1340,8 @@ ValidateStateMachineDefinitionInput = TypedDict(
     {
         "definition": Definition,
         "type": Optional[StateMachineType],
+        "severity": Optional[ValidateStateMachineDefinitionSeverity],
+        "maxResults": Optional[ValidateStateMachineDefinitionMaxResult],
     },
     total=False,
 )
@@ -1345,6 +1350,7 @@ ValidateStateMachineDefinitionInput = TypedDict(
 class ValidateStateMachineDefinitionOutput(TypedDict, total=False):
     result: ValidateStateMachineDefinitionResultCode
     diagnostics: ValidateStateMachineDefinitionDiagnosticList
+    truncated: Optional[ValidateStateMachineDefinitionTruncated]
 
 
 class StepfunctionsApi:

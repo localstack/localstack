@@ -267,7 +267,7 @@ class RequestTemplates(Templates):
             variables.get("context", {}).get("requestOverride", {}).get("header", {})
         )
 
-        LOG.debug(f"Endpoint request body after transformations:\n{result}")
+        LOG.debug("Endpoint request body after transformations:\n%s", result)
         return result
 
 

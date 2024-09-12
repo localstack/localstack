@@ -545,7 +545,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         if rule_service.schedule_cron:
             schedule_job_function = self._get_scheduled_rule_job_function(
-                account_id, region, rule_service.rule
+                account_id, region, rule_service.rule, context
             )
             rule_service.create_schedule_job(schedule_job_function)
         response = PutTargetsResponse(
@@ -1077,7 +1077,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 try:
                     del self._target_sender_store[target_arn]
                 except KeyError:
-                    LOG.error(f"Error deleting target service {target_arn}.")
+                    LOG.error("Error deleting target service %s.", target_arn)
 
     def _get_limited_dict_and_next_token(
         self, input_dict: dict, next_token: NextToken | None, limit: LimitMax100 | None
@@ -1109,7 +1109,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             rule_name = resource_arn.split("/")[-1]
             self.get_rule(rule_name, event_bus)
 
-    def _get_scheduled_rule_job_function(self, account_id, region, rule: Rule) -> Callable:
+    def _get_scheduled_rule_job_function(
+        self, account_id, region, rule: Rule, context: RequestContext
+    ) -> Callable:
         def func(*args, **kwargs):
             """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
             for target in rule.targets.values():
@@ -1130,7 +1132,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
                 target_sender = self._target_sender_store[target["Arn"]]
                 try:
-                    target_sender.process_event(event)
+                    target_sender.process_event(event, context)
                 except Exception as e:
                     LOG.info(
                         "Unable to send event notification %s to target %s: %s",
@@ -1363,7 +1365,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         else:
                             target_sender = self._target_sender_store[target_arn]
                             try:
-                                target_sender.process_event(event_formatted)
+                                target_sender.process_event(event_formatted, context)
                                 processed_entries.append({"EventId": event_formatted["id"]})
                             except Exception as error:
                                 processed_entries.append(

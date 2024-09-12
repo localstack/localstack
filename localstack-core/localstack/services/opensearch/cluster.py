@@ -243,7 +243,7 @@ def register_cluster(
     strategy = config.OPENSEARCH_ENDPOINT_STRATEGY
     # custom endpoints override any endpoint strategy
     if custom_endpoint and custom_endpoint.enabled:
-        LOG.debug(f"Registering route from {host}{path} to {endpoint.proxy.forward_base_url}")
+        LOG.debug("Registering route from %s%s to %s", host, path, endpoint.proxy.forward_base_url)
         assert not (
             host == localstack_host().host and (not path or path == "/")
         ), "trying to register an illegal catch all route"
@@ -262,7 +262,7 @@ def register_cluster(
             )
         )
     elif strategy == "domain":
-        LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
+        LOG.debug("Registering route from %s to %s", host, endpoint.proxy.forward_base_url)
         assert not host == localstack_host().host, "trying to register an illegal catch all route"
         rules.append(
             ROUTER.add(
@@ -279,13 +279,13 @@ def register_cluster(
             )
         )
     elif strategy == "path":
-        LOG.debug(f"Registering route from {path} to {endpoint.proxy.forward_base_url}")
+        LOG.debug("Registering route from %s to %s", path, endpoint.proxy.forward_base_url)
         assert path and not path == "/", "trying to register an illegal catch all route"
         rules.append(ROUTER.add(path, endpoint=endpoint))
         rules.append(ROUTER.add(f"{path}/<path:path>", endpoint=endpoint))
 
     elif strategy != "port":
-        LOG.warning(f"Attempted to register route for cluster with invalid strategy '{strategy}'")
+        LOG.warning("Attempted to register route for cluster with invalid strategy '%s'", strategy)
 
     return rules
 

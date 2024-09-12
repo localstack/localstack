@@ -88,7 +88,8 @@ class KinesisEventSourceListener(StreamEventSourceListener):
                 parsed_records.append(parsed_record)
             except json.JSONDecodeError:
                 LOG.warning(
-                    f"Unable to convert record '{raw_data}' to json... Record will be dropped.",
+                    "Unable to convert record '%s' to json... Record will be dropped.",
+                    raw_data,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
