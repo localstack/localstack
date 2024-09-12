@@ -93,17 +93,19 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template",
+        [
+            ST.load_sfn_template(ST.PARALLEL_STATE),
+            ST.load_sfn_template(ST.PARALLEL_STATE_PARAMETERS),
+        ],
+        ids=["PARALLEL_STATE", "PARALLEL_STATE_PARAMETERS"],
+    )
     def test_parallel_state(
-        self,
-        aws_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        sfn_snapshot,
+        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, template
     ):
         sfn_snapshot.add_transformer(SfnNoneRecursiveParallelTransformer())
-        template = ST.load_sfn_template(ST.PARALLEL_STATE)
         definition = json.dumps(template)
-
         exec_input = json.dumps({})
         create_and_record_execution(
             aws_client.stepfunctions,

@@ -1,0 +1,33 @@
+{
+  "StartAt":"TestState",
+  "States":{
+    "TestState":{
+      "Type":"Parallel",
+      "Parameters":{
+        "static-input-0": 0,
+        "static-input-1": [1]
+      },
+      "End":true,
+      "Branches":[
+        {
+          "StartAt":"Branch0State0",
+          "States":{
+            "Branch0State0":{
+              "Type":"Pass",
+              "End":true
+            }
+          }
+        },
+        {
+          "StartAt":"Branch1State0",
+          "States":{
+            "Branch1State0":{
+              "Type":"Pass",
+              "End":true
+            }
+          }
+        }
+      ],
+    }
+  }
+}
