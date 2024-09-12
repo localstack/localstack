@@ -53,6 +53,11 @@ In host mode, additional dependencies (e.g., Java) are required for developing c
 The required dependencies vary depending on the service, [Configuration](https://docs.localstack.cloud/references/configuration/), operating system, and system architecture (i.e., x86 vs ARM).
 Refer to our official [Dockerfile](https://github.com/localstack/localstack/blob/master/Dockerfile) and our [package installer LPM](Concepts/index.md#packages-and-installers) for more details.
 
+#### Root Permissions
+
+* Set `DNS_ADDRESS=0` to disable the LocalStack [DNS server](https://docs.localstack.cloud/user-guide/tools/dns-server/)
+  if you are getting the error "cannot run command as root" because the DNS server tries to bind port 53.
+
 #### Python Dependencies
 
 * [JPype1](https://pypi.org/project/JPype1/) might require `g++` to fix a compile error on ARM Linux `gcc: fatal error: cannot execute ‘cc1plus’`
