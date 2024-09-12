@@ -72,6 +72,7 @@ def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github
     with open("./target/logs.txt", "a") as f:
         f.write(f"rel path: {rel_path}\n")
         f.write(f"code owners: {code_owners}\n")
+        f.write(f"entry: {entry}\n")
         f.write(f"entry file path: {entry['file_path']}\n")
         f.write(f"github_repo: {github_repo}\n")
 
