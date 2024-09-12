@@ -60,8 +60,8 @@ class StateParallel(ExecutionState):
         # Compute the branches' input: if declared this is the parameters, else the current memory state.
         if self.parameters is not None:
             self.parameters.eval(env=env)
-        # In both cases, the inputs are copied by value to the branches, to avoid cross branch state manipulation and
-        # so it can be resubmitted in case of failure.
+        # In both cases, the inputs are copied by value to the branches, to avoid cross branch state manipulation, and
+        # cached to allow them to be resubmitted in case of failure.
         input_value = copy.deepcopy(env.stack.pop())
 
         # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
