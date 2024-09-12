@@ -1170,7 +1170,7 @@ class PublishDispatcher:
                 )
 
     def publish_to_topic(
-        self, ctx: SnsPublishContext, topic_arn: str, trace_context: TraceContext
+        self, ctx: SnsPublishContext, topic_arn: str, trace_context: TraceContext | None = None
     ) -> None:  # context required by eventstudio
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
         for subscriber in subscriptions:
@@ -1187,7 +1187,7 @@ class PublishDispatcher:
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_batch_to_topic(
-        self, ctx: SnsBatchPublishContext, topic_arn: str, trace_context: TraceContext
+        self, ctx: SnsBatchPublishContext, topic_arn: str, trace_context: TraceContext | None = None
     ) -> None:  # context required by eventstudio
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
         for subscriber in subscriptions:
