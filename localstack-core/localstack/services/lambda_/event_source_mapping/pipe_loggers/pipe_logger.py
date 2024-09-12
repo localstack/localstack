@@ -49,6 +49,28 @@ class PipeLogger(ABC):
         return self.log_configuration["Level"]
 
     def filter_message(self, message: dict) -> dict:
+        """
+        Filters a message payload to ensure it is formatted correcly for EventBridge Pipes Logging (see [AWS docs example](https://aws.amazon.com/blogs/compute/introducing-logging-support-for-amazon-eventbridge-pipes/)):
+        ```python
+        {
+            "resourceArn": str,
+            "timestamp": str,
+            "executionId": str,
+            "messageType": str,
+            "logLevel": str,
+            "error": {
+                "message": str,
+                "httpStatusCode": int,
+                "awsService": str,
+                "requestId": str,
+                "exceptionType": str,
+                "resourceArn": str
+            }, # Optional
+            "awsRequest": str, # Optional
+            "awsResponse": str # Optional
+        }
+        ```
+        """
         # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-logs.html#eb-pipes-logs-execution-data
         execution_data_fields = [
             "payload",
