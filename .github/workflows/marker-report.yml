@@ -99,6 +99,7 @@ jobs:
         if: ${{ inputs.createIssue }}
         run: |
           cat ./target/MARKER_REPORT_ISSUE.md
+          cat ./target/logs.txt
 
       - name: Upload generated markdown
         uses: actions/upload-artifact@v4
