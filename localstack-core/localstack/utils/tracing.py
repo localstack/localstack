@@ -2,7 +2,7 @@ from typing import TypedDict
 
 from localstack.aws.api import RequestContext
 
-INTERNAL_CONTEXT_EVENTSTUDIO_TRACING_PARAMETER = "_eventstudio_tracing_parameter"
+INTERNAL_CONTEXT_TRACE_CONTEXT = "_trace_context"
 
 
 class TraceContext(TypedDict):
@@ -10,16 +10,19 @@ class TraceContext(TypedDict):
     parent_id: str | None
 
 
+def is_tracing_enabled() -> bool:
+    """Check if tracing is enabled, this needs to be patched by an extension that requires tracing."""
+    return False
+
+
 def get_trace_context(context: RequestContext) -> TraceContext | None:
-    """Generate a data transfer object with only the relevant subset of the context.
+    """Retrieve a data transfer object with only the relevant subset of the context.
     Required for tracing propagation and to keep performance overhead low."""
-    eventstudio_tracing_parameter = context.get(INTERNAL_CONTEXT_EVENTSTUDIO_TRACING_PARAMETER)
+    if is_tracing_enabled():
+        if trace_context := context.get(INTERNAL_CONTEXT_TRACE_CONTEXT) is None:
+            trace_context = TraceContext(trace_id=None, parent_id=None)
+            setattr(context, INTERNAL_CONTEXT_TRACE_CONTEXT, trace_context)
+        return trace_context
 
-    if eventstudio_tracing_parameter is not None:
-        trace_id = context.get("trace_id")
-        parent_id = context.get("parent_id")
-
-        if trace_id is not None or parent_id is not None:
-            return TraceContext(trace_id=trace_id, parent_id=parent_id)
-
-    return None
+    else:
+        return None
