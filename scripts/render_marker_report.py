@@ -67,12 +67,14 @@ def render_template(*, template: str, enriched_report: EnrichedReport) -> str:
 
 def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github_repo: str):
     rel_path = "".join(entry["file_path"].partition(github_repo + "/")[2:])
-    import logging
+    # append the relevant info to ./target/logs.txt for debugging
 
-    logger = logging.getLogger(__name__)
-    logger.debug("rel_path", rel_path)
-    logger.debug("code_owners", code_owners)
-    logger.debug("entry file path", entry["file_path"])
+    with open("./target/logs.txt", "a") as f:
+        f.write(f"rel path: {rel_path}\n")
+        f.write(f"code owners: {code_owners}\n")
+        f.write(f"entry file path: {entry['file_path']}\n")
+        f.write(f"github_repo: {github_repo}\n")
+
     return TestEntry(
         pytest_node_id=entry["node_id"],
         file_path=rel_path,
@@ -126,6 +128,11 @@ def main():
 
     code_owners = CodeOwners(load_file(codeowners_path))
     marker_report = json.loads(load_file(marker_report_path))
+
+    # create a temp log file
+    with open("./target/logs.txt", "w") as f:
+        f.write("Rel path logs\n")
+
     enriched_report = enrich_with_codeowners(
         input_data=marker_report,
         github_repo=github_repo,
