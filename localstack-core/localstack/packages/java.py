@@ -4,6 +4,7 @@ from typing import List
 
 import requests
 
+from localstack.constants import USER_AGENT_STRING
 from localstack.packages import InstallTarget, Package
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
 from localstack.utils.files import rm_rf
@@ -100,7 +101,8 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?"
             f"os=linux&architecture={self.arch}&image_type=jdk"
         )
-        response = requests.get(endpoint, headers={"user-agent": "example/0.0.0"}).json()
+        # Override user-agent because Adoptium API denies service to `requests` library
+        response = requests.get(endpoint, headers={"user-agent": USER_AGENT_STRING}).json()
         return response[0]["binary"]["package"]["link"]
 
     def _download_url_fallback(self) -> str:
