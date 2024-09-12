@@ -16,7 +16,6 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
 from localstack import config
-from localstack.aws.api import RequestContext
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.sns import MessageAttributeMap
 from localstack.aws.connect import connect_to
@@ -46,6 +45,7 @@ from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.objects import not_none_or
 from localstack.utils.strings import long_uid, md5, to_bytes, to_str
 from localstack.utils.time import timestamp_millis
+from localstack.utils.tracing import TraceContext
 
 LOG = logging.getLogger(__name__)
 
@@ -1170,7 +1170,7 @@ class PublishDispatcher:
                 )
 
     def publish_to_topic(
-        self, ctx: SnsPublishContext, topic_arn: str, context: RequestContext
+        self, ctx: SnsPublishContext, topic_arn: str, trace_context: TraceContext
     ) -> None:  # context required by eventstudio
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
         for subscriber in subscriptions:
@@ -1187,7 +1187,7 @@ class PublishDispatcher:
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_batch_to_topic(
-        self, ctx: SnsBatchPublishContext, topic_arn: str, context: RequestContext
+        self, ctx: SnsBatchPublishContext, topic_arn: str, trace_context: TraceContext
     ) -> None:  # context required by eventstudio
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
         for subscriber in subscriptions:

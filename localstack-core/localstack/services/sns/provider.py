@@ -77,6 +77,7 @@ from localstack.utils.aws.arns import (
 )
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
 from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.tracing import get_trace_context
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -252,7 +253,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             request_headers=context.request.headers,
             topic_attributes=vars(moto_topic),
         )
-        self._publisher.publish_batch_to_topic(publish_ctx, topic_arn, context)
+        trace_context = get_trace_context(context)
+        self._publisher.publish_batch_to_topic(publish_ctx, topic_arn, trace_context)
 
         return response
 
@@ -613,7 +615,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # 2 quick call to this method in succession might not be executed in order in the executor?
             # TODO: test how this behaves in a FIFO context with a lot of threads.
             publish_ctx.topic_attributes |= vars(topic_model)
-            self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn, context)
+            trace_context = get_trace_context(context)
+            self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn, trace_context)
 
         if is_fifo:
             return PublishResponse(
