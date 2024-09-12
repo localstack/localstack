@@ -8,7 +8,6 @@ from typing import Any, Set
 
 from botocore.client import BaseClient
 
-from localstack.aws.api import RequestContext
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
@@ -29,6 +28,7 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
+from localstack.utils.tracing import TraceContext
 
 LOG = logging.getLogger(__name__)
 
@@ -140,15 +140,15 @@ class TargetSender(ABC):
         pass
 
     def proxy_send_event(
-        self, event: FormattedEvent | TransformedEvent, context: RequestContext
-    ):  # context required by eventstudio
+        self, event: FormattedEvent | TransformedEvent, trace_context: TraceContext | None = None
+    ):  # context data required by eventstudio
         """Proxy method to process the event and send it to the target,
         in addition it removes the field event-bus-name from the event,
         required for EventStudio extension"""
         self.send_event(event)
 
-    def process_event(self, event: FormattedEvent, context: RequestContext):
-        # context required by eventstudio
+    def process_event(self, event: FormattedEvent, trace_context: TraceContext | None = None):
+        # context data required by eventstudio
         """Processes the event and send it to the target."""
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
@@ -156,7 +156,7 @@ class TargetSender(ABC):
             event = transform_event_with_target_input_path(input_path, event)
         if input_transformer := self.target.get("InputTransformer"):
             event = self.transform_event_with_target_input_transformer(input_transformer, event)
-        self.proxy_send_event(event, context)
+        self.proxy_send_event(event, trace_context)
 
     def transform_event_with_target_input_transformer(
         self, input_transformer: InputTransformer, event: FormattedEvent

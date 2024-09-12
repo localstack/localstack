@@ -134,6 +134,7 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.common import truncate
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
+from localstack.utils.tracing import TraceContext, get_trace_context
 
 LOG = logging.getLogger(__name__)
 
@@ -534,6 +535,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> PutTargetsResponse:
+        trace_context = get_trace_context(context)
         region = context.region
         account_id = context.account_id
         rule_service = self.get_rule_service(region, account_id, rule, event_bus_name)
@@ -545,7 +547,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         if rule_service.schedule_cron:
             schedule_job_function = self._get_scheduled_rule_job_function(
-                account_id, region, rule_service.rule, context
+                account_id, region, rule_service.rule, trace_context
             )
             rule_service.create_schedule_job(schedule_job_function)
         response = PutTargetsResponse(
@@ -1110,7 +1112,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             self.get_rule(rule_name, event_bus)
 
     def _get_scheduled_rule_job_function(
-        self, account_id, region, rule: Rule, context: RequestContext
+        self, account_id, region, rule: Rule, trace_context: TraceContext | None = None
     ) -> Callable:
         def func(*args, **kwargs):
             """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
@@ -1132,7 +1134,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
                 target_sender = self._target_sender_store[target["Arn"]]
                 try:
-                    target_sender.process_event(event, context)
+                    target_sender.process_event(event, trace_context)
                 except Exception as e:
                     LOG.info(
                         "Unable to send event notification %s to target %s: %s",
@@ -1326,6 +1328,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         Events are matched against all the rules of the respective event bus.
         For matching rules the event is either sent to the respective target,
         via the target sender put to the defined archived."""
+        trace_context = get_trace_context(context)
         processed_entries = []
         failed_entry_count = 0
         for event in entries:
@@ -1365,7 +1368,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         else:
                             target_sender = self._target_sender_store[target_arn]
                             try:
-                                target_sender.process_event(event_formatted, context)
+                                target_sender.process_event(event_formatted, trace_context)
                                 processed_entries.append({"EventId": event_formatted["id"]})
                             except Exception as error:
                                 processed_entries.append(
