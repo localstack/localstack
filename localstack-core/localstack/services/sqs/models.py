@@ -514,7 +514,7 @@ class SqsQueue:
     def put(
         self,
         message: Message,
-        context: RequestContext,
+        context: RequestContext = None,  # context required by eventstudio, not enforced due to lambda FakeSqsClient
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
@@ -746,7 +746,7 @@ class StandardQueue(SqsQueue):
     def put(
         self,
         message: Message,
-        context: RequestContext,  # context required by eventstudio
+        context: RequestContext = None,  # context required by eventstudio, not enforced due to lambda FakeSqsClient
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
@@ -1003,7 +1003,7 @@ class FifoQueue(SqsQueue):
     def put(
         self,
         message: Message,
-        context: RequestContext,  # context required by eventstudio
+        context: RequestContext = None,  # context required by eventstudio, not enforced due to lambda FakeSqsClient
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
