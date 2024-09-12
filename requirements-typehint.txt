@@ -53,7 +53,7 @@ boto3==1.35.14
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.35.15
+boto3-stubs==1.35.16
     # via localstack-core (pyproject.toml)
 botocore==1.35.14
     # via
@@ -64,7 +64,7 @@ botocore==1.35.14
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.35.15
+botocore-stubs==1.35.16
     # via boto3-stubs
 build==1.2.2
     # via
@@ -305,7 +305,7 @@ mypy-boto3-cloudwatch==1.35.0
     # via boto3-stubs
 mypy-boto3-codecommit==1.35.0
     # via boto3-stubs
-mypy-boto3-cognito-identity==1.35.0
+mypy-boto3-cognito-identity==1.35.16
     # via boto3-stubs
 mypy-boto3-cognito-idp==1.35.0
     # via boto3-stubs
@@ -395,7 +395,9 @@ mypy-boto3-organizations==1.35.5
     # via boto3-stubs
 mypy-boto3-pi==1.35.0
     # via boto3-stubs
-mypy-boto3-pipes==1.35.0
+mypy-boto3-pinpoint==1.35.0
+    # via boto3-stubs
+mypy-boto3-pipes==1.35.16
     # via boto3-stubs
 mypy-boto3-qldb==1.35.0
     # via boto3-stubs
@@ -417,7 +419,7 @@ mypy-boto3-route53==1.35.4
     # via boto3-stubs
 mypy-boto3-route53resolver==1.35.0
     # via boto3-stubs
-mypy-boto3-s3==1.35.2
+mypy-boto3-s3==1.35.16
     # via boto3-stubs
 mypy-boto3-s3control==1.35.12
     # via boto3-stubs
@@ -551,7 +553,7 @@ pyparsing==3.1.4
     # via moto-ext
 pyproject-hooks==1.1.0
     # via build
-pytest==8.3.2
+pytest==8.3.3
     # via
     #   localstack-core
     #   pytest-rerunfailures
@@ -614,7 +616,7 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.8.0
+rich==13.8.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -740,6 +742,7 @@ typing-extensions==4.12.2
     #   mypy-boto3-opensearch
     #   mypy-boto3-organizations
     #   mypy-boto3-pi
+    #   mypy-boto3-pinpoint
     #   mypy-boto3-pipes
     #   mypy-boto3-qldb
     #   mypy-boto3-qldb-session

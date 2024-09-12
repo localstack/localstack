@@ -75,6 +75,7 @@ if TYPE_CHECKING:
     from mypy_boto3_opensearch import OpenSearchServiceClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_pi import PIClient
+    from mypy_boto3_pinpoint import PinpointClient
     from mypy_boto3_pipes import EventBridgePipesClient
     from mypy_boto3_qldb import QLDBClient
     from mypy_boto3_qldb_session import QLDBSessionClient
@@ -196,6 +197,7 @@ class TypedServiceClientFactory(abc.ABC):
     opensearch: Union["OpenSearchServiceClient", "MetadataRequestInjector[OpenSearchServiceClient]"]
     organizations: Union["OrganizationsClient", "MetadataRequestInjector[OrganizationsClient]"]
     pi: Union["PIClient", "MetadataRequestInjector[PIClient]"]
+    pinpoint: Union["PinpointClient", "MetadataRequestInjector[PinpointClient]"]
     pipes: Union["EventBridgePipesClient", "MetadataRequestInjector[EventBridgePipesClient]"]
     qldb: Union["QLDBClient", "MetadataRequestInjector[QLDBClient]"]
     qldb_session: Union["QLDBSessionClient", "MetadataRequestInjector[QLDBSessionClient]"]

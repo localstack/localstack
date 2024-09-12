@@ -20,6 +20,9 @@ LOCALHOST = "localhost"
 LOCALHOST_IP = "127.0.0.1"
 LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 
+# User-agent string used in outgoing HTTP requests made by LocalStack
+USER_AGENT_STRING = f"localstack/{VERSION}"
+
 # version of the Maven dependency with Java utility code
 LOCALSTACK_MAVEN_VERSION = "0.2.21"
 MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
