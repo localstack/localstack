@@ -65,27 +65,8 @@ def render_template(*, template: str, enriched_report: EnrichedReport) -> str:
     return jinja2.Template(source=template).render(data=enriched_report)
 
 
-def normalize_path(file_path: str) -> str:
-    """
-    Normalize paths to match those in CODEOWNERS files by adjusting known prefixes
-    and making them compatible with code owner patterns.
-    """
-    # Define potential path prefixes that need normalization
-    # normalized_path = re.sub(r"^(localstack-core|localstack-pro-core)/", "", file_path)
-    normalized_path = file_path.replace("pro/core/", "")  # Remove extra segments for pro paths
-    return normalized_path
-
-
-def add_path_prefix(file_path: str) -> str:
-    if "localstack-pro-core" in file_path and "/pro/core/" not in file_path:
-        # Insert '/pro/core/' after 'localstack-pro-core'
-        return file_path.replace("localstack/", "localstack/pro/core/")
-    return file_path
-
-
 def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github_repo: str):
-    rel_path = "".join(entry["file_path"].partition("tests/")[1:])
-    # code_owners_path = add_path_prefix(rel_path)
+    rel_path = entry["file_path"].partition(github_repo + "/")[2]
     return TestEntry(
         pytest_node_id=entry["node_id"],
         file_path=rel_path,
