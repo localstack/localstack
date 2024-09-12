@@ -137,7 +137,8 @@ class CountingService:
                 provisioned_executions = provisioned_tracker.concurrent_executions[qualified_arn]
                 if on_demand_executions or provisioned_executions:
                     LOG.warning(
-                        f"Concurrent lambda invocations disabled for '{qualified_arn}' by Lambda Debug Mode"
+                        "Concurrent lambda invocations disabled for '%s' by Lambda Debug Mode",
+                        qualified_arn,
                     )
                     raise TooManyRequestsException(
                         "Rate Exceeded.",

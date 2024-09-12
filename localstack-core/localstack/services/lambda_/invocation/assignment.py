@@ -143,8 +143,10 @@ class AssignmentService(OtherServiceEndpoint):
             and target_provisioned_environments > 0
         ):
             LOG.warning(
-                f"Environments for '{qualified_lambda_version_arn}' enforced to '1' by Lambda Debug Mode, "
-                f"configurations will continue to report the set value '{target_provisioned_environments}'"
+                "Environments for '%s' enforced to '1' by Lambda Debug Mode, "
+                "configurations will continue to report the set value '%s'",
+                qualified_lambda_version_arn,
+                target_provisioned_environments,
             )
             target_provisioned_environments = 1
 
