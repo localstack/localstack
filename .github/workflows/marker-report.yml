@@ -101,6 +101,7 @@ jobs:
           cat ./target/MARKER_REPORT_ISSUE.md
 
       - name: Upload generated markdown
+        if: ${{ inputs.createIssue }}
         uses: actions/upload-artifact@v4
         with:
           path: ./target/MARKER_REPORT_ISSUE.md
