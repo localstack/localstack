@@ -240,7 +240,9 @@ tolerated_failure_percentage_path_decl: TOLERATEDFAILUREPERCENTAGEPATH COLON STR
 
 label_decl: LABEL COLON keyword_or_string;
 
-result_writer_decl: RESULTWRITER COLON LBRACE result_writer_field (COMMA result_writer_field)* RBRACE;
+result_writer_decl:
+    RESULTWRITER COLON LBRACE result_writer_field (COMMA result_writer_field)* RBRACE
+;
 
 result_writer_field: resource_decl | parameters_decl;
 
