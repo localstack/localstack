@@ -119,6 +119,7 @@ from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invoc
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.collections import (
     DelSafeDict,
     PaginatedList,
@@ -2303,8 +2304,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
 
+        usage_plan_arn = f"arn:{get_partition(context.region)}:apigateway:{context.region}::/usageplans/{usage_plan_id}"
+        existing_tags = get_apigateway_store(context=context).TAGS.get(usage_plan_arn, {})
         if "tags" not in usage_plan:
-            usage_plan["tags"] = {}
+            usage_plan["tags"] = existing_tags
+        else:
+            usage_plan["tags"].update(existing_tags)
 
         fix_throttle_and_quota_from_usage_plan(usage_plan)
 
@@ -2317,8 +2322,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         fix_throttle_and_quota_from_usage_plan(usage_plan)
 
+        usage_plan_arn = f"arn:{get_partition(context.region)}:apigateway:{context.region}::/usageplans/{usage_plan_id}"
+        existing_tags = get_apigateway_store(context=context).TAGS.get(usage_plan_arn, {})
         if "tags" not in usage_plan:
-            usage_plan["tags"] = {}
+            usage_plan["tags"] = existing_tags
+        else:
+            usage_plan["tags"].update(existing_tags)
 
         return usage_plan
 
