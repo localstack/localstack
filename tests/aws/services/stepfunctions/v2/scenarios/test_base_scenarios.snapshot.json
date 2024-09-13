@@ -20071,5 +20071,111 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_result_writer": {
+    "recorded-date": "19-08-2024, 08:59:42",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\",\"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/TestMap:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": {
+                "MapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/TestMap:<MapRunArnPart1_0idx>",
+                "ResultWriterDetails": {
+                  "Bucket": "result-bucket",
+                  "Key": "mapJobs/<MapRunArnPart1_0idx>/manifest.json"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/TestMap:<MapRunArnPart1_0idx>",
+                "ResultWriterDetails": {
+                  "Bucket": "result-bucket",
+                  "Key": "mapJobs/<MapRunArnPart1_0idx>/manifest.json"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

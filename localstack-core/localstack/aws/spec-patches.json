@@ -1309,6 +1309,11 @@
       "op": "add",
       "path": "/operations/UpdateApi/http/responseCode",
       "value": 201
+    },
+    {
+      "op": "add",
+      "path": "/operations/UpdateRoute/http/responseCode",
+      "value": 201
     }
   ]
 }

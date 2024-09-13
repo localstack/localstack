@@ -227,7 +227,7 @@ class StreamPoller(Poller):
             attempts_count=attempts,
             partner_resource_arn=self.partner_resource_arn,
         )
-        self.send_events_to_dlq(events, context=failure_context)
+        self.send_events_to_dlq(shard_id, events, context=failure_context)
         # Update shard iterator if the execution failed but the events are sent to a DLQ
         self.shards[shard_id] = get_records_response["NextShardIterator"]
 
@@ -272,10 +272,10 @@ class StreamPoller(Poller):
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
                 raise PipeInternalError from e
 
-    def send_events_to_dlq(self, events, context) -> None:
+    def send_events_to_dlq(self, shard_id, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")
         if dlq_arn:
-            dlq_event = self.create_dlq_event(events, context)
+            dlq_event = self.create_dlq_event(shard_id, events, context)
             # Send DLQ event to DLQ target
             parsed_arn = parse_arn(dlq_arn)
             service = parsed_arn["service"]
@@ -291,7 +291,7 @@ class StreamPoller(Poller):
                 # TODO: implement sns DLQ
                 LOG.warning("Unsupported DLQ service %s", service)
 
-    def create_dlq_event(self, events: list[dict], context: dict) -> dict:
+    def create_dlq_event(self, shard_id: str, events: list[dict], context: dict) -> dict:
         first_record = events[0]
         first_record_arrival = get_datetime_from_timestamp(
             self.get_approximate_arrival_time(first_record)
@@ -301,7 +301,6 @@ class StreamPoller(Poller):
         last_record_arrival = get_datetime_from_timestamp(
             self.get_approximate_arrival_time(last_record)
         )
-        shard_id = first_record["eventID"].split(":")[0]
         return {
             **context,
             self.failure_payload_details_field_name(): {
