@@ -725,7 +725,7 @@ class TestUsagePlans:
                 {"op": "replace", "path": "/throttle/rateLimit", "value": "200"},
                 {"op": "replace", "path": "/quota/period", "value": "MONTH"},
                 {"op": "replace", "path": "/quota/limit", "value": "5000"},
-                {"op": "replace", "path": "/tags", "value": "{\"Key\":\"tag\",\"Value\":\"value\"}"},
+                {"op": "replace", "path": "/tags", "value": '{"Key":"tag","Value":"value"}'},
             ],
         )
         snapshot.match("update-usage-plan", response)
