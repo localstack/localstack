@@ -1,0 +1,31 @@
+{
+  "Comment": "MAP_STATE_RESULT_WRITER_JSON",
+  "StartAt": "MapState",
+  "States": {
+    "MapState": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "IteratorInner",
+        "States": {
+          "IteratorInner": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+      },
+      "ResultWriter": {
+        "Resource": "arn:aws:states:::s3:putObject",
+        "Parameters": {
+          "Bucket": "result-bucket",
+          "Prefix": "mapJobs"
+        }
+      },
+      "Label": "TestMap",
+      "End": true
+    }
+  }
+}

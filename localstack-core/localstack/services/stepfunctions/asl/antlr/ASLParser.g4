@@ -61,6 +61,7 @@ state_stmt:
     | tolerated_failure_percentage_decl
     | tolerated_failure_percentage_path_decl
     | label_decl
+    | result_writer_decl
 ;
 
 states_decl: STATES COLON LBRACE state_decl (COMMA state_decl)* RBRACE;
@@ -250,6 +251,12 @@ tolerated_failure_percentage_decl: TOLERATEDFAILUREPERCENTAGE COLON NUMBER;
 tolerated_failure_percentage_path_decl: TOLERATEDFAILUREPERCENTAGEPATH COLON STRINGPATH;
 
 label_decl: LABEL COLON keyword_or_string;
+
+result_writer_decl:
+    RESULTWRITER COLON LBRACE result_writer_field (COMMA result_writer_field)* RBRACE
+;
+
+result_writer_field: resource_decl | parameters_decl;
 
 retry_decl: RETRY COLON LBRACK (retrier_decl (COMMA retrier_decl)*)? RBRACK;
 
@@ -469,6 +476,7 @@ keyword_or_string:
     | TOLERATEDFAILUREPERCENTAGE
     | TOLERATEDFAILUREPERCENTAGEPATH
     | LABEL
+    | RESULTWRITER
     | NEXT
     | END
     | CAUSE
