@@ -3,13 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from localstack.aws.api.lambda_ import Arn
 from localstack.config import LAMBDA_DEBUG_MODE, LAMBDA_DEBUG_MODE_CONFIG_PATH
-from localstack.utils.lambda_debug_mode.lambda_debug_mode_config import (
-    LambdaDebugConfig,
-    LambdaDebugModeConfig,
-    load_lambda_debug_mode_config,
-)
+from localstack.utils.lambda_debug_mode.config.config import LambdaDebugModeConfig
+from localstack.utils.lambda_debug_mode.config.loader import load_lambda_debug_mode_config
 from localstack.utils.objects import singleton_factory
 
 LOG = logging.getLogger(__name__)
@@ -17,11 +13,11 @@ LOG = logging.getLogger(__name__)
 
 class LambdaDebugModeSession:
     _is_lambda_debug_mode: bool
-    _config: Optional[LambdaDebugModeConfig]
+    _lambda_debug_mode_config: Optional[LambdaDebugModeConfig]
 
     def __init__(self):
         self._is_lambda_debug_mode = bool(LAMBDA_DEBUG_MODE)
-        self._configuration = self._load_lambda_debug_mode_config()
+        self._lambda_debug_mode_config = self._load_lambda_debug_mode_config()
 
     @staticmethod
     @singleton_factory
@@ -67,5 +63,5 @@ class LambdaDebugModeSession:
     def is_lambda_debug_mode(self) -> bool:
         return self._is_lambda_debug_mode
 
-    def debug_config_for(self, lambda_arn: Arn) -> Optional[LambdaDebugConfig]:
-        return self._configuration.functions.get(lambda_arn) if self._configuration else None
+    def debug_config_for(self) -> Optional[LambdaDebugModeConfig]:
+        return self._lambda_debug_mode_config

@@ -3,122 +3,96 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-import yaml
 from pydantic import BaseModel, Field, ValidationError
-from yaml import Loader, MappingNode, MarkedYAMLError, SafeLoader
 
 from localstack.aws.api.lambda_ import Arn
+from localstack.utils.lambda_debug_mode.config.config import (
+    LambdaDebugModeConfig,
+)
+from localstack.utils.lambda_debug_mode.config.exceptions import (
+    DuplicateLambdaDebugConfig,
+    LambdaDebugModeConfigException,
+    PortAlreadyInUse,
+    UnknownLambdaArnFormat,
+)
+from localstack.utils.lambda_debug_mode.config.version import DEFAULT_VERSION, Version
 
 LOG = logging.getLogger(__name__)
 
 
-class LambdaDebugConfig(BaseModel):
+class LambdaDebugConfigData(BaseModel):
     debug_port: Optional[int] = Field(None, alias="debug-port")
     enforce_timeouts: bool = Field(False, alias="enforce-timeouts")
 
 
-class LambdaDebugModeConfig(BaseModel):
+class LambdaDebugModeConfigData(BaseModel):
+    # Version of the configuration file.
+    version: Version = Field(DEFAULT_VERSION, alias="version")
     # Bindings of Lambda function Arn and the respective debugging configuration.
-    functions: dict[Arn, LambdaDebugConfig]
+    functions: dict[Arn, LambdaDebugConfigData]
 
 
-class LambdaDebugModeConfigException(Exception): ...
+class LambdaDebugModeConfigV0(LambdaDebugModeConfig):
+    _config: Optional[LambdaDebugModeConfigData]
 
+    def __init__(self, config: LambdaDebugModeConfigData):
+        self._config = config
 
-class UnknownLambdaArnFormat(LambdaDebugModeConfigException):
-    unknown_lambda_arn: str
+    @classmethod
+    def from_yaml(cls, yaml_string: str):
+        config: Optional[LambdaDebugModeConfigData] = load_lambda_debug_mode_config(yaml_string)
+        return cls(config=config)
 
-    def __init__(self, unknown_lambda_arn: str):
-        self.unknown_lambda_arn = unknown_lambda_arn
+    def _get_lambda_debug_config_for(self, lambda_arn: Arn) -> Optional[LambdaDebugConfigData]:
+        config = self._config
+        if config is None:
+            return None
+        lambda_debug_config = config.functions.get(lambda_arn)
+        return lambda_debug_config
 
-    def __str__(self):
-        return f"UnknownLambdaArnFormat: '{self.unknown_lambda_arn}'"
-
-
-class PortAlreadyInUse(LambdaDebugModeConfigException):
-    port_number: int
-
-    def __init__(self, port_number: int):
-        self.port_number = port_number
-
-    def __str__(self):
-        return f"PortAlreadyInUse: '{self.port_number}'"
-
-
-class DuplicateLambdaDebugConfig(LambdaDebugModeConfigException):
-    lambda_arn_debug_config_first: str
-    lambda_arn_debug_config_second: str
-
-    def __init__(self, lambda_arn_debug_config_first: str, lambda_arn_debug_config_second: str):
-        self.lambda_arn_debug_config_first = lambda_arn_debug_config_first
-        self.lambda_arn_debug_config_second = lambda_arn_debug_config_second
-
-    def __str__(self):
-        return (
-            f"DuplicateLambdaDebugConfig: Lambda debug configuration in '{self.lambda_arn_debug_config_first}' "
-            f"is redefined in '{self.lambda_arn_debug_config_second}'"
+    def lambda_is_enforce_timeouts_for(self, lambda_arn: Arn) -> bool:
+        lambda_debug_config: Optional[LambdaDebugConfigData] = self._get_lambda_debug_config_for(
+            lambda_arn=lambda_arn
         )
+        if lambda_debug_config is None:
+            return False
+        return not lambda_debug_config.enforce_timeouts
+
+    def _debug_port_for(self, lambda_arn: Arn) -> Optional[int]:
+        lambda_debug_config: Optional[LambdaDebugConfigData] = self._get_lambda_debug_config_for(
+            lambda_arn=lambda_arn
+        )
+        if lambda_debug_config is None:
+            return None
+        return lambda_debug_config.debug_port
+
+    def lambda_debug_client_port_for(self, lambda_arn: Arn) -> Optional[int]:
+        return self._debug_port_for(lambda_arn=lambda_arn)
+
+    def lambda_debugger_port_for(self, lambda_arn: Arn) -> Optional[int]:
+        return self._debug_port_for(lambda_arn=lambda_arn)
 
 
 class _LambdaDebugModeConfigPostProcessingState:
+    version: Version
     ports_used: set[int]
 
-    def __init__(self):
+    def __init__(self, version: Version):
+        self.version = version
         self.ports_used = set()
 
 
-class _SafeLoaderWithDuplicateCheck(SafeLoader):
-    def __init__(self, stream):
-        super().__init__(stream)
-        self.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            self._construct_mappings_with_duplicate_check,
-        )
-
-    @staticmethod
-    def _construct_mappings_with_duplicate_check(loader: Loader, node: MappingNode, deep=False):
-        # Constructs yaml bindings, whilst checking for duplicate mapping key definitions, raising a
-        # MarkedYAMLError when one is found.
-        mapping = dict()
-        for key_node, value_node in node.value:
-            key = loader.construct_object(key_node, deep=deep)
-            if key in mapping:
-                # Create a MarkedYAMLError to indicate the duplicate key issue
-                raise MarkedYAMLError(
-                    context="while constructing a mapping",
-                    context_mark=node.start_mark,
-                    problem=f"found duplicate key: {key}",
-                    problem_mark=key_node.start_mark,
-                )
-            value = loader.construct_object(value_node, deep=deep)
-            mapping[key] = value
-        return mapping
-
-
-def from_yaml_string(yaml_string: str) -> Optional[LambdaDebugModeConfig]:
-    try:
-        data = yaml.load(yaml_string, _SafeLoaderWithDuplicateCheck)
-    except yaml.YAMLError as yaml_error:
-        LOG.error(
-            "Could not parse yaml lambda debug mode configuration file due to: %s",
-            yaml_error,
-        )
-        data = None
-    if not data:
-        return None
-    config = LambdaDebugModeConfig(**data)
-    return config
-
-
-def post_process_lambda_debug_mode_config(config: LambdaDebugModeConfig) -> None:
+def post_process_lambda_debug_mode_config(config: LambdaDebugModeConfigData) -> None:
     _post_process_lambda_debug_mode_config(
-        post_processing_state=_LambdaDebugModeConfigPostProcessingState(), config=config
+        post_processing_state=_LambdaDebugModeConfigPostProcessingState(version=config.version),
+        config=config,
     )
 
 
 def _post_process_lambda_debug_mode_config(
-    post_processing_state: _LambdaDebugModeConfigPostProcessingState, config: LambdaDebugModeConfig
-):
+    post_processing_state: _LambdaDebugModeConfigPostProcessingState,
+    config: LambdaDebugModeConfigData,
+) -> None:
     config_functions = config.functions
     lambda_arns = list(config_functions.keys())
     for lambda_arn in lambda_arns:
@@ -179,7 +153,7 @@ def _to_qualified_lambda_function_arn(lambda_arn: Arn) -> Arn:
 
 def _post_process_lambda_debug_config(
     post_processing_state: _LambdaDebugModeConfigPostProcessingState,
-    lambda_debug_config: LambdaDebugConfig,
+    lambda_debug_config: LambdaDebugConfigData,
 ) -> None:
     debug_port: Optional[int] = lambda_debug_config.debug_port
     if debug_port is None:
@@ -189,22 +163,10 @@ def _post_process_lambda_debug_config(
     post_processing_state.ports_used.add(debug_port)
 
 
-def load_lambda_debug_mode_config(yaml_string: str) -> Optional[LambdaDebugModeConfig]:
-    # Attempt to parse the yaml string.
-    try:
-        yaml_data = yaml.load(yaml_string, _SafeLoaderWithDuplicateCheck)
-    except yaml.YAMLError as yaml_error:
-        LOG.error(
-            "Could not parse yaml lambda debug mode configuration file due to: %s",
-            yaml_error,
-        )
-        yaml_data = None
-    if not yaml_data:
-        return None
-
+def load_lambda_debug_mode_config(raw_config: dict) -> Optional[LambdaDebugModeConfigData]:
     # Attempt to build the LambdaDebugModeConfig object from the yaml object.
     try:
-        config = LambdaDebugModeConfig(**yaml_data)
+        config = LambdaDebugModeConfigData(**raw_config)
     except ValidationError as validation_error:
         validation_errors = validation_error.errors() or list()
         error_messages = [
