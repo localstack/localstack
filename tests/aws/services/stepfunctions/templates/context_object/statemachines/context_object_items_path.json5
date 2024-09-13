@@ -1,5 +1,5 @@
 {
-  "Comment": "CONTEXT_OBJECT_INPUT_PATH",
+  "Comment": "CONTEXT_OBJECT_ITEMS_PATH",
   "StartAt": "TestState",
   "States": {
     "TestState": {
