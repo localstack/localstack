@@ -69,21 +69,21 @@ class OpenAPIRequestValidator(OpenAPIValidator):
         path = context.request.path
 
         if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
-            try:
-                for openapi in self.open_apis:
+            for openapi in self.open_apis:
+                try:
                     openapi.validate_request(WerkzeugOpenAPIRequest(context.request))
-            except RequestValidationError as e:
-                # Note: in this handler we only check validation errors, e.g., wrong body, missing required in the body.
-                response.status_code = 400
-                response.set_json({"error": "Bad Request", "message": str(e)})
-                chain.stop()
-            except OpenAPIError:
-                # Other errors can be raised when validating a request against the OpenAPI specification.
-                #   The most common are: ServerNotFound, OperationNotFound, or PathNotFound.
-                #   We explicitly do not check any other error but RequestValidationError ones.
-                #   We shallow the exception to avoid excessive logging (e.g., a lot of ServerNotFound), as the only
-                #   purpose of this handler is to check for request validation errors.
-                pass
+                except RequestValidationError as e:
+                    # Note: in this handler we only check validation errors, e.g., wrong body, missing required.
+                    response.status_code = 400
+                    response.set_json({"error": "Bad Request", "message": str(e)})
+                    chain.stop()
+                except OpenAPIError:
+                    # Other errors can be raised when validating a request against the OpenAPI specification.
+                    #   The most common are: ServerNotFound, OperationNotFound, or PathNotFound.
+                    #   We explicitly do not check any other error but RequestValidationError ones.
+                    #   We shallow the exception to avoid excessive logging (e.g., a lot of ServerNotFound), as the only
+                    #   purpose of this handler is to check for request validation errors.
+                    pass
 
 
 class OpenAPIResponseValidator(OpenAPIValidator):
@@ -96,14 +96,14 @@ class OpenAPIResponseValidator(OpenAPIValidator):
         path = context.request.path
 
         if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
-            try:
-                for openapi in self.open_apis:
+            for openapi in self.open_apis:
+                try:
                     openapi.validate_response(
                         WerkzeugOpenAPIRequest(context.request),
                         WerkzeugOpenAPIResponse(response),
                     )
-            except ResponseValidationError as exc:
-                LOG.error("Response validation failed for %s: $s", path, exc)
-                response.status_code = 500
-                response.set_json({"error": exc.__class__.__name__, "message": str(exc)})
-                chain.stop()
+                except ResponseValidationError as exc:
+                    LOG.error("Response validation failed for %s: $s", path, exc)
+                    response.status_code = 500
+                    response.set_json({"error": exc.__class__.__name__, "message": str(exc)})
+                    chain.stop()
