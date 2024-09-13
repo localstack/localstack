@@ -23,12 +23,10 @@ on:
         default: false
 
   push:
-#    paths:
-#      - "tests/**"
-#    branches:
-#      - master
-    branches: # TODO: remove this before merge and uncomment the above
-      - reusable-workflow-markers
+    paths:
+      - "tests/**"
+    branches:
+      - master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -107,17 +105,16 @@ jobs:
         with:
           path: ./target/MARKER_REPORT_ISSUE.md
 
-# TODO: enable before merge
-#      - name: Create GH issue from template
-#        if: inputs.dryRun != true && ${{ inputs.createIssue }}
-#        uses: JasonEtco/create-an-issue@v2
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}
-#        with:
-#          # `update_existing` actually has 3 possible values:
-#          # 1. not set => will always open duplicates
-#          # 2. false => will not update and will not open duplicates (NOOP if title conflict detected)
-#          # 3. true => will update an existing one if conflict detected
-#          update_existing: ${{ inputs.updateExistingIssue || '' }}
-##          search_existing: open
-#          filename: ./target/MARKER_REPORT_ISSUE.md
+      - name: Create GH issue from template
+        if: inputs.dryRun != true && ${{ inputs.createIssue }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}
+        with:
+          # `update_existing` actually has 3 possible values:
+          # 1. not set => will always open duplicates
+          # 2. false => will not update and will not open duplicates (NOOP if title conflict detected)
+          # 3. true => will update an existing one if conflict detected
+          update_existing: ${{ inputs.updateExistingIssue || '' }}
+#          search_existing: open
+          filename: ./target/MARKER_REPORT_ISSUE.md
