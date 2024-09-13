@@ -392,6 +392,13 @@ def test_account(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..tags.'aws:cloudformation:logical-id'",
+        "$..tags.'aws:cloudformation:stack-id'",
+        "$..tags.'aws:cloudformation:stack-name'",
+    ]
+)
 def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
     snapshot.add_transformers_list(
         [
@@ -399,6 +406,8 @@ def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
             snapshot.transform.key_value("stage"),
             snapshot.transform.key_value("id"),
             snapshot.transform.key_value("name"),
+            snapshot.transform.key_value("aws:cloudformation:stack-name"),
+            snapshot.transform.resource_name(),
         ]
     )
     rest_api_name = f"api-{short_uid()}"
@@ -406,7 +415,7 @@ def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/apigateway_usage_plan.yml"
         ),
-        parameters={"QuotaLimit": "5000", "RestApiName": rest_api_name},
+        parameters={"QuotaLimit": "5000", "RestApiName": rest_api_name, "TagValue": "value1"},
     )
 
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
@@ -419,7 +428,11 @@ def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
         template=load_file(
             os.path.join(os.path.dirname(__file__), "../../../templates/apigateway_usage_plan.yml")
         ),
-        parameters={"QuotaLimit": "7000", "RestApiName": rest_api_name},
+        parameters={
+            "QuotaLimit": "7000",
+            "RestApiName": rest_api_name,
+            "TagValue": "value-updated",
+        },
     )
 
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
