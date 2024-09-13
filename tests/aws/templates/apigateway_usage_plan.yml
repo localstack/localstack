@@ -27,6 +27,9 @@ Resources:
         Limit:
           Ref: QuotaLimit
         Period: MONTH
+      Tags:
+        - Key: test
+          Value: value
     DependsOn:
       - Stage
   MockMethod:
