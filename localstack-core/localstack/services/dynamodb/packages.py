@@ -42,7 +42,7 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
     def _prepare_installation(self, target: InstallTarget) -> None:
         from localstack.packages.java import java_package
 
-        java_package.get_installer(self.java_version).install()
+        java_package.get_installer(self.java_version).install(target)
 
     def _install(self, target: InstallTarget):
         # download and extract archive
