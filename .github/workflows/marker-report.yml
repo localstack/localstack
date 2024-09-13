@@ -106,7 +106,7 @@ jobs:
           path: ./target/MARKER_REPORT_ISSUE.md
 
       - name: Create GH issue from template
-        if: inputs.dryRun != true && ${{ inputs.createIssue }}
+        if: inputs.dryRun != true && inputs.createIssue == true
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}
