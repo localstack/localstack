@@ -791,6 +791,24 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#result_writer_decl.
+    def enterResult_writer_decl(self, ctx:ASLParser.Result_writer_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#result_writer_decl.
+    def exitResult_writer_decl(self, ctx:ASLParser.Result_writer_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#result_writer_field.
+    def enterResult_writer_field(self, ctx:ASLParser.Result_writer_fieldContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#result_writer_field.
+    def exitResult_writer_field(self, ctx:ASLParser.Result_writer_fieldContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#retry_decl.
     def enterRetry_decl(self, ctx:ASLParser.Retry_declContext):
         pass
