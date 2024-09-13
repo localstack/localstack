@@ -4,7 +4,9 @@ Handlers for validating request and response schema against OpenAPI specs.
 
 import logging
 import os
+from pathlib import Path
 
+import yaml
 from openapi_core import OpenAPI
 from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest, WerkzeugOpenAPIResponse
 from openapi_core.exceptions import OpenAPIError
@@ -12,24 +14,36 @@ from openapi_core.validation.request.exceptions import (
     RequestValidationError,
 )
 from openapi_core.validation.response.exceptions import ResponseValidationError
-from plux import PluginManager
+from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 from localstack.constants import INTERNAL_RESOURCE_PATH
 from localstack.http import Response
-from localstack.plugins import OASPlugin
 
 LOG = logging.getLogger(__name__)
 
 
-class CoreOASPlugin(OASPlugin):
-    name = "localstack.core"
+class OASPlugin(Plugin):
+    """
+    This plugin allows to register an arbitrary number of OpenAPI specs, e.g., the spec for the public endpoints
+    of localstack.core.
+    The OpenAPIValidator handler uses (as opt-in) all the collected specs to validate the requests and the responses
+    to these public endpoints.
+    """
 
-    def __init__(self):
-        path = os.path.join(os.path.dirname(__file__), "..", "..", "openapi.yaml")
-        super().__init__(path)
+    namespace = "localstack.openapi.spec"
+
+    def __init__(self, spec_path: os.PathLike | str) -> None:
+        if isinstance(spec_path, str):
+            spec_path = Path(spec_path)
+        self.spec_path = spec_path
+        self.spec = {}
+
+    def load(self):
+        with self.spec_path.open("r") as f:
+            self.spec = yaml.safe_load(f)
 
 
 class OpenAPIValidator(Handler):

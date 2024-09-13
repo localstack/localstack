@@ -1,11 +1,8 @@
 import logging
 import os
-from pathlib import Path
-
-import yaml
-from plux import Plugin
 
 from localstack import config
+from localstack.aws.handlers.validation import OASPlugin
 from localstack.runtime import hooks
 from localstack.utils.files import rm_rf
 from localstack.utils.ssl import get_cert_pem_file_path
@@ -28,15 +25,9 @@ def delete_cached_certificate():
     rm_rf(target_file)
 
 
-class OASPlugin(Plugin):
-    namespace = "localstack.openapi.spec"
+class CoreOASPlugin(OASPlugin):
+    name = "localstack.core"
 
-    def __init__(self, spec_path: os.PathLike | str) -> None:
-        if isinstance(spec_path, str):
-            spec_path = Path(spec_path)
-        self.spec_path = spec_path
-        self.spec = {}
-
-    def load(self):
-        with self.spec_path.open("r") as f:
-            self.spec = yaml.safe_load(f)
+    def __init__(self):
+        path = os.path.join(os.path.dirname(__file__), "openapi.yaml")
+        super().__init__(path)
