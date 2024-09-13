@@ -12,6 +12,9 @@ class ScenariosTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/catch_states_runtime.json5"
     )
     PARALLEL_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/parallel_state.json5")
+    PARALLEL_STATE_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/parallel_state_parameters.json5"
+    )
     MAX_CONCURRENCY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/max_concurrency_path.json5"
     )

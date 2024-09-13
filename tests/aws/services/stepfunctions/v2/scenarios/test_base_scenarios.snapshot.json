@@ -19646,6 +19646,432 @@
       }
     }
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state[PARALLEL_STATE]": {
+    "recorded-date": "12-09-2024, 20:48:56",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "LoadInput"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "LoadInput",
+              "output": "[1,2,3,4]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": "[1,2,3,4]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[1,2,3,4]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[1,2,3,4]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch21"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[1,2,3,4]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch22"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[1,2,3,4]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch31"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[1,2,3,4]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch32"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[1,2,3,4]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch33"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch1",
+              "output": "[1,2,3,4]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch21",
+              "output": "[1,2,3,4]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch22",
+              "output": "[1,2,3,4]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch31",
+              "output": "[1,2,3,4]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch32",
+              "output": "[1,2,3,4]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch33",
+              "output": "[1,2,3,4]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 19,
+            "previousEventId": 17,
+            "stateExitedEventDetails": {
+              "name": "ParallelState",
+              "output": "[[1,2,3,4],[1,2,3,4],[1,2,3,4]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[[1,2,3,4],[1,2,3,4],[1,2,3,4]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 20,
+            "previousEventId": 19,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state[PARALLEL_STATE_PARAMETERS]": {
+    "recorded-date": "12-09-2024, 20:49:10",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "static-input-0": 0,
+                "static-input-1": [
+                  1
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch0State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "static-input-0": 0,
+                "static-input-1": [
+                  1
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch1State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch0State0",
+              "output": {
+                "static-input-0": 0,
+                "static-input-1": [
+                  1
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch1State0",
+              "output": {
+                "static-input-0": 0,
+                "static-input-1": [
+                  1
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 9,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "TestState",
+              "output": "[{\"static-input-0\":0,\"static-input-1\":[1]},{\"static-input-0\":0,\"static-input-1\":[1]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"static-input-0\":0,\"static-input-1\":[1]},{\"static-input-0\":0,\"static-input-1\":[1]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_result_writer": {
     "recorded-date": "19-08-2024, 08:59:42",
     "recorded-content": {

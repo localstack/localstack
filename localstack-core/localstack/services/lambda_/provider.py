@@ -52,6 +52,7 @@ from localstack.aws.api.lambda_ import (
     GetCodeSigningConfigResponse,
     GetFunctionCodeSigningConfigResponse,
     GetFunctionConcurrencyResponse,
+    GetFunctionRecursionConfigResponse,
     GetFunctionResponse,
     GetFunctionUrlConfigResponse,
     GetLayerVersionPolicyResponse,
@@ -109,8 +110,10 @@ from localstack.aws.api.lambda_ import (
     ProvisionedConcurrencyStatusEnum,
     PublishLayerVersionResponse,
     PutFunctionCodeSigningConfigResponse,
+    PutFunctionRecursionConfigResponse,
     PutProvisionedConcurrencyConfigResponse,
     Qualifier,
+    RecursiveLoop,
     ReservedConcurrentExecutions,
     ResourceConflictException,
     ResourceNotFoundException,
@@ -127,6 +130,7 @@ from localstack.aws.api.lambda_ import (
     TagKeyList,
     Tags,
     TracingMode,
+    UnqualifiedFunctionName,
     UpdateCodeSigningConfigResponse,
     UpdateEventSourceMappingRequest,
     UpdateFunctionCodeRequest,
@@ -715,6 +719,39 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             layer_version = layer.layer_versions.get(layer_version)
             layers.append(layer_version)
         return layers
+
+    def get_function_recursion_config(
+        self,
+        context: RequestContext,
+        function_name: UnqualifiedFunctionName,
+        **kwargs,
+    ) -> GetFunctionRecursionConfigResponse:
+        account_id, region = api_utils.get_account_and_region(function_name, context)
+        function_name = api_utils.get_function_name(function_name, context)
+        fn = self._get_function(function_name=function_name, region=region, account_id=account_id)
+        return GetFunctionRecursionConfigResponse(RecursiveLoop=fn.recursive_loop)
+
+    def put_function_recursion_config(
+        self,
+        context: RequestContext,
+        function_name: UnqualifiedFunctionName,
+        recursive_loop: RecursiveLoop,
+        **kwargs,
+    ) -> PutFunctionRecursionConfigResponse:
+        account_id, region = api_utils.get_account_and_region(function_name, context)
+        function_name = api_utils.get_function_name(function_name, context)
+
+        fn = self._get_function(function_name=function_name, region=region, account_id=account_id)
+
+        allowed_values = list(RecursiveLoop.__members__.values())
+        if recursive_loop not in allowed_values:
+            raise ValidationException(
+                f"1 validation error detected: Value '{recursive_loop}' at 'recursiveLoop' failed to satisfy constraint: "
+                f"Member must satisfy enum value set: [Terminate, Allow]"
+            )
+
+        fn.recursive_loop = recursive_loop
+        return PutFunctionRecursionConfigResponse(RecursiveLoop=fn.recursive_loop)
 
     @handler(operation="CreateFunction", expand=False)
     def create_function(
