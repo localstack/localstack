@@ -174,6 +174,7 @@ class RestApiAwsIntegration(RestApiIntegration):
     def __init__(self):
         self._base_domain = config.internal_service_url()
         self._base_host = ""
+        self._service_names = get_service_catalog().service_names
 
     def invoke(self, context: RestApiInvocationContext) -> EndpointResponse:
         integration_req: IntegrationRequest = context.integration_request
@@ -186,14 +187,18 @@ class RestApiAwsIntegration(RestApiIntegration):
             credentials = render_uri_with_stage_variables(credentials, context.stage_variables)
 
         headers = integration_req["headers"]
-        headers.update(
-            get_internal_mocked_headers(
-                service_name=service_name,
-                region_name=integration_region,
-                source_arn=get_source_arn(context),
-                role_arn=credentials,
+        # Some integrations will use a special format for the service in the URI, like AppSync, and so those requests
+        # are not directed to a service directly, so need to add the Authorization header. It would fail parsing
+        # by our service name parser anyway
+        if service_name in self._service_names:
+            headers.update(
+                get_internal_mocked_headers(
+                    service_name=service_name,
+                    region_name=integration_region,
+                    source_arn=get_source_arn(context),
+                    role_arn=credentials,
+                )
             )
-        )
         query_params = integration_req["query_string_parameters"].copy()
         data = integration_req["body"]
 
@@ -284,6 +289,9 @@ class RestApiAwsIntegration(RestApiIntegration):
         if service_name == "sqs":
             # This follow the new SQS_ENDPOINT_STRATEGY=standard
             url = config.external_service_url(subdomains=f"sqs.{region_name}")
+        elif "-api" in service_name:
+            # this could be an `<subdomain>.<service>-api`, used by some services
+            url = config.external_service_url(subdomains=service_name)
 
         return urlparse(url).netloc
 
