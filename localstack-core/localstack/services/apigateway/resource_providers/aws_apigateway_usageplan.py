@@ -166,7 +166,7 @@ class ApiGatewayUsagePlanProvider(ResourceProvider[ApiGatewayUsagePlanProperties
 
         if "Tags" in update_config_props:
             tags_dict = {}
-            for tag in update_config_props:
+            for tag in update_config_props["Tags"]:
                 tags_dict.update({tag["Key"]: tag["Value"]})
             update_config_props["Tags"] = tags_dict
 
