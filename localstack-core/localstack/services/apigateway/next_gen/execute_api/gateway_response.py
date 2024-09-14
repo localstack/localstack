@@ -100,6 +100,8 @@ class AuthorizerConfigurationError(BaseGatewayException):
     type = GatewayResponseType.AUTHORIZER_CONFIGURATION_ERROR
     # TODO validate this header with aws validated tests
     code = "AuthorizerConfigurationException"
+    # the message is set to None by default in AWS
+    message = None
 
 
 class AuthorizerFailureError(BaseGatewayException):
