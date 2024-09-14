@@ -1,5 +1,4 @@
 import logging
-import os
 
 from localstack import config
 from localstack.aws.handlers.validation import OASPlugin
@@ -26,8 +25,4 @@ def delete_cached_certificate():
 
 
 class CoreOASPlugin(OASPlugin):
-    name = "localstack.core"
-
-    def __init__(self):
-        path = os.path.join(os.path.dirname(__file__), "openapi.yaml")
-        super().__init__(path)
+    name = "localstack"

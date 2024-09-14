@@ -3,9 +3,8 @@ Handlers for validating request and response schema against OpenAPI specs.
 """
 
 import logging
-import os
-from pathlib import Path
 
+import importlib_resources
 import yaml
 from openapi_core import OpenAPI
 from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest, WerkzeugOpenAPIResponse
@@ -31,14 +30,34 @@ class OASPlugin(Plugin):
     of localstack.core.
     The OpenAPIValidator handler uses (as opt-in) all the collected specs to validate the requests and the responses
     to these public endpoints.
+
+    An OAS plugin assumes the following directory layout.
+
+    my_package
+    ├── sub_package
+    │   ├── __init__.py       <-- spec file
+    │   ├── openapi.yaml
+    │   └── style.css
+    └── openapi.yaml          <-- spec file
+
+    Each package can have its own OpenAPI yaml spec. The only convention (and prerequisite) is to have the openapi.yaml
+    file at the root of the package.
+
+    To declare a plugin you should simply implement OASPlugin and use the package name as the plugin name. E.g.,:
+
+    class MyPackageOASPlugin(OASPlugin):
+        name = "my_package"
+
+    class MySubPackagePlugin(OASPlugin):
+        name = "my_package.sub_package"
     """
 
     namespace = "localstack.openapi.spec"
 
-    def __init__(self, spec_path: os.PathLike | str) -> None:
-        if isinstance(spec_path, str):
-            spec_path = Path(spec_path)
-        self.spec_path = spec_path
+    def __init__(self) -> None:
+        # By convention, the anchor is the package and is the name of the plugin. An openapi.yaml file is resolved
+        #   from there.
+        self.spec_path = importlib_resources.files(self.name).joinpath("openapi.yaml")
         self.spec = {}
 
     def load(self):
