@@ -3,8 +3,10 @@ Handlers for validating request and response schema against OpenAPI specs.
 """
 
 import logging
+import os
+import sys
+from pathlib import Path
 
-import importlib_resources
 import yaml
 from openapi_core import OpenAPI
 from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest, WerkzeugOpenAPIResponse
@@ -37,27 +39,29 @@ class OASPlugin(Plugin):
     ├── sub_package
     │   ├── __init__.py       <-- spec file
     │   ├── openapi.yaml
-    │   └── style.css
+    │   └── plugins.py        <-- plugins
+    ├── plugins.py            <-- plugins
     └── openapi.yaml          <-- spec file
 
-    Each package can have its own OpenAPI yaml spec. The only convention (and prerequisite) is to have the openapi.yaml
-    file at the root of the package.
-
-    To declare a plugin you should simply implement OASPlugin and use the package name as the plugin name. E.g.,:
+    Each package can have its own OpenAPI yaml spec which is loaded by the correspondent plugin in plugins.py
+    You can simply create a plugin like the following:
 
     class MyPackageOASPlugin(OASPlugin):
         name = "my_package"
 
-    class MySubPackagePlugin(OASPlugin):
-        name = "my_package.sub_package"
+    The only convention is that plugins.py and openapi.yaml have the same pathname.
     """
 
     namespace = "localstack.openapi.spec"
 
     def __init__(self) -> None:
-        # By convention, the anchor is the package and is the name of the plugin. An openapi.yaml file is resolved
-        #   from there.
-        self.spec_path = importlib_resources.files(self.name).joinpath("openapi.yaml")
+        # By convention a plugins.py is at the same level (i.e., same pathname) of the openapi.yaml file.
+        # importlib.resources would be a better approach but has issues with namespace packages in editable mode
+        _module = sys.modules[self.__module__]
+        self.spec_path = Path(
+            os.path.join(os.path.dirname(os.path.abspath(_module.__file__)), "openapi.yaml")
+        )
+        assert self.spec_path.exists()
         self.spec = {}
 
     def load(self):
@@ -69,6 +73,9 @@ class OpenAPIValidator(Handler):
     open_apis: list["OpenAPI"]
 
     def __init__(self) -> None:
+        # avoid to load the specs if we don't have to perform any validation
+        if not (config.OPENAPI_VALIDATE_REQUEST or config.OPENAPI_VALIDATE_RESPONSE):
+            return
         specs = PluginManager("localstack.openapi.spec").load_all()
         self.open_apis = []
         for spec in specs:
