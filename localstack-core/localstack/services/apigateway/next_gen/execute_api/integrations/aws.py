@@ -18,7 +18,7 @@ from localstack.aws.connect import (
     dump_dto,
 )
 from localstack.aws.protocol.service_router import get_service_catalog
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, INTERNAL_AWS_ACCESS_KEY_ID
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.collections import merge_dicts
@@ -109,7 +109,7 @@ def get_internal_mocked_headers(
             ]["AccessKeyId"]
         )
     else:
-        access_key_id = None
+        access_key_id = INTERNAL_AWS_ACCESS_KEY_ID
 
     dto = InternalRequestParameters(
         service_principal=ServicePrincipal.apigateway, source_arn=source_arn
@@ -213,12 +213,12 @@ class RestApiAwsIntegration(RestApiIntegration):
             if target := self.get_action_service_target(service_name, action):
                 headers["X-Amz-Target"] = target
 
+            query_params["Action"] = action
+
             if service_name in self.SERVICES_LEGACY_QUERY_PROTOCOL:
                 # this has been tested in AWS: for `ssm`, it fully overrides the body because SSM uses the Query
                 # protocol, so we simulate it that way
                 data = self.get_payload_from_query_string(query_params)
-
-            query_params["Action"] = action
 
         url = f"{self._base_domain}{path}"
         headers["Host"] = self.get_internal_host_for_service(
@@ -228,7 +228,7 @@ class RestApiAwsIntegration(RestApiIntegration):
         request_parameters = {
             "method": method,
             "url": url,
-            "params": integration_req["query_string_parameters"],
+            "params": query_params,
             "headers": headers,
         }
 
@@ -314,7 +314,7 @@ class RestApiAwsIntegration(RestApiIntegration):
                     data[key] = None
 
         except Exception:
-            # the operation above is only for parity reason, skips if it fail
+            # the operation above is only for parity reason, skips if it fails
             pass
 
         wrapped = {
@@ -356,9 +356,6 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
 
         function_arn = get_lambda_function_arn_from_invocation_uri(integration_uri)
         source_arn = get_source_arn(context)
-        # TODO: properly get the value out/validate it?
-        headers = integration_req["headers"]
-        is_invocation_asynchronous = headers.get("X-Amz-Invocation-Type") == "'Event'"
 
         # TODO: write test for credentials rendering
         if credentials := context.integration.get("credentials"):
@@ -370,15 +367,18 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
                 event=to_bytes(json.dumps(input_event)),
                 source_arn=source_arn,
                 credentials=credentials,
-                asynchronous=is_invocation_asynchronous,
             )
+
         except ClientError as e:
-            # TODO: more data from the error message?
             LOG.warning(
                 "Exception during integration invocation: '%s'",
                 e,
             )
-            raise IntegrationFailureError("Internal server error", status_code=502) from e
+            status_code = 502
+            if e.response["Error"]["Code"] == "AccessDeniedException":
+                status_code = 500
+            raise IntegrationFailureError("Internal server error", status_code=status_code) from e
+
         except Exception as e:
             LOG.warning(
                 "Unexpected exception during integration invocation: '%s'",
@@ -408,7 +408,6 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         event: bytes,
         source_arn: str,
         credentials: str = None,
-        asynchronous: bool = False,
     ) -> bytes:
         lambda_client = get_service_factory(
             region_name=extract_region_from_arn(function_arn),
@@ -420,7 +419,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         ).invoke(
             FunctionName=function_arn,
             Payload=event,
-            InvocationType="Event" if asynchronous else "RequestResponse",
+            InvocationType="RequestResponse",
         )
         if payload := inv_result.get("Payload"):
             return payload.read()

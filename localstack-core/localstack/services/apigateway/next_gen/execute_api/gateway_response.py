@@ -128,7 +128,6 @@ class ExpiredTokenError(BaseGatewayException):
 
 class IntegrationFailureError(BaseGatewayException):
     type = GatewayResponseType.INTEGRATION_FAILURE
-    # TODO: tested manually for now
     code = "InternalServerErrorException"
     status_code = 500
 
