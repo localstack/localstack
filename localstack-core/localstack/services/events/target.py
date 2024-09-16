@@ -8,7 +8,6 @@ from typing import Any, Set
 
 from botocore.client import BaseClient
 
-from localstack.aws.api import RequestContext
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
@@ -139,24 +138,17 @@ class TargetSender(ABC):
     def send_event(self, event: FormattedEvent | TransformedEvent):
         pass
 
-    def proxy_send_event(
-        self, event: FormattedEvent | TransformedEvent, context: RequestContext
-    ):  # context required by eventstudio
-        """Proxy method to process the event and send it to the target,
-        in addition it removes the field event-bus-name from the event,
-        required for EventStudio extension"""
-        self.send_event(event)
-
-    def process_event(self, event: FormattedEvent, context: RequestContext):
+    def process_event(self, event: FormattedEvent):
         # context required by eventstudio
         """Processes the event and send it to the target."""
+        event = event.copy()
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
         if input_path := self.target.get("InputPath"):
             event = transform_event_with_target_input_path(input_path, event)
         if input_transformer := self.target.get("InputTransformer"):
             event = self.transform_event_with_target_input_transformer(input_transformer, event)
-        self.proxy_send_event(event, context)
+        self.send_event(event)
 
     def transform_event_with_target_input_transformer(
         self, input_transformer: InputTransformer, event: FormattedEvent

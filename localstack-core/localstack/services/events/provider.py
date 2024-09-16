@@ -545,7 +545,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         if rule_service.schedule_cron:
             schedule_job_function = self._get_scheduled_rule_job_function(
-                account_id, region, rule_service.rule, context
+                account_id, region, rule_service.rule
             )
             rule_service.create_schedule_job(schedule_job_function)
         response = PutTargetsResponse(
@@ -1109,9 +1109,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             rule_name = resource_arn.split("/")[-1]
             self.get_rule(rule_name, event_bus)
 
-    def _get_scheduled_rule_job_function(
-        self, account_id, region, rule: Rule, context: RequestContext
-    ) -> Callable:
+    def _get_scheduled_rule_job_function(self, account_id, region, rule: Rule) -> Callable:
         def func(*args, **kwargs):
             """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
             for target in rule.targets.values():
@@ -1132,7 +1130,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
                 target_sender = self._target_sender_store[target["Arn"]]
                 try:
-                    target_sender.process_event(event, context)
+                    target_sender.process_event(event)
                 except Exception as e:
                     LOG.info(
                         "Unable to send event notification %s to target %s: %s",
@@ -1365,7 +1363,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         else:
                             target_sender = self._target_sender_store[target_arn]
                             try:
-                                target_sender.process_event(event_formatted, context)
+                                target_sender.process_event(event_formatted)
                                 processed_entries.append({"EventId": event_formatted["id"]})
                             except Exception as error:
                                 processed_entries.append(
