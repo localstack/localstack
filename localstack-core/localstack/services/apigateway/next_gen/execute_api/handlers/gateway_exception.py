@@ -87,7 +87,7 @@ class GatewayExceptionHandler(RestApiGatewayExceptionHandler):
         #  on the CRUD level, it returns the same template as all other errors but in reality the message field is
         #  capitalized
         if isinstance(exception, AccessDeniedError):
-            return json.dumps({"Message": exception.message})
+            return json.dumps({"Message": exception.message}, separators=(",", ":"))
 
         return json.dumps({"message": exception.message})
 
