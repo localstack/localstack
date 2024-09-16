@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/resources/test_logs.py::test_cfn_handle_log_group_resource": {
+    "last_validated_date": "2024-06-20T16:15:47+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_logs.py::test_logstream": {
     "last_validated_date": "2022-07-29T11:22:53+00:00"
   }

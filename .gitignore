@@ -69,5 +69,7 @@ gen/
 
 # RAW snapshots
 *.raw.snapshot.json
+<mainh.onmicrosoft.com>
 
-.fake
+# setuptools_scm version.py
+

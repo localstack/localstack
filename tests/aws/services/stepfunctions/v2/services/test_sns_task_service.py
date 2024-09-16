@@ -4,18 +4,19 @@ import threading
 import pytest
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
-from tests.aws.services.stepfunctions.utils import create_and_record_execution
 from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOUT
 
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",

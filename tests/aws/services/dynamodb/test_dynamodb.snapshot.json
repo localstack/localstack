@@ -268,14 +268,14 @@
     "recorded-date": "10-01-2024, 12:59:51",
     "recorded-content": {
       "SSEDescription": {
-        "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "SSEType": "KMS",
         "Status": "ENABLED"
       },
       "KMSDescription": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "Default key that protects my DynamoDB data when no other key is defined",
@@ -297,7 +297,7 @@
         }
       },
       "update-table-disable-sse-spec": {
-        "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "SSEType": "KMS",
         "Status": "UPDATING"
       }
@@ -459,7 +459,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -470,7 +470,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -498,7 +498,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
@@ -640,7 +640,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_stream_view_type": {
-    "recorded-date": "22-10-2023, 23:22:27",
+    "recorded-date": "31-05-2024, 14:49:57",
     "recorded-content": {
       "create-table": {
         "TableDescription": {
@@ -659,7 +659,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -670,7 +670,7 @@
             "StreamEnabled": true,
             "StreamViewType": "KEYS_ONLY"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -698,7 +698,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "KEYS_ONLY",
@@ -857,7 +857,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming": {
-    "recorded-date": "17-04-2024, 22:45:49",
+    "recorded-date": "31-05-2024, 14:47:04",
     "recorded-content": {
       "create-table": {
         "TableDescription": {
@@ -876,7 +876,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -887,7 +887,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -915,7 +915,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
@@ -1148,7 +1148,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -1159,7 +1159,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
@@ -1192,7 +1192,7 @@
             "ReadCapacityUnits": 5,
             "WriteCapacityUnits": 5
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:2>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:2>",
           "TableId": "<uuid:2>",
           "TableName": "<table-name:2>",
           "TableSizeBytes": 0,
@@ -1220,7 +1220,7 @@
               "ShardId": "<shard-id:1>"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
           "StreamLabel": "<latest-stream-label:1>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
@@ -1259,6 +1259,158 @@
             },
             "eventID": "<event-i-d:1>",
             "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventVersion": "1.1"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_records_with_update_item": {
+    "recorded-date": "26-06-2024, 14:28:27",
+    "recorded-content": {
+      "create-table": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamLabel": "<latest-stream-label:1>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_AND_OLD_IMAGES"
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "<table-status:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-stream": {
+        "StreamDescription": {
+          "CreationRequestDateTime": "datetime",
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "Shards": [
+            {
+              "SequenceNumberRange": {
+                "StartingSequenceNumber": "starting-sequence-number"
+              },
+              "ShardId": "<shard-id:1>"
+            }
+          ],
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "StreamLabel": "<latest-stream-label:1>",
+          "StreamStatus": "ENABLED",
+          "StreamViewType": "NEW_AND_OLD_IMAGES",
+          "TableName": "<table-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-shard-iterator": {
+        "ShardIterator": "<shard-iterator:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-records": {
+        "Records": [
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "datetime",
+              "Keys": {
+                "id": {
+                  "S": "my-item-id"
+                }
+              },
+              "NewImage": {
+                "attr1": {
+                  "S": "value1"
+                },
+                "attr2": {
+                  "S": "value2"
+                },
+                "id": {
+                  "S": "my-item-id"
+                }
+              },
+              "SequenceNumber": "<sequence-number:1>",
+              "SizeBytes": 46,
+              "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventID": "<event-i-d:1>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "datetime",
+              "Keys": {
+                "id": {
+                  "S": "my-item-id"
+                }
+              },
+              "NewImage": {
+                "attr1": {
+                  "S": "value2"
+                },
+                "attr2": {
+                  "S": "value3"
+                },
+                "id": {
+                  "S": "my-item-id"
+                }
+              },
+              "OldImage": {
+                "attr1": {
+                  "S": "value1"
+                },
+                "attr2": {
+                  "S": "value2"
+                },
+                "id": {
+                  "S": "my-item-id"
+                }
+              },
+              "SequenceNumber": "<sequence-number:2>",
+              "SizeBytes": 80,
+              "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventID": "<event-i-d:2>",
+            "eventName": "MODIFY",
             "eventSource": "aws:dynamodb",
             "eventVersion": "1.1"
           }

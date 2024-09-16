@@ -73,7 +73,7 @@ def test_create_change_set_without_parameters(
 
 
 # TODO: implement
-@pytest.mark.xfail(condition=not is_aws_cloud(), reason="Not properly implemented")
+@pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not properly implemented")
 @markers.aws.validated
 def test_create_change_set_update_without_parameters(
     cleanup_stacks,

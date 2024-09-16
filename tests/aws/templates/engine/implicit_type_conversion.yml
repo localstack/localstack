@@ -1,0 +1,19 @@
+Resources:
+  blaBE223B94:
+    Type: AWS::SNS::Topic
+  queue276F7297:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: "2"
+      FifoQueue: "true"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+Outputs:
+  QueueName:
+    Value:
+      Fn::GetAtt:
+        - queue276F7297
+        - QueueName
+  QueueUrl:
+    Value:
+      Ref: queue276F7297

@@ -15,7 +15,6 @@ from localstack.constants import (
     APPLICATION_XML,
     AWS_REGION_US_EAST_1,
     DEFAULT_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
 )
 from localstack.services.apigateway.helpers import (
     ModelResolver,
@@ -41,6 +40,7 @@ from localstack.services.apigateway.templates import (
     ResponseTemplates,
     VelocityUtilApiGateway,
 )
+from localstack.testing.config import TEST_AWS_REGION_NAME
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
 
@@ -859,17 +859,18 @@ def test_create_invocation_headers():
 
 
 class TestApigatewayEvents:
+    # TODO: remove this tests, assertion are wrong
     def test_construct_invocation_event(self):
         tt = [
             {
                 "method": "GET",
-                "path": "http://localhost.localstack.cloud",
+                "path": "/test/path",
                 "headers": {},
                 "data": None,
                 "query_string_params": None,
                 "is_base64_encoded": False,
                 "expected": {
-                    "path": "http://localhost.localstack.cloud",
+                    "path": "/test/path",
                     "headers": {},
                     "multiValueHeaders": {},
                     "body": None,
@@ -881,13 +882,13 @@ class TestApigatewayEvents:
             },
             {
                 "method": "GET",
-                "path": "http://localhost.localstack.cloud",
+                "path": "/test/path",
                 "headers": {},
                 "data": None,
                 "query_string_params": {},
                 "is_base64_encoded": False,
                 "expected": {
-                    "path": "http://localhost.localstack.cloud",
+                    "path": "/test/path",
                     "headers": {},
                     "multiValueHeaders": {},
                     "body": None,
@@ -899,13 +900,13 @@ class TestApigatewayEvents:
             },
             {
                 "method": "GET",
-                "path": "http://localhost.localstack.cloud",
+                "path": "/test/path",
                 "headers": {},
                 "data": None,
                 "query_string_params": {"foo": "bar"},
                 "is_base64_encoded": False,
                 "expected": {
-                    "path": "http://localhost.localstack.cloud",
+                    "path": "/test/path",
                     "headers": {},
                     "multiValueHeaders": {},
                     "body": None,
@@ -917,13 +918,13 @@ class TestApigatewayEvents:
             },
             {
                 "method": "GET",
-                "path": "http://localhost.localstack.cloud?baz=qux",
+                "path": "/test/path?baz=qux",
                 "headers": {},
                 "data": None,
                 "query_string_params": {"foo": "bar"},
                 "is_base64_encoded": False,
                 "expected": {
-                    "path": "http://localhost.localstack.cloud?baz=qux",
+                    "path": "/test/path?baz=qux",
                     "headers": {},
                     "multiValueHeaders": {},
                     "body": None,

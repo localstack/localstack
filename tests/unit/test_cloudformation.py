@@ -3,6 +3,7 @@ from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     remove_none_values,
 )
+from localstack.services.cloudformation.engine.template_deployer import order_resources
 
 
 def test_is_local_service_url():
@@ -36,3 +37,26 @@ def test_remove_none_values():
     }
     result = remove_none_values(template)
     assert result == {"Properties": {"prop1": 123, "nested": {}, "list": [1, 2, 3]}}
+
+
+def test_order_resources():
+    resources: dict[str, dict] = {
+        "B": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Type": "String",
+                "Value": {
+                    "Ref": "A",
+                },
+            },
+        },
+        "A": {
+            "Type": "AWS::SNS::Topic",
+        },
+    }
+
+    sorted_resources = order_resources(
+        resources=resources, resolved_conditions={}, resolved_parameters={}
+    )
+
+    assert list(sorted_resources.keys()) == ["A", "B"]

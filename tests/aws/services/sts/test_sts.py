@@ -5,12 +5,14 @@ import pytest
 import requests
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCESS_KEY_ID
+from localstack.constants import APPLICATION_JSON
 from localstack.testing.aws.util import create_client_with_keys
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.numbers import is_number
 from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import retry
 
 TEST_SAML_ASSERTION = """
 <?xml version="1.0"?>
@@ -91,8 +93,53 @@ TEST_SAML_ASSERTION = """
 
 
 class TestSTSIntegrations:
-    @markers.aws.unknown
-    def test_assume_role(self, aws_client):
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..PackedPolicySize"],
+    )
+    def test_assume_role(self, aws_client, create_role, account_id, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.resource_name(),
+                snapshot.transform.key_value("RoleId"),
+                snapshot.transform.key_value("AccessKeyId"),
+                snapshot.transform.key_value("SecretAccessKey"),
+                snapshot.transform.key_value("SessionToken"),
+            ]
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("RoleSessionName"), priority=-1)
+
+        test_role_session_name = f"test-assume-role-{short_uid()}"
+        # we snapshot the test role session name with a transformer in order to validate its presence in the
+        # `AssumedRoleId` and Àrn` of the `AssumedRoleUser`
+        snapshot.match("role-session-name", {"RoleSessionName": test_role_session_name})
+        test_role_name = f"role-{short_uid()}"
+        assume_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"AWS": account_id},
+                    "Effect": "Allow",
+                }
+            ],
+        }
+        created_role = create_role(
+            RoleName=test_role_name, AssumeRolePolicyDocument=json.dumps(assume_policy_doc)
+        )
+        snapshot.match("create-role", created_role)
+
+        def assume_role():
+            assume_role_resp = aws_client.sts.assume_role(
+                RoleArn=created_role["Role"]["Arn"], RoleSessionName=test_role_session_name
+            )
+            return assume_role_resp
+
+        response = retry(assume_role, sleep=5, retries=4)
+        snapshot.match("assume-role", response)
+
+    @markers.aws.only_localstack
+    def test_assume_non_existent_role(self, aws_client):
         test_role_session_name = "s3-access-example"
         test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
         response = aws_client.sts.assume_role(
@@ -105,7 +152,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == test_role_session_name
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_assume_role_with_web_identity(self, aws_client):
         test_role_session_name = "web_token"
         test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
@@ -122,7 +169,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == test_role_session_name
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_assume_role_with_saml(self, aws_client):
         account_id = "000000000000"
         role_name = "test-role"
@@ -155,15 +202,23 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == fed_name
 
-    @markers.aws.unknown
-    def test_get_federation_token(self, aws_client):
-        token_name = "TestName"
-        response = aws_client.sts.get_federation_token(Name=token_name)
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..PackedPolicySize"],
+    )
+    def test_get_federation_token(self, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.resource_name(),
+                snapshot.transform.key_value("AccessKeyId"),
+                snapshot.transform.key_value("SecretAccessKey"),
+                snapshot.transform.key_value("SessionToken"),
+            ]
+        )
+        token_name = f"TestName{short_uid()}"
+        response = aws_client.sts.get_federation_token(Name=token_name, DurationSeconds=900)
+        snapshot.match("get-federation-token", response)
 
-        assert response["Credentials"]
-        assert response["Credentials"]["SecretAccessKey"]
-        assert response["Credentials"]["SessionToken"]
-        assert response["Credentials"]["Expiration"]
         federated_user_info = response["FederatedUser"]["FederatedUserId"].split(":")
         assert federated_user_info[1] == token_name
 

@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import get_partition, parse_arn
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import (
@@ -18,7 +18,43 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource_method,
 )
+from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY, is_next_gen_api
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY
+
+
+def _create_mock_integration_with_200_response_template(
+    aws_client, api_id: str, resource_id: str, http_method: str, response_template: dict
+):
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod=http_method,
+        authorizationType="NONE",
+    )
+
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod=http_method,
+        statusCode="200",
+    )
+
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod=http_method,
+        type="MOCK",
+        requestTemplates={"application/json": '{"statusCode": 200}'},
+    )
+
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod=http_method,
+        statusCode="200",
+        selectionPattern="",
+        responseTemplates={"application/json": json.dumps(response_template)},
+    )
 
 
 class TestApiGatewayCommon:
@@ -53,7 +89,7 @@ class TestApiGatewayCommon:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_AWS_PROXY,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
@@ -123,7 +159,7 @@ class TestApiGatewayCommon:
                 httpMethod=http_method,
                 integrationHttpMethod="POST",
                 type="AWS_PROXY",
-                uri=f"arn:aws:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+                uri=f"arn:{get_partition(region)}:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
             )
             aws_client.apigateway.put_method_response(
                 restApiId=api_id,
@@ -142,7 +178,9 @@ class TestApiGatewayCommon:
         deploy_1 = aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
         snapshot.match("deploy-1", deploy_1)
 
-        source_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*/nested/*"
+        source_arn = (
+            f"arn:{get_partition(region)}:execute-api:{region}:{account_id}:{api_id}/*/*/nested/*"
+        )
 
         aws_client.lambda_.add_permission(
             FunctionName=lambda_arn,
@@ -359,6 +397,152 @@ class TestApiGatewayCommon:
         lower_case_headers = {k.lower(): v for k, v in response_data["headers"].items()}
         assert lower_case_headers["contextheader"] == root
         assert lower_case_headers["testheader"] == "test"
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_next_gen_api() and not is_aws_cloud(),
+        reason="Wrong behavior in legacy implementation",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..server",
+            "$..via",
+            "$..x-amz-cf-id",
+            "$..x-amz-cf-pop",
+            "$..x-cache",
+        ]
+    )
+    def test_invocation_trace_id(
+        self,
+        aws_client,
+        create_rest_apigw,
+        create_lambda_function,
+        create_role_with_policy,
+        region_name,
+        snapshot,
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("via"),
+                snapshot.transform.key_value("x-amz-cf-id"),
+                snapshot.transform.key_value("x-amz-cf-pop"),
+                snapshot.transform.key_value("x-amz-apigw-id"),
+                snapshot.transform.key_value("x-amzn-trace-id"),
+                snapshot.transform.key_value("FunctionName"),
+                snapshot.transform.key_value("FunctionArn"),
+                snapshot.transform.key_value("date", reference_replacement=False),
+                snapshot.transform.key_value("content-length", reference_replacement=False),
+            ]
+        )
+        api_id, _, root_id = create_rest_apigw(name="test trace id")
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="path"
+        )
+        hardcoded_resource_id = resource["id"]
+
+        response_template_get = {"statusCode": 200}
+        _create_mock_integration_with_200_response_template(
+            aws_client, api_id, hardcoded_resource_id, "GET", response_template_get
+        )
+
+        fn_name = f"test-trace-id-{short_uid()}"
+        # create lambda
+        create_function_response = create_lambda_function(
+            func_name=fn_name,
+            handler_file=TEST_LAMBDA_AWS_PROXY,
+            handler="lambda_aws_proxy.handler",
+            runtime=Runtime.python3_12,
+        )
+        # create invocation role
+        _, role_arn = create_role_with_policy(
+            "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+        )
+        lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+        # matching on lambda id for reference replacement in snapshots
+        snapshot.match("register-lambda", {"FunctionName": fn_name, "FunctionArn": lambda_arn})
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="{proxy+}"
+        )
+        proxy_resource_id = resource["id"]
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=proxy_resource_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+        )
+
+        # Lambda AWS_PROXY integration
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=proxy_resource_id,
+            httpMethod="ANY",
+            type="AWS_PROXY",
+            integrationHttpMethod="POST",
+            uri=f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+            credentials=role_arn,
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        def _invoke_api(path: str, headers: dict[str, str]) -> dict[str, str]:
+            url = api_invoke_url(api_id=api_id, stage=stage_name, path=path)
+            _response = requests.get(url, headers=headers)
+            assert _response.ok
+            lower_case_headers = {k.lower(): v for k, v in _response.headers.items()}
+            return lower_case_headers
+
+        retries = 10 if is_aws_cloud() else 3
+        sleep = 3 if is_aws_cloud() else 1
+        resp_headers = retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            headers={},
+            path="/path",
+        )
+
+        snapshot.match("normal-req-headers-MOCK", resp_headers)
+        assert "x-amzn-trace-id" not in resp_headers
+
+        full_trace = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+        trace_id = "Root=1-3152b799-8954dae64eda91bc9a23a7e8"
+        hardcoded_parent = "Parent=7fa8c0f79203be72"
+
+        resp_headers_with_trace_id = _invoke_api(
+            path="/path", headers={"x-amzn-trace-id": full_trace}
+        )
+        snapshot.match("trace-id-req-headers-MOCK", resp_headers_with_trace_id)
+
+        resp_proxy_headers = retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            headers={},
+            path="/proxy-value",
+        )
+        snapshot.match("normal-req-headers-AWS_PROXY", resp_proxy_headers)
+
+        resp_headers_with_trace_id = _invoke_api(
+            path="/proxy-value", headers={"x-amzn-trace-id": full_trace}
+        )
+        snapshot.match("trace-id-req-headers-AWS_PROXY", resp_headers_with_trace_id)
+        assert full_trace in resp_headers_with_trace_id["x-amzn-trace-id"]
+        split_trace = resp_headers_with_trace_id["x-amzn-trace-id"].split(";")
+        assert split_trace[1] == hardcoded_parent
+
+        small_trace = trace_id
+        resp_headers_with_trace_id = _invoke_api(
+            path="/proxy-value", headers={"x-amzn-trace-id": small_trace}
+        )
+        snapshot.match("trace-id-small-req-headers-AWS_PROXY", resp_headers_with_trace_id)
+        assert small_trace in resp_headers_with_trace_id["x-amzn-trace-id"]
+        split_trace = resp_headers_with_trace_id["x-amzn-trace-id"].split(";")
+        # assert that AWS populated the parent part of the trace with a generated one
+        assert split_trace[1] != hardcoded_parent
 
 
 class TestUsagePlans:
@@ -913,47 +1097,8 @@ class TestDeployments:
 
 
 class TestApigatewayRouting:
-    def _create_mock_integration_with_200_response_template(
-        self, aws_client, api_id: str, resource_id: str, http_method: str, response_template: dict
-    ):
-        aws_client.apigateway.put_method(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod=http_method,
-            authorizationType="NONE",
-        )
-
-        aws_client.apigateway.put_method_response(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod=http_method,
-            statusCode="200",
-        )
-
-        aws_client.apigateway.put_integration(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod=http_method,
-            type="MOCK",
-            requestTemplates={"application/json": '{"statusCode": 200}'},
-        )
-
-        aws_client.apigateway.put_integration_response(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod=http_method,
-            statusCode="200",
-            selectionPattern="",
-            responseTemplates={"application/json": json.dumps(response_template)},
-        )
-
     @markers.aws.validated
-    def test_proxy_routing_with_hardcoded_resource_sibling(
-        self,
-        aws_client,
-        create_rest_apigw,
-        apigw_redeploy_api,
-    ):
+    def test_proxy_routing_with_hardcoded_resource_sibling(self, aws_client, create_rest_apigw):
         api_id, _, root_id = create_rest_apigw(name="test proxy routing")
 
         resource = aws_client.apigateway.create_resource(
@@ -962,7 +1107,7 @@ class TestApigatewayRouting:
         hardcoded_resource_id = resource["id"]
 
         response_template_post = {"statusCode": 200, "message": "POST request"}
-        self._create_mock_integration_with_200_response_template(
+        _create_mock_integration_with_200_response_template(
             aws_client, api_id, hardcoded_resource_id, "POST", response_template_post
         )
 
@@ -972,7 +1117,7 @@ class TestApigatewayRouting:
         any_resource_id = resource["id"]
 
         response_template_any = {"statusCode": 200, "message": "ANY request"}
-        self._create_mock_integration_with_200_response_template(
+        _create_mock_integration_with_200_response_template(
             aws_client, api_id, any_resource_id, "ANY", response_template_any
         )
 
@@ -981,7 +1126,7 @@ class TestApigatewayRouting:
         )
         proxy_resource_id = resource["id"]
         response_template_options = {"statusCode": 200, "message": "OPTIONS request"}
-        self._create_mock_integration_with_200_response_template(
+        _create_mock_integration_with_200_response_template(
             aws_client, api_id, proxy_resource_id, "OPTIONS", response_template_options
         )
 
@@ -1032,12 +1177,7 @@ class TestApigatewayRouting:
         )
 
     @markers.aws.validated
-    def test_routing_with_hardcoded_resource_sibling_order(
-        self,
-        aws_client,
-        create_rest_apigw,
-        apigw_redeploy_api,
-    ):
+    def test_routing_with_hardcoded_resource_sibling_order(self, aws_client, create_rest_apigw):
         api_id, _, root_id = create_rest_apigw(name="test parameter routing")
 
         resource = aws_client.apigateway.create_resource(
@@ -1046,7 +1186,7 @@ class TestApigatewayRouting:
         hardcoded_resource_id = resource["id"]
 
         response_template_get = {"statusCode": 200, "message": "part1"}
-        self._create_mock_integration_with_200_response_template(
+        _create_mock_integration_with_200_response_template(
             aws_client, api_id, hardcoded_resource_id, "GET", response_template_get
         )
 
@@ -1056,7 +1196,7 @@ class TestApigatewayRouting:
         )
         proxy_resource_id = resource["id"]
         response_template_get = {"statusCode": 200, "message": "proxy"}
-        self._create_mock_integration_with_200_response_template(
+        _create_mock_integration_with_200_response_template(
             aws_client, api_id, proxy_resource_id, "GET", response_template_get
         )
 
@@ -1066,7 +1206,7 @@ class TestApigatewayRouting:
         any_resource_id = resource["id"]
 
         response_template_get = {"statusCode": 200, "message": "hardcoded-value"}
-        self._create_mock_integration_with_200_response_template(
+        _create_mock_integration_with_200_response_template(
             aws_client, api_id, any_resource_id, "GET", response_template_get
         )
 
@@ -1103,3 +1243,50 @@ class TestApigatewayRouting:
             path="/part1/random-value",
             expected_response="proxy",
         )
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_next_gen_api() and not is_aws_cloud(),
+        reason="Wrong behavior in legacy implementation",
+    )
+    def test_routing_not_found(self, aws_client, create_rest_apigw, snapshot):
+        api_id, _, root_id = create_rest_apigw(name=f"test-notfound-{short_uid()}")
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="existing"
+        )
+        hardcoded_resource_id = resource["id"]
+
+        response_template_get = {"statusCode": 200, "message": "exists"}
+        _create_mock_integration_with_200_response_template(
+            aws_client, api_id, hardcoded_resource_id, "GET", response_template_get
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        def _invoke_api(path: str, method: str, works: bool):
+            url = api_invoke_url(api_id=api_id, stage=stage_name, path=path)
+            _response = requests.request(method, url)
+            assert _response.ok == works
+            return _response
+
+        retry_args = {"retries": 10 if is_aws_cloud() else 3, "sleep": 3 if is_aws_cloud() else 1}
+        response = retry(_invoke_api, method="GET", path="/existing", works=True, **retry_args)
+        snapshot.match("working-route", response.json())
+
+        response = retry(
+            _invoke_api, method="GET", path="/random-non-existing", works=False, **retry_args
+        )
+        resp = {
+            "content": response.json(),
+            "errorType": response.headers.get("x-amzn-ErrorType"),
+        }
+        snapshot.match("not-found", resp)
+
+        response = retry(_invoke_api, method="POST", path="/existing", works=False, **retry_args)
+        resp = {
+            "content": response.json(),
+            "errorType": response.headers.get("x-amzn-ErrorType"),
+        }
+        snapshot.match("wrong-method", resp)

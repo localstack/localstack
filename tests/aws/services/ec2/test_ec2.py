@@ -3,9 +3,16 @@ import contextlib
 import pytest
 from botocore.exceptions import ClientError
 from moto.ec2 import ec2_backends
+from moto.ec2.utils import (
+    random_security_group_id,
+    random_subnet_id,
+    random_vpc_id,
+)
 
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 # public amazon image used for ec2 launch templates
 PUBLIC_AMAZON_LINUX_IMAGE = "ami-06c39ed6b42908a36"
@@ -32,43 +39,82 @@ def create_launch_template(aws_client):
             aws_client.ec2.delete_launch_template(LaunchTemplateId=id)
 
 
-class TestEc2Integrations:
-    @markers.aws.unknown
-    def test_create_route_table_association(self, cleanups, aws_client):
-        vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
-        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
-        subnet = aws_client.ec2.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
-        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
+@pytest.fixture()
+def create_vpc(aws_client):
+    vpcs = []
 
-        route_table = aws_client.ec2.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
-        cleanups.append(
-            lambda: aws_client.ec2.delete_route_table(
-                RouteTableId=route_table["RouteTable"]["RouteTableId"]
-            )
+    def _create_vpc(
+        cidr_block: str,
+        tag_specifications: list[dict],
+    ):
+        vpc = aws_client.ec2.create_vpc(CidrBlock=cidr_block, TagSpecifications=tag_specifications)
+        vpcs.append(vpc["Vpc"]["VpcId"])
+        return vpc
+
+    yield _create_vpc
+
+    for vpc_id in vpcs:
+        # Best effort deletion of VPC resources
+        try:
+            aws_client.ec2.delete_vpc(VpcId=vpc_id)
+        except Exception:
+            pass
+
+
+class TestEc2Integrations:
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PropagatingVgws"])
+    @markers.aws.validated
+    def test_create_route_table_association(self, cleanups, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("vpc_id"),
+                snapshot.transform.key_value("subnet_id"),
+                snapshot.transform.key_value("route_table_id"),
+                snapshot.transform.key_value("association_id"),
+                snapshot.transform.key_value("ClientToken"),
+            ]
         )
+        vpc_id = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc_id))
+        snapshot.match("vpc_id", vpc_id)
+
+        subnet_id = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.0.0.0/24")["Subnet"][
+            "SubnetId"
+        ]
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet_id))
+        snapshot.match("subnet_id", subnet_id)
+
+        route_table_id = aws_client.ec2.create_route_table(VpcId=vpc_id)["RouteTable"][
+            "RouteTableId"
+        ]
+        cleanups.append(lambda: aws_client.ec2.delete_route_table(RouteTableId=route_table_id))
+        snapshot.match("route_table_id", route_table_id)
+
         association_id = aws_client.ec2.associate_route_table(
-            RouteTableId=route_table["RouteTable"]["RouteTableId"],
-            SubnetId=subnet["Subnet"]["SubnetId"],
+            RouteTableId=route_table_id,
+            SubnetId=subnet_id,
         )["AssociationId"]
         cleanups.append(
             lambda: aws_client.ec2.disassociate_route_table(AssociationId=association_id)
         )
+        snapshot.match("association_id", association_id)
 
-        for route_tables in aws_client.ec2.describe_route_tables()["RouteTables"]:
-            for association in route_tables["Associations"]:
-                if association["RouteTableId"] == route_table["RouteTable"]["RouteTableId"]:
-                    if association.get("Main"):
-                        continue  # default route table associations have no SubnetId in moto
-                    assert association["SubnetId"] == subnet["Subnet"]["SubnetId"]
-                    assert association["AssociationState"]["State"] == "associated"
+        route_tables = aws_client.ec2.describe_route_tables(RouteTableIds=[route_table_id])[
+            "RouteTables"
+        ]
+        snapshot.match("route_tables", route_tables)
 
         aws_client.ec2.disassociate_route_table(AssociationId=association_id)
-        for route_tables in aws_client.ec2.describe_route_tables()["RouteTables"]:
-            associations = [a for a in route_tables["Associations"] if not a.get("Main")]
-            assert associations == []
+        for route_tables in aws_client.ec2.describe_route_tables(RouteTableIds=[route_table_id])[
+            "RouteTables"
+        ]:
+            assert route_tables["Associations"] == []
 
-    @markers.aws.unknown
-    def test_create_vpc_end_point(self, cleanups, aws_client):
+    @markers.aws.needs_fixing
+    # TODO LocalStack fails to delete endpoints
+    #  LocalStack does not properly initiate Endpoints with no VpcEndpointType fix probably needed in moto
+    #  AWS does not allow for lowercase VpcEndpointType: gateway => Gateway
+    def test_create_vpc_endpoint(self, cleanups, aws_client):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
         subnet = aws_client.ec2.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
@@ -80,28 +126,28 @@ class TestEc2Integrations:
             )
         )
 
-        # test without any end point type specified
-        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
+        # test without any endpoint type specified
+        vpc_endpoint = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             RouteTableIds=[route_table["RouteTable"]["RouteTableId"]],
         )
         cleanups.append(
             lambda: aws_client.ec2.delete_vpc_endpoints(
-                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+                VpcEndpointIds=[vpc_endpoint["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
 
-        assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
+        assert "com.amazonaws.us-east-1.s3" == vpc_endpoint["VpcEndpoint"]["ServiceName"]
         assert (
             route_table["RouteTable"]["RouteTableId"]
-            == vpc_end_point["VpcEndpoint"]["RouteTableIds"][0]
+            == vpc_endpoint["VpcEndpoint"]["RouteTableIds"][0]
         )
-        assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
-        assert 0 == len(vpc_end_point["VpcEndpoint"]["DnsEntries"])
+        assert vpc["Vpc"]["VpcId"] == vpc_endpoint["VpcEndpoint"]["VpcId"]
+        assert 0 == len(vpc_endpoint["VpcEndpoint"]["DnsEntries"])
 
-        # test with any end point type as gateway
-        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
+        # test with any endpoint type as gateway
+        vpc_endpoint = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             RouteTableIds=[route_table["RouteTable"]["RouteTableId"]],
@@ -109,20 +155,20 @@ class TestEc2Integrations:
         )
         cleanups.append(
             lambda: aws_client.ec2.delete_vpc_endpoints(
-                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+                VpcEndpointIds=[vpc_endpoint["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
 
-        assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
+        assert "com.amazonaws.us-east-1.s3" == vpc_endpoint["VpcEndpoint"]["ServiceName"]
         assert (
             route_table["RouteTable"]["RouteTableId"]
-            == vpc_end_point["VpcEndpoint"]["RouteTableIds"][0]
+            == vpc_endpoint["VpcEndpoint"]["RouteTableIds"][0]
         )
-        assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
-        assert 0 == len(vpc_end_point["VpcEndpoint"]["DnsEntries"])
+        assert vpc["Vpc"]["VpcId"] == vpc_endpoint["VpcEndpoint"]["VpcId"]
+        assert 0 == len(vpc_endpoint["VpcEndpoint"]["DnsEntries"])
 
-        # test with end point type as interface
-        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
+        # test with endpoint type as interface
+        vpc_endpoint = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             SubnetIds=[subnet["Subnet"]["SubnetId"]],
@@ -130,16 +176,17 @@ class TestEc2Integrations:
         )
         cleanups.append(
             lambda: aws_client.ec2.delete_vpc_endpoints(
-                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+                VpcEndpointIds=[vpc_endpoint["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
 
-        assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
-        assert subnet["Subnet"]["SubnetId"] == vpc_end_point["VpcEndpoint"]["SubnetIds"][0]
-        assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
-        assert len(vpc_end_point["VpcEndpoint"]["DnsEntries"]) > 0
+        assert "com.amazonaws.us-east-1.s3" == vpc_endpoint["VpcEndpoint"]["ServiceName"]
+        assert subnet["Subnet"]["SubnetId"] == vpc_endpoint["VpcEndpoint"]["SubnetIds"][0]
+        assert vpc["Vpc"]["VpcId"] == vpc_endpoint["VpcEndpoint"]["VpcId"]
+        assert len(vpc_endpoint["VpcEndpoint"]["DnsEntries"]) > 0
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
+    # This test would attempt to purchase Reserved instance.
     def test_reserved_instance_api(self, aws_client):
         rs = aws_client.ec2.describe_reserved_instances_offerings(
             AvailabilityZone="us-east-1a",
@@ -170,110 +217,147 @@ class TestEc2Integrations:
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-    @markers.aws.unknown
-    def test_vcp_peering_difference_regions(self, aws_client_factory, region_name):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # AWS doesn't populate all info of the requester to the peer describe until connection available
+            "$..pending-acceptance..VpcPeeringConnections..AccepterVpcInfo.CidrBlock",
+            "$..pending-acceptance..VpcPeeringConnections..AccepterVpcInfo.PeeringOptions",
+            # LS leaves as `[]`
+            "$..VpcPeeringConnections..AccepterVpcInfo.CidrBlockSet",
+            "$..VpcPeeringConnections..RequesterVpcInfo.CidrBlockSet",
+            # LS adds, not on AWS
+            "$..VpcPeeringConnections..AccepterVpcInfo.Ipv6CidrBlockSet",
+            "$..VpcPeeringConnections..RequesterVpcInfo.Ipv6CidrBlockSet",
+            # LS doesn't add
+            "$..VpcPeeringConnections..ExpirationTime",
+        ]
+    )
+    @markers.aws.validated
+    def test_vcp_peering_difference_regions(
+        self, aws_client_factory, region_name, cleanups, snapshot, secondary_region_name
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("vpc-id"),
+                snapshot.transform.key_value("peering-connection-id"),
+                snapshot.transform.key_value("region"),
+            ]
+        )
         region1 = region_name
-        region2 = region_name  # When cross-region peering is supported, change to SECONDARY_TEST_AWS_REGION_NAME
-
-        # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
+        region2 = secondary_region_name
         ec2_client1 = aws_client_factory(region_name=region1).ec2
         ec2_client2 = aws_client_factory(region_name=region2).ec2
 
-        cidr_block1 = "192.168.1.2/24"
-        cidr_block2 = "192.168.1.2/24"
-        peer_vpc1 = ec2_client1.create_vpc(CidrBlock=cidr_block1)
-        peer_vpc2 = ec2_client2.create_vpc(CidrBlock=cidr_block2)
+        def _delete_vpc(client, vpc_id):
+            # The Peering connection in the peer vpc might have a delay to detach from the vpc
+            return lambda: retry(lambda: client.delete_vpc(VpcId=vpc_id), retries=10, sleep=5)
 
-        assert 200 == peer_vpc1["ResponseMetadata"]["HTTPStatusCode"]
-        assert cidr_block1 == peer_vpc1["Vpc"]["CidrBlock"]
-        assert 200 == peer_vpc2["ResponseMetadata"]["HTTPStatusCode"]
-        assert cidr_block2 == peer_vpc2["Vpc"]["CidrBlock"]
+        # CIDR range can't overlap when creating peering connection
+        cidr_block1 = "192.168.1.0/24"
+        cidr_block2 = "192.168.2.0/24"
+        peer_vpc1_id = ec2_client1.create_vpc(CidrBlock=cidr_block1)["Vpc"]["VpcId"]
+        cleanups.append(_delete_vpc(ec2_client1, peer_vpc1_id))
+        snapshot.match("vpc1", {"vpc-id": peer_vpc1_id, "region": region1})
 
-        cross_region = ec2_client1.create_vpc_peering_connection(
-            PeerVpcId=peer_vpc2["Vpc"]["VpcId"],
-            VpcId=peer_vpc1["Vpc"]["VpcId"],
+        peer_vpc2_id = ec2_client2.create_vpc(CidrBlock=cidr_block2)["Vpc"]["VpcId"]
+        cleanups.append(_delete_vpc(ec2_client2, peer_vpc2_id))
+        snapshot.match("vpc2", {"vpc-id": peer_vpc2_id, "region": region2})
+
+        peering_connection_id = ec2_client1.create_vpc_peering_connection(
+            VpcId=peer_vpc1_id,
+            PeerVpcId=peer_vpc2_id,
             PeerRegion=region2,
+        )["VpcPeeringConnection"]["VpcPeeringConnectionId"]
+        cleanups.append(
+            lambda: ec2_client1.delete_vpc_peering_connection(
+                VpcPeeringConnectionId=peering_connection_id
+            )
         )
-        assert 200 == cross_region["ResponseMetadata"]["HTTPStatusCode"]
-        assert (
-            peer_vpc1["Vpc"]["VpcId"]
-            == cross_region["VpcPeeringConnection"]["RequesterVpcInfo"]["VpcId"]
+        snapshot.match("peering-connection-id", peering_connection_id)
+
+        def _describe_peering_connections(client, expected_status):
+            response = client.describe_vpc_peering_connections(
+                VpcPeeringConnectionIds=[peering_connection_id]
+            )
+            assert response["VpcPeeringConnections"][0]["Status"]["Code"] == expected_status
+            return response
+
+        # wait for the peering connection to be observable in the peer region
+        pending_peer = retry(
+            lambda: _describe_peering_connections(ec2_client2, "pending-acceptance"),
+            retries=10,
+            sleep=5,
         )
-        assert (
-            peer_vpc2["Vpc"]["VpcId"]
-            == cross_region["VpcPeeringConnection"]["AccepterVpcInfo"]["VpcId"]
+        snapshot.match("pending-acceptance", pending_peer)
+
+        # Not creating a snapshot of the response as aws isn't consistent
+        ec2_client2.accept_vpc_peering_connection(VpcPeeringConnectionId=peering_connection_id)
+
+        # wait for peering connection to be active in the requester region
+        requester_peer = retry(
+            lambda: _describe_peering_connections(ec2_client1, "active"), retries=10, sleep=5
+        )
+        snapshot.match("requester-peer", requester_peer)
+
+        # wait for peering connection to be active in the peer region
+        accepter_peer = retry(
+            lambda: _describe_peering_connections(ec2_client2, "active"), retries=10, sleep=5
+        )
+        snapshot.match("accepter-peer", accepter_peer)
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..AmazonSideAsn", "$..AvailabilityZone", "$..Tags"]
+    )
+    @markers.aws.validated
+    def test_describe_vpn_gateways_filter_by_vpc(self, aws_client, cleanups, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("vpc-id"),
+                snapshot.transform.key_value("VpnGatewayId"),
+            ]
         )
 
-        accept_vpc = ec2_client2.accept_vpc_peering_connection(
-            VpcPeeringConnectionId=cross_region["VpcPeeringConnection"]["VpcPeeringConnectionId"]
-        )
-        assert 200 == accept_vpc["ResponseMetadata"]["HTTPStatusCode"]
-        assert (
-            peer_vpc1["Vpc"]["VpcId"]
-            == accept_vpc["VpcPeeringConnection"]["RequesterVpcInfo"]["VpcId"]
-        )
-        assert (
-            peer_vpc2["Vpc"]["VpcId"]
-            == accept_vpc["VpcPeeringConnection"]["AccepterVpcInfo"]["VpcId"]
-        )
-        assert (
-            cross_region["VpcPeeringConnection"]["VpcPeeringConnectionId"]
-            == accept_vpc["VpcPeeringConnection"]["VpcPeeringConnectionId"]
-        )
-
-        requester_peer = ec2_client1.describe_vpc_peering_connections(
-            VpcPeeringConnectionIds=[accept_vpc["VpcPeeringConnection"]["VpcPeeringConnectionId"]]
-        )
-        assert 1 == len(requester_peer["VpcPeeringConnections"])
-        assert region1 == requester_peer["VpcPeeringConnections"][0]["RequesterVpcInfo"]["Region"]
-        assert region2 == requester_peer["VpcPeeringConnections"][0]["AccepterVpcInfo"]["Region"]
-
-        accepter_peer = ec2_client2.describe_vpc_peering_connections(
-            VpcPeeringConnectionIds=[accept_vpc["VpcPeeringConnection"]["VpcPeeringConnectionId"]]
-        )
-        assert 1 == len(accepter_peer["VpcPeeringConnections"])
-        assert region1 == accepter_peer["VpcPeeringConnections"][0]["RequesterVpcInfo"]["Region"]
-        assert region2 == accepter_peer["VpcPeeringConnections"][0]["AccepterVpcInfo"]["Region"]
-
-        # Clean up
-        ec2_client1.delete_vpc_peering_connection(
-            VpcPeeringConnectionId=cross_region["VpcPeeringConnection"]["VpcPeeringConnectionId"]
-        )
-
-        ec2_client1.delete_vpc(VpcId=peer_vpc1["Vpc"]["VpcId"])
-        ec2_client2.delete_vpc(VpcId=peer_vpc2["Vpc"]["VpcId"])
-
-    @markers.aws.unknown
-    def test_describe_vpn_gateways_filter_by_vpc(self, aws_client):
-        vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
-        vpc_id = vpc["Vpc"]["VpcId"]
+        vpc_id = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc_id))
+        snapshot.match("vpc-id", vpc_id)
 
         gateway = aws_client.ec2.create_vpn_gateway(AvailabilityZone="us-east-1a", Type="ipsec.1")
-        assert 200 == gateway["ResponseMetadata"]["HTTPStatusCode"]
-        assert "ipsec.1" == gateway["VpnGateway"]["Type"]
-        assert gateway["VpnGateway"]["VpnGatewayId"] is not None
-
         gateway_id = gateway["VpnGateway"]["VpnGatewayId"]
+        cleanups.append(lambda: aws_client.ec2.delete_vpn_gateway(VpnGatewayId=gateway_id))
+        snapshot.match("gateway", gateway)
+
+        def _detach_vpn_gateway():
+            aws_client.ec2.detach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
+            # This is a bit convoluted, but trying to delete a vpc with an attached vpn gateway
+            # fails silently. So a simple retry on the delete_vpc will not work.
+            retry(
+                lambda: aws_client.ec2.describe_vpn_gateways(
+                    Filters=[
+                        {"Name": "vpn-gateway-id", "Values": [gateway_id]},
+                        {"Name": "attachment.state", "Values": ["detached"]},
+                    ]
+                )["VpnGateways"][0],
+                retries=20,
+                sleep=5,
+            )
 
         aws_client.ec2.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
+        cleanups.append(_detach_vpn_gateway)
 
-        gateways = aws_client.ec2.describe_vpn_gateways(
-            Filters=[
-                {"Name": "attachment.vpc-id", "Values": [vpc_id]},
-            ],
-        )
-        assert 200 == gateways["ResponseMetadata"]["HTTPStatusCode"]
-        assert 1 == len(gateways["VpnGateways"])
-        assert gateway_id == gateways["VpnGateways"][0]["VpnGatewayId"]
-        assert "attached" == gateways["VpnGateways"][0]["VpcAttachments"][0]["State"]
-        assert vpc_id == gateways["VpnGateways"][0]["VpcAttachments"][0]["VpcId"]
+        def _describe_vpn_gateway():
+            gateways = aws_client.ec2.describe_vpn_gateways(
+                Filters=[
+                    {"Name": "attachment.vpc-id", "Values": [vpc_id]},
+                ],
+            )["VpnGateways"]
+            assert gateways[0]["VpcAttachments"][0]["State"] == "attached"
+            return gateways[0]
 
-        # clean up
-        aws_client.ec2.detach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
-        aws_client.ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
-        aws_client.ec2.delete_vpc(VpcId=vpc_id)
+        gateway = retry(_describe_vpn_gateway, retries=20, sleep=5)
+        snapshot.match("attached-gateway", gateway)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # AWS returns 272 elements and a fair bit more information about them than LS
     def test_describe_vpc_endpoints_with_filter(self, aws_client, region_name):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         vpc_id = vpc["Vpc"]["VpcId"]
@@ -350,6 +434,150 @@ class TestEc2Integrations:
             new_default_version
         )
 
+    @markers.aws.only_localstack
+    def test_create_vpc_with_custom_id(self, aws_client, create_vpc):
+        custom_id = random_vpc_id()
+
+        # Check if the custom ID is present
+        vpc: dict = create_vpc(
+            cidr_block="10.0.0.0/16",
+            tag_specifications=[
+                {
+                    "ResourceType": "vpc",
+                    "Tags": [
+                        {"Key": TAG_KEY_CUSTOM_ID, "Value": custom_id},
+                    ],
+                }
+            ],
+        )
+        assert vpc["Vpc"]["VpcId"] == custom_id
+
+        # Check if the custom ID is present in the describe_vpcs response as well
+        vpc: dict = aws_client.ec2.describe_vpcs(VpcIds=[custom_id])["Vpcs"][0]
+        assert vpc["VpcId"] == custom_id
+
+        # Check if an duplicate custom ID exception is thrown if we try to recreate the VPC with the same custom ID
+        with pytest.raises(ClientError) as e:
+            create_vpc(
+                cidr_block="10.0.0.0/16",
+                tag_specifications=[
+                    {
+                        "ResourceType": "vpc",
+                        "Tags": [
+                            {"Key": TAG_KEY_CUSTOM_ID, "Value": custom_id},
+                        ],
+                    }
+                ],
+            )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidVpc.DuplicateCustomId"
+
+    @markers.aws.only_localstack
+    def test_create_subnet_with_custom_id(self, aws_client, create_vpc):
+        custom_id = random_subnet_id()
+
+        # Create necessary VPC resource
+        vpc: dict = create_vpc(cidr_block="10.0.0.0/16", tag_specifications=[])
+        vpc_id = vpc["Vpc"]["VpcId"]
+
+        # Check if subnet ID matches the custom ID
+        subnet: dict = aws_client.ec2.create_subnet(
+            VpcId=vpc_id,
+            CidrBlock="10.0.0.0/24",
+            TagSpecifications=[
+                {
+                    "ResourceType": "subnet",
+                    "Tags": [
+                        {"Key": TAG_KEY_CUSTOM_ID, "Value": custom_id},
+                    ],
+                }
+            ],
+        )
+        assert subnet["Subnet"]["SubnetId"] == custom_id
+
+        # Check if the custom ID is present in the describe_subnets response as well
+        subnet: dict = aws_client.ec2.describe_subnets(
+            SubnetIds=[custom_id],
+        )["Subnets"][0]
+        assert subnet["SubnetId"] == custom_id
+
+        # Check if a duplicate custom ID exception is thrown if we try to recreate the subnet with the same custom ID
+        with pytest.raises(ClientError) as e:
+            aws_client.ec2.create_subnet(
+                CidrBlock="10.0.1.0/24",
+                VpcId=vpc_id,
+                TagSpecifications=[
+                    {
+                        "ResourceType": "subnet",
+                        "Tags": [
+                            {"Key": TAG_KEY_CUSTOM_ID, "Value": custom_id},
+                        ],
+                    }
+                ],
+            )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidSubnet.DuplicateCustomId"
+
+    @markers.aws.only_localstack
+    def test_create_security_group_with_custom_id(self, aws_client, create_vpc):
+        custom_id = random_security_group_id()
+
+        # Create necessary VPC resource
+        vpc: dict = create_vpc(
+            cidr_block="10.0.0.0/24",
+            tag_specifications=[],
+        )
+
+        # Check if security group ID matches the custom ID
+        security_group: dict = aws_client.ec2.create_security_group(
+            Description="Test security group",
+            GroupName="test-security-group-0",
+            VpcId=vpc["Vpc"]["VpcId"],
+            TagSpecifications=[
+                {
+                    "ResourceType": "security-group",
+                    "Tags": [
+                        {"Key": TAG_KEY_CUSTOM_ID, "Value": custom_id},
+                    ],
+                }
+            ],
+        )
+        assert (
+            security_group["GroupId"] == custom_id
+        ), f"Security group ID does not match custom ID: {security_group}"
+
+        # Check if the custom ID is present in the describe_security_groups response as well
+        security_groups: dict = aws_client.ec2.describe_security_groups(
+            GroupIds=[custom_id],
+        )["SecurityGroups"]
+
+        # Get security group that match a given VPC id
+        security_group = next(
+            (sg for sg in security_groups if sg["VpcId"] == vpc["Vpc"]["VpcId"]), None
+        )
+        assert security_group["GroupId"] == custom_id
+
+        # Check if a duplicate custom ID exception is thrown if we try to recreate the security group with the same custom ID
+        with pytest.raises(ClientError) as e:
+            aws_client.ec2.create_security_group(
+                Description="Test security group",
+                GroupName="test-security-group-1",
+                VpcId=vpc["Vpc"]["VpcId"],
+                TagSpecifications=[
+                    {
+                        "ResourceType": "security-group",
+                        "Tags": [
+                            {"Key": TAG_KEY_CUSTOM_ID, "Value": custom_id},
+                        ],
+                    }
+                ],
+            )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidSecurityGroupId.DuplicateCustomId"
+
 
 @markers.aws.validated
 def test_raise_modify_to_invalid_default_version(create_launch_template, aws_client):
@@ -409,7 +637,7 @@ def pickle_backends():
     return _can_pickle
 
 
-@markers.aws.unknown
+@markers.aws.only_localstack
 def test_pickle_ec2_backend(pickle_backends, aws_client):
     _ = aws_client.ec2.describe_account_attributes()
     pickle_backends(ec2_backends)

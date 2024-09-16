@@ -4,7 +4,7 @@
     "recorded-content": {
       "created_role": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<role-name:1>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -60,7 +60,7 @@
     "recorded-content": {
       "created_role": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<path-prefix>/<role-name:1>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -87,7 +87,7 @@
         "IsTruncated": false,
         "Roles": [
           {
-            "Arn": "arn:aws:iam::111111111111:role/<path-prefix>/<role-name:1>",
+            "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
             "AssumeRolePolicyDocument": {
               "Statement": [
                 {
@@ -119,7 +119,7 @@
     "recorded-content": {
       "create_role_result": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<path-prefix>/<role-name:1>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -144,7 +144,7 @@
       },
       "get_role_result": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<path-prefix>/<role-name:1>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -173,7 +173,7 @@
         "IsTruncated": false,
         "Roles": [
           {
-            "Arn": "arn:aws:iam::111111111111:role/<path-prefix>/<role-name:1>",
+            "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
             "AssumeRolePolicyDocument": {
               "Statement": [
                 {
@@ -205,7 +205,7 @@
     "recorded-content": {
       "create_policy_response": {
         "Policy": {
-          "Arn": "arn:aws:iam::111111111111:policy/<policy-name:1>",
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
           "AttachmentCount": 0,
           "CreateDate": "datetime",
           "DefaultVersionId": "v1",
@@ -246,7 +246,7 @@
       "valid_arn_not_existent": {
         "Error": {
           "Code": "NoSuchEntity",
-          "Message": "Policy arn:aws:iam::111111111111:policy/<policy-name:1>123 does not exist or is not attachable.",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1>123 does not exist or is not attachable.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -267,7 +267,7 @@
     "recorded-content": {
       "create_policy_response": {
         "Policy": {
-          "Arn": "arn:aws:iam::111111111111:policy/<policy-name:1>",
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
           "AttachmentCount": 0,
           "CreateDate": "datetime",
           "DefaultVersionId": "v1",
@@ -308,7 +308,7 @@
       "valid_arn_not_existent": {
         "Error": {
           "Code": "NoSuchEntity",
-          "Message": "Policy arn:aws:iam::111111111111:policy/<policy-name:1>123 does not exist or is not attachable.",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1>123 does not exist or is not attachable.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -317,6 +317,69 @@
         }
       },
       "valid_policy_arn": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_role_with_path_lifecycle": {
+    "recorded-date": "21-06-2024, 12:13:05",
+    "recorded-content": {
+      "create-role-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role<path><role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Path": "<path>",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-role-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role<path><role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "MaxSessionDuration": 3600,
+          "Path": "<path>",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-role-response": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

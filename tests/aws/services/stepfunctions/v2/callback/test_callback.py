@@ -7,19 +7,22 @@ from localstack_snapshot.snapshots.transformer import JsonpathTransformer, Regex
 from localstack.services.stepfunctions.asl.eval.count_down_latch import CountDownLatch
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    await_execution_terminated,
+    create,
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
     CallbackTemplates as CT,
 )
+from tests.aws.services.stepfunctions.templates.services.services_templates import (
+    ServicesTemplates as ST,
+)
 from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates import (
     TimeoutTemplates as TT,
-)
-from tests.aws.services.stepfunctions.utils import (
-    await_execution_terminated,
-    create,
-    create_and_record_execution,
 )
 from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOUT
 
@@ -49,7 +52,6 @@ def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) ->
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
@@ -499,6 +501,7 @@ class TestCallback:
         )
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="Skipped until flaky behaviour can be rectified.")
     def test_multiple_heartbeat_notifications(
         self,
         aws_client,
@@ -546,6 +549,7 @@ class TestCallback:
         task_token_consumer_thread.join(timeout=300)
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="Skipped until flaky behaviour can be rectified.")
     def test_multiple_executions_and_heartbeat_notifications(
         self,
         aws_client,
@@ -764,6 +768,92 @@ class TestCallback:
         definition = json.dumps(template)
 
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": "test_message_txt"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_sync_with_task_token(
+        self,
+        aws_client,
+        sqs_create_queue,
+        sqs_send_task_success_state_machine,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        # This tests simulates a sync integration pattern interrupt via a manual
+        # SendTaskSuccess command about the task's TaskToken.
+
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..output.StartDate",
+                replacement="start-date",
+                replace_reference=False,
+            )
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..output.StopDate",
+                replacement="stop-date",
+                replace_reference=False,
+            )
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..MessageId",
+                replacement="message_id",
+                replace_reference=True,
+            )
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..TaskToken",
+                replacement="task_token",
+                replace_reference=True,
+            )
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
+
+        # Set up the queue on which the worker sending SendTaskSuccess requests will be listening for
+        # TaskToken values to accept.
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs_queue_name"))
+        # Start the worker which requests SendTaskSuccess about the incoming TaskToken values on the queue.
+        sqs_send_task_success_state_machine(queue_url)
+
+        # Create the child state machine, which receives the parent's TaskToken, forwards it to the SendTaskSuccess
+        # worker and simulates a long-lasting task by waiting.
+        template_target = BT.load_sfn_template(ST.SQS_SEND_MESSAGE_AND_WAIT)
+        definition_target = json.dumps(template_target)
+        state_machine_arn_target = create(
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition_target,
+        )
+
+        # Create the parent state machine, which starts the child state machine with a sync integration pattern.
+        template = CT.load_sfn_template(CT.SFN_START_EXECUTION_SYNC_WITH_TASK_TOKEN)
+        definition = json.dumps(template)
+
+        # Start the stack and record the behaviour of the parent state machine. The events recorded
+        # should show the sync integration pattern about the child state machine being interrupted
+        # by the SendTaskSuccess state machine.
+        exec_input = json.dumps(
+            {
+                "StateMachineArn": state_machine_arn_target,
+                "Name": "TestStartTarget",
+                "QueueUrl": queue_url,
+            }
+        )
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

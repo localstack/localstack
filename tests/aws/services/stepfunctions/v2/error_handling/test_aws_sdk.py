@@ -5,14 +5,16 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (
     ErrorHandlingTemplate as EHT,
 )
-from tests.aws.services.stepfunctions.utils import create_and_record_execution
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestAwsSdk:
     @markers.aws.validated
     def test_invalid_secret_name(

@@ -4,12 +4,12 @@ import threading
 
 import pytest
 
-from localstack.constants import (
+from localstack.packages.terraform import terraform_package
+from localstack.testing.config import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.packages.terraform import terraform_package
 from localstack.testing.pytest import markers
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
@@ -166,7 +166,7 @@ class TestTerraform:
         assert function_mapping["EventSourceArn"] == queue_arn
 
     @markers.skip_offline
-    @pytest.mark.xfail(reason="flaky")
+    @pytest.mark.skip(reason="flaky")
     @markers.aws.needs_fixing
     def test_apigateway(self, aws_client):
         rest_apis = aws_client.apigateway.get_rest_apis()
@@ -214,7 +214,7 @@ class TestTerraform:
         assert len(certs) == 1
 
     @markers.skip_offline
-    @pytest.mark.xfail(reason="flaky")
+    @pytest.mark.skip(reason="flaky")
     @markers.aws.needs_fixing
     def test_apigateway_escaped_policy(self, aws_client):
         rest_apis = aws_client.apigateway.get_rest_apis()

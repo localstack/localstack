@@ -36,5 +36,35 @@
         "UrlSuffixPseudoParam": "<url-suffix>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/engine/test_references.py::test_useful_error_when_invalid_ref": {
+    "recorded-date": "28-05-2024, 11:42:58",
+    "recorded-content": {
+      "validation_error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Unresolved resource dependencies [InvalidRef] in the Resources block of the template",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_references.py::test_resolve_transitive_placeholders_in_strings": {
+    "recorded-date": "18-06-2024, 19:55:48",
+    "recorded-content": {
+      "tags": {
+        "Tags": {
+          "test": "arn:<partition>:ssm:<region>:111111111111:parameter/cdk-bootstrap/.../version"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

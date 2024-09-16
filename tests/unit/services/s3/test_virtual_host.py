@@ -8,7 +8,7 @@ from localstack.http import Request, Response, Router
 from localstack.http.client import HttpClient
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.http.proxy import Proxy
-from localstack.services.s3.virtual_host import S3VirtualHostProxyHandler, add_s3_vhost_rules
+from localstack.services.s3.legacy.virtual_host import S3VirtualHostProxyHandler, add_s3_vhost_rules
 
 
 class _RequestCollectingClient(HttpClient):

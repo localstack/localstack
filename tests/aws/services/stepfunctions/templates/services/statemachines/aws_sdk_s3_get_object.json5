@@ -1,0 +1,15 @@
+{
+  "Comment": "AWS_SDK_S3_GET_OBJECT",
+  "StartAt": "S3GetObject",
+  "States": {
+    "S3GetObject": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:getObject",
+      "Parameters": {
+        "Bucket.$": "$.Bucket",
+        "Key.$": "$.Key"
+      },
+      "End": true
+    }
+  }
+}

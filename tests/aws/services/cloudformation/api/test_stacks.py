@@ -1,5 +1,7 @@
 import json
 import os
+from collections import OrderedDict
+from itertools import permutations
 
 import botocore.exceptions
 import pytest
@@ -221,10 +223,12 @@ class TestStacksApi:
         statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"UPDATE_COMPLETE"}
 
-    @markers.aws.needs_fixing
-    def test_update_stack_with_same_template_withoutchange(self, deploy_cfn_template, aws_client):
+    @markers.aws.validated
+    def test_update_stack_with_same_template_withoutchange(
+        self, deploy_cfn_template, aws_client, snapshot
+    ):
         template = load_file(
-            os.path.join(os.path.dirname(__file__), "../../../templates/fifo_queue.json")
+            os.path.join(os.path.dirname(__file__), "../../../templates/simple_no_change.yaml")
         )
         stack = deploy_cfn_template(template=template)
 
@@ -236,9 +240,29 @@ class TestStacksApi:
                 StackName=stack.stack_name
             )
 
-        error_message = str(ctx.value)
-        assert "UpdateStack" in error_message
-        assert "No updates are to be performed." in error_message
+        snapshot.match("no_change_exception", ctx.value.response)
+
+    @markers.aws.validated
+    def test_update_stack_with_same_template_withoutchange_transformation(
+        self, deploy_cfn_template, aws_client
+    ):
+        template = load_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/simple_no_change_with_transformation.yaml",
+            )
+        )
+        stack = deploy_cfn_template(template=template)
+
+        # transformations will always work even if there's no change in the template!
+        aws_client.cloudformation.update_stack(
+            StackName=stack.stack_name,
+            TemplateBody=template,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack.stack_name
+        )
 
     @markers.aws.validated
     def test_update_stack_actual_update(self, deploy_cfn_template, aws_client):
@@ -323,66 +347,58 @@ class TestStacksApi:
 
         aws_client.cloudformation.delete_stack(StackName=stack_name)
 
-    # TODO finish this test
-    @pytest.mark.skip(reason="disable rollback not enabled")
-    # @markers.aws.validated
+    @markers.aws.validated
+    @pytest.mark.skipif(reason="disable rollback not enabled", condition=not is_aws_cloud())
     @pytest.mark.parametrize("rollback_disabled, length_expected", [(False, 2), (True, 1)])
-    @markers.aws.unknown
-    def test_failure_options_for_stack_update(self, rollback_disabled, length_expected, aws_client):
+    def test_failure_options_for_stack_update(
+        self, rollback_disabled, length_expected, aws_client, cleanups
+    ):
         stack_name = f"stack-{short_uid()}"
+        template = open(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/multiple_bucket_update.yaml"
+            ),
+            "r",
+        ).read()
 
         aws_client.cloudformation.create_stack(
             StackName=stack_name,
-            TemplateBody=open(
-                os.path.join(
-                    os.path.dirname(__file__), "../../../templates/multiple_kms_keys.yaml"
-                ),
-                "r",
-            ).read(),
-            Parameters=[
-                {"ParameterKey": "Usage", "ParameterValue": "SYMMETRIC_DEFAULT"},
-            ],
+            TemplateBody=template,
         )
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
 
-        assert wait_until(
-            lambda _: stack_process_is_finished(aws_client.cloudformation, stack_name),
-        )
+        def _assert_stack_process_finished():
+            return stack_process_is_finished(aws_client.cloudformation, stack_name)
+
+        assert wait_until(_assert_stack_process_finished)
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)[
             "StackResources"
         ]
         created_resources = [
             resource for resource in resources if "CREATE_COMPLETE" in resource["ResourceStatus"]
         ]
-        print(created_resources)
+        assert len(created_resources) == 2
 
         aws_client.cloudformation.update_stack(
             StackName=stack_name,
-            TemplateBody=open(
-                os.path.join(
-                    os.path.dirname(__file__), "../../../templates/multiple_kms_keys.yaml"
-                ),
-                "r",
-            ).read(),
+            TemplateBody=template,
             DisableRollback=rollback_disabled,
             Parameters=[
-                {"ParameterKey": "Usage", "ParameterValue": "Incorrect Value"},
+                {"ParameterKey": "Days", "ParameterValue": "-1"},
             ],
         )
 
-        assert wait_until(
-            lambda _: stack_process_is_finished(aws_client.cloudformation, stack_name)
-        )
+        assert wait_until(_assert_stack_process_finished)
 
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)[
             "StackResources"
         ]
-        created_resources = [
-            resource for resource in resources if "CREATE_COMPLETE" in resource["ResourceStatus"]
+        updated_resources = [
+            resource
+            for resource in resources
+            if resource["ResourceStatus"] in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
         ]
-        print(created_resources)
-        # assert len(created_resources) == length_expected
-
-        aws_client.cloudformation.delete_stack(StackName=stack_name)
+        assert len(updated_resources) == length_expected
 
 
 def stack_process_is_finished(cfn_client, stack_name):
@@ -766,3 +782,90 @@ def test_describe_stack_events_errors(aws_client, snapshot):
     with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
         aws_client.cloudformation.describe_stack_events(StackName="does-not-exist")
     snapshot.match("describe_stack_events_stack_not_found", e.value.response)
+
+
+TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..StackId",
+        # TODO
+        "$..PhysicalResourceId",
+        # TODO
+        "$..ResourceProperties",
+    ]
+)
+@pytest.mark.parametrize(
+    "deploy_order", TEMPLATE_ORDER_CASES, ids=["-".join(vals) for vals in TEMPLATE_ORDER_CASES]
+)
+def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_order: tuple[str]):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.key_value("EventId"))
+    resources = {
+        "A": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Type": "String",
+                "Value": "root",
+            },
+        },
+        "B": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Type": "String",
+                "Value": {
+                    "Ref": "A",
+                },
+            },
+        },
+        "C": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Type": "String",
+                "Value": {
+                    "Ref": "B",
+                },
+            },
+        },
+    }
+
+    resources = OrderedDict(
+        [
+            (logical_resource_id, resources[logical_resource_id])
+            for logical_resource_id in deploy_order
+        ]
+    )
+    assert len(resources) == 3
+
+    stack = deploy_cfn_template(
+        template=json.dumps(
+            {
+                "Resources": resources,
+            }
+        )
+    )
+
+    stack.destroy()
+
+    events = aws_client.cloudformation.describe_stack_events(
+        StackName=stack.stack_id,
+    )["StackEvents"]
+
+    filtered_events = []
+    for event in events:
+        # only the resources we care about
+        if event["LogicalResourceId"] not in deploy_order:
+            continue
+
+        # only _COMPLETE events
+        if not event["ResourceStatus"].endswith("_COMPLETE"):
+            continue
+
+        filtered_events.append(event)
+
+    # sort by event time
+    filtered_events.sort(key=lambda e: e["Timestamp"])
+
+    snapshot.match("events", filtered_events)

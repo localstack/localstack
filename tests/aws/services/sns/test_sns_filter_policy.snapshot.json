@@ -1,0 +1,1610 @@
+{
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy": {
+    "recorded-date": "14-05-2024, 16:51:02",
+    "recorded-content": {
+      "error-condition-list": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Match value must be String, number, true, false, or null\n at [Source: (String)\"{\"key\":[[\"value\"]]}\"; line: 1, column: 10]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Match value must be String, number, true, false, or null"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-operator": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Unrecognized match type wrong-operator\n at [Source: (String)\"{\"key\":[{\"wrong-operator\":true}]}\"; line: 1, column: 31]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Unrecognized match type wrong-operator"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-two-operators": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Only one key allowed in match expression\n at [Source: (String)\"{\"key\":[{\"suffix\":\"value\",\"prefix\":\"value2\"}]}\"; line: 1, column: 37]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Only one key allowed in match expression"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_string_operators": {
+    "recorded-date": "15-05-2024, 14:39:23",
+    "recorded-content": {
+      "error-condition-is-numeric": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"suffix\":100}]}\"; line: 1, column: 22]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-is-none": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"suffix\":null}]}\"; line: 1, column: 23]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-is-not-list-and-operator": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: \"suffix\" must be an object or an array\n at [Source: (String)\"{\"key\":{\"suffix\":\"value\"}}\"; line: 1, column: 19]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: \"suffix\" must be an object or an array"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-empty-list": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"suffix\":[]}]}\"; line: 1, column: 20]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-list-wrong-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"suffix\":[\"test\",\"test2\"]}]}\"; line: 1, column: 20]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-is-not-list-two-ops": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: \"suffix\" must be an object or an array\n at [Source: (String)\"{\"key\":{\"suffix\":\"value\",\"prefix\":\"value\"}}\"; line: 1, column: 19]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: \"suffix\" must be an object or an array"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-is-not-list-and-no-operator": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: \"not-an-operator\" must be an object or an array\n at [Source: (String)\"{\"key\":{\"not-an-operator\":\"value\"}}\"; line: 1, column: 28]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: \"not-an-operator\" must be an object or an array"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_numeric_operator": {
+    "recorded-date": "14-05-2024, 16:51:06",
+    "recorded-content": {
+      "error-numeric-empty": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Invalid member in numeric match: ]\n at [Source: (String)\"{\"key\":[{\"numeric\":[]}]}\"; line: 1, column: 22]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Invalid member in numeric match: ]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-wrong-operator": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Unrecognized numeric range operator: operator\n at [Source: (String)\"{\"key\":[{\"numeric\":[\"operator\"]}]}\"; line: 1, column: 32]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Unrecognized numeric range operator: operator"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-operator-order": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Invalid member in numeric match: 1\n at [Source: (String)\"{\"key\":[{\"numeric\":[1,\"<=\"]}]}\"; line: 1, column: 22]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Invalid member in numeric match: 1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Value of equals must be numeric\n at [Source: (String)\"{\"key\":[{\"numeric\":[\"=\",\"000\"]}]}\"; line: 1, column: 26]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Value of equals must be numeric"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-missing-value": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Value of >= must be numeric\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">=\"]}]}\"; line: 1, column: 26]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Value of >= must be numeric"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-wrong-range-order": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Too many elements in numeric expression\n at [Source: (String)\"{\"key\":[{\"numeric\":[\"<\",100,\">\",10]}]}\"; line: 1, column: 30]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Too many elements in numeric expression"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-wrong-range-operators": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Bad numeric range operator: >\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">=\",1,\">\",2]}]}\"; line: 1, column: 31]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Bad numeric range operator: >"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-wrong-value-order": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Bottom must be less than top\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">\",3,\"<\",1]}]}\"; line: 1, column: 33]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Bottom must be less than top"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-missing-range-value": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Value of <= must be numeric\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">\",20,\"<=\"]}]}\"; line: 1, column: 33]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Value of <= must be numeric"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-missing-range-operator": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Bad value in numeric range: 30\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">\",20,30]}]}\"; line: 1, column: 30]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Bad value in numeric range: 30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-wrong-second-range-operator": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Bad numeric range operator: test\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">\",20,\"test\"]}]}\"; line: 1, column: 34]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Bad numeric range operator: test"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-wrong-range-value-1-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Value of > must be numeric\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">\",\"20\",\"<\",\"30\"]}]}\"; line: 1, column: 26]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Value of > must be numeric"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-wrong-range-value-2-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Value of < must be numeric\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">\",20,\"<\",\"30\"]}]}\"; line: 1, column: 33]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Value of < must be numeric"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-numeric-too-many-range": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Too many terms in numeric range expression\n at [Source: (String)\"{\"key\":[{\"numeric\":[\">\",20,\"<\",30,\"<\",50]}]}\"; line: 1, column: 36]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Too many terms in numeric range expression"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_exists_operator": {
+    "recorded-date": "14-05-2024, 16:51:07",
+    "recorded-content": {
+      "error-condition-none": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: exists match pattern must be either true or false.\n at [Source: (String)\"{\"key\":[{\"exists\":null}]}\"; line: 1, column: 23]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: exists match pattern must be either true or false."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-string": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: exists match pattern must be either true or false.\n at [Source: (String)\"{\"key\":[{\"exists\":\"no\"}]}\"; line: 1, column: 20]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: exists match pattern must be either true or false."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_policy_complexity": {
+    "recorded-date": "14-05-2024, 16:51:07",
+    "recorded-content": {
+      "error-complexity-in-one-condition": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Filter policy is too complex",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-complexity-in-two-conditions": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Filter policy is too complex",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-complexity-too-many-fields": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Filter policy can not have more than 5 keys",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_sub_filter_policy_nested_property": {
+    "recorded-date": "14-05-2024, 16:49:14",
+    "recorded-content": {
+      "sub-filter-policy-nested-error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Filter policy scope MessageAttributes does not support nested filter policy",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-attrs-after-setting-nested-policy": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "object": {
+              "key": [
+                {
+                  "prefix": "auto-"
+                }
+              ]
+            }
+          },
+          "FilterPolicyScope": "MessageBody",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_policy_complexity_with_or": {
+    "recorded-date": "14-05-2024, 16:51:09",
+    "recorded-content": {
+      "error-complexity-or-flat": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Filter policy is too complex",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-complexity-or-nested": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Filter policy is too complex",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_set_subscription_filter_policy_scope": {
+    "recorded-date": "14-05-2024, 16:49:12",
+    "recorded-content": {
+      "sub-attrs-default": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs-filter-scope-body": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs-filter-scope-error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicyScope: Invalid value [RandomValue]. Please use either MessageBody or MessageAttributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-attrs-after-setting-policy": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "attr": [
+              "match-this"
+            ]
+          },
+          "FilterPolicyScope": "MessageBody",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_sub_filter_policy_nested_property_constraints": {
+    "recorded-date": "14-05-2024, 16:49:16",
+    "recorded-content": {
+      "sub-filter-policy-nested-error-too-many-combinations": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: Filter policy is too complex",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-filter-policy-max-attr-keys": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: Filter policy can not have more than 5 keys",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-filter-policy-rule-no-list": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: \"key_a\" must be an object or an array\n at [Source: (String)\"{\"key_a\":\"value_one\"}\"; line: 1, column: 11]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyAttributes::test_filter_policy": {
+    "recorded-date": "14-05-2024, 16:49:29",
+    "recorded-content": {
+      "subscription-attributes": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "attr1": [
+              {
+                "numeric": [
+                  ">",
+                  0,
+                  "<=",
+                  100
+                ]
+              }
+            ]
+          },
+          "FilterPolicyScope": "MessageAttributes",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-0": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "This is a test message",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-2": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "This is a test message",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-attributes-2": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "attr1": [
+              null,
+              {
+                "anything-but": "whatever"
+              }
+            ]
+          },
+          "FilterPolicyScope": "MessageAttributes",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-3": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-4": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "This the test message for null",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyAttributes::test_exists_filter_policy": {
+    "recorded-date": "14-05-2024, 16:49:37",
+    "recorded-content": {
+      "subscription-attributes-policy-1": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "store": [
+              {
+                "exists": true
+              }
+            ]
+          },
+          "FilterPolicyScope": "MessageAttributes",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-0": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "message-1",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "def": {
+                  "Type": "Number",
+                  "Value": "99"
+                },
+                "store": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-2": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "message-1",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "def": {
+                  "Type": "Number",
+                  "Value": "99"
+                },
+                "store": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-attributes-policy-2": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "store": [
+              {
+                "exists": false
+              }
+            ]
+          },
+          "FilterPolicyScope": "MessageAttributes",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-3": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "message-3",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "def": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-4": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "message-3",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "def": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyAttributes::test_exists_filter_policy_attributes_array": {
+    "recorded-date": "14-05-2024, 16:49:44",
+    "recorded-content": {
+      "subscription-attributes-policy": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "store": [
+              "value1"
+            ]
+          },
+          "FilterPolicyScope": "MessageAttributes",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-1": {
+        "Messages": [
+          {
+            "Body": "message-1",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-2": {
+        "Messages": [
+          {
+            "Body": "message-2",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-3": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[True]": {
+    "recorded-date": "14-05-2024, 16:49:57",
+    "recorded-content": {
+      "recv-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg-0": {
+        "Messages": [
+          {
+            "Body": {
+              "object": {
+                "key": "auto-test"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg-1": {
+        "Messages": [
+          {
+            "Body": {
+              "object": {
+                "key": "hardcodedvalue"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[False]": {
+    "recorded-date": "14-05-2024, 16:50:08",
+    "recorded-content": {
+      "recv-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg-0": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"key\": \"auto-test\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"key\": \"hardcodedvalue\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_for_batch": {
+    "recorded-date": "14-05-2024, 16:50:25",
+    "recorded-content": {
+      "subscription-attributes-with-filter": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "attr1": [
+              {
+                "numeric": [
+                  ">",
+                  0,
+                  "<=",
+                  100
+                ]
+              }
+            ]
+          },
+          "FilterPolicyScope": "MessageAttributes",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-attributes-no-filter": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:5>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:6>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-no-filter-before-publish": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-with-filter-before-publish": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-no-filter-after-publish-ok": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "This is a test message",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:6>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-with-filter-after-publish-ok": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "This is a test message",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-no-filter-after-publish-ok-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "Message": "This is another test message",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:6>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "111"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:5>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-with-filter-after-publish-filtered": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_dot_attribute": {
+    "recorded-date": "14-05-2024, 16:50:50",
+    "recorded-content": {
+      "recv-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-nested-msg-0": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"nested\": \"string.value\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-nested-msg-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object.nested\": \"string.value\"}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-deep-nested-msg-0": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:5>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"nested\": {\"test\": \"string.value\"}}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:6>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-deep-nested-msg-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:7>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object.nested.test\": \"string.value\"}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:8>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-deep-nested-msg-2": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:9>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object.nested\": {\"test\": \"string.value\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:10>",
+            "ReceiptHandle": "<receipt-handle:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-deep-nested-msg-3": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:11>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"nested.test\": \"string.value\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:12>",
+            "ReceiptHandle": "<receipt-handle:6>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_array_attributes": {
+    "recorded-date": "14-05-2024, 16:50:55",
+    "recorded-content": {
+      "messages-queue-0": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "headers": {
+                "route-to": [
+                  "queue1",
+                  "queue2"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "headers": {
+                "route-to": [
+                  "queue1"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ]
+      },
+      "messages-queue-1": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "headers": {
+                "route-to": [
+                  "queue1",
+                  "queue2"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "headers": {
+                "route-to": [
+                  "queue2"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_array_of_object_attributes": {
+    "recorded-date": "14-05-2024, 16:50:58",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "Records": [
+                {
+                  "eventSource": "aws:s3",
+                  "eventName": "ObjectCreated:Put",
+                  "s3": {
+                    "object": [
+                      [
+                        {
+                          "key": "auto-insurance-2314.xml",
+                          "size": 17
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "eventSource": "aws:s3",
+                  "eventName": "ObjectRemoved:Delete",
+                  "s3": {
+                    "object": {
+                      "key": "home-insurance-2314.xml",
+                      "size": 17
+                    }
+                  }
+                }
+              ]
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "Records": [
+                {
+                  "eventSource": "aws:s3",
+                  "eventTime": "date",
+                  "eventName": "ObjectCreated:Put",
+                  "s3": {
+                    "bucket": {
+                      "name": "<resource:1>",
+                      "arn": "arn:<partition>:s3:::<resource:1>"
+                    },
+                    "object": {
+                      "key": "auto-insurance-2314.xml",
+                      "size": 17
+                    }
+                  }
+                }
+              ]
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_or_attribute": {
+    "recorded-date": "14-05-2024, 16:51:02",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_nested_anything_but_operator": {
+    "recorded-date": "15-05-2024, 14:39:32",
+    "recorded-content": {
+      "error-condition-wrong-operator": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: wrong-operator\n at [Source: (String)\"{\"key\":[{\"anything-but\":{\"wrong-operator\":null}}]}\"; line: 1, column: 47]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: wrong-operator"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-anything-but-suffix": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: suffix\n at [Source: (String)\"{\"key\":[{\"anything-but\":{\"suffix\":\"test\"}}]}\"; line: 1, column: 36]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: suffix"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-anything-but-exists": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: exists\n at [Source: (String)\"{\"key\":[{\"anything-but\":{\"exists\":false}}]}\"; line: 1, column: 40]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: exists"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-anything-but-prefix-wrong-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: prefix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"anything-but\":{\"prefix\":false}}]}\"; line: 1, column: 40]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: prefix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

@@ -12,10 +12,15 @@ from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url, create_rest_resource
-from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
+from tests.aws.services.apigateway.conftest import (
+    APIGATEWAY_ASSUME_ROLE_POLICY,
+    APIGATEWAY_LAMBDA_POLICY,
+    is_next_gen_api,
+)
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_AWS_PROXY_FORMAT,
+    TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_MAPPING_RESPONSES,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_SELECT_PATTERN,
@@ -25,65 +30,36 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 REQUEST_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/request-template.vm")
 RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.vm")
 
+CLOUDFRONT_SKIP_HEADERS = [
+    "$..Via",
+    "$..X-Amz-Cf-Id",
+    "$..CloudFront-Forwarded-Proto",
+    "$..CloudFront-Is-Desktop-Viewer",
+    "$..CloudFront-Is-Mobile-Viewer",
+    "$..CloudFront-Is-SmartTV-Viewer",
+    "$..CloudFront-Is-Tablet-Viewer",
+    "$..CloudFront-Viewer-ASN",
+    "$..CloudFront-Viewer-Country",
+]
+
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=CLOUDFRONT_SKIP_HEADERS)
 @markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_next_gen_api(),
     paths=[
         "$..body",
-        "$..headers.Accept",
-        "$..headers.Content-Length",
-        "$..headers.Accept-Encoding",
-        "$..headers.CloudFront-Forwarded-Proto",
-        "$..headers.CloudFront-Is-Desktop-Viewer",
-        "$..headers.CloudFront-Is-Mobile-Viewer",
-        "$..headers.CloudFront-Is-SmartTV-Viewer",
-        "$..headers.CloudFront-Is-Tablet-Viewer",
-        "$..headers.CloudFront-Viewer-ASN",
-        "$..headers.CloudFront-Viewer-Country",
-        "$..headers.Connection",
-        "$..headers.Host",
-        "$..headers.Remote-Addr",
-        "$..headers.Via",
-        "$..headers.X-Amz-Cf-Id",
-        "$..headers.X-Amzn-Trace-Id",
-        "$..headers.X-Forwarded-For",
-        "$..headers.X-Forwarded-Port",
-        "$..headers.X-Forwarded-Proto",
-        "$..headers.accept",
-        "$..headers.accept-encoding",
-        "$..headers.x-localstack-edge",
-        "$..headers.x-localstack-request-url",
-        "$..headers.x-localstack-tgt-api",
-        "$..multiValueHeaders.Content-Length",
-        "$..multiValueHeaders.Accept",
-        "$..multiValueHeaders.Accept-Encoding",
-        "$..multiValueHeaders.CloudFront-Forwarded-Proto",
-        "$..multiValueHeaders.CloudFront-Is-Desktop-Viewer",
-        "$..multiValueHeaders.CloudFront-Is-Mobile-Viewer",
-        "$..multiValueHeaders.CloudFront-Is-SmartTV-Viewer",
-        "$..multiValueHeaders.CloudFront-Is-Tablet-Viewer",
-        "$..multiValueHeaders.CloudFront-Viewer-ASN",
-        "$..multiValueHeaders.CloudFront-Viewer-Country",
-        "$..multiValueHeaders.Connection",
-        "$..multiValueHeaders.Host",
-        "$..multiValueHeaders.Remote-Addr",
-        "$..multiValueHeaders.Via",
-        "$..multiValueHeaders.X-Amz-Cf-Id",
-        "$..multiValueHeaders.X-Amzn-Trace-Id",
-        "$..multiValueHeaders.X-Forwarded-For",
-        "$..multiValueHeaders.X-Forwarded-Port",
-        "$..multiValueHeaders.X-Forwarded-Proto",
-        "$..multiValueHeaders.accept",
-        "$..multiValueHeaders.accept-encoding",
-        "$..multiValueHeaders.x-localstack-edge",
-        "$..multiValueHeaders.x-localstack-request-url",
-        "$..multiValueHeaders.x-localstack-tgt-api",
+        "$..Accept",
+        "$..accept",
+        "$..Content-Length",
+        "$..Accept-Encoding",
+        "$..Connection",
+        "$..accept-encoding",
+        "$..x-localstack-edge",
         "$..pathParameters",
-        "$..requestContext.apiId",
         "$..requestContext.authorizer",
         "$..requestContext.deploymentId",
         "$..requestContext.domainName",
-        "$..requestContext.domainPrefix",
         "$..requestContext.extendedRequestId",
         "$..requestContext.identity.accessKey",
         "$..requestContext.identity.accountId",
@@ -96,23 +72,50 @@ RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.
         "$..requestContext.identity.user",
         "$..requestContext.identity.userArn",
         "$..stageVariables",
-    ]
+        "$..X-Amzn-Trace-Id",
+        "$..X-Forwarded-For",
+        "$..X-Forwarded-Port",
+        "$..X-Forwarded-Proto",
+    ],
 )
 def test_lambda_aws_proxy_integration(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):
     function_name = f"test-function-{short_uid()}"
-    stage_name = "test"
+    stage_name = "stage"
     snapshot.add_transformer(snapshot.transform.apigateway_api())
     snapshot.add_transformer(snapshot.transform.apigateway_proxy_event())
-    snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
+    # TODO: update global transformers, but we will need to regenerate all snapshots at once
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("deploymentId"),
+            snapshot.transform.jsonpath("$..headers.Host", value_replacement="host"),
+            snapshot.transform.jsonpath("$..multiValueHeaders.Host[0]", value_replacement="host"),
+            snapshot.transform.key_value(
+                "X-Forwarded-For",
+                value_replacement="<X-Forwarded-For>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Port",
+                value_replacement="<X-Forwarded-Port>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Proto",
+                value_replacement="<X-Forwarded-Proto>",
+                reference_replacement=False,
+            ),
+        ],
+        priority=-1,
+    )
 
     # create lambda
     create_function_response = create_lambda_function(
         func_name=function_name,
         handler_file=TEST_LAMBDA_AWS_PROXY,
         handler="lambda_aws_proxy.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -126,39 +129,44 @@ def test_lambda_aws_proxy_integration(
     )
     # use a regex transform as create_rest_apigw fixture does not return the original response
     snapshot.add_transformer(snapshot.transform.regex(api_id, replacement="<api-id>"), priority=-1)
-    resource_id = aws_client.apigateway.create_resource(
+    resource_id_proxy = aws_client.apigateway.create_resource(
         restApiId=api_id, parentId=root, pathPart="{proxy+}"
     )["id"]
-    aws_client.apigateway.put_method(
-        restApiId=api_id,
-        resourceId=resource_id,
-        httpMethod="ANY",
-        authorizationType="NONE",
-    )
+    resource_id_hardcoded = aws_client.apigateway.create_resource(
+        restApiId=api_id, parentId=root, pathPart="hardcoded"
+    )["id"]
+    for resource_id in (resource_id_proxy, resource_id_hardcoded):
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+        )
 
-    # Lambda AWS_PROXY integration
-    aws_client.apigateway.put_integration(
-        restApiId=api_id,
-        resourceId=resource_id,
-        httpMethod="ANY",
-        type="AWS_PROXY",
-        integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
-        credentials=role_arn,
-    )
+        # Lambda AWS_PROXY integration
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            type="AWS_PROXY",
+            integrationHttpMethod="POST",
+            uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+            credentials=role_arn,
+        )
+
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
-    # invoke rest api
-    invocation_url = api_invoke_url(
-        api_id=api_id,
-        stage=stage_name,
-        path="/test-path",
-    )
+    def get_invoke_url(path: str) -> str:
+        return api_invoke_url(
+            api_id=api_id,
+            stage=stage_name,
+            path=path,
+        )
 
     def invoke_api(url):
         # use test header with different casing to check if it is preserved in the proxy payload
         # authorization is a weird case, it will get Pascal cased by default
-        response = requests.get(
+        _response = requests.get(
             url,
             headers={
                 "User-Agent": "python-requests/testing",
@@ -167,28 +175,46 @@ def test_lambda_aws_proxy_integration(
             },
             verify=False,
         )
-        assert 200 == response.status_code
-        return response
+        if not _response.ok:
+            print(f"{_response.content=}")
+        assert _response.status_code == 200
+        return _response
 
+    invocation_url = get_invoke_url(path="/proxy-value")
     # retry is necessary against AWS, probably IAM permission delay
     response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
     snapshot.match("invocation-payload-without-trailing-slash", response.json())
 
     # invoke rest api with trailing slash
-    response_trailing_slash = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/")
+    invocation_url = get_invoke_url(path="/proxy-value/")
+    response_trailing_slash = invoke_api(url=invocation_url)
     snapshot.match("invocation-payload-with-trailing-slash", response_trailing_slash.json())
 
-    response_no_trailing_slash = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test"
+    # invoke rest api with double slash in proxy param
+    invocation_url = get_invoke_url(path="/proxy-value//double-slash")
+    response_double_slash = invoke_api(url=invocation_url)
+    snapshot.match("invocation-payload-with-double-slash", response_double_slash.json())
+
+    # invoke rest api with prepended slash to the stage (//<stage>/<path>)
+    invocation_url = get_invoke_url(path="/proxy-value")
+    double_slash_before_stage = invocation_url.replace(f"/{stage_name}/", f"//{stage_name}/")
+    response_prepend_slash = invoke_api(url=double_slash_before_stage)
+    snapshot.match(
+        "invocation-payload-with-prepended-slash-to-stage", response_prepend_slash.json()
     )
+
+    # invoke rest api with prepended slash
+    slash_between_stage_and_path = get_invoke_url(path="//proxy-value")
+    response_prepend_slash = invoke_api(url=slash_between_stage_and_path)
+    snapshot.match("invocation-payload-with-prepended-slash", response_prepend_slash.json())
+
+    response_no_trailing_slash = invoke_api(url=f"{invocation_url}?urlparam=test")
     snapshot.match(
         "invocation-payload-without-trailing-slash-and-query-params",
         response_no_trailing_slash.json(),
     )
 
-    response_trailing_slash_param = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test"
-    )
+    response_trailing_slash_param = invoke_api(url=f"{invocation_url}/?urlparam=test")
     snapshot.match(
         "invocation-payload-with-trailing-slash-and-query-params",
         response_trailing_slash_param.json(),
@@ -196,12 +222,7 @@ def test_lambda_aws_proxy_integration(
 
     # invoke rest api with encoded information in URL path
     path_encoded_emails = "user/test%2Balias@gmail.com/plus/test+alias@gmail.com"
-    response_path_encoding = retry(
-        invoke_api,
-        sleep=2,
-        retries=10,
-        url=f"{invocation_url}/api/{path_encoded_emails}",
-    )
+    response_path_encoding = invoke_api(url=f"{invocation_url}/api/{path_encoded_emails}")
     snapshot.match(
         "invocation-payload-with-path-encoded-email",
         response_path_encoding.json(),
@@ -219,12 +240,7 @@ def test_lambda_aws_proxy_integration(
             "ignored=this-does-not-appear-after-the-hash",
         ]
     )
-    response_params_encoding = retry(
-        invoke_api,
-        sleep=2,
-        retries=10,
-        url=f"{invocation_url}/api?{url_params}",
-    )
+    response_params_encoding = invoke_api(url=f"{invocation_url}/api?{url_params}")
     snapshot.match(
         "invocation-payload-with-params-encoding",
         response_params_encoding.json(),
@@ -251,6 +267,15 @@ def test_lambda_aws_proxy_integration(
     responses = retry(invoke_api_with_multi_value_header, sleep=2, retries=10, url=invocation_url)
     snapshot.match("invocation-payload-with-params-encoding-multi", responses.json())
 
+    # invoke the hardcoded path with prepended slashes
+    invocation_url_hardcoded = api_invoke_url(
+        api_id=api_id,
+        stage=stage_name,
+        path="//hardcoded",
+    )
+    response_hardcoded = retry(invoke_api, sleep=2, retries=10, url=invocation_url_hardcoded)
+    snapshot.match("invocation-hardcoded", response_hardcoded.json())
+
 
 @markers.aws.validated
 def test_lambda_aws_proxy_integration_non_post_method(
@@ -264,7 +289,7 @@ def test_lambda_aws_proxy_integration_non_post_method(
         func_name=function_name,
         handler_file=TEST_LAMBDA_AWS_PROXY,
         handler="lambda_aws_proxy.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -296,8 +321,20 @@ def test_lambda_aws_proxy_integration_non_post_method(
         uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
         credentials=role_arn,
     )
-    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
+    # Note: we are adding a GatewayResponse here to test a weird AWS bug: when the AWS_PROXY integration fails, it
+    # internally raises an IntegrationFailure error.
+    # However, in the documentation, it is written than this error should return 504. But like this test shows, when the
+    # user does not update the status code, it returns 500, unlike what the documentation and APIGW returns when calling
+    # `GetGatewayResponse`.
+    # TODO: in the future, write a specific test for this behavior
+    aws_client.apigateway.put_gateway_response(
+        restApiId=api_id,
+        responseType="INTEGRATION_FAILURE",
+        responseParameters={},
+    )
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
     # invoke rest api
     invocation_url = api_invoke_url(
         api_id=api_id,
@@ -343,7 +380,7 @@ def test_lambda_aws_integration(
         func_name=function_name,
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         handler="lambda_echo.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -430,7 +467,7 @@ def test_lambda_aws_integration_with_request_template(
         func_name=function_name,
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         handler="lambda_echo.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -535,7 +572,7 @@ def test_lambda_aws_integration_response_with_mapping_templates(
         func_name=function_name,
         handler_file=TEST_LAMBDA_MAPPING_RESPONSES,
         handler="lambda_mapping_responses.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -641,7 +678,7 @@ def test_lambda_selection_patterns(
         func_name=function_name,
         handler_file=TEST_LAMBDA_PYTHON_SELECT_PATTERN,
         handler="lambda_select_pattern.handler",
-        runtime=Runtime.python3_10,
+        runtime=Runtime.python3_12,
     )
 
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
@@ -758,7 +795,7 @@ def test_lambda_aws_proxy_response_format(
         func_name=function_name,
         handler_file=TEST_LAMBDA_AWS_PROXY_FORMAT,
         handler="lambda_aws_proxy_format.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
@@ -799,7 +836,7 @@ def test_lambda_aws_proxy_response_format(
         "wrong-format",
         "empty-response",
     ]
-
+    # TODO: refactor the test to use a lambda that returns whatever we pass it to instead of pre-defined responses
     for lambda_format_type in format_types:
         # invoke rest api
         invocation_url = api_invoke_url(
@@ -832,3 +869,231 @@ def test_lambda_aws_proxy_response_format(
         elif lambda_format_type == "wrong-format":
             assert response.status_code == 502
             assert response.json() == {"message": "Internal server error"}
+
+
+# Testing the integration with Rust to prevent future regression with strongly typed language integration
+# TODO make the test compatible for ARM
+@markers.aws.validated
+@markers.only_on_amd64
+def test_lambda_rust_proxy_integration(
+    create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client, snapshot
+):
+    function_name = f"test-rust-function-{short_uid()}"
+    api_gateway_name = f"api_gateway_{short_uid()}"
+    role_name = f"test_apigateway_role_{short_uid()}"
+    policy_name = f"test_apigateway_policy_{short_uid()}"
+    stage_name = "test"
+    first_name = f"test_name_{short_uid()}"
+    lambda_create_response = create_lambda_function(
+        func_name=function_name,
+        zip_file=load_file(TEST_LAMBDA_HTTP_RUST, mode="rb"),
+        handler="bootstrap.is.the.handler",
+        runtime="provided.al2",
+    )
+    role_arn = create_iam_role_with_policy(
+        RoleName=role_name,
+        PolicyName=policy_name,
+        RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+        PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
+    )
+    lambda_arn = lambda_create_response["CreateFunctionResponse"]["FunctionArn"]
+    rest_api_id, _, _ = create_rest_apigw(name=api_gateway_name)
+
+    root_resource_id = aws_client.apigateway.get_resources(restApiId=rest_api_id)["items"][0]["id"]
+    aws_client.apigateway.put_method(
+        restApiId=rest_api_id,
+        resourceId=root_resource_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+    )
+    aws_client.apigateway.put_method_response(
+        restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
+    )
+    lambda_target_uri = arns.apigateway_invocations_arn(
+        lambda_uri=lambda_arn, region_name=aws_client.apigateway.meta.region_name
+    )
+    aws_client.apigateway.put_integration(
+        restApiId=rest_api_id,
+        resourceId=root_resource_id,
+        httpMethod="GET",
+        integrationHttpMethod="POST",
+        type="AWS_PROXY",
+        uri=lambda_target_uri,
+        credentials=role_arn,
+    )
+    aws_client.apigateway.create_deployment(restApiId=rest_api_id, stageName=stage_name)
+    url = api_invoke_url(api_id=rest_api_id, stage=stage_name, path=f"/?first_name={first_name}")
+
+    def _invoke_url(url):
+        invoker_response = requests.get(url)
+        assert invoker_response.status_code == 200
+        return invoker_response
+
+    result = retry(_invoke_url, retries=20, sleep=2, url=url)
+    assert result.text == f"Hello, {first_name}!"
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=CLOUDFRONT_SKIP_HEADERS)
+@markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_next_gen_api(),
+    paths=[
+        "$..body",
+        "$..accept",
+        "$..Accept",
+        "$..accept-encoding",
+        "$..Accept-Encoding",
+        "$..Content-Length",
+        "$..Connection",
+        "$..user-Agent",
+        "$..User-Agent",
+        "$..x-localstack-edge",
+        "$..pathParameters",
+        "$..requestContext.authorizer",
+        "$..requestContext.deploymentId",
+        "$..requestContext.domainName",
+        "$..requestContext.extendedRequestId",
+        "$..requestContext.identity.accessKey",
+        "$..requestContext.identity.accountId",
+        "$..requestContext.identity.caller",
+        "$..requestContext.identity.cognitoAuthenticationProvider",
+        "$..requestContext.identity.cognitoAuthenticationType",
+        "$..requestContext.identity.cognitoIdentityId",
+        "$..requestContext.identity.cognitoIdentityPoolId",
+        "$..requestContext.identity.principalOrgId",
+        "$..requestContext.identity.user",
+        "$..requestContext.identity.userArn",
+        "$..stageVariables",
+        "$..X-Amzn-Trace-Id",
+        "$..X-Forwarded-For",
+        "$..X-Forwarded-Port",
+        "$..X-Forwarded-Proto",
+    ],
+)
+def test_lambda_aws_proxy_integration_request_data_mapping(
+    create_rest_apigw,
+    create_lambda_function,
+    create_role_with_policy,
+    snapshot,
+    aws_client,
+    create_rest_api_with_integration,
+):
+    function_name = f"test-function-{short_uid()}"
+    stage_name = "test"
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformer(snapshot.transform.apigateway_proxy_event())
+    # TODO: update global transformers, but we will need to regenerate all snapshots at once
+    snapshot.add_transformer(snapshot.transform.key_value("rest_api_id"))
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("deploymentId"),
+            snapshot.transform.jsonpath("$..headers.Host", value_replacement="host"),
+            snapshot.transform.jsonpath("$..multiValueHeaders.Host[0]", value_replacement="host"),
+            snapshot.transform.key_value(
+                "X-Forwarded-For",
+                value_replacement="<X-Forwarded-For>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Port",
+                value_replacement="<X-Forwarded-Port>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Proto",
+                value_replacement="<X-Forwarded-Proto>",
+                reference_replacement=False,
+            ),
+        ],
+        priority=-1,
+    )
+
+    # create lambda
+    create_function_response = create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_AWS_PROXY,
+        handler="lambda_aws_proxy.handler",
+        runtime=Runtime.python3_12,
+    )
+    # create invocation role
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+
+    api_id, _, root = create_rest_apigw(
+        name=f"test-api-{short_uid()}",
+        description="Integration test API",
+    )
+
+    snapshot.match("api_id", {"rest_api_id": api_id})
+
+    resource_id = aws_client.apigateway.create_resource(
+        restApiId=api_id, parentId=root, pathPart="{pathVariable}"
+    )["id"]
+
+    # This test is there to verify that AWS_PROXY does not use the requestParameters
+    req_parameters = {
+        "integration.request.header.headerVar": "method.request.header.foobar",
+        "integration.request.path.qsVar": "method.request.querystring.testVar",
+        "integration.request.path.pathVar": "method.request.path.pathVariable",
+        "integration.request.querystring.queryString": "method.request.querystring.testQueryString",
+        "integration.request.querystring.testQs": "method.request.querystring.testQueryString",
+        "integration.request.querystring.testEmptyQs": "method.request.header.emptyheader",
+    }
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        authorizationType="NONE",
+        requestParameters={value: True for value in req_parameters.values()},
+    )
+
+    # Lambda AWS_PROXY integration
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        type="AWS_PROXY",
+        integrationHttpMethod="POST",
+        uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        credentials=role_arn,
+        requestParameters=req_parameters,
+    )
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+    stage_name = "test"
+
+    invocation_url = api_invoke_url(
+        api_id=api_id,
+        stage=stage_name,
+        path="/foobar",
+    )
+
+    def invoke_api(url):
+        response = requests.post(
+            url,
+            data=json.dumps({"message": "hello world"}),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "foobar": "mapped-value",
+                "user-Agent": "test/integration",
+                "headerVar": "request-value",
+            },
+            params={
+                "testQueryString": "foo",
+                "testVar": "bar",
+            },
+            verify=False,
+        )
+        assert response.status_code == 200
+        return {
+            "content": response.json(),
+            "status_code": response.status_code,
+        }
+
+    # retry is necessary against AWS, probably IAM permission delay
+    invoke_response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+    snapshot.match("http-proxy-invocation-data-mapping", invoke_response)

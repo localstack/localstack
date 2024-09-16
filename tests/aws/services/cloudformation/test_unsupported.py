@@ -3,7 +3,7 @@ import os
 from localstack.testing.pytest import markers
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_unsupported(deploy_cfn_template):
     """
     Exercise the unsupported usage counters

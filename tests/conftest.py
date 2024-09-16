@@ -11,12 +11,12 @@ pytest_plugins = [
     "localstack_snapshot.pytest.snapshot",
     "localstack.testing.pytest.filters",
     "localstack.testing.pytest.fixture_conflicts",
-    "localstack.testing.pytest.detect_thread_leakage",
     "localstack.testing.pytest.marking",
     "localstack.testing.pytest.marker_report",
     "localstack.testing.pytest.in_memory_localstack",
     "localstack.testing.pytest.validation_tracking",
     "localstack.testing.pytest.path_filter",
+    "localstack.testing.pytest.stepfunctions.fixtures",
 ]
 
 
@@ -61,6 +61,16 @@ def aws_session():
 
 
 @pytest.fixture(scope="session")
+def secondary_aws_session():
+    """
+    This fixture returns the Boto Session instance for testing a secondary account.
+    """
+    from localstack.testing.aws.util import secondary_aws_session
+
+    return secondary_aws_session()
+
+
+@pytest.fixture(scope="session")
 def aws_client_factory(aws_session):
     """
     This fixture returns a client factory for testing.
@@ -73,25 +83,37 @@ def aws_client_factory(aws_session):
 
 
 @pytest.fixture(scope="session")
+def secondary_aws_client_factory(secondary_aws_session):
+    """
+    This fixture returns a client factory for testing a secondary account.
+
+    Use this fixture if you need to use custom endpoint or Boto config.
+    """
+    from localstack.testing.aws.util import base_aws_client_factory
+
+    return base_aws_client_factory(secondary_aws_session)
+
+
+@pytest.fixture(scope="session")
 def aws_client(aws_client_factory):
     """
     This fixture can be used to obtain Boto clients for testing.
 
     The clients are configured with the primary testing credentials.
     """
-    from localstack.testing.aws.util import primary_testing_aws_client
+    from localstack.testing.aws.util import base_testing_aws_client
 
-    return primary_testing_aws_client(aws_client_factory)
+    return base_testing_aws_client(aws_client_factory)
 
 
 @pytest.fixture(scope="session")
-def secondary_aws_client(aws_client_factory):
+def secondary_aws_client(secondary_aws_client_factory):
     """
-    This fixture can be used to obtain Boto clients for testing.
+    This fixture can be used to obtain Boto clients for testing a secondary account.
 
     The clients are configured with the secondary testing credentials.
     The region is not overridden.
     """
-    from localstack.testing.aws.util import secondary_testing_aws_client
+    from localstack.testing.aws.util import base_testing_aws_client
 
-    return secondary_testing_aws_client(aws_client_factory)
+    return base_testing_aws_client(secondary_aws_client_factory)

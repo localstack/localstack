@@ -1,7 +1,15 @@
 {
   "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_setup": {
-    "recorded-date": "29-08-2023, 17:20:44",
+    "recorded-date": "15-07-2024, 12:54:12",
     "recorded-content": {
+      "scan_count": {
+        "Count": 56,
+        "ScannedCount": 56,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "get-item": {
         "Item": {
           "author": {
@@ -30,19 +38,11 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      },
-      "scan_count": {
-        "Count": 56,
-        "ScannedCount": 56,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
       }
     }
   },
   "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_lambda_dynamodb": {
-    "recorded-date": "30-08-2023, 13:23:16",
+    "recorded-date": "15-07-2024, 12:54:17",
     "recorded-content": {
       "get_books_fn": {
         "ExecutedVersion": "$LATEST",
@@ -161,14 +161,14 @@
     }
   },
   "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_search_books": {
-    "recorded-date": "31-08-2023, 13:39:41",
+    "recorded-date": "15-07-2024, 12:55:25",
     "recorded-content": {
       "search_name_spaghetti": {
         "_shards": {
           "failed": 0,
           "skipped": 0,
-          "successful": 6,
-          "total": 6
+          "successful": 12,
+          "total": 12
         },
         "hits": {
           "hits": [
@@ -214,8 +214,8 @@
         "_shards": {
           "failed": 0,
           "skipped": 0,
-          "successful": 6,
-          "total": 6
+          "successful": 12,
+          "total": 12
         },
         "hits": {
           "hits": [
@@ -373,8 +373,8 @@
         "_shards": {
           "failed": 0,
           "skipped": 0,
-          "successful": 6,
-          "total": 6
+          "successful": 12,
+          "total": 12
         },
         "hits": {
           "hits": [
@@ -532,8 +532,8 @@
         "_shards": {
           "failed": 0,
           "skipped": 0,
-          "successful": 6,
-          "total": 6
+          "successful": 12,
+          "total": 12
         },
         "hits": {
           "hits": [],
@@ -549,12 +549,12 @@
     }
   },
   "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_opensearch_crud": {
-    "recorded-date": "12-02-2024, 15:44:19",
+    "recorded-date": "15-07-2024, 12:55:29",
     "recorded-content": {
       "describe_domains": {
         "DomainStatusList": [
           {
-            "ARN": "arn:aws:es:<region>:111111111111:domain/<domain-name:1>",
+            "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
             "AccessPolicies": "",
             "AdvancedOptions": {
               "override_main_response_version": "false",
@@ -570,7 +570,11 @@
               "UseOffPeakWindow": false
             },
             "ChangeProgressDetails": {
-              "ChangeId": "<change-id:1>"
+              "ChangeId": "<change-id:1>",
+              "ConfigChangeStatus": "Completed",
+              "InitiatedBy": "CUSTOMER",
+              "LastUpdatedTime": "datetime",
+              "StartTime": "datetime"
             },
             "ClusterConfig": {
               "ColdStorageOptions": {
@@ -595,6 +599,7 @@
             },
             "DomainId": "<domain-id:1>",
             "DomainName": "<domain-name:1>",
+            "DomainProcessingStatus": "Active",
             "EBSOptions": {
               "EBSEnabled": true,
               "VolumeSize": 10,
@@ -604,8 +609,9 @@
               "Enabled": false
             },
             "Endpoint": "<endpoint:1>",
-            "EngineVersion": "OpenSearch_2.5",
+            "EngineVersion": "OpenSearch_2.11",
             "IPAddressType": "ipv4",
+            "ModifyingProperties": [],
             "NodeToNodeEncryptionOptions": {
               "Enabled": false
             },
@@ -613,7 +619,7 @@
               "Enabled": true,
               "OffPeakWindow": {
                 "WindowStartTime": {
-                  "Hours": 3,
+                  "Hours": 2,
                   "Minutes": 0
                 }
               }
@@ -622,7 +628,7 @@
             "ServiceSoftwareOptions": {
               "AutomatedUpdateDate": "datetime",
               "Cancellable": false,
-              "CurrentVersion": "OpenSearch_2_5_R20230928-P3",
+              "CurrentVersion": "OpenSearch_2_11_R20240502-P2",
               "Description": "There is no software update available for this domain.",
               "NewVersion": "",
               "OptionalDeployment": true,
@@ -710,7 +716,11 @@
             }
           },
           "ChangeProgressDetails": {
-            "ChangeId": "<change-id:1>"
+            "ChangeId": "<change-id:1>",
+            "ConfigChangeStatus": "Completed",
+            "InitiatedBy": "CUSTOMER",
+            "LastUpdatedTime": "datetime",
+            "StartTime": "datetime"
           },
           "ClusterConfig": {
             "Options": {
@@ -785,7 +795,7 @@
             }
           },
           "EngineVersion": {
-            "Options": "OpenSearch_2.5",
+            "Options": "OpenSearch_2.11",
             "Status": {
               "CreationDate": "datetime",
               "PendingDeletion": false,
@@ -814,6 +824,7 @@
               "UpdateVersion": "update-version"
             }
           },
+          "ModifyingProperties": [],
           "NodeToNodeEncryptionOptions": {
             "Options": {
               "Enabled": false
@@ -831,7 +842,7 @@
               "Enabled": true,
               "OffPeakWindow": {
                 "WindowStartTime": {
-                  "Hours": 3,
+                  "Hours": 2,
                   "Minutes": 0
                 }
               }
@@ -915,11 +926,9 @@
       "get_compatible_versions": {
         "CompatibleVersions": [
           {
-            "SourceVersion": "OpenSearch_2.5",
+            "SourceVersion": "OpenSearch_2.11",
             "TargetVersions": [
-              "OpenSearch_2.7",
-              "OpenSearch_2.9",
-              "OpenSearch_2.11"
+              "OpenSearch_2.13"
             ]
           }
         ],
@@ -930,6 +939,7 @@
       },
       "list_versions": {
         "Versions": [
+          "OpenSearch_2.13",
           "OpenSearch_2.11",
           "OpenSearch_2.9",
           "OpenSearch_2.7",

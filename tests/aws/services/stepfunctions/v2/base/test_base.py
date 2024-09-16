@@ -7,16 +7,16 @@ from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
-from tests.aws.services.stepfunctions.utils import (
+from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_success,
     create_and_record_events,
     create_and_record_execution,
 )
+from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSnfBase:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])
@@ -165,6 +165,7 @@ class TestSnfBase:
         self,
         create_iam_role_for_sfn,
         create_state_machine,
+        events_to_sqs_queue,
         sfn_events_to_sqs_queue,
         aws_client,
         sfn_snapshot,
@@ -188,7 +189,6 @@ class TestSnfBase:
         self,
         create_iam_role_for_sfn,
         create_state_machine,
-        sfn_events_to_sqs_queue,
         aws_client,
         sfn_snapshot,
     ):
@@ -263,7 +263,7 @@ class TestSnfBase:
         template = BaseTemplate.load_sfn_template(BaseTemplate.QUERY_CONTEXT_OBJECT_VALUES)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"message": "HelloWorld!"})
+        exec_input = json.dumps({"message": "TestMessage"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -388,6 +388,35 @@ class TestSnfBase:
                 ]
             }
         )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    # TODO: the jsonpath library used in the SFN v2 interpreter does not support indexing features available in
+    #  AWS SFN such as: negative ([-1]) and list ([1,2]) indexing.
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "json_path_string",
+        ["$.items[0]", "$.items[10]"],
+    )
+    def test_json_path_array_access(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        json_path_string,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.JSON_PATH_ARRAY_ACCESS)
+        template["States"]["EntryState"]["Parameters"]["item.$"] = json_path_string
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"items": [{"item_key": i} for i in range(11)]})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

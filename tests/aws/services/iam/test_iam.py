@@ -7,6 +7,7 @@ from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
 from localstack.utils.strings import long_uid
 
@@ -39,7 +40,7 @@ class TestIAMExtensions:
         user_response = iam_client_as_user.get_user()
         user = user_response["User"]
         assert user["UserName"] == user_name
-        assert user["Arn"] == f"arn:aws:iam::{account_id}:user/{user_name}"
+        assert user["Arn"] == f"arn:{get_partition(region_name)}:iam::{account_id}:user/{user_name}"
 
     @markers.aws.only_localstack
     def test_get_user_without_username_as_root(self, aws_client):
@@ -150,6 +151,36 @@ class TestIAMExtensions:
                 RoleName=role_name, AssumeRolePolicyDocument=assume_role_policy_document
             )
         snapshot.match("invalid-json", e.value.response)
+
+    @markers.aws.validated
+    def test_role_with_path_lifecycle(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        role_name = f"role-{short_uid()}"
+        path = f"/path{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.regex(path, "<path>"))
+        assume_policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"Service": "lambda.amazonaws.com"},
+                    "Effect": "Allow",
+                }
+            ],
+        }
+
+        create_role_response = aws_client.iam.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(assume_policy_document),
+            Path=path,
+        )
+        snapshot.match("create-role-response", create_role_response)
+
+        get_role_response = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-response", get_role_response)
+
+        delete_role_response = aws_client.iam.delete_role(RoleName=role_name)
+        snapshot.match("delete-role-response", delete_role_response)
 
 
 class TestIAMIntegrations:
@@ -330,11 +361,14 @@ class TestIAMIntegrations:
         aws_client.iam.delete_user(UserName=user_name)
 
     @markers.aws.validated
-    def test_attach_detach_role_policy(self, aws_client):
+    def test_attach_detach_role_policy(self, aws_client, region_name):
         role_name = f"s3-role-{short_uid()}"
         policy_name = f"s3-role-policy-{short_uid()}"
 
         policy_arns = [p["Arn"] for p in ADDITIONAL_MANAGED_POLICIES.values()]
+        policy_arns = [
+            arn.replace("arn:aws:", f"arn:{get_partition(region_name)}:") for arn in policy_arns
+        ]
 
         assume_policy_document = {
             "Version": "2012-10-17",
@@ -357,7 +391,7 @@ class TestIAMIntegrations:
                         "s3:ListBucket",
                     ],
                     "Effect": "Allow",
-                    "Resource": ["arn:aws:s3:::bucket_name"],
+                    "Resource": [f"arn:{get_partition(region_name)}:s3:::bucket_name"],
                 }
             ],
         }
@@ -484,7 +518,7 @@ class TestIAMIntegrations:
         assert roles["Roles"][0]["RoleName"] == role_name_2
 
     @markers.aws.validated
-    @pytest.mark.xfail
+    @pytest.mark.skip
     @pytest.mark.parametrize(
         "service_name, expected_role",
         [

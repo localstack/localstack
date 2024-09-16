@@ -7,7 +7,9 @@ import re
 
 if __name__ == "__main__":
     with open(
-        os.path.join(os.path.dirname(__file__), "../localstack/utils/aws/client_types.py")
+        os.path.join(
+            os.path.dirname(__file__), "../localstack-core/localstack/utils/aws/client_types.py"
+        )
     ) as fd:
         content = fd.read()
         result = re.findall(r"\smypy_boto3_([a-z0-9_]+)\s", content)

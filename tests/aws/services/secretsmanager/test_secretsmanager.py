@@ -20,7 +20,7 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     ListSecretsResponse,
 )
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -97,7 +97,8 @@ class TestSecretsManager:
         success = poll_condition(condition=_is_secret_deleted, timeout=120, interval=30)
         if not success:
             LOG.warning(
-                f"Timed out whilst awaiting for force deletion of secret '{secret_id}' to complete."
+                "Timed out whilst awaiting for force deletion of secret '%s' to complete.",
+                secret_id,
             )
 
     @staticmethod
@@ -114,7 +115,8 @@ class TestSecretsManager:
         success = poll_condition(condition=_is_secret_rotated, timeout=120, interval=5)
         if not success:
             LOG.warning(
-                f"Timed out whilst awaiting for secret '{secret_id}' to be rotated to new version."
+                "Timed out whilst awaiting for secret '%s' to be rotated to new version.",
+                secret_id,
             )
 
     @pytest.mark.parametrize(
@@ -211,6 +213,29 @@ class TestSecretsManager:
         with pytest.raises(Exception) as not_found:
             aws_client.secretsmanager.list_secret_version_ids(SecretId=f"s-{short_uid()}")
         sm_snapshot.match("list_secret_version_ids_not_found_ex", not_found.value.response)
+
+    @markers.aws.validated
+    def test_secret_version_not_found(self, secret_name: str, sm_snapshot, cleanups, aws_client):
+        aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+        )
+
+        version_id = str(uuid.uuid4())
+        sm_snapshot.add_transformer(sm_snapshot.transform.regex(version_id, "<version-id>"))
+
+        with pytest.raises(ClientError) as not_found:
+            aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+        sm_snapshot.match("get_secret_value_no_version_ex", not_found.value)
+
+        with pytest.raises(ClientError) as not_found:
+            aws_client.secretsmanager.get_secret_value(SecretId=secret_name, VersionId=version_id)
+        sm_snapshot.match("get_secret_value_version_not_found_ex", not_found.value)
+
+        with pytest.raises(ClientError) as not_found:
+            aws_client.secretsmanager.get_secret_value(
+                SecretId=secret_name, VersionStage="AWSPENDING"
+            )
+        sm_snapshot.match("get_secret_value_stage_not_found_ex", not_found.value)
 
     @markers.aws.validated
     def test_call_lists_secrets_multiple_times(self, secret_name, aws_client, cleanups):
@@ -523,7 +548,7 @@ class TestSecretsManager:
         function_arn = create_lambda_function(
             handler_file=TEST_LAMBDA_ROTATE_SECRET,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )["CreateFunctionResponse"]["FunctionArn"]
 
         aws_client.lambda_.add_permission(

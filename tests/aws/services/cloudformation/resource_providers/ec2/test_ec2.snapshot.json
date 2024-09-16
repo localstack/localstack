@@ -43,7 +43,7 @@
             "PhysicalResourceId": "<resource:2>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::PrefixList",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -59,7 +59,7 @@
             "AddressFamily": "IPv4",
             "MaxEntries": 10,
             "OwnerId": "111111111111",
-            "PrefixListArn": "arn:aws:ec2:<region>:111111111111:prefix-list/<resource:2>",
+            "PrefixListArn": "arn:<partition>:ec2:<region>:111111111111:prefix-list/<resource:2>",
             "PrefixListId": "<resource:2>",
             "PrefixListName": "vpc-1-servers",
             "State": "create-complete",
@@ -92,7 +92,7 @@
             "PhysicalResourceId": "<vpc-endpoint-id:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::VPCEndpoint",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -104,7 +104,7 @@
             "PhysicalResourceId": "<group-id:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::SecurityGroup",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -116,7 +116,7 @@
             "PhysicalResourceId": "vpc-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::VPC",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -128,7 +128,7 @@
             "PhysicalResourceId": "subnet-a-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::Subnet",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -140,7 +140,7 @@
             "PhysicalResourceId": "subnet-b-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::Subnet",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -220,6 +220,54 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_security_group_with_tags": {
+    "recorded-date": "16-08-2024, 19:09:00",
+    "recorded-content": {
+      "security-group": {
+        "Description": "Security Group",
+        "GroupId": "<group-id:1>",
+        "GroupName": "<group-name:1>",
+        "IpPermissions": [],
+        "IpPermissionsEgress": [
+          {
+            "IpProtocol": "-1",
+            "IpRanges": [
+              {
+                "CidrIp": "0.0.0.0/0"
+              }
+            ],
+            "Ipv6Ranges": [],
+            "PrefixListIds": [],
+            "UserIdGroupPairs": []
+          }
+        ],
+        "OwnerId": "111111111111",
+        "Tags": [
+          {
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "SecurityGroup"
+          },
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "<stack-id>"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "<stack-name>"
+          },
+          {
+            "Key": "key1",
+            "Value": "value1"
+          },
+          {
+            "Key": "key2",
+            "Value": "value2"
+          }
+        ],
+        "VpcId": "<vpc-id:1>"
       }
     }
   }

@@ -6,7 +6,11 @@ SWF_VERSION = "1.0"
 
 
 class TestSwf:
-    @markers.aws.unknown
+    # FIXME: This test does not clean up after itself, and does not use fixtures
+    # It seems you cannot delete an AWS SWF `Domain` after its been registered, only deprecate it
+    # The `Domain` resource will deprecate all `Workflow` and `Activity` it holds, so this might be useful.
+    # You cannot delete `Workflow` and `Activity` if they're not deprecated first.
+    @markers.aws.needs_fixing
     def test_run_workflow(self, aws_client):
         swf_client = aws_client.swf
 

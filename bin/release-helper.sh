@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-set -e
+# set -x
+set -euo pipefail
+shopt -s nullglob
+shopt -s globstar
 
-VERSION_FILE=${VERSION_FILE-VERSION}
-VERSION_PY=${VERSION_PY-*/version.py}
-DEPENDENCY_FILE=${DEPENDENCY_FILE-pyproject.toml}
+DEPENDENCY_FILE=${DEPENDENCY_FILE:-pyproject.toml}
 
 function usage() {
     echo "A set of commands that facilitate release automation"
@@ -21,13 +22,6 @@ function usage() {
     echo ""
     echo "  get-ver"
     echo "      prints the current version number in the version file"
-    echo ""
-    echo "  next-dev-ver"
-    echo "      prints the next development release version from the current version"
-    echo ""
-    echo "  set-ver <version>"
-    echo "      sets the version number in the version file"
-    echo "      example: set-ver 0.15.0"
     echo ""
     echo "  set-dep-ver <dep> <range>"
     echo "      set the dependency version in the dependency file"
@@ -48,15 +42,16 @@ function usage() {
 }
 
 function get_current_version() {
-    cat ${VERSION_FILE}
+    # check if setuptools_scm is installed, if not prompt to install. python3 is expected to be present
+    if ! python3 -m pip -qqq show setuptools_scm > /dev/null ; then
+      echo "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'" >&2
+      exit 1
+    fi
+    python3 -m setuptools_scm
 }
 
 function remove_ver_suffix() {
     awk -F. '{ print $1 "." $2 "." $3 }'
-}
-
-function increment_dev() {
-    awk -F. -v time="$(date -u +%Y%m%d%H%M%S)" '{ print $1 "." $2 "." $3 ".dev" time }'
 }
 
 function add_dev_suffix() {
@@ -114,16 +109,14 @@ function release_env_validate() {
 }
 
 function explain_release_steps() {
-    echo "- bump VERSION: ${CURRENT_VER} -> ${RELEASE_VER}"
-    echo "- set synced dependencies to ==${RELEASE_VER}"
     echo "- perform release"
+    echo "  - set synced dependencies to ==${RELEASE_VER}"
     echo "  - git commit -a -m 'Release version ${RELEASE_VER}'"
-    echo "  - make publish"
     echo "  - git tag -a 'v${RELEASE_VER}' -m 'Release version ${RELEASE_VER}'"
+    echo "  - make publish"
     echo "  - git push && git push --tags"
-    echo "- bump VERSION: ${RELEASE_VER} -> ${DEVELOP_VER}"
-    echo "- set synced dependencies to >=${DEVELOP_VER},<${BOUNDARY_VER}"
     echo "- prepare development iteration"
+    echo "  - set synced dependencies to >=${DEVELOP_VER},<${BOUNDARY_VER}"
     echo "  - git commit -a -m 'Prepare next development iteration'"
     echo "  - git push"
 }
@@ -140,17 +133,6 @@ function print_github_outputs() {
 function cmd-get-ver() {
     [[ $# -eq 0 ]] || { usage; exit 1; }
     get_current_version
-}
-
-function cmd-next-dev-ver() {
-    [[ $# -eq 0 ]] || { usage; exit 1; }
-    get_current_version | increment_dev
-}
-
-function cmd-set-ver() {
-    [[ $# -eq 1 ]] || { usage; exit 1; }
-
-    echo $1 > ${VERSION_FILE}
 }
 
 function cmd-set-dep-ver() {
@@ -182,7 +164,7 @@ function cmd-pip-download-retry() {
     export pip_download_tmpdir="$(mktemp -d)"
     trap 'rm -rf -- "$pip_download_tmpdir"' EXIT
 
-    while ! pip download -d ${pip_download_tmpdir} --no-deps --pre "${dep}==${ver}" &> /dev/null; do
+    while ! python3 -m pip download -d ${pip_download_tmpdir} --no-deps --pre "${dep}==${ver}" &> /dev/null; do
         sleep 5
     done
 }
@@ -192,18 +174,15 @@ function cmd-git-commit-release() {
 
     echo $1 || verify_valid_version
 
-    for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
-            [ -e "$file" ] && git add "$file"
-    done
-    git commit -m "release version ${1}"
+    git add "${DEPENDENCY_FILE}"
+    # allow empty commit here as the community version might not have any changes, but we still need a commit for a tag
+    git commit --allow-empty -m "release version ${1}"
     git tag -a "v${1}" -m "Release version ${1}"
 }
 
 function cmd-git-commit-increment() {
-    for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
-            [ -e "$file" ] && git add "$file"
-    done
-    git commit -m "prepare next development iteration"
+    git add "${DEPENDENCY_FILE}"
+    git commit --allow-empty -m "prepare next development iteration"
 }
 
 function main() {
@@ -215,8 +194,6 @@ function main() {
     # invoke command
     case $command_name in
         "get-ver")              cmd-get-ver "$@" ;;
-        "next-dev-ver")         cmd-next-dev-ver "$@" ;;
-        "set-ver")              cmd-set-ver "$@" ;;
         "set-dep-ver")          cmd-set-dep-ver "$@" ;;
         "github-outputs")       cmd-github-outputs "$@" ;;
         "explain-steps")        cmd-explain-steps "$@" ;;

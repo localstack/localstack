@@ -91,6 +91,54 @@ def test_sqs_query_parse_tag_map_with_member_name_as_location():
     }
 
 
+def test_sqs_query_parse_map_with_nested_dict():
+    # see https://github.com/localstack/localstack/issues/10949
+    parser = create_parser(load_service("sqs-query"))
+
+    # with "MessageAttribute." it works (this is the default request)
+    request = HttpRequest(
+        "POST",
+        "/",
+        body="Action=SendMessage&"
+        "MessageBody=foobar&"
+        "QueueUrl=http://localhost:4566/000000000000/foobar&"
+        "MessageAttribute.1.Name=Foo&"
+        "MessageAttribute.1.Value.DataType=String&"
+        "MessageAttribute.1.Value.StringValue=Bar",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    operation, params = parser.parse(request)
+    assert operation.name == "SendMessage"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/foobar",
+        "MessageBody": "foobar",
+        "MessageAttributes": {"Foo": {"DataType": "String", "StringValue": "Bar"}},
+    }
+
+    # Aws also accepts MessageAttributes. Most likely related to issue
+    # https://github.com/localstack/localstack/issues/4391
+    request = HttpRequest(
+        "POST",
+        "/",
+        body="Action=SendMessage&"
+        "MessageBody=foobar&"
+        "QueueUrl=http://localhost:4566/000000000000/foobar&"
+        "MessageAttributes.1.Name=Foo&"
+        "MessageAttributes.1.Value.DataType=String&"
+        "MessageAttributes.1.Value.StringValue=Bar",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    operation, params = parser.parse(request)
+    assert operation.name == "SendMessage"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/foobar",
+        "MessageAttributes": {"Foo": {"DataType": "String", "StringValue": "Bar"}},
+        "MessageBody": "foobar",
+    }
+
+
 def test_query_parser_uri():
     """
     Basic test for the QueryParser with a simple example (SQS SendMessage request),
@@ -631,6 +679,52 @@ def test_json_cbor_blob_parsing():
     assert parsed_request["PartitionKey"] == "partitionkey"
 
 
+def test_json_cbor_blob_parsing_w_timestamp(snapshot):
+    serialized_request = {
+        "url_path": "/",
+        "query_string": "",
+        "method": "POST",
+        "headers": {
+            "Host": "localhost:4566",
+            "amz-sdk-invocation-id": "d77968c6-b536-155d-7228-d4dfe6372154",
+            "amz-sdk-request": "attempt=1; max=3",
+            "Content-Length": "103",
+            "Content-Type": "application/x-amz-cbor-1.1",
+            "X-Amz-Date": "20220721T081553Z",
+            "X-Amz-Target": "Kinesis_20131202.SubscribeToShard",
+            "x-localstack-tgt-api": "kinesis",
+        },
+        "body": b"\xa3kConsumerARNs<test-consumer-arn>gShardIdo<test-shard-id>pStartingPosition\xa2dTypelAT_TIMESTAMPiTimestampm1718960048123",
+        "url": "/",
+        "context": {},
+    }
+
+    prepare_request_dict(serialized_request, "")
+    split_url = urlsplit(serialized_request.get("url"))
+    path = split_url.path
+    query_string = split_url.query
+
+    # Use our parser to parse the serialized body
+    # Load the appropriate service
+    service = load_service("kinesis")
+    operation_model = service.operation_model("SubscribeToShard")
+    parser = create_parser(service)
+    parsed_operation_model, parsed_request = parser.parse(
+        HttpRequest(
+            method=serialized_request.get("method"),
+            path=unquote(path),
+            query_string=to_str(query_string),
+            headers=serialized_request.get("headers"),
+            body=serialized_request["body"],
+            raw_path=path,
+        )
+    )
+
+    # Check if the determined operation_model is correct
+    assert parsed_operation_model == operation_model
+    snapshot.match("parsed_request", parsed_request)
+
+
 def test_restjson_parser_xray_with_botocore():
     _botocore_parser_integration_test(
         service="xray",
@@ -1169,6 +1263,48 @@ def test_s3_list_buckets_with_localhost():
     parser = create_parser(load_service("s3"))
     parsed_operation_model, parsed_request = parser.parse(request)
     assert parsed_operation_model.name == "ListBuckets"
+
+
+def test_s3_get_object_attributes_with_whitespace():
+    # optional whitespace is accepted for ObjectAttributesList, a list of strings with location:"header"
+    request = HttpRequest(
+        "GET",
+        "/bucket/key?attributes",
+        query_string="attributes",
+        headers={
+            "x-amz-object-attributes": "ETag, Checksum, ObjectParts, StorageClass, ObjectSize",
+        },
+    )
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "GetObjectAttributes"
+    assert parsed_request["ObjectAttributes"] == [
+        "ETag",
+        "Checksum",
+        "ObjectParts",
+        "StorageClass",
+        "ObjectSize",
+    ]
+
+    # assert that with no whitespace, it is identical
+    request = HttpRequest(
+        "GET",
+        "/bucket/key",
+        query_string="attributes",
+        headers={
+            "x-amz-object-attributes": "ETag,Checksum,ObjectParts,StorageClass,ObjectSize",
+        },
+    )
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "GetObjectAttributes"
+    assert parsed_request["ObjectAttributes"] == [
+        "ETag",
+        "Checksum",
+        "ObjectParts",
+        "StorageClass",
+        "ObjectSize",
+    ]
 
 
 def test_s3_list_buckets_with_localhost_and_port():

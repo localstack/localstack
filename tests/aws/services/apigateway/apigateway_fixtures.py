@@ -198,11 +198,17 @@ class UrlType(Enum):
 
 
 def api_invoke_url(
-    api_id: str, stage: str = "", path: str = "/", url_type: UrlType = UrlType.HOST_BASED
+    api_id: str,
+    stage: str = "",
+    path: str = "/",
+    url_type: UrlType = UrlType.HOST_BASED,
+    region: str = "",
 ):
     if is_aws_cloud():
+        if not region:
+            region = aws_stack.get_boto3_region()
         stage = f"/{stage}" if stage else ""
-        return f"https://{api_id}.execute-api.{aws_stack.get_boto3_region()}.amazonaws.com{stage}{path}"
+        return f"https://{api_id}.execute-api.{region}.amazonaws.com{stage}{path}"
     if url_type == UrlType.HOST_BASED:
         return host_based_url(api_id, stage_name=stage, path=path)
     return path_based_url(api_id, stage_name=stage, path=path)

@@ -1,8 +1,10 @@
 import datetime
 import ipaddress
+import json
 import logging
 import os
 import re
+import textwrap
 import time
 from typing import NamedTuple, Type
 
@@ -20,6 +22,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerException,
     DockerContainerStatus,
     DockerNotAvailable,
+    LogConfig,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
@@ -40,6 +43,7 @@ from localstack.utils.docker_utils import (
 )
 from localstack.utils.net import Port, PortNotAvailableException, get_free_tcp_port
 from localstack.utils.strings import to_bytes
+from localstack.utils.sync import retry
 from localstack.utils.threads import FuncThread
 from tests.integration.docker_utils.conftest import is_podman_test, skip_for_podman
 
@@ -364,8 +368,9 @@ class TestDockerClient:
             docker_client.remove_container(container_name)
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_get_network(self, docker_client: ContainerClient, dummy_container):
         networks = docker_client.get_networks(dummy_container.container_name)
@@ -417,8 +422,9 @@ class TestDockerClient:
         assert ipaddress.IPv4Address(result_custom_network) in ipaddress.IPv4Network(custom_network)
 
     # TODO: currently failing under Podman
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman inspect_network does not return `Containers` attribute"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman inspect_network does not return `Containers` attribute",
     )
     def test_get_container_ip_for_network_wrong_network(
         self, docker_client: ContainerClient, dummy_container, create_network
@@ -438,8 +444,9 @@ class TestDockerClient:
             )
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_get_container_ip_for_host_network(
         self, docker_client: ContainerClient, create_container
@@ -465,8 +472,9 @@ class TestDockerClient:
             )
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
@@ -499,12 +507,12 @@ class TestDockerClient:
         condition=in_docker(), reason="cannot test volume mounts from host when in docker"
     )
     def test_create_with_volume(self, tmpdir, docker_client: ContainerClient, create_container):
-        mount_volumes = [(tmpdir.realpath(), "/tmp/mypath")]
+        volumes = [(tmpdir.realpath(), "/tmp/mypath")]
 
         c = create_container(
             "alpine",
             command=["sh", "-c", "echo 'foobar' > /tmp/mypath/foo.log"],
-            mount_volumes=mount_volumes,
+            volumes=volumes,
         )
         docker_client.start_container(c.container_id)
         assert tmpdir.join("foo.log").isfile(), "foo.log was not created in mounted dir"
@@ -516,7 +524,7 @@ class TestDockerClient:
     def test_inspect_container_volumes(
         self, tmpdir, docker_client: ContainerClient, create_container
     ):
-        mount_volumes = [
+        volumes = [
             (tmpdir.realpath() / "foo", "/tmp/mypath/foo"),
             ("some_named_volume", "/tmp/mypath/volume"),
         ]
@@ -524,7 +532,7 @@ class TestDockerClient:
         c = create_container(
             "alpine",
             command=["sh", "-c", "while true; do sleep 1; done"],
-            mount_volumes=mount_volumes,
+            volumes=volumes,
         )
         docker_client.start_container(c.container_id)
 
@@ -1282,8 +1290,8 @@ class TestDockerClient:
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]
 
     # TODO: currently failing under Podman
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman inspect_network does not return `Id` attribute"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(), reason="Podman inspect_network does not return `Id` attribute"
     )
     def test_inspect_network(self, docker_client: ContainerClient, create_network):
         network_name = f"ls_test_network_{short_uid()}"
@@ -1443,6 +1451,76 @@ class TestRunWithAdditionalArgs:
             ulimits=[Ulimit(name="nofile", soft_limit=1024, hard_limit=1024)],
         )
         assert stdout.decode(config.DEFAULT_ENCODING).strip() == "1024"
+
+    def test_run_with_additional_arguments_env_files(
+        self, docker_client: ContainerClient, tmp_path, monkeypatch
+    ):
+        env_variable = "TEST1=VAL1"
+        env_file = tmp_path / "env1"
+        env_vars = textwrap.dedent("""
+            # Some comment
+            TEST1=OVERRIDDEN
+            TEST2=VAL2
+            TEST3=${TEST2}
+            TEST4=VAL # end comment
+            TEST5="VAL"
+            """)
+        env_file.write_text(env_vars)
+
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            remove=True,
+            command=["env"],
+            additional_flags=f"-e {env_variable} --env-file {env_file}",
+        )
+        env_output = stdout.decode(config.DEFAULT_ENCODING)
+        # behavior differs here from more advanced env file parsers
+        assert env_variable in env_output
+        assert "TEST1=VAL1" in env_output
+        assert "TEST2=VAL2" in env_output
+        assert "TEST3=${TEST2}" in env_output
+        assert "TEST4=VAL # end comment" in env_output
+        assert 'TEST5="VAL"' in env_output
+
+        env_vars = textwrap.dedent("""
+            # Some comment
+            TEST1
+            """)
+        env_file.write_text(env_vars)
+
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            remove=True,
+            command=["env"],
+            additional_flags=f"--env-file {env_file}",
+        )
+        env_output = stdout.decode(config.DEFAULT_ENCODING)
+        assert "TEST1" not in env_output
+
+        monkeypatch.setenv("TEST1", "VAL1")
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            remove=True,
+            command=["env"],
+            additional_flags=f"--env-file {env_file}",
+        )
+        env_output = stdout.decode(config.DEFAULT_ENCODING)
+        assert "TEST1=VAL1" in env_output
+
+        env_vars = textwrap.dedent("""
+            # Some comment
+            TEST1=
+            """)
+        env_file.write_text(env_vars)
+
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            remove=True,
+            command=["env"],
+            additional_flags=f"--env-file {env_file}",
+        )
+        env_output = stdout.decode(config.DEFAULT_ENCODING)
+        assert "TEST1=" in env_output.splitlines()
 
 
 class TestDockerImages:
@@ -1665,6 +1743,54 @@ class TestDockerNetworking:
         init_thread.join()
         # verify that the client is available
         assert sdk_client.docker_client is not None
+
+
+class TestDockerLogging:
+    def test_docker_logging_none_disables_logs(
+        self, docker_client: ContainerClient, create_container
+    ):
+        container = create_container(
+            "alpine", command=["sh", "-c", "echo test"], log_config=LogConfig("none")
+        )
+        docker_client.start_container(container.container_id, attach=True)
+        with pytest.raises(ContainerException):
+            docker_client.get_container_logs(container_name_or_id=container.container_id)
+
+    def test_docker_logging_fluentbit(self, docker_client: ContainerClient, create_container):
+        ports = PortMappings(bind_host="0.0.0.0")
+        ports.add(24224, 24224)
+        fluentd_container = create_container(
+            "fluent/fluent-bit",
+            command=["-i", "forward", "-o", "stdout", "-p", "format=json_lines", "-f", "1", "-q"],
+            ports=ports,
+        )
+        docker_client.start_container(fluentd_container.container_id)
+
+        container = create_container(
+            "alpine",
+            command=["sh", "-c", "echo test"],
+            log_config=LogConfig(
+                "fluentd", config={"fluentd-address": "127.0.0.1:24224", "fluentd-async": "true"}
+            ),
+        )
+        docker_client.start_container(container.container_id, attach=True)
+
+        def _get_logs():
+            logs = docker_client.get_container_logs(
+                container_name_or_id=fluentd_container.container_id
+            )
+            message = None
+            for log in logs.splitlines():
+                if log.strip():
+                    message = json.loads(log.strip())
+            assert message
+            return message
+
+        log = retry(_get_logs, retries=10, sleep=1)
+        assert log["log"] == "test"
+        assert log["source"] == "stdout"
+        assert log["container_id"] == container.container_id
+        assert log["container_name"] == f"/{container.container_name}"
 
 
 class TestDockerPermissions:

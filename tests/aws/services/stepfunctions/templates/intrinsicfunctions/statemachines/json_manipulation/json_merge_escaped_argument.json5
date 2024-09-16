@@ -1,0 +1,15 @@
+{
+  "Comment": "JSON_MERGE_ESCAPED_ARGUMENT",
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "ResultPath": "$.result_path",
+      "Parameters": {
+        "merged.$": "States.JsonMerge(States.StringToJson('{\"constant_in_literal\": \"false\"}'), $$.Execution.Input.input_field, false)"
+      },
+      "OutputPath": "$.result_path.merged",
+      "End": true
+    }
+  }
+}

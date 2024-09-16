@@ -6,25 +6,25 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:2>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Send",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -90,19 +90,19 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Delivery",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -179,7 +179,7 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         }
       ]
     }
@@ -191,18 +191,18 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:2>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Send",
@@ -265,19 +265,19 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Delivery",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -363,7 +363,7 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         }
       ]
     }
@@ -375,25 +375,25 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:2>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Send",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -428,19 +428,19 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Delivery",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -486,7 +486,7 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         }
       ]
     }
@@ -546,13 +546,13 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
         }
       ]
     }
@@ -590,12 +590,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:07",
     "recorded-content": {
       "response": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -606,12 +606,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Invalid tag value <test_invalid_value:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Message": "Invalid tag value <test_invalid_value:123>: only alphanumeric ASCII characters, '_',  '-' , '.', '@' are allowed.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -622,12 +622,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -638,7 +638,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
@@ -654,7 +654,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
@@ -670,12 +670,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:08",
     "recorded-content": {
       "response": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Invalid tag name <test_invalid_name@123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Message": "Invalid tag name <test_invalid_name@123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -686,7 +686,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
-    "recorded-date": "26-08-2023, 00:05:47",
+    "recorded-date": "30-07-2024, 10:18:09",
     "recorded-content": {
       "response": {
         "Error": {
@@ -702,7 +702,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-test]": {
-    "recorded-date": "26-08-2023, 00:05:48",
+    "recorded-date": "30-07-2024, 10:18:09",
     "recorded-content": {
       "response": {
         "Error": {
@@ -718,7 +718,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-]": {
-    "recorded-date": "26-08-2023, 00:05:48",
+    "recorded-date": "30-07-2024, 10:18:09",
     "recorded-content": {
       "response": {
         "Error": {

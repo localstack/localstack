@@ -24,7 +24,7 @@ class TestExceptionHandlers:
         }
         assert "Allow" in response.headers
 
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="fails until the service request parser stops detecting custom route requests as s3 requests"
     )
     def test_router_handler_get_http_errors(self, cleanups):
@@ -58,7 +58,7 @@ class TestExceptionHandlers:
             "either read-protected or not readable by the server.",
         }
 
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="fails until the service request parser stops detecting custom route requests as s3 requests"
     )
     def test_router_handler_get_unexpected_errors(self, cleanups):
@@ -171,7 +171,7 @@ class TestHttps:
         assert response.ok
 
 
-@pytest.mark.xfail(
+@pytest.mark.skipif(
     condition=config.GATEWAY_SERVER not in ["hypercorn"],
     reason=f"websockets not supported with {config.GATEWAY_SERVER}",
 )

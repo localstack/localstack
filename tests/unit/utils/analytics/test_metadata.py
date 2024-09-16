@@ -1,8 +1,16 @@
 import multiprocessing
+import os.path
 import threading
 from queue import Queue
 
-from localstack.utils.analytics.metadata import get_client_metadata, get_session_id
+import pytest
+
+from localstack import config
+from localstack.utils.analytics.metadata import (
+    get_client_metadata,
+    get_localstack_edition,
+    get_session_id,
+)
 
 
 def test_get_client_metadata_cache():
@@ -47,3 +55,27 @@ def test_get_session_id_cache_not_process_local():
         # fix for MacOS (and potentially other systems) where local functions cannot be used for multiprocessing
         if "Can't pickle local object" not in str(e):
             raise
+
+
+@pytest.mark.parametrize(
+    "expected_edition, version_file",
+    [
+        ("enterprise", ".enterprise-version"),
+        ("pro", ".pro-version"),
+        ("community", ".community-version"),
+        ("azure-alpha", ".azure-alpha-version"),
+        ("unknown", "non-hidden-version"),
+        ("unknown", ".hidden-file"),
+        ("unknown", "not-a-version-file"),
+    ],
+)
+def test_get_localstack_edition(expected_edition, version_file):
+    # put the version file in the expected location
+    file_location = os.path.join(config.dirs.static_libs, version_file)
+    with open(file_location, "w") as f:
+        f.write("")
+
+    assert get_localstack_edition() == expected_edition
+
+    # cleanup
+    os.remove(file_location)

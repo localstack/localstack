@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_ssm.py::test_get_parameter_query_protocol": {
+    "last_validated_date": "2024-07-12T19:14:34+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_ssm.py::test_ssm_aws_integration": {
+    "last_validated_date": "2024-07-12T19:13:50+00:00"
+  }
+}

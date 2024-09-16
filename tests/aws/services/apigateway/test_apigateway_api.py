@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.apigateway import PutMode
-from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -23,6 +23,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_resource,
     create_rest_resource_method,
 )
+from tests.aws.services.apigateway.conftest import is_next_gen_api
 
 LOG = logging.getLogger(__name__)
 
@@ -123,7 +124,7 @@ class TestApiGatewayApiRestApi:
         snapshot.match("get-rest-api-after-delete", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="rest apis are case insensitive for now because of custom id tags")
+    @pytest.mark.skip(reason="rest apis are case insensitive for now because of custom id tags")
     def test_get_api_case_insensitive(self, apigw_create_rest_api, snapshot, aws_client):
         api_name1 = f"test-case-sensitive-apis-{short_uid()}"
 
@@ -2014,6 +2015,91 @@ class TestApiGatewayGatewayResponse:
         snapshot.match("get-deleted-gw-response", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_next_gen_api(), reason="Behaviour only present in next gen api"
+    )
+    def test_gateway_response_put(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(
+            SortingTransformer(key="items", sorting_fn=itemgetter("responseType"))
+        )
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test GatewayResponse",
+        )
+        api_id = response["id"]
+
+        # Put all values
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            statusCode="404",
+            responseParameters={
+                "gatewayresponse.header.x-request-path": "method.request.path.petId",
+                "gatewayresponse.header.Access-Control-Allow-Origin": "'a.b.c'",
+                "gatewayresponse.header.x-request-query": "method.request.querystring.q",
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+            },
+            responseTemplates={
+                "application/json": '{\n     "message": $context.error.messageString,\n     "type":  "$context.error.responseType",\n     "stage":  "$context.stage",\n     "resourcePath":  "$context.resourcePath",\n     "stageVariables.a":  "$stageVariables.a",\n     "statusCode": "\'404\'"\n}'
+            },
+        )
+        snapshot.match("put-gateway-response-all-value", response)
+
+        # Put only status code
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            statusCode="404",
+        )
+        snapshot.match("put-gateway-response-status-only", response)
+
+        # Put only response parameters
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            responseParameters={
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+        )
+        snapshot.match("put-gateway-response-response-parameters-only", response)
+
+        # Put only response templates
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            responseTemplates={
+                "application/json": '{\n     "message": $context.error.messageString,\n     "type":  "$context.error.responseType",\n     "stage":  "$context.stage",\n     "resourcePath":  "$context.resourcePath",\n     "stageVariables.a":  "$stageVariables.a",\n     "statusCode": "\'404\'"\n}'
+            },
+        )
+        snapshot.match("put-gateway-response-response-templates-only", response)
+
+        # Put default response
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="DEFAULT_5XX",
+            statusCode="599",
+            responseParameters={
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept"
+            },
+            responseTemplates={
+                "application/json": '{\n     "message": $context.error.messageString,\n     "type":  "$context.error.responseType",\n     "stage":  "$context.stage",\n     "resourcePath":  "$context.resourcePath",\n     "stageVariables.a":  "$stageVariables.a",\n     "statusCode": "\'404\'"\n}'
+            },
+        )
+        snapshot.match("put-gateway-response-default-5xx", response)
+
+        # Put 500 after default set
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="AUTHORIZER_FAILURE",
+            responseParameters={"gatewayresponse.header.foo": "'bar'"},
+        )
+        snapshot.match("put-gateway-response-default-ignored", response)
+
+        # Get all, default should affect all 500
+        response = aws_client.apigateway.get_gateway_responses(restApiId=api_id)
+        snapshot.match("get-gateway-responses", response)
+
+    @markers.aws.validated
     def test_gateway_response_validation(self, aws_client_factory, apigw_create_rest_api, snapshot):
         apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
         response = apigw_create_rest_api(
@@ -2412,3 +2498,77 @@ class TestApigatewayIntegration:
                 restApiId=api_id, resourceId=root_resource_id, httpMethod="GET", type="HTTPS_PROXY"
             )
         snapshot.match("put-integration-wrong-type", e.value.response)
+
+    @markers.aws.validated
+    def test_put_integration_response_validation(
+        self, aws_client, apigw_create_rest_api, aws_client_factory, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing PutIntegrationResponse method exc"
+        )
+        api_id = response["id"]
+        root_id = response["rootResourceId"]
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="GET",
+                integrationHttpMethod="GET",
+                type="MOCK",
+                requestTemplates={"application/json": '{"statusCode": 200}'},
+            )
+        snapshot.match("put-integration-wrong-method", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId="badresource",
+                httpMethod="GET",
+                integrationHttpMethod="GET",
+                type="MOCK",
+                requestTemplates={"application/json": '{"statusCode": 200}'},
+            )
+        snapshot.match("put-integration-wrong-resource", e.value.response)
+
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            integrationHttpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=root_id,
+                # put the integrationHttpMethod instead of the `httpMethod` should result in an error
+                httpMethod="GET",
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": json.dumps({})},
+            )
+
+        snapshot.match("put-integration-response-wrong-method", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId="badresource",
+                # put the integrationHttpMethod instead of the `httpMethod` should result in an error
+                httpMethod="GET",
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": json.dumps({})},
+            )
+
+        snapshot.match("put-integration-response-wrong-resource", e.value.response)

@@ -1,0 +1,73 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_ssm.py::test_ssm_aws_integration": {
+    "recorded-date": "12-07-2024, 19:13:50",
+    "recorded-content": {
+      "put-param": {
+        "Tier": "Standard",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "ssm-aws-integration": {
+        "GetParameterResult": {
+          "Parameter": {
+            "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/param-test-123",
+            "DataType": "text",
+            "LastModifiedDate": "<timestamp>",
+            "Name": "param-test-123",
+            "Selector": null,
+            "SourceResult": null,
+            "Type": "String",
+            "Value": "123",
+            "Version": 1
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {}
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_ssm.py::test_get_parameter_query_protocol": {
+    "recorded-date": "12-07-2024, 19:14:34",
+    "recorded-content": {
+      "get-parameter-query-default": {
+        "@xmlns": "http://ssm.amazonaws.com/doc/2014-11-06/",
+        "GetParameterResult": {
+          "Parameter": {
+            "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<name:1>",
+            "DataType": "text",
+            "LastModifiedDate": "<timestamp>",
+            "Name": "<name:1>",
+            "Type": "String",
+            "Value": "123",
+            "Version": "1"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {}
+        }
+      },
+      "get-parameter-query-json": {
+        "GetParameterResult": {
+          "Parameter": {
+            "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<name:1>",
+            "DataType": "text",
+            "LastModifiedDate": "<timestamp>",
+            "Name": "<name:1>",
+            "Selector": null,
+            "SourceResult": null,
+            "Type": "String",
+            "Value": "123",
+            "Version": 1
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {}
+        }
+      }
+    }
+  }
+}

@@ -44,8 +44,11 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_pay_per_request": {
     "last_validated_date": "2023-08-23T14:33:43+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_records_with_update_item": {
+    "last_validated_date": "2024-06-26T14:28:26+00:00"
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_stream_view_type": {
-    "last_validated_date": "2023-10-22T21:22:27+00:00"
+    "last_validated_date": "2024-05-31T14:49:56+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_describe_with_exclusive_start_shard_id": {
     "last_validated_date": "2023-10-22T20:27:28+00:00"
@@ -63,7 +66,7 @@
     "last_validated_date": "2023-08-23T14:33:37+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming": {
-    "last_validated_date": "2024-04-17T22:45:49+00:00"
+    "last_validated_date": "2024-05-31T14:47:04+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming_for_different_tables": {
     "last_validated_date": "2024-04-02T21:45:36+00:00"

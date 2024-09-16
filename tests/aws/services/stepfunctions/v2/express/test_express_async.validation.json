@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_base[BASE_PASS_RESULT]": {
+    "last_validated_date": "2024-07-03T16:26:21+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_base[BASE_RAISE_FAILURE]": {
+    "last_validated_date": "2024-07-03T16:27:05+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_catch": {
+    "last_validated_date": "2024-07-15T13:31:21+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_query_runtime_memory": {
+    "last_validated_date": "2024-07-15T12:58:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_retry": {
+    "last_validated_date": "2024-07-15T13:37:46+00:00"
+  }
+}

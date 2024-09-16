@@ -5,10 +5,15 @@ import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    SfnNoneRecursiveParallelTransformer,
+    await_execution_terminated,
+    create,
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.conftest import SfnNoneRecursiveParallelTransformer
 from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (
     ErrorHandlingTemplate as EHT,
 )
@@ -18,14 +23,9 @@ from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates im
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as SerT,
 )
-from tests.aws.services.stepfunctions.utils import (
-    await_execution_terminated,
-    create,
-    create_and_record_execution,
-)
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestBaseScenarios:
     @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     @markers.aws.validated
@@ -93,17 +93,19 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template",
+        [
+            ST.load_sfn_template(ST.PARALLEL_STATE),
+            ST.load_sfn_template(ST.PARALLEL_STATE_PARAMETERS),
+        ],
+        ids=["PARALLEL_STATE", "PARALLEL_STATE_PARAMETERS"],
+    )
     def test_parallel_state(
-        self,
-        aws_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        sfn_snapshot,
+        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, template
     ):
         sfn_snapshot.add_transformer(SfnNoneRecursiveParallelTransformer())
-        template = ST.load_sfn_template(ST.PARALLEL_STATE)
         definition = json.dumps(template)
-
         exec_input = json.dumps({})
         create_and_record_execution(
             aws_client.stepfunctions,
@@ -580,6 +582,94 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    def test_map_state_legacy_reentrant(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_LEGACY_REENTRANT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_state_config_distributed_reentrant(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        # Replace MapRunArns with fixed values to circumvent random ordering issues.
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..mapRunArn", replacement="map_run_arn", replace_reference=False
+            )
+        )
+
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_state_config_distributed_reentrant_lambda(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        # Replace MapRunArns with fixed values to circumvent random ordering issues.
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..mapRunArn", replacement="map_run_arn", replace_reference=False
+            )
+        )
+
+        function_name = f"sfn_lambda_{short_uid()}"
+        create_res = create_lambda_function(
+            func_name=function_name,
+            handler_file=SerT.LAMBDA_ID_FUNCTION,
+            runtime=Runtime.python3_12,
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
+
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT_LAMBDA)
+        definition = json.dumps(template)
+        definition = definition.replace("_tbd_", function_arn)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # TODO: AWS appears to have changed json encoding to include spaces after separators,
@@ -917,6 +1007,150 @@ class TestBaseScenarios:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
+        "tolerance_template",
+        [ST.MAP_STATE_TOLERATED_FAILURE_COUNT, ST.MAP_STATE_TOLERATED_FAILURE_PERCENTAGE],
+        ids=["count_literal", "percentage_literal"],
+    )
+    def test_map_state_tolerated_failure_values(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        tolerance_template,
+    ):
+        template = ST.load_sfn_template(tolerance_template)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps([0])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("tolerated_failure_count_value", [dict(), "NoNumber", -1, 0, 1])
+    def test_map_state_tolerated_failure_count_path(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        tolerated_failure_count_value,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_TOLERATED_FAILURE_COUNT_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"Items": [0], "ToleratedFailureCount": tolerated_failure_count_value}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "tolerated_failure_percentage_value", [dict(), "NoNumber", -1.1, -1, 0, 1, 1.1, 100, 100.1]
+    )
+    def test_map_state_tolerated_failure_percentage_path(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        tolerated_failure_percentage_value,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_TOLERATED_FAILURE_PERCENTAGE_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"Items": [0], "ToleratedFailurePercentage": tolerated_failure_percentage_value}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_state_label(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_LABEL)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(["Hello", "World"])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_state_result_writer(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = "result-bucket"
+        s3_create_bucket(Bucket=bucket_name)
+
+        template = ST.load_sfn_template(ST.MAP_STATE_RESULT_WRITER)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(["Hello", "World"])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+        # Validate the manifest file
+        # TODO: consider a better way to get MapRunArn
+        map_run_arn = json.loads(
+            sfn_snapshot.observed_state["get_execution_history"]["events"][-1][
+                "executionSucceededEventDetails"
+            ]["output"]
+        )["MapRunArn"]
+        map_run_uuid = map_run_arn.split(":")[-1]
+        resp = aws_client.s3.get_object(
+            Bucket=bucket_name, Key=f"mapJobs/{map_run_uuid}/manifest.json"
+        )
+        manifest_data = json.loads(resp["Body"].read().decode("utf-8"))
+        assert manifest_data["DestinationBucket"] == bucket_name
+        assert manifest_data["MapRunArn"] == map_run_arn
+        assert manifest_data["ResultFiles"]["FAILED"] == []
+        assert manifest_data["ResultFiles"]["PENDING"] == []
+        assert manifest_data["ResultFiles"]["SUCCEEDED"] == []
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
         "exec_input",
         [json.dumps({"result": {"done": True}}), json.dumps({"result": {"done": False}})],
     )
@@ -1018,9 +1252,7 @@ class TestBaseScenarios:
         execution_history = aws_client.stepfunctions.get_execution_history(
             executionArn=execution_arn
         )
-        map_run_arn = JSONPathUtils.extract_json(
-            "$..mapRunStartedEventDetails.mapRunArn", execution_history
-        )
+        map_run_arn = extract_json("$..mapRunStartedEventDetails.mapRunArn", execution_history)
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_map_run_arn(map_run_arn, 0))
 
         # Normalise s3 ListObjectV2 response in the execution events output to ensure variable fields such as

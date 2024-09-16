@@ -2,9 +2,10 @@ import json
 import os
 
 import pytest
+from botocore.exceptions import ClientError
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
@@ -57,8 +58,8 @@ class TestFnSub:
         snapshot.match("outputs", deployment.outputs)
 
 
-@markers.aws.only_localstack
-def test_useful_error_when_invalid_ref(deploy_cfn_template):
+@markers.aws.validated
+def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
     """
     When trying to resolve a non-existent !Ref, make sure the error message includes the name of the !Ref
     to clarify which !Ref cannot be resolved.
@@ -81,16 +82,27 @@ def test_useful_error_when_invalid_ref(deploy_cfn_template):
         }
     )
 
-    with pytest.raises(StackDeployError) as exc_info:
+    with pytest.raises(ClientError) as exc_info:
         deploy_cfn_template(template=template)
 
-    # get the exception error message from the events list
-    message = None
-    for event in exc_info.value.events:
-        if (
-            event["LogicalResourceId"] == logical_resource_id
-            and event["ResourceStatus"] == "CREATE_FAILED"
-        ):
-            message = event["ResourceStatusReason"]
+    snapshot.match("validation_error", exc_info.value.response)
 
-    assert ref_name in message
+
+@markers.aws.validated
+def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_client, snapshot):
+    queue_name = f"q-{short_uid()}"
+    parameter_ver = f"v{short_uid()}"
+    stack_name = f"stack-{short_uid()}"
+    stack = deploy_cfn_template(
+        stack_name=stack_name,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/legacy_transitive_ref.yaml"
+        ),
+        max_wait=300 if is_aws_cloud() else 10,
+        parameters={"QueueName": queue_name, "Qualifier": parameter_ver},
+    )
+    tags = aws_client.sqs.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
+    snapshot.add_transformer(
+        snapshot.transform.regex(r"/cdk-bootstrap/(\w+)/", "/cdk-bootstrap/.../")
+    )
+    snapshot.match("tags", tags)

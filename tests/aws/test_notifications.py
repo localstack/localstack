@@ -19,9 +19,14 @@ class TestNotifications:
         finally:
             aws_client.sqs.delete_queue(QueueUrl=queue["QueueUrl"])
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_sns_to_sqs(
-        self, sqs_create_queue, sns_create_topic, sqs_receive_num_messages, aws_client
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_allow_topic_sqs_queue,
+        sqs_receive_num_messages,
+        aws_client,
     ):
         # create topic and queue
         queue_url = sqs_create_queue()
@@ -36,14 +41,15 @@ class TestNotifications:
             Protocol="sqs",
             Endpoint=queue_arn,
         )
+        sns_allow_topic_sqs_queue(
+            sqs_queue_url=queue_url, sqs_queue_arn=queue_arn, sns_topic_arn=topic_arn
+        )
         test_value = short_uid()
         aws_client.sns.publish(
             TopicArn=topic_arn,
             Message="test message for SQS",
             MessageAttributes={"attr1": {"DataType": "String", "StringValue": test_value}},
         )
-        # cleanup
-        aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
 
         def assert_message():
             # receive, and delete message from SQS
@@ -53,3 +59,6 @@ class TestNotifications:
             assert expected == messages[0]["MessageAttributes"]
 
         retry(assert_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+        # cleanup
+        aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])

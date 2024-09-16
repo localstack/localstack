@@ -4,7 +4,7 @@
     "recorded-content": {
       "outputs": {
         "ClicksBucketDestinationName": "<clicks-bucket-destination-name:1>",
-        "DeliveryStreamArn": "arn:aws:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>",
+        "DeliveryStreamArn": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>",
         "DeliveryStreamName": "<delivery-stream-name:1>",
         "<physical-resource-id:1>Name": "<physical-resource-id:1>",
         "PopulateDbFunctionName": "<populate-db-function-name:1>",
@@ -19,7 +19,7 @@
           "CAPABILITY_IAM",
           "CAPABILITY_NAMED_IAM"
         ],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/test-cs-ca7a7051/3d2a3934-f24e-4fd3-955f-9579c69b55ba",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/test-cs-ca7a7051/3d2a3934-f24e-4fd3-955f-9579c69b55ba",
         "CreationTime": "datetime",
         "DisableRollback": false,
         "DriftInformation": {
@@ -51,7 +51,7 @@
           },
           {
             "OutputKey": "DeliveryStreamArn",
-            "OutputValue": "arn:aws:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>"
+            "OutputValue": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>"
           },
           {
             "OutputKey": "DeliveryStreamName",
@@ -365,7 +365,7 @@
             "DeletionProtectionEnabled": false,
             "GlobalSecondaryIndexes": [
               {
-                "IndexArn": "arn:aws:dynamodb:<region>:111111111111:table/<physical-resource-id:1>/index/LawChaosIndex",
+                "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<physical-resource-id:1>/index/LawChaosIndex",
                 "IndexName": "LawChaosIndex",
                 "IndexSizeBytes": 0,
                 "IndexStatus": "ACTIVE",
@@ -390,7 +390,7 @@
                 }
               },
               {
-                "IndexArn": "arn:aws:dynamodb:<region>:111111111111:table/<physical-resource-id:1>/index/GoodEvilIndex",
+                "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<physical-resource-id:1>/index/GoodEvilIndex",
                 "IndexName": "GoodEvilIndex",
                 "IndexSizeBytes": 0,
                 "IndexStatus": "ACTIVE",
@@ -427,7 +427,7 @@
               "ReadCapacityUnits": 5,
               "WriteCapacityUnits": 5
             },
-            "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<physical-resource-id:1>",
+            "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<physical-resource-id:1>",
             "TableId": "<uuid:1>",
             "TableName": "<physical-resource-id:1>",
             "TableSizeBytes": 0,
@@ -441,7 +441,7 @@
         "AWS::KinesisFirehose::DeliveryStream-1": {
           "DeliveryStreamDescription": {
             "CreateTimestamp": "timestamp",
-            "DeliveryStreamARN": "arn:aws:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>",
+            "DeliveryStreamARN": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>",
             "DeliveryStreamEncryptionConfiguration": {
               "Status": "DISABLED"
             },
@@ -452,7 +452,7 @@
               {
                 "DestinationId": "destinationId-000000000001",
                 "ExtendedS3DestinationDescription": {
-                  "BucketARN": "arn:aws:s3:::<clicks-bucket-destination-name:1>",
+                  "BucketARN": "arn:<partition>:s3:::<clicks-bucket-destination-name:1>",
                   "BufferingHints": {
                     "IntervalInSeconds": 60,
                     "SizeInMBs": 50
@@ -472,7 +472,7 @@
                         "Parameters": [
                           {
                             "ParameterName": "LambdaArn",
-                            "ParameterValue": "arn:aws:lambda:<region>:111111111111:function:<stream-processor-function-name:1>"
+                            "ParameterValue": "arn:<partition>:lambda:<region>:111111111111:function:<stream-processor-function-name:1>"
                           },
                           {
                             "ParameterName": "NumberOfRetries",
@@ -480,7 +480,7 @@
                           },
                           {
                             "ParameterName": "RoleArn",
-                            "ParameterValue": "arn:aws:iam::111111111111:role/<physical-resource-id:13>"
+                            "ParameterValue": "arn:<partition>:iam::111111111111:role/<physical-resource-id:13>"
                           },
                           {
                             "ParameterName": "BufferSizeInMBs",
@@ -495,11 +495,11 @@
                       }
                     ]
                   },
-                  "RoleARN": "arn:aws:iam::111111111111:role/<physical-resource-id:13>",
+                  "RoleARN": "arn:<partition>:iam::111111111111:role/<physical-resource-id:13>",
                   "S3BackupMode": "Disabled"
                 },
                 "S3DestinationDescription": {
-                  "BucketARN": "arn:aws:s3:::<clicks-bucket-destination-name:1>",
+                  "BucketARN": "arn:<partition>:s3:::<clicks-bucket-destination-name:1>",
                   "BufferingHints": {
                     "IntervalInSeconds": 60,
                     "SizeInMBs": 50
@@ -512,7 +512,7 @@
                     "NoEncryptionConfig": "NoEncryption"
                   },
                   "Prefix": "firehose/",
-                  "RoleARN": "arn:aws:iam::111111111111:role/<physical-resource-id:13>"
+                  "RoleARN": "arn:<partition>:iam::111111111111:role/<physical-resource-id:13>"
                 }
               }
             ],
@@ -544,7 +544,7 @@
             "EphemeralStorage": {
               "Size": 512
             },
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<populate-db-function-name:1>",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<populate-db-function-name:1>",
             "FunctionName": "<populate-db-function-name:1>",
             "Handler": "index.insertMysfits",
             "LastModified": "date",
@@ -552,7 +552,7 @@
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:2>",
-            "Role": "arn:aws:iam::111111111111:role/<physical-resource-id:2>",
+            "Role": "arn:<partition>:iam::111111111111:role/<physical-resource-id:2>",
             "Runtime": "python3.10",
             "RuntimeVersionConfig": {
               "RuntimeVersionArn": "<runtime-version-arn:1>"
@@ -598,7 +598,7 @@
             "EphemeralStorage": {
               "Size": 512
             },
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<stream-processor-function-name:1>",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<stream-processor-function-name:1>",
             "FunctionName": "<stream-processor-function-name:1>",
             "Handler": "index.processRecord",
             "LastModified": "date",
@@ -606,7 +606,7 @@
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:3>",
-            "Role": "arn:aws:iam::111111111111:role/<physical-resource-id:16>",
+            "Role": "arn:<partition>:iam::111111111111:role/<physical-resource-id:16>",
             "Runtime": "python3.10",
             "RuntimeVersionConfig": {
               "RuntimeVersionArn": "<runtime-version-arn:1>"

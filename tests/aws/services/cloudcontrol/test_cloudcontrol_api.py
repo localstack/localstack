@@ -64,7 +64,7 @@ def create_resource(aws_client):
                 RequestToken=delete_request["ProgressEvent"]["RequestToken"]
             )
         except Exception:
-            LOG.warning(f"Failed to delete resource with request token {rr}")
+            LOG.warning("Failed to delete resource with request token %s", rr)
 
 
 @pytest.mark.skip("Not Implemented yet")

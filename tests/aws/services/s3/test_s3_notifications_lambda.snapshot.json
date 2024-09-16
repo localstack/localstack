@@ -41,7 +41,7 @@
               "bucket": {
                 "M": {
                   "arn": {
-                    "S": "arn:aws:s3:::<bucket-name:1>"
+                    "S": "arn:<partition>:s3:::<bucket-name:1>"
                   },
                   "name": {
                     "S": "<bucket-name:1>"
@@ -108,7 +108,7 @@
                         "S": "<bucket-name:1>"
                       },
                       "arn": {
-                        "S": "arn:aws:s3:::<bucket-name:1>"
+                        "S": "arn:<partition>:s3:::<bucket-name:1>"
                       },
                       "ownerIdentity": {
                         "M": {
@@ -199,7 +199,7 @@
                         "S": "<bucket-name:1>"
                       },
                       "arn": {
-                        "S": "arn:aws:s3:::<bucket-name:1>"
+                        "S": "arn:<partition>:s3:::<bucket-name:1>"
                       },
                       "ownerIdentity": {
                         "M": {
@@ -308,8 +308,8 @@
       },
       "lambda-does-not-exist": {
         "Error": {
-          "ArgumentName1": "arn:aws:lambda:<region>:111111111111:function:my-lambda, null",
-          "ArgumentValue1": "Not authorized to invoke function [arn:aws:lambda:<region>:111111111111:function:my-lambda]",
+          "ArgumentName1": "arn:<partition>:lambda:<region>:111111111111:function:my-lambda, null",
+          "ArgumentValue1": "Not authorized to invoke function [arn:<partition>:lambda:<region>:111111111111:function:my-lambda]",
           "Code": "InvalidArgument",
           "Message": "Unable to validate the following destination configurations"
         },
@@ -325,7 +325,7 @@
               "s3:ObjectCreated:*"
             ],
             "Id": "id123",
-            "LambdaFunctionArn": "arn:aws:lambda:<region>:111111111111:function:my-lambda"
+            "LambdaFunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:my-lambda"
           }
         ],
         "ResponseMetadata": {

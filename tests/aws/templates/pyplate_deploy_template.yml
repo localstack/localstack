@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Macro allowing you to run arbitrary Python code in your CloudFormation templates
+
+Parameters:
+  LambdaTimeout:
+    Description: "Optional setting of the Lambda's execution timeout (in seconds). \nThe default of 3 seconds won't be enough if you call AWS services; \nthen at least 10 seconds is recommended, more depending on complexity.\n"
+    Type: Number
+    Default: 10
+    MinValue: 3
+
+Resources:
+  TransformExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource: arn:aws:logs:*:*:*
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AdministratorAccess
+
+  TransformFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      guard:
+        SuppressedRules:
+          - LAMBDA_INSIDE_VPC
+    Properties:
+      Description: Support for the PyPlate CloudFormation macro
+      Code:
+        ZipFile: |
+          #pylint: disable=exec-used
+
+          import traceback
+          import json
+
+          def obj_iterate(obj, params):
+              "Iterate over template resources and execute any PyPlate directives"
+              if isinstance(obj, dict):
+                  for k in obj:
+                      obj[k] = obj_iterate(obj[k], params)
+              elif isinstance(obj, list):
+                  for i, v in enumerate(obj):
+                      obj[i] = obj_iterate(v, params)
+              elif isinstance(obj, str):
+                  if obj.startswith("#!PyPlate"):
+                      params["output"] = None
+                      exec(obj, params)
+                      obj = params["output"]
+              return obj
+
+          def handler(event, _):
+              "Lambda handler"
+              print(json.dumps(event))
+
+              macro_response = {"requestId": event["requestId"], "status": "success"}
+              try:
+                  params = {
+                      "params": event["templateParameterValues"],
+                      "template": event["fragment"],
+                      "account_id": event["accountId"],
+                      "region": event["region"],
+                  }
+                  response = event["fragment"]
+                  macro_response["fragment"] = obj_iterate(response, params)
+              except Exception as e:
+                  traceback.print_exc()
+                  macro_response["status"] = "failure"
+                  macro_response["errorMessage"] = str(e)
+              return macro_response
+      Handler: index.handler
+      Runtime: python3.11
+      Role: !GetAtt TransformExecutionRole.Arn
+      Timeout: !Ref LambdaTimeout
+
+  TransformFunctionPermissions:
+    Type: AWS::Lambda::Permission
+    Metadata:
+      guard:
+        SuppressedRules:
+          - LAMBDA_FUNCTION_PUBLIC_ACCESS_PROHIBITED
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt TransformFunction.Arn
+      Principal: cloudformation.amazonaws.com
+
+  Transform:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Name: !Sub PyPlate
+      Description: Processes inline python in templates
+      FunctionName: !GetAtt TransformFunction.Arn

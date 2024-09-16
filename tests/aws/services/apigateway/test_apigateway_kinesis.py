@@ -17,6 +17,7 @@ def test_apigateway_to_kinesis(
     wait_for_stream_ready,
     create_rest_api_with_integration,
     snapshot,
+    region_name,
     aws_client,
 ):
     snapshot.add_transformer(snapshot.transform.apigateway_api())
@@ -34,7 +35,6 @@ def test_apigateway_to_kinesis(
     shard_id = first_stream_shard_data["ShardId"]
 
     # create REST API with Kinesis integration
-    region_name = aws_client.apigateway.meta.region_name
     integration_uri = f"arn:aws:apigateway:{region_name}:kinesis:action/PutRecord"
     request_templates = {
         "application/json": json.dumps(
@@ -51,17 +51,20 @@ def test_apigateway_to_kinesis(
         integration_type="AWS",
     )
 
-    def _invoke_apigw_to_kinesis():
+    def _invoke_apigw_to_kinesis() -> dict:
         url = api_invoke_url(api_id, stage=DEFAULT_STAGE_NAME, path="/test")
-        response = requests.post(url, json={"kinesis": "snapshot"})
-        assert response.status_code == 200
-        snapshot.match("apigateway_response", response.json())
+        _response = requests.post(url, json={"kinesis": "snapshot"})
+        assert _response.ok
+        json_resp = _response.json()
+        assert "SequenceNumber" in json_resp
+        return json_resp
 
     # push events to Kinesis via API
     shard_iterator = aws_client.kinesis.get_shard_iterator(
         StreamName=stream_name, ShardIteratorType="LATEST", ShardId=shard_id
     )["ShardIterator"]
-    retry(_invoke_apigw_to_kinesis, retries=15, sleep=1)
+    response = retry(_invoke_apigw_to_kinesis, retries=15, sleep=1)
+    snapshot.match("apigateway_response", response)
 
     # get records from stream
     get_records_response = aws_client.kinesis.get_records(ShardIterator=shard_iterator)

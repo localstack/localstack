@@ -43,7 +43,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>",
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>",
               "timeoutInSeconds": 5
             },
             "previousEventId": 2,
@@ -689,7 +689,7 @@
     "recorded-date": "10-03-2024, 16:22:15",
     "recorded-content": {
       "describe_execution": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<execution-name>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<execution-name>",
         "input": {},
         "inputDetails": {
           "included": true
@@ -698,7 +698,7 @@
         "redriveCount": 0,
         "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "TIMED_OUT",
         "stopDate": "datetime",
         "ResponseMetadata": {

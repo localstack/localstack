@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  ResourceNamePrefix:
+    Type: String
+  RestLatencyPreemptiveAlarmPeriod:
+    Type: Number
+  RestLatencyPreemptiveAlarmEvaluationPeriods:
+    Type: Number
+    Default: 1
+  RestLatencyPreemptiveAlarmThreshold:
+    Type: Number
+
+Resources:
+  RestLatencyPreemptiveAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:opsitem:2
+      AlarmDescription: Test alarm
+      AlarmName:
+        Fn::Sub: "${ResourceNamePrefix}-${RestLatencyPreemptiveAlarmPeriod}"
+      Namespace: AWS/ApiGateway
+      MetricName: Latency
+      Dimensions:
+        - Name: ApiName
+          Value: dummy-api
+      Statistic: Average
+      Period:
+        Fn::Sub: ${RestLatencyPreemptiveAlarmPeriod}
+      EvaluationPeriods:
+        Fn::Sub: ${RestLatencyPreemptiveAlarmEvaluationPeriods}
+      Threshold:
+        Fn::Sub: ${RestLatencyPreemptiveAlarmThreshold}
+      ComparisonOperator: GreaterThanThreshold
+
+Outputs:
+  AlarmName:
+    Value: !Ref RestLatencyPreemptiveAlarm
+  Threshold:
+    Value: !Ref RestLatencyPreemptiveAlarmThreshold
+  Period:
+    Value: !Ref RestLatencyPreemptiveAlarmPeriod

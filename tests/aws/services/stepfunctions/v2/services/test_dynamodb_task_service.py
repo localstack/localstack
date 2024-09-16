@@ -1,16 +1,17 @@
 import json
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
-from tests.aws.services.stepfunctions.utils import create_and_record_execution
 
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         # # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",

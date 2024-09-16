@@ -190,3 +190,15 @@ def test_get_defining_object():
 
     # static method (= function defined by a class)
     assert get_defining_object(MyEchoer.do_static_echo) == MyEchoer
+
+
+def test_to_string():
+    @patch(MyEchoer.do_echo)
+    def monkey(self, *args):
+        return f"monkey: {args[-1]}"
+
+    applied = [str(p) for p in Patch.applied_patches]
+
+    value = "Patch(function(tests.unit.utils.test_patch:MyEchoer.do_echo) -> function(tests.unit.utils.test_patch:test_to_string.<locals>.monkey), applied=True)"
+    assert value in applied
+    assert str(monkey.patch) == value

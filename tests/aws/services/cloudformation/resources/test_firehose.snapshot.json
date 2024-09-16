@@ -8,7 +8,7 @@
       "delivery_stream": {
         "DeliveryStreamDescription": {
           "CreateTimestamp": "timestamp",
-          "DeliveryStreamARN": "arn:aws:firehose:<region>:111111111111:deliverystream/<resource:1>",
+          "DeliveryStreamARN": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<resource:1>",
           "DeliveryStreamName": "<resource:1>",
           "DeliveryStreamStatus": "ACTIVE",
           "DeliveryStreamType": "KinesisStreamAsSource",
@@ -16,7 +16,7 @@
             {
               "DestinationId": "destinationId-000000000001",
               "ExtendedS3DestinationDescription": {
-                "BucketARN": "arn:aws:s3:::<resource:2>",
+                "BucketARN": "arn:<partition>:s3:::<resource:2>",
                 "BufferingHints": {
                   "IntervalInSeconds": 60,
                   "SizeInMBs": 64
@@ -57,11 +57,11 @@
                     }
                   ]
                 },
-                "RoleARN": "arn:aws:iam::111111111111:role/<resource:3>",
+                "RoleARN": "arn:<partition>:iam::111111111111:role/<resource:3>",
                 "S3BackupMode": "Disabled"
               },
               "S3DestinationDescription": {
-                "BucketARN": "arn:aws:s3:::<resource:2>",
+                "BucketARN": "arn:<partition>:s3:::<resource:2>",
                 "BufferingHints": {
                   "IntervalInSeconds": 60,
                   "SizeInMBs": 64
@@ -75,7 +75,7 @@
                 },
                 "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
                 "Prefix": "firehoseTest/!{partitionKeyFromQuery:s3Prefix}",
-                "RoleARN": "arn:aws:iam::111111111111:role/<resource:3>"
+                "RoleARN": "arn:<partition>:iam::111111111111:role/<resource:3>"
               }
             }
           ],
@@ -83,8 +83,8 @@
           "Source": {
             "KinesisStreamSourceDescription": {
               "DeliveryStartTimestamp": "timestamp",
-              "KinesisStreamARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:4>",
-              "RoleARN": "arn:aws:iam::111111111111:role/<resource:3>"
+              "KinesisStreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:4>",
+              "RoleARN": "arn:<partition>:iam::111111111111:role/<resource:3>"
             }
           },
           "VersionId": "1"

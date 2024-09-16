@@ -11,11 +11,12 @@ from urllib.request import Request, urlopen
 
 import pytest
 import requests
+from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import arns
@@ -27,12 +28,11 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
 PUBLICATION_RETRIES = 5
 
-
 LOG = logging.getLogger(__name__)
 
 
 def is_old_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2" and not is_aws_cloud()
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") == "v1" and not is_aws_cloud()
 
 
 class TestCloudwatch:
@@ -579,7 +579,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_describe_alarms_converts_date_format_correctly(self, aws_client, cleanups):
-        alarm_name = f"a-{short_uid()}"
+        alarm_name = f"a-{short_uid()}:test"
         metric_name = f"test-metric-{short_uid()}"
         namespace = f"test-ns-{short_uid()}"
         aws_client.cloudwatch.put_metric_alarm(
@@ -657,7 +657,10 @@ class TestCloudwatch:
         snapshot.match("describe_alarms", describe_alarms)
         alarm = describe_alarms["MetricAlarms"][0]
         alarm_arn = alarm["AlarmArn"]
+        list_tags_for_resource = aws_client.cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        snapshot.match("list_tags_for_resource_empty ", list_tags_for_resource)
 
+        # add tags
         tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
         response = aws_client.cloudwatch.tag_resource(ResourceARN=alarm_arn, Tags=tags)
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
@@ -1070,7 +1073,8 @@ class TestCloudwatch:
             AlarmActions=[topic_arn_alarm],
             EvaluationPeriods=1,
             ComparisonOperator="GreaterThanThreshold",
-            TreatMissingData="ignore",  # notBreaching had some downsides, as depending on the alarm evaluation interval it would first go into OK
+            TreatMissingData="ignore",
+            # notBreaching had some downsides, as depending on the alarm evaluation interval it would first go into OK
         )
         cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
         response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
@@ -1388,6 +1392,35 @@ class TestCloudwatch:
         )
 
         snapshot.match("get_metric_data_2", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=is_old_provider(), reason="Old provider is not raising exception")
+    def test_invalid_dashboard_name(self, aws_client, region_name, snapshot):
+        dashboard_name = f"test-{short_uid()}:invalid"
+        dashboard_body = {
+            "widgets": [
+                {
+                    "type": "metric",
+                    "x": 0,
+                    "y": 0,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
+                        "region": region_name,
+                        "view": "timeSeries",
+                        "stacked": False,
+                    },
+                }
+            ]
+        }
+
+        with pytest.raises(Exception) as ex:
+            aws_client.cloudwatch.put_dashboard(
+                DashboardName=dashboard_name, DashboardBody=json.dumps(dashboard_body)
+            )
+
+        snapshot.match("error-invalid-dashboardname", ex.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -2195,6 +2228,7 @@ class TestCloudwatch:
                 {"MetricName": "metric1", "Value": val, "Unit": "Seconds"} for val in values
             ],
         )
+
         # get_metric_data
 
         def _get_metric_data():
@@ -2438,7 +2472,7 @@ class TestCloudwatch:
                                 "MetricStat": {
                                     "Metric": {
                                         "Namespace": namespace,
-                                        "MetricName": f"metric-{runner-1}-1",
+                                        "MetricName": f"metric-{runner - 1}-1",
                                     },
                                     "Period": 60,
                                     "Stat": "Sum",
@@ -2449,7 +2483,7 @@ class TestCloudwatch:
                                 "MetricStat": {
                                     "Metric": {
                                         "Namespace": namespace,
-                                        "MetricName": f"metric-{runner-1}-2",
+                                        "MetricName": f"metric-{runner - 1}-2",
                                     },
                                     "Period": 60,
                                     "Stat": "Sum",
@@ -2460,7 +2494,7 @@ class TestCloudwatch:
                         EndTime=end_time,
                     )
             except Exception as e:
-                LOG.exception(f"runner {runner} failed: {e}")
+                LOG.exception("runner %s failed: %s", runner, e)
                 exception_caught = True
 
         thread_list = []
@@ -2506,6 +2540,140 @@ class TestCloudwatch:
 
         describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("describe-after-delete", describe_alarm)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..list-metrics..Metrics",
+        ],
+    )
+    def test_multiple_dimensions_statistics(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+
+        utc_now = datetime.now(tz=timezone.utc)
+        namespace = f"test/{short_uid()}"
+        metric_name = "http.server.requests.count"
+        dimensions = [
+            {"Name": "error", "Value": "none"},
+            {"Name": "exception", "Value": "none"},
+            {"Name": "method", "Value": "GET"},
+            {"Name": "outcome", "Value": "SUCCESS"},
+            {"Name": "uri", "Value": "/greetings"},
+            {"Name": "status", "Value": "200"},
+        ]
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Value": 0.0,
+                    "Unit": "Count",
+                    "StorageResolution": 1,
+                    "Dimensions": dimensions,
+                    "Timestamp": datetime.now(tz=timezone.utc),
+                }
+            ],
+        )
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Value": 5.0,
+                    "Unit": "Count",
+                    "StorageResolution": 1,
+                    "Dimensions": dimensions,
+                    "Timestamp": datetime.now(tz=timezone.utc),
+                }
+            ],
+        )
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "result1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                                "Dimensions": dimensions,
+                            },
+                            "Period": 10,
+                            "Stat": "Maximum",
+                            "Unit": "Count",
+                        },
+                    }
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
+
+            assert len(response["MetricDataResults"][0]["Values"]) > 0
+            snapshot.match("get-metric-stats-max", response)
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0
+        retry(assert_results, retries=retries, sleep_before=sleep_before)
+
+        def list_metrics():
+            res = aws_client.cloudwatch.list_metrics(
+                Namespace=namespace, MetricName=metric_name, Dimensions=dimensions
+            )
+            assert len(res["Metrics"]) > 0
+            return res
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0
+        list_metrics_res = retry(list_metrics, retries=retries, sleep_before=sleep_before)
+
+        # Function to sort the dimensions by "Name"
+        def sort_dimensions(data: dict):
+            for metric in data["Metrics"]:
+                metric["Dimensions"] = sorted(metric["Dimensions"], key=lambda x: x["Name"])
+
+        sort_dimensions(list_metrics_res)
+        snapshot.match("list-metrics", list_metrics_res)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
+    def test_invalid_amount_of_datapoints(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+        utc_now = datetime.now(tz=timezone.utc)
+        with pytest.raises(ClientError) as ex:
+            aws_client.cloudwatch.get_metric_statistics(
+                Namespace="namespace",
+                MetricName="metric_name",
+                StartTime=utc_now,
+                EndTime=utc_now + timedelta(days=1),
+                Period=1,
+                Statistics=["SampleCount"],
+            )
+
+        snapshot.match("error-invalid-amount-datapoints", ex.value.response)
+        with pytest.raises(ClientError) as ex:
+            aws_client.cloudwatch.get_metric_statistics(
+                Namespace="namespace",
+                MetricName="metric_name",
+                StartTime=utc_now,
+                EndTime=utc_now,
+                Period=1,
+                Statistics=["SampleCount"],
+            )
+
+        snapshot.match("error-invalid-time-frame", ex.value.response)
+
+        response = aws_client.cloudwatch.get_metric_statistics(
+            Namespace=f"namespace_{short_uid()}",
+            MetricName="metric_name",
+            StartTime=utc_now,
+            EndTime=utc_now + timedelta(days=1),
+            Period=60,
+            Statistics=["SampleCount"],
+        )
+
+        snapshot.match("get-metric-statitics", response)
 
 
 def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):

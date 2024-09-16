@@ -12,6 +12,9 @@ class ScenariosTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/catch_states_runtime.json5"
     )
     PARALLEL_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/parallel_state.json5")
+    PARALLEL_STATE_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/parallel_state_parameters.json5"
+    )
     MAX_CONCURRENCY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/max_concurrency_path.json5"
     )
@@ -57,6 +60,15 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
+    )
+    MAP_STATE_LEGACY_REENTRANT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_reentrant.json5"
+    )
+    MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_reentrant.json5"
+    )
+    MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT_LAMBDA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_reentrant_lambda.json5"
     )
     MAP_STATE_CONFIG_INLINE_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_inline_parameters.json5"
@@ -110,6 +122,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_CATCH_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_catch_legacy.json5"
     )
+    MAP_STATE_LEGACY_REENTRANT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_reentrant.json5"
+    )
     MAP_STATE_RETRY: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state_retry.json5")
     MAP_STATE_RETRY_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_retry_legacy.json5"
@@ -122,6 +137,31 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_STATE_BREAK_CONDITION_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_break_condition_legacy.json5"
+    )
+    MAP_STATE_TOLERATED_FAILURE_COUNT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_tolerated_failure_count.json5"
+    )
+    MAP_STATE_TOLERATED_FAILURE_COUNT_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_tolerated_failure_count_path.json5"
+    )
+    MAP_STATE_TOLERATED_FAILURE_PERCENTAGE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_tolerated_failure_percentage.json5"
+    )
+    MAP_STATE_TOLERATED_FAILURE_PERCENTAGE_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_tolerated_failure_percentage_path.json5"
+    )
+    MAP_STATE_LABEL: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state_label.json5")
+    MAP_STATE_LABEL_EMPTY_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_label_empty_fail.json5"
+    )
+    MAP_STATE_LABEL_INVALID_CHAR_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_label_invalid_char_fail.json5"
+    )
+    MAP_STATE_LABEL_TOO_LONG_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_label_too_long_fail.json5"
+    )
+    MAP_STATE_RESULT_WRITER: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_result_writer.json5"
     )
     CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_unsorted_choice_parameters.json5"
@@ -156,4 +196,7 @@ class ScenariosTemplate(TemplateLoader):
     WAIT_TIMESTAMP: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_timestamp.json5")
     WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"
+    )
+    DIRECT_ACCESS_CONTEXT_OBJECT_CHILD_FIELD: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/direct_access_context_object_child_field.json5"
     )

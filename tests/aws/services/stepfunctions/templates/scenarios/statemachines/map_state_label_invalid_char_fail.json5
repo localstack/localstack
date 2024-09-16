@@ -1,0 +1,24 @@
+{
+  "Comment": "MAP_STATE_LABEL_JSON",
+  "StartAt": "MapState",
+  "States": {
+    "MapState": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "IteratorInner",
+        "States": {
+          "IteratorInner": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+      },
+      "Label": "label_{invalid_char}",
+      "End": true
+    }
+  }
+}

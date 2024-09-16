@@ -2,16 +2,16 @@ import json
 
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import await_execution_success
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.intrinsicfunctions.intrinsic_functions_templates import (
     IntrinsicFunctionTemplate as IFT,
 )
-from tests.aws.services.stepfunctions.utils import await_execution_success
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestUniqueIdGeneration:
     @markers.aws.validated
     def test_uuid(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
@@ -37,9 +37,7 @@ class TestUniqueIdGeneration:
         )
 
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
-        output = JSONPathUtils.extract_json(
-            "$..executionSucceededEventDetails..output", exec_hist_resp
-        )
+        output = extract_json("$..executionSucceededEventDetails..output", exec_hist_resp)
         uuid = json.loads(output)[IFT.FUNCTION_OUTPUT_KEY]
         sfn_snapshot.add_transformer(RegexTransformer(uuid, "generated-uuid"))
 

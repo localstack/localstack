@@ -5,15 +5,15 @@ import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
-from tests.aws.services.stepfunctions.utils import (
+from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
 )
+from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
 # TODO: add tests for seconds, secondspath, timestamp
 # TODO: add tests that actually validate waiting time (e.g. x minutes) BUT mark them accordingly and skip them by default!
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSfnWait:
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not implemented")
     @markers.aws.validated

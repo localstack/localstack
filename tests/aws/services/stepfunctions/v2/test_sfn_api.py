@@ -3,25 +3,32 @@ import json
 import pytest
 import yaml
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import RegexTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.aws.api.stepfunctions import HistoryEventList, StateMachineType
 from localstack.testing.pytest import markers
-from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
-from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
-from tests.aws.services.stepfunctions.utils import (
+from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_aborted,
     await_execution_started,
     await_execution_success,
     await_execution_terminated,
     await_list_execution_status,
+    await_on_execution_events,
     await_state_machine_listed,
     await_state_machine_not_listed,
+    await_state_machine_version_listed,
+)
+from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry, wait_until
+from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
+from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
+from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
+    CallbackTemplates as CT,
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSnfApi:
     @markers.aws.validated
     def test_create_delete_valid_sm(
@@ -35,7 +42,7 @@ class TestSnfApi:
         create_lambda_1 = create_lambda_function(
             handler_file=lambda_functions.BASE_ID_FUNCTION,
             func_name="id_function",
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         lambda_arn_1 = create_lambda_1["CreateFunctionResponse"]["FunctionArn"]
 
@@ -131,6 +138,30 @@ class TestSnfApi:
         with pytest.raises(Exception) as exc:
             aws_client.stepfunctions.describe_state_machine(stateMachineArn=sm_nonexistent_arn)
         sfn_snapshot.match("describe_nonexistent_sm", exc.value)
+
+    @markers.aws.validated
+    def test_describe_sm_arn_containing_punctuation(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        # ARN will contain a punctuation symbol
+        sm_name = f"state.machine_{short_uid()}"
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
+
+        describe_resp = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=creation_resp["stateMachineArn"]
+        )
+        sfn_snapshot.match("describe_resp", describe_resp)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
@@ -290,7 +321,185 @@ class TestSnfApi:
         lst_resp_filter = [sm for sm in lst_resp["stateMachines"] if sm["name"] in sm_names]
         sfn_snapshot.match("lst_resp_del_filter", lst_resp_filter)
 
-    @markers.aws.needs_fixing
+    @markers.aws.validated
+    def test_list_sms_pagination(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        sm_names = [f"statemachine_{i}_{short_uid()}" for i in range(13)]
+        state_machine_arns = list()
+
+        for i, sm_name in enumerate(sm_names):
+            creation_resp = create_state_machine(
+                name=sm_name,
+                definition=definition_str,
+                roleArn=snf_role_arn,
+            )
+
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, i))
+
+            state_machine_arn: str = creation_resp["stateMachineArn"]
+            state_machine_arns.append(state_machine_arn)
+
+        def _list_state_machines(expected_results_count: int, **kwargs):
+            """Returns a filtered list of relevant State Machines"""
+            state_machines = aws_client.stepfunctions.list_state_machines(**kwargs)
+            filtered_sms = [sm for sm in state_machines["stateMachines"] if sm["name"] in sm_names]
+
+            assert len(filtered_sms) == expected_results_count
+            return filtered_sms
+
+        # expect all state machines to be present
+        wait_until(lambda: _list_state_machines(expected_results_count=13), max_retries=20)
+
+        paginator = aws_client.stepfunctions.get_paginator("list_state_machines")
+        page_iterator = paginator.paginate(maxResults=5)
+
+        # Paginates across all results and filters out any StateMachines not relevant to the test
+        def _verify_paginate_results() -> list:
+            filtered_state_machines = []
+            for page in page_iterator:
+                assert 0 < len(page["stateMachines"]) <= 5
+
+                filtered_page = [sm for sm in page["stateMachines"] if sm["name"] in sm_names]
+                if filtered_page:
+                    sm_name_set = {sm.get("name") for sm in filtered_state_machines}
+                    # assert that none of the State Machines being added are already present
+                    assert not any(sm.get("name") in sm_name_set for sm in filtered_page)
+
+                    filtered_state_machines.extend(filtered_page)
+
+            assert len(filtered_state_machines) == len(sm_names)
+            return filtered_state_machines
+
+        # Since ListStateMachines is eventually consistent, we should re-attempt pagination
+        listed_state_machines = retry(_verify_paginate_results, retries=20, sleep=1)
+        sfn_snapshot.match("list-state-machines-page-1", listed_state_machines[:10])
+        sfn_snapshot.match("list-state-machines-page-2", listed_state_machines[10:])
+
+        # maxResults value is out of bounds
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_state_machines(maxResults=1001)
+        sfn_snapshot.match("list-state-machines-invalid-param-too-large", err.value.response)
+
+        # nextToken is too short
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_state_machines(nextToken="")
+        sfn_snapshot.match(
+            "list-state-machines-invalid-param-short-nextToken",
+            {"exception_typename": err.typename, "exception_value": err.value},
+        )
+
+        # nextToken is too long
+        invalid_long_token = "x" * 1025
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_state_machines(nextToken=invalid_long_token)
+        sfn_snapshot.add_transformer(
+            RegexTransformer(invalid_long_token, f"<invalid_token_{len(invalid_long_token)}_chars>")
+        )
+        sfn_snapshot.match("list-state-machines-invalid-param-long-nextToken", err.value.response)
+
+        # where maxResults is 0, the default of 100 is used
+        retry(
+            lambda: _list_state_machines(expected_results_count=13, maxResults=0),
+            retries=20,
+            sleep=1,
+        )
+
+        for state_machine_arn in state_machine_arns:
+            aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
+
+        # expect no state machines created in this test to be leftover after deletion
+        wait_until(lambda: not _list_state_machines(expected_results_count=0), max_retries=20)
+
+    @markers.aws.validated
+    def test_start_execution_idempotent(
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_send_task_success_state_machine,
+        sqs_create_queue,
+        sfn_snapshot,
+        aws_client,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..TaskToken",
+                replacement="<task_token>",
+                replace_reference=True,
+            )
+        )
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        sm_name: str = f"statemachine_{short_uid()}"
+        execution_name: str = f"execution_name_{short_uid()}"
+
+        template = BaseTemplate.load_sfn_template(CT.SQS_WAIT_FOR_TASK_TOKEN)
+        definition = json.dumps(template)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        input_data = json.dumps({"QueueUrl": queue_url, "Message": "test_message_txt"})
+        exec_resp = aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn, input=input_data, name=execution_name
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.match("exec_resp", exec_resp)
+        execution_arn = exec_resp["executionArn"]
+
+        await_execution_started(
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        )
+
+        exec_resp_idempotent = aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn, input=input_data, name=execution_name
+        )
+        sfn_snapshot.add_transformer(
+            sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp_idempotent, 0)
+        )
+        sfn_snapshot.match("exec_resp_idempotent", exec_resp_idempotent)
+
+        # Should fail because the execution has the same 'name' as another but a different 'input'.
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.start_execution(
+                stateMachineArn=state_machine_arn,
+                input='{"body" : "different-data"}',
+                name=execution_name,
+            )
+        sfn_snapshot.match("start_exec_already_exists", err.value.response)
+
+        stop_res = aws_client.stepfunctions.stop_execution(executionArn=execution_arn)
+        sfn_snapshot.match("stop_res", stop_res)
+
+        sqs_send_task_success_state_machine(queue_name)
+
+        await_execution_terminated(
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        )
+
+        assert exec_resp_idempotent["executionArn"] == execution_arn
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount"])
     def test_start_execution(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -357,6 +566,211 @@ class TestSnfApi:
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value", "$..redriveCount"])
+    def test_list_executions_pagination(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        await_state_machine_listed(
+            stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
+        )
+
+        execution_arns = list()
+        for i in range(13):
+            input_data = json.dumps(dict())
+
+            exec_resp = aws_client.stepfunctions.start_execution(
+                stateMachineArn=state_machine_arn, input=input_data
+            )
+
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
+
+            execution_arn = exec_resp["executionArn"]
+            execution_arns.append(execution_arn)
+
+            await_execution_success(
+                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+            )
+
+        page_1_executions = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn, maxResults=10
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.key_value("nextToken"))
+        sfn_snapshot.match("list-executions-page-1", page_1_executions)
+
+        page_2_executions = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn,
+            maxResults=3,
+            nextToken=page_1_executions["nextToken"],
+        )
+
+        sfn_snapshot.match("list-executions-page-2", page_2_executions)
+
+        assert all(
+            sm not in page_1_executions["executions"] for sm in page_2_executions["executions"]
+        )
+
+        # maxResults value is out of bounds
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_arn, maxResults=1001
+            )
+        sfn_snapshot.match("list-executions-invalid-param-too-large", err.value.response)
+
+        # nextToken is too short
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_arn, nextToken=""
+            )
+        sfn_snapshot.match(
+            "list-executions-invalid-param-short-nextToken",
+            {"exception_typename": err.typename, "exception_value": err.value},
+        )
+
+        # nextToken is too long
+        invalid_long_token = "x" * 3097
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_arn, nextToken=invalid_long_token
+            )
+        sfn_snapshot.add_transformer(
+            RegexTransformer(invalid_long_token, f"<invalid_token_{len(invalid_long_token)}_chars>")
+        )
+        sfn_snapshot.match("list-executions-invalid-param-long-nextToken", err.value.response)
+
+        # where maxResults is 0, the default of 100 should be returned
+        executions_default_all_returned = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn, maxResults=0
+        )
+        assert len(executions_default_all_returned["executions"]) == 13
+        assert "nextToken" not in executions_default_all_returned
+
+        deletion_resp = aws_client.stepfunctions.delete_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("deletion_resp", deletion_resp)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value", "$..redriveCount"])
+    def test_list_executions_versions_pagination(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn, publish=True
+        )
+
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+
+        state_machine_arn = creation_resp["stateMachineArn"]
+        state_machine_version_arn = creation_resp["stateMachineVersionArn"]
+
+        await_state_machine_version_listed(
+            stepfunctions_client=aws_client.stepfunctions,
+            state_machine_arn=state_machine_arn,
+            state_machine_version_arn=state_machine_version_arn,
+        )
+
+        execution_arns = list()
+        for i in range(13):
+            input_data = json.dumps(dict())
+
+            exec_resp = aws_client.stepfunctions.start_execution(
+                stateMachineArn=state_machine_version_arn, input=input_data
+            )
+
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
+
+            execution_arn = exec_resp["executionArn"]
+            execution_arns.append(execution_arn)
+
+            await_execution_success(
+                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+            )
+
+        page_1_executions = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_version_arn, maxResults=10
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.key_value("nextToken"))
+        sfn_snapshot.match("list-executions-page-1", page_1_executions)
+
+        page_2_executions = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_version_arn,
+            maxResults=3,
+            nextToken=page_1_executions["nextToken"],
+        )
+
+        sfn_snapshot.match("list-execution-page-2", page_2_executions)
+
+        assert all(
+            sm not in page_1_executions["executions"] for sm in page_2_executions["executions"]
+        )
+
+        # maxResults value is out of bounds
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_version_arn, maxResults=1001
+            )
+        sfn_snapshot.match("list-executions-invalid-param-too-large", err.value.response)
+
+        # nextToken is too short
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_version_arn, nextToken=""
+            )
+        sfn_snapshot.match(
+            "list-executions-invalid-param-short-nextToken",
+            {"exception_typename": err.typename, "exception_value": err.value},
+        )
+
+        # nextToken is too long
+        invalid_long_token = "x" * 3097
+        with pytest.raises(Exception) as err:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_version_arn, nextToken=invalid_long_token
+            )
+        sfn_snapshot.add_transformer(
+            RegexTransformer(invalid_long_token, f"<invalid_token_{len(invalid_long_token)}_chars>")
+        )
+        sfn_snapshot.match("list-executions-invalid-param-long-nextToken", err.value.response)
+
+        # where maxResults is 0, the default of 100 should be returned
+        executions_default_all_returned = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_version_arn, maxResults=0
+        )
+        assert len(executions_default_all_returned["executions"]) == 13
+        assert "nextToken" not in executions_default_all_returned
+
+        deletion_resp = aws_client.stepfunctions.delete_state_machine_version(
+            stateMachineVersionArn=state_machine_version_arn
+        )
+        sfn_snapshot.match("deletion_resp", deletion_resp)
 
     @markers.aws.validated
     def test_get_execution_history_reversed(
@@ -491,8 +905,19 @@ class TestSnfApi:
         sfn_snapshot.match("exec_resp", exec_resp)
         execution_arn = exec_resp["executionArn"]
 
-        await_execution_started(
-            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        def _check_stated_entered(events: HistoryEventList) -> bool:
+            # Check the evaluation entered the wait state, called State_1.
+            for event in events:
+                event_details = event.get("stateEnteredEventDetails")
+                if event_details:
+                    return event_details.get("name") == "State_1"
+            return False
+
+        # Wait until the state machine enters the wait state.
+        await_on_execution_events(
+            stepfunctions_client=aws_client.stepfunctions,
+            execution_arn=execution_arn,
+            check_func=_check_stated_entered,
         )
 
         stop_res = aws_client.stepfunctions.stop_execution(executionArn=execution_arn)
@@ -921,7 +1346,7 @@ class TestSnfApi:
         )
 
         describe_execution = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
-        sfn_snapshot.match("ddescribe_execution", describe_execution)
+        sfn_snapshot.match("describe_execution", describe_execution)
 
     @markers.aws.validated
     def test_describe_execution_no_such_state_machine(
@@ -966,6 +1391,42 @@ class TestSnfApi:
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..redriveCount", "$..redriveStatus", "$..redriveStatusReason"]
+    )
+    def test_describe_execution_arn_containing_punctuation(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        sm_name: str = f"state.machine_{short_uid()}"
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
+
+        # ARN will contain a punctuation symbol
+        exec_name: str = f"state.machine.execution_{short_uid()}"
+        exec_resp = aws_client.stepfunctions.start_execution(
+            stateMachineArn=creation_resp["stateMachineArn"], name=exec_name
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.match("exec_resp", exec_resp)
+        execution_arn = exec_resp["executionArn"]
+
+        await_execution_success(
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        )
+
+        describe_execution = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
+        sfn_snapshot.match("describe_execution", describe_execution)
 
     @markers.aws.needs_fixing
     def test_get_execution_history_no_such_execution(
@@ -1057,3 +1518,38 @@ class TestSnfApi:
                 stateMachineArn=state_machine_arn, statusFilter="succeeded"
             )
         sfn_snapshot.match("list_executions_filter_exc", e.value.response)
+
+    @markers.aws.validated
+    def test_start_sync_execution(
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_create_queue,
+        sfn_snapshot,
+        aws_client,
+        stepfunctions_client_sync_executions,
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}")
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        creation_response = create_state_machine(
+            name=f"statemachine_{short_uid()}",
+            definition=definition_str,
+            roleArn=snf_role_arn,
+            type=StateMachineType.STANDARD,
+        )
+        state_machine_arn = creation_response["stateMachineArn"]
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
+        sfn_snapshot.match("creation_response", creation_response)
+
+        with pytest.raises(Exception) as ex:
+            stepfunctions_client_sync_executions.start_sync_execution(
+                stateMachineArn=state_machine_arn, input=json.dumps({}), name="SyncExecution"
+            )
+        sfn_snapshot.match("start_sync_execution_error", ex.value.response)

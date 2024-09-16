@@ -3,12 +3,12 @@ from typing import Any, Final
 
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
-from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
+from localstack.services.stepfunctions.asl.utils.json_path import extract_json
+from localstack.testing.pytest.stepfunctions.utils import await_execution_success
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.choiceoperators.choice_operators_templates import (
     ChoiceOperatorTemplate as COT,
 )
-from tests.aws.services.stepfunctions.utils import await_execution_success
 
 TYPE_COMPARISONS: Final[list[tuple[Any, bool]]] = [
     (None, True),  # 0
@@ -94,8 +94,6 @@ def create_and_test_comparison_function(
         )
 
         exec_hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
-        output = JSONPathUtils.extract_json(
-            "$.events[*].executionSucceededEventDetails.output", exec_hist_resp
-        )
+        output = extract_json("$.events[*].executionSucceededEventDetails.output", exec_hist_resp)
         input_output_cases.append({"input": exec_input, "output": output})
     sfn_snapshot.match("cases", input_output_cases)

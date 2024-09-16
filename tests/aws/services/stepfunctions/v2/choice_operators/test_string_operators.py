@@ -24,7 +24,7 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
 ]
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestStrings:
     @markers.aws.validated
     def test_string_equals(

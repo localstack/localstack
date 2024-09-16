@@ -16,6 +16,10 @@ on:
         description: 'LocalStack Pro Ref'
         required: false
         type: string
+      PYTEST_LOGLEVEL:
+        type: string
+        description: Loglevel for PyTest
+        default: WARNING
   workflow_dispatch:
     inputs:
       disableCaching:
@@ -32,12 +36,22 @@ on:
         description: 'LocalStack Pro Ref'
         required: false
         type: string
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
   pull_request:
     paths:
       - '**'
       - '!.github/**'
       - '.github/workflows/tests-pro-integration.yml'
-      - '!doc/**'
+      - '!docs/**'
       - '!scripts/**'
       - './scripts/build_common_test_functions.sh'
       - '!.dockerignore'
@@ -55,13 +69,13 @@ on:
       - 'v[0-9]+'
       - release/*
   schedule:
-    - cron: '0 4 * * *'  # run once a day at 4 AM UTC
+    - cron: '15 4 * * *'  # run once a day at 4:15 AM UTC
   push:
     paths:
       - '**'
       - '!.github/**'
       - '.github/workflows/tests-pro-integration.yml'
-      - '!doc/**'
+      - '!docs/**'
       - '!scripts/**'
       - './scripts/build_common_test_functions.sh'
       - '!.dockerignore'
@@ -82,6 +96,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Configure PyTest log level
+  PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
   TINYBIRD_DATASOURCE: community_tests_pro_integration
@@ -89,9 +105,10 @@ env:
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
-  # report to tinybird if executed on master
-  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
-  TESTSELECTION_PYTEST_ARGS: "${{ github.event_name == 'pull_request' && inputs.disableTestSelection && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
+  # report to tinybird if executed on master on community AND pro (targetRef not set)
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && inputs.targetRef == '' && '--report-to-tinybird ' || '' }}"
+  # enable test selection if  not running on master and test selection is not explicitly disabled
+  TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=../../localstack/target/testselection/test-selection.txt ' || '' }}"
 
 jobs:
   test-pro:
@@ -217,9 +234,9 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
-          # libvirt-dev is required by the libvirt-python Python package
           # postgresql-14 pin is required to make explicit install of the version from the Ubuntu repos and not PGDG repos
-          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.11-0ubuntu0* postgresql-client postgresql-plpython3 libvirt-dev
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.13-0ubuntu0* postgresql-client postgresql-plpython3 libvirt-dev
+
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
         uses: actions/cache@v4
@@ -227,16 +244,16 @@ jobs:
           path: |
             localstack-ext/.venv
           # include the matrix group (to re-use the venv)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-refs/heads/master
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-refs/heads/master
 
       - name: Cache Ext Dependencies (libs)
         if: inputs.disableCaching != true
         uses: actions/cache@v4
         with:
           path: |
-            localstack/.filesystem/var/lib/localstack
+            localstack/localstack-core/.filesystem/var/lib/localstack
           # include the matrix group (to re-use the var-libs used in the specific test group)
           key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
           restore-keys: |
@@ -265,7 +282,7 @@ jobs:
 
       - name: Install Python Dependencies for Pro
         working-directory: localstack-ext
-        run: make install
+        run: make install-ci
 
       - name: Link Community into Pro venv
         working-directory: localstack-ext
@@ -278,14 +295,15 @@ jobs:
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: |
           VENV_DIR="../localstack-ext/.venv" make entrypoints
-          cat localstack_core.egg-info/entry_points.txt
+          ../localstack-ext/.venv/bin/python -m plux show
 
       - name: Create Pro Entrypoints
         working-directory: localstack-ext
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: |
           make entrypoints
-          cat localstack_ext.egg-info/entry_points.txt
+          cd localstack-pro-core
+          ../.venv/bin/python -m plux show
 
       - name: Test Pro Startup
         env:
@@ -297,12 +315,20 @@ jobs:
           source .venv/bin/activate
           bin/test_localstack_pro.sh
 
-      - name: Determine test selection
+      - name: Determine Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
         working-directory: localstack
         run: |
+          if [ -z "${{ github.event.pull_request.base.sha }}" ]; then
+            echo "Do test selection based on Push event"
+          else
+            echo "Do test selection based on Pull Request event"
+            SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
+          fi
           . ../localstack-ext/.venv/bin/activate
-          python -m localstack.testing.testselection.scripts.generate_test_selection_from_commits $(pwd) ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} target/testselection/test-selection.txt
+          python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) target/testselection/test-selection.txt $SCRIPT_OPTS || (mkdir -p target/testselection && echo "SENTINEL_ALL_TESTS" >> target/testselection/test-selection.txt)
+          echo "Resulting Test Selection file:"
+          cat target/testselection/test-selection.txt
 
       - name: Run Community Integration Tests
         env:
@@ -310,19 +336,30 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           DISABLE_BOTO_RETRIES: 1
+          OPENAPI_VALIDATE_RESPONSE: 1
           DNS_ADDRESS: 0
+          LAMBDA_EXECUTOR: "local"
           LOCALSTACK_API_KEY: "test"
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
-          PYTEST_LOGLEVEL: debug
-          TEST_PATH: "../localstack/tests/aws/"  # TODO: also include tests/integration/
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --durations-path ../localstack/.test_durations --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
+          JUNIT_REPORTS_FILE: "pytest-junit-community-${{ matrix.group }}.xml"
+          TEST_PATH: "../../localstack/tests/aws/"  # TODO: run tests in tests/integration
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path ../../localstack/.test_durations --store-durations"
         working-directory: localstack-ext
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
-          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
+          sudo rm -rf ../localstack/localstack-core/.filesystem/var/lib/localstack/tmp
           make test
+
+      - name: Archive Test Durations
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: pytest-split-durations-community-${{ matrix.group }}
+          path: |
+            localstack/.test_durations
+          retention-days: 5
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4
@@ -330,7 +367,7 @@ jobs:
         with:
           name: test-results-community-${{ matrix.group }}
           path: |
-            localstack-ext/pytest-junit-community-${{ matrix.group }}.xml
+            localstack-ext/localstack-pro-core/pytest-junit-community-${{ matrix.group }}.xml
           retention-days: 30
 
   publish-pro-test-results:

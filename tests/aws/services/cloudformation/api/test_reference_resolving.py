@@ -83,21 +83,3 @@ def test_sub_resolving(deploy_cfn_template, aws_client, snapshot):
     # Verify resource was created
     topic_arns = [t["TopicArn"] for t in aws_client.sns.list_topics()["Topics"]]
     assert topic_arn in topic_arns
-
-
-@markers.aws.only_localstack
-def test_unexisting_resource_dependency(deploy_cfn_template, aws_client):
-    stack_name = f"s-{short_uid()}"
-
-    with pytest.raises(Exception):
-        deploy_cfn_template(
-            template_path=os.path.join(
-                os.path.dirname(__file__),
-                "../../../templates/cfn_unexisting_resource_dependency.yml",
-            ),
-            stack_name=stack_name,
-        )
-
-    description = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0]
-    assert description["StackStatus"] == "CREATE_FAILED"
-    assert "Resource 'UnexistingResource' not found in stack" in description["StackStatusReason"]

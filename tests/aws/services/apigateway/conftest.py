@@ -1,6 +1,7 @@
 import pytest
 from botocore.config import Config
 
+from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
@@ -66,6 +67,10 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
 }
 
 
+def is_next_gen_api():
+    return config.APIGW_NEXT_GEN_PROVIDER and not is_aws_cloud()
+
+
 @pytest.fixture
 def create_rest_api_with_integration(
     create_rest_apigw, wait_for_stream_ready, create_iam_role_with_policy, aws_client
@@ -78,6 +83,8 @@ def create_rest_api_with_integration(
         res_templates=None,
         integration_type=None,
         stage=DEFAULT_STAGE_NAME,
+        resource_method: str = "POST",
+        integration_method: str = "POST",
     ):
         name = f"test-apigw-{short_uid()}"
         api_id, name, root_id = create_rest_apigw(
@@ -95,7 +102,7 @@ def create_rest_api_with_integration(
             aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
-            httpMethod="POST",
+            httpMethod=resource_method,
             authorizationType="NONE",
             apiKeyRequired=False,
             requestParameters={value: True for value in req_parameters.values()},
@@ -124,7 +131,7 @@ def create_rest_api_with_integration(
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod=method,
-            integrationHttpMethod="POST",
+            integrationHttpMethod=integration_method,
             type=integration_type or "AWS",
             credentials=assume_role_arn,
             uri=integration_uri,
@@ -136,7 +143,7 @@ def create_rest_api_with_integration(
             aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
-            httpMethod="POST",
+            httpMethod=resource_method,
             statusCode="200",
         )
 
@@ -145,7 +152,7 @@ def create_rest_api_with_integration(
             aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
-            httpMethod="POST",
+            httpMethod=resource_method,
             statusCode="200",
             responseTemplates=res_templates,
         )

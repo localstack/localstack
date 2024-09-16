@@ -5,7 +5,7 @@
       "describe_execution": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
         "error": "SomeFailure",
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
         "input": {},
         "inputDetails": {
           "included": true
@@ -14,7 +14,7 @@
         "redriveCount": 0,
         "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "FAILED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -182,7 +182,7 @@
     "recorded-date": "06-03-2024, 10:24:13",
     "recorded-content": {
       "describe_execution": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
         "input": {},
         "inputDetails": {
           "included": true
@@ -191,7 +191,7 @@
         "redriveCount": 0,
         "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "FAILED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -393,11 +393,11 @@
           "time": "date",
           "region": "<region>",
           "resources": [
-            "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
+            "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
           ],
           "detail": {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:2>",
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:2>",
             "name": "test_event_bridge_events-{short_uid()}",
             "status": "RUNNING",
             "startDate": "start-date",
@@ -427,11 +427,11 @@
           "time": "date",
           "region": "<region>",
           "resources": [
-            "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
+            "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
           ],
           "detail": {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:2>",
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:2>",
             "name": "test_event_bridge_events-{short_uid()}",
             "status": "SUCCEEDED",
             "startDate": "start-date",
@@ -524,14 +524,14 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_query_context_object_values": {
-    "recorded-date": "07-02-2024, 13:52:16",
+    "recorded-date": "15-07-2024, 13:00:19",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "message": "HelloWorld!"
+                "message": "TestMessage"
               },
               "inputDetails": {
                 "truncated": false
@@ -548,7 +548,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "message": "HelloWorld!"
+                "message": "TestMessage"
               },
               "inputDetails": {
                 "truncated": false
@@ -564,12 +564,12 @@
             "stateExitedEventDetails": {
               "name": "QueryValues1",
               "output": {
-                "message": "HelloWorld!",
+                "message": "TestMessage",
                 "query_values_1": {
                   "execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
-                      "message": "HelloWorld!"
+                      "message": "TestMessage"
                     },
                     "StartTime": "start-time",
                     "Name": "<ExecArnPart_0idx>",
@@ -578,16 +578,16 @@
                   },
                   "execution_rolearn": "snf_role_arn",
                   "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "execution_starttime": "start-time",
                   "state_name": "QueryValues1",
                   "state_enteredtime": "entered-time",
                   "statemachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "state": {
@@ -596,9 +596,9 @@
                   },
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -606,7 +606,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -629,12 +629,12 @@
             "previousEventId": 3,
             "stateEnteredEventDetails": {
               "input": {
-                "message": "HelloWorld!",
+                "message": "TestMessage",
                 "query_values_1": {
                   "execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
-                      "message": "HelloWorld!"
+                      "message": "TestMessage"
                     },
                     "StartTime": "start-time",
                     "Name": "<ExecArnPart_0idx>",
@@ -643,16 +643,16 @@
                   },
                   "execution_rolearn": "snf_role_arn",
                   "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "execution_starttime": "start-time",
                   "state_name": "QueryValues1",
                   "state_enteredtime": "entered-time",
                   "statemachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "state": {
@@ -661,9 +661,9 @@
                   },
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -671,7 +671,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -696,12 +696,12 @@
             "stateExitedEventDetails": {
               "name": "QueryValues2",
               "output": {
-                "message": "HelloWorld!",
+                "message": "TestMessage",
                 "query_values_1": {
                   "execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
-                      "message": "HelloWorld!"
+                      "message": "TestMessage"
                     },
                     "StartTime": "start-time",
                     "Name": "<ExecArnPart_0idx>",
@@ -710,16 +710,16 @@
                   },
                   "execution_rolearn": "snf_role_arn",
                   "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "execution_starttime": "start-time",
                   "state_name": "QueryValues1",
                   "state_enteredtime": "entered-time",
                   "statemachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "state": {
@@ -728,9 +728,9 @@
                   },
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -738,7 +738,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -751,9 +751,9 @@
                 "query_values_2": {
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -761,7 +761,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -781,12 +781,12 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "message": "HelloWorld!",
+                "message": "TestMessage",
                 "query_values_1": {
                   "execution": {
-                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                     "Input": {
-                      "message": "HelloWorld!"
+                      "message": "TestMessage"
                     },
                     "StartTime": "start-time",
                     "Name": "<ExecArnPart_0idx>",
@@ -795,16 +795,16 @@
                   },
                   "execution_rolearn": "snf_role_arn",
                   "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                   "execution_input": {
-                    "message": "HelloWorld!"
+                    "message": "TestMessage"
                   },
                   "execution_starttime": "start-time",
                   "state_name": "QueryValues1",
                   "state_enteredtime": "entered-time",
                   "statemachine": {
-                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                     "Name": "<ArnPart_0idx>"
                   },
                   "state": {
@@ -813,9 +813,9 @@
                   },
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -823,7 +823,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -836,9 +836,9 @@
                 "query_values_2": {
                   "context_object": {
                     "Execution": {
-                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
-                        "message": "HelloWorld!"
+                        "message": "TestMessage"
                       },
                       "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
@@ -846,7 +846,7 @@
                       "RedriveCount": 0
                     },
                     "StateMachine": {
-                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
@@ -1091,6 +1091,294 @@
                     "status": 0
                   }
                 ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[0]]": {
+    "recorded-date": "16-08-2024, 15:52:50",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "items": [
+                  {
+                    "item_key": 0
+                  },
+                  {
+                    "item_key": 1
+                  },
+                  {
+                    "item_key": 2
+                  },
+                  {
+                    "item_key": 3
+                  },
+                  {
+                    "item_key": 4
+                  },
+                  {
+                    "item_key": 5
+                  },
+                  {
+                    "item_key": 6
+                  },
+                  {
+                    "item_key": 7
+                  },
+                  {
+                    "item_key": 8
+                  },
+                  {
+                    "item_key": 9
+                  },
+                  {
+                    "item_key": 10
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "items": [
+                  {
+                    "item_key": 0
+                  },
+                  {
+                    "item_key": 1
+                  },
+                  {
+                    "item_key": 2
+                  },
+                  {
+                    "item_key": 3
+                  },
+                  {
+                    "item_key": 4
+                  },
+                  {
+                    "item_key": 5
+                  },
+                  {
+                    "item_key": 6
+                  },
+                  {
+                    "item_key": 7
+                  },
+                  {
+                    "item_key": 8
+                  },
+                  {
+                    "item_key": 9
+                  },
+                  {
+                    "item_key": 10
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": {
+                  "item_key": 0
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": {
+                  "item_key": 0
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[10]]": {
+    "recorded-date": "16-08-2024, 15:53:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "items": [
+                  {
+                    "item_key": 0
+                  },
+                  {
+                    "item_key": 1
+                  },
+                  {
+                    "item_key": 2
+                  },
+                  {
+                    "item_key": 3
+                  },
+                  {
+                    "item_key": 4
+                  },
+                  {
+                    "item_key": 5
+                  },
+                  {
+                    "item_key": 6
+                  },
+                  {
+                    "item_key": 7
+                  },
+                  {
+                    "item_key": 8
+                  },
+                  {
+                    "item_key": 9
+                  },
+                  {
+                    "item_key": 10
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "items": [
+                  {
+                    "item_key": 0
+                  },
+                  {
+                    "item_key": 1
+                  },
+                  {
+                    "item_key": 2
+                  },
+                  {
+                    "item_key": 3
+                  },
+                  {
+                    "item_key": 4
+                  },
+                  {
+                    "item_key": 5
+                  },
+                  {
+                    "item_key": 6
+                  },
+                  {
+                    "item_key": 7
+                  },
+                  {
+                    "item_key": 8
+                  },
+                  {
+                    "item_key": 9
+                  },
+                  {
+                    "item_key": 10
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": {
+                  "item_key": 10
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": {
+                  "item_key": 10
+                }
               },
               "outputDetails": {
                 "truncated": false

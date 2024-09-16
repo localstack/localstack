@@ -12,7 +12,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Account",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -24,7 +24,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Deployment",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -36,7 +36,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Method",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -48,7 +48,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Method",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -60,7 +60,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Method",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -72,7 +72,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Method",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -84,7 +84,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Method",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -96,7 +96,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Method",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -108,7 +108,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Resource",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -120,7 +120,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Resource",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -132,7 +132,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::RestApi",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -144,7 +144,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Stage",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -156,7 +156,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::DynamoDB::Table",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -168,7 +168,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Policy",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -180,7 +180,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Policy",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -192,7 +192,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Policy",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -204,7 +204,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Policy",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -216,7 +216,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Policy",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -228,7 +228,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -240,7 +240,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -252,7 +252,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -264,7 +264,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -276,7 +276,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -288,7 +288,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -300,7 +300,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -312,7 +312,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -324,7 +324,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -336,7 +336,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -348,7 +348,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -360,7 +360,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -372,7 +372,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -384,7 +384,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -396,7 +396,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -408,7 +408,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -420,7 +420,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -432,7 +432,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -444,7 +444,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -456,7 +456,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           },
@@ -468,7 +468,7 @@
             "PhysicalResourceId": "physical-resource-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
             "StackName": "NoteTakingStack",
             "Timestamp": "timestamp"
           }
@@ -500,7 +500,7 @@
             "ReadCapacityUnits": 5,
             "WriteCapacityUnits": 5
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
@@ -531,7 +531,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -543,10 +543,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:3>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:3>",
           "Runtime": "nodejs18.x",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:4>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -561,7 +561,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "<logical-resource-id:25>",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
           "aws:cloudformation:stack-name": "NoteTakingStack"
         },
         "ResponseMetadata": {
@@ -589,7 +589,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:2>",
           "FunctionName": "<function-name:2>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -601,10 +601,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:5>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
           "Runtime": "nodejs18.x",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:4>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -619,7 +619,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "<logical-resource-id:26>",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
           "aws:cloudformation:stack-name": "NoteTakingStack"
         },
         "ResponseMetadata": {
@@ -647,7 +647,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:3>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:3>",
           "FunctionName": "<function-name:3>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -659,10 +659,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:6>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:6>",
           "Runtime": "nodejs18.x",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:4>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -677,7 +677,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "<logical-resource-id:27>",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
           "aws:cloudformation:stack-name": "NoteTakingStack"
         },
         "ResponseMetadata": {
@@ -705,7 +705,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:4>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:4>",
           "FunctionName": "<function-name:4>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -717,10 +717,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:5>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:7>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:7>",
           "Runtime": "nodejs18.x",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:4>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -735,7 +735,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "<logical-resource-id:28>",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
           "aws:cloudformation:stack-name": "NoteTakingStack"
         },
         "ResponseMetadata": {
@@ -763,7 +763,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:5>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:5>",
           "FunctionName": "<function-name:5>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -775,10 +775,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:6>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:8>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:8>",
           "Runtime": "nodejs18.x",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:4>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -793,7 +793,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "<logical-resource-id:29>",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
           "aws:cloudformation:stack-name": "NoteTakingStack"
         },
         "ResponseMetadata": {
@@ -815,7 +815,7 @@
         "rootResourceId": "root-resource-id",
         "tags": {
           "aws:cloudformation:logical-id": "<logical-resource-id:11>",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
           "aws:cloudformation:stack-name": "NoteTakingStack"
         },
         "ResponseMetadata": {

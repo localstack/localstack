@@ -4,9 +4,10 @@ import os
 
 import pytest
 
-from localstack.services.events.provider import TEST_EVENTS_CACHE
+from localstack.services.events.v1.provider import TEST_EVENTS_CACHE
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import is_not_legacy_provider
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
@@ -16,7 +17,6 @@ from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from localstack.utils.threads import parallelize
 from tests.aws.services.lambda_.functions import lambda_environment
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
-from tests.aws.services.stepfunctions.utils import is_not_legacy_provider
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"

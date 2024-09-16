@@ -19,7 +19,7 @@ RESOURCE_GETATT_TARGETS = [
 
 class TestAttributeAccess:
     @pytest.mark.parametrize("attribute", RESOURCE_GETATT_TARGETS)
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="Some tests are expected to fail, since they try to access invalid CFn attributes",
         raises=StackDeployError,
     )

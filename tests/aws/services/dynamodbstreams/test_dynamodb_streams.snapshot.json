@@ -33,5 +33,53 @@
         }
       ]
     }
+  },
+  "tests/aws/services/dynamodbstreams/test_dynamodb_streams.py::TestDynamoDBStreams::test_table_v2_stream": {
+    "recorded-date": "12-06-2024, 21:57:48",
+    "recorded-content": {
+      "global-table-v2": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "datetime"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "<latest-stream-arn:1>",
+          "LatestStreamLabel": "<latest-stream-label:1>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_AND_OLD_IMAGES"
+          },
+          "TableArn": "<table-arn:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "<table-status:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

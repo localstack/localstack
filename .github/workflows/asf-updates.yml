@@ -25,6 +25,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install release helper dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
       - name: Cache LocalStack community dependencies (venv)
         uses: actions/cache@v4
         with:
@@ -48,7 +51,7 @@ jobs:
         run: |
           source .venv/bin/activate
           # explicitly perform an unsafe fix to remove unused imports in the generated ASF APIs
-          ruff check --select F401 --unsafe-fixes --fix . --config "lint.ignore-init-module-imports = false"
+          ruff check --select F401 --unsafe-fixes --fix . --config "lint.preview = true"
           make format-modified
 
       - name: Check for changes
@@ -58,12 +61,12 @@ jobs:
           # Check against the PR branch if it exists, otherwise against the master
           # Store the result in target/diff-check.log and store the diff count in the GitHub Action output "diff-count"
           mkdir -p target
-          (git diff --name-only origin/asf-auto-updates localstack/aws/api/ 2>/dev/null || git diff --name-only origin/master localstack/aws/api/ 2>/dev/null) | tee target/diff-check.log
+          (git diff --name-only origin/asf-auto-updates localstack-core/localstack/aws/api/ 2>/dev/null || git diff --name-only origin/master localstack-core/localstack/aws/api/ 2>/dev/null) | tee target/diff-check.log
           echo "diff-count=$(cat target/diff-check.log | wc -l)" >> $GITHUB_OUTPUT
 
           # Store a (multiline-sanitized) list of changed services (compared to the master) in the GitHub Action output "changed-services"
           echo "changed-services<<EOF" >> $GITHUB_OUTPUT
-          echo "$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
+          echo "$(git diff --name-only origin/master localstack-core/localstack/aws/api/ | sed 's#localstack-core/localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Update botocore and transitive pins
@@ -76,20 +79,14 @@ jobs:
           echo "Pinning botocore, boto3, and boto3-stubs to version $BOTOCORE_VERSION"
           bin/release-helper.sh set-dep-ver botocore "==$BOTOCORE_VERSION"
           bin/release-helper.sh set-dep-ver boto3 "==$BOTOCORE_VERSION"
-          bin/release-helper.sh set-dep-ver boto3-stubs "==$BOTOCORE_VERSION"
-
-          # aws-cli is two minor versions behind botocore
-          AWSCLI_VERSION=$(python -c 'import botocore; from packaging.version import Version; version = Version(botocore.__version__); print(f"{version.major}.{version.minor - 2}.{version.micro}")')
-          echo "Pinning aws-cli to version $AWSCLI_VERSION"
-          bin/release-helper.sh set-dep-ver awscli "==$AWSCLI_VERSION"
 
           # upgrade the requirements files only for the botocore package
           pip install pip-tools
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
-          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra runtime -o requirements-runtime.txt pyproject.toml
-          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra test -o requirements-test.txt pyproject.toml
-          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra dev -o requirements-dev.txt pyproject.toml
-          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --upgrade-package "boto3-stubs==$BOTOCORE_VERSION" --extra typehint -o requirements-typehint.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --extra runtime -o requirements-runtime.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --extra test -o requirements-test.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --extra dev -o requirements-dev.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli" --extra typehint -o requirements-typehint.txt pyproject.toml
 
       - name: Read PR markdown template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
@@ -108,7 +105,7 @@ jobs:
           replace: ${{ steps.check-for-changes.outputs.changed-services }}
 
       - name: Create PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         with:
           title: "Update ASF APIs"

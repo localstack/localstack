@@ -36,7 +36,7 @@ class SignalSuccess(Thread):
                 LOG.debug("fetching parameter")
                 res = self.client.get_parameter(Name=PARAMETER_NAME)
                 url = res["Parameter"]["Value"]
-                LOG.info(f"signalling url {url}")
+                LOG.info("signalling url %s", url)
 
                 payload = {
                     "Status": "SUCCESS",
@@ -45,7 +45,7 @@ class SignalSuccess(Thread):
                     "Data": "Application has completed configuration.",
                 }
                 r = self.session.put(url, json=payload)
-                LOG.debug(f"status from signalling: {r.status_code}")
+                LOG.debug("status from signalling: %s", r.status_code)
                 r.raise_for_status()
                 LOG.debug("status signalled")
                 break
@@ -111,7 +111,7 @@ def test_create_macro(deploy_cfn_template, create_lambda_function, snapshot, aws
     create_lambda_function(
         func_name=function_name,
         handler_file=handler_code,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
 
     template_path = os.path.join(os.path.dirname(__file__), "../../../templates/macro_resource.yml")

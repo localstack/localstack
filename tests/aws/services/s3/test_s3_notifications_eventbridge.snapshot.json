@@ -23,7 +23,7 @@
         "id": "<uuid:1>",
         "region": "<region>",
         "resources": [
-          "arn:aws:s3:::<bucket-name:1>"
+          "arn:<partition>:s3:::<bucket-name:1>"
         ],
         "source": "aws.s3",
         "time": "date",
@@ -51,7 +51,7 @@
         "id": "<uuid:2>",
         "region": "<region>",
         "resources": [
-          "arn:aws:s3:::<bucket-name:1>"
+          "arn:<partition>:s3:::<bucket-name:1>"
         ],
         "source": "aws.s3",
         "time": "date",
@@ -83,7 +83,7 @@
             "id": "<uuid:1>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -108,7 +108,7 @@
             "id": "<uuid:2>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -133,7 +133,7 @@
             "id": "<uuid:3>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -161,7 +161,7 @@
             "id": "<uuid:4>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -197,7 +197,7 @@
             "id": "<uuid:1>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -224,7 +224,7 @@
             "id": "<uuid:2>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -261,7 +261,7 @@
             "id": "<uuid:1>",
             "region": "<region:1>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -289,7 +289,7 @@
             "id": "<uuid:2>",
             "region": "<region:1>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -297,6 +297,176 @@
           }
         ]
       }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put_versioned": {
+    "recorded-date": "03-09-2024, 14:18:13",
+    "recorded-content": {
+      "obj-ver1": {
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "obj-ver2": {
+        "ETag": "\"6869c34ca384e0ed836d49214f881e87\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-version": {
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "message-versioning-active": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "Object Created",
+          "source": "aws.s3",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:s3:::<bucket-name:1>"
+          ],
+          "detail": {
+            "version": "0",
+            "bucket": {
+              "name": "<bucket-name:1>"
+            },
+            "object": {
+              "key": "<key-name:1>",
+              "size": 13,
+              "etag": "2fb1d4988881168bbcd6432d7593be5a",
+              "sequencer": "object-sequencer"
+            },
+            "request-id": "request-id",
+            "requester": "<requester>",
+            "source-ip-address": "<ip-address:1>",
+            "reason": "PutObject"
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:2>",
+          "detail-type": "Object Deleted",
+          "source": "aws.s3",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:s3:::<bucket-name:1>"
+          ],
+          "detail": {
+            "version": "0",
+            "bucket": {
+              "name": "<bucket-name:1>"
+            },
+            "object": {
+              "key": "<key-name:1>",
+              "version-id": "<version-id:3>",
+              "sequencer": "object-sequencer"
+            },
+            "request-id": "request-id",
+            "requester": "<requester>",
+            "source-ip-address": "<ip-address:1>",
+            "reason": "DeleteObject",
+            "deletion-type": "Permanently Deleted"
+          }
+        }
+      ],
+      "add-null-version": {
+        "ETag": "\"2fb1d4988881168bbcd6432d7593be5a\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "message-versioning-suspended": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "Object Created",
+          "source": "aws.s3",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:s3:::<bucket-name:1>"
+          ],
+          "detail": {
+            "version": "0",
+            "bucket": {
+              "name": "<bucket-name:1>"
+            },
+            "object": {
+              "key": "<key-name:1>",
+              "size": 13,
+              "etag": "2fb1d4988881168bbcd6432d7593be5a",
+              "sequencer": "object-sequencer"
+            },
+            "request-id": "request-id",
+            "requester": "<requester>",
+            "source-ip-address": "<ip-address:1>",
+            "reason": "PutObject"
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:2>",
+          "detail-type": "Object Deleted",
+          "source": "aws.s3",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:s3:::<bucket-name:1>"
+          ],
+          "detail": {
+            "version": "0",
+            "bucket": {
+              "name": "<bucket-name:1>"
+            },
+            "object": {
+              "key": "<key-name:1>",
+              "version-id": "<version-id:3>",
+              "sequencer": "object-sequencer"
+            },
+            "request-id": "request-id",
+            "requester": "<requester>",
+            "source-ip-address": "<ip-address:1>",
+            "reason": "DeleteObject",
+            "deletion-type": "Permanently Deleted"
+          }
+        }
+      ]
     }
   }
 }

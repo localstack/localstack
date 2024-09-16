@@ -6,7 +6,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_events_sqs_sns_lambda(deploy_cfn_template, aws_client):
     function_name = f"function-{short_uid()}"
     queue_name = f"queue-{short_uid()}"
@@ -52,6 +52,7 @@ def test_events_sqs_sns_lambda(deploy_cfn_template, aws_client):
             {
                 "DetailType": "test-detail-type",
                 "Detail": '{"app": "localstack"}',
+                "Source": "test-source",
                 "EventBusName": bus_name,
             },
         ]

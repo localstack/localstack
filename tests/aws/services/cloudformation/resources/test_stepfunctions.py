@@ -6,8 +6,9 @@ import pytest
 
 from localstack import config
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import await_execution_terminated
+from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
-from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 
 @markers.aws.validated
@@ -255,19 +256,24 @@ def test_retry_and_catch(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-@pytest.mark.skip(reason="Add support for StepFunction's Activities")
 def test_cfn_statemachine_with_dependencies(deploy_cfn_template, aws_client):
+    sm_name = f"sm_{short_uid()}"
+    activity_name = f"act_{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../templates/statemachine_test.json"
+            os.path.dirname(__file__), "../../../templates/statemachine_machine_with_activity.yml"
         ),
         max_wait=150,
+        parameters={"StateMachineName": sm_name, "ActivityName": activity_name},
     )
 
     rs = aws_client.stepfunctions.list_state_machines()
-    sm_name = "SFSM22S5Y"
     statemachines = [sm for sm in rs["stateMachines"] if sm_name in sm["name"]]
     assert len(statemachines) == 1
+
+    rs = aws_client.stepfunctions.list_activities()
+    activities = [act for act in rs["activities"] if activity_name in act["name"]]
+    assert len(activities) == 1
 
     stack.destroy()
 

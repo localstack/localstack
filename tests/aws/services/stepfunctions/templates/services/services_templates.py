@@ -32,6 +32,12 @@ class ServicesTemplates(TemplateLoader):
     AWS_SDK_SFN_START_EXECUTION_IMPLICIT_JSON_SERIALISATION: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/aws_sdk_sfn_start_execution_implicit_json_serialisation.json5"
     )
+    AWS_SDK_S3_GET_OBJECT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/aws_sdk_s3_get_object.json5"
+    )
+    AWS_SDK_S3_PUT_OBJECT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/aws_sdk_s3_put_object.json5"
+    )
     API_GATEWAY_INVOKE_BASE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/api_gateway_invoke_base.json5"
     )
@@ -45,6 +51,12 @@ class ServicesTemplates(TemplateLoader):
         _THIS_FOLDER, "statemachines/events_put_events.json5"
     )
     SQS_SEND_MESSAGE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sqs_send_msg.json5")
+    SQS_SEND_MESSAGE_AND_WAIT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sqs_send_msg_and_wait.json5"
+    )
+    SQS_SEND_MESSAGE_ATTRIBUTES: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sqs_send_msg_attributes.json5"
+    )
     SNS_PUBLISH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sns_publish.json5")
     SNS_FIFO_PUBLISH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sns_fifo_publish.json5"

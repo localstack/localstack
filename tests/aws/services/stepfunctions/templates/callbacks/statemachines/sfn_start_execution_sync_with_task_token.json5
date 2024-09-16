@@ -1,0 +1,19 @@
+{
+  "Comment": "SFN_START_EXECUTION_SYNC_WITH_TASK_TOKEN",
+  "StartAt": "StartExecution",
+  "States": {
+    "StartExecution": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::states:startExecution.sync",
+      "Parameters": {
+        "StateMachineArn.$": "$.StateMachineArn",
+        "Name.$": "$.Name",
+        "Input": {
+          "QueueUrl.$": "$.QueueUrl",
+          "TaskToken.$": "$$.Task.Token",
+        },
+      },
+      "End": true,
+    }
+  }
+}

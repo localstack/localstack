@@ -4,15 +4,15 @@ on:
   push:
     paths:
       - .github/workflows/tests-s3-image.yml
-      - localstack/aws/*.py
-      - localstack/aws/handlers/*¨
-      - localstack/aws/protocol/**
-      - localstack/aws/serving/**
-      - localstack/aws/api/s3/**
-      - localstack/http/**
-      - localstack/runtime/**
-      - localstack/services/s3/**
-      - localstack/*.py
+      - localstack-core/localstack/aws/*.py
+      - localstack-core/localstack/aws/handlers/*¨
+      - localstack-core/localstack/aws/protocol/**
+      - localstack-core/localstack/aws/serving/**
+      - localstack-core/localstack/aws/api/s3/**
+      - localstack-core/localstack/http/**
+      - localstack-core/localstack/runtime/**
+      - localstack-core/localstack/services/s3/**
+      - localstack-core/localstack/*.py
       - tests/aws/services/s3/**
       - Dockerfile.s3
       - requirements-*.txt
@@ -23,15 +23,15 @@ on:
   pull_request:
     paths:
       - .github/workflows/tests-s3-image.yml
-      - localstack/aws/*.py
-      - localstack/aws/handlers/*¨
-      - localstack/aws/protocol/**
-      - localstack/aws/serving/**
-      - localstack/aws/api/s3/**
-      - localstack/http/**
-      - localstack/runtime/**
-      - localstack/services/s3/**
-      - localstack/*.py
+      - localstack-core/localstack/aws/*.py
+      - localstack-core/localstack/aws/handlers/*¨
+      - localstack-core/localstack/aws/protocol/**
+      - localstack-core/localstack/aws/serving/**
+      - localstack-core/localstack/aws/api/s3/**
+      - localstack-core/localstack/http/**
+      - localstack-core/localstack/runtime/**
+      - localstack-core/localstack/services/s3/**
+      - localstack-core/localstack/*.py
       - tests/aws/services/s3/**
       - Dockerfile.s3
       - requirements-*.txt
@@ -44,6 +44,16 @@ on:
         required: false
         type: boolean
         default: false
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
 
 # Only one pull-request triggered run should be executed at a time
 # (head_ref is only set for PR events, otherwise fallback to run_id which differs for every run).
@@ -52,6 +62,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Configure PyTest log level
+  PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
   TINYBIRD_DATASOURCE: community_tests_s3_image
@@ -74,7 +86,9 @@ jobs:
             runner: buildjet-2vcpu-ubuntu-2204-arm
     name: "Build and Test S3 image"
     env:
-      IMAGE_NAME: "localstack-s3-${{ matrix.arch }}"
+      PLATFORM: ${{ matrix.arch }}
+      IMAGE_NAME: "localstack/localstack"
+      DEFAULT_TAG: "s3-latest"
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
@@ -82,6 +96,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -96,11 +113,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install docker build dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
       - name: Build S3 Docker Image
         env:
-          PLATFORM: ${{ matrix.arch }}
           DOCKERFILE: "./Dockerfile.s3"
-        run: make docker-build
+        run: ./bin/docker-helper.sh build
 
       - name: Run S3 Image tests
         timeout-minutes: 10
@@ -108,7 +132,6 @@ jobs:
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy --junitxml=target/pytest-junit-s3-image-${{ matrix.arch }}.xml"
           TEST_PATH: "tests/aws/services/s3"
           DEBUG: 1
-
         run: |
           mkdir target
           make docker-run-tests-s3-only
@@ -122,13 +145,14 @@ jobs:
           retention-days: 30
 
       - name: Save the S3 image
-        run: docker save ${{ env.IMAGE_NAME }} | gzip > ${{ env.IMAGE_NAME }}.tar.gz
+        id: save-image
+        run: ./bin/docker-helper.sh save
 
       - name: Store Docker image as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.IMAGE_NAME }}
-          path: ${{ env.IMAGE_NAME }}.tar.gz
+          name: localstack-s3-image-${{ matrix.arch }}
+          path: ${{ steps.save-image.outputs.IMAGE_FILENAME }}
           retention-days: 1
 
   publish-test-results:
@@ -172,8 +196,8 @@ jobs:
       - build-test-s3
     if: inputs.publishDockerImage
     env:
-      LOCAL_IMAGE_NAME: "localstack-s3"
-      DOCKERHUB_IMAGE_NAME: "localstack/localstack:s3-latest"
+      IMAGE_NAME: "localstack/localstack"
+      DEFAULT_TAG: "s3-latest"
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -181,38 +205,56 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install docker build dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
       - name: Download AMD64 image
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.LOCAL_IMAGE_NAME }}-amd64
+          name: localstack-s3-image-amd64
 
       - name: Download ARM64 image
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.LOCAL_IMAGE_NAME }}-arm64
+          name: localstack-s3-image-arm64
 
       - name: Load AMD64 image
-        run: docker load --input ${{ env.LOCAL_IMAGE_NAME }}-amd64.tar.gz
+        env:
+          PLATFORM: amd64
+        run: ./bin/docker-helper.sh load
 
       - name: Push AMD64 image
-        run: |
-          docker tag ${{ env.LOCAL_IMAGE_NAME }}-amd64 ${{ env.DOCKERHUB_IMAGE_NAME }}-amd64
-          docker push ${{ env.DOCKERHUB_IMAGE_NAME }}-amd64
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+          PLATFORM: amd64
+        run: ./bin/docker-helper.sh push
 
       - name: Load ARM64 image
-        run: docker load --input ${{ env.LOCAL_IMAGE_NAME }}-arm64.tar.gz
+        env:
+          PLATFORM: arm64
+        run: ./bin/docker-helper.sh load
 
       - name: Push ARM64 image
-        run: |
-          docker tag ${{ env.LOCAL_IMAGE_NAME }}-arm64 ${{ env.DOCKERHUB_IMAGE_NAME }}-arm64
-          docker push ${{ env.DOCKERHUB_IMAGE_NAME }}-arm64
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+          PLATFORM: arm64
+        run: ./bin/docker-helper.sh push
 
       - name: Create and push manifest
-        run: |
-          docker manifest create ${{ env.DOCKERHUB_IMAGE_NAME }} \
-            --amend ${{ env.DOCKERHUB_IMAGE_NAME }}-arm64 \
-            --amend ${{ env.DOCKERHUB_IMAGE_NAME }}-amd64
-          docker manifest push ${{ env.DOCKERHUB_IMAGE_NAME }}
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: ./bin/docker-helper.sh push-manifests
 
   cleanup:
     name: "Clean up"
@@ -222,7 +264,7 @@ jobs:
     steps:
       - uses: geekyeggo/delete-artifact@v5
         with:
-          name: localstack-s3-*
+          name: localstack-s3-image-*
           failOnError: false
 
   push-to-tinybird:

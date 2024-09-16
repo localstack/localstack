@@ -4,8 +4,8 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -34,8 +34,8 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -62,7 +62,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -94,7 +94,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -112,8 +112,8 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -141,7 +141,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -173,7 +173,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -191,7 +191,7 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -199,7 +199,7 @@
       },
       "update_resp_1": {
         "revisionId": "<uuid:1>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "updateDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -210,7 +210,7 @@
         "stateMachineVersions": [
           {
             "creationDate": "datetime",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
           }
         ],
         "ResponseMetadata": {
@@ -220,7 +220,7 @@
       },
       "update_resp_2": {
         "revisionId": "<uuid:2>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2",
         "updateDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -231,11 +231,11 @@
         "stateMachineVersions": [
           {
             "creationDate": "datetime",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2"
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2"
           },
           {
             "creationDate": "datetime",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
           }
         ],
         "ResponseMetadata": {
@@ -246,9 +246,9 @@
       "invalid_arn_1": {
         "Error": {
           "Code": "StateMachineDoesNotExist",
-          "Message": "State Machine Does Not Exist: 'arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2'"
+          "Message": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2'"
         },
-        "message": "State Machine Does Not Exist: 'arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2'",
+        "message": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -257,9 +257,9 @@
       "invalid_arn_2": {
         "Error": {
           "Code": "StateMachineDoesNotExist",
-          "Message": "State Machine Does Not Exist: 'arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2'"
+          "Message": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2'"
         },
-        "message": "State Machine Does Not Exist: 'arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2'",
+        "message": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -272,7 +272,7 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -288,7 +288,7 @@
       },
       "publish_v1": {
         "creationDate": "datetime",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -298,7 +298,7 @@
         "stateMachineVersions": [
           {
             "creationDate": "datetime",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
           }
         ],
         "ResponseMetadata": {
@@ -328,7 +328,7 @@
         "name": "<ArnPart_0idx>",
         "revisionId": "<uuid:1>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -349,7 +349,7 @@
       },
       "publish_v2": {
         "creationDate": "datetime",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -359,11 +359,11 @@
         "stateMachineVersions": [
           {
             "creationDate": "datetime",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2"
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2"
           },
           {
             "creationDate": "datetime",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
           }
         ],
         "ResponseMetadata": {
@@ -394,7 +394,7 @@
         "name": "<ArnPart_0idx>",
         "revisionId": "<uuid:2>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -421,15 +421,15 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "execution_resp": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -439,10 +439,10 @@
       "exec_list_resp": {
         "executions": [
           {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
             "name": "<ExecArnPart_0idx>",
             "startDate": "datetime",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
             "status": "SUCCEEDED",
             "stopDate": "datetime"
           }
@@ -453,7 +453,7 @@
         }
       },
       "execution_version_resp": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -463,11 +463,11 @@
       "exec_version_list_resp": {
         "executions": [
           {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
             "name": "<ExecArnPart_1idx>",
             "startDate": "datetime",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
             "status": "SUCCEEDED",
             "stopDate": "datetime"
           }
@@ -484,8 +484,8 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -512,7 +512,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -527,7 +527,7 @@
         "stateMachineVersions": [
           {
             "creationDate": "datetime",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
           }
         ],
         "ResponseMetadata": {
@@ -561,8 +561,8 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -570,7 +570,7 @@
       },
       "publish_res_v2_2": {
         "creationDate": "datetime",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:3",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:3",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -583,7 +583,7 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -591,7 +591,7 @@
       },
       "publish_v1_1": {
         "creationDate": "datetime",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -599,7 +599,7 @@
       },
       "publish_v1_2": {
         "creationDate": "datetime",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -609,7 +609,7 @@
         "stateMachineVersions": [
           {
             "creationDate": "datetime",
-            "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
           }
         ],
         "ResponseMetadata": {
@@ -624,14 +624,14 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "update_resp_1": {
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "updateDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -639,7 +639,7 @@
         }
       },
       "update_resp_2": {
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "updateDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -653,15 +653,15 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "update_resp_1": {
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "updateDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -669,7 +669,7 @@
         }
       },
       "update_resp_2": {
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "updateDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -683,15 +683,15 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "execution_resp": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -718,7 +718,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "tracingConfiguration": {
           "enabled": false
         },
@@ -735,7 +735,7 @@
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -743,7 +743,7 @@
       },
       "update_resp": {
         "revisionId": "<uuid:1>",
-        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
         "updateDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -751,7 +751,7 @@
         }
       },
       "execution_resp": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -779,7 +779,7 @@
         "name": "<ArnPart_0idx>",
         "revisionId": "<uuid:1>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "tracingConfiguration": {
           "enabled": false
         },
@@ -806,6 +806,128 @@
       "exception": {
         "exception_typename": "InvalidArn",
         "exception_value": "An error occurred (InvalidArn) when calling the PublishStateMachineVersion operation: Invalid Arn: 'Invalid ARN prefix: invalid_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_express_with_publish": {
+    "recorded-date": "05-04-2024, 19:53:29",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_list_state_machine_versions_pagination": {
+    "recorded-date": "01-07-2024, 12:20:00",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-state-machine-versions-page-1": {
+        "nextToken": "<next-token:1>",
+        "stateMachineVersions": [
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:13"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:12"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:11"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:10"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:9"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:8"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:7"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:6"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:5"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:4"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-state-machine-versions-page-2": {
+        "stateMachineVersions": [
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:3"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-state-machine-versions-invalid-param-too-large": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-state-machine-versions-param-short-nextToken": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter nextToken, value: 0, valid min length: 1"
+      },
+      "list-state-machine-versions-invalid-param-long-nextToken": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '<invalid_token_1025_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 1024"
+        },
+        "message": "1 validation error detected: Value '<invalid_token_1025_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 1024",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   }

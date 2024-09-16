@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_resource_groups.py::test_group_defaults": {
+    "last_validated_date": "2024-07-16T15:15:11+00:00"
+  }
+}

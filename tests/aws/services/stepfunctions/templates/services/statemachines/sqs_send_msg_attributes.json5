@@ -1,0 +1,25 @@
+{
+  "Comment": "SQS_SEND_MESSAGE_ATTRIBUTES",
+  "StartAt": "SendSQS",
+  "States": {
+    "SendSQS": {
+      "Type": "Task",
+     "Resource": "arn:aws:states:::sqs:sendMessage",
+     "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody.$": "$.Message",
+        "MessageAttributes": {
+          "my_attribute_no_1": {
+            "DataType": "String",
+            "StringValue.$": "$.MessageAttributeValue1"
+          },
+          "my_attribute_no_2": {
+            "DataType": "String",
+            "StringValue.$": "$.MessageAttributeValue2"
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

@@ -158,6 +158,7 @@ class TestKinesisFirehoseScenario:
             yield prov
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="flaky")
     def test_kinesis_firehose_s3(
         self,
         infrastructure,

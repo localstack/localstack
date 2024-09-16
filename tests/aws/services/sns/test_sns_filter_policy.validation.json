@@ -1,0 +1,62 @@
+{
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyAttributes::test_exists_filter_policy": {
+    "last_validated_date": "2024-05-14T16:49:36+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyAttributes::test_exists_filter_policy_attributes_array": {
+    "last_validated_date": "2024-05-14T16:49:44+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyAttributes::test_filter_policy": {
+    "last_validated_date": "2024-05-14T16:49:28+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_for_batch": {
+    "last_validated_date": "2024-05-14T16:50:24+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[False]": {
+    "last_validated_date": "2024-05-14T16:50:08+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[True]": {
+    "last_validated_date": "2024-05-14T16:49:56+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_array_attributes": {
+    "last_validated_date": "2024-05-14T16:50:54+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_array_of_object_attributes": {
+    "last_validated_date": "2024-05-14T16:50:58+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_dot_attribute": {
+    "last_validated_date": "2024-05-14T16:50:49+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_or_attribute": {
+    "last_validated_date": "2024-05-14T16:51:01+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_policy_complexity": {
+    "last_validated_date": "2024-05-14T16:51:07+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_policy_complexity_with_or": {
+    "last_validated_date": "2024-05-14T16:51:08+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy": {
+    "last_validated_date": "2024-05-14T16:51:02+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_exists_operator": {
+    "last_validated_date": "2024-05-14T16:51:06+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_nested_anything_but_operator": {
+    "last_validated_date": "2024-05-15T14:39:32+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_numeric_operator": {
+    "last_validated_date": "2024-05-14T16:51:06+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_string_operators": {
+    "last_validated_date": "2024-05-15T14:39:23+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_set_subscription_filter_policy_scope": {
+    "last_validated_date": "2024-05-14T16:49:11+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_sub_filter_policy_nested_property": {
+    "last_validated_date": "2024-05-14T16:49:13+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_sub_filter_policy_nested_property_constraints": {
+    "last_validated_date": "2024-05-14T16:49:15+00:00"
+  }
+}

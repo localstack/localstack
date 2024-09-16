@@ -57,10 +57,21 @@ body:
     description: |
       examples:
         - **OS**: Ubuntu 20.04
-        - **LocalStack**: latest
+        - **LocalStack**:
+          You can find this information in the logs when starting localstack
+
+          LocalStack version: 3.4.1.dev
+          LocalStack Docker image sha: sha256:f02ab8ef73f66b0ab26bb3d24a165e1066a714355f79a42bf8aa1a336d5722e7
+          LocalStack build date: 2024-05-14
+          LocalStack build git hash: ecd7dc879
+
     value: |
         - OS:
         - LocalStack:
+          LocalStack version:
+          LocalStack Docker image sha:
+          LocalStack build date:
+          LocalStack build git hash:
     render: markdown
   validations:
     required: false

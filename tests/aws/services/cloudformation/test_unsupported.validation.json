@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/test_unsupported.py::test_unsupported": {
+    "last_validated_date": "2024-07-04T14:33:07+00:00"
+  }
+}

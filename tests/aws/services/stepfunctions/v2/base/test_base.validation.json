@@ -5,8 +5,14 @@
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_event_bridge_events_base": {
     "last_validated_date": "2024-02-07T13:56:58+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[0]]": {
+    "last_validated_date": "2024-08-16T15:52:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[10]]": {
+    "last_validated_date": "2024-08-16T15:53:06+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_query_context_object_values": {
-    "last_validated_date": "2024-02-07T13:52:16+00:00"
+    "last_validated_date": "2024-07-15T13:00:19+00:00"
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail": {
     "last_validated_date": "2024-03-06T10:29:50+00:00"

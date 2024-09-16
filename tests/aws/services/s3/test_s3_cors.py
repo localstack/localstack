@@ -9,9 +9,9 @@ from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
-    TEST_AWS_ACCESS_KEY_ID,
 )
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid

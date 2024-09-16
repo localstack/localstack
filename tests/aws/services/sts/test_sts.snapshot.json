@@ -1,0 +1,73 @@
+{
+  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_get_federation_token": {
+    "recorded-date": "05-06-2024, 13:39:17",
+    "recorded-content": {
+      "get-federation-token": {
+        "Credentials": {
+          "AccessKeyId": "<access-key-id:1>",
+          "Expiration": "<datetime>",
+          "SecretAccessKey": "<secret-access-key:1>",
+          "SessionToken": "<session-token:1>"
+        },
+        "FederatedUser": {
+          "Arn": "arn:<partition>:sts::111111111111:federated-user/<resource:1>",
+          "FederatedUserId": "111111111111:<resource:1>"
+        },
+        "PackedPolicySize": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_assume_role": {
+    "recorded-date": "05-06-2024, 17:23:49",
+    "recorded-content": {
+      "role-session-name": {
+        "RoleSessionName": "<role-session-name:1>"
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<resource:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "111111111111"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "assume-role": {
+        "AssumedRoleUser": {
+          "Arn": "arn:<partition>:sts::111111111111:assumed-role/<resource:1>/<role-session-name:1>",
+          "AssumedRoleId": "<role-id:1>:<role-session-name:1>"
+        },
+        "Credentials": {
+          "AccessKeyId": "<access-key-id:1>",
+          "Expiration": "<datetime>",
+          "SecretAccessKey": "<secret-access-key:1>",
+          "SessionToken": "<session-token:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

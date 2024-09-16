@@ -1,6 +1,6 @@
 # LocalStack project configuration
 [build-system]
-requires = ['setuptools', 'wheel', 'plux>=1.7']
+requires = ['setuptools>=64', 'wheel', 'plux>=1.10', "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -18,14 +18,13 @@ dependencies = [
     "dill==0.3.6",
     "dnslib>=0.9.10",
     "dnspython>=1.16.0",
-    "plux>=1.7",
+    "plux>=1.10",
     "psutil>=5.4.8",
     "python-dotenv>=0.19.1",
     "pyyaml>=5.1",
     "rich>=12.3.0",
     "requests>=2.20.0",
     "semver>=2.10",
-    "stevedore>=3.4.0",
     "tailer>=0.4.1",
 ]
 dynamic = ["version"]
@@ -38,6 +37,12 @@ classifiers = [
     "Topic :: System :: Emulators",
 ]
 
+[tool.setuptools_scm]
+version_file = "localstack-core/localstack/version.py"
+# pypi does not support local versions:
+# https://setuptools-scm.readthedocs.io/en/latest/usage/#default-versioning-scheme
+local_scheme = "no-local-version"
+
 [project.urls]
 Homepage = "https://localstack.cloud"
 Documentation = "https://docs.localstack.cloud"
@@ -48,17 +53,17 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.34.93",
+    "boto3==1.35.14",
     # pinned / updated by ASF update action
-    "botocore==1.34.93",
+    "botocore==1.35.14",
     "awscrt>=0.13.14",
     "cbor2>=5.2.0",
     "dnspython>=1.16.0",
-    # TODO tag incompatibility introduced in 7.0.0 with https://github.com/docker/docker-py/pull/3191
-    "docker>=6.1.1,<7.0.0",
+    "docker>=6.1.1",
     "jsonpatch>=1.24",
     "hypercorn>=0.14.4",
     "localstack-twisted>=23.0",
+    "openapi-core>=0.19.2",
     "pyopenssl>=23.0.0",
     "readerwriterlock>=1.0.7",
     "requests-aws4auth>=1.0",
@@ -66,31 +71,29 @@ base-runtime = [
     "urllib3>=2.0.7",
     "Werkzeug>=3.0.0",
     "xmltodict>=0.13.0",
-    "rolo>=0.4",
-    # TODO: remove those 2 dependencies
-    "flask>=3.0.0",
-    "Quart>=0.19.2",
+    "rolo>=0.7",
 ]
 
 # required to actually run localstack on the host
 runtime = [
     "localstack-core[base-runtime]",
     # pinned / updated by ASF update action
-    "awscli==1.32.93",
+    "awscli>=1.32.117",
     "airspeed-ext>=0.6.3",
     "amazon_kclpy>=2.0.6,!=2.1.0,!=2.1.4",
     # antlr4-python3-runtime: exact pin because antlr4 runtime is tightly coupled to the generated parser code
-    "antlr4-python3-runtime==4.13.1",
+    "antlr4-python3-runtime==4.13.2",
     "apispec>=5.1.1",
     "aws-sam-translator>=1.15.1",
     "crontab>=0.22.6",
-    "cryptography>=41.0.5",
+    # TODO remove upper limit once https://github.com/getmoto/moto/pull/7876 is in our moto-ext version
+    "cryptography>=41.0.5,<43.0.0",
     # allow Python programs full access to Java class libraries. Used for opt-in event ruler.
     "JPype1>=1.5.0",
     "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
-    "moto-ext[all]==5.0.5.post1",
+    "moto-ext[all]==5.0.13.post3",
     "opensearch-py>=2.4.1",
     "pymongo>=4.2.0",
     "pyopenssl>=23.0.0",
@@ -121,6 +124,7 @@ dev = [
     "coveralls>=3.3.1",
     "Cython",
     "networkx>=2.8.4",
+    "openapi-spec-validator>=0.7.1",
     "pandoc",
     "pre-commit>=3.5.0",
     "pypandoc",
@@ -133,7 +137,7 @@ typehint = [
     # typehint is an optional extension of the dev dependencies
     "localstack-core[dev]",
     # pinned / updated by ASF update action
-    "boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.93",
+    "boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,pinpoint,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]",
 ]
 
 [tool.setuptools]
@@ -145,12 +149,13 @@ script-files = [
     "bin/localstack.bat",
     "bin/localstack-supervisor",
 ]
+package-dir = { "" = "localstack-core"}
 
 [tool.setuptools.dynamic]
 readme = { file = ["README.md"], content-type = "text/markdown"}
-version = { file = "VERSION" }
 
 [tool.setuptools.packages.find]
+where = ["localstack-core/"]
 include = ["localstack*"]
 exclude = ["tests*"]
 
@@ -158,19 +163,20 @@ exclude = ["tests*"]
 "*" = [
     "*.md",
     "Makefile",
-    "VERSION"
 ]
 "localstack" = [
     "aws/**/*.json",
     "services/**/*.html",
     "services/**/resource_providers/*.schema.json",
     "utils/kinesis/java/cloud/localstack/*.*",
+    "openapi.yaml"
 ]
 
 [tool.ruff]
 # Always generate Python 3.8-compatible code.
 target-version = "py38"
 line-length = 100
+src = ["localstack-core", "tests"]
 exclude = [
     ".venv*",
     "venv*",
@@ -178,9 +184,11 @@ exclude = [
     "build",
     "target",
     "*.egg-info",
+    "localstack-core/*.egg-info",
     ".filesystem",
+    "localstack-core/.filesystem",
     ".git",
-    "localstack/services/stepfunctions/asl/antlr/runtime"
+    "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime"
     ]
 
 [tool.ruff.lint]
@@ -202,19 +210,24 @@ ignore = [
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
 ]
-select = ["B", "C", "E", "F", "I", "W", "T", "B9"]
+select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G"]
 
 [tool.coverage.run]
 relative_files = true
 source = [
-    "localstack/"
+    "localstack",
 ]
 omit = [
-    "localstack/aws/api/*",
-    "localstack/extensions/api/*",
-    "localstack/services/stepfunctions/asl/antlr/runtime/*"
+    "*/aws/api/*",
+    "*/extensions/api/*",
+    "*/services/stepfunctions/asl/antlr/runtime/*"
 ]
 dynamic_context = "test_function"
+
+[tool.coverage.paths]
+source = [
+    "localstack-core"
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -225,7 +238,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-log_cli = true
+log_cli = false
 log_level = "DEBUG"
 log_cli_format = "%(asctime)s.%(msecs)03d %(levelname)5s --- [%(threadName)12s] %(name)-26s : %(message)s"
 log_cli_date_format = "%Y-%m-%dT%H:%M:%S"

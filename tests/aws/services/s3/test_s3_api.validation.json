@@ -9,7 +9,7 @@
     "last_validated_date": "2023-07-26T22:25:16+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_versioned_bucket_with_objects": {
-    "last_validated_date": "2023-08-01T14:54:38+00:00"
+    "last_validated_date": "2024-08-29T13:20:49+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms": {
     "last_validated_date": "2023-08-14T22:14:18+00:00"
@@ -39,7 +39,7 @@
     "last_validated_date": "2023-08-02T22:04:47+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
-    "last_validated_date": "2023-11-20T16:25:12+00:00"
+    "last_validated_date": "2024-07-11T13:53:37+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
     "last_validated_date": "2023-08-02T21:52:10+00:00"
@@ -64,6 +64,9 @@
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_bucket_versioning_crud": {
     "last_validated_date": "2024-01-15T03:12:29+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_object_version_id_format": {
+    "last_validated_date": "2024-09-03T13:17:03+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_no_copy_source_range": {
     "last_validated_date": "2023-11-14T19:50:28+00:00"
@@ -115,6 +118,21 @@
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_on_existing_bucket": {
     "last_validated_date": "2024-01-15T03:13:25+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_delete": {
+    "last_validated_date": "2024-08-21T22:26:26+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_put": {
+    "last_validated_date": "2024-08-21T22:26:28+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match": {
+    "last_validated_date": "2024-08-21T22:26:21+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_validation": {
+    "last_validated_date": "2024-08-21T22:26:23+00:00"
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_versioned_bucket": {
+    "last_validated_date": "2024-08-21T22:26:31+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3PublicAccessBlock::test_crud_public_access_block": {
     "last_validated_date": "2023-08-10T01:29:18+00:00"

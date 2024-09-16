@@ -1,0 +1,433 @@
+{
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus]": {
+    "recorded-date": "15-05-2024, 14:57:52",
+    "recorded-content": {
+      "tag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_untagged_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule]": {
+    "recorded-date": "15-05-2024, 14:57:54",
+    "recorded-content": {
+      "tag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_untagged_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_list_untag_not_existing_resource[not_existing_rule]": {
+    "recorded-date": "15-05-2024, 14:57:57",
+    "recorded-content": {
+      "tag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the TagResource operation: Rule <not-existing-resource-name> does not exist on EventBus default.') tblen=3>",
+      "list_tags_for_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Rule <not-existing-resource-name> does not exist on EventBus default.') tblen=3>",
+      "untag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the UntagResource operation: Rule <not-existing-resource-name> does not exist on EventBus default.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_list_untag_not_existing_resource[not_existing_event_bus]": {
+    "recorded-date": "15-05-2024, 14:58:00",
+    "recorded-content": {
+      "tag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the TagResource operation: Event bus <not-existing-resource-name> does not exist.') tblen=3>",
+      "list_tags_for_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Event bus <not-existing-resource-name> does not exist.') tblen=3>",
+      "untag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the UntagResource operation: Event bus <not-existing-resource-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_put_rule_with_tags": {
+    "recorded-date": "15-05-2024, 14:58:01",
+    "recorded-content": {
+      "put_rule_with_tags": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule_name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_rule": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_list_tags_for_deleted_rule": {
+    "recorded-date": "15-05-2024, 14:58:02",
+    "recorded-content": {
+      "list_tags_for_deleted_rule_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Rule <rule_name> does not exist on EventBus <bus_name>.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_create_event_bus_with_tags": {
+    "recorded-date": "15-05-2024, 14:58:04",
+    "recorded-content": {
+      "create_event_bus_with_tags": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus_name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_event_bus": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_list_tags_for_deleted_event_bus": {
+    "recorded-date": "15-05-2024, 14:58:05",
+    "recorded-content": {
+      "list_tags_for_deleted_rule_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Event bus <bus_name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus-event_bus_default]": {
+    "recorded-date": "16-05-2024, 11:45:30",
+    "recorded-content": {
+      "tag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_untagged_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_not_existing_tag": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus-event_bus_custom]": {
+    "recorded-date": "16-05-2024, 11:45:31",
+    "recorded-content": {
+      "tag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_untagged_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_not_existing_tag": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule-event_bus_default]": {
+    "recorded-date": "16-05-2024, 11:45:32",
+    "recorded-content": {
+      "tag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_untagged_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_not_existing_tag": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule-event_bus_custom]": {
+    "recorded-date": "16-05-2024, 11:45:34",
+    "recorded-content": {
+      "tag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_untagged_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_not_existing_tag": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[event_bus-event_bus_default]": {
+    "recorded-date": "16-05-2024, 12:13:16",
+    "recorded-content": {
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[event_bus-event_bus_custom]": {
+    "recorded-date": "16-05-2024, 12:13:17",
+    "recorded-content": {
+      "list_tags_for_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[rule-event_bus_default]": {
+    "recorded-date": "16-05-2024, 12:13:18",
+    "recorded-content": {
+      "list_tags_for_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[rule-event_bus_custom]": {
+    "recorded-date": "16-05-2024, 12:13:20",
+    "recorded-content": {
+      "list_tags_for_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

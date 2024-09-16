@@ -1,8 +1,14 @@
 import os
 
+import pytest
+
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 
 
+@pytest.mark.skipif(
+    not in_default_partition(), reason="Test not applicable in non-default partitions"
+)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

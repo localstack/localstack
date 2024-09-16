@@ -105,7 +105,7 @@
     "last_validated_date": "2024-04-11T15:52:32+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
-    "last_validated_date": "2024-04-11T15:52:31+00:00"
+    "last_validated_date": "2024-06-14T13:35:20+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
     "last_validated_date": "2024-04-11T15:52:33+00:00"

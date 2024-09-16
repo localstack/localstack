@@ -4,7 +4,7 @@ import requests
 from localstack import config
 from localstack.aws.handlers import cors as cors_handler
 from localstack.aws.handlers.cors import _get_allowed_cors_origins
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid, to_str
 
@@ -178,7 +178,11 @@ class TestCSRF:
                 "Origin": "https://app.localstack.cloud",
             },
         )
-        assert response.status_code == 404
+        if config.APIGW_NEXT_GEN_PROVIDER:
+            assert response.status_code == 403
+        else:
+            assert response.status_code == 404
+
         assert not any(response.headers.get(cors_header) for cors_header in cors_headers)
 
         rest_api_url_host = f"{config.internal_service_url()}/stage"
@@ -192,7 +196,10 @@ class TestCSRF:
             },
         )
 
-        assert response.status_code == 404
+        if config.APIGW_NEXT_GEN_PROVIDER:
+            assert response.status_code == 403
+        else:
+            assert response.status_code == 404
         assert not any(response.headers.get(cors_header) for cors_header in cors_headers)
 
         # now we give it a try with a route from the provider defined in the specs: GetRestApi, and an authorized origin

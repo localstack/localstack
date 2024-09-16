@@ -1,20 +1,22 @@
 import json
 
 import pytest
-from localstack_snapshot.snapshots.transformer import JsonpathTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    create,
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
-from tests.aws.services.stepfunctions.utils import create, create_and_record_execution
 
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
@@ -241,6 +243,79 @@ class TestTaskServiceAwsSdk:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "file_body",
+        ["", "text data", b"", b"binary data", bytearray(b"byte array data")],
+        ids=["empty_str", "str", "empty_binary", "binary", "bytearray"],
+    )
+    def test_s3_get_object(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        file_body,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        file_key = "file_key"
+        aws_client.s3.put_object(Bucket=bucket_name, Key=file_key, Body=file_body)
+
+        template = ST.load_sfn_template(ST.AWS_SDK_S3_GET_OBJECT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": file_key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # The serialisation of json values cannot currently lead to an output that can match the ETag obtainable
+            # from through AWS SFN uploading to s3. This is true regardless of sorting or separator settings. Further
+            # investigation into AWS's behaviour is needed.
+            "$..ETag"
+        ]
+    )
+    @pytest.mark.parametrize(
+        "body",
+        ["text data", {"Dict": "Value"}, ["List", "Data"], False, 0],
+        ids=["str", "dict", "list", "bool", "num"],
+    )
+    def test_s3_put_object(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        body,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        template = ST.load_sfn_template(ST.AWS_SDK_S3_PUT_OBJECT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": "file-key", "Body": body})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

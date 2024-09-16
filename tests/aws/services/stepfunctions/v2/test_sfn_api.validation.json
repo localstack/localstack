@@ -45,7 +45,10 @@
     "last_validated_date": "2023-06-22T11:47:36+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution": {
-    "last_validated_date": "2024-03-08T11:52:48+00:00"
+    "last_validated_date": "2024-08-21T09:14:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution_arn_containing_punctuation": {
+    "last_validated_date": "2024-06-11T14:54:08+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution_invalid_arn": {
     "last_validated_date": "2024-03-08T12:37:23+00:00"
@@ -58,6 +61,9 @@
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_nonexistent_sm": {
     "last_validated_date": "2023-10-26T15:10:22+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_sm_arn_containing_punctuation": {
+    "last_validated_date": "2024-06-11T14:55:41+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_state_machine_for_execution": {
     "last_validated_date": "2023-08-21T15:20:20+00:00"
@@ -83,16 +89,31 @@
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_execution_no_such_state_machine": {
     "last_validated_date": "2024-03-08T10:51:46+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_executions_pagination": {
+    "last_validated_date": "2024-07-01T12:33:00+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_executions_versions_pagination": {
+    "last_validated_date": "2024-07-01T12:54:55+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms": {
     "last_validated_date": "2023-08-29T17:40:19+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms_pagination": {
+    "last_validated_date": "2024-07-01T12:04:17+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution": {
-    "last_validated_date": "2023-06-22T11:52:39+00:00"
+    "last_validated_date": "2024-06-30T16:12:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution_idempotent": {
+    "last_validated_date": "2024-08-21T09:15:48+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_sync_execution": {
+    "last_validated_date": "2024-07-03T17:10:25+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_state_machine_status_filter": {
     "last_validated_date": "2024-03-14T21:59:25+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_stop_execution": {
-    "last_validated_date": "2023-06-22T11:53:24+00:00"
+    "last_validated_date": "2024-05-06T12:59:34+00:00"
   }
 }

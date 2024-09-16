@@ -6,8 +6,11 @@ from io import BytesIO
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
+from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
@@ -92,6 +95,35 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
 
     source_mappings = aws_client.lambda_.list_event_source_mappings(FunctionName=function_name)
     snapshot.match("updated_source_mappings", source_mappings)
+
+
+@pytest.mark.skip(
+    reason="fails/times out. Provider not able to update lambda function environment variables"
+)
+@markers.aws.validated
+def test_update_lambda_function(s3_create_bucket, deploy_cfn_template, aws_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
+        ),
+        parameters={"Environment": "ORIGINAL"},
+    )
+
+    function_name = stack.outputs["LambdaName"]
+    response = aws_client.lambda_.get_function(FunctionName=function_name)
+    assert response["Configuration"]["Environment"]["Variables"]["TEST"] == "ORIGINAL"
+
+    deploy_cfn_template(
+        stack_name=stack.stack_name,
+        is_update=True,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
+        ),
+        parameters={"Environment": "UPDATED"},
+    )
+
+    response = aws_client.lambda_.get_function(FunctionName=function_name)
+    assert response["Configuration"]["Environment"]["Variables"]["TEST"] == "UPDATED"
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -196,6 +228,9 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("Alias", alias)
 
 
+@pytest.mark.skipif(
+    not in_default_partition(), reason="Test not applicable in non-default partitions"
+)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..DestinationConfig"])
 def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, aws_client):
@@ -203,9 +238,7 @@ def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, a
     snapshot.add_transformer(snapshot.transform.lambda_api())
     snapshot.add_transformer(SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]))
 
-    signer_arn = (
-        f"arn:aws:signer:{aws_client.lambda_.meta.region_name}:{account_id}:/signing-profiles/test"
-    )
+    signer_arn = f"arn:{get_partition(aws_client.lambda_.meta.region_name)}:signer:{aws_client.lambda_.meta.region_name}:{account_id}:/signing-profiles/test"
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -300,6 +333,82 @@ def test_lambda_cfn_run(deploy_cfn_template, aws_client):
     aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
+@markers.aws.only_localstack(reason="This is functionality specific to Localstack")
+def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
+    deploy_cfn_template, aws_client, monkeypatch
+):
+    """
+    deploys the same lambda with an empty CFN string deny list, testing that it behaves as expected
+    (i.e. the URLs in the deny list are modified)
+    """
+    monkeypatch.setattr(config, "CFN_STRING_REPLACEMENT_DENY_LIST", [])
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/cfn_lambda_with_external_api_paths_in_env_vars.yaml",
+        ),
+        max_wait=120,
+    )
+    function = aws_client.lambda_.get_function(FunctionName=deployment.outputs["FunctionName"])
+    function_env_variables = function["Configuration"]["Environment"]["Variables"]
+    # URLs that match regex to capture AWS URLs gets Localstack port appended - non-matching URLs remain unchanged.
+    assert function_env_variables["API_URL_1"] == "https://api.example.com"
+    assert (
+        function_env_variables["API_URL_2"]
+        == "https://storage.execute-api.amazonaws.com:4566/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_3"]
+        == "https://reporting.execute-api.amazonaws.com:4566/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_4"]
+        == "https://blockchain.execute-api.amazonaws.com:4566/test-resource"
+    )
+
+
+@markers.aws.only_localstack(reason="This is functionality specific to Localstack")
+def test_lambda_cfn_run_with_non_empty_string_replacement_deny_list(
+    deploy_cfn_template, aws_client, monkeypatch
+):
+    """
+    deploys the same lambda with a non-empty CFN string deny list configurations, testing that it behaves as expected
+    (i.e. the URLs in the deny list are not modified)
+    """
+    monkeypatch.setattr(
+        config,
+        "CFN_STRING_REPLACEMENT_DENY_LIST",
+        [
+            "https://storage.execute-api.us-east-2.amazonaws.com/test-resource",
+            "https://reporting.execute-api.us-east-1.amazonaws.com/test-resource",
+        ],
+    )
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/cfn_lambda_with_external_api_paths_in_env_vars.yaml",
+        ),
+        max_wait=120,
+    )
+    function = aws_client.lambda_.get_function(FunctionName=deployment.outputs["FunctionName"])
+    function_env_variables = function["Configuration"]["Environment"]["Variables"]
+    # URLs that match regex to capture AWS URLs but are explicitly in the deny list, don't get modified -
+    # non-matching URLs remain unchanged.
+    assert function_env_variables["API_URL_1"] == "https://api.example.com"
+    assert (
+        function_env_variables["API_URL_2"]
+        == "https://storage.execute-api.us-east-2.amazonaws.com/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_3"]
+        == "https://reporting.execute-api.us-east-1.amazonaws.com/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_4"]
+        == "https://blockchain.execute-api.amazonaws.com:4566/test-resource"
+    )
+
+
 @pytest.mark.skip(reason="broken/notimplemented")
 @markers.aws.validated
 def test_lambda_vpc(deploy_cfn_template, aws_client):
@@ -324,7 +433,7 @@ def test_lambda_vpc(deploy_cfn_template, aws_client):
     aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
-@pytest.mark.xfail(reason="fails/times out with new provider")  # FIXME
+@pytest.mark.skip(reason="fails/times out with new provider")  # FIXME
 @markers.aws.validated
 def test_update_lambda_permissions(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
@@ -1017,7 +1126,7 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
             os.path.join(os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.py")
         ),
         get_content=True,
-        runtime=Runtime.python3_10,
+        runtime=Runtime.python3_12,
     )
     aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
@@ -1061,7 +1170,7 @@ def test_lambda_cfn_dead_letter_config_async_invocation(
             )
         ),
         get_content=True,
-        runtime=Runtime.python3_10,
+        runtime=Runtime.python3_12,
     )
     aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
