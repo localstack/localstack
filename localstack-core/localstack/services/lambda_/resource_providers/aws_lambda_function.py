@@ -358,7 +358,20 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                 kwargs["Environment"] = {
                     "Variables": {k: str(v) for k, v in environment_variables.items()}
                 }
+            # kwargs["Tags"] = request.desired_state.get('Tags',[])
+            tags = dict()
+            for tag_dict in request.desired_state.get('Tags',[]):
+                tag_dict_key = tag_dict.get("Key")
+                tag_dict_value = tag_dict.get("Value")
+                tags[tag_dict_key] = tag_dict_value
 
+            # the following mmust be added by default as specified here:
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-resource-tags.html
+            tags["aws:cloudformation:logical-id"] = request.logical_resource_id
+            tags["aws:cloudformation:stack-id"] = request.stack_id
+            tags["aws:cloudformation:stack-name"] =  request.stack_name
+
+            kwargs["Tags"] = tags
             kwargs["Code"] = _get_lambda_code_param(model)
             create_response = lambda_client.create_function(**kwargs)
             model["Arn"] = create_response["FunctionArn"]

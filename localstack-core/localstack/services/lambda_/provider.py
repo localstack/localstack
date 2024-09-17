@@ -138,6 +138,7 @@ from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
 from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
 from localstack.aws.spec import load_service
+from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
@@ -230,6 +231,12 @@ LAMBDA_DEFAULT_TIMEOUT = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
+LAMBDA_TAG_KEY_LEN_LIMIT = 128
+LAMBDA_TAG_VALUE_LEN_LIMIT = 256
+RESERVED_TAG_PREFIX = "aws:"
+LAMBDA_DEFAULT_TAG_PREFIX = "aws:cloudformation:"
+LAMBDA_DEFAULT_TAGS = frozenset([LAMBDA_DEFAULT_TAG_PREFIX + tag for tag in ["logical-id", "stack-id", "stack-name"]])
+LAMBDA_TAG_ALLOWED_CHARS = re.compile(r'^[a-zA-Z0-9\s+\-=._:/@]+$')
 LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 
 TAG_KEY_CUSTOM_URL = "_custom_id_"
@@ -4022,6 +4029,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 "Number of tags exceeds resource tag limit.", Type="User"
             )
+        # following validation conditions are performed based on the following AWS guidelines
+        # https://docs.aws.amazon.com/lambda/latest/dg/configuration-tags.html
+        for tag_key, tag_value in tags.items():
+            if len(tag_key)>128 or len(tag_value)>256:
+                raise InvalidParameterValueException(
+                    "Length of tag's key or value exceed limit.", Type="User"
+                )
+            if not bool(LAMBDA_TAG_ALLOWED_CHARS.match(tag_key)) or not bool(LAMBDA_TAG_ALLOWED_CHARS.match(tag_value)):
+                raise InvalidParameterValueException(
+                    "Tag key or value contains non allowed characters.", Type="User"
+                )
+            if tag_key.startswith(RESERVED_TAG_PREFIX) and tag_key not in LAMBDA_DEFAULT_TAGS:
+                raise InvalidParameterValueException(
+                    "Tag key cannot contain reserved prefix (aws:)", Type="User"
+                )
         with function.lock:
             function.tags = tags
             # dirty hack for changed revision id, should reevaluate model to prevent this:
@@ -4071,7 +4093,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         account_id, region = api_utils.get_account_and_region(resource, context)
         function_name = api_utils.get_function_name(resource, context)
         fn = self._get_function(function_name=function_name, account_id=account_id, region=region)
-
+        state = get_cloudformation_store(context.account_id, context.region)
         return ListTagsResponse(Tags=self._get_tags(fn))
 
     def untag_resource(
