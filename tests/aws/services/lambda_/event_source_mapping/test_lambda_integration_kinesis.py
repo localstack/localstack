@@ -543,6 +543,127 @@ class TestKinesisSource:
         sqs_payload = retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Message.KinesisBatchInfo.shardId",
+            "$..Message.KinesisBatchInfo.streamArn",
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_esm,
+        paths=[
+            "$..Message.KinesisBatchInfo.approximateArrivalOfFirstRecord",
+            "$..Message.KinesisBatchInfo.approximateArrivalOfLastRecord",
+            "$..Message.requestContext.approximateInvokeCount",
+            "$..Message.responseContext.statusCode",
+        ],
+    )
+    @markers.aws.validated
+    def test_kinesis_event_source_mapping_with_sns_on_failure_destination_config(
+        self,
+        create_lambda_function,
+        sqs_get_queue_arn,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_allow_topic_sqs_queue,
+        create_iam_role_with_policy,
+        wait_for_stream_ready,
+        cleanups,
+        snapshot,
+        aws_client,
+    ):
+        # snapshot setup
+        snapshot.add_transformer(snapshot.transform.sns_api())
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
+        function_name = f"lambda_func-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        kinesis_name = f"test-kinesis-{short_uid()}"
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=s3_lambda_permission,
+        )
+
+        # create topic and queue
+        queue_url = sqs_create_queue()
+        topic_info = sns_create_topic()
+        topic_arn = topic_info["TopicArn"]
+
+        # subscribe SQS to SNS
+        queue_arn = sqs_get_queue_arn(queue_url)
+        subscription = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+        )
+        cleanups.append(
+            lambda: aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+        )
+
+        sns_allow_topic_sqs_queue(
+            sqs_queue_url=queue_url, sqs_queue_arn=queue_arn, sns_topic_arn=topic_arn
+        )
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=role_arn,
+        )
+        aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)
+        cleanups.append(
+            lambda: aws_client.kinesis.delete_stream(
+                StreamName=kinesis_name, EnforceConsumerDeletion=True
+            )
+        )
+        result = aws_client.kinesis.describe_stream(StreamName=kinesis_name)["StreamDescription"]
+        kinesis_arn = result["StreamARN"]
+        wait_for_stream_ready(stream_name=kinesis_name)
+
+        destination_config = {"OnFailure": {"Destination": topic_arn}}
+        message = {
+            "input": "hello",
+            "value": "world",
+            lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
+        }
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=kinesis_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+            DestinationConfig=destination_config,
+        )
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+        )
+
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
+        aws_client.kinesis.put_record(
+            StreamName=kinesis_name, Data=to_bytes(json.dumps(message)), PartitionKey="custom"
+        )
+
+        def verify_failure_received():
+            result = aws_client.sqs.receive_message(QueueUrl=queue_url)
+            assert result["Messages"]
+            return result
+
+        messages = retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
+
+        # The failure context payload of the SQS response is in JSON-string format.
+        # Rather extract, parse, and snapshot it since the SQS information is irrelevant.
+        failure_sns_payload = messages.get("Messages", []).pop(0)
+        failure_sns_body_json = failure_sns_payload.get("Body", {})
+        failure_sns_message = json.loads(failure_sns_body_json)
+
+        snapshot.match("failure_sns_message", failure_sns_message)
+
 
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
