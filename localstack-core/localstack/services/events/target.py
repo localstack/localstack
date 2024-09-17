@@ -139,9 +139,7 @@ class TargetSender(ABC):
         pass
 
     def process_event(self, event: FormattedEvent):
-        # context required by eventstudio
         """Processes the event and send it to the target."""
-        event = event.copy()
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
         if input_path := self.target.get("InputPath"):

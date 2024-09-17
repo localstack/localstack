@@ -1130,7 +1130,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
                 target_sender = self._target_sender_store[target["Arn"]]
                 try:
-                    target_sender.process_event(event)
+                    target_sender.process_event(event.copy())
                 except Exception as e:
                     LOG.info(
                         "Unable to send event notification %s to target %s: %s",
@@ -1363,7 +1363,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         else:
                             target_sender = self._target_sender_store[target_arn]
                             try:
-                                target_sender.process_event(event_formatted)
+                                target_sender.process_event(event_formatted.copy())
                                 processed_entries.append({"EventId": event_formatted["id"]})
                             except Exception as error:
                                 processed_entries.append(
