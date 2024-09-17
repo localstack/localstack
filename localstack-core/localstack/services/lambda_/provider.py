@@ -138,7 +138,6 @@ from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
 from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
 from localstack.aws.spec import load_service
-from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
@@ -4093,7 +4092,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         account_id, region = api_utils.get_account_and_region(resource, context)
         function_name = api_utils.get_function_name(resource, context)
         fn = self._get_function(function_name=function_name, account_id=account_id, region=region)
-        state = get_cloudformation_store(context.account_id, context.region)
         return ListTagsResponse(Tags=self._get_tags(fn))
 
     def untag_resource(
