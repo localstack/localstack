@@ -4092,6 +4092,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         account_id, region = api_utils.get_account_and_region(resource, context)
         function_name = api_utils.get_function_name(resource, context)
         fn = self._get_function(function_name=function_name, account_id=account_id, region=region)
+
         return ListTagsResponse(Tags=self._get_tags(fn))
 
     def untag_resource(
