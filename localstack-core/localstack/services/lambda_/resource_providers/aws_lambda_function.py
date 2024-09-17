@@ -360,7 +360,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                 }
             # kwargs["Tags"] = request.desired_state.get('Tags',[])
             tags = dict()
-            for tag_dict in request.desired_state.get('Tags',[]):
+            for tag_dict in request.desired_state.get("Tags", []):
                 tag_dict_key = tag_dict.get("Key")
                 tag_dict_value = tag_dict.get("Value")
                 tags[tag_dict_key] = tag_dict_value
@@ -369,7 +369,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-resource-tags.html
             tags["aws:cloudformation:logical-id"] = request.logical_resource_id
             tags["aws:cloudformation:stack-id"] = request.stack_id
-            tags["aws:cloudformation:stack-name"] =  request.stack_name
+            tags["aws:cloudformation:stack-name"] = request.stack_name
 
             kwargs["Tags"] = tags
             kwargs["Code"] = _get_lambda_code_param(model)

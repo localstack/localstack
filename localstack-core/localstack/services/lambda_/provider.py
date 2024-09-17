@@ -234,8 +234,10 @@ LAMBDA_TAG_KEY_LEN_LIMIT = 128
 LAMBDA_TAG_VALUE_LEN_LIMIT = 256
 RESERVED_TAG_PREFIX = "aws:"
 LAMBDA_DEFAULT_TAG_PREFIX = "aws:cloudformation:"
-LAMBDA_DEFAULT_TAGS = frozenset([LAMBDA_DEFAULT_TAG_PREFIX + tag for tag in ["logical-id", "stack-id", "stack-name"]])
-LAMBDA_TAG_ALLOWED_CHARS = re.compile(r'^[a-zA-Z0-9\s+\-=._:/@]+$')
+LAMBDA_DEFAULT_TAGS = frozenset(
+    [LAMBDA_DEFAULT_TAG_PREFIX + tag for tag in ["logical-id", "stack-id", "stack-name"]]
+)
+LAMBDA_TAG_ALLOWED_CHARS = re.compile(r"^[a-zA-Z0-9\s+\-=._:/@]+$")
 LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 
 TAG_KEY_CUSTOM_URL = "_custom_id_"
@@ -4031,11 +4033,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # following validation conditions are performed based on the following AWS guidelines
         # https://docs.aws.amazon.com/lambda/latest/dg/configuration-tags.html
         for tag_key, tag_value in tags.items():
-            if len(tag_key)>128 or len(tag_value)>256:
+            if len(tag_key) > 128 or len(tag_value) > 256:
                 raise InvalidParameterValueException(
                     "Length of tag's key or value exceed limit.", Type="User"
                 )
-            if not bool(LAMBDA_TAG_ALLOWED_CHARS.match(tag_key)) or not bool(LAMBDA_TAG_ALLOWED_CHARS.match(tag_value)):
+            if not bool(LAMBDA_TAG_ALLOWED_CHARS.match(tag_key)) or not bool(
+                LAMBDA_TAG_ALLOWED_CHARS.match(tag_value)
+            ):
                 raise InvalidParameterValueException(
                     "Tag key or value contains non allowed characters.", Type="User"
                 )
