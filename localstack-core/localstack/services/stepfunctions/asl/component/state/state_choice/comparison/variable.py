@@ -21,3 +21,16 @@ class Variable(EvalComponent):
         except Exception as ex:
             value = NoSuchVariable(f"{self.value}, {ex}")
         env.stack.append(value)
+
+
+class VariableContextObject(Variable):
+    def __init__(self, value: str):
+        value_tail = value[1:]
+        super().__init__(value=value_tail)
+
+    def _eval_body(self, env: Environment) -> None:
+        try:
+            value = extract_json(self.value, env.context_object_manager.context_object)
+        except Exception as ex:
+            value = NoSuchVariable(f"{self.value}, {ex}")
+        env.stack.append(value)
