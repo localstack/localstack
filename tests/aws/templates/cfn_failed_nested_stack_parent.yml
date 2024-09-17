@@ -1,14 +1,14 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
-  BucketName:
-    Type: String
-    Default: test-bucket-test!@#$!
   TemplateUri:
     Type: String
+
 Resources:
-  Bucket:
+  ChildStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Ref TemplateUri
-      Parameters:
-        BucketName: !Ref BucketName
+
+Outputs:
+  BucketStackId:
+    Value: !Ref ChildStack

@@ -1,14 +1,14 @@
 import os
 
 import pytest
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, WaiterError
 
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry, wait_until
+from localstack.utils.sync import retry
 
 
 @markers.aws.needs_fixing
@@ -82,7 +82,6 @@ def test_nested_stack_output_refs(deploy_cfn_template, s3_create_bucket, aws_cli
     assert f"{nested_bucket_name}-suffix" == result.outputs["CustomOutput"]
 
 
-@pytest.mark.skip(reason="Nested rtacks don't work properly")
 @markers.aws.validated
 def test_nested_with_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     bucket_name = s3_create_bucket()
@@ -295,7 +294,7 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
 
 
 @markers.aws.validated
-def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_name):
+def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_name, snapshot):
     """
     This test confirms that after deleting a stack parent with a failed nested stack. The nested stack is also deleted
     """
@@ -324,27 +323,30 @@ def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_na
             ),
         ),
         Parameters=[
-            {"ParameterKey": "BucketName", "ParameterValue": "Invalid!@#$"},
             {"ParameterKey": "TemplateUri", "ParameterValue": child_template_url},
         ],
+        OnFailure="DO_NOTHING",
+        Capabilities=["CAPABILITY_NAMED_IAM"],
     )
 
-    def _status_is_complete():
-        status = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0][
-            "StackStatus"
-        ]
-        return status in [
-            "ROLLBACK_COMPLETE",
-            "CREATE_FAILED",
-        ]  # LS doesn't implement the ROLLBACK yet
+    with pytest.raises(WaiterError):
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
-    wait_until(_status_is_complete, strategy="static")
+    stack_status = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0][
+        "StackStatus"
+    ]
+    assert stack_status == "CREATE_FAILED"
+
+    stacks = aws_client.cloudformation.describe_stacks()["Stacks"]
+    nested_stack_name = [
+        stack for stack in stacks if f"{stack_name}-ChildStack-" in stack["StackName"]
+    ][0]["StackName"]
 
     aws_client.cloudformation.delete_stack(StackName=stack_name)
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
 
-    def _stack_and_child_deleted():
-        stacks = aws_client.cloudformation.describe_stacks()["Stacks"]
-        stacks_with_name = [s for s in stacks if stack_name in s["StackName"]]
-        assert len(stacks_with_name) == 0
+    with pytest.raises(ClientError) as ex:
+        aws_client.cloudformation.describe_stacks(StackName=nested_stack_name)
 
-    retry(_stack_and_child_deleted, sleep=2 if is_aws_cloud() else 1)
+    snapshot.match("error", ex.value.response)
+    snapshot.add_transformer(snapshot.transform.regex(nested_stack_name, "<nested-stack-name>"))
