@@ -85,6 +85,14 @@ def get_attr_from_model_instance(
     resource_id: str,
     attribute_sub_name: Optional[str] = None,
 ) -> str:
+    if resource["PhysicalResourceId"] == MOCK_REFERENCE:
+        LOG.warning(
+            "Attribute '%s' requested from unsupported resource with id %s",
+            attribute_name,
+            resource_id,
+        )
+        return MOCK_REFERENCE
+
     properties = resource.get("Properties", {})
     # if there's no entry in VALID_GETATT_PROPERTIES for the resource type we still default to "open" and accept anything
     valid_atts = VALID_GETATT_PROPERTIES.get(resource_type)
@@ -322,13 +330,6 @@ def _resolve_refs_recursively(
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
 
-                resource_type = get_resource_type(resources.get(value["Ref"]))
-                resource_provider = ResourceProviderExecutor.try_load_resource_provider(
-                    resource_type
-                )
-                if resource_provider is None:
-                    return MOCK_REFERENCE
-
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
 
             ref = resolve_refs_recursively(
@@ -374,12 +375,6 @@ def _resolve_refs_recursively(
 
             # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
             if resolved_getatt is None:
-                resource_provider = ResourceProviderExecutor.try_load_resource_provider(
-                    resource_type
-                )
-                if resource_provider is None:
-                    return MOCK_REFERENCE
-
                 raise DependencyNotYetSatisfied(
                     resource_ids=resource_logical_id,
                     message=f"Could not resolve attribute '{attribute_name}' on resource '{resource_logical_id}'",
@@ -1290,6 +1285,8 @@ class TemplateDeployer:
                 resource_provider, resource, resource_provider_payload
             )
         else:
+            resource["PhysicalResourceId"] = MOCK_REFERENCE
+            resource["Ref"] = MOCK_REFERENCE
             progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
         # TODO: clean up the surrounding loop (do_apply_changes_in_loop) so that the responsibilities are clearer

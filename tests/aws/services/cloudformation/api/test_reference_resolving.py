@@ -100,4 +100,6 @@ def test_reference_unsupported_resource(deploy_cfn_template, aws_client):
     )
 
     ref_of_unsupported = deployment.outputs["reference"]
+    value_of_unsupported = deployment.outputs["parameter"]
     assert ref_of_unsupported == MOCK_REFERENCE
+    assert value_of_unsupported == f"The value of the attribute is: {MOCK_REFERENCE}"
