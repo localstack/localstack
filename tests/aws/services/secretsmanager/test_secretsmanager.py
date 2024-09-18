@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import os
@@ -2394,6 +2395,26 @@ class TestSecretsManager:
                 SecretId=secret_name, VersionId=version_id, VersionStage="AWSPREVIOUS"
             )
         sm_snapshot.match("mismatch_version_id_and_stage", exc.value.response)
+
+    @markers.aws.unknown
+    def test_get_secret_value(self, aws_client, create_secret, sm_snapshot):
+        secret_name = short_uid()
+        secret_string = b"footest"
+        secret_string_b64_encoded = base64.b64encode(secret_string)
+        response = create_secret(
+            Name=secret_name,
+            SecretBinary=secret_string_b64_encoded,
+        )
+
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+
+        secret_arn = response["ARN"]
+
+        value_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+
+        assert value_response["SecretBinary"] == secret_string_b64_encoded
 
 
 class TestSecretsManagerMultiAccounts:
