@@ -8,13 +8,13 @@ from typing import Optional
 
 from localstack.aws.api.lambda_ import Arn
 from localstack.config import LAMBDA_DEBUG_MODE, LAMBDA_DEBUG_MODE_CONFIG_PATH
+from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.utils.lambda_debug_mode.lambda_debug_mode_config import (
     LambdaDebugConfig,
     LambdaDebugModeConfig,
     load_lambda_debug_mode_config,
 )
 from localstack.utils.objects import singleton_factory
-from localstack.utils.threads import TMP_THREADS
 
 LOG = logging.getLogger(__name__)
 
@@ -59,7 +59,6 @@ class LambdaDebugModeSession:
         self._watch_thread = Thread(
             target=self._watch_logic, args=(), daemon=True, name="LambdaDebugModeConfigWatch"
         )
-        TMP_THREADS.append(self._watch_thread)
         self._watch_thread.start()
 
     @staticmethod
@@ -67,6 +66,27 @@ class LambdaDebugModeSession:
     def get() -> LambdaDebugModeSession:
         """Returns a singleton instance of the Lambda Debug Mode session."""
         return LambdaDebugModeSession()
+
+    def ensure_running(self) -> None:
+        # Nothing to start.
+        if self._watch_thread is None or self._watch_thread.is_alive():
+            return
+        try:
+            self._watch_thread.start()
+        except Exception as exception:
+            exception_str = str(exception)
+            # The thread was already restarted by another process.
+            if (
+                isinstance(exception, RuntimeError)
+                and exception_str
+                and "threads can only be started once" in exception_str
+            ):
+                return
+            LOG.error(
+                "Lambda Debug Mode could not restart the "
+                "hot reloading of the configuration file, '%s'",
+                exception_str,
+            )
 
     def _load_lambda_debug_mode_config(self):
         yaml_configuration_string = None
@@ -113,7 +133,7 @@ class LambdaDebugModeSession:
             modified_time = os.path.getmtime(self._configuration_file_path)
             return int(modified_time)
         except Exception as e:
-            print("Lambda Debug Mode could not access the configuration file: %s", e)
+            LOG.warning("Lambda Debug Mode could not access the configuration file: %s", e)
             epoch_now = int(time.time())
             return epoch_now
 
@@ -125,8 +145,8 @@ class LambdaDebugModeSession:
         self._load_lambda_debug_mode_config()
         self._initialised_event.set()
 
-        # Monitor for file changes in an endless loop: this logic should be started as a daemon.
-        while True:
+        # Monitor for file changes whilst the lambda service is running.
+        while SERVICE_PLUGINS.is_running("lambda"):
             time.sleep(1)
             epoch_last_modified = self._config_file_epoch_last_modified_or_now()
             if epoch_last_modified > epoch_last_loaded:

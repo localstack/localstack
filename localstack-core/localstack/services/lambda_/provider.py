@@ -220,6 +220,7 @@ from localstack.utils.aws.arns import extract_service_from_arn, get_partition
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
+from localstack.utils.lambda_debug_mode.lambda_debug_mode_session import LambdaDebugModeSession
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
 from localstack.utils.urls import localstack_host
@@ -257,6 +258,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(lambda_stores)
+
+    def on_before_start(self):
+        # Attempt to start the Lambda Debug Mode session object.
+        try:
+            lambda_debug_mode_session = LambdaDebugModeSession.get()
+            lambda_debug_mode_session.ensure_running()
+        except Exception as ex:
+            LOG.error(
+                "Unexpected error encountered when attempting to initialise Lambda Debug Mode '%s'.",
+                ex,
+            )
 
     def on_before_state_reset(self):
         self.lambda_service.stop()
