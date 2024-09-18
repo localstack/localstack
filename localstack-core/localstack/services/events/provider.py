@@ -1325,52 +1325,79 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         For matching rules the event is either sent to the respective target,
         via the target sender put to the defined archived."""
         processed_entries = []
-        failed_entry_count = 0
+        failed_entry_count = {"count": 0}
         for event in entries:
-            event_bus_name_or_arn = event.get("EventBusName", "default")
-            event_bus_name = extract_event_bus_name(event_bus_name_or_arn)
-            if event_failed_validation := validate_event(event):
-                processed_entries.append(event_failed_validation)
-                failed_entry_count += 1
-                continue
-            region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
-            if encoded_trace_header := get_trace_header_encoded_region_account(
-                event, context.region, context.account_id, region, account_id
-            ):
-                event["TraceHeader"] = encoded_trace_header
-            event_formatted = format_event(event, region, account_id, event_bus_name)
-            store = self.get_store(region, account_id)
-            try:
-                event_bus = self.get_event_bus(event_bus_name, store)
-            except ResourceNotFoundException:
-                # ignore events for non-existing event buses but add processed event
-                processed_entries.append({"EventId": event_formatted["id"]})
-                continue
-            matching_rules = [rule for rule in event_bus.rules.values()]
-            for rule in matching_rules:
-                event_pattern = rule.event_pattern
-                event_str = to_json_str(event_formatted)
-                if matches_rule(event_str, event_pattern):
-                    for target in rule.targets.values():
-                        target_arn = target["Arn"]
-                        if is_archive_arn(target_arn):
-                            self._put_to_archive(
-                                region,
-                                account_id,
-                                archive_target_id=target["Id"],
-                                event=event_formatted,
-                            )
-                        else:
-                            target_sender = self._target_sender_store[target_arn]
-                            try:
-                                target_sender.process_event(event_formatted.copy())
-                                processed_entries.append({"EventId": event_formatted["id"]})
-                            except Exception as error:
-                                processed_entries.append(
-                                    {
-                                        "ErrorCode": "InternalException",
-                                        "ErrorMessage": str(error),
-                                    }
-                                )
-                                failed_entry_count += 1
-        return processed_entries, failed_entry_count
+            self._process_entry(event, processed_entries, failed_entry_count, context)
+        return processed_entries, failed_entry_count["count"]
+
+    def _process_entry(
+        self,
+        entry: PutEventsRequestEntry,
+        processed_entries: PutEventsResultEntryList,
+        failed_entry_count: dict[str, int],
+        context: RequestContext,
+    ) -> None:
+        event_bus_name_or_arn = entry.get("EventBusName", "default")
+        event_bus_name = extract_event_bus_name(event_bus_name_or_arn)
+        if event_failed_validation := validate_event(entry):
+            processed_entries.append(event_failed_validation)
+            failed_entry_count["count"] += 1
+            return
+        region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
+        if encoded_trace_header := get_trace_header_encoded_region_account(
+            entry, context.region, context.account_id, region, account_id
+        ):
+            entry["TraceHeader"] = encoded_trace_header
+        event_formatted = format_event(entry, region, account_id, event_bus_name)
+        store = self.get_store(region, account_id)
+        try:
+            event_bus = self.get_event_bus(event_bus_name, store)
+        except ResourceNotFoundException:
+            # ignore events for non-existing event buses but add processed event
+            processed_entries.append({"EventId": event_formatted["id"]})
+            return
+        self._proxy_capture_input_event(event_formatted)
+        matching_rules = [rule for rule in event_bus.rules.values()]
+        for rule in matching_rules:
+            self._process_matched_rules(
+                rule, region, account_id, event_formatted, processed_entries, failed_entry_count
+            )
+
+    def _proxy_capture_input_event(self, event: FormattedEvent) -> None:
+        # only required for eventstudio to capture input event if no rule is configured
+        pass
+
+    def _process_matched_rules(
+        self,
+        rule: Rule,
+        region: str,
+        account_id: str,
+        event_formatted: FormattedEvent,
+        processed_entries: PutEventsResultEntryList,
+        failed_entry_count: dict[str, int],
+    ) -> None:
+        event_pattern = rule.event_pattern
+        event_str = to_json_str(event_formatted)
+        if matches_rule(event_str, event_pattern):
+            for target in rule.targets.values():
+                target_arn = target["Arn"]
+                if is_archive_arn(target_arn):
+                    self._put_to_archive(
+                        region,
+                        account_id,
+                        archive_target_id=target["Id"],
+                        event=event_formatted,
+                    )
+                else:
+                    target_sender = self._target_sender_store[target_arn]
+                    try:
+                        target_sender.process_event(event_formatted.copy())
+                        processed_entries.append({"EventId": event_formatted["id"]})
+                    except Exception as error:
+                        processed_entries.append(
+                            {
+                                "ErrorCode": "InternalException",
+                                "ErrorMessage": str(error),
+                            }
+                        )
+                        failed_entry_count["count"] += 1
