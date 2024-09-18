@@ -24,6 +24,6 @@
     "last_validated_date": "2023-07-06T19:01:08+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_usage_plan": {
-    "last_validated_date": "2024-03-20T22:33:14+00:00"
+    "last_validated_date": "2024-09-13T09:57:21+00:00"
   }
 }

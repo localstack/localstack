@@ -1,4 +1,5 @@
 import copy
+from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
@@ -6,6 +7,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
     FailureEventException,
 )
+from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
@@ -23,6 +25,7 @@ class StateParallel(ExecutionState):
     # machine object must have fields named States and StartAt, whose meanings are exactly
     # like those in the top level of a state machine.
     branches: BranchesDecl
+    parameters: Optional[Parameters]
 
     def __init__(self):
         super().__init__(
@@ -36,6 +39,7 @@ class StateParallel(ExecutionState):
             typ=BranchesDecl,
             raise_on_missing=ValueError(f"Missing Branches definition in props '{state_props}'."),
         )
+        self.parameters = state_props.get(Parameters)
 
     def _eval_execution(self, env: Environment) -> None:
         env.event_manager.add_event(
@@ -53,7 +57,11 @@ class StateParallel(ExecutionState):
         # Initialise the retry counter for execution states.
         env.context_object_manager.context_object["State"]["RetryCount"] = 0
 
-        # Cache the input, so it can be resubmitted in case of failure.
+        # Compute the branches' input: if declared this is the parameters, else the current memory state.
+        if self.parameters is not None:
+            self.parameters.eval(env=env)
+        # In both cases, the inputs are copied by value to the branches, to avoid cross branch state manipulation, and
+        # cached to allow them to be resubmitted in case of failure.
         input_value = copy.deepcopy(env.stack.pop())
 
         # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.

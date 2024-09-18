@@ -12,6 +12,9 @@ class ScenariosTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/catch_states_runtime.json5"
     )
     PARALLEL_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/parallel_state.json5")
+    PARALLEL_STATE_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/parallel_state_parameters.json5"
+    )
     MAX_CONCURRENCY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/max_concurrency_path.json5"
     )
@@ -156,6 +159,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_STATE_LABEL_TOO_LONG_FAIL: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_label_too_long_fail.json5"
+    )
+    MAP_STATE_RESULT_WRITER: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_result_writer.json5"
     )
     CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_unsorted_choice_parameters.json5"

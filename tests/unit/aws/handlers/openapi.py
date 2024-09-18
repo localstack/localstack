@@ -1,6 +1,8 @@
 import json
 
 import pytest
+import yaml
+from openapi_core import OpenAPI
 from rolo import Request, Response
 from rolo.gateway import RequestContext
 from rolo.gateway.handlers import EmptyResponseHandler
@@ -8,6 +10,35 @@ from rolo.gateway.handlers import EmptyResponseHandler
 from localstack import config
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.validation import OpenAPIRequestValidator
+
+test_spec = """
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 0.0.1
+  description: Sample
+paths:
+  /_localstack/dummy/{entityId}:
+    get:
+      parameters:
+      - name: entityId
+        in: path
+        required: true
+        schema:
+          type: number
+          example: 4
+      responses:
+        '200':
+          description: Response list
+          content:
+            application/json: {}
+"""
+
+
+@pytest.fixture()
+def openapi() -> OpenAPI:
+    spec = yaml.safe_load(test_spec)
+    return OpenAPI.from_dict(spec)
 
 
 @pytest.fixture(autouse=True)
@@ -127,3 +158,21 @@ class TestOpenAPIRequestValidator:
         assert response.status_code == 400
         assert response.json["error"] == "Bad Request"
         assert response.json["message"] == "Request body validation error"
+
+    def test_multiple_specs(self, openapi):
+        validator = OpenAPIRequestValidator()
+        validator.open_apis.append(openapi)
+        chain = HandlerChain([validator])
+        context = RequestContext(
+            Request(
+                path="/_localstack/dummy/dummyName",
+                method="GET",
+                scheme="http",
+                headers={"Host": "localhost.localstack.cloud:4566"},
+            )
+        )
+        response = Response()
+        chain.handle(context=context, response=response)
+        assert response.status_code == 400
+        assert response.json["error"] == "Bad Request"
+        assert "Path parameter error" in response.json["message"]

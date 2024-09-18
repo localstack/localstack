@@ -10,7 +10,7 @@ amazon-kclpy==2.1.5
     # via localstack-core
 annotated-types==0.7.0
     # via pydantic
-antlr4-python3-runtime==4.13.1
+antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext

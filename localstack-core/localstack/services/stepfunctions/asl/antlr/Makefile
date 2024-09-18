@@ -7,7 +7,7 @@ ANTLR4_TARGET_DIR = $(ANTLR4_SRC_DIR)/runtime
 ANTLR4_GRAMMAR_FILES = $(wildcard $(ANTLR4_SRC_DIR)/*.g4)
 
 # Define the default ANTLR4 version and jar file.
-ANTLR4_VERSION ?= 4.13.1
+ANTLR4_VERSION ?= 4.13.2
 ANTLR4_JAR ?= $(ANTLR4_DIR)/antlr-$(ANTLR4_VERSION)-complete.jar
 
 # Define the download path for ANTLR4 parser generator.
@@ -17,7 +17,7 @@ ANTLR4_URL = https://www.antlr.org/download/antlr-$(ANTLR4_VERSION)-complete.jar
 RUN_ANTLR4 = java -jar $(ANTLR4_JAR) -Dlanguage=Python3 -visitor
 
 install:        ## Install the dependencies for compiling the ANTLR4 project.
-	@npm i -g --save-dev antlr-format@2.1.4
+	@npm i -g --save-dev antlr-format@2.1.5
 	@mkdir -p $(ANTLR4_DIR)
 	@curl -o $(ANTLR4_JAR) $(ANTLR4_URL)
 

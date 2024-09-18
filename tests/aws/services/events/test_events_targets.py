@@ -24,15 +24,15 @@ from tests.aws.services.kinesis.helper_functions import get_shard_iterator
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 # TODO:
-# - Add tests for the following services:
-#   - API Gateway
-#   - AppSync
-#   - Batch
-#   - Container
-#   - Logs
-#   - Redshift
-#   - Sagemaker
-#   - StepFunctions
+#  Add tests for the following services:
+#   - API Gateway (community)
+#   - CloudWatch Logs (community)
+#  These tests should go into LocalStack Pro:
+#   - AppSync (pro)
+#   - Batch (pro)
+#   - Container (pro)
+#   - Redshift (pro)
+#   - Sagemaker (pro)
 
 
 class TestEventsTargetEvents:

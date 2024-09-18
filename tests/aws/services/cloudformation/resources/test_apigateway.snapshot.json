@@ -571,7 +571,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_usage_plan": {
-    "recorded-date": "20-03-2024, 22:33:14",
+    "recorded-date": "13-09-2024, 09:57:21",
     "recorded-content": {
       "usage-plan": {
         "apiStages": [
@@ -587,7 +587,13 @@
           "offset": 0,
           "period": "MONTH"
         },
-        "tags": {},
+        "tags": {
+          "aws:cloudformation:logical-id": "UsagePlan",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>",
+          "test": "value1",
+          "test2": "hardcoded"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -607,7 +613,13 @@
           "offset": 0,
           "period": "MONTH"
         },
-        "tags": {},
+        "tags": {
+          "aws:cloudformation:logical-id": "UsagePlan",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>",
+          "test": "value-updated",
+          "test2": "hardcoded"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
