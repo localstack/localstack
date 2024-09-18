@@ -17462,5 +17462,80 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_invalid": {
+    "recorded-date": "18-09-2024, 08:13:12",
+    "recorded-content": {
+      "tag_lambda_invalid_key_length": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Length of tag's key or value exceed limit."
+        },
+        "Type": "User",
+        "message": "Length of tag's key or value exceed limit.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag_lambda_invalid_value_length": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Length of tag's key or value exceed limit."
+        },
+        "Type": "User",
+        "message": "Length of tag's key or value exceed limit.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag_lambda_invalid_chars_in_key": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Tag key or value contains non allowed characters."
+        },
+        "Type": "User",
+        "message": "Tag key or value contains non allowed characters.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag_lambda_invalid_chars_in_value": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Tag key or value contains non allowed characters."
+        },
+        "Type": "User",
+        "message": "Tag key or value contains non allowed characters.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag_lambda_invalid_prefix_in_key": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Tag key cannot contain reserved prefix (aws:)"
+        },
+        "Type": "User",
+        "message": "Tag key cannot contain reserved prefix (aws:)",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag_lambda_valid_tags": {
+        "Tags": {
+          "anotherKey": "anotherValue",
+          "validKey": "validValue"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

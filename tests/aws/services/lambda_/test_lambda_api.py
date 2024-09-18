@@ -5354,6 +5354,108 @@ class TestLambdaTags:
         snapshot.match("tag_lambda_too_many_tags_additional", e.value.response)
 
     @markers.aws.validated
+    def test_tag_invalid(self, create_lambda_function, snapshot, aws_client):
+        """"""
+        function_name = f"fn-tag-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        function_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
+            "FunctionArn"
+        ]
+
+        # invalid
+        long_tag_key = 'k' * 129
+        tags = {long_tag_key: 'value', 'normal_key': 'normal_value'}
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.tag_resource(
+                Resource=function_arn, Tags=tags
+            )
+
+        snapshot.match("tag_lambda_invalid_key_length", e.value.response)
+
+        # invalid
+        long_tag_value = 'v' * 257
+        tags = {'key': long_tag_value, 'normal_key': 'normal_value'}
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.tag_resource(
+                Resource=function_arn, Tags=tags
+            )
+
+        snapshot.match("tag_lambda_invalid_value_length", e.value.response)
+
+        # Test invalid characters in tag key
+        invalid_tag_key = 'invalid*key'
+        tags = {invalid_tag_key: 'value', 'normal_key': 'normal_value'}
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.tag_resource(
+                Resource=function_arn, Tags=tags
+            )
+
+        snapshot.match("tag_lambda_invalid_chars_in_key", e.value.response)
+
+        # Test invalid character in tag value
+        invalid_tag_value = 'invalid*value'
+        tags = {'key': invalid_tag_value, 'normal_key': 'normal_value'}
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.tag_resource(
+                Resource=function_arn, Tags=tags
+            )
+
+        snapshot.match("tag_lambda_invalid_chars_in_value", e.value.response)
+
+        # Test reserved tag prefix (aws:) not allowed
+        reserved_tag_key = 'aws:some_key'
+        tags = {reserved_tag_key: 'value'}
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.tag_resource(
+                Resource=function_arn, Tags=tags
+            )
+
+        snapshot.match("tag_lambda_invalid_prefix_in_key", e.value.response)
+
+        # Test valid tags are accepted
+        valid_tags = {'validKey': 'validValue', 'anotherKey': 'anotherValue'}
+        aws_client.lambda_.tag_resource(Resource=function_arn, Tags=valid_tags)
+        # Confirm that the valid tags are applied
+
+        response = aws_client.lambda_.list_tags(Resource=function_arn)
+
+        snapshot.match("tag_lambda_valid_tags", response)
+
+
+    # @markers.aws.validated
+    # def test_tag_value_length_invalid(self, create_lambda_function, snapshot, aws_client):
+    #     """"""
+    #     function_name = f"fn-tag-{short_uid()}"
+    #     create_lambda_function(
+    #         handler_file=TEST_LAMBDA_PYTHON_ECHO,
+    #         func_name=function_name,
+    #         runtime=Runtime.python3_12,
+    #     )
+    #     function_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
+    #         "FunctionArn"
+    #     ]
+    #
+    #     # invalid
+    #     long_tag_value = 'v' * 257
+    #     tags = {'key': long_tag_value}
+    #
+    #     with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+    #         aws_client.lambda_.tag_resource(
+    #             Resource=function_arn, Tags=tags
+    #         )
+    #
+    #     snapshot.match("tag_lambda_invalid_value_length", e.value.response)
+
+    @markers.aws.validated
     def test_tag_versions(self, create_lambda_function, snapshot, aws_client):
         function_name = f"fn-tag-{short_uid()}"
         create_function_result = create_lambda_function(
