@@ -153,3 +153,23 @@ class TestCloudFormationMappings:
                 ],
             )
         snapshot.match("mapping_minimum_level_exc", e.value.response)
+
+    @markers.aws.validated
+    def test_mapping_ref_map_key(self, deploy_cfn_template, aws_client, snapshot):
+        topic_name = f"topic-{short_uid()}"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                THIS_DIR, "../../../templates/mappings/mapping-ref-map-key.yaml"
+            ),
+            parameters={
+                "MapName": "MyMap",
+                "MapKey": "A",
+                "TopicName": topic_name,
+            },
+        )
+
+        topic_arn = stack.outputs.get("TopicArn")
+        assert topic_arn is not None
+
+        describe_res = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("topic-attributes", describe_res)

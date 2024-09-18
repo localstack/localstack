@@ -2,6 +2,7 @@ import re
 from typing import Any
 
 from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_NO_VALUE
+from localstack.services.cloudformation.engine.errors import TemplateError
 from localstack.utils.urls import localstack_host
 
 AWS_URL_SUFFIX = localstack_host().host  # value is "amazonaws.com" in real AWS
@@ -181,7 +182,52 @@ def resolve_condition(
                     )
                 case "Fn::FindInMap":
                     map_name, top_level_key, second_level_key = v
-                    return mappings[map_name][top_level_key][second_level_key]
+                    if isinstance(map_name, dict) and "Ref" in map_name:
+                        ref_name = map_name["Ref"]
+                        param = parameters.get(ref_name)
+                        if not param:
+                            raise TemplateError(
+                                f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
+                            )
+                        map_name = param.get("ResolvedValue") or param.get("ParameterValue")
+
+                    if isinstance(top_level_key, dict) and "Ref" in top_level_key:
+                        ref_name = top_level_key["Ref"]
+                        param = parameters.get(ref_name)
+                        if not param:
+                            raise TemplateError(
+                                f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
+                            )
+                        top_level_key = param.get("ResolvedValue") or param.get("ParameterValue")
+
+                    if isinstance(second_level_key, dict) and "Ref" in second_level_key:
+                        ref_name = second_level_key["Ref"]
+                        param = parameters.get(ref_name)
+                        if not param:
+                            raise TemplateError(
+                                f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
+                            )
+                        second_level_key = param.get("ResolvedValue") or param.get("ParameterValue")
+
+                    mapping = mappings.get(map_name)
+                    if not mapping:
+                        raise TemplateError(
+                            f"Invalid reference: '{map_name}' could not be found in the template mappings: '{list(mappings.keys())}'"
+                        )
+
+                    top_level_map = mapping.get(top_level_key)
+                    if not top_level_map:
+                        raise TemplateError(
+                            f"Invalid reference: '{top_level_key}' could not be found in the '{map_name}' mapping: '{list(mapping.keys())}'"
+                        )
+
+                    value = top_level_map.get(second_level_key)
+                    if not value:
+                        raise TemplateError(
+                            f"Invalid reference: '{second_level_key}' could not be found in the '{top_level_key}' mapping: '{top_level_map}'"
+                        )
+
+                    return value
                 case "Fn::If":
                     if_condition_name, true_branch, false_branch = v
                     if resolve_condition(
