@@ -55,8 +55,7 @@ Refer to our official [Dockerfile](https://github.com/localstack/localstack/blob
 
 #### Root Permissions
 
-* Set `DNS_ADDRESS=0` to disable the LocalStack [DNS server](https://docs.localstack.cloud/user-guide/tools/dns-server/) if you are getting the error "cannot run command as root" because the DNS server tries to bind port 53.
-  * LocalStack runs its own [DNS server](https://docs.localstack.cloud/user-guide/tools/dns-server/) which listens for requests on port 53. This requires root permission. When LocalStack starts in host mode it runs the DNS server as sudo, so a prompt is triggered asking for the sudo password. This is annoying during local development, so to disable this functionality, use `DNS_ADDRESS=0`.
+LocalStack runs its own [DNS server](https://docs.localstack.cloud/user-guide/tools/dns-server/) which listens for requests on port 53. This requires root permission. When LocalStack starts in host mode it runs the DNS server as sudo, so a prompt is triggered asking for the sudo password. This is annoying during local development, so to disable this functionality, use `DNS_ADDRESS=0`.
 
 > [!NOTE]
 > We don't recommend disabling the DNS server in general (e.g. in Docker) because the [DNS server](https://docs.localstack.cloud/user-guide/tools/dns-server/) enables seamless connectivity to LocalStack from different environments via the domain name `localhost.localstack.cloud`.
