@@ -656,3 +656,89 @@ class TestCloudWatchLogs:
             sleep=5 if is_aws() else 1,
             sleep_before=3 if is_aws() else 0,
         )
+
+    @markers.aws.validated
+    def test_filter_logs_with_resources_arn(self, aws_client, cleanups):
+        """
+        This test asserts that a log event can be found using the ARN in the resources
+        """
+        log_group_name = f"/aws/test/filter/{short_uid()}"
+        aws_client.logs.create_log_group(logGroupName=log_group_name)
+        cleanups.append(lambda: aws_client.logs.delete_log_group(logGroupName=log_group_name))
+
+        log_stream_name = f"/aws/test/{short_uid()}/{short_uid()}"
+        aws_client.logs.create_log_stream(
+            logGroupName=log_group_name, logStreamName=log_stream_name
+        )
+        cleanups.append(lambda: aws_client.logs.delete_log_(logGroupName=log_group_name))
+
+        sample_machine_arn = (
+            "arn:aws:states:us-east-1:111222333444:stateMachine:OrderProcessorWorkflow"
+        )
+        sample_execution_arn = (
+            "arn:aws:states:us-east-1:111222333444:execution:OrderProcessorWorkflow:d57d4769-72fd"
+        )
+        detail_type = "ShopUnavailable"
+        detail_id = f"{short_uid()}-{short_uid()}"
+
+        message_1 = {
+            "version": "0",
+            "id": detail_id,
+            "detail-type": detail_type,
+            "source": "lstesting",
+            "account": "708750094265",
+            "time": "2024-09-19T14:58:21Z",
+            "region": "us-east-1",
+            "resources": [sample_machine_arn, sample_execution_arn],
+            "detail": {
+                "Message": "sample event",
+                "userId": "1",
+            },
+        }
+
+        message_2 = {
+            "version": "0",
+            "id": "041f35ca-cfd9-151d-b349-483aeac04c31",
+            "detail-type": "NewOrder",
+            "source": "lstesting",
+            "account": "708750094265",
+            "time": "2024-09-19T14:58:21Z",
+            "region": "us-east-1",
+            "resources": [],
+            "detail": {
+                "Message": "",
+                "userId": "",
+            },
+        }
+
+        aws_client.logs.put_log_events(
+            logGroupName=log_group_name,
+            logStreamName=log_stream_name,
+            logEvents=[
+                {"timestamp": now_utc(millis=True), "message": json.dumps(message_1)},
+                {"timestamp": now_utc(millis=True), "message": json.dumps(message_2)},
+            ],
+        )
+
+        patterns = [
+            # Use execution arn
+            f'{{ ($.detail-type = "{detail_type}") && (($.resources[1] = "{sample_execution_arn}") || ($.resources[0] = "{sample_execution_arn}"))}}',
+            # Use machine arn
+            f'{{ ($.detail-type = "{detail_type}") && (($.resources[1] = "{sample_machine_arn}") || ($.resources[0] = "{sample_machine_arn}"))}}',
+            # Use both
+            f'{{ ($.detail-type = "{detail_type}") && (($.resources[1] = "{sample_execution_arn}") || ($.resources[0] = "{sample_machine_arn}"))}}',
+        ]
+
+        def _assert_filtered_events():
+            for search_pattern in patterns:
+                log_events = aws_client.logs.filter_log_events(
+                    logGroupName=log_group_name,
+                    filterPattern=search_pattern,
+                )["events"]
+
+                assert len(log_events) == 1
+
+                message = json.loads(log_events[0]["message"])
+                assert message["id"] == detail_id
+
+        retry(_assert_filtered_events)
