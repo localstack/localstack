@@ -38,16 +38,7 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO_JSON_
 
 import boto3
 import botocore.config
-import json
-import time
-import pytest
-from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, retry
-from localstack.utils.aws.aws_utils import is_aws_cloud
-from localstack.services.awslambda.lambda_utils import Runtime
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO_JSON_BODY
-from tests.integration.events.test_events import check_expected_lambda_log_events_length
-from tests import markers
+
 
 class TestEventsTargetApiGateway:
     @markers.aws.validated
@@ -255,8 +246,7 @@ class TestEventsTargetApiGateway:
             "EventBusName": event_bus_name,
             "Source": "test.source",
             "DetailType": "test.detail.type",
-            "Detail": json.dumps({"message": "Hello from EventBridge"}),
-            "Id": str(uuid.uuid4())  # Unique identifier for the event
+            "Detail": json.dumps({"message": "Hello from EventBridge"})
         }
         put_events_response = events_client.put_events(
             Entries=[event_entry]
