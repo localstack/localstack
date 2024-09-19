@@ -2396,7 +2396,7 @@ class TestSecretsManager:
             )
         sm_snapshot.match("mismatch_version_id_and_stage", exc.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_get_secret_value(self, aws_client, create_secret, sm_snapshot):
         secret_name = short_uid()
         secret_string = b"footest"
@@ -2412,9 +2412,11 @@ class TestSecretsManager:
 
         secret_arn = response["ARN"]
 
-        value_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+        secret_value_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
 
-        assert value_response["SecretBinary"] == secret_string_b64_encoded
+        sm_snapshot.match("secret_value_response", secret_value_response)
+
+        assert secret_value_response["SecretBinary"] == secret_string_b64_encoded
 
 
 class TestSecretsManagerMultiAccounts:
