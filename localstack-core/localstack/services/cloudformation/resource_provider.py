@@ -477,6 +477,7 @@ class ResourceProviderExecutor:
                     context = {**payload["callbackContext"], **event.custom_context}
                     payload["callbackContext"] = context
                     payload["requestData"]["resourceProperties"] = event.resource_model
+                    resource["Properties"] = event.resource_model
 
                     if current_iteration == 0:
                         time.sleep(0)
