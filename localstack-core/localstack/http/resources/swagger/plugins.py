@@ -1,10 +1,7 @@
-import importlib
-
 import werkzeug
 import yaml
 from rolo.routing import RuleAdapter
 
-from localstack.http import Response
 from localstack.http.resources.swagger.endpoints import SwaggerUIApi
 from localstack.runtime import hooks
 from localstack.services.edge import ROUTER
@@ -16,10 +13,6 @@ from localstack.utils.openapi import get_localstack_openapi_spec
 def register_swagger_endpoints():
     get_internal_apis().add(SwaggerUIApi())
 
-    def _serve_static_file(_request, path: str):
-        module = importlib.import_module("localstack.http.resources.swagger.static")
-        return Response.for_resource(module, path)
-
     def _serve_openapi_spec(_request):
         spec = get_localstack_openapi_spec()
         response_body = yaml.dump(spec)
@@ -28,4 +21,3 @@ def register_swagger_endpoints():
         )
 
     ROUTER.add(RuleAdapter("/openapi.yaml", _serve_openapi_spec))
-    ROUTER.add(RuleAdapter("/static/<path:path>", _serve_static_file))
