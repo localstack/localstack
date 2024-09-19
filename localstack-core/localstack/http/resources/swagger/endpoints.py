@@ -15,7 +15,7 @@ class SwaggerUIApi:
 
     @route("/_localstack/swagger", methods=["GET"])
     def server_swagger_ui(self, _request):
-        oas_path = os.path.join(os.path.dirname(__file__), "..", "templates")
+        oas_path = os.path.join(os.path.dirname(__file__), "templates")
         env = Environment(loader=FileSystemLoader(oas_path))
         template = env.get_template("index.html")
         rendered_template = template.render()
@@ -23,7 +23,7 @@ class SwaggerUIApi:
 
     @route("/_localstack/swagger-initializer.js", methods=["GET"])
     def serve_swagger_initializer(self, _request):
-        oas_path = os.path.join(os.path.dirname(__file__), "..", "static")
+        oas_path = os.path.join(os.path.dirname(__file__), "static")
         env = Environment(loader=FileSystemLoader(oas_path))
         template = env.get_template("swagger-initializer.js")
 
