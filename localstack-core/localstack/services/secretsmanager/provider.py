@@ -247,8 +247,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self._raise_if_default_kms_key(secret_id, context, backend)
         try:
             response = backend.get_secret_value(secret_id, version_id, version_stage)
-            if should_decode_secret_binary(context):
-                response = decode_secret_binary_from_response(response)
+            response = decode_secret_binary_from_response(response)
         except moto_exception.SecretNotFoundException:
             raise ResourceNotFoundException(
                 f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
@@ -864,12 +863,6 @@ def get_resource_policy_model(self, secret_id):
 def get_resource_policy_response(self):
     secret_id = self._get_param("SecretId")
     return self.backend.get_resource_policy(secret_id=secret_id)
-
-
-def should_decode_secret_binary(context: RequestContext):
-    headers = context.request.headers
-    user_agents = headers.get("User-Agent", "").split(" ")
-    return not any(ua_val.startswith(("boto3", "botocore", "aws-cli")) for ua_val in user_agents)
 
 
 def decode_secret_binary_from_response(response: Dict[str, Any]):
