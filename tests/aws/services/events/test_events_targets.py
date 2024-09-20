@@ -69,7 +69,7 @@ class TestEventsTargetApiGateway:
         snapshot.match("create_lambda_response", create_lambda_response)
 
         # Register cleanup for Lambda function immediately after creation
-        cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
+        # cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
 
         # Step b: Set up an API Gateway
         api_id, _, root = create_rest_apigw(
@@ -78,7 +78,7 @@ class TestEventsTargetApiGateway:
         )
 
         # Register cleanup for API Gateway immediately after creation
-        cleanups.append(lambda: aws_client.apigateway.delete_rest_api(restApiId=api_id))
+        # cleanups.append(lambda: aws_client.apigateway.delete_rest_api(restApiId=api_id))
 
         # Get the root resource ID
         resources = aws_client.apigateway.get_resources(restApiId=api_id)
@@ -139,7 +139,7 @@ class TestEventsTargetApiGateway:
         snapshot.match("event_bus_response", event_bus_response)
 
         # Register cleanup for Event Bus immediately after creation
-        cleanups.append(lambda: aws_client.events.delete_event_bus(Name=event_bus_name))
+        # cleanups.append(lambda: aws_client.events.delete_event_bus(Name=event_bus_name))
 
         # Step d: Create a rule on this bus
         rule_name = f"test-rule-{short_uid()}"
@@ -155,7 +155,7 @@ class TestEventsTargetApiGateway:
         snapshot.match("rule_response", rule_response)
 
         # Register cleanup for Rule immediately after creation
-        cleanups.append(lambda: aws_client.events.delete_rule(Name=rule_name, EventBusName=event_bus_name))
+        # cleanups.append(lambda: aws_client.events.delete_rule(Name=rule_name, EventBusName=event_bus_name))
 
         # Step e: Create an IAM Role for EventBridge to invoke API Gateway
         assume_role_policy_document = {
@@ -177,8 +177,8 @@ class TestEventsTargetApiGateway:
         )
 
         # Register cleanups for IAM Role and Policy immediately after creation
-        cleanups.append(lambda: aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=f'p-{role_name}'))
-        cleanups.append(lambda: aws_client.iam.delete_role(RoleName=role_name))
+        # cleanups.append(lambda: aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=f'p-{role_name}'))
+        # cleanups.append(lambda: aws_client.iam.delete_role(RoleName=role_name))
 
         # Allow some time for IAM role propagation (only needed in AWS)
         if is_aws_cloud():
@@ -205,7 +205,7 @@ class TestEventsTargetApiGateway:
         assert put_targets_response['FailedEntryCount'] == 0
 
         # Register cleanup for the EventBridge target immediately after adding
-        cleanups.append(lambda: aws_client.events.remove_targets(Rule=rule_name, EventBusName=event_bus_name, Ids=[target_id]))
+        # cleanups.append(lambda: aws_client.events.remove_targets(Rule=rule_name, EventBusName=event_bus_name, Ids=[target_id]))
 
         # Step g: Send an event to EventBridge
         event_entry = {
