@@ -2,7 +2,7 @@ Mappings:
   MyMap:
     A:
       value: "true"
-    C:
+    B:
       value: "false"
 
 Conditions:
@@ -33,4 +33,5 @@ Resources:
 Outputs:
   TopicArn:
     Value: !Ref MyTopic
+    Condition: MyCondition
 
