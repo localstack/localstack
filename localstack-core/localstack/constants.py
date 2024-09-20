@@ -12,7 +12,7 @@ HEADER_LOCALSTACK_AUTHORIZATION = "x-localstack-authorization"
 HEADER_LOCALSTACK_TARGET = "x-localstack-target"
 HEADER_AMZN_ERROR_TYPE = "X-Amzn-Errortype"
 
-# backend service ports, for services that are behind a proxy (counting down from 4566)
+# backend service ports, for services that are behind the proxy (counting down from 4566)
 DEFAULT_PORT_EDGE = 4566
 
 # host name for localhost
@@ -33,7 +33,7 @@ ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 # Artifacts endpoint
 ASSETS_ENDPOINT = "https://assets.localstack.cloud"
 
-# host to bind to when starting the services
+# host to bind when starting the services
 BIND_HOST = "0.0.0.0"
 
 # root code folder
@@ -75,7 +75,7 @@ ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 # environment variable name to tag collect metrics during a test run
 ENV_INTERNAL_TEST_COLLECT_METRIC = "LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC"
 
-# environment variable that flags whether pro was activated. do not use for security purposes!
+# environment variable that flags whether pro was activated. do not use it for security purposes!
 ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 
 # content types / encodings
@@ -128,7 +128,7 @@ API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v
 # new analytics API endpoint
 ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack.cloud/v1"
 
-# environment variable to indicates this process should run the localstack infrastructure
+# environment variable to indicate this process should run the localstack infrastructure
 LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 
 # AWS region us-east-1
