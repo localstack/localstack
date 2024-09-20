@@ -5,9 +5,6 @@
   "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_minimum_nesting_depth": {
     "last_validated_date": "2023-06-12T14:47:25+00:00"
   },
-  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_ref_map_key": {
-    "last_validated_date": "2024-09-18T21:26:20+00:00"
-  },
   "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_ref_map_key[should-deploy]": {
     "last_validated_date": "2024-09-20T11:09:25+00:00"
   },
