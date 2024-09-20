@@ -19,17 +19,7 @@ dynamically simulate functions that look like::
 import json
 
 def handler(event, context):
-    print(f"Received event: {json.dumps(event)}")
+    # Just print the event that was passed to the Lambda
 
-    response_body = {
-        "message": "Hello from Lambda!",
-        "input": event
-    }
-    return {
-        "isBase64Encoded": False,
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": json.dumps(response_body)
-    }
+    print(json.dumps(event))
+    return json.loads(event["body"])

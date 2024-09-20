@@ -671,7 +671,7 @@
     }
   },
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetApiGateway::test_put_events_with_target_api_gateway": {
-    "recorded-date": "19-09-2024, 19:32:01",
+    "recorded-date": "20-09-2024, 19:00:12",
     "recorded-content": {
       "create_lambda_response": {
         "CreateEventSourceMappingResponse": null,
@@ -679,7 +679,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "sXbjOPfOag8wOGYl3EzZyMHpQOsmtwP4xiaKKO8DZsM=",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
@@ -690,7 +690,7 @@
           },
           "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
-          "Handler": "lambda_echo_json_body.handler",
+          "Handler": "lambda_aws_proxy_format.handler",
           "LastModified": "date",
           "LoggingConfig": {
             "LogFormat": "Text",
@@ -765,7 +765,146 @@
         }
       },
       "lambda_logs": [
-        "Received event: {\"resource\": \"/test\", \"path\": \"/test/\", \"httpMethod\": \"POST\", \"headers\": {\"amz-sdk-invocation-id\": \"56c9681d-874c-ef1b-876b-f3985d9d1fa0\", \"amz-sdk-request\": \"ttl=20240919T193234Z;attempt=1;max=4\", \"amz-sdk-retry\": \"0/0/500\", \"CloudFront-Forwarded-Proto\": \"https\", \"CloudFront-Is-Desktop-Viewer\": \"true\", \"CloudFront-Is-Mobile-Viewer\": \"false\", \"CloudFront-Is-SmartTV-Viewer\": \"false\", \"CloudFront-Is-Tablet-Viewer\": \"false\", \"CloudFront-Viewer-ASN\": \"16509\", \"CloudFront-Viewer-Country\": \"US\", \"Content-Type\": \"application/json\", \"Host\": \"sp260dl21k.execute-api.<region>.amazonaws.com\", \"User-Agent\": \"aws-sdk-java/1.12.769 Linux/5.10.224-190.876.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/17.0.12+8-LTS java/17.0.12 scala/2.12.17 kotlin/1.5.32 vendor/Amazon.com_Inc. cfg/retry-mode/legacy\", \"Via\": \"1.1 a929b4bfaa0111e3feb7c4dbffdbd8d8.cloudfront.net (CloudFront)\", \"X-Amz-Cf-Id\": \"BKQQYBXKENj_W1ZK2LDm_YMuNXI1XHU9isWbrESHAhr5lfFoNcg0vg==\", \"X-Amz-Date\": \"20240919T193144Z\", \"X-Amz-Security-Token\": \"IQoJb3JpZ2luX2VjECwaCXVzLWVhc3QtMSJIMEYCIQDvt7mWI5G/D00yl23M9LKlTTPdeqQg49Vt7NJ8CxvBRQIhAIM/C7B3vq8swY/BwtVMQ1pRJGTkVLRlc2K91GP73/4OKuMCCGUQABoMNTM1MDAyODY2NjgyIgxSjjvKlfZx7lJImTwqwAJuXUDPlL7a9zlcLfiIa5IGDlKRzQKumT+0Hs0bcH4k90qBGqocF4CE785VDt70RSyTsdNY33m3v03W2e+D3gk+Fygkld5xasYKt6Uhd0FuoVFvNeY/dKhfQUVukvdCuc3aVo86KUHWQY2Ot2ZHKjXKsbnuiS57kVsgayS4sOMLuVsCv9hrSG5Ek85l/+TAdtOHekNU2hV5Bus2iPhsI7HL+vjgMCsdvZDz9Pq4tF56lnXEF41LJahHJc01nAd2RaNJysgWmEjKeylo0zTvKb17xWywGsb31cHonmnLj1bhB0nfzOBhwKZdzfEOVw54OR5BLLb1+14t4RmivjZfXoRlJUMKQ+mgVt1Td4k5aTUXN4vo9gcvN8GRQA7xuLHoGCZpTuEz0UyHSrG5596xtZ1pvilNAJnTBrkuRImmB2h3JTCg+LG3Bjq+AUOgEmpmLhONNqo12HBQg93wD87quqtbU5xaAxEKGngF2nG+oDV/iRYpkgP3jhCzYY0PyXdmPgYMVO6RJpB/mt5LyURq0qz9or/J0qbXW2aYufyqGnfxfx0Swcdr5dIPKWsu+YpScElR9LP33wiUZpvNWee/qcXO2S7Y8vHVTsOuRfml5W7Tlz53xfVgvVg9JA/Iv0LS2sYaiwKoGH+TC4tbXvBBBOVPcGFoUFu2wBC1XtVX+MAKRcxM0LTkfEM=\", \"X-Amz-Source-Account\": \"111111111111\", \"X-Amz-Source-Arn\": \"arn:<partition>:events:<region>:111111111111:rule/<resource:3>/<resource:4>\", \"X-Amzn-Trace-Id\": \"Root=1-66ec7c21-44b7c5793da6158925dd8353\", \"X-Forwarded-For\": \"72.21.217.42, 70.132.32.74\", \"X-Forwarded-Port\": \"443\", \"X-Forwarded-Proto\": \"https\"}, \"multiValueHeaders\": {\"amz-sdk-invocation-id\": [\"56c9681d-874c-ef1b-876b-f3985d9d1fa0\"], \"amz-sdk-request\": [\"ttl=20240919T193234Z;attempt=1;max=4\"], \"amz-sdk-retry\": [\"0/0/500\"], \"CloudFront-Forwarded-Proto\": [\"https\"], \"CloudFront-Is-Desktop-Viewer\": [\"true\"], \"CloudFront-Is-Mobile-Viewer\": [\"false\"], \"CloudFront-Is-SmartTV-Viewer\": [\"false\"], \"CloudFront-Is-Tablet-Viewer\": [\"false\"], \"CloudFront-Viewer-ASN\": [\"16509\"], \"CloudFront-Viewer-Country\": [\"US\"], \"Content-Type\": [\"application/json\"], \"Host\": [\"sp260dl21k.execute-api.<region>.amazonaws.com\"], \"User-Agent\": [\"aws-sdk-java/1.12.769 Linux/5.10.224-190.876.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/17.0.12+8-LTS java/17.0.12 scala/2.12.17 kotlin/1.5.32 vendor/Amazon.com_Inc. cfg/retry-mode/legacy\"], \"Via\": [\"1.1 a929b4bfaa0111e3feb7c4dbffdbd8d8.cloudfront.net (CloudFront)\"], \"X-Amz-Cf-Id\": [\"BKQQYBXKENj_W1ZK2LDm_YMuNXI1XHU9isWbrESHAhr5lfFoNcg0vg==\"], \"X-Amz-Date\": [\"20240919T193144Z\"], \"X-Amz-Security-Token\": [\"IQoJb3JpZ2luX2VjECwaCXVzLWVhc3QtMSJIMEYCIQDvt7mWI5G/D00yl23M9LKlTTPdeqQg49Vt7NJ8CxvBRQIhAIM/C7B3vq8swY/BwtVMQ1pRJGTkVLRlc2K91GP73/4OKuMCCGUQABoMNTM1MDAyODY2NjgyIgxSjjvKlfZx7lJImTwqwAJuXUDPlL7a9zlcLfiIa5IGDlKRzQKumT+0Hs0bcH4k90qBGqocF4CE785VDt70RSyTsdNY33m3v03W2e+D3gk+Fygkld5xasYKt6Uhd0FuoVFvNeY/dKhfQUVukvdCuc3aVo86KUHWQY2Ot2ZHKjXKsbnuiS57kVsgayS4sOMLuVsCv9hrSG5Ek85l/+TAdtOHekNU2hV5Bus2iPhsI7HL+vjgMCsdvZDz9Pq4tF56lnXEF41LJahHJc01nAd2RaNJysgWmEjKeylo0zTvKb17xWywGsb31cHonmnLj1bhB0nfzOBhwKZdzfEOVw54OR5BLLb1+14t4RmivjZfXoRlJUMKQ+mgVt1Td4k5aTUXN4vo9gcvN8GRQA7xuLHoGCZpTuEz0UyHSrG5596xtZ1pvilNAJnTBrkuRImmB2h3JTCg+LG3Bjq+AUOgEmpmLhONNqo12HBQg93wD87quqtbU5xaAxEKGngF2nG+oDV/iRYpkgP3jhCzYY0PyXdmPgYMVO6RJpB/mt5LyURq0qz9or/J0qbXW2aYufyqGnfxfx0Swcdr5dIPKWsu+YpScElR9LP33wiUZpvNWee/qcXO2S7Y8vHVTsOuRfml5W7Tlz53xfVgvVg9JA/Iv0LS2sYaiwKoGH+TC4tbXvBBBOVPcGFoUFu2wBC1XtVX+MAKRcxM0LTkfEM=\"], \"X-Amz-Source-Account\": [\"111111111111\"], \"X-Amz-Source-Arn\": [\"arn:<partition>:events:<region>:111111111111:rule/<resource:3>/<resource:4>\"], \"X-Amzn-Trace-Id\": [\"Root=1-66ec7c21-44b7c5793da6158925dd8353\"], \"X-Forwarded-For\": [\"72.21.217.42, 70.132.32.74\"], \"X-Forwarded-Port\": [\"443\"], \"X-Forwarded-Proto\": [\"https\"]}, \"queryStringParameters\": null, \"multiValueQueryStringParameters\": null, \"pathParameters\": null, \"stageVariables\": null, \"requestContext\": {\"resourceId\": \"7a07rd\", \"resourcePath\": \"/test\", \"httpMethod\": \"POST\", \"extendedRequestId\": \"eXhVNFPooAMELnA=\", \"requestTime\": \"19/Sep/2024:19:31:45 +0000\", \"path\": \"/test/test/\", \"accountId\": \"111111111111\", \"protocol\": \"HTTP/1.1\", \"stage\": \"test\", \"domainPrefix\": \"sp260dl21k\", \"requestTimeEpoch\": 1726774305007, \"requestId\": \"3ae58bde-9ef6-4867-af27-361dd207f942\", \"identity\": {\"cognitoIdentityPoolId\": null, \"accountId\": null, \"cognitoIdentityId\": null, \"caller\": null, \"sourceIp\": \"72.21.217.42\", \"principalOrgId\": null, \"accessKey\": null, \"cognitoAuthenticationType\": null, \"cognitoAuthenticationProvider\": null, \"userArn\": null, \"userAgent\": \"aws-sdk-java/1.12.769 Linux/5.10.224-190.876.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/17.0.12+8-LTS java/17.0.12 scala/2.12.17 kotlin/1.5.32 vendor/Amazon.com_Inc. cfg/retry-mode/legacy\", \"user\": null}, \"domainName\": \"sp260dl21k.execute-api.<region>.amazonaws.com\", \"deploymentId\": \"<id:1>\", \"apiId\": \"sp260dl21k\"}, \"body\": \"{\\\"message\\\": \\\"Hello from EventBridge\\\"}\", \"isBase64Encoded\": false}\n"
+        {
+          "resource": "/test",
+          "path": "/test/",
+          "httpMethod": "POST",
+          "headers": {
+            "amz-sdk-invocation-id": "<uuid:3>",
+            "amz-sdk-request": "ttl=20240920T190046Z;attempt=1;max=4",
+            "amz-sdk-retry": "0/0/500",
+            "CloudFront-Forwarded-Proto": "https",
+            "CloudFront-Is-Desktop-Viewer": "true",
+            "CloudFront-Is-Mobile-Viewer": "false",
+            "CloudFront-Is-SmartTV-Viewer": "false",
+            "CloudFront-Is-Tablet-Viewer": "false",
+            "CloudFront-Viewer-ASN": "0",
+            "CloudFront-Viewer-Country": "US",
+            "Content-Type": "application/json",
+            "Host": "f84avh0zn0.execute-api.<region>.amazonaws.com",
+            "User-Agent": "aws-sdk-java/1.12.769 Linux/5.10.224-190.876.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/17.0.12+8-LTS java/17.0.12 scala/2.12.17 kotlin/1.5.32 vendor/Amazon.com_Inc. cfg/retry-mode/legacy",
+            "Via": "1.1 87231a08ea3c7f15402d76db2a29d98c.cloudfront.net (CloudFront)",
+            "X-Amz-Cf-Id": "Ardf8cUQXLrSCkK9ArbSlGGTgMOrUsOPbqhDQTbmhkQF8La-0EWyBw==",
+            "X-Amz-Date": "20240920T185956Z",
+            "X-Amz-Security-Token": "IQoJb3JpZ2luX2VjEEMaCXVzLWVhc3QtMSJGMEQCIEOkieAMGZmsiBnBldd7bODIH9Ge2BFMx1yWaYn3Iek2AiALWJgLoo5bttOW5HhwE4K88ZIQP5Ti3At/iRiNsGcZdyrjAgh8EAAaDDUzNTAwMjg2NjY4MiIMDLDWmOxilUAawlgKKsACR7cRgcmw73t+9nEuiL9ZycwfUBYycCV4cCdZOQi8pE+vSb0FgEEVfwaFPsNRtfLasu/lb9ZrxhkqtbU0axil5PDCUbnZlFsQC4VUAom9SS+qODRrOmw+/vgEsQKMj1h9gy1sKAWcy+XXecEFb9jdrYf62JJZZLIf9DhukA4IlGhAa8Qz0XnUNU9jzzTVbYxBlix8C5UdtWivlDXdgflK6bQz0/8z4RmxImJWq1stx/zZ9nOD/WjFhEccOE+hC7pL/tsaCI5/3q/2Y5AiVkekua8ZSbTppUL2qYYCbd2tWWGZHcyf51giQjsZyi9aioCylyXqMyB9JkTMfu1KIr6DWfelsIj4r7IUlnYRJDxZYbDS2y6hcnla7LzIeszeS+yvHqt/geDSPA4gODEiS+R4Zlpx3F0WaGFmi94ehbaIP7MwrIy3twY6wAHrQgfUSnDWsKeRqC0fVhAIddnjkDiWVVPEreVhL2XaKtRzV90tyWxxD94d8Zwpv4RSFlefhXzfQcg3Vh7H8NBdXSzBxGmLJ72q13G1YuP6NGK+7h3DPXKII4PdiXeykNnySTfoi4DXiWJct2J7Ij0mT6IZfpFy0PcRDhi/Gd8tJ7W/3bPFw28elgxpycGsD/N7zuvS/thwiHWZWA+p5bQ4xWdewerkTffKGhE4IUPeNghwvcuazIsOyDl9BkoNcl8=",
+            "X-Amz-Source-Account": "111111111111",
+            "X-Amz-Source-Arn": "arn:<partition>:events:<region>:111111111111:rule/<resource:3>/<resource:4>",
+            "X-Amzn-Trace-Id": "Root=1-66edc62c-4f6e17ee0bf9652c7a19217d",
+            "X-Forwarded-For": "15.221.161.50, 18.68.30.240",
+            "X-Forwarded-Port": "443",
+            "X-Forwarded-Proto": "https"
+          },
+          "multiValueHeaders": {
+            "amz-sdk-invocation-id": [
+              "<uuid:3>"
+            ],
+            "amz-sdk-request": [
+              "ttl=20240920T190046Z;attempt=1;max=4"
+            ],
+            "amz-sdk-retry": [
+              "0/0/500"
+            ],
+            "CloudFront-Forwarded-Proto": [
+              "https"
+            ],
+            "CloudFront-Is-Desktop-Viewer": [
+              "true"
+            ],
+            "CloudFront-Is-Mobile-Viewer": [
+              "false"
+            ],
+            "CloudFront-Is-SmartTV-Viewer": [
+              "false"
+            ],
+            "CloudFront-Is-Tablet-Viewer": [
+              "false"
+            ],
+            "CloudFront-Viewer-ASN": [
+              "0"
+            ],
+            "CloudFront-Viewer-Country": [
+              "US"
+            ],
+            "Content-Type": [
+              "application/json"
+            ],
+            "Host": [
+              "f84avh0zn0.execute-api.<region>.amazonaws.com"
+            ],
+            "User-Agent": [
+              "aws-sdk-java/1.12.769 Linux/5.10.224-190.876.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/17.0.12+8-LTS java/17.0.12 scala/2.12.17 kotlin/1.5.32 vendor/Amazon.com_Inc. cfg/retry-mode/legacy"
+            ],
+            "Via": [
+              "1.1 87231a08ea3c7f15402d76db2a29d98c.cloudfront.net (CloudFront)"
+            ],
+            "X-Amz-Cf-Id": [
+              "Ardf8cUQXLrSCkK9ArbSlGGTgMOrUsOPbqhDQTbmhkQF8La-0EWyBw=="
+            ],
+            "X-Amz-Date": [
+              "20240920T185956Z"
+            ],
+            "X-Amz-Security-Token": [
+              "IQoJb3JpZ2luX2VjEEMaCXVzLWVhc3QtMSJGMEQCIEOkieAMGZmsiBnBldd7bODIH9Ge2BFMx1yWaYn3Iek2AiALWJgLoo5bttOW5HhwE4K88ZIQP5Ti3At/iRiNsGcZdyrjAgh8EAAaDDUzNTAwMjg2NjY4MiIMDLDWmOxilUAawlgKKsACR7cRgcmw73t+9nEuiL9ZycwfUBYycCV4cCdZOQi8pE+vSb0FgEEVfwaFPsNRtfLasu/lb9ZrxhkqtbU0axil5PDCUbnZlFsQC4VUAom9SS+qODRrOmw+/vgEsQKMj1h9gy1sKAWcy+XXecEFb9jdrYf62JJZZLIf9DhukA4IlGhAa8Qz0XnUNU9jzzTVbYxBlix8C5UdtWivlDXdgflK6bQz0/8z4RmxImJWq1stx/zZ9nOD/WjFhEccOE+hC7pL/tsaCI5/3q/2Y5AiVkekua8ZSbTppUL2qYYCbd2tWWGZHcyf51giQjsZyi9aioCylyXqMyB9JkTMfu1KIr6DWfelsIj4r7IUlnYRJDxZYbDS2y6hcnla7LzIeszeS+yvHqt/geDSPA4gODEiS+R4Zlpx3F0WaGFmi94ehbaIP7MwrIy3twY6wAHrQgfUSnDWsKeRqC0fVhAIddnjkDiWVVPEreVhL2XaKtRzV90tyWxxD94d8Zwpv4RSFlefhXzfQcg3Vh7H8NBdXSzBxGmLJ72q13G1YuP6NGK+7h3DPXKII4PdiXeykNnySTfoi4DXiWJct2J7Ij0mT6IZfpFy0PcRDhi/Gd8tJ7W/3bPFw28elgxpycGsD/N7zuvS/thwiHWZWA+p5bQ4xWdewerkTffKGhE4IUPeNghwvcuazIsOyDl9BkoNcl8="
+            ],
+            "X-Amz-Source-Account": [
+              "111111111111"
+            ],
+            "X-Amz-Source-Arn": [
+              "arn:<partition>:events:<region>:111111111111:rule/<resource:3>/<resource:4>"
+            ],
+            "X-Amzn-Trace-Id": [
+              "Root=1-66edc62c-4f6e17ee0bf9652c7a19217d"
+            ],
+            "X-Forwarded-For": [
+              "15.221.161.50, 18.68.30.240"
+            ],
+            "X-Forwarded-Port": [
+              "443"
+            ],
+            "X-Forwarded-Proto": [
+              "https"
+            ]
+          },
+          "queryStringParameters": null,
+          "multiValueQueryStringParameters": null,
+          "pathParameters": null,
+          "stageVariables": null,
+          "requestContext": {
+            "resourceId": "6lce7i",
+            "resourcePath": "/test",
+            "httpMethod": "POST",
+            "extendedRequestId": "eavnBH7RoAMEM_g=",
+            "requestTime": "20/Sep/2024:18:59:56 +0000",
+            "path": "/test/test/",
+            "accountId": "111111111111",
+            "protocol": "HTTP/1.1",
+            "stage": "test",
+            "domainPrefix": "f84avh0zn0",
+            "requestTimeEpoch": 1726858796693,
+            "requestId": "<uuid:4>",
+            "identity": {
+              "cognitoIdentityPoolId": null,
+              "accountId": null,
+              "cognitoIdentityId": null,
+              "caller": null,
+              "sourceIp": "15.221.161.50",
+              "principalOrgId": null,
+              "accessKey": null,
+              "cognitoAuthenticationType": null,
+              "cognitoAuthenticationProvider": null,
+              "userArn": null,
+              "userAgent": "aws-sdk-java/1.12.769 Linux/5.10.224-190.876.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/17.0.12+8-LTS java/17.0.12 scala/2.12.17 kotlin/1.5.32 vendor/Amazon.com_Inc. cfg/retry-mode/legacy",
+              "user": null
+            },
+            "domainName": "f84avh0zn0.execute-api.<region>.amazonaws.com",
+            "deploymentId": "<id:1>",
+            "apiId": "f84avh0zn0"
+          },
+          "body": {
+            "message": "Hello from EventBridge"
+          },
+          "isBase64Encoded": false
+        }
       ]
     }
   }

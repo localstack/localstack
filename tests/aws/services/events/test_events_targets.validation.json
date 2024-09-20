@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetApiGateway::test_put_events_with_target_api_gateway": {
-    "last_validated_date": "2024-09-19T19:31:58+00:00"
+    "last_validated_date": "2024-09-20T19:00:10+00:00"
   },
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetEvents::test_put_events_with_target_events[bus_combination0]": {
     "last_validated_date": "2024-07-11T08:59:28+00:00"
