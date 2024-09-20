@@ -1,4 +1,3 @@
-import base64
 import json
 import logging
 import os
@@ -23,6 +22,7 @@ from localstack.aws.api.secretsmanager import (
 )
 from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_from_typed_dict
@@ -2397,13 +2397,17 @@ class TestSecretsManager:
         sm_snapshot.match("mismatch_version_id_and_stage", exc.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..CreatedDate"])
-    def test_get_secret_value(
+    def test_get_secret_value_to_fix_11319(
         self, aws_client, aws_http_client_factory, region_name, create_secret, sm_snapshot
     ):
+        """
+        This is a regession test for #11319
+        AWS returns decoded value when fetching secret from a SDK
+        but AWS returns base64 encoded value for a plain HTTP API request
+        This tests tries to verify both of these behaviours.
+        """
         secret_name = short_uid()
         secret_string = "footest"
-        secret_string_b64_encoded = base64.b64encode(secret_string.encode())
 
         response = create_secret(
             Name=secret_name,
@@ -2416,11 +2420,13 @@ class TestSecretsManager:
 
         secret_arn = response["ARN"]
 
+        # Testing from Boto client
+
         secret_value_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
 
         sm_snapshot.match("secret_value_response", secret_value_response)
 
-        assert secret_value_response["SecretBinary"] == secret_string.encode()
+        # Testing as HTTP request
 
         client = aws_http_client_factory(
             "secretsmanager", region=region_name, signer_factory=SigV4Auth
@@ -2434,9 +2440,11 @@ class TestSecretsManager:
 
         response = client.post("/", data=json.dumps(parameters), headers=headers)
         json_response = response.json()
-        sm_snapshot.match("secret_value_http_response", json_response)
 
-        assert json_response["SecretBinary"] == str(secret_string_b64_encoded, encoding="utf-8")
+        sm_snapshot.add_transformer(
+            TransformerUtility.jsonpath("$..CreatedDate", "datetime", reference_replacement=False)
+        )
+        sm_snapshot.match("secret_value_http_response", json_response)
 
 
 class TestSecretsManagerMultiAccounts:
