@@ -32,8 +32,8 @@ load_start_time = time.time()
 
 class Directories:
     """
-    Holds the different directories available to localstack. Some directories are shared between the host and the
-    localstack container, some live only on the host and some only in the container.
+    Holds different directories available to localstack. Some directories are shared between the host and the
+    localstack container, some live only on the host and others in the container.
 
     Attributes:
         static_libs: container only; binaries and libraries statically packaged with the image
@@ -153,7 +153,7 @@ class Directories:
     @staticmethod
     def for_cli() -> "Directories":
         """Returns directories used for when running localstack CLI commands from the host system. Unlike
-        ``for_container``, these here need to be cross-platform. Ideally, this should not be needed at all,
+        ``for_container``, these are meant to be cross-platform. Ideally, this should not be needed at all,
         because the localstack runtime and CLI do not share any control paths. There are a handful of
         situations where directories or files may be created lazily for CLI commands. Some paths are
         intentionally set to None to provoke errors if these paths are used from the CLI - which they
@@ -275,7 +275,7 @@ def is_windows() -> bool:
 
 
 def ping(host):
-    """Returns True if host responds to a ping request"""
+    """Returns True if the host responds to a ping request"""
     is_in_windows = is_windows()
     ping_opts = "-n 1 -w 2000" if is_in_windows else "-c 1 -W 2"
     args = "ping %s %s" % (ping_opts, host)
@@ -338,7 +338,7 @@ def in_docker():
         if os_hostname and os_hostname in content:
             return True
 
-    # containerd does not set any specific file or config, but does use
+    # container does not set any specific file or config, but it does use
     # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem for `/`.
     try:
         with open("/proc/mounts", "rt") as infile:
@@ -375,7 +375,7 @@ def in_docker():
     return False
 
 
-# whether the in_docker check should always return True or False
+# whether in_docker check should always return True or False
 OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
@@ -389,7 +389,7 @@ CONFIG_PROFILE = os.environ.get("CONFIG_PROFILE", "").strip()
 # CLI specific: host configuration directory
 CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 
-# keep this on top to populate environment
+# keep this on top to populate the environment
 try:
     # CLI specific: the actually loaded configuration profile
     LOADED_PROFILES = load_environment(CONFIG_PROFILE)
@@ -1106,7 +1106,7 @@ DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
 
 # Comma-separated list of regex patterns for DNS names to resolve locally.
 # Any DNS name not matched against any of the patterns on this whitelist
-# will resolve to the real DNS entry, rather than the local one.
+# will resolve it to the real DNS entry, rather than the local one.
 DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM = (
     os.environ.get("DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM") or ""
 ).strip()
@@ -1453,8 +1453,8 @@ def service_port(service_key: str, external: bool = False) -> int:
 
 def get_edge_port_http():
     """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for
-    internal use. This function is also not needed anymore because we don't separate between HTTP
-    and HTTP ports anymore since LocalStack listens to both."""
+    internal use. This function is not needed anymore because we don't separate between HTTP
+    and HTTP ports anymore since LocalStack comprehends to both."""
     warnings.warn(
         """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port`
         for internal use. This function is also not needed anymore because we don't separate
