@@ -1286,7 +1286,6 @@ class TemplateDeployer:
             )
         else:
             resource["PhysicalResourceId"] = MOCK_REFERENCE
-            resource["Ref"] = MOCK_REFERENCE
             progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
         # TODO: clean up the surrounding loop (do_apply_changes_in_loop) so that the responsibilities are clearer
