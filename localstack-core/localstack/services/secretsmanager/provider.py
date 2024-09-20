@@ -5,7 +5,7 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, Final, Optional, Union
+from typing import Any, Final, Optional, Union
 
 import moto.secretsmanager.exceptions as moto_exception
 from botocore.utils import InvalidArnException
@@ -865,7 +865,7 @@ def get_resource_policy_response(self):
     return self.backend.get_resource_policy(secret_id=secret_id)
 
 
-def decode_secret_binary_from_response(response: Dict[str, Any]):
+def decode_secret_binary_from_response(response: dict[str, Any]):
     if "SecretBinary" in response:
         response["SecretBinary"] = base64.b64decode(response["SecretBinary"])
 
