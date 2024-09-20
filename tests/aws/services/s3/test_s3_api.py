@@ -531,6 +531,10 @@ class TestS3ObjectCRUD:
             aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=100-200")
         snapshot.match("get-100-200", e.value.response)
 
+        # test that we can still put an object on the same key that failed GetObject with range request
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=content * 2)
+        snapshot.match("put-after-failed", put_obj)
+
 
 @markers.snapshot.skip_snapshot_verify(condition=is_v2_provider, paths=["$..ServerSideEncryption"])
 class TestS3Multipart:

@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  TemplateUri:
+    Type: String
+
+Resources:
+  ChildStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref TemplateUri
+
+Outputs:
+  BucketStackId:
+    Value: !Ref ChildStack
