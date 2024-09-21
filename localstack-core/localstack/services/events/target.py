@@ -2,15 +2,15 @@ import datetime
 import json
 import logging
 import re
-import time
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Set
+from typing import Any, Dict, Set
+from urllib.parse import urlencode
 
 import requests
-
 from botocore.client import BaseClient
 
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
@@ -32,9 +32,6 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
-from urllib.parse import urlencode
-from typing import Any, Dict
-from localstack import config
 
 LOG = logging.getLogger(__name__)
 
@@ -243,11 +240,22 @@ TargetSenderDict = dict[Arn, TargetSender]
 
 # Target Senders are ordered alphabetically by service name
 
+
 class ApiGatewayTargetSender(TargetSender):
     PROHIBITED_HEADERS = [
-        "authorization", "connection", "content-encoding", "content-length",
-        "host", "max-forwards", "te", "transfer-encoding", "trailer",
-        "upgrade", "via", "www-authenticate", "x-forwarded-for"
+        "authorization",
+        "connection",
+        "content-encoding",
+        "content-length",
+        "host",
+        "max-forwards",
+        "te",
+        "transfer-encoding",
+        "trailer",
+        "upgrade",
+        "via",
+        "www-authenticate",
+        "x-forwarded-for",
     ]
     ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
@@ -264,7 +272,7 @@ class ApiGatewayTargetSender(TargetSender):
         resource_path_parts = api_gateway_info_parts[3:]  # may contain wildcards
 
         if http_method not in self.ALLOWED_HTTP_METHODS:
-            LOG.error(f"Unsupported HTTP method: {http_method}")
+            LOG.error("Unsupported HTTP method: %s", http_method)
             return
 
         # Replace wildcards in resource path with PathParameterValues
@@ -272,23 +280,23 @@ class ApiGatewayTargetSender(TargetSender):
         resource_path_segments = []
         path_param_index = 0
         for part in resource_path_parts:
-            if part == '*':
+            if part == "*":
                 if path_param_index < len(path_params_values):
                     resource_path_segments.append(path_params_values[path_param_index])
                     path_param_index += 1
                 else:
                     # Use empty string if no path parameter is provided
-                    resource_path_segments.append('')
+                    resource_path_segments.append("")
             else:
                 resource_path_segments.append(part)
-        resource_path = '/'.join(resource_path_segments)
+        resource_path = "/".join(resource_path_segments)
 
         # Ensure resource path starts and ends with '/'
         resource_path = f"/{resource_path.strip('/')}/"
 
         # Construct query string parameters
         query_params = self.target.get("HttpParameters", {}).get("QueryStringParameters", {})
-        query_string = urlencode(query_params) if query_params else ''
+        query_string = urlencode(query_params) if query_params else ""
 
         # Construct headers
         headers = self.target.get("HttpParameters", {}).get("HeaderParameters", {})
@@ -299,11 +307,10 @@ class ApiGatewayTargetSender(TargetSender):
         headers["Host"] = host
 
         # Ensure Content-Type is set
-        headers.setdefault('Content-Type', 'application/json')
+        headers.setdefault("Content-Type", "application/json")
 
         # Construct the full URL
         resource_path = f"/{resource_path.strip('/')}/"
-
 
         # Construct the full URL using urljoin
         from urllib.parse import urljoin
@@ -312,7 +319,6 @@ class ApiGatewayTargetSender(TargetSender):
         base_path = f"/{stage_name}"
         full_path = urljoin(base_path + "/", resource_path.lstrip("/"))
         url = urljoin(base_url + "/", full_path.lstrip("/"))
-
 
         if query_string:
             url += f"?{query_string}"
@@ -323,18 +329,16 @@ class ApiGatewayTargetSender(TargetSender):
         try:
             # Send the HTTP request
             response = requests.request(
-                method=http_method,
-                url=url,
-                headers=headers,
-                data=event_json,
-                timeout=5
+                method=http_method, url=url, headers=headers, data=event_json, timeout=5
             )
             if not response.ok:
                 LOG.error(
-                    f"API Gateway target invocation failed with status code {response.status_code}, response: {response.text}"
+                    "API Gateway target invocation failed with status code %s, response: %s",
+                    response.status_code,
+                    response.text,
                 )
         except requests.RequestException as e:
-            LOG.error(f"Request failed: {str(e)}")
+            LOG.error("Request failed: %s", e)
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
@@ -347,10 +351,10 @@ class ApiGatewayTargetSender(TargetSender):
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
         # Handle 'Input' parameter
-        if 'Input' in self.target:
-            event = json.loads(self.target['Input'])
-        elif 'InputTransformer' in self.target:
-            input_transformer = self.target['InputTransformer']
+        if "Input" in self.target:
+            event = json.loads(self.target["Input"])
+        elif "InputTransformer" in self.target:
+            input_transformer = self.target["InputTransformer"]
             template_replacements = get_template_replacements(input_transformer, event)
             predefined_template_replacements = self._get_predefined_template_replacements(event)
             template_replacements.update(predefined_template_replacements)
@@ -359,15 +363,12 @@ class ApiGatewayTargetSender(TargetSender):
             event = replace_template_placeholders(
                 input_template, template_replacements, is_json_format
             )
-        elif 'InputPath' in self.target:
-            event = transform_event_with_target_input_path(
-                self.target['InputPath'], event
-            )
+        elif "InputPath" in self.target:
+            event = transform_event_with_target_input_path(self.target["InputPath"], event)
         else:
             pass
 
         self.send_event(event)
-
 
     def _get_predefined_template_replacements(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """Extracts predefined values from the event."""
@@ -376,9 +377,7 @@ class ApiGatewayTargetSender(TargetSender):
         predefined_template_replacements["aws.events.rule-name"] = self.rule_name
         predefined_template_replacements["aws.events.event.ingestion-time"] = event.get("time", "")
         predefined_template_replacements["aws.events.event"] = {
-            "detailType" if k == "detail-type" else k: v
-            for k, v in event.items()
-            if k != "detail"
+            "detailType" if k == "detail-type" else k: v for k, v in event.items() if k != "detail"
         }
         predefined_template_replacements["aws.events.event.json"] = event
 
