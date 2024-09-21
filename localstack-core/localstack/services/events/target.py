@@ -2,9 +2,12 @@ import datetime
 import json
 import logging
 import re
+import time
 import uuid
 from abc import ABC, abstractmethod
 from typing import Any, Set
+
+import requests
 
 from botocore.client import BaseClient
 
@@ -134,135 +137,85 @@ class TargetSender(ABC):
         if self._client is None:
             self._client = self._initialize_client()
         return self._client
-
-class ApiGatewayTargetSender(TargetSender):
-    def send_event(self, event):
-        import requests
-        from localstack import config
-        from urllib.parse import urlencode
-
-        # Parse the ARN to extract api_id, stage_name, http_method, and resource path
-        # Example ARN: arn:aws:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
-        arn_parts = self.target["Arn"].split(":")
-        api_gateway_info = arn_parts[5]  # e.g., 'myapi/dev/POST/pets/*/*'
-        api_gateway_info_parts = api_gateway_info.split("/")
-
-        api_id = api_gateway_info_parts[0]
-        stage_name = api_gateway_info_parts[1]
-        http_method = api_gateway_info_parts[2].upper()
-        resource_path_parts = api_gateway_info_parts[3:]  # may contain wildcards
-
-        # Replace wildcards in resource path with PathParameterValues
-        path_params_values = self.target.get("HttpParameters", {}).get("PathParameterValues", [])
-        resource_path_segments = []
-        path_param_index = 0
-        for part in resource_path_parts:
-            if part == '*':
-                if path_param_index < len(path_params_values):
-                    resource_path_segments.append(path_params_values[path_param_index])
-                    path_param_index += 1
-                else:
-                    # Use empty string if no path parameter is provided
-                    resource_path_segments.append('')
-            else:
-                resource_path_segments.append(part)
-        resource_path = '/'.join(resource_path_segments)
-
-        # Construct query string parameters
-        query_params = self.target.get("HttpParameters", {}).get("QueryStringParameters", {})
-        query_string = urlencode(query_params) if query_params else ''
-
-        # Construct headers
-        headers = self.target.get("HttpParameters", {}).get("HeaderParameters", {})
-        # Add Host header to ensure proper routing
-        host = f"{api_id}.execute-api.{self.target_region or self.region}.localhost.localstack.cloud"
-        headers["Host"] = host
-        # Ensure Content-Type is set
-        headers.setdefault('Content-Type', 'application/json')
-
-        # Construct the full URL
-        base_url = config.internal_service_url()
-        url = f"{base_url}/{stage_name}/{resource_path}"
-        if query_string:
-            url += f"?{query_string}"
-
-        # Serialize the event, converting datetime objects to strings
-        event_json = json.dumps(event, default=str)
-
-        # Send the HTTP request
-        response = requests.request(
-            method=http_method,
-            url=url,
-            headers=headers,
-            data=event_json,
-        )
-
-        # Log error if the request was unsuccessful
-        if not response.ok:
-            LOG.error(
-                f"API Gateway target invocation failed with status code {response.status_code}, response: {response.text}"
-            )
-
-    def _validate_input(self, target: Target):
-        # Skipping validations as per instructions
-        pass
-
-    def process_event(self, event: FormattedEvent, context: RequestContext):
-        """Processes the event, applies transformations, and sends it to the target."""
-        # Remove the 'event-bus-name' field if present
-        if isinstance(event, dict):
-            event.pop("event-bus-name", None)
-        # Apply InputPath if specified
-        if input_path := self.target.get("InputPath"):
-            event = transform_event_with_target_input_path(input_path, event)
-        # Apply InputTransformer if specified
-        if input_transformer := self.target.get("InputTransformer"):
-            event = self.transform_event_with_target_input_transformer(input_transformer, event)
-        # Send the transformed event
-        self.send_event(event)
-
-    def transform_event_with_target_input_transformer(
-        self, input_transformer: InputTransformer, event: FormattedEvent
-    ) -> TransformedEvent:
-        input_template = input_transformer["InputTemplate"]
-        template_replacements = get_template_replacements(input_transformer, event)
-        predefined_template_replacements = self._get_predefined_template_replacements(event)
-        template_replacements.update(predefined_template_replacements)
-
-        is_json_format = input_template.strip().startswith(("{"))
-        populated_template = replace_template_placeholders(
-            input_template, template_replacements, is_json_format
-        )
-
-        return populated_template
-
-    def _get_predefined_template_replacements(self, event: FormattedEvent) -> dict[str, Any]:
-        """Extracts predefined values from the event."""
-        predefined_template_replacements = {}
-        predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
-        predefined_template_replacements["aws.events.rule-name"] = self.rule_name
-        predefined_template_replacements["aws.events.event.ingestion-time"] = event["time"]
-        predefined_template_replacements["aws.events.event"] = {
-            "detailType" if k == "detail-type" else k: v  # detail-type is returned as detailType
-            for k, v in event.items()
-            if k != "detail"  # detail is not part of .event placeholder
-        }
-        predefined_template_replacements["aws.events.event.json"] = event
-
-        return predefined_template_replacements
-
-
+    
 TargetSenderDict = dict[Arn, TargetSender]
 
-# Target Senders are ordered alphabetically by service name
+from urllib.parse import urlencode
+from typing import Any, Dict
+from localstack import config
 
+
+
+# Target Senders are ordered alphabetically by service name
+import json
+import logging
+import time
+from typing import Any, Dict
+
+import requests
+from requests.exceptions import RequestException
+
+LOG = logging.getLogger(__name__)
+
+import json
+import logging
+import time
+from typing import Any, Dict
+from urllib.parse import urlencode
+
+import requests
+from requests.exceptions import RequestException
+
+LOG = logging.getLogger(__name__)
+
+
+import json
+import logging
+import time
+from typing import Any, Dict
+from urllib.parse import urlencode
+
+import requests
+from requests.exceptions import RequestException
+
+LOG = logging.getLogger(__name__)
+
+import json
+import logging
+import time
+from typing import Any, Dict
+from urllib.parse import urlencode
+
+import requests
+from requests.exceptions import RequestException
+from localstack import config
+
+LOG = logging.getLogger(__name__)
+
+
+import json
+import logging
+import time
+from typing import Any, Dict
+from urllib.parse import urlencode
+
+import requests
+from requests.exceptions import RequestException
+from localstack import config
+
+
+LOG = logging.getLogger(__name__)
 
 class ApiGatewayTargetSender(TargetSender):
-    def send_event(self, event):
-        import requests
-        from localstack import config
-        from urllib.parse import urlencode
+    PROHIBITED_HEADERS = [
+        "authorization", "connection", "content-encoding", "content-length",
+        "host", "max-forwards", "te", "transfer-encoding", "trailer",
+        "upgrade", "via", "www-authenticate", "x-forwarded-for"
+    ]
+    MAX_RETRIES = 3
+    RETRY_DELAY = 1  # seconds
 
+    def send_event(self, event):
         # Parse the ARN to extract api_id, stage_name, http_method, and resource path
         # Example ARN: arn:aws:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
         arn_parts = self.target["Arn"].split(":")
@@ -290,62 +243,96 @@ class ApiGatewayTargetSender(TargetSender):
                 resource_path_segments.append(part)
         resource_path = '/'.join(resource_path_segments)
 
+        # Ensure resource path starts and ends with '/'
+        resource_path = f"/{resource_path.strip('/')}/"
+
         # Construct query string parameters
         query_params = self.target.get("HttpParameters", {}).get("QueryStringParameters", {})
         query_string = urlencode(query_params) if query_params else ''
 
         # Construct headers
         headers = self.target.get("HttpParameters", {}).get("HeaderParameters", {})
-        # Add Host header to ensure proper routing
-        host = f"{api_id}.execute-api.{self.target_region or self.region}.localhost.localstack.cloud"
+        headers = {k: v for k, v in headers.items() if k.lower() not in self.PROHIBITED_HEADERS}
+        # Add Host header to ensure proper routing in LocalStack
+
+        host = f"{api_id}.execute-api.{self.target_region or self.region}.amazonaws.com"
         headers["Host"] = host
+
         # Ensure Content-Type is set
         headers.setdefault('Content-Type', 'application/json')
 
         # Construct the full URL
+        resource_path = f"/{resource_path.strip('/')}/"
+
+
+        # Construct the full URL using urljoin
+        from urllib.parse import urljoin
+
         base_url = config.internal_service_url()
-        url = f"{base_url}/{stage_name}/{resource_path}"
+        base_path = f"/{stage_name}"
+        full_path = urljoin(base_path + "/", resource_path.lstrip("/"))
+        url = urljoin(base_url + "/", full_path.lstrip("/"))
+
+
         if query_string:
             url += f"?{query_string}"
 
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
 
-        # Send the HTTP request
-        response = requests.request(
-            method=http_method,
-            url=url,
-            headers=headers,
-            data=event_json,
-        )
-
-        # Log error if the request was unsuccessful
-        if not response.ok:
-            LOG.error(
-                f"API Gateway target invocation failed with status code {response.status_code}, response: {response.text}"
-            )
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                # Send the HTTP request
+                response = requests.request(
+                    method=http_method,
+                    url=url,
+                    headers=headers,
+                    data=event_json,
+                    timeout=5  # 5 second timeout
+                )
+                if response.status_code < 500 and response.status_code != 429:
+                    if not response.ok:
+                        LOG.error(
+                            f"API Gateway target invocation failed with status code {response.status_code}, response: {response.text}"
+                        )
+                    return
+                if attempt == self.MAX_RETRIES - 1:
+                    LOG.error(
+                        f"API Gateway target invocation failed after {self.MAX_RETRIES} attempts. Status code: {response.status_code}, response: {response.text}"
+                    )
+            except RequestException as e:
+                LOG.error(f"Request failed: {str(e)}")
+            time.sleep(self.RETRY_DELAY * (2 ** attempt))  # Exponential backoff
 
     def _validate_input(self, target: Target):
         # Skipping validations as per instructions
         pass
 
-    def process_event(self, event: FormattedEvent, context: RequestContext):
+    def process_event(self, event: Dict[str, Any], context: RequestContext):
         """Processes the event, applies transformations, and sends it to the target."""
         # Remove the 'event-bus-name' field if present
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
-        # Apply InputPath if specified
-        if input_path := self.target.get("InputPath"):
-            event = transform_event_with_target_input_path(input_path, event)
-        # Apply InputTransformer if specified
-        if input_transformer := self.target.get("InputTransformer"):
-            event = self.transform_event_with_target_input_transformer(input_transformer, event)
+        # Handle 'Input' parameter
+        if 'Input' in self.target:
+            event = json.loads(self.target['Input'])
+        elif 'InputTransformer' in self.target:
+            event = self.transform_event_with_target_input_transformer(
+                self.target['InputTransformer'], event
+            )
+        elif 'InputPath' in self.target:
+            event = transform_event_with_target_input_path(
+                self.target['InputPath'], event
+            )
+        else:
+            # Use the event as is
+            pass
         # Send the transformed event
         self.send_event(event)
 
     def transform_event_with_target_input_transformer(
-        self, input_transformer: InputTransformer, event: FormattedEvent
-    ) -> TransformedEvent:
+        self, input_transformer: Dict[str, Any], event: Dict[str, Any]
+    ) -> Dict[str, Any]:
         input_template = input_transformer["InputTemplate"]
         template_replacements = get_template_replacements(input_transformer, event)
         predefined_template_replacements = self._get_predefined_template_replacements(event)
@@ -358,16 +345,16 @@ class ApiGatewayTargetSender(TargetSender):
 
         return populated_template
 
-    def _get_predefined_template_replacements(self, event: FormattedEvent) -> dict[str, Any]:
+    def _get_predefined_template_replacements(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """Extracts predefined values from the event."""
         predefined_template_replacements = {}
         predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
         predefined_template_replacements["aws.events.rule-name"] = self.rule_name
-        predefined_template_replacements["aws.events.event.ingestion-time"] = event["time"]
+        predefined_template_replacements["aws.events.event.ingestion-time"] = event.get("time", "")
         predefined_template_replacements["aws.events.event"] = {
-            "detailType" if k == "detail-type" else k: v  # detail-type is returned as detailType
+            "detailType" if k == "detail-type" else k: v
             for k, v in event.items()
-            if k != "detail"  # detail is not part of .event placeholder
+            if k != "detail"
         }
         predefined_template_replacements["aws.events.event.json"] = event
 

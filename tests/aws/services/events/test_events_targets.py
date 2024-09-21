@@ -23,6 +23,10 @@ from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTE
 from tests.aws.services.firehose.helper_functions import get_firehose_iam_documents
 from tests.aws.services.kinesis.helper_functions import get_shard_iterator
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY_FORMAT, TEST_LAMBDA_PYTHON_ECHO
+from localstack_snapshot.snapshots.transformer import (
+    JsonpathTransformer,
+    RegexTransformer,
+)
 
 # TODO:
 #  Add tests for the following services:
@@ -47,12 +51,22 @@ class TestEventsTargetApiGateway:
         create_role_with_policy,
         region_name,
         account_id,
-        cleanups,
     ):
-        # Add transformers for snapshot testing
-        snapshot.add_transformer(snapshot.transform.lambda_api())
-        snapshot.add_transformer(snapshot.transform.apigateway_api())
-        snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
+        # Existing transformers
+        transformers = [
+            snapshot.transform.lambda_api(),
+            snapshot.transform.apigateway_api(),
+            snapshot.transform.apigatewayv2_lambda_proxy_event(),
+            snapshot.transform.key_value("CodeSha256"),
+            snapshot.transform.regex(r'"EventId":\s*"[^"]+"', '"EventId": "<event-id>"'),
+            snapshot.transform.key_value("headers", value_replacement="<headers>", reference_replacement=False),
+            snapshot.transform.key_value("multiValueHeaders", value_replacement="<multiValueHeaders>", reference_replacement=False),
+            snapshot.transform.key_value("stageVariables", value_replacement="<stageVariables>", reference_replacement=False),
+        ]
+
+
+        for transformer in transformers:
+            snapshot.add_transformer(transformer)
 
 
         # Step a: Create a Lambda function with a unique name using the existing fixture
@@ -68,17 +82,12 @@ class TestEventsTargetApiGateway:
         lambda_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
         snapshot.match("create_lambda_response", create_lambda_response)
 
-        # Register cleanup for Lambda function immediately after creation
-        # cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
-
         # Step b: Set up an API Gateway
         api_id, _, root = create_rest_apigw(
             name=f"test-api-${short_uid()}",
             description="Test Integration with SQS",
         )
 
-        # Register cleanup for API Gateway immediately after creation
-        # cleanups.append(lambda: aws_client.apigateway.delete_rest_api(restApiId=api_id))
 
         # Get the root resource ID
         resources = aws_client.apigateway.get_resources(restApiId=api_id)
@@ -138,9 +147,6 @@ class TestEventsTargetApiGateway:
         event_bus_response = events_create_event_bus(Name=event_bus_name)
         snapshot.match("event_bus_response", event_bus_response)
 
-        # Register cleanup for Event Bus immediately after creation
-        # cleanups.append(lambda: aws_client.events.delete_event_bus(Name=event_bus_name))
-
         # Step d: Create a rule on this bus
         rule_name = f"test-rule-{short_uid()}"
         event_pattern = {
@@ -153,9 +159,6 @@ class TestEventsTargetApiGateway:
             EventPattern=json.dumps(event_pattern),
         )
         snapshot.match("rule_response", rule_response)
-
-        # Register cleanup for Rule immediately after creation
-        # cleanups.append(lambda: aws_client.events.delete_rule(Name=rule_name, EventBusName=event_bus_name))
 
         # Step e: Create an IAM Role for EventBridge to invoke API Gateway
         assume_role_policy_document = {
@@ -175,10 +178,6 @@ class TestEventsTargetApiGateway:
             resource=source_arn,
             attach=False  # Since we're using put_role_policy, not attach_role_policy
         )
-
-        # Register cleanups for IAM Role and Policy immediately after creation
-        # cleanups.append(lambda: aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=f'p-{role_name}'))
-        # cleanups.append(lambda: aws_client.iam.delete_role(RoleName=role_name))
 
         # Allow some time for IAM role propagation (only needed in AWS)
         if is_aws_cloud():
@@ -203,9 +202,6 @@ class TestEventsTargetApiGateway:
         )
         snapshot.match("put_targets_response", put_targets_response)
         assert put_targets_response['FailedEntryCount'] == 0
-
-        # Register cleanup for the EventBridge target immediately after adding
-        # cleanups.append(lambda: aws_client.events.remove_targets(Rule=rule_name, EventBusName=event_bus_name, Ids=[target_id]))
 
         # Step g: Send an event to EventBridge
         event_entry = {
