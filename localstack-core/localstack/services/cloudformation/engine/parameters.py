@@ -90,7 +90,7 @@ def resolve_parameters(
             default_value = pm["DefaultValue"]
             if default_value is None:
                 raise Exception(
-                    "Invalid. Needs to have either param specified or Default. (TODO)"
+                    f"Invalid. Parameter '{pm_key}' needs to have either param specified or Default."
                 )  # TODO: test and verify
 
             resolved_param["ParameterValue"] = default_value
@@ -100,13 +100,13 @@ def resolve_parameters(
                 and new_parameter.get("ParameterValue") is not None
             ):
                 raise Exception(
-                    "Can't set both 'UsePreviousValue' and a concrete value. (TODO)"
+                    f"Can't set both 'UsePreviousValue' and a concrete value for parameter '{pm_key}'."
                 )  # TODO: test and verify
 
             if new_parameter.get("UsePreviousValue", False):
                 if old_parameter is None:
                     raise Exception(
-                        "Set 'UsePreviousValue' but stack has no previous value for this parameter. (TODO)"
+                        f"Set 'UsePreviousValue' but stack has no previous value for parameter '{pm_key}'."
                     )  # TODO: test and verify
 
                 resolved_param["ParameterValue"] = old_parameter["ParameterValue"]
