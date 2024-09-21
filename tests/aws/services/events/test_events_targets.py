@@ -25,7 +25,6 @@ from tests.aws.services.kinesis.helper_functions import get_shard_iterator
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY_FORMAT, TEST_LAMBDA_PYTHON_ECHO
 from localstack_snapshot.snapshots.transformer import (
     JsonpathTransformer,
-    RegexTransformer,
 )
 
 # TODO:
@@ -52,7 +51,6 @@ class TestEventsTargetApiGateway:
         region_name,
         account_id,
     ):
-        # Existing transformers
         transformers = [
             snapshot.transform.lambda_api(),
             snapshot.transform.apigateway_api(),
@@ -61,13 +59,25 @@ class TestEventsTargetApiGateway:
             snapshot.transform.regex(r'"EventId":\s*"[^"]+"', '"EventId": "<event-id>"'),
             snapshot.transform.key_value("headers", value_replacement="<headers>", reference_replacement=False),
             snapshot.transform.key_value("multiValueHeaders", value_replacement="<multiValueHeaders>", reference_replacement=False),
-            snapshot.transform.key_value("stageVariables", value_replacement="<stageVariables>", reference_replacement=False),
+             JsonpathTransformer(
+                jsonpath="$..pathParameters",
+                replacement="<pathParameters>",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                jsonpath="$..requestContext",
+                replacement="<requestContext>",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                jsonpath="$..stageVariables",
+                replacement="<stageVariables>",
+                replace_reference=False,
+            ),
         ]
-
 
         for transformer in transformers:
             snapshot.add_transformer(transformer)
-
 
         # Step a: Create a Lambda function with a unique name using the existing fixture
         function_name = f"test-lambda-{short_uid()}"
@@ -87,7 +97,6 @@ class TestEventsTargetApiGateway:
             name=f"test-api-${short_uid()}",
             description="Test Integration with SQS",
         )
-
 
         # Get the root resource ID
         resources = aws_client.apigateway.get_resources(restApiId=api_id)
@@ -638,13 +647,13 @@ class TestEventsTargetLambda:
         # Get lambda's log events
         events = retry(
             check_expected_lambda_log_events_length,
-            retries=10,
-            sleep=10,
-            sleep_before=10,
+            retries=3,
+            sleep=1,
             function_name=function_name,
             expected_length=1,
             logs_client=aws_client.logs,
         )
+
         snapshot.match("events", events)
 
     @markers.aws.validated

@@ -32,6 +32,9 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
+from urllib.parse import urlencode
+from typing import Any, Dict
+from localstack import config
 
 LOG = logging.getLogger(__name__)
 
@@ -137,74 +140,108 @@ class TargetSender(ABC):
         if self._client is None:
             self._client = self._initialize_client()
         return self._client
-    
+
+    @abstractmethod
+    def send_event(self, event: FormattedEvent | TransformedEvent):
+        pass
+
+    def proxy_send_event(
+        self, event: FormattedEvent | TransformedEvent, context: RequestContext
+    ):  # context required by eventstudio
+        """Proxy method to process the event and send it to the target,
+        in addition it removes the field event-bus-name from the event,
+        required for EventStudio extension"""
+        self.send_event(event)
+
+    def process_event(self, event: FormattedEvent, context: RequestContext):
+        # context required by eventstudio
+        """Processes the event and send it to the target."""
+        if isinstance(event, dict):
+            event.pop("event-bus-name", None)
+        if input_path := self.target.get("InputPath"):
+            event = transform_event_with_target_input_path(input_path, event)
+        if input_transformer := self.target.get("InputTransformer"):
+            event = self.transform_event_with_target_input_transformer(input_transformer, event)
+        self.proxy_send_event(event, context)
+
+    def transform_event_with_target_input_transformer(
+        self, input_transformer: InputTransformer, event: FormattedEvent
+    ) -> TransformedEvent:
+        input_template = input_transformer["InputTemplate"]
+        template_replacements = get_template_replacements(input_transformer, event)
+        predefined_template_replacements = self._get_predefined_template_replacements(event)
+        template_replacements.update(predefined_template_replacements)
+
+        is_json_format = input_template.strip().startswith(("{"))
+        populated_template = replace_template_placeholders(
+            input_template, template_replacements, is_json_format
+        )
+
+        return populated_template
+
+    def _validate_input(self, target: Target):
+        """Provide a default implementation extended for each target based on specifications."""
+        # TODO add For Lambda and Amazon SNS resources, EventBridge relies on resource-based policies.
+        if "InputPath" in target and "InputTransformer" in target:
+            raise ValidationException(
+                f"Only one of Input, InputPath, or InputTransformer must be provided for target {target.get('Id')}."
+            )
+        if input_transformer := target.get("InputTransformer"):
+            self._validate_input_transformer(input_transformer)
+
+    def _initialize_client(self) -> BaseClient:
+        """Initializes internal boto client.
+        If a role from a target is provided, the client will be initialized with the assumed role.
+        If no role is provided, the client will be initialized with the account ID and region.
+        In both cases event bridge is requested as service principal"""
+        service_principal = ServicePrincipal.events
+        role_arn = self.target.get("RoleArn")
+        if role_arn:  # required for cross account
+            # assumed role sessions expire after 6 hours in AWS, currently no expiration in LocalStack
+            client_factory = connect_to.with_assumed_role(
+                role_arn=role_arn,
+                service_principal=service_principal,
+                region_name=self.region,
+            )
+        else:
+            client_factory = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
+        client = client_factory.get_client(self.service)
+        client = client.request_metadata(
+            service_principal=service_principal, source_arn=self.rule_arn
+        )
+        return client
+
+    def _validate_input_transformer(self, input_transformer: InputTransformer):
+        if "InputTemplate" not in input_transformer:
+            raise ValueError("InputTemplate is required for InputTransformer")
+        input_template = input_transformer["InputTemplate"]
+        input_paths_map = input_transformer.get("InputPathsMap", {})
+        placeholders = TRANSFORMER_PLACEHOLDER_PATTERN.findall(input_template)
+        for placeholder in placeholders:
+            if placeholder not in input_paths_map and placeholder not in PREDEFINED_PLACEHOLDERS:
+                raise ValidationException(
+                    f"InputTemplate for target {self.target.get('Id')} contains invalid placeholder {placeholder}."
+                )
+
+    def _get_predefined_template_replacements(self, event: FormattedEvent) -> dict[str, Any]:
+        """Extracts predefined values from the event."""
+        predefined_template_replacements = {}
+        predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
+        predefined_template_replacements["aws.events.rule-name"] = self.rule_name
+        predefined_template_replacements["aws.events.event.ingestion-time"] = event["time"]
+        predefined_template_replacements["aws.events.event"] = {
+            "detailType" if k == "detail-type" else k: v  # detail-type is is returned as detailType
+            for k, v in event.items()
+            if k != "detail"  # detail is not part of .event placeholder
+        }
+        predefined_template_replacements["aws.events.event.json"] = event
+
+        return predefined_template_replacements
+
+
 TargetSenderDict = dict[Arn, TargetSender]
 
-from urllib.parse import urlencode
-from typing import Any, Dict
-from localstack import config
-
-
-
 # Target Senders are ordered alphabetically by service name
-import json
-import logging
-import time
-from typing import Any, Dict
-
-import requests
-from requests.exceptions import RequestException
-
-LOG = logging.getLogger(__name__)
-
-import json
-import logging
-import time
-from typing import Any, Dict
-from urllib.parse import urlencode
-
-import requests
-from requests.exceptions import RequestException
-
-LOG = logging.getLogger(__name__)
-
-
-import json
-import logging
-import time
-from typing import Any, Dict
-from urllib.parse import urlencode
-
-import requests
-from requests.exceptions import RequestException
-
-LOG = logging.getLogger(__name__)
-
-import json
-import logging
-import time
-from typing import Any, Dict
-from urllib.parse import urlencode
-
-import requests
-from requests.exceptions import RequestException
-from localstack import config
-
-LOG = logging.getLogger(__name__)
-
-
-import json
-import logging
-import time
-from typing import Any, Dict
-from urllib.parse import urlencode
-
-import requests
-from requests.exceptions import RequestException
-from localstack import config
-
-
-LOG = logging.getLogger(__name__)
 
 class ApiGatewayTargetSender(TargetSender):
     PROHIBITED_HEADERS = [
@@ -212,8 +249,7 @@ class ApiGatewayTargetSender(TargetSender):
         "host", "max-forwards", "te", "transfer-encoding", "trailer",
         "upgrade", "via", "www-authenticate", "x-forwarded-for"
     ]
-    MAX_RETRIES = 3
-    RETRY_DELAY = 1  # seconds
+    ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
     def send_event(self, event):
         # Parse the ARN to extract api_id, stage_name, http_method, and resource path
@@ -226,6 +262,10 @@ class ApiGatewayTargetSender(TargetSender):
         stage_name = api_gateway_info_parts[1]
         http_method = api_gateway_info_parts[2].upper()
         resource_path_parts = api_gateway_info_parts[3:]  # may contain wildcards
+
+        if http_method not in self.ALLOWED_HTTP_METHODS:
+            LOG.error(f"Unsupported HTTP method: {http_method}")
+            return
 
         # Replace wildcards in resource path with PathParameterValues
         path_params_values = self.target.get("HttpParameters", {}).get("PathParameterValues", [])
@@ -255,7 +295,7 @@ class ApiGatewayTargetSender(TargetSender):
         headers = {k: v for k, v in headers.items() if k.lower() not in self.PROHIBITED_HEADERS}
         # Add Host header to ensure proper routing in LocalStack
 
-        host = f"{api_id}.execute-api.{self.target_region or self.region}.amazonaws.com"
+        host = f"{api_id}.execute-api.localhost.localstack.cloud"
         headers["Host"] = host
 
         # Ensure Content-Type is set
@@ -280,33 +320,26 @@ class ApiGatewayTargetSender(TargetSender):
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
 
-        for attempt in range(self.MAX_RETRIES):
-            try:
-                # Send the HTTP request
-                response = requests.request(
-                    method=http_method,
-                    url=url,
-                    headers=headers,
-                    data=event_json,
-                    timeout=5  # 5 second timeout
+        try:
+            # Send the HTTP request
+            response = requests.request(
+                method=http_method,
+                url=url,
+                headers=headers,
+                data=event_json,
+                timeout=5
+            )
+            if not response.ok:
+                LOG.error(
+                    f"API Gateway target invocation failed with status code {response.status_code}, response: {response.text}"
                 )
-                if response.status_code < 500 and response.status_code != 429:
-                    if not response.ok:
-                        LOG.error(
-                            f"API Gateway target invocation failed with status code {response.status_code}, response: {response.text}"
-                        )
-                    return
-                if attempt == self.MAX_RETRIES - 1:
-                    LOG.error(
-                        f"API Gateway target invocation failed after {self.MAX_RETRIES} attempts. Status code: {response.status_code}, response: {response.text}"
-                    )
-            except RequestException as e:
-                LOG.error(f"Request failed: {str(e)}")
-            time.sleep(self.RETRY_DELAY * (2 ** attempt))  # Exponential backoff
+        except requests.RequestException as e:
+            LOG.error(f"Request failed: {str(e)}")
 
     def _validate_input(self, target: Target):
-        # Skipping validations as per instructions
-        pass
+        super()._validate_input(target)
+        if not collections.get_safe(target, "$.RoleArn"):
+            raise ValueError("RoleArn is required for ApiGateway target")
 
     def process_event(self, event: Dict[str, Any], context: RequestContext):
         """Processes the event, applies transformations, and sends it to the target."""
@@ -317,33 +350,24 @@ class ApiGatewayTargetSender(TargetSender):
         if 'Input' in self.target:
             event = json.loads(self.target['Input'])
         elif 'InputTransformer' in self.target:
-            event = self.transform_event_with_target_input_transformer(
-                self.target['InputTransformer'], event
+            input_transformer = self.target['InputTransformer']
+            template_replacements = get_template_replacements(input_transformer, event)
+            predefined_template_replacements = self._get_predefined_template_replacements(event)
+            template_replacements.update(predefined_template_replacements)
+            input_template = input_transformer["InputTemplate"]
+            is_json_format = input_template.strip().startswith(("{"))
+            event = replace_template_placeholders(
+                input_template, template_replacements, is_json_format
             )
         elif 'InputPath' in self.target:
             event = transform_event_with_target_input_path(
                 self.target['InputPath'], event
             )
         else:
-            # Use the event as is
             pass
-        # Send the transformed event
+
         self.send_event(event)
 
-    def transform_event_with_target_input_transformer(
-        self, input_transformer: Dict[str, Any], event: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        input_template = input_transformer["InputTemplate"]
-        template_replacements = get_template_replacements(input_transformer, event)
-        predefined_template_replacements = self._get_predefined_template_replacements(event)
-        template_replacements.update(predefined_template_replacements)
-
-        is_json_format = input_template.strip().startswith(("{"))
-        populated_template = replace_template_placeholders(
-            input_template, template_replacements, is_json_format
-        )
-
-        return populated_template
 
     def _get_predefined_template_replacements(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """Extracts predefined values from the event."""

@@ -671,7 +671,7 @@
     }
   },
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetApiGateway::test_put_events_with_target_api_gateway": {
-    "recorded-date": "21-09-2024, 00:08:15",
+    "recorded-date": "21-09-2024, 07:40:28",
     "recorded-content": {
       "create_lambda_response": {
         "CreateEventSourceMappingResponse": null,
@@ -773,39 +773,9 @@
           "multiValueHeaders": "<multiValueHeaders>",
           "queryStringParameters": null,
           "multiValueQueryStringParameters": null,
-          "pathParameters": null,
-          "stageVariables": null,
-          "requestContext": {
-            "resourceId": "<resource-id:1>",
-            "resourcePath": "/test",
-            "httpMethod": "POST",
-            "extendedRequestId": "<extended-request-id:1>",
-            "requestTime": "<request-time>",
-            "path": "/test/test/",
-            "accountId": "<account-id:1>",
-            "protocol": "HTTP/1.1",
-            "stage": "test",
-            "domainPrefix": "<api-id:1>",
-            "requestTimeEpoch": "<request-time-epoch>",
-            "requestId": "<request-id:1>",
-            "identity": {
-              "cognitoIdentityPoolId": null,
-              "accountId": null,
-              "cognitoIdentityId": null,
-              "caller": null,
-              "sourceIp": "<source-ip:1>",
-              "principalOrgId": null,
-              "accessKey": null,
-              "cognitoAuthenticationType": null,
-              "cognitoAuthenticationProvider": null,
-              "userArn": null,
-              "userAgent": "<user-agent:1>",
-              "user": null
-            },
-            "domainName": "<api-id:1>.execute-api.<region>.amazonaws.com",
-            "deploymentId": "<id:1>",
-            "apiId": "<api-id:1>"
-          },
+          "pathParameters": "<pathParameters>",
+          "stageVariables": "<stageVariables>",
+          "requestContext": "<requestContext>",
           "body": {
             "message": "Hello from EventBridge"
           },
