@@ -168,6 +168,8 @@ class ApiGatewayUsagePlanProvider(ResourceProvider[ApiGatewayUsagePlanProperties
         updated_tags = update_config_props.pop("Tags", [])
 
         usage_plan_id = request.previous_state["Id"]
+        # when storing the Id in the model, subsequent update will find it in previous_state
+        model["Id"] = usage_plan_id
 
         patch_operations = []
 
