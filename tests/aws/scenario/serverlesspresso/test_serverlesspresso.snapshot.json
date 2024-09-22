@@ -1,0 +1,166 @@
+{
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_deployed_infra_state": {
+    "recorded-date": "10-07-2024, 18:48:42",
+    "recorded-content": {
+      "outputs": {
+        "AdminFnName": "ServerlesspressoStack-PublisherServicePublisherFun-ILe6v6clHuC5",
+        "ConfigFnName": "ServerlesspressoStack-PublisherServicePublisherFun-rX5SkNkAOYxz",
+        "ConfigTableName": "serverlesspresso-config-table",
+        "CountingTableName": "serverlesspresso-counting-table",
+        "DisplayAppURI": "https://workshop-display.serverlesscoffee.com/?region=<region>&userPoolId=<region>_yejZcP12O&userPoolWebClientId=6603lbu06trvv060vnorqs8ml7&orderManagerEndpoint=https://h66ty1xpqa.execute-api.<region>.amazonaws.com/Prod/&APIGWEndpointValidatorService=https://6lm7zh1s96.execute-api.<region>.amazonaws.com/Prod/&APIGWEndpointConfigService=https://3uuuzkbu9d.execute-api.<region>.amazonaws.com/Prod/",
+        "EventBusName": "Serverlesspresso",
+        "LogAllLogGroupName": "/aws/events/serverlesspressoEventBus",
+        "OrderManagerStateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:OrderManagerStateMachine-EXcPsw83fexg",
+        "OrderProcessorWorkflowStateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:OrderProcessorWorkflow",
+        "OrderTableName": "serverlesspresso-order-table",
+        "PopulateDbFunctionName": "ServerlesspressoStack-PopulateDbFnECBC3588-VKGOUFJwle1f",
+        "UserFnName": "ServerlesspressoStack-PublisherServicePublisherFun-7npLxQTwymu6",
+        "UserPoolClientId": "6603lbu06trvv060vnorqs8ml7",
+        "UserPoolId": "<region>_yejZcP12O",
+        "ValidatorServiceRESTApiValidatorServiceEndpoint3F21CEDD": "https://6lm7zh1s96.execute-api.<region>.amazonaws.com/prod/",
+        "ValidatorTableName": "serverlesspresso-validator-table"
+      },
+      "describe_stack": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/test-cs-399aaafc/baf9f35d-d2d6-4981-b834-ee5b9d00fd27",
+        "CreationTime": "<datetime>",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "<datetime>",
+        "NotificationARNs": [],
+        "Outputs": [
+          {
+            "OutputKey": "EventBusName",
+            "OutputValue": "Serverlesspresso"
+          },
+          {
+            "OutputKey": "OrderProcessorWorkflowStateMachineArn",
+            "OutputValue": "arn:aws:states:<region>:111111111111:stateMachine:OrderProcessorWorkflow"
+          },
+          {
+            "OutputKey": "ValidatorServiceRESTApiValidatorServiceEndpoint3F21CEDD",
+            "OutputValue": "https://6lm7zh1s96.execute-api.<region>.amazonaws.com/prod/"
+          },
+          {
+            "OutputKey": "ConfigFnName",
+            "OutputValue": "ServerlesspressoStack-PublisherServicePublisherFun-rX5SkNkAOYxz"
+          },
+          {
+            "OutputKey": "OrderTableName",
+            "OutputValue": "serverlesspresso-order-table"
+          },
+          {
+            "OutputKey": "AdminFnName",
+            "OutputValue": "ServerlesspressoStack-PublisherServicePublisherFun-ILe6v6clHuC5"
+          },
+          {
+            "OutputKey": "UserPoolClientId",
+            "OutputValue": "6603lbu06trvv060vnorqs8ml7"
+          },
+          {
+            "OutputKey": "LogAllLogGroupName",
+            "OutputValue": "/aws/events/serverlesspressoEventBus"
+          },
+          {
+            "OutputKey": "ValidatorTableName",
+            "OutputValue": "serverlesspresso-validator-table"
+          },
+          {
+            "OutputKey": "UserPoolId",
+            "OutputValue": "<region>_yejZcP12O"
+          },
+          {
+            "OutputKey": "OrderManagerStateMachineArn",
+            "OutputValue": "arn:aws:states:<region>:111111111111:stateMachine:OrderManagerStateMachine-EXcPsw83fexg"
+          },
+          {
+            "OutputKey": "PopulateDbFunctionName",
+            "OutputValue": "ServerlesspressoStack-PopulateDbFnECBC3588-VKGOUFJwle1f"
+          },
+          {
+            "OutputKey": "CountingTableName",
+            "OutputValue": "serverlesspresso-counting-table"
+          },
+          {
+            "OutputKey": "ConfigTableName",
+            "OutputValue": "serverlesspresso-config-table"
+          },
+          {
+            "OutputKey": "DisplayAppURI",
+            "OutputValue": "https://workshop-display.serverlesscoffee.com/?region=<region>&userPoolId=<region>_yejZcP12O&userPoolWebClientId=6603lbu06trvv060vnorqs8ml7&orderManagerEndpoint=https://h66ty1xpqa.execute-api.<region>.amazonaws.com/Prod/&APIGWEndpointValidatorService=https://6lm7zh1s96.execute-api.<region>.amazonaws.com/Prod/&APIGWEndpointConfigService=https://3uuuzkbu9d.execute-api.<region>.amazonaws.com/Prod/"
+          },
+          {
+            "OutputKey": "UserFnName",
+            "OutputValue": "ServerlesspressoStack-PublisherServicePublisherFun-7npLxQTwymu6"
+          }
+        ],
+        "Parameters": [
+          {
+            "ParameterKey": "BootstrapVersion",
+            "ParameterValue": "/cdk-bootstrap/hnb659fds/version",
+            "ResolvedValue": "10"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/ServerlesspressoStack/0d3f5090-3ee9-11ef-888d-0eb78df00631",
+        "StackName": "ServerlesspressoStack",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      }
+    }
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_register_admin_user": {
+    "recorded-date": "09-08-2024, 16:29:10",
+    "recorded-content": {
+      "user": {
+        "Enabled": true,
+        "UserAttributes": [
+          {
+            "Name": "email",
+            "Value": "<email>"
+          },
+          {
+            "Name": "email_verified",
+            "Value": "true"
+          },
+          {
+            "Name": "sub",
+            "Value": "<uuid>"
+          }
+        ],
+        "UserCreateDate": "<datetime>",
+        "UserLastModifiedDate": "<datetime>",
+        "UserStatus": "CONFIRMED",
+        "Username": "<email>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/serverlesspresso/test_serverlesspresso.py::TestServerlesspressoScenario::test_rest_apis": {
+    "recorded-date": "09-08-2024, 19:09:30",
+    "recorded-content": {
+      "get-response": {
+        "bucket": {
+          "PK": 5744101,
+          "availableTokens": 10,
+          "end_full": "Fri Aug 09 2024 19:09:59 GMT+0000 (Coordinated Universal Time)",
+          "end_ts": 1723230599999,
+          "last_code": "piII5_1gJZ",
+          "last_id": 5744101,
+          "start_full": "Fri Aug 09 2024 19:05:00 GMT+0000 (Coordinated Universal Time)",
+          "start_ts": 1723230300000
+        }
+      }
+    }
+  }
+}
