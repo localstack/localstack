@@ -386,5 +386,32 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_put_policy_encoding": {
+    "recorded-date": "23-09-2024, 12:33:47",
+    "recorded-content": {
+      "get-policy-response": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "apigatway:PUT"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:<partition>:apigateway:<region>::/tags/arn%3Aaws%3Aapigateway%3A<region>%3A%3A%2Frestapis%2Faaeeieije"
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
+        "UserName": "<user-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

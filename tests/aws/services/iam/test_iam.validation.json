@@ -11,6 +11,9 @@
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_list_roles_with_permission_boundary": {
     "last_validated_date": "2023-09-14T15:42:39+00:00"
   },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_put_policy_encoding": {
+    "last_validated_date": "2024-09-23T12:34:15+00:00"
+  },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
     "last_validated_date": "2023-09-14T15:42:42+00:00"
   },

@@ -1,4 +1,5 @@
 import json
+from urllib.parse import quote_plus
 
 import pytest
 from botocore.exceptions import ClientError
@@ -742,3 +743,31 @@ class TestIAMIntegrations:
             UserName=user_name, PolicyArn=policy_arn
         )
         snapshot.match("valid_policy_arn", attach_policy_response)
+
+    @markers.aws.validated
+    def test_put_policy_encoding(self, snapshot, aws_client, create_user, region_name):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        target_arn = quote_plus(f"arn:aws:apigateway:{region_name}::/restapis/aaeeieije")
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["apigatway:PUT"],
+                    "Resource": [f"arn:aws:apigateway:{region_name}::/tags/{target_arn}"],
+                }
+            ],
+        }
+
+        user_name = f"test-role-{short_uid()}"
+        policy_name = f"test-policy-{short_uid()}"
+        create_user(UserName=user_name)
+
+        aws_client.iam.put_user_policy(
+            UserName=user_name, PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
+        )
+        get_policy_response = aws_client.iam.get_user_policy(
+            UserName=user_name, PolicyName=policy_name
+        )
+        snapshot.match("get-policy-response", get_policy_response)
