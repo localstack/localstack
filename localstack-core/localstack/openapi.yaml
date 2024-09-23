@@ -273,7 +273,7 @@ paths:
   /_aws/events/rules/{rule_arn}/trigger:
     get:
       description: Trigger a scheduled EventBridge rule
-      operationId: trigger_event_bridge_Rule
+      operationId: trigger_event_bridge_rule
       tags: [aws]
       parameters:
       - description: EventBridge rule ARN
@@ -702,7 +702,7 @@ paths:
   /_localstack/health:
     get:
       description: Get available LocalStack features and AWS services
-      operationId: health
+      operationId: get_ls_features_and_services
       tags: [internal]
       parameters:
       - allowEmptyValue: true
@@ -740,6 +740,7 @@ paths:
           description: Available LocalStack features and AWS services
     head:
       tags: [internal]
+      operationId: heath
       responses:
         '200':
           content:
