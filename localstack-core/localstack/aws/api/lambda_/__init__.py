@@ -23,6 +23,7 @@ Endpoint = str
 EnvironmentVariableName = str
 EnvironmentVariableValue = str
 EphemeralStorageSize = int
+EventSourceMappingArn = str
 EventSourceToken = str
 FileSystemArn = str
 FilterCriteriaErrorCode = str
@@ -69,13 +70,17 @@ OrganizationId = str
 Origin = str
 ParallelizationFactor = int
 Pattern = str
+PolicyResourceArn = str
 PositiveInteger = int
 Principal = str
 PrincipalOrgID = str
+PublicAccessBlockResourceArn = str
 Qualifier = str
 Queue = str
 ReservedConcurrentExecutions = int
 ResourceArn = str
+ResourcePolicy = str
+RevisionId = str
 RoleArn = str
 RuntimeVersionArn = str
 S3Bucket = str
@@ -90,6 +95,7 @@ String = str
 SubnetId = str
 TagKey = str
 TagValue = str
+TaggableResource = str
 Timeout = int
 Timestamp = str
 Topic = str
@@ -522,6 +528,13 @@ class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
     Type: Optional[String]
 
 
+class PublicPolicyException(ServiceException):
+    code: str = "PublicPolicyException"
+    sender_fault: bool = False
+    status_code: int = 400
+    Type: Optional[String]
+
+
 class RecursiveInvocationException(ServiceException):
     code: str = "RecursiveInvocationException"
     sender_fault: bool = False
@@ -744,10 +757,14 @@ class CreateAliasRequest(ServiceRequest):
     RoutingConfig: Optional[AliasRoutingConfiguration]
 
 
+Tags = Dict[TagKey, TagValue]
+
+
 class CreateCodeSigningConfigRequest(ServiceRequest):
     Description: Optional[Description]
     AllowedPublishers: AllowedPublishers
     CodeSigningPolicies: Optional[CodeSigningPolicies]
+    Tags: Optional[Tags]
 
 
 class CreateCodeSigningConfigResponse(TypedDict, total=False):
@@ -828,6 +845,7 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
     BisectBatchOnFunctionError: Optional[BisectBatchOnFunctionError]
     MaximumRetryAttempts: Optional[MaximumRetryAttemptsEventSourceMapping]
+    Tags: Optional[Tags]
     TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
     Topics: Optional[Topics]
     Queues: Optional[Queues]
@@ -872,7 +890,6 @@ class FileSystemConfig(TypedDict, total=False):
 
 FileSystemConfigList = List[FileSystemConfig]
 LayerList = List[LayerVersionArn]
-Tags = Dict[TagKey, TagValue]
 
 
 class TracingConfig(TypedDict, total=False):
@@ -1002,6 +1019,11 @@ class DeleteProvisionedConcurrencyConfigRequest(ServiceRequest):
     Qualifier: Qualifier
 
 
+class DeleteResourcePolicyRequest(ServiceRequest):
+    ResourceArn: PolicyResourceArn
+    RevisionId: Optional[RevisionId]
+
+
 class EnvironmentError(TypedDict, total=False):
     ErrorCode: Optional[String]
     Message: Optional[SensitiveString]
@@ -1047,6 +1069,7 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
     KMSKeyArn: Optional[KMSKeyArn]
     FilterCriteriaError: Optional[FilterCriteriaError]
+    EventSourceMappingArn: Optional[EventSourceMappingArn]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -1321,6 +1344,28 @@ class GetProvisionedConcurrencyConfigResponse(TypedDict, total=False):
     LastModified: Optional[Timestamp]
 
 
+class GetPublicAccessBlockConfigRequest(ServiceRequest):
+    ResourceArn: PublicAccessBlockResourceArn
+
+
+class PublicAccessBlockConfig(TypedDict, total=False):
+    BlockPublicPolicy: Optional[NullableBoolean]
+    RestrictPublicResource: Optional[NullableBoolean]
+
+
+class GetPublicAccessBlockConfigResponse(TypedDict, total=False):
+    PublicAccessBlockConfig: Optional[PublicAccessBlockConfig]
+
+
+class GetResourcePolicyRequest(ServiceRequest):
+    ResourceArn: PolicyResourceArn
+
+
+class GetResourcePolicyResponse(TypedDict, total=False):
+    Policy: Optional[ResourcePolicy]
+    RevisionId: Optional[RevisionId]
+
+
 class GetRuntimeManagementConfigRequest(ServiceRequest):
     FunctionName: NamespacedFunctionName
     Qualifier: Optional[Qualifier]
@@ -1547,7 +1592,7 @@ class ListProvisionedConcurrencyConfigsResponse(TypedDict, total=False):
 
 
 class ListTagsRequest(ServiceRequest):
-    Resource: FunctionArn
+    Resource: TaggableResource
 
 
 class ListTagsResponse(TypedDict, total=False):
@@ -1640,6 +1685,26 @@ class PutProvisionedConcurrencyConfigResponse(TypedDict, total=False):
     LastModified: Optional[Timestamp]
 
 
+class PutPublicAccessBlockConfigRequest(ServiceRequest):
+    ResourceArn: PublicAccessBlockResourceArn
+    PublicAccessBlockConfig: PublicAccessBlockConfig
+
+
+class PutPublicAccessBlockConfigResponse(TypedDict, total=False):
+    PublicAccessBlockConfig: Optional[PublicAccessBlockConfig]
+
+
+class PutResourcePolicyRequest(ServiceRequest):
+    ResourceArn: PolicyResourceArn
+    Policy: ResourcePolicy
+    RevisionId: Optional[RevisionId]
+
+
+class PutResourcePolicyResponse(TypedDict, total=False):
+    Policy: Optional[ResourcePolicy]
+    RevisionId: Optional[RevisionId]
+
+
 class PutRuntimeManagementConfigRequest(ServiceRequest):
     FunctionName: FunctionName
     Qualifier: Optional[Qualifier]
@@ -1671,12 +1736,12 @@ TagKeyList = List[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
-    Resource: FunctionArn
+    Resource: TaggableResource
     Tags: Tags
 
 
 class UntagResourceRequest(ServiceRequest):
-    Resource: FunctionArn
+    Resource: TaggableResource
     TagKeys: TagKeyList
 
 
@@ -1839,6 +1904,7 @@ class LambdaApi:
         allowed_publishers: AllowedPublishers,
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
+        tags: Tags = None,
         **kwargs,
     ) -> CreateCodeSigningConfigResponse:
         raise NotImplementedError
@@ -1860,6 +1926,7 @@ class LambdaApi:
         maximum_record_age_in_seconds: MaximumRecordAgeInSeconds = None,
         bisect_batch_on_function_error: BisectBatchOnFunctionError = None,
         maximum_retry_attempts: MaximumRetryAttemptsEventSourceMapping = None,
+        tags: Tags = None,
         tumbling_window_in_seconds: TumblingWindowInSeconds = None,
         topics: Topics = None,
         queues: Queues = None,
@@ -1996,6 +2063,16 @@ class LambdaApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DeleteResourcePolicy")
+    def delete_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: PolicyResourceArn,
+        revision_id: RevisionId = None,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
     @handler("GetAccountSettings")
     def get_account_settings(self, context: RequestContext, **kwargs) -> GetAccountSettingsResponse:
         raise NotImplementedError
@@ -2116,6 +2193,18 @@ class LambdaApi:
     def get_provisioned_concurrency_config(
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier, **kwargs
     ) -> GetProvisionedConcurrencyConfigResponse:
+        raise NotImplementedError
+
+    @handler("GetPublicAccessBlockConfig")
+    def get_public_access_block_config(
+        self, context: RequestContext, resource_arn: PublicAccessBlockResourceArn, **kwargs
+    ) -> GetPublicAccessBlockConfigResponse:
+        raise NotImplementedError
+
+    @handler("GetResourcePolicy")
+    def get_resource_policy(
+        self, context: RequestContext, resource_arn: PolicyResourceArn, **kwargs
+    ) -> GetResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("GetRuntimeManagementConfig")
@@ -2283,7 +2372,7 @@ class LambdaApi:
 
     @handler("ListTags")
     def list_tags(
-        self, context: RequestContext, resource: FunctionArn, **kwargs
+        self, context: RequestContext, resource: TaggableResource, **kwargs
     ) -> ListTagsResponse:
         raise NotImplementedError
 
@@ -2378,6 +2467,27 @@ class LambdaApi:
     ) -> PutProvisionedConcurrencyConfigResponse:
         raise NotImplementedError
 
+    @handler("PutPublicAccessBlockConfig")
+    def put_public_access_block_config(
+        self,
+        context: RequestContext,
+        resource_arn: PublicAccessBlockResourceArn,
+        public_access_block_config: PublicAccessBlockConfig,
+        **kwargs,
+    ) -> PutPublicAccessBlockConfigResponse:
+        raise NotImplementedError
+
+    @handler("PutResourcePolicy")
+    def put_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: PolicyResourceArn,
+        policy: ResourcePolicy,
+        revision_id: RevisionId = None,
+        **kwargs,
+    ) -> PutResourcePolicyResponse:
+        raise NotImplementedError
+
     @handler("PutRuntimeManagementConfig")
     def put_runtime_management_config(
         self,
@@ -2416,13 +2526,13 @@ class LambdaApi:
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource: FunctionArn, tags: Tags, **kwargs
+        self, context: RequestContext, resource: TaggableResource, tags: Tags, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource: FunctionArn, tag_keys: TagKeyList, **kwargs
+        self, context: RequestContext, resource: TaggableResource, tag_keys: TagKeyList, **kwargs
     ) -> None:
         raise NotImplementedError
 
