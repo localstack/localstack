@@ -205,19 +205,24 @@ class ServiceLevelClientFactory(TypedServiceClientFactory):
     """
 
     def __init__(
-        self, *, factory: "ClientFactory", client_creation_params: dict[str, str | Config | None]
+        self,
+        *,
+        factory: "ClientFactory",
+        client_creation_params: dict[str, str | Config | None],
+        request_wrapper_clazz: type,
     ):
         self._factory = factory
         self._client_creation_params = client_creation_params
+        self._request_wrapper_clazz = request_wrapper_clazz
 
     def get_client(self, service: str):
-        return MetadataRequestInjector(
+        return self._request_wrapper_clazz(
             client=self._factory.get_client(service_name=service, **self._client_creation_params)
         )
 
     def __getattr__(self, service: str):
         service = attribute_name_to_service_name(service)
-        return MetadataRequestInjector(
+        return self._request_wrapper_clazz(
             client=self._factory.get_client(service_name=service, **self._client_creation_params)
         )
 
@@ -292,7 +297,11 @@ class ClientFactory(ABC):
             "endpoint_url": endpoint_url,
             "config": config,
         }
-        return ServiceLevelClientFactory(factory=self, client_creation_params=params)
+        return ServiceLevelClientFactory(
+            factory=self,
+            client_creation_params=params,
+            request_wrapper_clazz=MetadataRequestInjector,
+        )
 
     def with_assumed_role(
         self,
@@ -633,6 +642,7 @@ class ExternalAwsClientFactory(ClientFactory):
 
 connect_to = InternalClientFactory(use_ssl=localstack_config.DISTRIBUTED_MODE)
 connect_externally_to = ExternalClientFactory()
+
 
 #
 # Handlers
