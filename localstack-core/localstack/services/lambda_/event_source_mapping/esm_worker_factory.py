@@ -1,3 +1,5 @@
+from typing import Callable, Optional, Type
+
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
@@ -12,6 +14,7 @@ from localstack.aws.api.pipes import (
     PipeTargetLambdaFunctionParameters,
     PipeTargetParameters,
 )
+from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.event_source_mapping.esm_event_processor import (
     EsmEventProcessor,
 )
@@ -25,6 +28,7 @@ from localstack.services.lambda_.event_source_mapping.pipe_utils import (
 )
 from localstack.services.lambda_.event_source_mapping.pollers.dynamodb_poller import DynamoDBPoller
 from localstack.services.lambda_.event_source_mapping.pollers.kinesis_poller import KinesisPoller
+from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
 from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import SqsPoller
 from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
 from localstack.utils.aws.arns import parse_arn
@@ -58,7 +62,7 @@ class EsmWorkerFactory:
                 )
             ),
             target_client=lambda_client,
-            payload_dict=True,
+            payload_dict=True,  # TODO: This should be handled better since not all payloads in ESM are in the form { "Records" : List[Dict]}
         )
 
         # Logger
@@ -68,15 +72,19 @@ class EsmWorkerFactory:
         esm_processor = EsmEventProcessor(sender=sender, logger=logger)
 
         # Poller
-        source_arn = self.esm_config["EventSourceArn"]
-        parsed_source_arn = parse_arn(source_arn)
-        source_service = get_standardized_service_name(parsed_source_arn["service"])
-        source_client = get_internal_client(
-            arn=source_arn,
-            role_arn=self.function_role_arn,
-            service_principal=ServicePrincipal.lambda_,
-            source_arn=self.esm_config["FunctionArn"],
-        )
+        source_service = ""
+        source_client = None
+        source_arn = self.esm_config.get("EventSourceArn", "")
+        if source_arn:
+            parsed_source_arn = parse_arn(source_arn)
+            source_service = get_standardized_service_name(parsed_source_arn["service"])
+            source_client = get_internal_client(
+                arn=source_arn,
+                role_arn=self.function_role_arn,
+                service_principal=ServicePrincipal.lambda_,
+                source_arn=self.esm_config["FunctionArn"],
+            )
+
         filter_criteria = self.esm_config.get("FilterCriteria", {"Filters": []})
         user_state_reason = EsmStateReason.USER_ACTION
         if source_service == "sqs":
@@ -149,8 +157,23 @@ class EsmWorkerFactory:
                 processor=esm_processor,
             )
         else:
-            raise Exception(
-                f"Unsupported event source mapping source service {source_service}. Please upvote or create a feature request."
+            poller_holder = {"create_poller": None}
+            lambda_hooks.create_event_source_poller.run(
+                poller_holder, source_service, self.esm_config
+            )
+
+            create_poller: Optional[Callable[..., Type[Poller]]] = poller_holder.get(
+                "create_poller"
+            )
+            if not create_poller:
+                raise Exception(
+                    f"Unsupported event source mapping source service {source_service}. Please upvote or create a feature request."
+                )
+
+            poller: Type[Poller] = create_poller(
+                arn=source_arn,
+                client=source_client,
+                processor=esm_processor,
             )
 
         esm_worker = EsmWorker(

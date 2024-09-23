@@ -23,7 +23,7 @@ class LambdaSender(Sender):
         super().__init__(target_arn, target_parameters, target_client)
         self.payload_dict = payload_dict
 
-    def send_events(self, events: list[dict]) -> dict:
+    def send_events(self, events: list[dict] | dict) -> dict:
         if self.payload_dict:
             events = {"Records": events}
         # TODO: test qualified + unqualified Lambda invoke

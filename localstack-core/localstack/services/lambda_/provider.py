@@ -1819,7 +1819,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         return event_source_configuration
 
     def create_event_source_mapping_v2(
-        self, context: RequestContext, request: CreateEventSourceMappingRequest
+        self,
+        context: RequestContext,
+        request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
         # Validations
         function_arn, function_name, state = self.validate_event_source_mapping(context, request)
