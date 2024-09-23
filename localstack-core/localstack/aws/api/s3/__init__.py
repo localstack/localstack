@@ -1487,12 +1487,20 @@ class SessionCredentials(TypedDict, total=False):
 
 
 class CreateSessionOutput(TypedDict, total=False):
+    ServerSideEncryption: Optional[ServerSideEncryption]
+    SSEKMSKeyId: Optional[SSEKMSKeyId]
+    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
+    BucketKeyEnabled: Optional[BucketKeyEnabled]
     Credentials: SessionCredentials
 
 
 class CreateSessionRequest(ServiceRequest):
     SessionMode: Optional[SessionMode]
     Bucket: BucketName
+    ServerSideEncryption: Optional[ServerSideEncryption]
+    SSEKMSKeyId: Optional[SSEKMSKeyId]
+    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
+    BucketKeyEnabled: Optional[BucketKeyEnabled]
 
 
 class DefaultRetention(TypedDict, total=False):
@@ -3559,6 +3567,10 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         session_mode: SessionMode = None,
+        server_side_encryption: ServerSideEncryption = None,
+        ssekms_key_id: SSEKMSKeyId = None,
+        ssekms_encryption_context: SSEKMSEncryptionContext = None,
+        bucket_key_enabled: BucketKeyEnabled = None,
         **kwargs,
     ) -> CreateSessionOutput:
         raise NotImplementedError
