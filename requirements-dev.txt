@@ -255,7 +255,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.13.post3
+moto-ext==5.0.15.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -331,7 +331,7 @@ publication==0.0.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-py-partiql-parser==0.5.5
+py-partiql-parser==0.5.6
     # via moto-ext
 pyasn1==0.6.0
     # via rsa
