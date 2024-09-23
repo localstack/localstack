@@ -12,7 +12,7 @@ HEADER_LOCALSTACK_AUTHORIZATION = "x-localstack-authorization"
 HEADER_LOCALSTACK_TARGET = "x-localstack-target"
 HEADER_AMZN_ERROR_TYPE = "X-Amzn-Errortype"
 
-# backend service ports, for services that are behind the proxy (counting down from 4566)
+# backend service ports, for services that are behind a proxy (counting down from 4566)
 DEFAULT_PORT_EDGE = 4566
 
 # host name for localhost
@@ -33,7 +33,7 @@ ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 # Artifacts endpoint
 ASSETS_ENDPOINT = "https://assets.localstack.cloud"
 
-# host to bind when starting the services
+# host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
 # root code folder

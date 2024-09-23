@@ -153,7 +153,7 @@ class Directories:
     @staticmethod
     def for_cli() -> "Directories":
         """Returns directories used for when running localstack CLI commands from the host system. Unlike
-        ``for_container``, these are meant to be cross-platform. Ideally, this should not be needed at all,
+        ``for_container``, these needs to be cross-platform. Ideally, this should not be needed at all,
         because the localstack runtime and CLI do not share any control paths. There are a handful of
         situations where directories or files may be created lazily for CLI commands. Some paths are
         intentionally set to None to provoke errors if these paths are used from the CLI - which they
@@ -338,7 +338,7 @@ def in_docker():
         if os_hostname and os_hostname in content:
             return True
 
-    # container does not set any specific file or config, but it does use
+    # containerd does not set any specific file or config, but it does use
     # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem for `/`.
     try:
         with open("/proc/mounts", "rt") as infile:
@@ -375,7 +375,7 @@ def in_docker():
     return False
 
 
-# whether in_docker check should always return True or False
+# whether the `in_docker` check should always return True or False
 OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
@@ -1454,7 +1454,7 @@ def service_port(service_key: str, external: bool = False) -> int:
 def get_edge_port_http():
     """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for
     internal use. This function is not needed anymore because we don't separate between HTTP
-    and HTTP ports anymore since LocalStack comprehends to both."""
+    and HTTP ports anymore since LocalStack listens to both ports."""
     warnings.warn(
         """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port`
         for internal use. This function is also not needed anymore because we don't separate
