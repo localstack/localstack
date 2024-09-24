@@ -507,7 +507,7 @@ paths:
   /_aws/sqs/messages/{region}/{account_id}/{queue_name}:
     get:
       description: List SQS messages without side effects
-      operationId: list_sqs_queue_messages
+      operationId: list_sqs_messages
       tags: [aws]
       parameters:
       - description: SQS queue region
