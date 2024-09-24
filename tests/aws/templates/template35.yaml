@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Celeste Service
+
+Parameters:
+  ServiceName:
+    Type: String
+    Default: celeste
+  Environment:
+    Type: String
+    Default: local
+  BuildKey:
+    Type: String
+    Default: celeste-local.zip
+
+Resources:
+  Gateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name:
+        !Join
+        - '-'
+        - - !Ref ServiceName
+          - 'Gateway'
+          - !Ref Environment
+  GatewayV1:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref GatewayDeployment
+      RestApiId: !Ref Gateway
+      StageName: 'v0'
+  GatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - CreateAccount
+    Properties:
+      RestApiId: !Ref Gateway
+  DefaultModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref Gateway
+      Schema: {}
+  CreateAccountResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        !GetAtt
+        - Gateway
+        - RootResourceId
+      PathPart: 'account'
+      RestApiId: !Ref Gateway
+  CreateAccountRequestModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref Gateway
+      Schema:
+        $schema: 'http://json-schema.org/draft-04/schema#'
+        title: AccountCreate
+        type: object
+        properties:
+          field:
+            type: string
+          email:
+            type: string
+            format: email
+  CreateAccount:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: POST
+      RequestParameters:
+        method.request.path.account: True
+      Integration:
+        ConnectionType: INTERNET
+        IntegrationResponses:
+          - ResponseTemplates:
+              application/json: "{\"operation\":\"celeste_account_create\",\"data\":{\"key\":\"123e4567-e89b-12d3-a456-426614174000\",\"secret\":\"123e4567-e89b-12d3-a456-426614174000\"}}"
+            SelectionPattern: '2\d{2}'
+            StatusCode: '202'
+          - ResponseTemplates:
+              application/json: "{\"message\":\"Unknown Error\"}"
+            SelectionPattern: '5\d{2}'
+            StatusCode: '500'
+          - ResponseTemplates:
+              application/json: "{\"message\":\"Not Found\"}"
+            SelectionPattern: 404
+            StatusCode: '404'
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: !Ref CreateAccountRequestModel
+        Type: MOCK
+        TimeoutInMillis: 29000
+      MethodResponses:
+        - ResponseModels:
+            application/json: !Ref DefaultModel
+          StatusCode: '202'
+        - ResponseModels:
+            application/json: !Ref DefaultModel
+          StatusCode: '500'
+      OperationName: 'create_account'
+      ResourceId: !Ref CreateAccountResource
+      RestApiId: !Ref Gateway

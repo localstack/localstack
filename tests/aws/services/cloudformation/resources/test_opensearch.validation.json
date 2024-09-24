@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/resources/test_opensearch.py::test_domain": {
+    "last_validated_date": "2023-08-31T15:42:29+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_opensearch.py::test_domain_with_alternative_types": {
+    "last_validated_date": "2023-10-05T09:07:39+00:00"
+  }
+}

@@ -1,0 +1,16 @@
+Resources:
+  localEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: my-test-bus
+
+  localEventConnection:
+    Type: AWS::Events::Connection
+    Properties:
+      Name: my-test-conn
+      AuthorizationType: API_KEY
+      AuthParameters:
+        ApiKeyAuthParameters:
+          ApiKeyName: apikey123
+          ApiKeyValue: secretapikey123
+      Description: test events connection

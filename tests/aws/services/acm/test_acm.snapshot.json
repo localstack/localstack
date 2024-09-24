@@ -1,0 +1,336 @@
+{
+  "tests/aws/services/acm/test_acm.py::TestACM::test_certificate_for_subdomain_wildcard": {
+    "recorded-date": "18-04-2023, 19:01:27",
+    "recorded-content": {
+      "request-cert": {
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-cert": {
+        "Certificate": {
+          "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+          "CreatedAt": "datetime",
+          "DomainName": "*.<domain-name>",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "*.<domain-name>",
+              "ResourceRecord": {
+                "Name": "<record-prefix>.<domain-name>.",
+                "Type": "CNAME",
+                "Value": "<record-value>"
+              },
+              "ValidationDomain": "*.<domain-name>",
+              "ValidationMethod": "DNS",
+              "ValidationStatus": "PENDING_VALIDATION"
+            }
+          ],
+          "ExtendedKeyUsages": [],
+          "InUseBy": [],
+          "Issuer": "Amazon",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [],
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "ENABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "SignatureAlgorithm": "SHA256WITHRSA",
+          "Status": "PENDING_VALIDATION",
+          "Subject": "CN=*.<domain-name>",
+          "SubjectAlternativeNames": [
+            "*.<domain-name>"
+          ],
+          "Type": "AMAZON_ISSUED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-cert-2": {
+        "Certificate": {
+          "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+          "CreatedAt": "datetime",
+          "DomainName": "*.<domain-name>",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "*.<domain-name>",
+              "ResourceRecord": {
+                "Name": "<record-prefix>.<domain-name>.",
+                "Type": "CNAME",
+                "Value": "<record-value>"
+              },
+              "ValidationDomain": "*.<domain-name>",
+              "ValidationMethod": "DNS",
+              "ValidationStatus": "SUCCESS"
+            }
+          ],
+          "ExtendedKeyUsages": [
+            {
+              "Name": "TLS_WEB_SERVER_AUTHENTICATION",
+              "OID": "<o-i-d:1>"
+            },
+            {
+              "Name": "TLS_WEB_CLIENT_AUTHENTICATION",
+              "OID": "<o-i-d:2>"
+            }
+          ],
+          "InUseBy": [],
+          "IssuedAt": "datetime",
+          "Issuer": "Amazon",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [
+            {
+              "Name": "DIGITAL_SIGNATURE"
+            },
+            {
+              "Name": "KEY_ENCIPHERMENT"
+            }
+          ],
+          "NotAfter": "datetime",
+          "NotBefore": "datetime",
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "ENABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "Serial": "<serial:1>",
+          "SignatureAlgorithm": "SHA256WITHRSA",
+          "Status": "ISSUED",
+          "Subject": "CN=*.<domain-name>",
+          "SubjectAlternativeNames": [
+            "*.<domain-name>"
+          ],
+          "Type": "AMAZON_ISSUED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-cert": [
+        {
+          "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+          "DomainName": "*.<domain-name>",
+          "SubjectAlternativeNameSummaries": [
+            "*.<domain-name>"
+          ],
+          "HasAdditionalSubjectAlternativeNames": false,
+          "Status": "ISSUED",
+          "Type": "AMAZON_ISSUED",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [
+            "DIGITAL_SIGNATURE",
+            "KEY_ENCIPHERMENT"
+          ],
+          "ExtendedKeyUsages": [
+            "TLS_WEB_SERVER_AUTHENTICATION",
+            "TLS_WEB_CLIENT_AUTHENTICATION"
+          ],
+          "InUse": false,
+          "RenewalEligibility": "INELIGIBLE",
+          "NotBefore": "datetime",
+          "NotAfter": "datetime",
+          "CreatedAt": "datetime",
+          "IssuedAt": "datetime"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_create_certificate_for_multiple_alternative_domains": {
+    "recorded-date": "09-01-2024, 14:58:14",
+    "recorded-content": {
+      "list-cert-summary-list": {
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+        "CreatedAt": "datetime",
+        "DomainName": "test.example.com",
+        "ExtendedKeyUsages": [],
+        "HasAdditionalSubjectAlternativeNames": false,
+        "InUse": false,
+        "KeyAlgorithm": "RSA-2048",
+        "KeyUsages": [],
+        "RenewalEligibility": "INELIGIBLE",
+        "Status": "FAILED",
+        "SubjectAlternativeNameSummaries": [
+          "*.test.example.com",
+          "another.domain.com",
+          "test.example.com",
+          "yet-another.domain.com"
+        ],
+        "Type": "AMAZON_ISSUED"
+      },
+      "describe-cert": {
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+        "CreatedAt": "datetime",
+        "DomainName": "test.example.com",
+        "DomainValidationOptions": [
+          {
+            "DomainName": "*.test.example.com",
+            "ValidationDomain": "*.test.example.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "FAILED"
+          },
+          {
+            "DomainName": "another.domain.com",
+            "ValidationDomain": "another.domain.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "PENDING_VALIDATION"
+          },
+          {
+            "DomainName": "test.example.com",
+            "ValidationDomain": "test.example.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "PENDING_VALIDATION"
+          },
+          {
+            "DomainName": "yet-another.domain.com",
+            "ValidationDomain": "yet-another.domain.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "PENDING_VALIDATION"
+          }
+        ],
+        "ExtendedKeyUsages": [],
+        "FailureReason": "ADDITIONAL_VERIFICATION_REQUIRED",
+        "InUseBy": [],
+        "Issuer": "Amazon",
+        "KeyAlgorithm": "RSA-2048",
+        "KeyUsages": [],
+        "Options": {
+          "CertificateTransparencyLoggingPreference": "ENABLED"
+        },
+        "RenewalEligibility": "INELIGIBLE",
+        "SignatureAlgorithm": "SHA256WITHRSA",
+        "Status": "FAILED",
+        "Subject": "CN=test.example.com",
+        "SubjectAlternativeNames": [
+          "*.test.example.com",
+          "another.domain.com",
+          "test.example.com",
+          "yet-another.domain.com"
+        ],
+        "Type": "AMAZON_ISSUED"
+      }
+    }
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_import_certificate": {
+    "recorded-date": "22-02-2024, 17:41:15",
+    "recorded-content": {
+      "import-certificate-response": {
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-certificate-response": {
+        "Certificate": {
+          "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+          "CreatedAt": "datetime",
+          "DomainName": "localhost",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "localhost"
+            },
+            {
+              "DomainName": "localhost.localstack.cloud"
+            },
+            {
+              "DomainName": "localhost.localstack.cloudIP:127.0.0.1"
+            },
+            {
+              "DomainName": "test.localhost.atlassian.io"
+            }
+          ],
+          "ExtendedKeyUsages": [
+            {
+              "Name": "TLS_WEB_SERVER_AUTHENTICATION",
+              "OID": "1.3.6.1.5.5.7.3.1"
+            }
+          ],
+          "ImportedAt": "datetime",
+          "InUseBy": [],
+          "Issuer": "LocalStack Org",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [
+            {
+              "Name": "DIGITAL_SIGNATURE"
+            },
+            {
+              "Name": "NON_REPUDIATION"
+            },
+            {
+              "Name": "KEY_ENCIPHERMENT"
+            }
+          ],
+          "NotAfter": "datetime",
+          "NotBefore": "datetime",
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "DISABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "Serial": "03:e9",
+          "SignatureAlgorithm": "SHA256WITHRSA",
+          "Status": "ISSUED",
+          "Subject": "C=AU,ST=Some-State,L=Some-Locality,O=LocalStack Org,OU=Testing,CN=localhost",
+          "SubjectAlternativeNames": [
+            "localhost",
+            "localhost.localstack.cloud",
+            "localhost.localstack.cloudIP:127.0.0.1",
+            "test.localhost.atlassian.io"
+          ],
+          "Type": "IMPORTED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_domain_validation": {
+    "recorded-date": "12-04-2024, 15:36:37",
+    "recorded-content": {
+      "describe-certificate": {
+        "Certificate": {
+          "CertificateArn": "<certificate-arn:1>",
+          "CreatedAt": "datetime",
+          "DomainName": "<domain-name:1>",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "<domain-name:1>",
+              "ValidationDomain": "<domain-name:1>",
+              "ValidationEmails": [],
+              "ValidationMethod": "<validation-method:1>",
+              "ValidationStatus": "PENDING_VALIDATION"
+            }
+          ],
+          "ExtendedKeyUsages": [],
+          "InUseBy": [],
+          "Issuer": "Amazon",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [],
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "ENABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "SignatureAlgorithm": "<signature-algorithm:1>",
+          "Status": "PENDING_VALIDATION",
+          "Subject": "CN=<domain-name:1>",
+          "SubjectAlternativeNames": [
+            "<domain-name:1>"
+          ],
+          "Type": "AMAZON_ISSUED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

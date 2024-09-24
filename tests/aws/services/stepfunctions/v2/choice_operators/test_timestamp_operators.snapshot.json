@@ -1,0 +1,400 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_greater_than": {
+    "recorded-date": "22-06-2023, 13:22:29",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_equals": {
+    "recorded-date": "22-06-2023, 13:21:55",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": null,
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56.832957",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": true,
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_equals_path": {
+    "recorded-date": "22-06-2023, 13:22:14",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_greater_than_path": {
+    "recorded-date": "22-06-2023, 13:22:44",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_greater_than_equals": {
+    "recorded-date": "22-06-2023, 13:23:00",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_greater_than_equals_path": {
+    "recorded-date": "22-06-2023, 13:23:14",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_less_than": {
+    "recorded-date": "22-06-2023, 13:23:29",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_less_than_path": {
+    "recorded-date": "22-06-2023, 13:23:44",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_less_than_equals": {
+    "recorded-date": "22-06-2023, 13:24:00",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_less_than_equals_path": {
+    "recorded-date": "22-06-2023, 13:24:14",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "date",
+            "Value": "date"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  }
+}

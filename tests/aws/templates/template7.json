@@ -1,0 +1,66 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template for AWS::AWS::Function.",
+  "Parameters": {
+    "LambdaFunctionName": {
+      "Type": "String"
+    },
+    "LambdaRoleName": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "LambdaFunction1": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "LambdaFunctionName"
+        },
+        "Code": {
+          "ZipFile": "file.zip"
+        },
+        "Runtime": "nodejs18.x",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 300
+      }
+    },
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Ref": "LambdaRoleName"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "ALLOW",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "TestStackFunctionName": {
+      "Value": {
+        "Ref": "LambdaFunctionName"
+      }
+    },
+    "TestStackRoleName": {
+      "Value": {
+        "Ref": "LambdaRoleName"
+      }
+    }
+  }
+}

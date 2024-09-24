@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_dynamodb.py::TestTaskServiceDynamoDB::test_invalid_param": {
+    "last_validated_date": "2023-05-16T20:11:36+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_dynamodb.py::TestTaskServiceDynamoDB::test_put_item_invalid_table_name": {
+    "last_validated_date": "2023-05-12T15:15:45+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_dynamodb.py::TestTaskServiceDynamoDB::test_put_item_no_such_table": {
+    "last_validated_date": "2023-05-12T13:39:16+00:00"
+  }
+}

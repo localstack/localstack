@@ -1,0 +1,44 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator": {
+    "last_validated_date": "2024-01-10T00:06:10+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_integration_request_parameters_mapping": {
+    "last_validated_date": "2024-02-05T19:37:03+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_invocation_trace_id": {
+    "last_validated_date": "2024-08-07T20:24:17+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApigatewayRouting::test_proxy_routing_with_hardcoded_resource_sibling": {
+    "last_validated_date": "2024-07-23T17:41:36+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApigatewayRouting::test_routing_not_found": {
+    "last_validated_date": "2024-07-23T17:41:58+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApigatewayRouting::test_routing_with_hardcoded_resource_sibling_order": {
+    "last_validated_date": "2024-07-23T17:41:43+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[False]": {
+    "last_validated_date": "2023-09-07T17:20:47+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[True]": {
+    "last_validated_date": "2023-09-07T17:27:48+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_update_deployments": {
+    "last_validated_date": "2023-09-11T10:12:50+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDocumentations::test_documentation_parts_and_versions": {
+    "last_validated_date": "2023-08-07T20:02:13+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
+    "last_validated_date": "2024-03-05T18:54:23+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_update_stage_remove_wildcard": {
+    "last_validated_date": "2024-03-05T21:10:56+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_api_key_required_for_methods": {
+    "last_validated_date": "2023-07-27T15:57:20+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
+    "last_validated_date": "2024-03-20T22:49:50+00:00"
+  }
+}

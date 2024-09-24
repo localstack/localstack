@@ -1,0 +1,1046 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_create_execute_api_vpc_endpoint": {
+    "recorded-date": "15-04-2024, 23:07:07",
+    "recorded-content": {
+      "endpoint-details": {
+        "CreationTimestamp": "timestamp",
+        "DnsEntries": [
+          {
+            "DnsName": "<dns-name:1>",
+            "HostedZoneId": "<hosted-zone-id:1>"
+          }
+        ],
+        "DnsOptions": {
+          "DnsRecordIpType": "ipv4"
+        },
+        "Groups": [
+          {
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>"
+          }
+        ],
+        "IpAddressType": "ipv4",
+        "OwnerId": "111111111111",
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "*",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "PrivateDnsEnabled": true,
+        "RequesterManaged": false,
+        "RouteTableIds": [],
+        "ServiceName": "com.amazonaws.<region>.execute-api",
+        "State": "available",
+        "Tags": [],
+        "VpcEndpointId": "<vpc-endpoint-id:1>",
+        "VpcEndpointType": "Interface",
+        "VpcId": "<vpc-id:1>"
+      },
+      "api-details": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "PRIVATE"
+          ],
+          "vpcEndpointIds": [
+            "<vpc-endpoint-id:1>"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "policy": {
+          "Statement": [
+            {
+              "Action": "execute-api:Invoke",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Resource": "arn:<partition>:execute-api:<region>:111111111111:<id:1>/*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_responses": {
+    "recorded-date": "26-05-2023, 19:44:45",
+    "recorded-content": {
+      "put-method-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-response-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "<uri:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-response-get": {
+        "responseTemplates": {},
+        "selectionPattern": "2\\d{2}",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration-response-get": {
+        "responseTemplates": {},
+        "selectionPattern": "2\\d{2}",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-method-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "connectionType": "INTERNET",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {},
+              "selectionPattern": "2\\d{2}",
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "<uri:1>"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deploy": {
+        "createdDate": "datetime",
+        "id": "<id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete-integration-response-get": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-method-get-after-int-resp-delete": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "connectionType": "INTERNET",
+          "httpMethod": "POST",
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "<uri:1>"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-method-put": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "PUT",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-response-put": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-put": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "<uri:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-response-put": {
+        "contentHandling": "CONVERT_TO_BINARY",
+        "selectionPattern": "2\\d{2}",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration-response-put": {
+        "contentHandling": "CONVERT_TO_BINARY",
+        "selectionPattern": "2\\d{2}",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_response_with_response_template": {
+    "recorded-date": "30-05-2024, 16:15:58",
+    "recorded-content": {
+      "get-integration-response": {
+        "responseTemplates": {
+          "application/json": {
+            "data": "test"
+          }
+        },
+        "selectionPattern": "foobar",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_validation": {
+    "recorded-date": "06-06-2024, 12:23:04",
+    "recorded-content": {
+      "required-integration-method-HTTP": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Enumeration value for HttpMethod must be non-empty"
+        },
+        "message": "Enumeration value for HttpMethod must be non-empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "required-integration-method-HTTP_PROXY": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Enumeration value for HttpMethod must be non-empty"
+        },
+        "message": "Enumeration value for HttpMethod must be non-empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "required-integration-method-AWS": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Enumeration value for HttpMethod must be non-empty"
+        },
+        "message": "Enumeration value for HttpMethod must be non-empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "not-required-integration-method-MOCK": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "http-method-HTTP": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://example.com",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "http-method-HTTP_PROXY": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP_PROXY",
+        "uri": "http://example.com",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "aws-integration-AWS": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "credentials": "arn:<partition>:iam::111111111111:role/service-role/testfunction-role-oe783psq",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:<partition>:apigateway:<region>:s3:path/b/k",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "aws-integration-type-AWS": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:MyLambda/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "aws-integration-type-AWS_PROXY": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:MyLambda/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "no-s3-support-AWS_PROXY": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations."
+        },
+        "message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-uri-HTTP": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid HTTP endpoint specified for URI"
+        },
+        "message": "Invalid HTTP endpoint specified for URI",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-uri-HTTP_PROXY": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid HTTP endpoint specified for URI"
+        },
+        "message": "Invalid HTTP endpoint specified for URI",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-uri-not-an-arn": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid ARN specified in the request"
+        },
+        "message": "Invalid ARN specified in the request",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-uri-invalid-arn": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "AWS ARN for integration must contain path or action"
+        },
+        "message": "AWS ARN for integration must contain path or action",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_http[HTTP]": {
+    "recorded-date": "17-07-2024, 18:34:51",
+    "recorded-content": {
+      "apigw-id": "<apigw-id:1>",
+      "no-param-integration": {
+        "body": "",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Length": "0",
+          "Host": "<host:1>",
+          "User-Agent": "AmazonAPIGateway_<apigw-id:1>",
+          "X-Amzn-Apigateway-Api-Id": "<apigw-id:1>",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "463",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-RequestId": "<uuid:1>"
+        }
+      },
+      "full-integration": {
+        "body": {
+          "Accept": "application/json",
+          "Accept-Charset": "UTF-8",
+          "Accept-Encoding": "br",
+          "Age": "request_Age",
+          "Authorization": "Unauthorized",
+          "Connection": "",
+          "Content-Encoding": "deflate",
+          "Content-Length": "",
+          "Content-MD5": "",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "Expect": "",
+          "Host": "<host:2>",
+          "Max-Forwards": "",
+          "Pragma": "cache",
+          "Proxy-Authenticate": "",
+          "Range": "bytes=500-999",
+          "Referer": "https://example.com/",
+          "Server": "",
+          "TE": "",
+          "Transfer-Encoding": "",
+          "Trailer": "",
+          "Upgrade": "",
+          "User-Agent": "localStack/0.0",
+          "Via": "<via:1>",
+          "Warn": "299 localStack/0.0",
+          "WWW-Authenticate": ""
+        },
+        "headers": {
+          "Accept": "text/html",
+          "Accept-Charset": "UTF-16",
+          "Accept-Encoding": "zstd",
+          "Age": "request_params_age",
+          "Authorization": "request_params_authorization",
+          "Content-Encoding": "compress",
+          "Content-Length": "648",
+          "Content-Md5": "request_params_Content-MD5",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "Host": "<host:2>",
+          "Max-Forwards": "2",
+          "Pragma": "no-cache",
+          "Range": "bytes=0-499",
+          "Referer": "https://example.com/page",
+          "Server": "https://example.com/page",
+          "Trailer": "user-agent",
+          "Upgrade": "HTTP/2.0",
+          "User-Agent": "Override-Agent",
+          "Warn": "110 anderson/1.3.37 \"Response is stale\"",
+          "Www-Authenticate": "Basic YWxhZGRpbjpvcGVuc2VzYW1l",
+          "X-Amzn-Apigateway-Api-Id": "<apigw-id:1>",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>"
+        },
+        "response-headers": {
+          "Accept": "response_param_Accept",
+          "Accept-Charset": "response_param_Accept-Charset",
+          "Accept-Encoding": "response_param_Accept-Encoding",
+          "Age": "response_param_Age",
+          "Connection": "close",
+          "Content-Encoding": "response_param_Content-Encoding",
+          "Content-Length": "2740",
+          "Content-Type": "response_param_Content-Type",
+          "Date": "<Date>",
+          "Pragma": "response_param_Pragma",
+          "Range": "response_param_Range",
+          "Referer": "response_param_Referer",
+          "TE": "response_param_TE",
+          "Via": "<via:2>",
+          "Warn": "response_param_Warn",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-Remapped-Authorization": "response_param_Authorization",
+          "x-amzn-Remapped-Connection": "response_param_Connection",
+          "x-amzn-Remapped-Content-Length": "response_param_Content-Length",
+          "x-amzn-Remapped-Content-MD5": "response_param_Content-MD5",
+          "x-amzn-Remapped-Date": "<x-amzn-Remapped-Date>",
+          "x-amzn-Remapped-Expect": "response_param_Expect",
+          "x-amzn-Remapped-Host": "response_param_Host",
+          "x-amzn-Remapped-Max-Forwards": "response_param_Max-Forwards",
+          "x-amzn-Remapped-Proxy-Authenticate": "response_param_Proxy-Authenticate",
+          "x-amzn-Remapped-Server": "response_param_Server",
+          "x-amzn-Remapped-Trailer": "response_param_Trailer",
+          "x-amzn-Remapped-Upgrade": "response_param_Upgrade",
+          "x-amzn-Remapped-User-Agent": "response_param_User-Agent",
+          "x-amzn-Remapped-WWW-Authenticate": "response_param_WWW-Authenticate",
+          "x-amzn-RequestId": "<uuid:2>"
+        }
+      },
+      "content-length": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:3>"
+        }
+      },
+      "transfer-encoding": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:4>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_http[HTTP_PROXY]": {
+    "recorded-date": "17-07-2024, 18:35:02",
+    "recorded-content": {
+      "apigw-id": "<apigw-id:1>",
+      "no-param-integration": {
+        "body": "",
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "UTF-8",
+          "Accept-Encoding": "br",
+          "Age": "request_Age",
+          "Authorization": "Unauthorized",
+          "Content-Length": "0",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "Host": "<host:1>",
+          "Pragma": "cache",
+          "Range": "bytes=500-999",
+          "Referer": "https://example.com/",
+          "User-Agent": "localStack/0.0",
+          "Warn": "299 localStack/0.0",
+          "X-Amzn-Apigateway-Api-Id": "<apigw-id:1>",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>"
+        },
+        "response-headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Origin": "*",
+          "Connection": "close",
+          "Content-Length": "791",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-Remapped-Connection": "keep-alive",
+          "x-amzn-Remapped-Content-Length": "791",
+          "x-amzn-Remapped-Date": "<x-amzn-Remapped-Date>",
+          "x-amzn-Remapped-Server": "gunicorn/19.9.0",
+          "x-amzn-RequestId": "<uuid:1>"
+        }
+      },
+      "full-integration": {
+        "body": "",
+        "headers": {
+          "Accept": "text/html",
+          "Accept-Charset": "UTF-16",
+          "Accept-Encoding": "zstd",
+          "Age": "request_params_age",
+          "Authorization": "request_params_authorization",
+          "Content-Encoding": "compress",
+          "Content-Length": "0",
+          "Content-Md5": "request_params_Content-MD5",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "Host": "<host:2>",
+          "Max-Forwards": "2",
+          "Pragma": "no-cache",
+          "Range": "bytes=0-499",
+          "Referer": "https://example.com/page",
+          "Server": "https://example.com/page",
+          "Trailer": "user-agent",
+          "Upgrade": "HTTP/2.0",
+          "User-Agent": "Override-Agent",
+          "Warn": "110 anderson/1.3.37 \"Response is stale\"",
+          "Www-Authenticate": "Basic YWxhZGRpbjpvcGVuc2VzYW1l",
+          "X-Amzn-Apigateway-Api-Id": "<apigw-id:1>",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>"
+        },
+        "response-headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Origin": "*",
+          "Connection": "close",
+          "Content-Length": "1189",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-Remapped-Connection": "keep-alive",
+          "x-amzn-Remapped-Content-Length": "1189",
+          "x-amzn-Remapped-Date": "<x-amzn-Remapped-Date>",
+          "x-amzn-Remapped-Server": "gunicorn/19.9.0",
+          "x-amzn-RequestId": "<uuid:2>"
+        }
+      },
+      "content-length": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:3>"
+        }
+      },
+      "transfer-encoding": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:4>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_aws[AWS]": {
+    "recorded-date": "18-07-2024, 23:22:48",
+    "recorded-content": {
+      "apigw-id": "<apigw-id:1>",
+      "no-param-integration": {
+        "body": {},
+        "headers": null,
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "59",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-RequestId": "<uuid:1>"
+        }
+      },
+      "full-integration": {
+        "body": {
+          "Accept": "application/json",
+          "Accept-Charset": "UTF-8",
+          "Accept-Encoding": "br",
+          "Age": "request_Age",
+          "Authorization": "Unauthorized",
+          "Connection": "",
+          "Content-Encoding": "deflate",
+          "Content-Length": "",
+          "Content-MD5": "",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "Expect": "",
+          "Host": "<host:1>",
+          "Max-Forwards": "",
+          "Pragma": "cache",
+          "Proxy-Authenticate": "",
+          "Range": "bytes=500-999",
+          "Referer": "https://example.com/",
+          "Server": "",
+          "TE": "",
+          "Transfer-Encoding": "",
+          "Trailer": "",
+          "Upgrade": "",
+          "User-Agent": "localStack/0.0",
+          "Via": "<via:1>",
+          "Warn": "299 localStack/0.0",
+          "WWW-Authenticate": ""
+        },
+        "headers": null,
+        "response-headers": {
+          "Accept": "response_param_Accept",
+          "Accept-Charset": "response_param_Accept-Charset",
+          "Accept-Encoding": "response_param_Accept-Encoding",
+          "Age": "response_param_Age",
+          "Connection": "close",
+          "Content-Encoding": "response_param_Content-Encoding",
+          "Content-Length": "839",
+          "Content-Type": "response_param_Content-Type",
+          "Date": "<Date>",
+          "Pragma": "response_param_Pragma",
+          "Range": "response_param_Range",
+          "Referer": "response_param_Referer",
+          "TE": "response_param_TE",
+          "Via": "<via:2>",
+          "Warn": "response_param_Warn",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-Remapped-Authorization": "response_param_Authorization",
+          "x-amzn-Remapped-Connection": "response_param_Connection",
+          "x-amzn-Remapped-Content-Length": "response_param_Content-Length",
+          "x-amzn-Remapped-Content-MD5": "response_param_Content-MD5",
+          "x-amzn-Remapped-Date": "<x-amzn-Remapped-Date>",
+          "x-amzn-Remapped-Expect": "response_param_Expect",
+          "x-amzn-Remapped-Host": "response_param_Host",
+          "x-amzn-Remapped-Max-Forwards": "response_param_Max-Forwards",
+          "x-amzn-Remapped-Proxy-Authenticate": "response_param_Proxy-Authenticate",
+          "x-amzn-Remapped-Server": "response_param_Server",
+          "x-amzn-Remapped-Trailer": "response_param_Trailer",
+          "x-amzn-Remapped-Upgrade": "response_param_Upgrade",
+          "x-amzn-Remapped-User-Agent": "response_param_User-Agent",
+          "x-amzn-Remapped-WWW-Authenticate": "response_param_WWW-Authenticate",
+          "x-amzn-RequestId": "<uuid:2>"
+        }
+      },
+      "content-length": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:3>"
+        }
+      },
+      "transfer-encoding": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:4>"
+        }
+      },
+      "authorization": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:5>"
+        }
+      },
+      "connection": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:6>"
+        }
+      },
+      "expect": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:7>"
+        }
+      },
+      "proxy-authenticate": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:8>"
+        }
+      },
+      "te": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:9>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_aws[AWS_PROXY]": {
+    "recorded-date": "18-07-2024, 23:23:10",
+    "recorded-content": {
+      "apigw-id": "<apigw-id:1>",
+      "no-param-integration": {
+        "body": null,
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "UTF-8",
+          "Accept-Encoding": "br",
+          "Age": "request_Age",
+          "Authorization": "Unauthorized",
+          "Content-Encoding": "deflate",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "Host": "<host:1>",
+          "Pragma": "cache",
+          "Range": "bytes=500-999",
+          "Referer": "https://example.com/",
+          "User-Agent": "localStack/0.0",
+          "Via": "<via:1>",
+          "Warn": "299 localStack/0.0",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
+          "X-Forwarded-For": "<x--forwarded--for:1>",
+          "X-Forwarded-Port": "<x--forwarded--port:1>",
+          "X-Forwarded-Proto": "<X-Forwarded-Proto>"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "2339",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-RequestId": "<uuid:1>"
+        }
+      },
+      "full-integration": {
+        "body": null,
+        "headers": {
+          "Accept": "application/json",
+          "Accept-Charset": "UTF-8",
+          "Accept-Encoding": "br",
+          "Age": "request_Age",
+          "Authorization": "Unauthorized",
+          "Content-Encoding": "deflate",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "Host": "<host:1>",
+          "Pragma": "cache",
+          "Range": "bytes=500-999",
+          "Referer": "https://example.com/",
+          "User-Agent": "localStack/0.0",
+          "Via": "<via:1>",
+          "Warn": "299 localStack/0.0",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
+          "X-Forwarded-For": "<x--forwarded--for:1>",
+          "X-Forwarded-Port": "<x--forwarded--port:1>",
+          "X-Forwarded-Proto": "<X-Forwarded-Proto>"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "2323",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-RequestId": "<uuid:2>"
+        }
+      },
+      "content-length": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:3>"
+        }
+      },
+      "transfer-encoding": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:4>"
+        }
+      },
+      "authorization": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:5>"
+        }
+      },
+      "connection": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:6>"
+        }
+      },
+      "expect": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:7>"
+        }
+      },
+      "proxy-authenticate": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:8>"
+        }
+      },
+      "te": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "response-headers": {
+          "Connection": "close",
+          "Content-Length": "36",
+          "Content-Type": "application/json",
+          "Date": "<Date>",
+          "x-amz-apigw-id": "<x-amz-apigw-id>",
+          "x-amzn-ErrorType": "InternalServerErrorException",
+          "x-amzn-RequestId": "<uuid:9>"
+        }
+      }
+    }
+  }
+}

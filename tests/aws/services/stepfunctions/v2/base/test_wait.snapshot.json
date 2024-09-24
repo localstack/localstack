@@ -1,0 +1,831 @@
+{
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_timestamp_too_far_in_future_boundary[24855]": {
+    "recorded-date": "13-12-2023, 07:09:01",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_timestamp_too_far_in_future_boundary[24856]": {
+    "recorded-date": "13-12-2023, 07:09:17",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State_1' (entered at the event id #2). Wait state delay is too long.",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[Z]": {
+    "recorded-date": "13-12-2023, 07:09:32",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.000000Z]": {
+    "recorded-date": "13-12-2023, 07:09:46",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.00Z]": {
+    "recorded-date": "13-12-2023, 07:10:01",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[]": {
+    "recorded-date": "13-12-2023, 07:10:17",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State_1' (entered at the event id #2). The TimestampPath parameter does not reference a valid ISO-8601 extended offset date-time format string: $.start_at == <timestamp>",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.000000]": {
+    "recorded-date": "13-12-2023, 07:10:32",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State_1' (entered at the event id #2). The TimestampPath parameter does not reference a valid ISO-8601 extended offset date-time format string: $.start_at == <timestamp>",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path": {
+    "recorded-date": "22-03-2024, 17:32:55",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": 1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": 1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "WaitState",
+              "output": {
+                "input": {
+                  "waitSeconds": 1
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "input": {
+                  "waitSeconds": 1
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[-1]": {
+    "recorded-date": "22-03-2024, 21:37:11",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": -1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": -1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'WaitState' (entered at the event id #2). The SecondsPath parameter references a negative value: $.input.waitSeconds == -1",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[0]": {
+    "recorded-date": "22-03-2024, 21:37:45",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": 0
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": 0
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "WaitState",
+              "output": {
+                "input": {
+                  "waitSeconds": 0
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "input": {
+                  "waitSeconds": 0
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[1]": {
+    "recorded-date": "22-03-2024, 21:38:00",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": 1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": 1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "WaitState",
+              "output": {
+                "input": {
+                  "waitSeconds": 1
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "input": {
+                  "waitSeconds": 1
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[1.5]": {
+    "recorded-date": "22-03-2024, 21:38:15",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": 1.5
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": 1.5
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'WaitState' (entered at the event id #2). The SecondsPath parameter cannot be parsed as a long value: $.input.waitSeconds == 1.5",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[-1.5]": {
+    "recorded-date": "22-03-2024, 21:37:25",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": -1.5
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input": {
+                  "waitSeconds": -1.5
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'WaitState' (entered at the event id #2). The SecondsPath parameter cannot be parsed as a long value: $.input.waitSeconds == -1.5",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

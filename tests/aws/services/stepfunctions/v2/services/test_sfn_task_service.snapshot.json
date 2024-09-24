@@ -1,0 +1,418 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution": {
+    "recorded-date": "28-06-2023, 11:07:54",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartExecution"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Input": null,
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Name": "TestStartTarget"
+              },
+              "region": "<region>",
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "160"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "160",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "StartExecution",
+              "output": {
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "160"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "160",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "160"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "160",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution_input_json": {
+    "recorded-date": "28-06-2023, 11:12:13",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Input": {
+                  "Hello": "World"
+                },
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Input": {
+                  "Hello": "World"
+                },
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartExecution"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Input": {
+                  "Hello": "World"
+                },
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Name": "TestStartTarget"
+              },
+              "region": "<region>",
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "161"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "161",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "StartExecution",
+              "output": {
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "161"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "161",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "161"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "161",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

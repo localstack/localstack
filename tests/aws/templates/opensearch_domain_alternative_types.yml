@@ -1,0 +1,37 @@
+# sample from https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
+Resources:
+  OpenSearchServiceDomain:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      DomainName: 'test-opensearch-domain'
+      EngineVersion: 'OpenSearch_1.0'
+      ClusterConfig:
+        DedicatedMasterEnabled: true
+        InstanceCount: '2'
+        ZoneAwarenessEnabled: true
+        InstanceType: 'm3.medium.search'
+        DedicatedMasterType: 'm3.medium.search'
+        DedicatedMasterCount: '3'
+      EBSOptions:
+        EBSEnabled: true
+        Iops: '0'
+        VolumeSize: '20'
+        VolumeType: 'gp2'
+      AccessPolicies:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: 'Allow'
+            Principal:
+              AWS:
+                Fn::Sub: 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'es:*'
+            Resource:
+              Fn::Sub: 'arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/test-opensearch-domain/*'
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: 'true'
+        override_main_response_version: 'true'
+Outputs:
+  SearchDomain:
+    Value:
+        Ref: OpenSearchServiceDomain

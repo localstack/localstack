@@ -1,0 +1,1206 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator": {
+    "recorded-date": "10-01-2024, 00:06:10",
+    "recorded-content": {
+      "register-lambda": {
+        "fn_arn": "arn:<partition>:lambda:<region>:111111111111:function:<fn_name:1>",
+        "fn_name": "<fn_name:1>"
+      },
+      "deploy-1": {
+        "createdDate": "datetime",
+        "id": "<id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "change-request-path-names": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "AWS_PROXY",
+          "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "requestModels": {
+          "application/json": "testSchema"
+        },
+        "requestParameters": {
+          "method.request.header.x-header-param": true,
+          "method.request.path.issuer": true,
+          "method.request.querystring.qs1": true
+        },
+        "requestValidatorId": "<request-validator-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "missing-all-required-request-params-post": {
+        "message": "Missing required request parameters: [x-header-param, issuer, qs1]"
+      },
+      "missing-required-headers-request-params-get": {
+        "message": "Missing required request parameters: [x-header-param]"
+      },
+      "missing-required-qs-request-params-get": {
+        "message": "Missing required request parameters: [qs1]"
+      },
+      "revert-request-path-names": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "AWS_PROXY",
+          "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "requestModels": {
+          "application/json": "testSchema"
+        },
+        "requestParameters": {
+          "method.request.header.x-header-param": true,
+          "method.request.path.test": true,
+          "method.request.querystring.qs1": true
+        },
+        "requestValidatorId": "<request-validator-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalid-request-body": {
+        "message": "Invalid request body"
+      },
+      "disable-request-validator": {
+        "id": "<request-validator-id:1>",
+        "name": "test-validator",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_api_key_required_for_methods": {
+    "recorded-date": "27-07-2023, 17:57:20",
+    "recorded-content": {
+      "create-usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "dev"
+          }
+        ],
+        "description": "Test Usage Plan for API key",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 10,
+          "offset": 0,
+          "period": "DAY"
+        },
+        "tags": {
+          "tag_key": "tag_value"
+        },
+        "throttle": {
+          "burstLimit": 1,
+          "rateLimit": 2.0
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-api-key": {
+        "createdDate": "datetime",
+        "enabled": true,
+        "id": "<id:2>",
+        "lastUpdatedDate": "datetime",
+        "name": "<name:2>",
+        "stageKeys": [],
+        "value": "<value:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-usage-plan-key": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "type": "API_KEY",
+        "value": "<value:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-api-key-disabled": {
+        "createdDate": "datetime",
+        "enabled": false,
+        "id": "<id:2>",
+        "lastUpdatedDate": "datetime",
+        "name": "<name:2>",
+        "stageKeys": [],
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
+    "recorded-date": "20-03-2024, 22:49:50",
+    "recorded-content": {
+      "create-usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "dev"
+          }
+        ],
+        "description": "<description:1>",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "dev"
+          }
+        ],
+        "description": "<description:1>",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-usage-plans": {
+        "items": [
+          {
+            "apiStages": [
+              {
+                "apiId": "<api-id:1>",
+                "stage": "dev"
+              }
+            ],
+            "description": "<description:1>",
+            "id": "<id:1>",
+            "name": "<name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "dev"
+          }
+        ],
+        "description": "<description:1>",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 5000,
+          "offset": 0,
+          "period": "MONTH"
+        },
+        "tags": {},
+        "throttle": {
+          "burstLimit": 100,
+          "rateLimit": 200.0
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-wrong-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Usage Plan ID specified"
+        },
+        "message": "Invalid Usage Plan ID specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-wrong-api-stages-no-value": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid API Stage specified"
+        },
+        "message": "Invalid API Stage specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-wrong-api-stages-wrong-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API Stage {api: <api-id:1>b, stage: dev} specified for usageplan <id:1>"
+        },
+        "message": "Invalid API Stage {api: <api-id:1>b, stage: dev} specified for usageplan <id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-wrong-api-stages-wrong-stage": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API Stage {api: <api-id:1>, stage: fakestagename} specified for usageplan <id:1>"
+        },
+        "message": "Invalid API Stage {api: <api-id:1>, stage: fakestagename} specified for usageplan <id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-wrong-api-stages-wrong-value": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid API Stage specified"
+        },
+        "message": "Invalid API Stage specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-usage-plan-after-update": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "dev"
+          }
+        ],
+        "description": "<description:1>",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 5000,
+          "offset": 0,
+          "period": "MONTH"
+        },
+        "tags": {},
+        "throttle": {
+          "burstLimit": 100,
+          "rateLimit": 200.0
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-usage-plans-after-update": {
+        "items": [
+          {
+            "apiStages": [
+              {
+                "apiId": "<api-id:1>",
+                "stage": "dev"
+              }
+            ],
+            "description": "<description:1>",
+            "id": "<id:1>",
+            "name": "<name:1>",
+            "quota": {
+              "limit": 5000,
+              "offset": 0,
+              "period": "MONTH"
+            },
+            "throttle": {
+              "burstLimit": 100,
+              "rateLimit": 200.0
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
+    "recorded-date": "05-03-2024, 18:54:23",
+    "recorded-content": {
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "error-update-doc-version": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid method setting path: /documentation_version. Must be one of: [/deploymentId, /description, /cacheClusterEnabled, /cacheClusterSize, /clientCertificateId, /accessLogSettings, /accessLogSettings/destinationArn, /accessLogSettings/format, /{resourcePath}/{httpMethod}/metrics/enabled, /{resourcePath}/{httpMethod}/logging/dataTrace, /{resourcePath}/{httpMethod}/logging/loglevel, /{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds, /{resourcePath}/{httpMethod}/caching/enabled, /{resourcePath}/{httpMethod}/caching/dataEncrypted, /{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl, /{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy, /*/*/metrics/enabled, /*/*/logging/dataTrace, /*/*/logging/loglevel, /*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds, /*/*/caching/enabled, /*/*/caching/dataEncrypted, /*/*/caching/requireAuthorizationForCacheControl, /*/*/caching/unauthorizedCacheControlHeaderStrategy, /variables/{variable_name}, /tracingEnabled]"
+        },
+        "message": "Invalid method setting path: /documentation_version. Must be one of: [/deploymentId, /description, /cacheClusterEnabled, /cacheClusterSize, /clientCertificateId, /accessLogSettings, /accessLogSettings/destinationArn, /accessLogSettings/format, /{resourcePath}/{httpMethod}/metrics/enabled, /{resourcePath}/{httpMethod}/logging/dataTrace, /{resourcePath}/{httpMethod}/logging/loglevel, /{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds, /{resourcePath}/{httpMethod}/caching/enabled, /{resourcePath}/{httpMethod}/caching/dataEncrypted, /{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl, /{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy, /*/*/metrics/enabled, /*/*/logging/dataTrace, /*/*/logging/loglevel, /*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds, /*/*/caching/enabled, /*/*/caching/dataEncrypted, /*/*/caching/requireAuthorizationForCacheControl, /*/*/caching/unauthorizedCacheControlHeaderStrategy, /variables/{variable_name}, /tracingEnabled]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-update-tags": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid method setting path: /tags/tag1. Must be one of: [/deploymentId, /description, /cacheClusterEnabled, /cacheClusterSize, /clientCertificateId, /accessLogSettings, /accessLogSettings/destinationArn, /accessLogSettings/format, /{resourcePath}/{httpMethod}/metrics/enabled, /{resourcePath}/{httpMethod}/logging/dataTrace, /{resourcePath}/{httpMethod}/logging/loglevel, /{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds, /{resourcePath}/{httpMethod}/caching/enabled, /{resourcePath}/{httpMethod}/caching/dataEncrypted, /{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl, /{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy, /*/*/metrics/enabled, /*/*/logging/dataTrace, /*/*/logging/loglevel, /*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds, /*/*/caching/enabled, /*/*/caching/dataEncrypted, /*/*/caching/requireAuthorizationForCacheControl, /*/*/caching/unauthorizedCacheControlHeaderStrategy, /variables/{variable_name}, /tracingEnabled]"
+        },
+        "message": "Invalid method setting path: /tags/tag1. Must be one of: [/deploymentId, /description, /cacheClusterEnabled, /cacheClusterSize, /clientCertificateId, /accessLogSettings, /accessLogSettings/destinationArn, /accessLogSettings/format, /{resourcePath}/{httpMethod}/metrics/enabled, /{resourcePath}/{httpMethod}/logging/dataTrace, /{resourcePath}/{httpMethod}/logging/loglevel, /{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds, /{resourcePath}/{httpMethod}/caching/enabled, /{resourcePath}/{httpMethod}/caching/dataEncrypted, /{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl, /{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy, /*/*/metrics/enabled, /*/*/logging/dataTrace, /*/*/logging/loglevel, /*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds, /*/*/caching/enabled, /*/*/caching/dataEncrypted, /*/*/caching/requireAuthorizationForCacheControl, /*/*/caching/unauthorizedCacheControlHeaderStrategy, /variables/{variable_name}, /tracingEnabled]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "stage new",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {
+          "*/*": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 123,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          },
+          "test/GET": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 124,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          }
+        },
+        "stageName": "s1",
+        "tracingEnabled": true,
+        "variables": {
+          "var1": "test",
+          "var2": "test2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "stage new",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {
+          "*/*": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 123,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          },
+          "test/GET": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 124,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          }
+        },
+        "stageName": "s1",
+        "tracingEnabled": true,
+        "variables": {
+          "var1": "test",
+          "var2": "test2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-override": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "stage new",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {
+          "*/*": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 100,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          },
+          "test/GET": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 124,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          }
+        },
+        "stageName": "s1",
+        "tracingEnabled": true,
+        "variables": {
+          "var1": "test",
+          "var2": "test2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDocumentations::test_documentation_parts_and_versions": {
+    "recorded-date": "07-08-2023, 22:02:13",
+    "recorded-content": {
+      "create-part-response": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "foo": "bar"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-parts-response": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "location": {
+              "type": "API"
+            },
+            "properties": {
+              "foo": "bar"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-version-response": {
+        "createdDate": "datetime",
+        "version": "v123",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-version-response": {
+        "createdDate": "datetime",
+        "description": "doc version new",
+        "version": "v123",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-version-response": {
+        "createdDate": "datetime",
+        "description": "doc version new",
+        "version": "v123",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[True]": {
+    "recorded-date": "07-09-2023, 19:27:48",
+    "recorded-content": {
+      "get-deployment": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-0": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-0": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-0": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-1": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-1": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-1": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-2": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-2": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:3>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[False]": {
+    "recorded-date": "07-09-2023, 19:20:47",
+    "recorded-content": {
+      "get-deployment": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-0": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-0": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-0": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-1": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-1": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-1": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-2": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-2": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:3>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_update_deployments": {
+    "recorded-date": "11-09-2023, 12:12:50",
+    "recorded-content": {
+      "get-deployment-1": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployment-1-after-update": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deployment-2": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-after-update": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "delete-deployment-2-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_update_stage_remove_wildcard": {
+    "recorded-date": "05-03-2024, 21:10:56",
+    "recorded-content": {
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Cannot remove method setting */* because there is no method setting for this method "
+        },
+        "message": "Cannot remove method setting */* because there is no method setting for this method ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {
+          "*/*": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 5000,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          }
+        },
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-reset": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stage-after-reset": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApigatewayRouting::test_routing_not_found": {
+    "recorded-date": "23-07-2024, 17:41:58",
+    "recorded-content": {
+      "working-route": {
+        "message": "exists",
+        "statusCode": 200
+      },
+      "not-found": {
+        "content": {
+          "message": "Missing Authentication Token"
+        },
+        "errorType": "MissingAuthenticationTokenException"
+      },
+      "wrong-method": {
+        "content": {
+          "message": "Missing Authentication Token"
+        },
+        "errorType": "MissingAuthenticationTokenException"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_invocation_trace_id": {
+    "recorded-date": "07-08-2024, 20:24:17",
+    "recorded-content": {
+      "register-lambda": {
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>"
+      },
+      "normal-req-headers-MOCK": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:1>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:1>",
+        "x-amz-cf-id": "<x-amz-cf-id:1>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:1>",
+        "x-cache": "Miss from cloudfront"
+      },
+      "trace-id-req-headers-MOCK": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:2>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:2>",
+        "x-amz-cf-id": "<x-amz-cf-id:2>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:2>",
+        "x-cache": "Miss from cloudfront"
+      },
+      "normal-req-headers-AWS_PROXY": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:3>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:3>",
+        "x-amz-cf-id": "<x-amz-cf-id:3>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:3>",
+        "x-amzn-trace-id": "<x-amzn-trace-id:1>",
+        "x-cache": "Miss from cloudfront"
+      },
+      "trace-id-req-headers-AWS_PROXY": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:4>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:4>",
+        "x-amz-cf-id": "<x-amz-cf-id:4>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:4>",
+        "x-amzn-trace-id": "<x-amzn-trace-id:2>",
+        "x-cache": "Miss from cloudfront"
+      },
+      "trace-id-small-req-headers-AWS_PROXY": {
+        "connection": "keep-alive",
+        "content-length": "content-length",
+        "content-type": "application/json",
+        "date": "date",
+        "via": "<via:5>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:5>",
+        "x-amz-cf-id": "<x-amz-cf-id:5>",
+        "x-amz-cf-pop": "<x-amz-cf-pop:1>",
+        "x-amzn-requestid": "<uuid:5>",
+        "x-amzn-trace-id": "<x-amzn-trace-id:3>",
+        "x-cache": "Miss from cloudfront"
+      }
+    }
+  }
+}

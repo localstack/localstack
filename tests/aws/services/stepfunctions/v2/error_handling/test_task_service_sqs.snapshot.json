@@ -1,0 +1,603 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue": {
+    "recorded-date": "22-06-2023, 13:31:36",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "region": "<region>",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known",
+              "error": "SQS.SdkClientException",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "Error": "SQS.SdkClientException",
+                "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "SQS.SdkClientException",
+                "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithClientHandler"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndWithClientHandler",
+              "output": {
+                "Error": "SQS.SdkClientException",
+                "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known",
+                "client_error": {
+                  "Error": "SQS.SdkClientException",
+                  "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "SQS.SdkClientException",
+                "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known",
+                "client_error": {
+                  "Error": "SQS.SdkClientException",
+                  "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_empty_body": {
+    "recorded-date": "22-06-2023, 13:32:07",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": null
+              },
+              "region": "<region>",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "The request must contain the parameter MessageBody. (Service: AmazonSQS; Status Code: 400; Error Code: MissingParameter; Request ID: <request_id>; Proxy: null)",
+              "error": "SQS.AmazonSQSException",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "Error": "SQS.AmazonSQSException",
+                "Cause": "The request must contain the parameter MessageBody. (Service: AmazonSQS; Status Code: 400; Error Code: MissingParameter; Request ID: <request_id>; Proxy: null)"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "SQS.AmazonSQSException",
+                "Cause": "The request must contain the parameter MessageBody. (Service: AmazonSQS; Status Code: 400; Error Code: MissingParameter; Request ID: <request_id>; Proxy: null)"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithSQSException"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndWithSQSException",
+              "output": {
+                "Error": "SQS.AmazonSQSException",
+                "Cause": "The request must contain the parameter MessageBody. (Service: AmazonSQS; Status Code: 400; Error Code: MissingParameter; Request ID: <request_id>; Proxy: null)",
+                "aws_error": {
+                  "Error": "SQS.AmazonSQSException",
+                  "Cause": "The request must contain the parameter MessageBody. (Service: AmazonSQS; Status Code: 400; Error Code: MissingParameter; Request ID: <request_id>; Proxy: null)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "SQS.AmazonSQSException",
+                "Cause": "The request must contain the parameter MessageBody. (Service: AmazonSQS; Status Code: 400; Error Code: MissingParameter; Request ID: <request_id>; Proxy: null)",
+                "aws_error": {
+                  "Error": "SQS.AmazonSQSException",
+                  "Cause": "The request must contain the parameter MessageBody. (Service: AmazonSQS; Status Code: 400; Error Code: MissingParameter; Request ID: <request_id>; Proxy: null)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue_no_catch": {
+    "recorded-date": "22-06-2023, 13:31:50",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendSQS"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "region": "<region>",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Unable to execute HTTP request: no-such-queue-fa484d45: Name or service not known",
+              "error": "SQS.SdkClientException",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Unable to execute HTTP request: no-such-queue-fa484d45: Name or service not known",
+              "error": "SQS.SdkClientException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_sqs_failure_in_wait_for_task_tok": {
+    "recorded-date": "18-04-2024, 06:27:04",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageBody": {
+                  "Message": "test_message_txt",
+                  "TaskToken": "<task_token:1>"
+                },
+                "QueueUrl": "<sqs_queue_url>"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": [
+                      "Thu, 18 Apr 2024 06:27:01 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Thu, 18 Apr 2024 06:27:01 GMT",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskFailedEventDetails": {
+              "cause": "Failure cause",
+              "error": "Failure error",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "Error": "Failure error",
+                "Cause": "Failure cause"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Failure error",
+                "Cause": "Failure cause"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithCaught"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "EndWithCaught",
+              "output": {
+                "Error": "Failure error",
+                "Cause": "Failure cause",
+                "caught": {
+                  "Error": "Failure error",
+                  "Cause": "Failure cause"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Failure error",
+                "Cause": "Failure cause",
+                "caught": {
+                  "Error": "Failure error",
+                  "Cause": "Failure cause"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

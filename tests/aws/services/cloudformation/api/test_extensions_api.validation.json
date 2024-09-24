@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[HOOK-LocalStack::Testing::TestHook-hooks/localstack-testing-testhook.zip]": {
+    "last_validated_date": "2023-03-02T15:12:56+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[MODULE-LocalStack::Testing::TestModule::MODULE-modules/localstack-testing-testmodule-module.zip]": {
+    "last_validated_date": "2023-03-02T15:11:53+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[RESOURCE-LocalStack::Testing::TestResource-resourcetypes/localstack-testing-testresource.zip]": {
+    "last_validated_date": "2023-03-02T15:11:19+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_not_complete": {
+    "last_validated_date": "2023-03-02T15:15:26+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_type_configuration": {
+    "last_validated_date": "2023-03-06T14:33:33+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_versioning": {
+    "last_validated_date": "2023-03-02T15:14:12+00:00"
+  }
+}

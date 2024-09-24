@@ -1,0 +1,9 @@
+Resources:
+  topic69831491:
+    Type: AWS::SNS::Topic
+Outputs:
+  TopicName:
+    Value:
+      Fn::GetAtt:
+        - topic69831491
+        - TopicName

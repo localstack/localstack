@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  tableName:
+    Type: String
+    Default: name
+  policyName:
+    Type: String
+    Default: name
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref tableName
+      AttributeDefinitions:
+        - AttributeName: ExKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ExKey
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  ManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Ref policyName
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action: "dynamodb:DescribeTable"
+            Effect: "Allow"
+            Resource:
+              - Fn::GetAtt:
+                  - DynamoDBTable
+                  - Arn
+              - Ref: AWS::NoValue
+    DependsOn: DynamoDBTable
+
+Outputs:
+    TableName:
+      Value:
+        Ref: DynamoDBTable
+    TableARN:
+      Value:
+        "Fn::GetAtt": "DynamoDBTable.Arn"
+    StreamARN:
+      Value:
+        "Fn::GetAtt": "DynamoDBTable.StreamArn"
+    PolicyArn:
+      Value:
+        Ref: ManagedPolicy

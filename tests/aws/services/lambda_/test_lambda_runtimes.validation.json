@@ -1,0 +1,92 @@
+{
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_manual_endpoint_injection[provided.al2023]": {
+    "last_validated_date": "2024-03-14T17:19:04+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_manual_endpoint_injection[provided.al2]": {
+    "last_validated_date": "2024-03-14T17:19:09+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_uncaught_exception_invoke[provided.al2023]": {
+    "last_validated_date": "2024-03-14T17:15:53+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_uncaught_exception_invoke[provided.al2]": {
+    "last_validated_date": "2024-03-14T17:15:56+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom-INTERFACE]": {
+    "last_validated_date": "2024-03-13T08:55:53+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequest-INTERFACE]": {
+    "last_validated_date": "2024-03-13T08:56:01+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom-CUSTOM]": {
+    "last_validated_date": "2024-03-13T08:55:45+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_lambda_subscribe_sns_topic": {
+    "last_validated_date": "2024-03-13T08:56:24+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_runtime_with_lib": {
+    "last_validated_date": "2024-03-13T08:54:58+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java11]": {
+    "last_validated_date": "2024-03-13T08:55:30+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java17]": {
+    "last_validated_date": "2024-03-13T08:55:24+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java21]": {
+    "last_validated_date": "2024-03-13T08:55:19+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8.al2]": {
+    "last_validated_date": "2024-03-13T08:55:36+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java11]": {
+    "last_validated_date": "2024-03-13T08:55:09+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java17]": {
+    "last_validated_date": "2024-03-13T08:55:05+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java21]": {
+    "last_validated_date": "2024-03-13T08:55:03+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8.al2]": {
+    "last_validated_date": "2024-03-13T08:55:12+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs16.x]": {
+    "last_validated_date": "2024-03-13T08:54:44+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs18.x]": {
+    "last_validated_date": "2024-03-13T08:54:33+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs20.x]": {
+    "last_validated_date": "2024-03-13T08:54:27+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.10]": {
+    "last_validated_date": "2024-03-13T08:56:35+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.11]": {
+    "last_validated_date": "2024-03-13T08:56:32+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.12]": {
+    "last_validated_date": "2024-03-13T08:56:29+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.8]": {
+    "last_validated_date": "2024-03-13T08:56:41+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.9]": {
+    "last_validated_date": "2024-03-13T08:56:38+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.10]": {
+    "last_validated_date": "2024-03-13T08:56:51+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.11]": {
+    "last_validated_date": "2024-03-13T08:56:48+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.12]": {
+    "last_validated_date": "2024-03-13T08:56:44+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.8]": {
+    "last_validated_date": "2024-03-13T08:56:56+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.9]": {
+    "last_validated_date": "2024-03-13T08:56:54+00:00"
+  }
+}

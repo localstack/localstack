@@ -1,0 +1,250 @@
+# LocalStack project configuration
+[build-system]
+requires = ['setuptools>=64', 'wheel', 'plux>=1.10', "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "localstack-core"
+authors = [
+        { name = "LocalStack Contributors", email = "info@localstack.cloud" }
+]
+description = "The core library and runtime of LocalStack"
+requires-python = ">=3.8"
+dependencies = [
+    "build",
+    "click>=7.1",
+    "cachetools>=5.0",
+    "cryptography",
+    "dill==0.3.6",
+    "dnslib>=0.9.10",
+    "dnspython>=1.16.0",
+    "plux>=1.10",
+    "psutil>=5.4.8",
+    "python-dotenv>=0.19.1",
+    "pyyaml>=5.1",
+    "rich>=12.3.0",
+    "requests>=2.20.0",
+    "semver>=2.10",
+    "tailer>=0.4.1",
+]
+dynamic = ["version"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Emulators",
+]
+
+[tool.setuptools_scm]
+version_file = "localstack-core/localstack/version.py"
+# pypi does not support local versions:
+# https://setuptools-scm.readthedocs.io/en/latest/usage/#default-versioning-scheme
+local_scheme = "no-local-version"
+
+[project.urls]
+Homepage = "https://localstack.cloud"
+Documentation = "https://docs.localstack.cloud"
+Repository = "https://github.com/localstack/localstack.git"
+Issues = "https://github.com/localstack/localstack/issues"
+
+[project.optional-dependencies]
+# minimal required to actually run localstack on the host for services natively implemented in python
+base-runtime = [
+    # pinned / updated by ASF update action
+    "boto3==1.35.24",
+    # pinned / updated by ASF update action
+    "botocore==1.35.24",
+    "awscrt>=0.13.14",
+    "cbor2>=5.2.0",
+    "dnspython>=1.16.0",
+    "docker>=6.1.1",
+    "jsonpatch>=1.24",
+    "hypercorn>=0.14.4",
+    "localstack-twisted>=23.0",
+    "openapi-core>=0.19.2",
+    "pyopenssl>=23.0.0",
+    "readerwriterlock>=1.0.7",
+    "requests-aws4auth>=1.0",
+    # explicitly set urllib3 to force its usage / ensure compatibility
+    "urllib3>=2.0.7",
+    "Werkzeug>=3.0.0",
+    "xmltodict>=0.13.0",
+    "rolo>=0.7",
+]
+
+# required to actually run localstack on the host
+runtime = [
+    "localstack-core[base-runtime]",
+    # pinned / updated by ASF update action
+    "awscli>=1.32.117",
+    "airspeed-ext>=0.6.3",
+    "amazon_kclpy>=2.0.6,!=2.1.0,!=2.1.4",
+    # antlr4-python3-runtime: exact pin because antlr4 runtime is tightly coupled to the generated parser code
+    "antlr4-python3-runtime==4.13.2",
+    "apispec>=5.1.1",
+    "aws-sam-translator>=1.15.1",
+    "crontab>=0.22.6",
+    # TODO remove upper limit once https://github.com/getmoto/moto/pull/7876 is in our moto-ext version
+    "cryptography>=41.0.5,<43.0.0",
+    # allow Python programs full access to Java class libraries. Used for opt-in event ruler.
+    "JPype1>=1.5.0",
+    "json5>=0.9.11",
+    "jsonpath-ng>=1.6.1",
+    "jsonpath-rw>=1.4.0",
+    "moto-ext[all]==5.0.13.post3",
+    "opensearch-py>=2.4.1",
+    "pymongo>=4.2.0",
+    "pyopenssl>=23.0.0",
+]
+
+# for running tests and coverage analysis
+test = [
+    # runtime dependencies are required for running the tests
+    "localstack-core[runtime]",
+    "coverage[toml]>=5.5",
+    "deepdiff>=6.4.1",
+    "httpx[http2]>=0.25",
+    "pluggy>=1.3.0",
+    "pytest>=7.4.2",
+    "pytest-split>=0.8.0",
+    "pytest-httpserver>=1.0.1",
+    "pytest-rerunfailures>=12.0",
+    "pytest-tinybird>=0.2.0",
+    "aws-cdk-lib>=2.88.0",
+    "websocket-client>=1.7.0",
+    "localstack-snapshot>=0.1.1",
+]
+
+# for developing localstack
+dev = [
+    # test dependencies are required for developing localstack
+    "localstack-core[test]",
+    "coveralls>=3.3.1",
+    "Cython",
+    "networkx>=2.8.4",
+    "openapi-spec-validator>=0.7.1",
+    "pandoc",
+    "pre-commit>=3.5.0",
+    "pypandoc",
+    "ruff>=0.3.3",
+    "rstr>=3.2.0",
+]
+
+# not strictly necessary for development, but provides type hint support for a better developer experience
+typehint = [
+    # typehint is an optional extension of the dev dependencies
+    "localstack-core[dev]",
+    # pinned / updated by ASF update action
+    "boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,pinpoint,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]",
+]
+
+[tool.setuptools]
+include-package-data = false
+# TODO using this is discouraged by setuptools, `project.scripts` should be used instead
+# However, `project.scripts` does not support non-python scripts.
+script-files = [
+    "bin/localstack",
+    "bin/localstack.bat",
+    "bin/localstack-supervisor",
+]
+package-dir = { "" = "localstack-core"}
+
+[tool.setuptools.dynamic]
+readme = { file = ["README.md"], content-type = "text/markdown"}
+
+[tool.setuptools.packages.find]
+where = ["localstack-core/"]
+include = ["localstack*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"*" = [
+    "*.md",
+    "Makefile",
+]
+"localstack" = [
+    "aws/**/*.json",
+    "services/**/*.html",
+    "services/**/resource_providers/*.schema.json",
+    "utils/kinesis/java/cloud/localstack/*.*",
+    "openapi.yaml",
+    "http/resources/swagger/templates/index.html"
+]
+
+[tool.ruff]
+# Always generate Python 3.8-compatible code.
+target-version = "py38"
+line-length = 100
+src = ["localstack-core", "tests"]
+exclude = [
+    ".venv*",
+    "venv*",
+    "dist",
+    "build",
+    "target",
+    "*.egg-info",
+    "localstack-core/*.egg-info",
+    ".filesystem",
+    "localstack-core/.filesystem",
+    ".git",
+    "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime"
+    ]
+
+[tool.ruff.lint]
+ignore = [
+    "B007", # TODO Loop control variable x not used within loop body
+    "B017", # TODO `pytest.raises(Exception)` should be considered evil
+    "B019", # TODO Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
+    "B022", # TODO No arguments passed to `contextlib.suppress`. No exceptions will be suppressed and therefore this context manager is redundant
+    "B023", # TODO Function definition does not bind loop variable `server`
+    "B024", # TODO x is an abstract base class, but it has no abstract methods
+    "B027", # TODO `Server.do_shutdown` is an empty method in an abstract base class, but has no abstract decorator
+    "B904", # TODO Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    "C408", # TODO Unnecessary `list` call (rewrite as a literal)
+    "C416", # TODO Unnecessary `set` comprehension
+    "C901", # TODO function is too complex
+    "E402", # TODO Module level import not at top of file
+    "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black
+    "E721", # TODO Do not compare types, use `isinstance()`
+    "T201", # TODO `print` found
+    "T203", # TODO `pprint` found
+]
+select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G"]
+
+[tool.coverage.run]
+relative_files = true
+source = [
+    "localstack",
+]
+omit = [
+    "*/aws/api/*",
+    "*/extensions/api/*",
+    "*/services/stepfunctions/asl/antlr/runtime/*"
+]
+dynamic_context = "test_function"
+
+[tool.coverage.paths]
+source = [
+    "localstack-core"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "if __name__ == .__main__.:",
+    "raise NotImplemented.",
+    "return NotImplemented",
+    "def __repr__",
+]
+
+[tool.pytest.ini_options]
+log_cli = false
+log_level = "DEBUG"
+log_cli_format = "%(asctime)s.%(msecs)03d %(levelname)5s --- [%(threadName)12s] %(name)-26s : %(message)s"
+log_cli_date_format = "%Y-%m-%dT%H:%M:%S"
+
+[tool.pip-tools]
+# adding localstack-core itself here because it is referenced in the pyproject.toml for stacking the extras
+# pip, setuptools, and distribute are pip-tools defaults which need to be set again here
+unsafe-package = ["localstack-core", "pip", "setuptools", "distribute"] # packages that should not be pinned

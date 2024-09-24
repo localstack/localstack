@@ -1,0 +1,390 @@
+{
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_update_assume_role_policy": {
+    "recorded-date": "14-09-2023, 17:42:36",
+    "recorded-content": {
+      "created_role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_create_role_with_malformed_assume_role_policy_document": {
+    "recorded-date": "14-09-2023, 17:07:51",
+    "recorded-content": {
+      "invalid-json": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "This policy contains invalid Json",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_list_roles_with_permission_boundary": {
+    "recorded-date": "14-09-2023, 17:42:39",
+    "recorded-content": {
+      "created_role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Path": "/<path-prefix>/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_roles_result": {
+        "IsTruncated": false,
+        "Roles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "datetime",
+            "MaxSessionDuration": 3600,
+            "Path": "/<path-prefix>/",
+            "RoleId": "<role-id:1>",
+            "RoleName": "<role-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_create_describe_role": {
+    "recorded-date": "14-09-2023, 17:42:37",
+    "recorded-content": {
+      "create_role_result": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Path": "/<path-prefix>/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_role_result": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "MaxSessionDuration": 3600,
+          "Path": "/<path-prefix>/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_roles_result": {
+        "IsTruncated": false,
+        "Roles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "datetime",
+            "MaxSessionDuration": 3600,
+            "Path": "/<path-prefix>/",
+            "RoleId": "<role-id:1>",
+            "RoleName": "<role-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
+    "recorded-date": "14-09-2023, 17:42:42",
+    "recorded-content": {
+      "create_policy_response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "datetime",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "non_existent_malformed_policy_arn": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "ARN longpolicynamebutnoarn is not valid.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "existing_policy_name_provided": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "ARN <policy-name:1> is not valid.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "valid_arn_not_existent": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1>123 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "valid_policy_arn": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_user_attach_policy": {
+    "recorded-date": "14-09-2023, 17:42:45",
+    "recorded-content": {
+      "create_policy_response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "datetime",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "non_existent_malformed_policy_arn": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "ARN longpolicynamebutnoarn is not valid.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "existing_policy_name_provided": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "ARN <policy-name:1> is not valid.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "valid_arn_not_existent": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1>123 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "valid_policy_arn": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_role_with_path_lifecycle": {
+    "recorded-date": "21-06-2024, 12:13:05",
+    "recorded-content": {
+      "create-role-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role<path><role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Path": "<path>",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-role-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role<path><role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "MaxSessionDuration": 3600,
+          "Path": "<path>",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-role-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

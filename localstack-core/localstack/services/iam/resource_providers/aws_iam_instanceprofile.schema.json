@@ -1,0 +1,77 @@
+{
+  "typeName": "AWS::IAM::InstanceProfile",
+  "description": "Resource Type definition for AWS::IAM::InstanceProfile",
+  "additionalProperties": false,
+  "properties": {
+    "Path": {
+      "type": "string",
+      "description": "The path to the instance profile."
+    },
+    "Roles": {
+      "type": "array",
+      "description": "The name of the role to associate with the instance profile. Only one role can be assigned to an EC2 instance at a time, and all applications on the instance share the same role and permissions.",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "InstanceProfileName": {
+      "type": "string",
+      "description": "The name of the instance profile to create."
+    },
+    "Arn": {
+      "type": "string",
+      "description": "The Amazon Resource Name (ARN) of the instance profile."
+    }
+  },
+  "taggable": false,
+  "required": [
+    "Roles"
+  ],
+  "createOnlyProperties": [
+    "/properties/InstanceProfileName",
+    "/properties/Path"
+  ],
+  "primaryIdentifier": [
+    "/properties/InstanceProfileName"
+  ],
+  "readOnlyProperties": [
+    "/properties/Arn"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "iam:CreateInstanceProfile",
+        "iam:PassRole",
+        "iam:AddRoleToInstanceProfile",
+        "iam:GetInstanceProfile"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "iam:GetInstanceProfile"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "iam:PassRole",
+        "iam:RemoveRoleFromInstanceProfile",
+        "iam:AddRoleToInstanceProfile",
+        "iam:GetInstanceProfile"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "iam:GetInstanceProfile",
+        "iam:RemoveRoleFromInstanceProfile",
+        "iam:DeleteInstanceProfile"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "iam:ListInstanceProfiles"
+      ]
+    }
+  }
+}

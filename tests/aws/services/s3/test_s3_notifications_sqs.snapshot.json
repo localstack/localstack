@@ -1,0 +1,1376 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put": {
+    "recorded-date": "03-09-2024, 14:22:07",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectCreated:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_0",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectCreated:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "6c7ba9c5a141421e1c03cb9807c97c74",
+                "key": "my_key_1",
+                "sequencer": "sequencer",
+                "size": 14
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_copy": {
+    "recorded-date": "05-08-2023, 00:55:27",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectCreated:Copy",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<object-key:1>",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_and_object_removed": {
+    "recorded-date": "05-08-2023, 00:55:32",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectCreated:Copy",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<object-key:1>",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectCreated:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<object-key:2>",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectRemoved:Delete",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "key": "<object-key:2>",
+                "sequencer": "sequencer"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_complete_multipart_upload": {
+    "recorded-date": "05-08-2023, 00:55:41",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectCreated:CompleteMultipartUpload",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "8eabe9d6b43316e840b079170916c079-1",
+                "key": "test-key",
+                "sequencer": "sequencer",
+                "size": 6144
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_key_encoding": {
+    "recorded-date": "05-08-2023, 00:55:45",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectCreated:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "a%40b",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_with_presigned_url_upload": {
+    "recorded-date": "29-08-2024, 14:05:28",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<aws-region:1>",
+            "eventName": "ObjectCreated:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "key-by-hostname",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      },
+      "receive_messages_region_2": {
+        "messages": [
+          {
+            "awsRegion": "<aws-region:2>",
+            "eventName": "ObjectCreated:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:2>",
+                "name": "<resource:2>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:2>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "key-by-hostname",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_put_event": {
+    "recorded-date": "05-08-2023, 00:55:54",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectTagging:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.3",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "f3e6da48d914f3f04f6bd9cb092c044d",
+                "key": "<object-key:1>"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_delete_event": {
+    "recorded-date": "05-08-2023, 00:55:58",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectTagging:Delete",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.3",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "f3e6da48d914f3f04f6bd9cb092c044d",
+                "key": "<object-key:1>"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_xray_header": {
+    "recorded-date": "05-08-2023, 00:56:03",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "Attributes": {
+              "AWSTraceHeader": "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            },
+            "Body": {
+              "Records": [
+                {
+                  "eventVersion": "2.1",
+                  "eventSource": "aws:s3",
+                  "awsRegion": "<region>",
+                  "eventTime": "date",
+                  "eventName": "ObjectCreated:Put",
+                  "userIdentity": {
+                    "principalId": "<principal-id:2>"
+                  },
+                  "requestParameters": {
+                    "sourceIPAddress": "<ip-address:1>"
+                  },
+                  "responseElements": {
+                    "x-amz-request-id": "amz-request-id",
+                    "x-amz-id-2": "amz-id"
+                  },
+                  "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "configurationId": "<config-id:1>",
+                    "bucket": {
+                      "name": "<resource:1>",
+                      "ownerIdentity": {
+                        "principalId": "<principal-id:1>"
+                      },
+                      "arn": "arn:<partition>:s3:::<resource:1>"
+                    },
+                    "object": {
+                      "key": "test-data",
+                      "size": 9,
+                      "eTag": "437b930db84b8079c2dd804a71936b5f",
+                      "sequencer": "sequencer"
+                    }
+                  }
+                }
+              ]
+            },
+            "MD5OfBody": "m-d5-of-body",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_notifications_with_filter": {
+    "recorded-date": "05-08-2023, 00:56:08",
+    "recorded-content": {
+      "config": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*",
+              "s3:ObjectRemoved:Delete"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Prefix",
+                    "Value": "testupload/"
+                  },
+                  {
+                    "Name": "Suffix",
+                    "Value": "testfile.txt"
+                  }
+                ]
+              }
+            },
+            "Id": "<config-id:1>",
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue>"
+          },
+          {
+            "Events": [
+              "s3:ObjectTagging:*"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Prefix",
+                    "Value": "testupload/"
+                  },
+                  {
+                    "Name": "Suffix",
+                    "Value": "testfile.txt"
+                  }
+                ]
+              }
+            },
+            "Id": "id0002",
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "message": {
+        "awsRegion": "<region>",
+        "eventName": "ObjectCreated:Put",
+        "eventSource": "aws:s3",
+        "eventTime": "date",
+        "eventVersion": "2.1",
+        "requestParameters": {
+          "sourceIPAddress": "<ip-address:1>"
+        },
+        "responseElements": {
+          "x-amz-id-2": "amz-id",
+          "x-amz-request-id": "amz-request-id"
+        },
+        "s3": {
+          "bucket": {
+            "arn": "arn:<partition>:s3:::<bucket>",
+            "name": "<bucket>",
+            "ownerIdentity": {
+              "principalId": "<principal-id:1>"
+            }
+          },
+          "configurationId": "<config-id:1>",
+          "object": {
+            "eTag": "f527a5c9f427867aeaf091c134949aa0",
+            "key": "testupload/dir1/testfile.txt",
+            "sequencer": "sequencer",
+            "size": 32
+          },
+          "s3SchemaVersion": "1.0"
+        },
+        "userIdentity": {
+          "principalId": "<principal-id:2>"
+        }
+      },
+      "config_empty": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "config_updated": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Id": "id123456",
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "config_updated_filter": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Prefix",
+                    "Value": "testupload/"
+                  }
+                ]
+              }
+            },
+            "Id": "id123456",
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_case_insensitive": {
+    "recorded-date": "05-08-2023, 00:56:10",
+    "recorded-content": {
+      "bucket_notification_configuration": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Prefix",
+                    "Value": "notif-"
+                  },
+                  {
+                    "Name": "Suffix",
+                    "Value": ".txt"
+                  }
+                ]
+              }
+            },
+            "Id": "<id:1>",
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:my-queue-<queue_id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_bucket_notification_with_invalid_filter_rules": {
+    "recorded-date": "05-08-2023, 00:56:12",
+    "recorded-content": {
+      "invalid_filter_name": {
+        "Error": {
+          "ArgumentName": "FilterRule.Name",
+          "ArgumentValue": "INVALID",
+          "Code": "InvalidArgument",
+          "Message": "filter rule name must be either prefix or suffix"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
+    "recorded-date": "05-08-2023, 00:56:15",
+    "recorded-content": {
+      "invalid_not_skip": {
+        "Error": {
+          "ArgumentName": "Queue",
+          "ArgumentValue": "invalid-queue",
+          "Code": "InvalidArgument",
+          "Message": "The ARN could not be parsed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_skip": {
+        "Error": {
+          "ArgumentName": "Queue",
+          "ArgumentValue": "invalid-queue",
+          "Code": "InvalidArgument",
+          "Message": "The ARN could not be parsed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "queue-does-not-exist": {
+        "Error": {
+          "ArgumentName1": "arn:<partition>:sqs:<region>:111111111111:my-queue",
+          "ArgumentValue1": "The destination queue does not exist",
+          "Code": "InvalidArgument",
+          "Message": "Unable to validate the following destination configurations"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "skip_destination_validation": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Id": "id123",
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:my-queue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_delete_objects": {
+    "recorded-date": "05-08-2023, 00:55:37",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectRemoved:Delete",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "key": "<object-key:1>",
+                "sequencer": "sequencer"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectRemoved:Delete",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "key": "<object-key:2>",
+                "sequencer": "sequencer"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectRemoved:Delete",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "key": "<object-key:3>",
+                "sequencer": "sequencer"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_put_acl": {
+    "recorded-date": "05-08-2023, 00:56:22",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectAcl:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.3",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_acl"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectAcl:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.3",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_acl"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectAcl:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.3",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_acl"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_multiple_invalid_sqs_arns": {
+    "recorded-date": "05-08-2023, 00:56:17",
+    "recorded-content": {
+      "two-queue-arns-invalid": {
+        "Error": {
+          "ArgumentName": "Queue",
+          "ArgumentValue": "invalid_arn",
+          "Code": "InvalidArgument",
+          "Message": "The ARN could not be parsed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "one-queue-invalid-one-not-existent": {
+        "Error": {
+          "ArgumentName": "Queue",
+          "ArgumentValue": "invalid_arn_2",
+          "Code": "InvalidArgument",
+          "Message": "The ARN could not be parsed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "multiple-queues-do-not-exist": {
+        "Error": {
+          "ArgumentName1": "arn:<partition>:sqs:<region>:111111111111:my-queue",
+          "ArgumentName2": "arn:<partition>:sqs:<region>:111111111111:my-queue-2",
+          "ArgumentValue1": "The destination queue does not exist",
+          "ArgumentValue2": "The destination queue does not exist",
+          "Code": "InvalidArgument",
+          "Message": "Unable to validate the following destination configurations"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_restore_object": {
+    "recorded-date": "13-07-2023, 01:18:19",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectRestore:Post",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_restore",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectRestore:Completed",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.1",
+            "glacierEventData": {
+              "restoreEventData": {
+                "lifecycleRestorationExpiryTime": "date",
+                "lifecycleRestoreStorageClass": "GLACIER"
+              }
+            },
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:2>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:<partition>:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_restore",
+                "sequencer": "sequencer",
+                "size": 9
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "AmazonCustomer:<principal-id:1>"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_versioned": {
+    "recorded-date": "03-09-2024, 14:30:59",
+    "recorded-content": {
+      "obj-ver1": {
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "obj-ver2": {
+        "ETag": "\"6869c34ca384e0ed836d49214f881e87\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-version": {
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "message-versioning-active": [
+        {
+          "eventVersion": "2.1",
+          "eventSource": "aws:s3",
+          "awsRegion": "<region>",
+          "eventTime": "date",
+          "eventName": "ObjectCreated:Put",
+          "userIdentity": {
+            "principalId": "<principal-id:2>"
+          },
+          "requestParameters": {
+            "sourceIPAddress": "<ip-address:1>"
+          },
+          "responseElements": {
+            "x-amz-request-id": "amz-request-id",
+            "x-amz-id-2": "amz-id"
+          },
+          "s3": {
+            "s3SchemaVersion": "1.0",
+            "configurationId": "<config-id:1>",
+            "bucket": {
+              "name": "<resource:1>",
+              "ownerIdentity": {
+                "principalId": "<principal-id:1>"
+              },
+              "arn": "arn:<partition>:s3:::<resource:1>"
+            },
+            "object": {
+              "key": "test-key",
+              "size": 13,
+              "eTag": "6869c34ca384e0ed836d49214f881e87",
+              "versionId": "version-id",
+              "sequencer": "sequencer"
+            }
+          }
+        },
+        {
+          "eventVersion": "2.1",
+          "eventSource": "aws:s3",
+          "awsRegion": "<region>",
+          "eventTime": "date",
+          "eventName": "ObjectCreated:Put",
+          "userIdentity": {
+            "principalId": "<principal-id:2>"
+          },
+          "requestParameters": {
+            "sourceIPAddress": "<ip-address:1>"
+          },
+          "responseElements": {
+            "x-amz-request-id": "amz-request-id",
+            "x-amz-id-2": "amz-id"
+          },
+          "s3": {
+            "s3SchemaVersion": "1.0",
+            "configurationId": "<config-id:1>",
+            "bucket": {
+              "name": "<resource:1>",
+              "ownerIdentity": {
+                "principalId": "<principal-id:1>"
+              },
+              "arn": "arn:<partition>:s3:::<resource:1>"
+            },
+            "object": {
+              "key": "test-key",
+              "size": 4,
+              "eTag": "8d777f385d3dfec8815d20f7496026dc",
+              "versionId": "version-id",
+              "sequencer": "sequencer"
+            }
+          }
+        },
+        {
+          "eventVersion": "2.1",
+          "eventSource": "aws:s3",
+          "awsRegion": "<region>",
+          "eventTime": "date",
+          "eventName": "ObjectRemoved:Delete",
+          "userIdentity": {
+            "principalId": "<principal-id:2>"
+          },
+          "requestParameters": {
+            "sourceIPAddress": "<ip-address:1>"
+          },
+          "responseElements": {
+            "x-amz-request-id": "amz-request-id",
+            "x-amz-id-2": "amz-id"
+          },
+          "s3": {
+            "s3SchemaVersion": "1.0",
+            "configurationId": "<config-id:1>",
+            "bucket": {
+              "name": "<resource:1>",
+              "ownerIdentity": {
+                "principalId": "<principal-id:1>"
+              },
+              "arn": "arn:<partition>:s3:::<resource:1>"
+            },
+            "object": {
+              "key": "test-key",
+              "versionId": "version-id",
+              "sequencer": "sequencer"
+            }
+          }
+        },
+        {
+          "eventVersion": "2.1",
+          "eventSource": "aws:s3",
+          "awsRegion": "<region>",
+          "eventTime": "date",
+          "eventName": "ObjectRemoved:DeleteMarkerCreated",
+          "userIdentity": {
+            "principalId": "<principal-id:2>"
+          },
+          "requestParameters": {
+            "sourceIPAddress": "<ip-address:1>"
+          },
+          "responseElements": {
+            "x-amz-request-id": "amz-request-id",
+            "x-amz-id-2": "amz-id"
+          },
+          "s3": {
+            "s3SchemaVersion": "1.0",
+            "configurationId": "<config-id:1>",
+            "bucket": {
+              "name": "<resource:1>",
+              "ownerIdentity": {
+                "principalId": "<principal-id:1>"
+              },
+              "arn": "arn:<partition>:s3:::<resource:1>"
+            },
+            "object": {
+              "key": "test-key",
+              "eTag": "d41d8cd98f00b204e9800998ecf8427e",
+              "versionId": "version-id",
+              "sequencer": "sequencer"
+            }
+          }
+        }
+      ],
+      "add-null-version": {
+        "ETag": "\"2fb1d4988881168bbcd6432d7593be5a\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "message-versioning-suspended": [
+        {
+          "eventVersion": "2.1",
+          "eventSource": "aws:s3",
+          "awsRegion": "<region>",
+          "eventTime": "date",
+          "eventName": "ObjectCreated:Put",
+          "userIdentity": {
+            "principalId": "<principal-id:2>"
+          },
+          "requestParameters": {
+            "sourceIPAddress": "<ip-address:1>"
+          },
+          "responseElements": {
+            "x-amz-request-id": "amz-request-id",
+            "x-amz-id-2": "amz-id"
+          },
+          "s3": {
+            "s3SchemaVersion": "1.0",
+            "configurationId": "<config-id:1>",
+            "bucket": {
+              "name": "<resource:1>",
+              "ownerIdentity": {
+                "principalId": "<principal-id:1>"
+              },
+              "arn": "arn:<partition>:s3:::<resource:1>"
+            },
+            "object": {
+              "key": "test-key",
+              "size": 13,
+              "eTag": "2fb1d4988881168bbcd6432d7593be5a",
+              "sequencer": "sequencer"
+            }
+          }
+        },
+        {
+          "eventVersion": "2.1",
+          "eventSource": "aws:s3",
+          "awsRegion": "<region>",
+          "eventTime": "date",
+          "eventName": "ObjectRemoved:Delete",
+          "userIdentity": {
+            "principalId": "<principal-id:2>"
+          },
+          "requestParameters": {
+            "sourceIPAddress": "<ip-address:1>"
+          },
+          "responseElements": {
+            "x-amz-request-id": "amz-request-id",
+            "x-amz-id-2": "amz-id"
+          },
+          "s3": {
+            "s3SchemaVersion": "1.0",
+            "configurationId": "<config-id:1>",
+            "bucket": {
+              "name": "<resource:1>",
+              "ownerIdentity": {
+                "principalId": "<principal-id:1>"
+              },
+              "arn": "arn:<partition>:s3:::<resource:1>"
+            },
+            "object": {
+              "key": "test-key",
+              "versionId": "version-id",
+              "sequencer": "sequencer"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

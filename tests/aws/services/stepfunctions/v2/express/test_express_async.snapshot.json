@@ -1,0 +1,218 @@
+{
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_base[BASE_PASS_RESULT]": {
+    "recorded-date": "03-07-2024, 16:26:21",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "end_event": {
+        "details": {
+          "output": {
+            "Arg1": "argument1"
+          },
+          "outputDetails": {
+            "truncated": false
+          }
+        },
+        "event_timestamp": "timestamp",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "id": "4",
+        "previous_event_id": "3",
+        "redrive_count": "0",
+        "type": "ExecutionSucceeded"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_base[BASE_RAISE_FAILURE]": {
+    "recorded-date": "03-07-2024, 16:27:05",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "end_event": {
+        "details": {
+          "cause": "This state machines raises a 'SomeFailure' failure.",
+          "error": "SomeFailure"
+        },
+        "event_timestamp": "timestamp",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "id": "3",
+        "previous_event_id": "2",
+        "redrive_count": "0",
+        "type": "ExecutionFailed"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_query_runtime_memory": {
+    "recorded-date": "15-07-2024, 12:58:13",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "end_event": {
+        "details": {
+          "output": {
+            "message": "TestMessage",
+            "query_values_1": {
+              "execution": {
+                "Id": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+                "Input": {
+                  "message": "TestMessage"
+                },
+                "Name": "<ExpressExecArn_Part1_0idx>",
+                "RoleArn": "sfn_role_arn",
+                "StartTime": "start-time",
+                "RedriveCount": 0
+              },
+              "execution_rolearn": "sfn_role_arn",
+              "execution_name": "<ExpressExecArn_Part1_0idx>",
+              "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+              "execution_id": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+              "execution_input": {
+                "message": "TestMessage"
+              },
+              "execution_starttime": "start-time",
+              "state_name": "QueryValues1",
+              "state_enteredtime": "entered-time",
+              "statemachine": {
+                "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Name": "<ArnPart_0idx>"
+              },
+              "state": {
+                "Name": "QueryValues1",
+                "EnteredTime": "entered-time"
+              },
+              "context_object": {
+                "Execution": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+                  "Input": {
+                    "message": "TestMessage"
+                  },
+                  "Name": "<ExpressExecArn_Part1_0idx>",
+                  "RoleArn": "sfn_role_arn",
+                  "StartTime": "start-time",
+                  "RedriveCount": 0
+                },
+                "StateMachine": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "Name": "<ArnPart_0idx>"
+                },
+                "State": {
+                  "Name": "QueryValues1",
+                  "EnteredTime": "entered-time"
+                }
+              },
+              "statemachine_name": "<ArnPart_0idx>"
+            },
+            "query_values_2": {
+              "context_object": {
+                "Execution": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+                  "Input": {
+                    "message": "TestMessage"
+                  },
+                  "Name": "<ExpressExecArn_Part1_0idx>",
+                  "RoleArn": "sfn_role_arn",
+                  "StartTime": "start-time",
+                  "RedriveCount": 0
+                },
+                "StateMachine": {
+                  "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "Name": "<ArnPart_0idx>"
+                },
+                "State": {
+                  "Name": "QueryValues2",
+                  "EnteredTime": "entered-time"
+                }
+              }
+            }
+          },
+          "outputDetails": {
+            "truncated": false
+          }
+        },
+        "event_timestamp": "timestamp",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "id": "6",
+        "previous_event_id": "5",
+        "redrive_count": "0",
+        "type": "ExecutionSucceeded"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_catch": {
+    "recorded-date": "15-07-2024, 13:31:21",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "end_event": {
+        "details": {
+          "output": {
+            "Error": "Exception",
+            "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":<request-id>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+          },
+          "outputDetails": {
+            "truncated": false
+          }
+        },
+        "event_timestamp": "timestamp",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "id": "9",
+        "previous_event_id": "8",
+        "redrive_count": "0",
+        "type": "ExecutionSucceeded"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_retry": {
+    "recorded-date": "15-07-2024, 13:37:47",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "end_event": {
+        "details": {
+          "output": {
+            "Error": "Exception",
+            "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<request-id>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+          },
+          "outputDetails": {
+            "truncated": false
+          }
+        },
+        "event_timestamp": "timestamp",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "id": "18",
+        "previous_event_id": "17",
+        "redrive_count": "0",
+        "type": "ExecutionSucceeded"
+      }
+    }
+  }
+}

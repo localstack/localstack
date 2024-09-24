@@ -1,0 +1,58 @@
+{
+  "typeName": "AWS::SNS::Subscription",
+  "description": "Resource Type definition for AWS::SNS::Subscription",
+  "additionalProperties": false,
+  "properties": {
+    "ReplayPolicy": {
+      "type": "object"
+    },
+    "RawMessageDelivery": {
+      "type": "boolean"
+    },
+    "Endpoint": {
+      "type": "string"
+    },
+    "FilterPolicy": {
+      "type": "object"
+    },
+    "TopicArn": {
+      "type": "string"
+    },
+    "RedrivePolicy": {
+      "type": "object"
+    },
+    "DeliveryPolicy": {
+      "type": "object"
+    },
+    "Region": {
+      "type": "string"
+    },
+    "SubscriptionRoleArn": {
+      "type": "string"
+    },
+    "FilterPolicyScope": {
+      "type": "string"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "Protocol": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "TopicArn",
+    "Protocol"
+  ],
+  "createOnlyProperties": [
+    "/properties/Endpoint",
+    "/properties/Protocol",
+    "/properties/TopicArn"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

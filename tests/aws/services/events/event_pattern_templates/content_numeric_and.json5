@@ -1,0 +1,23 @@
+// Based on https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#filtering-numeric-matching
+{
+  "Event": {
+    "id": "1",
+    "source": "test-source",
+    "detail-type": "test-detail-type",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z",
+    "detail": {
+      "c-count": 3,
+      "d-count": 9,
+      "x-limit": 3.018e2
+    }
+  },
+  "EventPattern": {
+    "detail": {
+      "c-count": [ { "numeric": [ ">", 0, "<=", 5 ] } ],
+      "d-count": [ { "numeric": [ "<", 10 ] } ],
+      "x-limit": [ { "numeric": [ "=", 3.018e2 ] } ]
+    }
+  }
+}

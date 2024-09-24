@@ -1,0 +1,39 @@
+Resources:
+  Domain66AC69E0:
+    Type: "AWS::OpenSearchService::Domain"
+    Properties:
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: "false"
+      ClusterConfig:
+        DedicatedMasterEnabled: false
+        InstanceCount: 1
+        InstanceType: "r5.large.search"
+        ZoneAwarenessEnabled: false
+      DomainEndpointOptions:
+        EnforceHTTPS: false
+        TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
+      EBSOptions:
+        EBSEnabled: true
+        Iops: 0
+        VolumeSize: 10
+        VolumeType: "gp2"
+      EncryptionAtRestOptions:
+        Enabled: false
+      EngineVersion: "OpenSearch_2.5"
+      LogPublishingOptions: {}
+      NodeToNodeEncryptionOptions:
+        Enabled: false
+      Tags:
+        - Key: foo
+          Value: bar
+        - Key: anotherkey
+          Value: hello
+    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: "Delete"
+Outputs:
+  SearchDomain:
+    Value: !Ref "Domain66AC69E0"
+  SearchDomainEndpoint:
+    Value: !GetAtt Domain66AC69E0.DomainEndpoint
+  SearchDomainArn:
+    Value: !GetAtt Domain66AC69E0.DomainArn

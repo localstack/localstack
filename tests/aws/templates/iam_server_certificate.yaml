@@ -1,0 +1,70 @@
+Parameters:
+  certificateName:
+    Type: String
+
+Resources:
+    ServerCertificate:
+        Type: AWS::IAM::ServerCertificate
+        Properties:
+          ServerCertificateName: !Ref certificateName
+          PrivateKey: |
+            -----BEGIN PRIVATE KEY-----
+            MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDJykIUBqUbsXDu
+            URfFTMgJlnuK7OF1nqHVUH5WLSVWPpgoPyYnZoGHtRGF7xNkKn9V84tjtqBCSUgL
+            P7Plm/dcs7p56B1Uf+bkx3Yzdnuh0YRJlBZSbnKJ45ZgcVSntSxuEWvMqyQPhNLU
+            tpM6xgizXBaYIUPfNhiY7r0VpvZwALAiT5uzfGvxptaKTHVJIh9W/93eO9MLoIrM
+            +n2ER0OtVCGH4zVFpYP7VdbYRjknAAdkcrrECXUweNtgUAJaQ+E01/Lo/FndBoWI
+            6TPA1lqUlDhbKGDhwXN2z6+3LaTqCBvIGXLOesw8GYvQlXWuL4kv/Bz5wq/I12kF
+            taasD/HpAgMBAAECggEAKePgBdI/UllqrT6OZboDyOHBcdytDULKK8NTBsbGenny
+            EmDRpdpEx4xSP/CaoO+lkY1GgYO3DyuxVgx6Zw8Ssd7ptkb2V8VZhGLX6eUN01Dw
+            WmnwnForUu65F/pO7aXRvGPHciyRBtu2/MuOEuRrh/h1BE3bjinnv0/IVwdbH3LW
+            pLiJoxzlSJDDomaIAOtB3u6Lw1/6kXiYT9lvXnUpBzR+1uMApTPQN0NJuxLiA0Rs
+            es2kBTZ/weEQW+GeJaSYmEXX9zCKGMVCq5EZfS3sH0TrkDENVqW40J+OF3Ee6r12
+            CoWLWkC+DPtfHvwh1zp89HFYZ7I6lyycBb31yHb1kQKBgQDuURbpgWxP7XaSgPuI
+            6rv2ApjZQav58kNj1K1pRIcnoZsfz3LX3xfft0PKyoKDmndN8nS9KKL9T//XIBaO
+            PeD3XzlSvQQ/SvNdaBHqOzkkwldGng3swR3c8RELoaKU9yBdhlMFYXkZsIp5hZgG
+            MPVdihamFfUk9J/sdYAr9vjnVQKBgQDYw1TWyBi4UTkMox62hqSUgWw3llaliHkP
+            tEinMKF3i0oZzGzWDIHV9YoPPuu2L5cy+j2wLe8r6DWvsKd0dqeNS/yXYj7eIDVz
+            fff9SmP25RdtV8h6fkAiLD708G7P0w94G+LhakuVpeTpMNSDPWUk6bl+K81ZRvm6
+            DKS7aOM4RQKBgEhQFrG38dO27Fm8BZcgEvStCRAzWym2lzg9mnjssE4YPWfDnMdg
+            DHB3vXxVQpEIV9cxELctE3flxG3UcMOshwzIui4e6KED7yCSqYz3d3lt9umYoAUM
+            /DDEfTWYUCr/abS3Q43Ia+SdqwcAwIZwaKN/eSvgUchq6fPoG4I7qH8ZAoGBAMRS
+            ndtuHZ2Kyw3cC6wrZJKwabAq9M02PtdvZMIwdH3OZU3abdSsPUfo/KL0TQ6UKfBc
+            31RbNhzhUwaODAyajwSVhvAhZmlOaLryo5IAN2vdcAtzjzsKb9HDmz3DKcoHEiKp
+            tyKMYGrodtyRglhfWeVF3uAckf9DHllYrDalN+61AoGAP9OrCgoDnjtTasFzibZ8
+            jb+xYG9E42smB2gep03Jj8l5gqnWTFh0TyA1Z7+RJNvSzkqK8bU/uAH/TgJAqviE
+            7XA7a2yuaf/Ww4vToy5bo1HqhQBak1PP2wzuWiUkJcyTRTGryLvnIR9fDonJ9TAd
+            0GsjqdfyAqjsvycLNvwR0wk=
+            -----END PRIVATE KEY-----
+          CertificateBody: |
+            -----BEGIN CERTIFICATE-----
+            MIIEHTCCAwWgAwIBAgIDAJojMA0GCSqGSIb3DQEBCwUAMIGLMQswCQYDVQQGEwJV
+            UzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNjbzEX
+            MBUGA1UECgwOTXlPcmdhbml6YXRpb24xHTAbBgNVBAsMFE15T3JnYW5pemF0aW9u
+            YWxVbml0MRcwFQYDVQQDDA5NeSBvd24gUm9vdCBDQTAeFw0yMTAzMTExNTAwNDla
+            Fw0zMDAzMDkxNTAwNDlaMIGIMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZv
+            cm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNjbzEXMBUGA1UECgwOTXlPcmdhbml6
+            YXRpb24xHTAbBgNVBAsMFE15T3JnYW5pemF0aW9uYWxVbml0MRQwEgYDVQQDDAtl
+            eGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMnKQhQG
+            pRuxcO5RF8VMyAmWe4rs4XWeodVQflYtJVY+mCg/JidmgYe1EYXvE2Qqf1Xzi2O2
+            oEJJSAs/s+Wb91yzunnoHVR/5uTHdjN2e6HRhEmUFlJuconjlmBxVKe1LG4Ra8yr
+            JA+E0tS2kzrGCLNcFpghQ982GJjuvRWm9nAAsCJPm7N8a/Gm1opMdUkiH1b/3d47
+            0wugisz6fYRHQ61UIYfjNUWlg/tV1thGOScAB2RyusQJdTB422BQAlpD4TTX8uj8
+            Wd0GhYjpM8DWWpSUOFsoYOHBc3bPr7ctpOoIG8gZcs56zDwZi9CVda4viS/8HPnC
+            r8jXaQW1pqwP8ekCAwEAAaOBijCBhzAJBgNVHRMEAjAAMB0GA1UdDgQWBBTaOaPu
+            XmtLDTJVv++VYBiQr9gHCTAfBgNVHSMEGDAWgBTaOaPuXmtLDTJVv++VYBiQr9gH
+            CTATBgNVHSUEDDAKBggrBgEFBQcDATALBgNVHQ8EBAMCB4AwGAYDVR0RBBEwD4IN
+            Ki5leGFtcGxlLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAWIZu4sma7MmWTXSMwKSP
+            stQDWdIvcwthD8ozHkLsNdl5eKqOEndAc0wb7mSk1z8rRkSsd0D0T2zaKyduCYrs
+            eBAMhS2+NnHWcXxhn0VOkmXhw5kO8Un14KIptRH0y8FIqHMJ8LrSiK9g9fWCRlI9
+            g7eBipu43hzGyMiBP3K0EQ4m49QXlIEwG3OIWak5hdR29h3cD6xXMXaUtlOswsAN
+            3PDG/gcjZWZpkwPlaVzwjV8MRsYLmQIYdHPr/qF1FWddYPvK89T0nzpgiuFdBOTY
+            W6I1TeTAXFXG2Qf4trXsh5vsFNAisxlRF3mkpixYP5OmVXTOyN7cCOSPOUh6Uctv
+            eg==
+            -----END CERTIFICATE-----
+
+Outputs:
+    ServerCertificateName:
+        Value: !Ref ServerCertificate
+    Arn:
+        Value: !GetAtt ServerCertificate.Arn

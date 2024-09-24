@@ -1,0 +1,41 @@
+# LocalStack Resource Provider Scaffolding {{ scaffolding_version }}
+import os
+
+import pytest
+
+from localstack.testing.aws.util import is_aws_cloud
+
+
+RESOURCE_GETATT_TARGETS = {{getatt_targets}}
+
+
+class TestAttributeAccess:
+    @pytest.mark.parametrize("attribute", RESOURCE_GETATT_TARGETS)
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Exploratory test only")
+    def test_getatt(
+        self,
+        aws_client,
+        deploy_cfn_template,
+        attribute,
+        snapshot,
+    ):
+        """
+        Use this test to find out which properties support GetAtt access
+
+        Fn::GetAtt documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-getatt.html
+        """
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "{{ template_path }}",
+            ),
+            parameters={"AttributeName": attribute},
+        )
+        snapshot.match("stack_outputs", stack.outputs)
+
+        # check physical resource id
+        res = aws_client.cloudformation.describe_stack_resource(
+            StackName=stack.stack_name, LogicalResourceId="MyResource"
+        )["StackResourceDetail"]
+        snapshot.match("physical_resource_id", res.get("PhysicalResourceId"))

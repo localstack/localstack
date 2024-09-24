@@ -1,0 +1,104 @@
+{
+  "tests/aws/services/cloudformation/test_template_engine.py::TestImportValues::test_cfn_with_exports": {
+    "last_validated_date": "2024-06-21T18:37:15+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestImports::test_stack_imports": {
+    "last_validated_date": "2024-07-04T14:19:31+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_cfn_template_with_short_form_fn_sub": {
+    "last_validated_date": "2024-06-20T20:41:15+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function": {
+    "last_validated_date": "2024-04-03T07:12:29+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[ap-northeast-1]": {
+    "last_validated_date": "2024-05-09T08:34:23+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[ap-southeast-2]": {
+    "last_validated_date": "2024-05-09T08:34:02+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[eu-central-1]": {
+    "last_validated_date": "2024-05-09T08:34:39+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[eu-west-1]": {
+    "last_validated_date": "2024-05-09T08:34:56+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-east-1]": {
+    "last_validated_date": "2024-05-09T08:32:56+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-east-2]": {
+    "last_validated_date": "2024-05-09T08:33:12+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-west-1]": {
+    "last_validated_date": "2024-05-09T08:33:29+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-west-2]": {
+    "last_validated_date": "2024-05-09T08:33:45+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_sub_number_type": {
+    "last_validated_date": "2024-08-09T06:55:16+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
+    "last_validated_date": "2023-01-30T19:15:46+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_error_pass_macro_as_reference": {
+    "last_validated_date": "2023-01-30T19:17:05+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_failed_state[raise_error.py]": {
+    "last_validated_date": "2023-01-30T19:21:20+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
+    "last_validated_date": "2023-01-30T19:20:30+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
+    "last_validated_date": "2023-01-30T19:18:45+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
+    "last_validated_date": "2023-01-30T19:19:35+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_functions_and_references_during_transformation": {
+    "last_validated_date": "2023-01-30T19:17:55+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
+    "last_validated_date": "2023-01-30T19:14:48+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_macro_deployment": {
+    "last_validated_date": "2023-01-30T19:13:58+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_pyplate_param_type_list": {
+    "last_validated_date": "2024-05-17T06:19:03+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_scope_order_and_parameters": {
+    "last_validated_date": "2022-12-07T08:08:26+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.json]": {
+    "last_validated_date": "2022-12-08T15:25:43+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.yml]": {
+    "last_validated_date": "2022-12-08T15:24:58+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
+    "last_validated_date": "2023-01-30T19:17:04+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
+    "last_validated_date": "2023-01-30T19:16:45+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestPseudoParameters::test_stack_id": {
+    "last_validated_date": "2024-07-18T08:56:47+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_change_set_with_ssm_parameter_list": {
+    "last_validated_date": "2024-08-08T21:21:23+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
+    "last_validated_date": "2023-01-15T16:54:23+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_ssm_nested_with_nested_stack": {
+    "last_validated_date": "2024-07-16T16:38:43+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestStackEvents::test_invalid_stack_deploy": {
+    "last_validated_date": "2023-06-12T15:08:47+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestTypes::test_implicit_type_conversion": {
+    "last_validated_date": "2023-08-29T13:21:22+00:00"
+  }
+}

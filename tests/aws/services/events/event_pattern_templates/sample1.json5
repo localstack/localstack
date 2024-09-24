@@ -1,0 +1,20 @@
+// This sample is based on our API tests
+// API: https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
+{
+  "Event": {
+    "id": "1",
+    "source": "order",
+    "detail-type": "Test",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z"
+  },
+  "EventPattern": {
+    "source": [
+      "order"
+    ],
+    "detail-type": [
+      "Test"
+    ],
+  }
+}

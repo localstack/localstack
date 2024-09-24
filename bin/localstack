@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+import glob
+import os
+import sys
+
+PARENT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
+venv_dir = os.path.join(PARENT_FOLDER, ".venv")
+insert_pos = min(len(sys.path), 2)
+if os.path.isdir(venv_dir):
+    for path in glob.glob(os.path.join(venv_dir, "lib/python*/site-packages")):
+        sys.path.insert(insert_pos, path)
+    sys.path.insert(insert_pos, PARENT_FOLDER)
+
+
+def main():
+    from localstack.cli import main
+
+    main.main()
+
+
+if __name__ == "__main__":
+    main()

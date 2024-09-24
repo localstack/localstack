@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_firehose.py::test_firehose_stack_with_kinesis_as_source": {
+    "last_validated_date": "2022-09-14T09:19:29+00:00"
+  }
+}

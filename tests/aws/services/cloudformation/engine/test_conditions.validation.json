@@ -1,0 +1,23 @@
+{
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_ref": {
+    "last_validated_date": "2023-06-26T12:18:26+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-bucket-policy]": {
+    "last_validated_date": "2023-06-26T12:24:03+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-nobucket-nopolicy]": {
+    "last_validated_date": "2023-06-26T12:22:58+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[test-bucket-nopolicy]": {
+    "last_validated_date": "2023-06-26T12:21:54+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[test-nobucket-nopolicy]": {
+    "last_validated_date": "2023-06-26T12:20:49+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_output_reference_to_skipped_resource": {
+    "last_validated_date": "2023-06-26T22:43:18+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_update_conditions": {
+    "last_validated_date": "2024-06-18T19:43:43+00:00"
+  }
+}

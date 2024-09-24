@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/engine/test_attributes.py::TestResourceAttributes::test_dependency_on_attribute_with_dot_notation": {
+    "last_validated_date": "2024-03-21T21:10:29+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_attributes.py::TestResourceAttributes::test_invalid_getatt_fails": {
+    "last_validated_date": "2023-08-01T09:54:31+00:00"
+  }
+}

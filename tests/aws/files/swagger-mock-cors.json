@@ -1,0 +1,117 @@
+{
+  "info": {
+    "version": "1.0",
+    "title": "aws-serverless-shopping-cart-product-mock"
+  },
+  "paths": {
+    "/product/{product_id}": {
+      "options": {
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "requestTemplates": {
+            "application/json": "{\n  \"statusCode\" : 200\n}\n"
+          },
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseTemplates": {
+                "application/json": "{}\n"
+              },
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+              }
+            }
+          }
+        },
+        "consumes": [
+          "application/json"
+        ],
+        "summary": "CORS support",
+        "responses": {
+          "200": {
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Headers": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Methods": {
+                "type": "string"
+              }
+            },
+            "description": "Default response for CORS method"
+          }
+        },
+        "produces": [
+          "application/json"
+        ]
+      },
+      "get": {
+        "x-amazon-apigateway-integration": {
+          "httpMethod": "POST",
+          "type": "aws_proxy",
+          "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:000000000000:function:aws-serverless-shopping-cart-produc-GetProductFunction-28378339:live/invocations"
+        },
+        "responses": {}
+      }
+    },
+    "/product": {
+      "options": {
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "requestTemplates": {
+            "application/json": "{\n  \"statusCode\" : 200\n}\n"
+          },
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseTemplates": {
+                "application/json": "{}\n"
+              },
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+              }
+            }
+          }
+        },
+        "consumes": [
+          "application/json"
+        ],
+        "summary": "CORS support",
+        "responses": {
+          "200": {
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Headers": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Methods": {
+                "type": "string"
+              }
+            },
+            "description": "Default response for CORS method"
+          }
+        },
+        "produces": [
+          "application/json"
+        ]
+      },
+      "get": {
+        "x-amazon-apigateway-integration": {
+          "httpMethod": "POST",
+          "type": "aws_proxy",
+          "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:000000000000:function:aws-serverless-shopping-cart-produ-GetProductsFunction-c1359550:live/invocations"
+        },
+        "responses": {}
+      }
+    }
+  },
+  "swagger": "2.0"
+}

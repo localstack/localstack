@@ -1,0 +1,375 @@
+Resources:
+  LsFnServiceRoleFE24FAB1:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  LsFnB43B12A0:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |-
+          exports.handler = async (event, ctx) => {
+              console.log(event);
+              return {
+                  statusCode: 200,
+                  body: "hello from stepfunctions"
+              };
+          };
+      Role:
+        Fn::GetAtt:
+          - LsFnServiceRoleFE24FAB1
+          - Arn
+      Handler: index.handler
+      Runtime: nodejs14.x
+    DependsOn:
+      - LsFnServiceRoleFE24FAB1
+  LsApi42D61DD0:
+    Type: AWS::ApiGateway::RestApi
+  LsApiCloudWatchRoleC538B6E8:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+  LsApiAccountC4165108:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+          - LsApiCloudWatchRoleC538B6E8
+          - Arn
+    DependsOn:
+      - LsApi42D61DD0
+  LsApiDeployment91771F3772cb22de3018868307c5d4c1339b075a:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: LsApi42D61DD0
+      Description: Automatically created by the RestApi construct
+    DependsOn:
+      - LsApiproxyANYB17F6382
+      - LsApiproxyE04C65C3
+      - LsApiANY7BA2F440
+  LsApiDeploymentStageprod82D8C5E7:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId:
+        Ref: LsApi42D61DD0
+      DeploymentId:
+        Ref: LsApiDeployment91771F3772cb22de3018868307c5d4c1339b075a
+      StageName: prod
+    DependsOn:
+      - LsApiAccountC4165108
+  LsApiproxyE04C65C3:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - LsApi42D61DD0
+          - RootResourceId
+      PathPart: "{proxy+}"
+      RestApiId:
+        Ref: LsApi42D61DD0
+  LsApiproxyANYApiPermissionStepfunctionsGatewayStackLsApiF631C9DDANYproxyDBAA49CB:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - LsFnB43B12A0
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: LsApi42D61DD0
+            - /
+            - Ref: LsApiDeploymentStageprod82D8C5E7
+            - /*/*
+  LsApiproxyANYApiPermissionTestStepfunctionsGatewayStackLsApiF631C9DDANYproxyCD0CCEC1:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - LsFnB43B12A0
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: LsApi42D61DD0
+            - /test-invoke-stage/*/*
+  LsApiproxyANYB17F6382:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: ANY
+      ResourceId:
+        Ref: LsApiproxyE04C65C3
+      RestApiId:
+        Ref: LsApi42D61DD0
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - LsFnB43B12A0
+                  - Arn
+              - /invocations
+  LsApiANYApiPermissionStepfunctionsGatewayStackLsApiF631C9DDANY529C16EB:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - LsFnB43B12A0
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: LsApi42D61DD0
+            - /
+            - Ref: LsApiDeploymentStageprod82D8C5E7
+            - /*/
+  LsApiANYApiPermissionTestStepfunctionsGatewayStackLsApiF631C9DDANY5CD1E87C:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - LsFnB43B12A0
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: LsApi42D61DD0
+            - /test-invoke-stage/*/
+  LsApiANY7BA2F440:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: ANY
+      ResourceId:
+        Fn::GetAtt:
+          - LsApi42D61DD0
+          - RootResourceId
+      RestApiId:
+        Ref: LsApi42D61DD0
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - LsFnB43B12A0
+                  - Arn
+              - /invocations
+  LsStateMachineRole0FA72689:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                Fn::FindInMap:
+                  - ServiceprincipalMap
+                  - Ref: AWS::Region
+                  - states
+        Version: "2012-10-17"
+  LsStateMachineRoleDefaultPolicyF0A7F6AB:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: execute-api:Invoke
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":execute-api:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - ":"
+                  - Ref: LsApi42D61DD0
+                  - /
+                  - Ref: LsApiDeploymentStageprod82D8C5E7
+                  - /GET/*
+        Version: "2012-10-17"
+      PolicyName: LsStateMachineRoleDefaultPolicyF0A7F6AB
+      Roles:
+        - Ref: LsStateMachineRole0FA72689
+  LsStateMachineC3258D1E:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - LsStateMachineRole0FA72689
+          - Arn
+      DefinitionString:
+        Fn::Join:
+          - ""
+          - - '{"StartAt":"LsCallApi","States":{"LsCallApi":{"End":true,"Type":"Task","Resource":"arn:'
+            - Ref: AWS::Partition
+            - :states:::apigateway:invoke","Parameters":{"ApiEndpoint":"
+            - Ref: LsApi42D61DD0
+            - .execute-api.
+            - Ref: AWS::Region
+            - "."
+            - Ref: AWS::URLSuffix
+            - '","Method":"GET","Stage":"'
+            - Ref: LsApiDeploymentStageprod82D8C5E7
+            - '","AuthType":"NO_AUTH"}}}}'
+      StateMachineType: STANDARD
+    DependsOn:
+      - LsStateMachineRoleDefaultPolicyF0A7F6AB
+      - LsStateMachineRole0FA72689
+Outputs:
+  LsApiEndpointA06D37E8:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: LsApi42D61DD0
+          - .execute-api.
+          - Ref: AWS::Region
+          - "."
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: LsApiDeploymentStageprod82D8C5E7
+          - /
+  statemachineOutput:
+    Value:
+      Ref: LsStateMachineC3258D1E
+Mappings:
+  ServiceprincipalMap:
+    af-south-1:
+      states: states.af-south-1.amazonaws.com
+    ap-east-1:
+      states: states.ap-east-1.amazonaws.com
+    ap-northeast-1:
+      states: states.ap-northeast-1.amazonaws.com
+    ap-northeast-2:
+      states: states.ap-northeast-2.amazonaws.com
+    ap-northeast-3:
+      states: states.ap-northeast-3.amazonaws.com
+    ap-south-1:
+      states: states.ap-south-1.amazonaws.com
+    ap-southeast-1:
+      states: states.ap-southeast-1.amazonaws.com
+    ap-southeast-2:
+      states: states.ap-southeast-2.amazonaws.com
+    ap-southeast-3:
+      states: states.ap-southeast-3.amazonaws.com
+    ca-central-1:
+      states: states.ca-central-1.amazonaws.com
+    cn-north-1:
+      states: states.cn-north-1.amazonaws.com
+    cn-northwest-1:
+      states: states.cn-northwest-1.amazonaws.com
+    eu-central-1:
+      states: states.eu-central-1.amazonaws.com
+    eu-north-1:
+      states: states.eu-north-1.amazonaws.com
+    eu-south-1:
+      states: states.eu-south-1.amazonaws.com
+    eu-south-2:
+      states: states.eu-south-2.amazonaws.com
+    eu-west-1:
+      states: states.eu-west-1.amazonaws.com
+    eu-west-2:
+      states: states.eu-west-2.amazonaws.com
+    eu-west-3:
+      states: states.eu-west-3.amazonaws.com
+    me-south-1:
+      states: states.me-south-1.amazonaws.com
+    sa-east-1:
+      states: states.sa-east-1.amazonaws.com
+    us-east-1:
+      states: states.us-east-1.amazonaws.com
+    us-east-2:
+      states: states.us-east-2.amazonaws.com
+    us-gov-east-1:
+      states: states.us-gov-east-1.amazonaws.com
+    us-gov-west-1:
+      states: states.us-gov-west-1.amazonaws.com
+    us-iso-east-1:
+      states: states.amazonaws.com
+    us-iso-west-1:
+      states: states.amazonaws.com
+    us-isob-east-1:
+      states: states.amazonaws.com
+    us-west-1:
+      states: states.us-west-1.amazonaws.com
+    us-west-2:
+      states: states.us-west-2.amazonaws.com

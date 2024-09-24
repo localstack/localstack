@@ -1,0 +1,29 @@
+Parameters:
+  AddBucket:
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+
+  BucketName:
+    Type: String
+
+Conditions:
+  ShouldDeployBucket: !Equals ["true", !Ref AddBucket]
+
+Resources:
+  Queue:
+    Type: AWS::SQS::Queue
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    Condition: ShouldDeployBucket
+    Properties:
+      BucketName: !Ref BucketName
+
+Outputs:
+  QueueUrl:
+    Value: !Ref Queue
+
+  QueueArn:
+    Value: !GetAtt Queue.Arn

@@ -1,0 +1,17 @@
+{
+  "Type": "Task",
+  "Resource": "arn:aws:states:::lambda:invoke",
+  "InputPath": "$.inputPathField",
+  "Parameters": {
+    "FunctionName.$": "$.FunctionName",
+    "Payload": {
+      "Input.$": "$",
+      "AdditionalParam": "Value"
+    }
+  },
+  "ResultSelector": {
+    "LambdaOutput.$": "$"
+  },
+  "ResultPath": "$.resultPathField",
+  "End": true,
+}

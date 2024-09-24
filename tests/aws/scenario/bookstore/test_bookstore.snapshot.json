@@ -1,0 +1,979 @@
+{
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_setup": {
+    "recorded-date": "15-07-2024, 12:54:12",
+    "recorded-content": {
+      "scan_count": {
+        "Count": 56,
+        "ScannedCount": 56,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-item": {
+        "Item": {
+          "author": {
+            "S": "Miles Way"
+          },
+          "category": {
+            "S": "Cookbooks"
+          },
+          "cover": {
+            "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Chasing_umami.png"
+          },
+          "id": {
+            "S": "nuklcm5b-d93b-11e8-9f8b-f2801f1b9fd1"
+          },
+          "name": {
+            "S": "Chasing Umami"
+          },
+          "price": {
+            "N": "15.98"
+          },
+          "rating": {
+            "N": "3"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_lambda_dynamodb": {
+    "recorded-date": "15-07-2024, 12:54:17",
+    "recorded-content": {
+      "get_books_fn": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "statusCode": 200,
+          "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": true
+          },
+          "body": {
+            "rating": 5,
+            "category": "Science Fiction",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/3140.png",
+            "price": 15.99,
+            "id": "0vld6p1u-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "3140",
+            "author": "Neal Wisozk"
+          }
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_books_cat_woodwork": {
+        "body": [
+          {
+            "rating": 5,
+            "category": "Woodwork",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Drill.png",
+            "price": 15.98,
+            "id": "3k9zka2c-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "Drill",
+            "author": "Neal Wisozk"
+          },
+          {
+            "rating": 5,
+            "category": "Woodwork",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Floor.png",
+            "price": 21.98,
+            "id": "5oekg7gl-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "Floor",
+            "author": "Neal Wisozk"
+          },
+          {
+            "rating": 4,
+            "category": "Woodwork",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Chisel.png",
+            "price": 17.99,
+            "id": "q8qfaonc-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "Chisel",
+            "author": "Neal Wisozk"
+          },
+          {
+            "rating": 4,
+            "category": "Woodwork",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/saw.png",
+            "price": 17.99,
+            "id": "xfpwqd2u-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "Saw",
+            "author": "Neal Wisozk"
+          }
+        ],
+        "headers": {
+          "Access-Control-Allow-Credentials": true,
+          "Access-Control-Allow-Origin": "*"
+        },
+        "statusCode": 200
+      },
+      "list_books_cat_home": {
+        "body": [
+          {
+            "rating": 5,
+            "category": "Home Improvement",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Bathrooms.png",
+            "price": 21.98,
+            "id": "5ymiu6mo-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "Bathrooms",
+            "author": "Deondre Toy"
+          },
+          {
+            "rating": 3,
+            "category": "Home Improvement",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Kitchens.png",
+            "price": 17.96,
+            "id": "lk38ejv5-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "Kitchens",
+            "author": "Deondre Toy"
+          },
+          {
+            "rating": 3,
+            "category": "Home Improvement",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Smart+homes.png",
+            "price": 17.96,
+            "id": "r0vs97kp-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "Smart Homes",
+            "author": "Deondre Toy"
+          },
+          {
+            "rating": 4,
+            "category": "Home Improvement",
+            "cover": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Home+office.png",
+            "price": 19.99,
+            "id": "tyqnawj4-d93b-11e8-9f8b-f2801f1b9fd1",
+            "name": "Home Office",
+            "author": "Deondre Toy"
+          }
+        ],
+        "headers": {
+          "Access-Control-Allow-Credentials": true,
+          "Access-Control-Allow-Origin": "*"
+        },
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_search_books": {
+    "recorded-date": "15-07-2024, 12:55:25",
+    "recorded-content": {
+      "search_name_spaghetti": {
+        "_shards": {
+          "failed": 0,
+          "skipped": 0,
+          "successful": 12,
+          "total": 12
+        },
+        "hits": {
+          "hits": [
+            {
+              "_id": "084s9grl-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Richard Labadie"
+                },
+                "category": {
+                  "S": "Cookbooks"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Spaghetti.png"
+                },
+                "id": {
+                  "S": "084s9grl-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Spaghetti"
+                },
+                "price": {
+                  "N": "20.99"
+                },
+                "rating": {
+                  "N": "5"
+                }
+              }
+            }
+          ],
+          "max_score": "<amount>",
+          "total": {
+            "relation": "eq",
+            "value": 1
+          }
+        },
+        "timed_out": false,
+        "took": "<amount>"
+      },
+      "search_author_aubree": {
+        "_shards": {
+          "failed": 0,
+          "skipped": 0,
+          "successful": 12,
+          "total": 12
+        },
+        "hits": {
+          "hits": [
+            {
+              "_id": "8u6lpj3e-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Aubree Konopelski"
+                },
+                "category": {
+                  "S": "Fairy Tales"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Just+follow.png"
+                },
+                "id": {
+                  "S": "8u6lpj3e-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Just Follow"
+                },
+                "price": {
+                  "N": "17.99"
+                },
+                "rating": {
+                  "N": "5"
+                }
+              }
+            },
+            {
+              "_id": "9vp96t5a-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Aubree Konopelski"
+                },
+                "category": {
+                  "S": "Fairy Tales"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Belle.png"
+                },
+                "id": {
+                  "S": "9vp96t5a-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Belle"
+                },
+                "price": {
+                  "N": "19.99"
+                },
+                "rating": {
+                  "N": "5"
+                }
+              }
+            },
+            {
+              "_id": "bsx7u3xv-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Aubree Konopelski"
+                },
+                "category": {
+                  "S": "Fairy Tales"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Duckling.png"
+                },
+                "id": {
+                  "S": "bsx7u3xv-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Duckling"
+                },
+                "price": {
+                  "N": "18.99"
+                },
+                "rating": {
+                  "N": "4"
+                }
+              }
+            },
+            {
+              "_id": "tj8mc0yd-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Aubree Konopelski"
+                },
+                "category": {
+                  "S": "Fairy Tales"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Little+red.png"
+                },
+                "id": {
+                  "S": "tj8mc0yd-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Little Red"
+                },
+                "price": {
+                  "N": "15.98"
+                },
+                "rating": {
+                  "N": "3"
+                }
+              }
+            },
+            {
+              "_id": "wh9yiu5w-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Aubree Konopelski"
+                },
+                "category": {
+                  "S": "Fairy Tales"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/HG.png"
+                },
+                "id": {
+                  "S": "wh9yiu5w-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "HG"
+                },
+                "price": {
+                  "N": "22.96"
+                },
+                "rating": {
+                  "N": "4"
+                }
+              }
+            }
+          ],
+          "max_score": "<amount>",
+          "total": {
+            "relation": "eq",
+            "value": 5
+          }
+        },
+        "timed_out": false,
+        "took": "<amount>"
+      },
+      "search_cat_home_impro": {
+        "_shards": {
+          "failed": 0,
+          "skipped": 0,
+          "successful": 12,
+          "total": 12
+        },
+        "hits": {
+          "hits": [
+            {
+              "_id": "5ymiu6mo-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Deondre Toy"
+                },
+                "category": {
+                  "S": "Home Improvement"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Bathrooms.png"
+                },
+                "id": {
+                  "S": "5ymiu6mo-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Bathrooms"
+                },
+                "price": {
+                  "N": "21.98"
+                },
+                "rating": {
+                  "N": "5"
+                }
+              }
+            },
+            {
+              "_id": "lk38ejv5-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Deondre Toy"
+                },
+                "category": {
+                  "S": "Home Improvement"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Kitchens.png"
+                },
+                "id": {
+                  "S": "lk38ejv5-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Kitchens"
+                },
+                "price": {
+                  "N": "17.96"
+                },
+                "rating": {
+                  "N": "3"
+                }
+              }
+            },
+            {
+              "_id": "r0vs97kp-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Deondre Toy"
+                },
+                "category": {
+                  "S": "Home Improvement"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Smart+homes.png"
+                },
+                "id": {
+                  "S": "r0vs97kp-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Smart Homes"
+                },
+                "price": {
+                  "N": "17.96"
+                },
+                "rating": {
+                  "N": "3"
+                }
+              }
+            },
+            {
+              "_id": "tyqnawj4-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Deondre Toy"
+                },
+                "category": {
+                  "S": "Home Improvement"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/Home+office.png"
+                },
+                "id": {
+                  "S": "tyqnawj4-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Home Office"
+                },
+                "price": {
+                  "N": "19.99"
+                },
+                "rating": {
+                  "N": "4"
+                }
+              }
+            },
+            {
+              "_id": "yrqzhlal-d93b-11e8-9f8b-f2801f1b9fd1",
+              "_index": "lambda-index",
+              "_score": "<amount>",
+              "_source": {
+                "author": {
+                  "S": "Jaylen Anderson"
+                },
+                "category": {
+                  "S": "Cookbooks"
+                },
+                "cover": {
+                  "S": "https://d2z6cj5wcte8g7.cloudfront.net/book-covers/home_brew_guide.png"
+                },
+                "id": {
+                  "S": "yrqzhlal-d93b-11e8-9f8b-f2801f1b9fd1"
+                },
+                "name": {
+                  "S": "Home Brew Guide"
+                },
+                "price": {
+                  "N": "15.99"
+                },
+                "rating": {
+                  "N": "5"
+                }
+              }
+            }
+          ],
+          "max_score": "<amount>",
+          "total": {
+            "relation": "eq",
+            "value": 5
+          }
+        },
+        "timed_out": false,
+        "took": "<amount>"
+      },
+      "search_no_result": {
+        "_shards": {
+          "failed": 0,
+          "skipped": 0,
+          "successful": 12,
+          "total": 12
+        },
+        "hits": {
+          "hits": [],
+          "max_score": null,
+          "total": {
+            "relation": "eq",
+            "value": 0
+          }
+        },
+        "timed_out": false,
+        "took": "<amount>"
+      }
+    }
+  },
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_opensearch_crud": {
+    "recorded-date": "15-07-2024, 12:55:29",
+    "recorded-content": {
+      "describe_domains": {
+        "DomainStatusList": [
+          {
+            "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
+            "AccessPolicies": "",
+            "AdvancedOptions": {
+              "override_main_response_version": "false",
+              "rest.action.multi.allow_explicit_index": "false"
+            },
+            "AdvancedSecurityOptions": {
+              "AnonymousAuthEnabled": false,
+              "Enabled": false,
+              "InternalUserDatabaseEnabled": false
+            },
+            "AutoTuneOptions": {
+              "State": "ENABLED",
+              "UseOffPeakWindow": false
+            },
+            "ChangeProgressDetails": {
+              "ChangeId": "<change-id:1>",
+              "ConfigChangeStatus": "Completed",
+              "InitiatedBy": "CUSTOMER",
+              "LastUpdatedTime": "datetime",
+              "StartTime": "datetime"
+            },
+            "ClusterConfig": {
+              "ColdStorageOptions": {
+                "Enabled": false
+              },
+              "DedicatedMasterEnabled": false,
+              "InstanceCount": 1,
+              "InstanceType": "r5.large.search",
+              "MultiAZWithStandbyEnabled": false,
+              "WarmEnabled": false,
+              "ZoneAwarenessEnabled": false
+            },
+            "CognitoOptions": {
+              "Enabled": false
+            },
+            "Created": true,
+            "Deleted": false,
+            "DomainEndpointOptions": {
+              "CustomEndpointEnabled": false,
+              "EnforceHTTPS": false,
+              "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
+            },
+            "DomainId": "<domain-id:1>",
+            "DomainName": "<domain-name:1>",
+            "DomainProcessingStatus": "Active",
+            "EBSOptions": {
+              "EBSEnabled": true,
+              "VolumeSize": 10,
+              "VolumeType": "gp2"
+            },
+            "EncryptionAtRestOptions": {
+              "Enabled": false
+            },
+            "Endpoint": "<endpoint:1>",
+            "EngineVersion": "OpenSearch_2.11",
+            "IPAddressType": "ipv4",
+            "ModifyingProperties": [],
+            "NodeToNodeEncryptionOptions": {
+              "Enabled": false
+            },
+            "OffPeakWindowOptions": {
+              "Enabled": true,
+              "OffPeakWindow": {
+                "WindowStartTime": {
+                  "Hours": 2,
+                  "Minutes": 0
+                }
+              }
+            },
+            "Processing": false,
+            "ServiceSoftwareOptions": {
+              "AutomatedUpdateDate": "datetime",
+              "Cancellable": false,
+              "CurrentVersion": "OpenSearch_2_11_R20240502-P2",
+              "Description": "There is no software update available for this domain.",
+              "NewVersion": "",
+              "OptionalDeployment": true,
+              "UpdateAvailable": false,
+              "UpdateStatus": "COMPLETED"
+            },
+            "SnapshotOptions": {
+              "AutomatedSnapshotStartHour": 0
+            },
+            "SoftwareUpdateOptions": {
+              "AutoSoftwareUpdateEnabled": false
+            },
+            "UpgradeProcessing": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_domain_names": {
+        "DomainNames": [
+          {
+            "DomainName": "<domain-name:1>",
+            "EngineType": "OpenSearch"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_domain_config": {
+        "DomainConfig": {
+          "AccessPolicies": {
+            "Options": "",
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "AdvancedOptions": {
+            "Options": {
+              "override_main_response_version": "false",
+              "rest.action.multi.allow_explicit_index": "false"
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "AdvancedSecurityOptions": {
+            "Options": {
+              "AnonymousAuthEnabled": false,
+              "Enabled": false,
+              "InternalUserDatabaseEnabled": false
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "AutoTuneOptions": {
+            "Options": {
+              "DesiredState": "ENABLED",
+              "MaintenanceSchedules": [],
+              "RollbackOnDisable": "NO_ROLLBACK",
+              "UseOffPeakWindow": false
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "ENABLED",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "ChangeProgressDetails": {
+            "ChangeId": "<change-id:1>",
+            "ConfigChangeStatus": "Completed",
+            "InitiatedBy": "CUSTOMER",
+            "LastUpdatedTime": "datetime",
+            "StartTime": "datetime"
+          },
+          "ClusterConfig": {
+            "Options": {
+              "ColdStorageOptions": {
+                "Enabled": false
+              },
+              "DedicatedMasterEnabled": false,
+              "InstanceCount": 1,
+              "InstanceType": "r5.large.search",
+              "MultiAZWithStandbyEnabled": false,
+              "WarmEnabled": false,
+              "ZoneAwarenessEnabled": false
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "CognitoOptions": {
+            "Options": {
+              "Enabled": false
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "DomainEndpointOptions": {
+            "Options": {
+              "CustomEndpointEnabled": false,
+              "EnforceHTTPS": false,
+              "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "EBSOptions": {
+            "Options": {
+              "EBSEnabled": true,
+              "VolumeSize": 10,
+              "VolumeType": "gp2"
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "EncryptionAtRestOptions": {
+            "Options": {
+              "Enabled": false
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "EngineVersion": {
+            "Options": "OpenSearch_2.11",
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "IPAddressType": {
+            "Options": "ipv4",
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "LogPublishingOptions": {
+            "Options": {},
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "ModifyingProperties": [],
+          "NodeToNodeEncryptionOptions": {
+            "Options": {
+              "Enabled": false
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "OffPeakWindowOptions": {
+            "Options": {
+              "Enabled": true,
+              "OffPeakWindow": {
+                "WindowStartTime": {
+                  "Hours": 2,
+                  "Minutes": 0
+                }
+              }
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "SnapshotOptions": {
+            "Options": {
+              "AutomatedSnapshotStartHour": 0
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "SoftwareUpdateOptions": {
+            "Options": {
+              "AutoSoftwareUpdateEnabled": false
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "VPCOptions": {
+            "Options": {},
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags": {
+        "TagList": [
+          {
+            "Key": "bookstore",
+            "Value": "search"
+          },
+          {
+            "Key": "scenario/test",
+            "Value": "bookstore"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_after_remove": {
+        "TagList": [
+          {
+            "Key": "scenario/test",
+            "Value": "bookstore"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_compatible_versions": {
+        "CompatibleVersions": [
+          {
+            "SourceVersion": "OpenSearch_2.11",
+            "TargetVersions": [
+              "OpenSearch_2.13"
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_versions": {
+        "Versions": [
+          "OpenSearch_2.13",
+          "OpenSearch_2.11",
+          "OpenSearch_2.9",
+          "OpenSearch_2.7",
+          "OpenSearch_2.5",
+          "OpenSearch_2.3",
+          "OpenSearch_1.3",
+          "OpenSearch_1.2",
+          "OpenSearch_1.1",
+          "OpenSearch_1.0",
+          "Elasticsearch_7.10",
+          "Elasticsearch_7.9",
+          "Elasticsearch_7.8",
+          "Elasticsearch_7.7",
+          "Elasticsearch_7.4",
+          "Elasticsearch_7.1",
+          "Elasticsearch_6.8",
+          "Elasticsearch_6.7",
+          "Elasticsearch_6.5",
+          "Elasticsearch_6.4",
+          "Elasticsearch_6.3",
+          "Elasticsearch_6.2",
+          "Elasticsearch_6.0",
+          "Elasticsearch_5.6",
+          "Elasticsearch_5.5",
+          "Elasticsearch_5.3",
+          "Elasticsearch_5.1",
+          "Elasticsearch_2.3",
+          "Elasticsearch_1.5"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

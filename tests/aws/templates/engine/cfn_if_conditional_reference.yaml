@@ -1,0 +1,39 @@
+Parameters:
+  ShouldUseFallbackParameter:
+    Type: String
+    AllowedValues: [true, false]
+    Default: true
+
+Conditions:
+  ShouldUseFallback: !Equals [true, !Ref ShouldUseFallbackParameter]
+  # both are equivalent
+#  ShouldNotUseFallback: !Equals [false, !Ref ShouldUseFallbackParameter]
+  ShouldNotUseFallback: !Not [Condition: ShouldUseFallback]
+
+Resources:
+  DependentParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !If
+        - ShouldUseFallback
+        - !GetAtt FallbackParameter.Value
+        - !GetAtt DefaultParameter.Value
+
+  FallbackParameter:
+    Type: AWS::SSM::Parameter
+    Condition: ShouldUseFallback
+    Properties:
+      Type: String
+      Value: "FallbackParamValue"
+
+  DefaultParameter:
+    Type: AWS::SSM::Parameter
+    Condition: ShouldNotUseFallback
+    Properties:
+      Type: String
+      Value: "DefaultParamValue"
+
+Outputs:
+  ParameterName:
+    Value: !Ref DependentParameter

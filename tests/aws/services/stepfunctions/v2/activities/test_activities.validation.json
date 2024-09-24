@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task": {
+    "last_validated_date": "2024-03-17T11:09:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_failure": {
+    "last_validated_date": "2024-03-17T11:10:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_no_worker_name": {
+    "last_validated_date": "2024-03-17T11:09:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_on_deleted": {
+    "last_validated_date": "2024-03-17T11:10:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_start_timeout": {
+    "last_validated_date": "2024-03-17T11:48:21+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_with_heartbeat": {
+    "last_validated_date": "2024-03-17T11:11:13+00:00"
+  }
+}

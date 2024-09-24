@@ -1,0 +1,12 @@
+.venv*
+
+.filesystem
+**/.filesystem
+
+# ignore files generated in CI build
+tests/aws/**/node_modules
+tests/aws/**/.terraform
+**/__pycache__
+target/
+htmlcov/
+.coverage

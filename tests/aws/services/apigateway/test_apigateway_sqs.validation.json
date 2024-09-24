@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration": {
+    "last_validated_date": "2024-05-30T17:27:58+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration_with_message_attribute[MessageAttribute]": {
+    "last_validated_date": "2024-06-06T00:38:25+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration_with_message_attribute[MessageAttributes]": {
+    "last_validated_date": "2024-06-06T00:38:34+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_request_and_response_xml_templates_integration": {
+    "last_validated_date": "2024-07-12T16:27:03+00:00"
+  }
+}

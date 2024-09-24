@@ -1,0 +1,2312 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_valid_sm": {
+    "recorded-date": "22-06-2023, 13:47:21",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deletion_resp_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_invalid_sm": {
+    "recorded-date": "04-08-2023, 16:47:10",
+    "recorded-content": {
+      "invalid_definition_1": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: These fields are required: [States] at /'"
+        },
+        "message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: These fields are required: [States] at /'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_delete_nonexistent_sm": {
+    "recorded-date": "22-06-2023, 13:47:36",
+    "recorded-content": {
+      "deletion_resp_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_exact_duplicate_sm": {
+    "recorded-date": "22-06-2023, 13:48:01",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_1": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "creation_resp_2": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_2": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_1_2": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_definition_format_sm": {
+    "recorded-date": "22-06-2023, 13:48:15",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_1": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "already_exists_1": {
+        "Error": {
+          "Code": "StateMachineAlreadyExists",
+          "Message": "State Machine Already Exists: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>'"
+        },
+        "message": "State Machine Already Exists: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_sm_name": {
+    "recorded-date": "22-06-2023, 13:48:28",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_1": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "already_exists_1": {
+        "Error": {
+          "Code": "StateMachineAlreadyExists",
+          "Message": "State Machine Already Exists: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>'"
+        },
+        "message": "State Machine Already Exists: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution": {
+    "recorded-date": "30-06-2024, 16:12:59",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_list_resp": {
+        "executions": [
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_arn": {
+    "recorded-date": "22-06-2023, 13:52:53",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_exec_of_deleted": {
+        "Error": {
+          "Code": "StateMachineDoesNotExist",
+          "Message": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:statemachine_invalid_<ArnPart_0idx>'"
+        },
+        "message": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:statemachine_invalid_<ArnPart_0idx>'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_input": {
+    "recorded-date": "22-06-2023, 13:53:08",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_exec_str_inp": {
+        "Error": {
+          "Code": "InvalidExecutionInput",
+          "Message": "Invalid State Machine Execution Input: 'Unrecognized token 'not': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')'"
+        },
+        "message": "Invalid State Machine Execution Input: 'Unrecognized token 'not': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "start_exec_not_json_inp": {
+        "Error": {
+          "Code": "InvalidExecutionInput",
+          "Message": "Invalid State Machine Execution Input: 'Unexpected character (''' (code 39)): was expecting double-quote to start field name'"
+        },
+        "message": "Invalid State Machine Execution Input: 'Unexpected character (''' (code 39)): was expecting double-quote to start field name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "start_res_empty": {
+        "Error": {
+          "Code": "InvalidExecutionInput",
+          "Message": "Invalid State Machine Execution Input: 'Invalid execution input.'"
+        },
+        "message": "Invalid State Machine Execution Input: 'Invalid execution input.'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "start_res_num": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_res_str": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_res_null": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_2idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_stop_execution": {
+    "recorded-date": "06-05-2024, 12:59:34",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stop_res": {
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionAbortedEventDetails": {},
+            "id": 3,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionAborted"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms": {
+    "recorded-date": "29-08-2023, 19:40:19",
+    "recorded-content": {
+      "creation_resp_0": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "creation_resp_2": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_filter": [
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+          "name": "<ArnPart_0idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
+          "name": "<ArnPart_1idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
+          "name": "<ArnPart_2idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        }
+      ],
+      "deletion_resp_0": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deletion_resp_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deletion_resp_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_del_filter": []
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_definition": {
+    "recorded-date": "08-08-2023, 12:43:56",
+    "recorded-content": {
+      "creation_resp_t0": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t0": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_res": {
+        "revisionId": "<uuid:1>",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t1": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "AfterUpdate1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:1>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_res_t2": {
+        "revisionId": "<uuid:2>",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t2": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "AfterUpdate2"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:2>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_role_arn": {
+    "recorded-date": "08-08-2023, 12:44:40",
+    "recorded-content": {
+      "creation_resp_t0": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t0": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn_t0",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_res_t1": {
+        "revisionId": "<uuid:1>",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t1": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:1>",
+        "roleArn": "snf_role_arn_t1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_res_t2": {
+        "revisionId": "<uuid:2>",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t2": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:2>",
+        "roleArn": "snf_role_arn_t2",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_definition_and_role": {
+    "recorded-date": "08-08-2023, 12:45:23",
+    "recorded-content": {
+      "creation_resp_t0": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t0": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_res_t1": {
+        "revisionId": "<uuid:1>",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t1": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "AfterUpdate1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:1>",
+        "roleArn": "snf_role_arn_t1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_res_t2": {
+        "revisionId": "<uuid:2>",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t2": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "AfterUpdate2"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:2>",
+        "roleArn": "snf_role_arn_t2",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_update_none": {
+    "recorded-date": "08-08-2023, 12:45:45",
+    "recorded-content": {
+      "creation_resp_t0": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t0": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "missing_required_parameter": {
+        "Error": {
+          "Code": "MissingRequiredParameter",
+          "Message": "Either the definition, the role ARN, the LoggingConfiguration, or the TracingConfiguration must be specified"
+        },
+        "message": "Either the definition, the role ARN, the LoggingConfiguration, or the TracingConfiguration must be specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "null_required_parameter": "Parameter validation failed:\nInvalid type for parameter definition, value: None, type: <class 'NoneType'>, valid types: <class 'str'>\nInvalid type for parameter roleArn, value: None, type: <class 'NoneType'>, valid types: <class 'str'>"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_same_parameters": {
+    "recorded-date": "08-08-2023, 12:46:16",
+    "recorded-content": {
+      "creation_resp_t0": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t0": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn_t0",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_res_t1": {
+        "revisionId": "<uuid:1>",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t1": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:1>",
+        "roleArn": "snf_role_arn_t1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_res_t2": {
+        "revisionId": "<uuid:1>",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_t2": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:1>",
+        "roleArn": "snf_role_arn_t1",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_state_machine_for_execution": {
+    "recorded-date": "21-08-2023, 17:20:20",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_nonexistent_sm": {
+    "recorded-date": "26-10-2023, 17:10:22",
+    "recorded-content": {
+      "describe_nonexistent_sm": "An error occurred (StateMachineDoesNotExist) when calling the DescribeStateMachine operation: State Machine Does Not Exist: 'sm_nonexistent_arn'"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_create_describe[dumps]": {
+    "recorded-date": "17-11-2023, 17:01:05",
+    "recorded-content": {
+      "describe_state_machine_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "End": true,
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "Type": "Pass"
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "state_machine_name",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:state_machine_name",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_create_describe[dump]": {
+    "recorded-date": "17-11-2023, 17:02:36",
+    "recorded-content": {
+      "describe_state_machine_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "End": true,
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "Type": "Pass"
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "state_machine_name",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:state_machine_name",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_string_create_describe[dumps]": {
+    "recorded-date": "17-11-2023, 17:06:22",
+    "recorded-content": {
+      "describe_state_machine_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "state_machine_name",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:state_machine_name",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_string_create_describe[dump]": {
+    "recorded-date": "17-11-2023, 17:07:38",
+    "recorded-content": {
+      "describe_state_machine_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "state_machine_name",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:state_machine_name",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_get_execution_history_reversed": {
+    "recorded-date": "28-01-2024, 19:44:43",
+    "recorded-content": {
+      "get_execution_history_reverseOrder[False]": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history_reverseOrder[True]": {
+        "events": [
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_invalid_arn_sm": {
+    "recorded-date": "08-03-2024, 10:34:51",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the DescribeStateMachine operation: Invalid Arn: 'Invalid ARN prefix: not_a_valid_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_execution_no_such_state_machine": {
+    "recorded-date": "08-03-2024, 10:51:46",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "StateMachineDoesNotExist",
+        "exception_value": "An error occurred (StateMachineDoesNotExist) when calling the ListExecutions operation: State Machine Does Not Exist: 'ssm_nonexistent_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_execution_invalid_arn": {
+    "recorded-date": "08-03-2024, 12:37:36",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the ListExecutions operation: Invalid Arn: 'Invalid ARN prefix: invalid_state_machine_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution": {
+    "recorded-date": "21-08-2024, 09:14:30",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_execution": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<ExecArnPart_0idx>",
+        "output": {
+          "Arg1": "argument1"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "redriveCount": 0,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution_no_such_state_machine": {
+    "recorded-date": "08-03-2024, 12:05:10",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ExecutionDoesNotExist",
+        "exception_value": "An error occurred (ExecutionDoesNotExist) when calling the DescribeExecution operation: Execution Does Not Exist: 'invalid_execution_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_get_execution_history_no_such_execution": {
+    "recorded-date": "08-03-2024, 12:34:03",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ExecutionDoesNotExist",
+        "exception_value": "An error occurred (ExecutionDoesNotExist) when calling the GetExecutionHistory operation: Execution Does Not Exist: 'invalid_execution_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_get_execution_history_invalid_arn": {
+    "recorded-date": "08-03-2024, 12:36:35",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the GetExecutionHistory operation: Invalid Arn: 'Invalid ARN prefix: invalid_state_machine_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution_invalid_arn": {
+    "recorded-date": "08-03-2024, 12:37:23",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the DescribeExecution operation: Invalid Arn: 'Invalid ARN prefix: invalid_state_machine_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_state_machine_status_filter": {
+    "recorded-date": "14-03-2024, 21:58:24",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_before_execution": {
+        "executions": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_succeeded_when_complete": {
+        "executions": [
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_running_when_complete": {
+        "executions": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_executions_filter_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'succeeded' at 'statusFilter' failed to satisfy constraint: Member must satisfy enum value set: [SUCCEEDED, TIMED_OUT, PENDING_REDRIVE, ABORTED, FAILED, RUNNING]"
+        },
+        "message": "1 validation error detected: Value 'succeeded' at 'statusFilter' failed to satisfy constraint: Member must satisfy enum value set: [SUCCEEDED, TIMED_OUT, PENDING_REDRIVE, ABORTED, FAILED, RUNNING]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution_arn_containing_punctuation": {
+    "recorded-date": "11-06-2024, 14:54:08",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_execution": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<ExecArnPart_0idx>",
+        "output": {
+          "Arg1": "argument1"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "redriveCount": 0,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_sm_arn_containing_punctuation": {
+    "recorded-date": "11-06-2024, 14:55:41",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_sync_execution": {
+    "recorded-date": "03-07-2024, 17:10:25",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_sync_execution_error": {
+        "Error": {
+          "Code": "StateMachineTypeNotSupported",
+          "Message": "This operation is not supported by this type of state machine"
+        },
+        "message": "This operation is not supported by this type of state machine",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms_pagination": {
+    "recorded-date": "01-07-2024, 12:04:17",
+    "recorded-content": {
+      "list-state-machines-page-1": [
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+          "name": "<ArnPart_0idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_10idx>",
+          "name": "<ArnPart_10idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_11idx>",
+          "name": "<ArnPart_11idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_12idx>",
+          "name": "<ArnPart_12idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
+          "name": "<ArnPart_1idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
+          "name": "<ArnPart_2idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_3idx>",
+          "name": "<ArnPart_3idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_4idx>",
+          "name": "<ArnPart_4idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_5idx>",
+          "name": "<ArnPart_5idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_6idx>",
+          "name": "<ArnPart_6idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        }
+      ],
+      "list-state-machines-page-2": [
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_7idx>",
+          "name": "<ArnPart_7idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_8idx>",
+          "name": "<ArnPart_8idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_9idx>",
+          "name": "<ArnPart_9idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        }
+      ],
+      "list-state-machines-invalid-param-too-large": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-state-machines-invalid-param-short-nextToken": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter nextToken, value: 0, valid min length: 1"
+      },
+      "list-state-machines-invalid-param-long-nextToken": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '<invalid_token_1025_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 1024"
+        },
+        "message": "1 validation error detected: Value '<invalid_token_1025_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 1024",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_executions_versions_pagination": {
+    "recorded-date": "01-07-2024, 12:54:55",
+    "recorded-content": {
+      "list-executions-page-1": {
+        "executions": [
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_12idx>",
+            "name": "<ExecArnPart_12idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_11idx>",
+            "name": "<ExecArnPart_11idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_10idx>",
+            "name": "<ExecArnPart_10idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_9idx>",
+            "name": "<ExecArnPart_9idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_8idx>",
+            "name": "<ExecArnPart_8idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_7idx>",
+            "name": "<ExecArnPart_7idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_6idx>",
+            "name": "<ExecArnPart_6idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_5idx>",
+            "name": "<ExecArnPart_5idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_4idx>",
+            "name": "<ExecArnPart_4idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_3idx>",
+            "name": "<ExecArnPart_3idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "nextToken": "<next-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-execution-page-2": {
+        "executions": [
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_2idx>",
+            "name": "<ExecArnPart_2idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+            "name": "<ExecArnPart_1idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-executions-invalid-param-too-large": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-executions-invalid-param-short-nextToken": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter nextToken, value: 0, valid min length: 1"
+      },
+      "list-executions-invalid-param-long-nextToken": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '<invalid_token_3097_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 3096"
+        },
+        "message": "1 validation error detected: Value '<invalid_token_3097_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 3096",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "deletion_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_executions_pagination": {
+    "recorded-date": "01-07-2024, 12:33:00",
+    "recorded-content": {
+      "list-executions-page-1": {
+        "executions": [
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_12idx>",
+            "name": "<ExecArnPart_12idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_11idx>",
+            "name": "<ExecArnPart_11idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_10idx>",
+            "name": "<ExecArnPart_10idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_9idx>",
+            "name": "<ExecArnPart_9idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_8idx>",
+            "name": "<ExecArnPart_8idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_7idx>",
+            "name": "<ExecArnPart_7idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_6idx>",
+            "name": "<ExecArnPart_6idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_5idx>",
+            "name": "<ExecArnPart_5idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_4idx>",
+            "name": "<ExecArnPart_4idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_3idx>",
+            "name": "<ExecArnPart_3idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "nextToken": "<next-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-executions-page-2": {
+        "executions": [
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_2idx>",
+            "name": "<ExecArnPart_2idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+            "name": "<ExecArnPart_1idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-executions-invalid-param-too-large": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-executions-invalid-param-short-nextToken": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter nextToken, value: 0, valid min length: 1"
+      },
+      "list-executions-invalid-param-long-nextToken": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '<invalid_token_3097_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 3096"
+        },
+        "message": "1 validation error detected: Value '<invalid_token_3097_chars>' at 'nextToken' failed to satisfy constraint: Member must have length less than or equal to 3096",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "deletion_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution_idempotent": {
+    "recorded-date": "21-08-2024, 09:15:48",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<resource:1>:<resource:2>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp_idempotent": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<resource:1>:<resource:2>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_exec_already_exists": {
+        "Error": {
+          "Code": "ExecutionAlreadyExists",
+          "Message": "Execution Already Exists: 'arn:<partition>:states:<region>:111111111111:execution:<resource:1>:<resource:2>'"
+        },
+        "message": "Execution Already Exists: 'arn:<partition>:states:<region>:111111111111:execution:<resource:1>:<resource:2>'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "stop_res": {
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

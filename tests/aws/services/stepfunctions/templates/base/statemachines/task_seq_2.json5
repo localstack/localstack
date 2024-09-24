@@ -1,0 +1,17 @@
+{
+  "Comment": "Hello World example",
+  "StartAt": "State_1",
+  "States": {
+    "State_1": {
+      "Type": "Task",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
+      "Next": "State_2"
+    },
+    "State_2": {
+      "Type": "Task",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
+      "ResultPath": "$.result_value",
+      "End": true,
+    },
+  },
+}

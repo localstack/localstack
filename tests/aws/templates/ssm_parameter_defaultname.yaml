@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  Input:
+    Type: String
+
+Resources:
+  CustomParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Ref Input
+
+Outputs:
+  CustomParameterOutput:
+    Value: !Ref CustomParameter

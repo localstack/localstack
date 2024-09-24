@@ -1,0 +1,42 @@
+{
+  "tests/aws/services/cloudformation/resources/test_logs.py::test_logstream": {
+    "recorded-date": "29-07-2022, 13:22:53",
+    "recorded-content": {
+      "outputs": {
+        "LogStreamNameOutput": "<resource:1>",
+        "LogGroupNameOutput": "<log-group-name-output:1>"
+      },
+      "describe_log_streams": [
+        {
+          "logStreamName": "<resource:1>",
+          "creationTime": "timestamp",
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name-output:1>:log-stream:<resource:1>",
+          "storedBytes": 0
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_logs.py::test_cfn_handle_log_group_resource": {
+    "recorded-date": "20-06-2024, 16:15:47",
+    "recorded-content": {
+      "describe_log_groups": {
+        "logGroups": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:1>",
+            "metricFilterCount": 0,
+            "retentionInDays": 731,
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

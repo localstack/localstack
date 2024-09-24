@@ -1,0 +1,93 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Simple CloudFormation Test Template
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: cf-test-bucket-1
+      NotificationConfiguration:
+        LambdaConfigurations:
+        - Event: "s3:ObjectCreated:*"
+          Function: aws:arn:lambda:test:testfunc
+        QueueConfigurations:
+        - Event: "s3:ObjectDeleted:*"
+          Queue: aws:arn:sqs:test:testqueue
+          Filter:
+            S3Key:
+              S3KeyFilter:
+                Rules:
+                  - { Name: name1, Value: value1 }
+                  - { Name: name2, Value: value2 }
+      Tags:
+        - Key: foobar
+          Value:
+            Ref: SQSQueue
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: cf-test-queue-1
+      Tags:
+        - Key: key1
+          Value: value1
+        - Key: key2
+          Value: value2
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: { "Fn::Join": [ "", [ { "Ref": "AWS::StackName" }, "-test-topic-1-1" ] ] }
+      Tags:
+        - Key: foo
+          Value:
+            Ref: S3Bucket
+        - Key: bar
+          Value: { "Fn::GetAtt": ["S3Bucket", "Arn"] }
+  TopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn: !Ref SNSTopic
+      Endpoint: !GetAtt SQSQueue.QueueArn
+      FilterPolicy:
+        eventType:
+          - created
+  KinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: cf-test-stream-1
+  KinesisStreamConsumer:
+    Type: AWS::Kinesis::StreamConsumer
+    Properties:
+      ConsumerName: c1
+      StreamARN: !Ref KinesisStream
+  SQSQueueNoNameProperty:
+    Type: AWS::SQS::Queue
+  TestParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: cf-test-param-1
+      Description: test param 1
+      Type: String
+      Value: value123
+      Tags:
+        tag1: value1
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: test-api
+  GatewayResponseUnauthorized:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      ResponseType: UNAUTHORIZED
+      ResponseTemplates:
+        application/json: '{"errors":[{"message":"Custom text!", "extra":"Some extra info"}]}'
+  GatewayResponseDefault500:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      ResponseType: DEFAULT_5XX
+      ResponseTemplates:
+        application/json: '{"errors":[{"message":$context.error.messageString}]}'

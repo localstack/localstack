@@ -1,0 +1,1347 @@
+{
+  "Resources": {
+    "notesAF81B09D": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "noteId",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "noteId",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
+        }
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "endpointE7B9679B": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "endpoint"
+      }
+    },
+    "endpointCloudWatchRole52213BC3": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+              ]
+            ]
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "endpointAccount6DA1D142": {
+      "Type": "AWS::ApiGateway::Account",
+      "Properties": {
+        "CloudWatchRoleArn": {
+          "Fn::GetAtt": [
+            "endpointCloudWatchRole52213BC3",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "endpointE7B9679B"
+      ],
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "endpointDeployment457D977Dcec5da4f84c2fadf4fb0f4a20c82b818": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "Description": "Automatically created by the RestApi construct",
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      },
+      "DependsOn": [
+        "endpointnotesidDELETEAD0C5CAD",
+        "endpointnotesidGETDA67C376",
+        "endpointnotesidOPTIONS6939D830",
+        "endpointnotesidPUTA29F9F3F",
+        "endpointnotesid284FFD82",
+        "endpointnotesGETFA0BD3D8",
+        "endpointnotesPOST22F9725C",
+        "endpointnotesF7F33EB6"
+      ]
+    },
+    "endpointDeploymentStageprod2CD5F9C4": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "DeploymentId": {
+          "Ref": "endpointDeployment457D977Dcec5da4f84c2fadf4fb0f4a20c82b818"
+        },
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        },
+        "StageName": "prod"
+      },
+      "DependsOn": [
+        "endpointAccount6DA1D142"
+      ]
+    },
+    "endpointnotesF7F33EB6": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "endpointE7B9679B",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "notes",
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      }
+    },
+    "endpointnotesGETApiPermissionNoteTakingStackendpoint7B805353GETnotes39B76FB0": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "listNoteshandlerDC187D34",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/",
+              {
+                "Ref": "endpointDeploymentStageprod2CD5F9C4"
+              },
+              "/GET/notes"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesGETApiPermissionTestNoteTakingStackendpoint7B805353GETnotes8D8B589D": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "listNoteshandlerDC187D34",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/test-invoke-stage/GET/notes"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesGETFA0BD3D8": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "listNoteshandlerDC187D34",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "endpointnotesF7F33EB6"
+        },
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      }
+    },
+    "endpointnotesPOSTApiPermissionNoteTakingStackendpoint7B805353POSTnotesCBF01E91": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "createNotehandlerBA768AA5",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/",
+              {
+                "Ref": "endpointDeploymentStageprod2CD5F9C4"
+              },
+              "/POST/notes"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesPOSTApiPermissionTestNoteTakingStackendpoint7B805353POSTnotesBA343362": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "createNotehandlerBA768AA5",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/test-invoke-stage/POST/notes"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesPOST22F9725C": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "createNotehandlerBA768AA5",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "endpointnotesF7F33EB6"
+        },
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      }
+    },
+    "endpointnotesid284FFD82": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Ref": "endpointnotesF7F33EB6"
+        },
+        "PathPart": "{id}",
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      }
+    },
+    "endpointnotesidOPTIONS6939D830": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+              },
+              "StatusCode": "204"
+            }
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }"
+          },
+          "Type": "MOCK"
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "StatusCode": "204"
+          }
+        ],
+        "ResourceId": {
+          "Ref": "endpointnotesid284FFD82"
+        },
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      }
+    },
+    "endpointnotesidGETApiPermissionNoteTakingStackendpoint7B805353GETnotesid84EE0B60": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "getNotehandler167C5FCF",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/",
+              {
+                "Ref": "endpointDeploymentStageprod2CD5F9C4"
+              },
+              "/GET/notes/*"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesidGETApiPermissionTestNoteTakingStackendpoint7B805353GETnotesidAB290F46": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "getNotehandler167C5FCF",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/test-invoke-stage/GET/notes/*"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesidGETDA67C376": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "getNotehandler167C5FCF",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "endpointnotesid284FFD82"
+        },
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      }
+    },
+    "endpointnotesidPUTApiPermissionNoteTakingStackendpoint7B805353PUTnotesid1848C2A1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "updateNotehandler6A5A41DF",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/",
+              {
+                "Ref": "endpointDeploymentStageprod2CD5F9C4"
+              },
+              "/PUT/notes/*"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesidPUTApiPermissionTestNoteTakingStackendpoint7B805353PUTnotesidE645D506": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "updateNotehandler6A5A41DF",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/test-invoke-stage/PUT/notes/*"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesidPUTA29F9F3F": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "PUT",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "updateNotehandler6A5A41DF",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "endpointnotesid284FFD82"
+        },
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      }
+    },
+    "endpointnotesidDELETEApiPermissionNoteTakingStackendpoint7B805353DELETEnotesid993C0373": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "deleteNotehandlerC903D399",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/",
+              {
+                "Ref": "endpointDeploymentStageprod2CD5F9C4"
+              },
+              "/DELETE/notes/*"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesidDELETEApiPermissionTestNoteTakingStackendpoint7B805353DELETEnotesid2095ABA3": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "deleteNotehandlerC903D399",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "endpointE7B9679B"
+              },
+              "/test-invoke-stage/DELETE/notes/*"
+            ]
+          ]
+        }
+      }
+    },
+    "endpointnotesidDELETEAD0C5CAD": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "DELETE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "deleteNotehandlerC903D399",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "endpointnotesid284FFD82"
+        },
+        "RestApiId": {
+          "Ref": "endpointE7B9679B"
+        }
+      }
+    },
+    "listNoteshandlerServiceRole334A15FF": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "listNoteshandlerServiceRoleDefaultPolicy247BA603": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:Scan",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "notesAF81B09D",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "listNoteshandlerServiceRoleDefaultPolicy247BA603",
+        "Roles": [
+          {
+            "Ref": "listNoteshandlerServiceRole334A15FF"
+          }
+        ]
+      }
+    },
+    "listNoteshandlerDC187D34": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Join": [
+              "-",
+              [
+                "localstack-testing",
+                {
+                  "Ref": "AWS::AccountId"
+                },
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          },
+          "S3Key": "listNotes.zip"
+        },
+        "Environment": {
+          "Variables": {
+            "NOTES_TABLE_NAME": {
+              "Ref": "notesAF81B09D"
+            }
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "listNoteshandlerServiceRole334A15FF",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "listNoteshandlerServiceRoleDefaultPolicy247BA603",
+        "listNoteshandlerServiceRole334A15FF"
+      ]
+    },
+    "createNotehandlerServiceRole8AC82B45": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "createNotehandlerServiceRoleDefaultPolicyFCFF3979": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:PutItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "notesAF81B09D",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "createNotehandlerServiceRoleDefaultPolicyFCFF3979",
+        "Roles": [
+          {
+            "Ref": "createNotehandlerServiceRole8AC82B45"
+          }
+        ]
+      }
+    },
+    "createNotehandlerBA768AA5": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Join": [
+              "-",
+              [
+                "localstack-testing",
+                {
+                  "Ref": "AWS::AccountId"
+                },
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          },
+          "S3Key": "createNote.zip"
+        },
+        "Environment": {
+          "Variables": {
+            "NOTES_TABLE_NAME": {
+              "Ref": "notesAF81B09D"
+            }
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "createNotehandlerServiceRole8AC82B45",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "createNotehandlerServiceRoleDefaultPolicyFCFF3979",
+        "createNotehandlerServiceRole8AC82B45"
+      ]
+    },
+    "getNotehandlerServiceRole08D68F24": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "getNotehandlerServiceRoleDefaultPolicy8920DE10": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "notesAF81B09D",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "getNotehandlerServiceRoleDefaultPolicy8920DE10",
+        "Roles": [
+          {
+            "Ref": "getNotehandlerServiceRole08D68F24"
+          }
+        ]
+      }
+    },
+    "getNotehandler167C5FCF": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Join": [
+              "-",
+              [
+                "localstack-testing",
+                {
+                  "Ref": "AWS::AccountId"
+                },
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          },
+          "S3Key": "getNote.zip"
+        },
+        "Environment": {
+          "Variables": {
+            "NOTES_TABLE_NAME": {
+              "Ref": "notesAF81B09D"
+            }
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "getNotehandlerServiceRole08D68F24",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "getNotehandlerServiceRoleDefaultPolicy8920DE10",
+        "getNotehandlerServiceRole08D68F24"
+      ]
+    },
+    "updateNotehandlerServiceRole9959F133": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "updateNotehandlerServiceRoleDefaultPolicyD405276B": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "notesAF81B09D",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "updateNotehandlerServiceRoleDefaultPolicyD405276B",
+        "Roles": [
+          {
+            "Ref": "updateNotehandlerServiceRole9959F133"
+          }
+        ]
+      }
+    },
+    "updateNotehandler6A5A41DF": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Join": [
+              "-",
+              [
+                "localstack-testing",
+                {
+                  "Ref": "AWS::AccountId"
+                },
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          },
+          "S3Key": "updateNote.zip"
+        },
+        "Environment": {
+          "Variables": {
+            "NOTES_TABLE_NAME": {
+              "Ref": "notesAF81B09D"
+            }
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "updateNotehandlerServiceRole9959F133",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "updateNotehandlerServiceRoleDefaultPolicyD405276B",
+        "updateNotehandlerServiceRole9959F133"
+      ]
+    },
+    "deleteNotehandlerServiceRoleAD0655B4": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "deleteNotehandlerServiceRoleDefaultPolicy82C8BF80": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:DeleteItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "notesAF81B09D",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "deleteNotehandlerServiceRoleDefaultPolicy82C8BF80",
+        "Roles": [
+          {
+            "Ref": "deleteNotehandlerServiceRoleAD0655B4"
+          }
+        ]
+      }
+    },
+    "deleteNotehandlerC903D399": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Join": [
+              "-",
+              [
+                "localstack-testing",
+                {
+                  "Ref": "AWS::AccountId"
+                },
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          },
+          "S3Key": "deleteNote.zip"
+        },
+        "Environment": {
+          "Variables": {
+            "NOTES_TABLE_NAME": {
+              "Ref": "notesAF81B09D"
+            }
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "deleteNotehandlerServiceRoleAD0655B4",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x"
+      },
+      "DependsOn": [
+        "deleteNotehandlerServiceRoleDefaultPolicy82C8BF80",
+        "deleteNotehandlerServiceRoleAD0655B4"
+      ]
+    }
+  },
+  "Outputs": {
+    "endpointEndpoint5E1E9134": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "endpointE7B9679B"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/",
+            {
+              "Ref": "endpointDeploymentStageprod2CD5F9C4"
+            },
+            "/"
+          ]
+        ]
+      }
+    },
+    "GatewayUrl": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "endpointE7B9679B"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/",
+            {
+              "Ref": "endpointDeploymentStageprod2CD5F9C4"
+            },
+            "/"
+          ]
+        ]
+      }
+    },
+    "Region": {
+      "Value": {
+        "Ref": "AWS::Region"
+      }
+    }
+  }
+}

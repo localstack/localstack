@@ -1,0 +1,25 @@
+Resources:
+  Queue4A7E3555:
+    Type: AWS::SQS::Queue
+  QueuePolicy25439813:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - sqs:SendMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+            Effect: Allow
+            Principal: "*"
+            Resource:
+              Fn::GetAtt:
+                - Queue4A7E3555
+                - Arn
+        Version: "2012-10-17"
+      Queues:
+        - Ref: Queue4A7E3555
+Outputs:
+  QueueUrlOutput:
+    Value:
+      Ref: Queue4A7E3555

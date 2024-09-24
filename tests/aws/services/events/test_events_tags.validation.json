@@ -1,0 +1,50 @@
+{
+  "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_create_event_bus_with_tags": {
+    "last_validated_date": "2024-05-15T14:58:04+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_list_tags_for_deleted_event_bus": {
+    "last_validated_date": "2024-05-15T14:58:05+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_list_tags_for_deleted_rule": {
+    "last_validated_date": "2024-05-15T14:58:02+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_put_rule_with_tags": {
+    "last_validated_date": "2024-05-15T14:58:01+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[event_bus-event_bus_custom]": {
+    "last_validated_date": "2024-05-16T12:13:17+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[event_bus-event_bus_default]": {
+    "last_validated_date": "2024-05-16T12:13:16+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[rule-event_bus_custom]": {
+    "last_validated_date": "2024-05-16T12:13:20+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[rule-event_bus_default]": {
+    "last_validated_date": "2024-05-16T12:13:18+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_list_untag_not_existing_resource[not_existing_event_bus]": {
+    "last_validated_date": "2024-05-15T14:58:00+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_list_untag_not_existing_resource[not_existing_rule]": {
+    "last_validated_date": "2024-05-15T14:57:57+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus-event_bus_custom]": {
+    "last_validated_date": "2024-05-16T11:45:31+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus-event_bus_default]": {
+    "last_validated_date": "2024-05-16T11:45:30+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus]": {
+    "last_validated_date": "2024-05-15T14:57:52+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule-event_bus_custom]": {
+    "last_validated_date": "2024-05-16T11:45:34+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule-event_bus_default]": {
+    "last_validated_date": "2024-05-16T11:45:32+00:00"
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule]": {
+    "last_validated_date": "2024-05-15T14:57:54+00:00"
+  }
+}

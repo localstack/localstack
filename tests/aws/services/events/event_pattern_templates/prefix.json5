@@ -1,0 +1,40 @@
+{
+  "Event": {
+    "id": "1",
+    "source": "order",
+    "detail-type": "Test",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z",
+    "dynamodb": {
+      "ApproximateCreationDateTime": 1664559083.0,
+      "Keys": {
+        "SK": { "S": "PRODUCT#CHOCOLATE#DARK#1000" },
+        "PK": { "S": "COMPANY#1000" }
+      },
+      "NewImage": {
+        "quantity": { "N": "50" },
+        "company_id": { "S": "1000" },
+        "fabric": { "S": "Florida Chocolates" },
+        "price": { "N": "15" },
+        "stores": { "N": "5" },
+        "product_id": { "S": "1000" },
+        "SK": { "S": "PRODUCT#CHOCOLATE#DARK#1000" },
+        "PK": { "S": "COMPANY#1000" },
+        "state": { "S": "FL" },
+        "type": { "S": "" }
+      },
+      "SequenceNumber": "700000000000888747038",
+      "SizeBytes": 174,
+      "StreamViewType": "NEW_AND_OLD_IMAGES"
+    }
+  },
+  "EventPattern": {
+    "dynamodb": {
+      "Keys": {
+        "PK": { "S": [{ "prefix": "COMPANY" }] },
+        "SK": { "S": [{ "prefix": "PRODUCT" }] }
+      }
+    }
+  }
+}

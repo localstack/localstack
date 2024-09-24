@@ -1,0 +1,29 @@
+{
+  "tests/aws/services/s3control/test_s3control.py::TestLegacyS3Control::test_lifecycle_public_access_block": {
+    "last_validated_date": "2024-05-30T17:31:18+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_already_exists": {
+    "last_validated_date": "2024-05-30T17:38:05+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_bucket_not_exists": {
+    "last_validated_date": "2024-05-30T17:37:59+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_lifecycle": {
+    "last_validated_date": "2024-05-30T17:37:58+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_name_validation": {
+    "last_validated_date": "2024-05-30T17:38:03+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_pagination": {
+    "last_validated_date": "2024-05-30T17:42:06+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_public_access_block_configuration": {
+    "last_validated_date": "2024-05-30T17:38:08+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlPublicAccessBlock::test_crud_public_access_block": {
+    "last_validated_date": "2024-05-30T17:32:58+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlPublicAccessBlock::test_empty_public_access_block": {
+    "last_validated_date": "2024-05-30T17:32:59+00:00"
+  }
+}

@@ -1,0 +1,17 @@
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::Sub:
+          - arn:${AWS::Partition}:sqs:${AWS::Region}:${AWS::AccountId}:${queueName}
+          - queueName:
+              Fn::GetAtt:
+                - Queue
+                - QueueName
+
+  Queue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Join ["-", [!Ref AWS::StackName, MyQueue]]

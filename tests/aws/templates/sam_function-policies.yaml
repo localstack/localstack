@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      InlineCode: |+
+        import json
+
+        def handler(event, context):
+              return {
+                  "statusCode": 200,
+                  "body": json.dumps({
+                      "message": "hello world",
+                  }),
+              }
+
+      Runtime: python3.9
+      Handler: index.handler
+      Architectures:
+        - x86_64
+      Policies:
+        - AmazonSNSFullAccess
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+Outputs:
+  HelloWorldFunctionIamRoleArn:
+    Value: !GetAtt HelloWorldFunctionRole.Arn
+  HelloWorldFunctionIamRoleName:
+    Value: !Ref HelloWorldFunctionRole

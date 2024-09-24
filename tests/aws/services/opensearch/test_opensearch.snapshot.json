@@ -1,0 +1,225 @@
+{
+  "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_get_compatible_versions": {
+    "recorded-date": "16-07-2024, 13:05:15",
+    "recorded-content": {
+      "source_versions": [
+        "Elasticsearch_5.1",
+        "Elasticsearch_5.3",
+        "Elasticsearch_5.5",
+        "Elasticsearch_5.6",
+        "Elasticsearch_6.0",
+        "Elasticsearch_6.2",
+        "Elasticsearch_6.3",
+        "Elasticsearch_6.4",
+        "Elasticsearch_6.5",
+        "Elasticsearch_6.7",
+        "Elasticsearch_6.8",
+        "Elasticsearch_7.1",
+        "Elasticsearch_7.10",
+        "Elasticsearch_7.4",
+        "Elasticsearch_7.7",
+        "Elasticsearch_7.8",
+        "Elasticsearch_7.9",
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3",
+        "OpenSearch_2.11",
+        "OpenSearch_2.3",
+        "OpenSearch_2.5",
+        "OpenSearch_2.7",
+        "OpenSearch_2.9"
+      ],
+      "source_elasticsearch_5.1": [
+        "Elasticsearch_5.6"
+      ],
+      "source_elasticsearch_5.3": [
+        "Elasticsearch_5.6"
+      ],
+      "source_elasticsearch_5.5": [
+        "Elasticsearch_5.6"
+      ],
+      "source_elasticsearch_5.6": [
+        "Elasticsearch_6.3",
+        "Elasticsearch_6.4",
+        "Elasticsearch_6.5",
+        "Elasticsearch_6.7",
+        "Elasticsearch_6.8"
+      ],
+      "source_elasticsearch_6.0": [
+        "Elasticsearch_6.3",
+        "Elasticsearch_6.4",
+        "Elasticsearch_6.5",
+        "Elasticsearch_6.7",
+        "Elasticsearch_6.8"
+      ],
+      "source_elasticsearch_6.2": [
+        "Elasticsearch_6.3",
+        "Elasticsearch_6.4",
+        "Elasticsearch_6.5",
+        "Elasticsearch_6.7",
+        "Elasticsearch_6.8"
+      ],
+      "source_elasticsearch_6.3": [
+        "Elasticsearch_6.4",
+        "Elasticsearch_6.5",
+        "Elasticsearch_6.7",
+        "Elasticsearch_6.8"
+      ],
+      "source_elasticsearch_6.4": [
+        "Elasticsearch_6.5",
+        "Elasticsearch_6.7",
+        "Elasticsearch_6.8"
+      ],
+      "source_elasticsearch_6.5": [
+        "Elasticsearch_6.7",
+        "Elasticsearch_6.8"
+      ],
+      "source_elasticsearch_6.7": [
+        "Elasticsearch_6.8"
+      ],
+      "source_elasticsearch_6.8": [
+        "Elasticsearch_7.1",
+        "Elasticsearch_7.4",
+        "Elasticsearch_7.7",
+        "Elasticsearch_7.8",
+        "Elasticsearch_7.9",
+        "Elasticsearch_7.10",
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_elasticsearch_7.1": [
+        "Elasticsearch_7.4",
+        "Elasticsearch_7.7",
+        "Elasticsearch_7.8",
+        "Elasticsearch_7.9",
+        "Elasticsearch_7.10",
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_elasticsearch_7.10": [
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_elasticsearch_7.4": [
+        "Elasticsearch_7.7",
+        "Elasticsearch_7.8",
+        "Elasticsearch_7.9",
+        "Elasticsearch_7.10",
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_elasticsearch_7.7": [
+        "Elasticsearch_7.8",
+        "Elasticsearch_7.9",
+        "Elasticsearch_7.10",
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_elasticsearch_7.8": [
+        "Elasticsearch_7.9",
+        "Elasticsearch_7.10",
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_elasticsearch_7.9": [
+        "Elasticsearch_7.10",
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_opensearch_1.0": [
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_opensearch_1.1": [
+        "OpenSearch_1.2",
+        "OpenSearch_1.3"
+      ],
+      "source_opensearch_1.2": [
+        "OpenSearch_1.3"
+      ],
+      "source_opensearch_1.3": [
+        "OpenSearch_2.3",
+        "OpenSearch_2.5",
+        "OpenSearch_2.7",
+        "OpenSearch_2.9",
+        "OpenSearch_2.11",
+        "OpenSearch_2.13"
+      ],
+      "source_opensearch_2.11": [
+        "OpenSearch_2.13"
+      ],
+      "source_opensearch_2.3": [
+        "OpenSearch_2.5",
+        "OpenSearch_2.7",
+        "OpenSearch_2.9",
+        "OpenSearch_2.11",
+        "OpenSearch_2.13"
+      ],
+      "source_opensearch_2.5": [
+        "OpenSearch_2.7",
+        "OpenSearch_2.9",
+        "OpenSearch_2.11",
+        "OpenSearch_2.13"
+      ],
+      "source_opensearch_2.7": [
+        "OpenSearch_2.9",
+        "OpenSearch_2.11",
+        "OpenSearch_2.13"
+      ],
+      "source_opensearch_2.9": [
+        "OpenSearch_2.11",
+        "OpenSearch_2.13"
+      ]
+    }
+  },
+  "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_list_versions": {
+    "recorded-date": "16-07-2024, 13:18:18",
+    "recorded-content": {
+      "versions": [
+        "Elasticsearch_5.1",
+        "Elasticsearch_5.3",
+        "Elasticsearch_5.5",
+        "Elasticsearch_5.6",
+        "Elasticsearch_6.0",
+        "Elasticsearch_6.2",
+        "Elasticsearch_6.3",
+        "Elasticsearch_6.4",
+        "Elasticsearch_6.5",
+        "Elasticsearch_6.7",
+        "Elasticsearch_6.8",
+        "Elasticsearch_7.1",
+        "Elasticsearch_7.10",
+        "Elasticsearch_7.4",
+        "Elasticsearch_7.7",
+        "Elasticsearch_7.8",
+        "Elasticsearch_7.9",
+        "OpenSearch_1.0",
+        "OpenSearch_1.1",
+        "OpenSearch_1.2",
+        "OpenSearch_1.3",
+        "OpenSearch_2.11",
+        "OpenSearch_2.13",
+        "OpenSearch_2.3",
+        "OpenSearch_2.5",
+        "OpenSearch_2.7",
+        "OpenSearch_2.9"
+      ]
+    }
+  }
+}

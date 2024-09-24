@@ -1,0 +1,28 @@
+Parameters:
+  TopicName:
+    Type: String
+    Default: topic-name
+  QueueName:
+    Type: String
+    Default: queue-name
+Resources:
+  queue276F7297:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref QueueName
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  topic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint:
+            Fn::GetAtt:
+              - queue276F7297
+              - Arn
+          Protocol: sqs
+      TopicName: !Ref TopicName
+Outputs:
+  TopicArnOutput:
+    Value:
+      Ref: topic

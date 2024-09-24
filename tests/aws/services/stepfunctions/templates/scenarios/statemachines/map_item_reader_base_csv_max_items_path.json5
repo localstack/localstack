@@ -1,0 +1,36 @@
+{
+  "Comment": "MAP_ITEM_READER_BASE_CSV_MAX_ITEMS_PATH",
+  "StartAt": "MapState",
+  "States": {
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemReader": {
+        "ReaderConfig": {
+          "InputType": "CSV",
+          "CSVHeaderLocation": "FIRST_ROW",
+          "MaxItemsPath": "$.MaxItems",
+        },
+        "Resource": "arn:aws:states:::s3:getObject",
+        "Parameters": {
+          "Bucket.$": "$.Bucket",
+          "Key.$": "$.Key"
+        }
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "PassItem",
+        "States": {
+          "PassItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+      },
+      "End": true
+    }
+  }
+}

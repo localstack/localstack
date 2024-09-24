@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Environment:
+    Type: String
+    Default: 'ci'
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: "10.0.0.0/20"
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+            - ssm.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: "RegmonInstancePolicy"
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Resource: '*'
+            Action:
+            - ec2:GetPasswordData
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-slack-sns-topic'
+
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: example.com
+
+Outputs:
+  VpcId:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub '${Environment}-vpc-id'
+
+  RoleArn:
+    Value: !GetAtt InstanceRole.Arn
+    Export:
+      Name: RoleArn
+
+  TopicArn:
+    Value: !Ref SnsTopic
+    Export:
+      Name: !Ref SnsTopic

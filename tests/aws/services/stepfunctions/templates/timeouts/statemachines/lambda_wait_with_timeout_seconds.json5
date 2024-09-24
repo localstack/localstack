@@ -1,0 +1,15 @@
+{
+  "Comment": "LAMBDA_WAIT_WITH_TIMEOUT_SECONDS",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "TimeoutSeconds": 5,
+      "Resource": "__tbc__",
+      "Parameters": {
+        "Payload.$": "$.Payload",
+      },
+      "End": true
+    },
+  },
+}

@@ -1,0 +1,49 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "wait-for-seconds",
+    "description": "Test API for asynchronous Lambda invocation",
+    "version": "2022-04-12T15:36:55Z"
+  },
+  "paths": {
+    "/echo/{data}": {
+      "x-amazon-apigateway-any-method": {
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseTemplates": {
+                "application/json": "{\"echo\": \"$input.params('data')\", \"response\": \"mocked\"}"
+              }
+            }
+          },
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "passthroughBehavior": "when_no_templates"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Empty": {
+        "title": "Empty Schema",
+        "type": "object"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+name: Upgrade Pinned Python Dependencies
+
+on:
+  schedule:
+    - cron: 0 5 * * TUE
+  workflow_dispatch:
+
+
+jobs:
+  upgrade-dependencies:
+    uses: localstack/meta/.github/workflows/upgrade-python-dependencies.yml@main
+    secrets:
+      github-token: ${{ secrets.PRO_ACCESS_TOKEN }}

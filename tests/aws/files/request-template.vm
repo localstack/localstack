@@ -1,0 +1,40 @@
+#set($allParams = $input.params())
+#set($jsonBody = $input.json('$'))
+#set($path = $allParams.get('path'))
+#set($querystring = $allParams.get('querystring'))
+#set($header = $allParams.get('header'))
+#set($stage = $context.stage)
+{
+"apiContext": {
+"apiId": "$context.apiId",
+"method": "$context.httpMethod",
+"sourceIp": "$context.identity.sourceIp",
+"userAgent": "$context.identity.userAgent",
+"path": "$context.path",
+"protocol": "$context.protocol",
+"requestId": "$context.requestId",
+"stage": "$stage"
+},
+"path": {
+"parameterMap": {
+#foreach($paramName in $path.keySet())
+"$paramName": "$util.escapeJavaScript($path.get($paramName))"#if($foreach.hasNext),#end
+#end
+}
+},
+"querystring": {
+"parameterMap":{
+#foreach($paramName in $querystring.keySet())
+"$paramName": "$util.escapeJavaScript($querystring.get($paramName))"#if($foreach.hasNext),#end
+#end
+}
+},
+"header": {
+"parameterMap": {
+#foreach($paramName in $header.keySet())
+"$paramName": "$util.escapeJavaScript($header.get($paramName))"#if($foreach.hasNext),#end
+#end
+}
+},
+"body": $jsonBody
+}

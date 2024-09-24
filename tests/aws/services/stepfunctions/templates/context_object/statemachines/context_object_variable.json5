@@ -1,0 +1,25 @@
+{
+  "Comment": "CONTEXT_OBJECT_VARIABLE",
+  "StartAt": "TestState",
+  "States": {
+    "TestState": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "%CONTEXT_OBJECT_LITERAL_PLACEHOLDER%",
+          "NumericLessThanEquals": 0,
+          "Next": "QuitChoiceMatched",
+        }
+      ],
+      "Default": "QuitNoChoiceMatched"
+    },
+    "QuitChoiceMatched": {
+      "Type": "Pass",
+      "End": true
+    },
+    "QuitNoChoiceMatched": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

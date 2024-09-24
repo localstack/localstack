@@ -1,0 +1,168 @@
+{
+  "typeName": "AWS::Logs::LogGroup",
+  "description": "Resource schema for AWS::Logs::LogGroup",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs.git",
+  "definitions": {
+    "Tag": {
+      "description": "A key-value pair to associate with a resource.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string",
+          "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., :, /, =, +, - and @.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "Value": {
+          "type": "string",
+          "description": "The value for the tag. You can specify a value that is 0 to 256 Unicode characters in length. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., :, /, =, +, - and @.",
+          "minLength": 0,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ]
+    }
+  },
+  "properties": {
+    "LogGroupName": {
+      "description": "The name of the log group. If you don't specify a name, AWS CloudFormation generates a unique ID for the log group.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[.\\-_/#A-Za-z0-9]{1,512}\\Z"
+    },
+    "KmsKeyId": {
+      "description": "The Amazon Resource Name (ARN) of the CMK to use when encrypting log data.",
+      "type": "string",
+      "maxLength": 256,
+      "pattern": "^arn:[a-z0-9-]+:kms:[a-z0-9-]+:\\d{12}:(key|alias)/.+\\Z"
+    },
+    "DataProtectionPolicy": {
+      "description": "The body of the policy document you want to use for this topic.\n\nYou can only add one policy per topic.\n\nThe policy must be in JSON string format.\n\nLength Constraints: Maximum length of 30720",
+      "type": "object"
+    },
+    "RetentionInDays": {
+      "description": "The number of days to retain the log events in the specified log group. Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, and 3653.",
+      "type": "integer",
+      "enum": [
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        365,
+        400,
+        545,
+        731,
+        1096,
+        1827,
+        2192,
+        2557,
+        2922,
+        3288,
+        3653
+      ]
+    },
+    "Tags": {
+      "description": "An array of key-value pairs to apply to this resource.",
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "Arn": {
+      "description": "The CloudWatch log group ARN.",
+      "type": "string"
+    }
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "logs:DescribeLogGroups",
+        "logs:CreateLogGroup",
+        "logs:PutRetentionPolicy",
+        "logs:TagLogGroup",
+        "logs:GetDataProtectionPolicy",
+        "logs:PutDataProtectionPolicy",
+        "logs:CreateLogDelivery",
+        "s3:REST.PUT.OBJECT",
+        "firehose:TagDeliveryStream",
+        "logs:PutResourcePolicy",
+        "logs:DescribeResourcePolicies"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "logs:DescribeLogGroups",
+        "logs:ListTagsLogGroup",
+        "logs:GetDataProtectionPolicy"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "logs:DescribeLogGroups",
+        "logs:AssociateKmsKey",
+        "logs:DisassociateKmsKey",
+        "logs:PutRetentionPolicy",
+        "logs:DeleteRetentionPolicy",
+        "logs:TagLogGroup",
+        "logs:UntagLogGroup",
+        "logs:GetDataProtectionPolicy",
+        "logs:PutDataProtectionPolicy",
+        "logs:CreateLogDelivery",
+        "s3:REST.PUT.OBJECT",
+        "firehose:TagDeliveryStream"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "logs:DescribeLogGroups",
+        "logs:DeleteLogGroup",
+        "logs:DeleteDataProtectionPolicy"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "logs:DescribeLogGroups",
+        "logs:ListTagsLogGroup"
+      ],
+      "handlerSchema": {
+        "properties": {
+          "LogGroupName": {
+            "$ref": "resource-schema.json#/properties/LogGroupName"
+          }
+        },
+        "required": []
+      }
+    }
+  },
+  "createOnlyProperties": [
+    "/properties/LogGroupName"
+  ],
+  "readOnlyProperties": [
+    "/properties/Arn"
+  ],
+  "primaryIdentifier": [
+    "/properties/LogGroupName"
+  ],
+  "additionalProperties": false,
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": true,
+    "tagProperty": "/properties/Tags"
+  }
+}

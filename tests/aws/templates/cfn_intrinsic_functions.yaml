@@ -1,0 +1,26 @@
+Parameters:
+  Param1:
+    Type: String
+  Param2:
+    Type: String
+  BucketName:
+    Type: String
+Conditions:
+  condition1:
+    Fn::Equals:
+      - Ref: Param1
+      - "1"
+  condition2:
+    Fn::Equals:
+      - Ref: Param2
+      - "1"
+  condition3:
+    {{ intrinsic_fn }}:
+      - Condition: condition1
+      - Condition: condition2
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+    Condition: condition3

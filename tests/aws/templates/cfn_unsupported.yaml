@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  WAFRule:
+    Type: AWS::WAF::Rule
+    Properties:
+      MetricName: foo
+      Name: bar
+
+  MyTopic:
+    Type: AWS::SNS::Topic

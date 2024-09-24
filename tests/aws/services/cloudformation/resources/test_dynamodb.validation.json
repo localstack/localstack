@@ -1,0 +1,23 @@
+{
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PAY_PER_REQUEST]": {
+    "last_validated_date": "2023-08-28T10:35:02+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PROVISIONED]": {
+    "last_validated_date": "2023-08-28T10:34:41+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_default_name_for_table": {
+    "last_validated_date": "2023-08-28T10:34:19+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table": {
+    "last_validated_date": "2023-12-01T11:54:13+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table_with_ttl_and_sse": {
+    "last_validated_date": "2024-03-12T15:44:36+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_table_with_ttl_and_sse": {
+    "last_validated_date": "2024-03-12T15:42:18+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_ttl_cdk": {
+    "last_validated_date": "2024-02-14T13:29:07+00:00"
+  }
+}

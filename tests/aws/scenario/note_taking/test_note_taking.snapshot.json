@@ -1,0 +1,862 @@
+{
+  "tests/aws/scenario/note_taking/test_note_taking.py::TestNoteTakingScenario::test_validate_infra_setup": {
+    "recorded-date": "16-04-2024, 08:42:29",
+    "recorded-content": {
+      "describe_stack_resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:1>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Account",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:2>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Deployment",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:3>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Method",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:4>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Method",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:5>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Method",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:6>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Method",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:7>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Method",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:8>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Method",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:9>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Resource",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:10>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Resource",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:11>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::RestApi",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:12>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Stage",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:13>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::DynamoDB::Table",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:14>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:15>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:16>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:17>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:18>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:19>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:20>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:21>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:22>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:23>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:24>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:25>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:26>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:27>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:28>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:29>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:30>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:31>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:32>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:33>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:34>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:35>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:36>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:37>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:38>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:39>",
+            "PhysicalResourceId": "physical-resource-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+            "StackName": "NoteTakingStack",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resource_table": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "noteId",
+              "AttributeType": "S"
+            }
+          ],
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "noteId",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:2>",
+          "TableSizeBytes": 0,
+          "TableStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "fn_0": {
+        "Code": {
+          "Location": "location",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha-256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {
+              "NOTES_TABLE_NAME": "<resource:2>"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:3>",
+          "Runtime": "nodejs18.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "<logical-resource-id:25>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-name": "NoteTakingStack"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "fn_1": {
+        "Code": {
+          "Location": "location",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha-256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {
+              "NOTES_TABLE_NAME": "<resource:2>"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:2>",
+          "FunctionName": "<function-name:2>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:2>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
+          "Runtime": "nodejs18.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "<logical-resource-id:26>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-name": "NoteTakingStack"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "fn_2": {
+        "Code": {
+          "Location": "location",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha-256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {
+              "NOTES_TABLE_NAME": "<resource:2>"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:3>",
+          "FunctionName": "<function-name:3>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:3>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:4>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:6>",
+          "Runtime": "nodejs18.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "<logical-resource-id:27>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-name": "NoteTakingStack"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "fn_3": {
+        "Code": {
+          "Location": "location",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha-256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {
+              "NOTES_TABLE_NAME": "<resource:2>"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:4>",
+          "FunctionName": "<function-name:4>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:4>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:5>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:7>",
+          "Runtime": "nodejs18.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "<logical-resource-id:28>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-name": "NoteTakingStack"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "fn_4": {
+        "Code": {
+          "Location": "location",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha-256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {
+              "NOTES_TABLE_NAME": "<resource:2>"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:5>",
+          "FunctionName": "<function-name:5>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:5>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:6>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:8>",
+          "Runtime": "nodejs18.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:4>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "<logical-resource-id:29>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-name": "NoteTakingStack"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "id",
+        "name": "endpoint",
+        "rootResourceId": "root-resource-id",
+        "tags": {
+          "aws:cloudformation:logical-id": "<logical-resource-id:11>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/NoteTakingStack/<resource:1>",
+          "aws:cloudformation:stack-name": "NoteTakingStack"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_resources": {
+        "items": [
+          {
+            "id": "id",
+            "path": "/"
+          },
+          {
+            "id": "id",
+            "parentId": "parent-id",
+            "path": "/notes",
+            "pathPart": "notes",
+            "resourceMethods": {
+              "GET": {},
+              "POST": {}
+            }
+          },
+          {
+            "id": "id",
+            "parentId": "parent-id",
+            "path": "/notes/{id}",
+            "pathPart": "{id}",
+            "resourceMethods": {
+              "DELETE": {},
+              "GET": {},
+              "OPTIONS": {},
+              "PUT": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+Parameters:
+  SelectedRegion:
+   Type: String
+   Default: east
+   AllowedValues:
+    - east
+    - west
+Mappings:
+  east:
+    region:
+      key: us-east-1
+  west:
+    region:
+      key: us-west-1
+
+Resources:
+  FunctionTest:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::FindInMap:
+         - !Ref SelectedRegion
+         - region
+         - key
+
+Outputs:
+    Result:
+        Value:
+          Fn::GetAtt:
+           - FunctionTest
+           - Value

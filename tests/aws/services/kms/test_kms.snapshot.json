@@ -1,0 +1,1730 @@
+{
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None]": {
+    "recorded-date": "13-04-2023, 11:29:52",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "NumberOfBytes is required."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0]": {
+    "recorded-date": "13-04-2023, 11:29:53",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '0' at 'numberOfBytes' failed to satisfy constraint: Member must have value greater than or equal to 1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025]": {
+    "recorded-date": "13-04-2023, 11:29:54",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1025' at 'numberOfBytes' failed to satisfy constraint: Member must have value less than or equal to 1024"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
+    "recorded-date": "13-04-2023, 11:30:27",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_1 and key spec RSA_2048 cannot encrypt data larger than 214 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_256]": {
+    "recorded-date": "13-04-2023, 11:30:28",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_256 and key spec RSA_2048 cannot encrypt data larger than 190 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_1]": {
+    "recorded-date": "13-04-2023, 11:30:29",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_1 and key spec RSA_3072 cannot encrypt data larger than 342 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_256]": {
+    "recorded-date": "13-04-2023, 11:30:30",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_256 and key spec RSA_3072 cannot encrypt data larger than 318 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_1]": {
+    "recorded-date": "13-04-2023, 11:30:31",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_1 and key spec RSA_4096 cannot encrypt data larger than 470 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_256]": {
+    "recorded-date": "13-04-2023, 11:30:32",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_256 and key spec RSA_4096 cannot encrypt data larger than 446 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[12]": {
+    "recorded-date": "13-04-2023, 11:29:50",
+    "recorded-content": {
+      "result_length": 12
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[44]": {
+    "recorded-date": "13-04-2023, 11:29:50",
+    "recorded-content": {
+      "result_length": 44
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[91]": {
+    "recorded-date": "13-04-2023, 11:29:51",
+    "recorded-content": {
+      "result_length": 91
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[1]": {
+    "recorded-date": "13-04-2023, 11:29:51",
+    "recorded-content": {
+      "result_length": 1
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[1024]": {
+    "recorded-date": "13-04-2023, 11:29:51",
+    "recorded-content": {
+      "result_length": 1024
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key": {
+    "recorded-date": "13-04-2023, 11:29:30",
+    "recorded-content": {
+      "describe-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test key 123",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
+    "recorded-date": "14-06-2024, 13:34:43",
+    "recorded-content": {
+      "describe-key-diff-region-with-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key 'arn:<partition>:kms:<region>:111111111111:key/<key-id:1>' does not exist"
+        },
+        "message": "Key 'arn:<partition>:kms:<region>:111111111111:key/<key-id:1>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-diff-region-with-arn": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid arn <secondary-region>"
+        },
+        "message": "Invalid arn <secondary-region>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-same-specific-region-with-id": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<secondary-region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test key 123",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-same-specific-region-with-arn": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<secondary-region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test key 123",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_does_not_exist": {
+    "recorded-date": "13-04-2023, 11:29:34",
+    "recorded-content": {
+      "describe-nonexistent-key-with-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key '<key-arn>' does not exist"
+        },
+        "message": "Key '<key-arn>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-nonexistent-with-arn": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key '<key-arn>' does not exist"
+        },
+        "message": "Key '<key-arn>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-with-valid-id-mrk": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key 'arn:<partition>:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist"
+        },
+        "message": "Key 'arn:<partition>:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
+    "recorded-date": "07-11-2023, 14:05:57",
+    "recorded-content": {
+      "describe-key-with-invalid-uuid": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'fake-key-id'"
+        },
+        "message": "Invalid keyId 'fake-key-id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-with-invalid-uuid-2": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId '134f2428cec14b25a1ae9048164dba47'"
+        },
+        "message": "Invalid keyId '134f2428cec14b25a1ae9048164dba47'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-with-invalid-uuid-mrk": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'mrk-fake-key-id'"
+        },
+        "message": "Invalid keyId 'mrk-fake-key-id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
+    "recorded-date": "11-04-2024, 15:51:52",
+    "recorded-content": {
+      "describe-key-from-different-region": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key 'arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>' does not exist"
+        },
+        "message": "Key 'arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "replicate-key": {
+        "ReplicaKeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Creating",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": true,
+          "MultiRegionConfiguration": {
+            "MultiRegionKeyType": "REPLICA",
+            "PrimaryKey": {
+              "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
+            },
+            "ReplicaKeys": [
+              {
+                "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+                "Region": "ap-southeast-1"
+              }
+            ]
+          },
+          "Origin": "AWS_KMS"
+        },
+        "ReplicaPolicy": {
+          "Version": "2012-10-17",
+          "Id": "key-default-1",
+          "Statement": [
+            {
+              "Sid": "Enable IAM User Permissions",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::111111111111:root"
+              },
+              "Action": "kms:*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-from-region": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test replicated key",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": true,
+          "MultiRegionConfiguration": {
+            "MultiRegionKeyType": "PRIMARY",
+            "PrimaryKey": {
+              "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
+            },
+            "ReplicaKeys": [
+              {
+                "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+                "Region": "ap-southeast-1"
+              }
+            ]
+          },
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replicated-key": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Creating",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": true,
+          "MultiRegionConfiguration": {
+            "MultiRegionKeyType": "REPLICA",
+            "PrimaryKey": {
+              "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
+            },
+            "ReplicaKeys": [
+              {
+                "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+                "Region": "ap-southeast-1"
+              }
+            ]
+          },
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_alias": {
+    "recorded-date": "13-04-2023, 11:29:27",
+    "recorded-content": {
+      "create_alias": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Alias must start with the prefix \"alias/\". Please see https://docs.aws.amazon.com/kms/latest/developerguide/kms-alias.html"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_256]": {
+    "recorded-date": "13-04-2023, 11:29:59",
+    "recorded-content": {
+      "signature": {
+        "KeyId": "<key-id:1>",
+        "Signature": "<signature>",
+        "SigningAlgorithm": "RSASSA_PSS_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verification": {
+        "KeyId": "<key-id:1>",
+        "SignatureValid": true,
+        "SigningAlgorithm": "RSASSA_PSS_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-digest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Digest is invalid length for algorithm RSASSA_PSS_SHA_256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "bad-signature": {
+        "Error": {
+          "Code": "KMSInvalidSignatureException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_384]": {
+    "recorded-date": "13-04-2023, 11:30:02",
+    "recorded-content": {
+      "signature": {
+        "KeyId": "<key-id:1>",
+        "Signature": "<signature>",
+        "SigningAlgorithm": "RSASSA_PSS_SHA_384",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verification": {
+        "KeyId": "<key-id:1>",
+        "SignatureValid": true,
+        "SigningAlgorithm": "RSASSA_PSS_SHA_384",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-digest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Digest is invalid length for algorithm RSASSA_PSS_SHA_384."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "bad-signature": {
+        "Error": {
+          "Code": "KMSInvalidSignatureException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_512]": {
+    "recorded-date": "13-04-2023, 11:30:05",
+    "recorded-content": {
+      "signature": {
+        "KeyId": "<key-id:1>",
+        "Signature": "<signature>",
+        "SigningAlgorithm": "RSASSA_PSS_SHA_512",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verification": {
+        "KeyId": "<key-id:1>",
+        "SignatureValid": true,
+        "SigningAlgorithm": "RSASSA_PSS_SHA_512",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-digest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Digest is invalid length for algorithm RSASSA_PSS_SHA_512."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "bad-signature": {
+        "Error": {
+          "Code": "KMSInvalidSignatureException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
+    "recorded-date": "13-04-2023, 11:30:09",
+    "recorded-content": {
+      "signature": {
+        "KeyId": "<key-id:1>",
+        "Signature": "<signature>",
+        "SigningAlgorithm": "RSASSA_PKCS1_V1_5_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verification": {
+        "KeyId": "<key-id:1>",
+        "SignatureValid": true,
+        "SigningAlgorithm": "RSASSA_PKCS1_V1_5_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-digest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Digest is invalid length for algorithm RSASSA_PKCS1_V1_5_SHA_256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "bad-signature": {
+        "Error": {
+          "Code": "KMSInvalidSignatureException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
+    "recorded-date": "13-04-2023, 11:30:12",
+    "recorded-content": {
+      "signature": {
+        "KeyId": "<key-id:1>",
+        "Signature": "<signature>",
+        "SigningAlgorithm": "RSASSA_PKCS1_V1_5_SHA_512",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verification": {
+        "KeyId": "<key-id:1>",
+        "SignatureValid": true,
+        "SigningAlgorithm": "RSASSA_PKCS1_V1_5_SHA_512",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-digest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Digest is invalid length for algorithm RSASSA_PKCS1_V1_5_SHA_512."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "bad-signature": {
+        "Error": {
+          "Code": "KMSInvalidSignatureException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P256-ECDSA_SHA_256]": {
+    "recorded-date": "13-04-2023, 11:30:15",
+    "recorded-content": {
+      "signature": {
+        "KeyId": "<key-id:1>",
+        "Signature": "<signature>",
+        "SigningAlgorithm": "ECDSA_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verification": {
+        "KeyId": "<key-id:1>",
+        "SignatureValid": true,
+        "SigningAlgorithm": "ECDSA_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-digest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Digest is invalid length for algorithm ECDSA_SHA_256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "bad-signature": {
+        "Error": {
+          "Code": "KMSInvalidSignatureException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P256-ECDSA_SHA_384]": {
+    "recorded-date": "16-03-2023, 18:57:59",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_SECG_P256K1-ECDSA_SHA_256]": {
+    "recorded-date": "13-04-2023, 11:30:22",
+    "recorded-content": {
+      "signature": {
+        "KeyId": "<key-id:1>",
+        "Signature": "<signature>",
+        "SigningAlgorithm": "ECDSA_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verification": {
+        "KeyId": "<key-id:1>",
+        "SignatureValid": true,
+        "SigningAlgorithm": "ECDSA_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-digest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Digest is invalid length for algorithm ECDSA_SHA_256."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "bad-signature": {
+        "Error": {
+          "Code": "KMSInvalidSignatureException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_SECG_P256K1-ECDSA_SHA_512]": {
+    "recorded-date": "16-03-2023, 18:58:07",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P384-ECDSA_SHA_384]": {
+    "recorded-date": "13-04-2023, 11:30:19",
+    "recorded-content": {
+      "signature": {
+        "KeyId": "<key-id:1>",
+        "Signature": "<signature>",
+        "SigningAlgorithm": "ECDSA_SHA_384",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verification": {
+        "KeyId": "<key-id:1>",
+        "SignatureValid": true,
+        "SigningAlgorithm": "ECDSA_SHA_384",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-digest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Digest is invalid length for algorithm ECDSA_SHA_384."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "bad-signature": {
+        "Error": {
+          "Code": "KMSInvalidSignatureException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key": {
+    "recorded-date": "13-04-2023, 11:34:18",
+    "recorded-content": {
+      "create-hmac-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "HMAC_256",
+        "Description": "test key",
+        "Enabled": true,
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "HMAC_256",
+        "KeyState": "Enabled",
+        "KeyUsage": "GENERATE_VERIFY_MAC",
+        "MacAlgorithms": [
+          "HMAC_SHA_256"
+        ],
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      },
+      "describe-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "HMAC_256",
+        "Description": "test key",
+        "Enabled": true,
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "HMAC_256",
+        "KeyState": "Enabled",
+        "KeyUsage": "GENERATE_VERIFY_MAC",
+        "MacAlgorithms": [
+          "HMAC_SHA_256"
+        ],
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key_invalid_operations": {
+    "recorded-date": "13-04-2023, 11:31:06",
+    "recorded-content": {
+      "create-hmac-key-without-key-usage": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "You must specify a KeyUsage value for all KMS keys except for symmetric encryption keys."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-hmac-key-invalid-spec": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'HMAC_random' at 'keySpec' failed to satisfy constraint: Member must satisfy enum value set: [RSA_2048, ECC_NIST_P384, ECC_NIST_P256, ECC_NIST_P521, HMAC_384, RSA_3072, ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-hmac-key-invalid-key-usage": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'RANDOM' at 'keyUsage' failed to satisfy constraint: Member must satisfy enum value set: [ENCRYPT_DECRYPT, SIGN_VERIFY, GENERATE_VERIFY_MAC]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
+    "recorded-date": "07-11-2023, 14:06:46",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "<key-id:1>",
+        "Mac": "<mac>",
+        "MacAlgorithm": "HMAC_SHA_224",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "KeyId": "<key-id:1>",
+        "MacAlgorithm": "HMAC_SHA_224",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'key_id'"
+        },
+        "message": "Invalid keyId 'key_id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'key_id'"
+        },
+        "message": "Invalid keyId 'key_id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
+    "recorded-date": "07-11-2023, 14:06:48",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "<key-id:1>",
+        "Mac": "<mac>",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "KeyId": "<key-id:1>",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'key_id'"
+        },
+        "message": "Invalid keyId 'key_id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'key_id'"
+        },
+        "message": "Invalid keyId 'key_id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
+    "recorded-date": "07-11-2023, 14:06:51",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "<key-id:1>",
+        "Mac": "<mac>",
+        "MacAlgorithm": "HMAC_SHA_384",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "KeyId": "<key-id:1>",
+        "MacAlgorithm": "HMAC_SHA_384",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'key_id'"
+        },
+        "message": "Invalid keyId 'key_id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'key_id'"
+        },
+        "message": "Invalid keyId 'key_id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
+    "recorded-date": "07-11-2023, 14:06:52",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "<key-id:1>",
+        "Mac": "<mac>",
+        "MacAlgorithm": "HMAC_SHA_512",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "KeyId": "<key-id:1>",
+        "MacAlgorithm": "HMAC_SHA_512",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'key_id'"
+        },
+        "message": "Invalid keyId 'key_id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 'key_id'"
+        },
+        "message": "Invalid keyId 'key_id'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
+    "recorded-date": "13-04-2023, 11:31:14",
+    "recorded-content": {
+      "generate-mac": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "Algorithm HMAC_SHA_256 is incompatible with key spec HMAC_224."
+        },
+        "message": "Algorithm HMAC_SHA_256 is incompatible with key spec HMAC_224.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_256-INVALID]": {
+    "recorded-date": "13-04-2023, 11:31:15",
+    "recorded-content": {
+      "generate-mac": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID' at 'macAlgorithm' failed to satisfy constraint: Member must satisfy enum value set: [HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_256-some different important message]": {
+    "recorded-date": "13-04-2023, 11:31:17",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "<key-id:1>",
+        "Mac": "<mac>",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "Error": {
+          "Code": "KMSInvalidMacException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_512-some important message]": {
+    "recorded-date": "13-04-2023, 11:31:18",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "<key-id:1>",
+        "Mac": "<mac>",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "Algorithm HMAC_SHA_512 is incompatible with key spec HMAC_256."
+        },
+        "message": "Algorithm HMAC_SHA_512 is incompatible with key spec HMAC_256.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
+    "recorded-date": "13-04-2023, 11:31:19",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "<key-id:1>",
+        "Mac": "<mac>",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID' at 'macAlgorithm' failed to satisfy constraint: Member must satisfy enum value set: [HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
+    "recorded-date": "24-01-2024, 10:44:12",
+    "recorded-content": {
+      "created-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "<description:1>",
+        "Enabled": false,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "PendingImport",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
+      },
+      "encrypt-before-import-error": {
+        "Error": {
+          "Code": "KMSInvalidStateException",
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import."
+        },
+        "message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-before-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "PendingImport",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "import-expiring-key-without-valid-to": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-after-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "<description:1>",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-deleted-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "PendingImport",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "encrypt-after-delete-error": {
+        "Error": {
+          "Code": "KMSInvalidStateException",
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import."
+        },
+        "message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
+    "recorded-date": "24-01-2024, 10:44:14",
+    "recorded-content": {
+      "created-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "ECC_NIST_P256",
+        "Description": "<description:1>",
+        "Enabled": false,
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "ECC_NIST_P256",
+        "KeyState": "PendingImport",
+        "KeyUsage": "SIGN_VERIFY",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL",
+        "SigningAlgorithms": [
+          "ECDSA_SHA_256"
+        ]
+      },
+      "describe-key-before-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "ECC_NIST_P256",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "ECC_NIST_P256",
+          "KeyState": "PendingImport",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "ECDSA_SHA_256"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "ECC_NIST_P256",
+          "Description": "<description:1>",
+          "Enabled": true,
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "ECC_NIST_P256",
+          "KeyState": "Enabled",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "ECDSA_SHA_256"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-deleted-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "ECC_NIST_P256",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "ECC_NIST_P256",
+          "KeyState": "PendingImport",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "ECDSA_SHA_256"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_error_messaging_for_invalid_keys": {
+    "recorded-date": "13-04-2023, 11:31:23",
+    "recorded-content": {
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for GenerateMac."
+        },
+        "message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for GenerateMac.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sign-invalid-key-id": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is GENERATE_VERIFY_MAC which is not valid for Sign."
+        },
+        "message": "<key-arn> key usage is GENERATE_VERIFY_MAC which is not valid for Sign.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-invalid-key-id": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for Verify."
+        },
+        "message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for Verify.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "encrypt-invalid-key-id": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is SIGN_VERIFY which is not valid for Encrypt."
+        },
+        "message": "<key-arn> key usage is SIGN_VERIFY which is not valid for Encrypt.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "decrypt-invalid-key-id": {
+        "Error": {
+          "Code": "IncorrectKeyException",
+          "Message": "The key ID in the request does not identify a CMK that can perform this operation."
+        },
+        "message": "The key ID in the request does not identify a CMK that can perform this operation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_plaintext_size_for_encrypt": {
+    "recorded-date": "13-04-2023, 11:31:24",
+    "recorded-content": {
+      "invalid-plaintext-size-encrypt": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value at 'plaintext' failed to satisfy constraint: Member must have length less than or equal to 4096"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_without_plaintext": {
+    "recorded-date": "11-05-2023, 14:40:23",
+    "recorded-content": {
+      "generate-data-key-pair-without-plaintext": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
+        "KeyPairSpec": "RSA_2048",
+        "PrivateKeyCiphertextBlob": "private-key-ciphertext-blob",
+        "PublicKey": "public-key",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair": {
+    "recorded-date": "11-05-2023, 14:40:23",
+    "recorded-content": {
+      "generate-data-key-pair": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
+        "KeyPairSpec": "RSA_2048",
+        "PrivateKeyCiphertextBlob": "private-key-ciphertext-blob",
+        "PrivateKeyPlaintext": "private-key-plaintext",
+        "PublicKey": "public-key",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key": {
+    "recorded-date": "11-05-2023, 14:40:24",
+    "recorded-content": {
+      "generate-data-key-result": {
+        "CiphertextBlob": "ciphertext-blob",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
+        "Plaintext": "plaintext",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_without_plaintext": {
+    "recorded-date": "11-05-2023, 14:40:24",
+    "recorded-content": {
+      "generate-data-key-without-plaintext": {
+        "CiphertextBlob": "ciphertext-blob",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
+    "recorded-date": "11-05-2023, 22:46:49",
+    "recorded-content": {
+      "encrypt_response": {
+        "CiphertextBlob": "ciphertext-blob",
+        "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "KeyId": "<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "decrypt_response_with_encryption_context": {
+        "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "KeyId": "<key-id:1>",
+        "Plaintext": "plaintext",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "decrypt_response_without_encryption_context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key": {
+    "recorded-date": "16-06-2023, 12:47:28",
+    "recorded-content": {
+      "decrypt-without-encryption-context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_without_plaintext": {
+    "recorded-date": "16-06-2023, 12:47:45",
+    "recorded-content": {
+      "decrypt-without-encryption-context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair": {
+    "recorded-date": "16-06-2023, 17:51:27",
+    "recorded-content": {
+      "decrypt-without-encryption-context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair_without_plaintext": {
+    "recorded-date": "16-06-2023, 17:51:43",
+    "recorded-content": {
+      "decrypt-without-encryption-context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import": {
+    "recorded-date": "25-10-2023, 12:29:27",
+    "recorded-content": {
+      "response-error": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": "<key-arn> origin is AWS_KMS which is not valid for this operation."
+        },
+        "message": "<key-arn> origin is AWS_KMS which is not valid for this operation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_multi_region_key": {
+    "recorded-date": "11-04-2024, 14:46:26",
+    "recorded-content": {
+      "create_multi_region_key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test multi region key",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": true,
+        "MultiRegionConfiguration": {
+          "MultiRegionKeyType": "PRIMARY",
+          "PrimaryKey": {
+            "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+            "Region": "<region>"
+          },
+          "ReplicaKeys": []
+        },
+        "Origin": "AWS_KMS"
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_non_multi_region_keys_should_not_have_multi_region_properties": {
+    "recorded-date": "11-04-2024, 15:47:59",
+    "recorded-content": {
+      "non_multi_region_keys_should_not_have_multi_region_properties": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test non multi region key",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      }
+    }
+  }
+}

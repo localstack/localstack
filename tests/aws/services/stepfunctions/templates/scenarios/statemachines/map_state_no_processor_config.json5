@@ -1,0 +1,31 @@
+{
+  "Comment": "MAP_STATE_NO_PROCESSOR_CONFIG",
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "Result": [
+        1,
+        2,
+        3,
+      ],
+      "ResultPath": "$.arr",
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "ItemsPath": "$.arr",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true,
+    },
+  }
+}

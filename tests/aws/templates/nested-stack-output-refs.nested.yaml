@@ -1,0 +1,13 @@
+Parameters:
+  NestedBucketName:
+    Type: String
+Resources:
+  CustomBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Ref: NestedBucketName
+Outputs:
+  InnerCustomOutput:
+    Value:
+      Ref: CustomBucket

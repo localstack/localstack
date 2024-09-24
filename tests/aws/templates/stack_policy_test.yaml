@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  TopicName:
+    Type: String
+  BucketName:
+    Type: String
+
+Resources:
+  topic123:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Ref: TopicName
+
+  bucket123:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Ref: BucketName

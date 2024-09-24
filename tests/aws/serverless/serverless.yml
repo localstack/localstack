@@ -1,0 +1,233 @@
+service: sls-test
+
+provider:
+  stage: "${opt:stage, self:provider.environment.stage}"
+  name: "aws"
+  memorySize: 384
+  versionFunctions: false
+  timeout: 900
+  runtime: "nodejs16.x"
+  apiGateway:
+    minimumCompressionSize: 1024
+    shouldStartNameWithService: true
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 'sqs:ReceiveMessage'
+            - 'sqs:DeleteMessage'
+          Resource:
+            - "arn:aws:sqs:::${self:service}-${opt:stage}-CreateQueue"
+        - Effect: 'Allow'
+          Action:
+            - 'sqs:SendMessage'
+          Resource: '*'
+        - Effect: 'Allow'
+          Action:
+            - 'dynamodb:DeleteItem'
+            - 'dynamodb:PutItem'
+            - 'dynamodb:Query'
+            - 'dynamodb:Scan'
+          Resource:
+            - "arn:aws:dynamodb:::jizo.${opt:stage}.loginsTable"
+            - "arn:aws:dynamodb:::jizo.${opt:stage}.authAuditTrailTable"
+        - Effect: 'Allow'
+          Action:
+            - 'lambda:InvokeFunction'
+            - 'lambda:InvokeAsync'
+          Resource:
+            - "arn:aws:lambda:::function:jizo-accts-prod-userGet:*"
+        - Effect: 'Allow'
+          Action:
+            - 'sns:Subscribe'
+          Resource: '*'
+  eventBridge:
+    useCloudFormation: true
+
+resources:
+  Resources:
+    TestTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Delete
+      Properties:
+        TableName: 'Test'
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+
+    KinesisStream:
+      Type: AWS::Kinesis::Stream
+      DeletionPolicy: Delete
+      Properties:
+        Name: KinesisTestStream
+        ShardCount: 1
+    KinesisStreamConsumer:
+      Type: AWS::Kinesis::StreamConsumer
+      DeletionPolicy: Delete
+      Properties:
+        ConsumerName: stream-consumer1
+        StreamARN: !GetAtt 'KinesisStream.Arn'
+
+    # DynamoDB configuration
+    loginsTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Delete
+      Properties:
+        TableName: "jizo.${opt:stage}.loginsTable"
+        AttributeDefinitions:
+          - AttributeName: object_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: object_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    authAuditTrailTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Delete
+      Properties:
+        TableName: "jizo.${opt:stage}.authAuditTrailTable"
+        AttributeDefinitions:
+          - AttributeName: object_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: object_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    # incoming SQS configuration
+    CreateQueue:
+      Type: AWS::SQS::Queue
+      DeletionPolicy: Delete
+      Properties:
+        QueueName: "${self:service}-${opt:stage}-CreateQueue"
+        VisibilityTimeout: 1080
+        MessageRetentionPeriod: 2160
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt:
+              - CreateBackupQueue
+              - Arn
+          maxReceiveCount: 3
+    CreateBackupQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: "${self:service}-${opt:stage}-CreateBackupQueue"
+
+    TestBucket:
+      Type: AWS::S3::Bucket
+      DeletionPolicy: Delete
+      Properties:
+        BucketName:
+          !Sub "testing-bucket-${AWS::StackName}-${AWS::Region}"
+
+functions:
+  tests:
+    handler: "handler.tests"
+    maximumEventAge: 7200
+    maximumRetryAttempts: 2
+  test:
+    handler: "handler.test"
+    maximumEventAge: 7200
+    maximumRetryAttempts: 2
+    events:
+      - cloudwatchEvent:
+          name: sls-test-cf-event
+          event:
+            source:
+              - aws.cloudformation
+            detail-type:
+              - "AWS API Call from CloudFormation"
+            detail:
+              eventName:
+                - CreateStack
+                - UpdateStack
+      - http:
+          path: /test/v1
+          method: get
+          integration: lambda-proxy
+
+      - eventBridge:
+          eventBus: customBus
+          pattern:
+            source:
+            - "customSource"
+
+  dynamodbStreamHandler:
+    handler: handler.processItem
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt:
+              - TestTable
+              - StreamArn
+          batchSize: 10
+          startingPosition: TRIM_HORIZON
+  kinesisStreamHandler:
+    handler: handler.processKinesis
+    events:
+      - stream:
+          type: kinesis
+          arn: !GetAtt 'KinesisStream.Arn'
+          batchSize: 10
+          startingPosition: TRIM_HORIZON
+  kinesisConsumerHandler:
+    handler: handler.processKinesis
+    runtime: python3.9
+    events:
+      - stream:
+          type: kinesis
+          arn: !GetAtt 'KinesisStream.Arn'
+          batchWindow: 10
+          parallelizationFactor: 2
+          maximumRetryAttempts: 2
+          consumer:
+            Fn::GetAtt:
+              - KinesisStreamConsumer
+              - StreamARN
+          maximumRecordAgeInSeconds: 120
+          startingPosition: TRIM_HORIZON
+          enabled: true
+  queueHandler:
+    handler: handler.createQueue
+    description: "To handle create new login"
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - CreateQueue
+              - Arn
+  router:
+    handler: handler.createHttpRouter
+    description: 'primary REST related handlers for this service'
+    events:
+    - http:
+        path: foo/bar
+        method: post
+    - http:
+        path: foo/bar
+        method: put
+    - http:
+        path: foo/bar
+        method: delete
+
+plugins:
+  - serverless-localstack
+
+custom:
+  localstack:
+    host: http://localhost.localstack.cloud
+    stages: local

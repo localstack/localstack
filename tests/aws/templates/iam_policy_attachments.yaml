@@ -1,0 +1,70 @@
+Resources:
+  roleC7B7E775:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: {{ role_name }}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS: "*"
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AdministratorAccess
+      Policies:
+        - PolicyName: {{ role_name }}-s3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:*"
+                Resource:
+                  - "arn:aws:s3:::bucket"
+                  - !Ref AWS::NoValue
+  serviceLinkedRole754232:
+    Type: AWS::IAM::ServiceLinkedRole
+    Properties:
+      AWSServiceName: elasticbeanstalk.amazonaws.com
+      Description: service linked role {{ service_linked_role_id }}
+  groupC397F008:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: {{ group_name }}
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AdministratorAccess
+  user2C2B57AE:
+    Type: AWS::IAM::User
+    Properties:
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AdministratorAccess
+      UserName: {{ user_name }}
+  policyE16B4B70:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: "*"
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: {{ policy_name }}
+      Groups:
+        - Ref: groupC397F008
+      Roles:
+        - Ref: roleC7B7E775
+      Users:
+        - Ref: user2C2B57AE

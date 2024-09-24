@@ -1,0 +1,766 @@
+{
+  "Resources": {
+    "CreditBureauLambdaServiceRole5747B731": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      }
+    },
+    "CreditBureauLambda41F5F0B1": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "const getRandomInt = (min, max) => {\n    return min + Math.floor(Math.random() * (max - min));\n};\nconst min_score = 300;\nconst max_score = 900;\n\nconst getHistoryForSSN = (ssn) => {\n    // here should be the logic to retrieve the history of the customer\n    if (ssn.startsWith(\"123\")) {\n        return 10;\n    } else {\n        return 13;\n    }\n};\n\nconst getScoreForSSN = (ssn) => {\n    // here should be the logic to retrieve the score of the customer\n    if (ssn.startsWith(\"123\")) {\n        return max_score;\n    } else {\n        return min_score;\n    }\n};\n\nexports.handler = async (event) => {\n\n    var ssn_regex = new RegExp(\"^\\\\d{3}-\\\\d{2}-\\\\d{4}$\");\n\n\n    console.log(\"received event \" + JSON.stringify(event))\n    if (ssn_regex.test(event.SSN)) {\n        console.log(\"ssn matches pattern\")\n        return {\n            statusCode: 200,\n            request_id: event.RequestId,\n            body: {\n                SSN: event.SSN,\n                score: getScoreForSSN(event.SSN),\n                history: getHistoryForSSN(event.SSN),\n            },\n        };\n    } else {\n        console.log(\"ssn not matching pattern\")\n        return {\n            statusCode: 400,\n            request_id: event.RequestId,\n            body: {\n                SSN: event.SSN,\n            },\n        };\n    }\n};\n"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "CreditBureauLambdaServiceRole5747B731",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      },
+      "DependsOn": [
+        "CreditBureauLambdaServiceRole5747B731"
+      ]
+    },
+    "LoanBrokerBanksTableB671E6A0": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "Type",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "Type",
+            "KeyType": "HASH"
+          }
+        ],
+        "TableName": "LoanBrokerBanksTable",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "LoanBrokerLogGroup0AC7392D": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 731,
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "LoanBrokerRole70979761": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::FindInMap": [
+                    "ServiceprincipalMap",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "states"
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      }
+    },
+    "LoanBrokerRoleDefaultPolicy4FA71B4B": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "logs:CreateLogDelivery",
+                "logs:GetLogDelivery",
+                "logs:UpdateLogDelivery",
+                "logs:DeleteLogDelivery",
+                "logs:ListLogDeliveries",
+                "logs:PutResourcePolicy",
+                "logs:DescribeResourcePolicies",
+                "logs:DescribeLogGroups"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+                "xray:GetSamplingRules",
+                "xray:GetSamplingTargets"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "CreditBureauLambda41F5F0B1",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "CreditBureauLambda41F5F0B1",
+                          "Arn"
+                        ]
+                      },
+                      ":*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":dynamodb:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":table/",
+                    {
+                      "Ref": "LoanBrokerBanksTableB671E6A0"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "BankRecipientPawnShop487E3BD8",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "BankRecipientPawnShop487E3BD8",
+                          "Arn"
+                        ]
+                      },
+                      ":*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "BankRecipientUniversal8F27A740",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "BankRecipientUniversal8F27A740",
+                          "Arn"
+                        ]
+                      },
+                      ":*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "BankRecipientPremium36050019",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "BankRecipientPremium36050019",
+                          "Arn"
+                        ]
+                      },
+                      ":*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "LoanBrokerRoleDefaultPolicy4FA71B4B",
+        "Roles": [
+          {
+            "Ref": "LoanBrokerRole70979761"
+          }
+        ]
+      }
+    },
+    "LoanBroker641FC9A8": {
+      "Type": "AWS::StepFunctions::StateMachine",
+      "Properties": {
+        "DefinitionString": {
+          "Fn::Join": [
+            "",
+            [
+              "{\"StartAt\":\"Get Credit Score from credit bureau\",\"States\":{\"Get Credit Score from credit bureau\":{\"Next\":\"Fetch Bank Addresses from database\",\"Type\":\"Task\",\"ResultPath\":\"$.Credit\",\"ResultSelector\":{\"Score.$\":\"$.Payload.body.score\",\"History.$\":\"$.Payload.body.history\"},\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
+              {
+                "Fn::GetAtt": [
+                  "CreditBureauLambda41F5F0B1",
+                  "Arn"
+                ]
+              },
+              "\",\"Payload\":{\"SSN.$\":\"$.SSN\",\"RequestId.$\":\"$$.Execution.Id\"}}},\"Fetch Bank Addresses from database\":{\"Next\":\"Get all bank quotes\",\"Type\":\"Task\",\"ResultPath\":\"$.Banks\",\"ResultSelector\":{\"BankAddress.$\":\"$.Item.BankAddress.L[*].S\"},\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::dynamodb:getItem\",\"Parameters\":{\"Key\":{\"Type\":{\"S\":\"Home\"}},\"TableName\":\"",
+              {
+                "Ref": "LoanBrokerBanksTableB671E6A0"
+              },
+              "\",\"ConsistentRead\":false}},\"Get all bank quotes\":{\"Type\":\"Map\",\"ResultPath\":\"$.Quotes\",\"End\":true,\"Parameters\":{\"function.$\":\"$$.Map.Item.Value\",\"SSN.$\":\"$.SSN\",\"Amount.$\":\"$.Amount\",\"Term.$\":\"$.Term\",\"Credit.$\":\"$.Credit\"},\"Iterator\":{\"StartAt\":\"Get individual bank quotes\",\"States\":{\"Get individual bank quotes\":{\"End\":true,\"Type\":\"Task\",\"Resource\":\"arn:aws:states:::lambda:invoke\",\"Parameters\":{\"FunctionName.$\":\"$.function\",\"Payload\":{\"SSN.$\":\"$.SSN\",\"Amount.$\":\"$.Amount\",\"Term.$\":\"$.Term\",\"Credit.$\":\"$.Credit\"}},\"ResultSelector\":{\"Quote.$\":\"$.Payload\"}}}},\"ItemsPath\":\"$.Banks.BankAddress\"}},\"TimeoutSeconds\":300}"
+            ]
+          ]
+        },
+        "LoggingConfiguration": {
+          "Destinations": [
+            {
+              "CloudWatchLogsLogGroup": {
+                "LogGroupArn": {
+                  "Fn::GetAtt": [
+                    "LoanBrokerLogGroup0AC7392D",
+                    "Arn"
+                  ]
+                }
+              }
+            }
+          ],
+          "IncludeExecutionData": true,
+          "Level": "ALL"
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "LoanBrokerRole70979761",
+            "Arn"
+          ]
+        },
+        "StateMachineType": "STANDARD",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ],
+        "TracingConfiguration": {
+          "Enabled": true
+        }
+      },
+      "DependsOn": [
+        "LoanBrokerRoleDefaultPolicy4FA71B4B",
+        "LoanBrokerRole70979761"
+      ],
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "BankRecipientPawnShopServiceRoleF9C28899": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      }
+    },
+    "BankRecipientPawnShop487E3BD8": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "/**\n    Each bank will vary its behavior by the following parameters:\n\n    MIN_CREDIT_SCORE - the customer's minimum credit score required to receive a quote from this bank.\n    MAX_LOAN_AMOUNT - the maximum amount the bank is willing to lend to a customer.\n    BASE_RATE - the minimum rate the bank might give. The actual rate increases for a lower credit score and some randomness.\n    BANK_ID - as the loan broker processes multiple responses, knowing which bank supplied the quote will be handy.\n */\n\nfunction calcRate(amount, term, score, history) {\n    if (amount <= process.env.MAX_LOAN_AMOUNT && score >= process.env.MIN_CREDIT_SCORE) {\n        return parseFloat(process.env.BASE_RATE) + history * ((1000 - score) / 100.0);\n    }\n}\n\nexports.handler = async (event) => {\n    console.log(\"Received request for %s\", process.env.BANK_ID);\n    console.log(\"Received event:\", JSON.stringify(event));\n\n    const amount = event.Amount;\n    const term = event.Term;\n    const score = event.Credit.Score;\n    const history = event.Credit.History;\n\n    const bankId = process.env.BANK_ID;\n\n    console.log(\"Loan Request over %d at credit score %d\", amount, score);\n    console.log(\"Received term: %d, history: %d\", term, history);\n    const rate = calcRate(amount, term, score, history);\n    if (rate) {\n        const response = { rate: rate, bankId: bankId };\n        console.log(response);\n        return response;\n    } else {\n        console.log(\"Rejecting Loan\");\n    }\n};\n"
+        },
+        "Environment": {
+          "Variables": {
+            "BANK_ID": "PawnShop",
+            "BASE_RATE": "5",
+            "MAX_LOAN_AMOUNT": "500000",
+            "MIN_CREDIT_SCORE": "400"
+          }
+        },
+        "FunctionName": "BankRecipientPawnShop",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "BankRecipientPawnShopServiceRoleF9C28899",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      },
+      "DependsOn": [
+        "BankRecipientPawnShopServiceRoleF9C28899"
+      ]
+    },
+    "BankRecipientUniversalServiceRoleD0A4869D": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      }
+    },
+    "BankRecipientUniversal8F27A740": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "/**\n    Each bank will vary its behavior by the following parameters:\n\n    MIN_CREDIT_SCORE - the customer's minimum credit score required to receive a quote from this bank.\n    MAX_LOAN_AMOUNT - the maximum amount the bank is willing to lend to a customer.\n    BASE_RATE - the minimum rate the bank might give. The actual rate increases for a lower credit score and some randomness.\n    BANK_ID - as the loan broker processes multiple responses, knowing which bank supplied the quote will be handy.\n */\n\nfunction calcRate(amount, term, score, history) {\n    if (amount <= process.env.MAX_LOAN_AMOUNT && score >= process.env.MIN_CREDIT_SCORE) {\n        return parseFloat(process.env.BASE_RATE) + history * ((1000 - score) / 100.0);\n    }\n}\n\nexports.handler = async (event) => {\n    console.log(\"Received request for %s\", process.env.BANK_ID);\n    console.log(\"Received event:\", JSON.stringify(event));\n\n    const amount = event.Amount;\n    const term = event.Term;\n    const score = event.Credit.Score;\n    const history = event.Credit.History;\n\n    const bankId = process.env.BANK_ID;\n\n    console.log(\"Loan Request over %d at credit score %d\", amount, score);\n    console.log(\"Received term: %d, history: %d\", term, history);\n    const rate = calcRate(amount, term, score, history);\n    if (rate) {\n        const response = { rate: rate, bankId: bankId };\n        console.log(response);\n        return response;\n    } else {\n        console.log(\"Rejecting Loan\");\n    }\n};\n"
+        },
+        "Environment": {
+          "Variables": {
+            "BANK_ID": "Universal",
+            "BASE_RATE": "4",
+            "MAX_LOAN_AMOUNT": "700000",
+            "MIN_CREDIT_SCORE": "500"
+          }
+        },
+        "FunctionName": "BankRecipientUniversal",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "BankRecipientUniversalServiceRoleD0A4869D",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      },
+      "DependsOn": [
+        "BankRecipientUniversalServiceRoleD0A4869D"
+      ]
+    },
+    "BankRecipientPremiumServiceRole4E49E640": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      }
+    },
+    "BankRecipientPremium36050019": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "/**\n    Each bank will vary its behavior by the following parameters:\n\n    MIN_CREDIT_SCORE - the customer's minimum credit score required to receive a quote from this bank.\n    MAX_LOAN_AMOUNT - the maximum amount the bank is willing to lend to a customer.\n    BASE_RATE - the minimum rate the bank might give. The actual rate increases for a lower credit score and some randomness.\n    BANK_ID - as the loan broker processes multiple responses, knowing which bank supplied the quote will be handy.\n */\n\nfunction calcRate(amount, term, score, history) {\n    if (amount <= process.env.MAX_LOAN_AMOUNT && score >= process.env.MIN_CREDIT_SCORE) {\n        return parseFloat(process.env.BASE_RATE) + history * ((1000 - score) / 100.0);\n    }\n}\n\nexports.handler = async (event) => {\n    console.log(\"Received request for %s\", process.env.BANK_ID);\n    console.log(\"Received event:\", JSON.stringify(event));\n\n    const amount = event.Amount;\n    const term = event.Term;\n    const score = event.Credit.Score;\n    const history = event.Credit.History;\n\n    const bankId = process.env.BANK_ID;\n\n    console.log(\"Loan Request over %d at credit score %d\", amount, score);\n    console.log(\"Received term: %d, history: %d\", term, history);\n    const rate = calcRate(amount, term, score, history);\n    if (rate) {\n        const response = { rate: rate, bankId: bankId };\n        console.log(response);\n        return response;\n    } else {\n        console.log(\"Rejecting Loan\");\n    }\n};\n"
+        },
+        "Environment": {
+          "Variables": {
+            "BANK_ID": "Premium",
+            "BASE_RATE": "3",
+            "MAX_LOAN_AMOUNT": "900000",
+            "MIN_CREDIT_SCORE": "600"
+          }
+        },
+        "FunctionName": "BankRecipientPremium",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "BankRecipientPremiumServiceRole4E49E640",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs18.x",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "CDK Loan Broker"
+          },
+          {
+            "Key": "Stackname",
+            "Value": "LoanBroker-RecipientList"
+          }
+        ]
+      },
+      "DependsOn": [
+        "BankRecipientPremiumServiceRole4E49E640"
+      ]
+    }
+  },
+  "Outputs": {
+    "LoanBrokerArn": {
+      "Value": {
+        "Ref": "LoanBroker641FC9A8"
+      }
+    },
+    "LogGroupName": {
+      "Value": {
+        "Ref": "LoanBrokerLogGroup0AC7392D"
+      }
+    },
+    "TableName": {
+      "Value": {
+        "Ref": "LoanBrokerBanksTableB671E6A0"
+      }
+    }
+  },
+  "Mappings": {
+    "ServiceprincipalMap": {
+      "af-south-1": {
+        "states": "states.af-south-1.amazonaws.com"
+      },
+      "ap-east-1": {
+        "states": "states.ap-east-1.amazonaws.com"
+      },
+      "ap-northeast-1": {
+        "states": "states.ap-northeast-1.amazonaws.com"
+      },
+      "ap-northeast-2": {
+        "states": "states.ap-northeast-2.amazonaws.com"
+      },
+      "ap-northeast-3": {
+        "states": "states.ap-northeast-3.amazonaws.com"
+      },
+      "ap-south-1": {
+        "states": "states.ap-south-1.amazonaws.com"
+      },
+      "ap-south-2": {
+        "states": "states.ap-south-2.amazonaws.com"
+      },
+      "ap-southeast-1": {
+        "states": "states.ap-southeast-1.amazonaws.com"
+      },
+      "ap-southeast-2": {
+        "states": "states.ap-southeast-2.amazonaws.com"
+      },
+      "ap-southeast-3": {
+        "states": "states.ap-southeast-3.amazonaws.com"
+      },
+      "ap-southeast-4": {
+        "states": "states.ap-southeast-4.amazonaws.com"
+      },
+      "ca-central-1": {
+        "states": "states.ca-central-1.amazonaws.com"
+      },
+      "cn-north-1": {
+        "states": "states.cn-north-1.amazonaws.com"
+      },
+      "cn-northwest-1": {
+        "states": "states.cn-northwest-1.amazonaws.com"
+      },
+      "eu-central-1": {
+        "states": "states.eu-central-1.amazonaws.com"
+      },
+      "eu-central-2": {
+        "states": "states.eu-central-2.amazonaws.com"
+      },
+      "eu-north-1": {
+        "states": "states.eu-north-1.amazonaws.com"
+      },
+      "eu-south-1": {
+        "states": "states.eu-south-1.amazonaws.com"
+      },
+      "eu-south-2": {
+        "states": "states.eu-south-2.amazonaws.com"
+      },
+      "eu-west-1": {
+        "states": "states.eu-west-1.amazonaws.com"
+      },
+      "eu-west-2": {
+        "states": "states.eu-west-2.amazonaws.com"
+      },
+      "eu-west-3": {
+        "states": "states.eu-west-3.amazonaws.com"
+      },
+      "il-central-1": {
+        "states": "states.il-central-1.amazonaws.com"
+      },
+      "me-central-1": {
+        "states": "states.me-central-1.amazonaws.com"
+      },
+      "me-south-1": {
+        "states": "states.me-south-1.amazonaws.com"
+      },
+      "sa-east-1": {
+        "states": "states.sa-east-1.amazonaws.com"
+      },
+      "us-east-1": {
+        "states": "states.us-east-1.amazonaws.com"
+      },
+      "us-east-2": {
+        "states": "states.us-east-2.amazonaws.com"
+      },
+      "us-gov-east-1": {
+        "states": "states.us-gov-east-1.amazonaws.com"
+      },
+      "us-gov-west-1": {
+        "states": "states.us-gov-west-1.amazonaws.com"
+      },
+      "us-iso-east-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-iso-west-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-isob-east-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-west-1": {
+        "states": "states.us-west-1.amazonaws.com"
+      },
+      "us-west-2": {
+        "states": "states.us-west-2.amazonaws.com"
+      }
+    }
+  }
+}

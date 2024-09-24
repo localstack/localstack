@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_cfn_handle_sqs_resource": {
+    "last_validated_date": "2024-07-03T20:03:51+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_sqs_fifo_queue_generates_valid_name": {
+    "last_validated_date": "2024-05-15T02:01:00+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_sqs_non_fifo_queue_generates_valid_name": {
+    "last_validated_date": "2024-05-15T01:59:34+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_sqs_queue_policy": {
+    "last_validated_date": "2024-07-03T19:49:04+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_queue_no_change": {
+    "last_validated_date": "2023-12-08T20:11:26+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_sqs_queuepolicy": {
+    "last_validated_date": "2024-03-27T20:30:23+00:00"
+  }
+}

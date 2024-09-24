@@ -1,0 +1,1533 @@
+{
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
+    "recorded-date": "16-04-2024, 08:16:02",
+    "recorded-content": {
+      "url_resource": {
+        "StackResourceDetail": {
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          },
+          "LastUpdatedTimestamp": "timestamp",
+          "LogicalResourceId": "<url_logical_resource_id>",
+          "Metadata": {},
+          "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceType": "AWS::Lambda::Url",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url:1>",
+        "InvokeMode": "BUFFERED",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exception_url_config_nonexistent_version": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "url_config_arn": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url:1>",
+        "InvokeMode": "BUFFERED",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response_headers": {
+        "connection": "keep-alive",
+        "content-length": "17",
+        "content-type": "application/json",
+        "date": "date",
+        "x-amzn-requestid": "<uuid:1>",
+        "x-amzn-trace-id": "x-amzn-trace-id"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_alias": {
+    "recorded-date": "09-04-2024, 07:19:19",
+    "recorded-content": {
+      "stack_resource_descriptions": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "FunctionAlias",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Alias",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "LambdaFunction",
+            "PhysicalResourceId": "<function-name>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyFnServiceRole",
+            "PhysicalResourceId": "<role-name>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "Version",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Version",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "Alias": {
+        "AliasArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "Description": "",
+        "FunctionVersion": "1",
+        "Name": "<alias-name>",
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
+    "recorded-date": "09-04-2024, 07:26:03",
+    "recorded-content": {
+      "stack_resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fn5FF616E3",
+            "PhysicalResourceId": "<resource:4>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnAllowInvokeLambdaPermissionsStacktopicF723B1A748672DB5",
+            "PhysicalResourceId": "<sid:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRole5D180AFD",
+            "PhysicalResourceId": "<resource:5>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fntopic09ED913A",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Subscription",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "topic69831491",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+          "FunctionName": "<resource:4>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:4>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
+          "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:6>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "fn5FF616E3",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_topic_attributes_result": {
+        "Attributes": {
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "<sid:1>",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:3>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_policy_result": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "<sid:2>",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "sns.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
+                }
+              }
+            }
+          ]
+        },
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
+    "recorded-date": "09-04-2024, 07:29:12",
+    "recorded-content": {
+      "stack_resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fn5FF616E3",
+            "PhysicalResourceId": "<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRole5D180AFD",
+            "PhysicalResourceId": "<resource:4>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRoleDefaultPolicy0ED5D3E5",
+            "PhysicalResourceId": "<iam-policy-physicalid>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnSqsEventSourceLambdaSqsSourceStackq2097017B53C3FF8C",
+            "PhysicalResourceId": "<uuid:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::EventSourceMapping",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "q14836DC8",
+            "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SQS::Queue",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "role_policies": {
+        "policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "sqs:ReceiveMessage",
+                    "sqs:ChangeMessageVisibility",
+                    "sqs:GetQueueUrl",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueAttributes"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "fnServiceRoleDefaultPolicy0ED5D3E5",
+            "RoleName": "<resource:4>",
+            "ResponseMetadata": "<response-metadata>"
+          }
+        ]
+      },
+      "get_function_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+          "FunctionName": "<resource:3>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "fn5FF616E3",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_esm_result": {
+        "BatchSize": 1,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Enabled",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_queue_atts_result": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "0",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_role_result": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Description": "",
+          "MaxSessionDuration": 3600,
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_attached_role_policies_result": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+            "PolicyName": "AWSLambdaBasicExecutionRole"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_inline_role_policies_result": {
+        "IsTruncated": false,
+        "PolicyNames": [
+          "fnServiceRoleDefaultPolicy0ED5D3E5"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_code_signing_config": {
+    "recorded-date": "09-04-2024, 07:19:51",
+    "recorded-content": {
+      "stack_resource_descriptions": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "CodeSigningConfig",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::CodeSigningConfig",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "config": {
+        "CodeSigningConfig": {
+          "AllowedPublishers": {
+            "SigningProfileVersionArns": [
+              "arn:<partition>:signer:<region>:111111111111:/signing-profiles/test"
+            ]
+          },
+          "CodeSigningConfigArn": "arn:<partition>:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigId": "<resource:1>",
+          "CodeSigningPolicies": {
+            "UntrustedArtifactOnDeployment": "Enforce"
+          },
+          "Description": "Code Signing",
+          "LastModified": "date"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_event_invoke_config": {
+    "recorded-date": "09-04-2024, 07:20:36",
+    "recorded-content": {
+      "event_invoke_config": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 300,
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version": {
+    "recorded-date": "09-04-2024, 07:21:37",
+    "recorded-content": {
+      "stack_resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fn5FF616E3",
+            "PhysicalResourceId": "<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRole5D180AFD",
+            "PhysicalResourceId": "<resource:4>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnVersion7BF8AE5A",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Version",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "versions_by_fn": {
+        "Versions": [
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "",
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>:$LATEST",
+            "FunctionName": "<resource:3>",
+            "Handler": "index.handler",
+            "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<resource:3>"
+            },
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:1>",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+            "Runtime": "python3.9",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "$LATEST"
+          },
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "test description",
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionName": "<resource:3>",
+            "Handler": "index.handler",
+            "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<resource:3>"
+            },
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:2>",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+            "Runtime": "python3.9",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_version": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "test description",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+          "FunctionName": "<resource:3>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
+    "recorded-date": "09-04-2024, 07:34:20",
+    "recorded-content": {
+      "stack_resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fn5FF616E3",
+            "PhysicalResourceId": "<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnDynamoDBEventSourceLambdaDynamodbSourceStacktable153BBA79064FDF1D",
+            "PhysicalResourceId": "<uuid:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::EventSourceMapping",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRole5D180AFD",
+            "PhysicalResourceId": "<resource:4>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRoleDefaultPolicy0ED5D3E5",
+            "PhysicalResourceId": "<iam-policy-physicalid>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "table8235A42E",
+            "PhysicalResourceId": "<resource:6>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::DynamoDB::Table",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "role_policies": {
+        "policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "dynamodb:ListStreams",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Action": [
+                    "dynamodb:DescribeStream",
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "fnServiceRoleDefaultPolicy0ED5D3E5",
+            "RoleName": "<resource:4>",
+            "ResponseMetadata": "<response-metadata>"
+          }
+        ]
+      },
+      "get_function_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+          "FunctionName": "<resource:3>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "fn5FF616E3",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_esm_result": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 0,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Enabled",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_table_result": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+          "LatestStreamLabel": "<resource:2>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_AND_OLD_IMAGES"
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>",
+          "TableId": "<uuid:3>",
+          "TableName": "<resource:6>",
+          "TableSizeBytes": 0,
+          "TableStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_stream_result": {
+        "StreamDescription": {
+          "CreationRequestDateTime": "datetime",
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "Shards": [
+            {
+              "SequenceNumberRange": {
+                "StartingSequenceNumber": "starting-sequence-number"
+              },
+              "ShardId": "shard-id"
+            }
+          ],
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+          "StreamLabel": "<resource:2>",
+          "StreamStatus": "ENABLED",
+          "StreamViewType": "NEW_AND_OLD_IMAGES",
+          "TableName": "<resource:6>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_role_result": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Description": "",
+          "MaxSessionDuration": 3600,
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_attached_role_policies_result": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+            "PolicyName": "AWSLambdaBasicExecutionRole"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_inline_role_policies_result": {
+        "IsTruncated": false,
+        "PolicyNames": [
+          "fnServiceRoleDefaultPolicy0ED5D3E5"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
+    "recorded-date": "09-04-2024, 07:37:55",
+    "recorded-content": {
+      "stack_resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fn5FF616E3",
+            "PhysicalResourceId": "<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnKinesisEventSourceLambdaKinesisSourceStackstream996A3395ED86A30E",
+            "PhysicalResourceId": "<uuid:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::EventSourceMapping",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRole5D180AFD",
+            "PhysicalResourceId": "<resource:4>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRoleDefaultPolicy0ED5D3E5",
+            "PhysicalResourceId": "<iam-policy-physicalid>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "stream19075594",
+            "PhysicalResourceId": "<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Kinesis::Stream",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "role_policies": {
+        "policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "kinesis:DescribeStreamSummary",
+                    "kinesis:GetRecords",
+                    "kinesis:GetShardIterator",
+                    "kinesis:ListShards",
+                    "kinesis:SubscribeToShard",
+                    "kinesis:DescribeStream",
+                    "kinesis:ListStreams"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+                },
+                {
+                  "Action": "kinesis:DescribeStream",
+                  "Effect": "Allow",
+                  "Resource": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "fnServiceRoleDefaultPolicy0ED5D3E5",
+            "RoleName": "<resource:4>",
+            "ResponseMetadata": "<response-metadata>"
+          }
+        ]
+      },
+      "get_function_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+          "FunctionName": "<resource:3>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "fn5FF616E3",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_esm_result": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 10,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Enabled",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_stream_result": {
+        "StreamDescription": {
+          "EncryptionType": "NONE",
+          "EnhancedMonitoring": [
+            {
+              "ShardLevelMetrics": []
+            }
+          ],
+          "HasMoreShards": false,
+          "RetentionPeriodHours": 24,
+          "Shards": [
+            {
+              "HashKeyRange": {
+                "EndingHashKey": "ending_hash",
+                "StartingHashKey": "starting_hash"
+              },
+              "SequenceNumberRange": {
+                "StartingSequenceNumber": "starting-sequence-number"
+              },
+              "ShardId": "shard-id"
+            }
+          ],
+          "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+          "StreamCreationTimestamp": "timestamp",
+          "StreamModeDetails": {
+            "StreamMode": "PROVISIONED"
+          },
+          "StreamName": "<resource:2>",
+          "StreamStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_role_result": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Description": "",
+          "MaxSessionDuration": 3600,
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_attached_role_policies_result": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+            "PolicyName": "AWSLambdaBasicExecutionRole"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_inline_role_policies_result": {
+        "IsTruncated": false,
+        "PolicyNames": [
+          "fnServiceRoleDefaultPolicy0ED5D3E5"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
+    "recorded-date": "09-04-2024, 07:25:05",
+    "recorded-content": {
+      "policy": {
+        "Policy": {
+          "Id": "default",
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<fn-name>",
+              "Sid": "<p1-sid>"
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com"
+              },
+              "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<fn-name>",
+              "Sid": "<p2-sid>"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_cfn_dead_letter_config_async_invocation": {
+    "recorded-date": "09-04-2024, 07:39:50",
+    "recorded-content": {
+      "failed-async-lambda": {
+        "Messages": [
+          {
+            "Body": {},
+            "MD5OfBody": "99914b932bd37a50b983c5e7c90ae93b",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter_update": {
+    "recorded-date": "11-04-2024, 18:29:12",
+    "recorded-content": {
+      "source_mappings": {
+        "EventSourceMappings": [
+          {
+            "BatchSize": 1,
+            "BisectBatchOnFunctionError": false,
+            "DestinationConfig": {
+              "OnFailure": {}
+            },
+            "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
+            "FilterCriteria": {
+              "Filters": [
+                {
+                  "Pattern": {
+                    "eventName": [
+                      "DELETE"
+                    ]
+                  }
+                }
+              ]
+            },
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionResponseTypes": [],
+            "LastModified": "datetime",
+            "LastProcessingResult": "No records processed",
+            "MaximumBatchingWindowInSeconds": 0,
+            "MaximumRecordAgeInSeconds": -1,
+            "MaximumRetryAttempts": -1,
+            "ParallelizationFactor": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "State": "Enabled",
+            "StateTransitionReason": "User action",
+            "TumblingWindowInSeconds": 0,
+            "UUID": "<uuid:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_source_mappings": {
+        "EventSourceMappings": [
+          {
+            "BatchSize": 1,
+            "BisectBatchOnFunctionError": false,
+            "DestinationConfig": {
+              "OnFailure": {}
+            },
+            "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
+            "FilterCriteria": {
+              "Filters": [
+                {
+                  "Pattern": {
+                    "eventName": [
+                      "MODIFY"
+                    ]
+                  }
+                }
+              ]
+            },
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionResponseTypes": [],
+            "LastModified": "datetime",
+            "LastProcessingResult": "No records processed",
+            "MaximumBatchingWindowInSeconds": 0,
+            "MaximumRecordAgeInSeconds": -1,
+            "MaximumRetryAttempts": -1,
+            "ParallelizationFactor": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "State": "Enabled",
+            "StateTransitionReason": "User action",
+            "TumblingWindowInSeconds": 0,
+            "UUID": "<uuid:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

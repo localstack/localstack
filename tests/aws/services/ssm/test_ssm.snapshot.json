@@ -1,0 +1,16 @@
+{
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_parameter_by_arn": {
+    "recorded-date": "16-07-2024, 17:17:40",
+    "recorded-content": {
+      "Parameter": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<name:1>",
+        "DataType": "text",
+        "LastModifiedDate": "<datetime>",
+        "Name": "<name:1>",
+        "Type": "String",
+        "Value": "test",
+        "Version": 1
+      }
+    }
+  }
+}

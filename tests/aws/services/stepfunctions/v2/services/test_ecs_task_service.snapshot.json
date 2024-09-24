@@ -1,0 +1,1731 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_task_sync": {
+    "recorded-date": "23-02-2024, 19:20:12",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "state_machine_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ecstask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Cluster": "cluster_arn",
+                "TaskDefinition": "task_definition_family",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet_value",
+                      "subnet_value"
+                    ],
+                    "SecurityGroups": [
+                      "sg_value"
+                    ]
+                  }
+                },
+                "LaunchType": "FARGATE",
+                "PlatformVersion": "1.4.0",
+                "StartedBy": "AWS Step Functions"
+              },
+              "region": "<region>",
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "1595"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1595",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet_value"
+                          }
+                        ],
+                        "Id": "<uuid:2>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>b",
+                    "ClusterArn": "cluster_arn",
+                    "Containers": [
+                      {
+                        "ContainerArn": "<container_arn:1>",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "busybox",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "task_definition_container_name",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "<task_arn:1>"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": "time",
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:task_definition_family",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "task_definition_container_name",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "StartedBy": "AWS Step Functions",
+                    "Tags": [],
+                    "TaskArn": "<task_arn:1>",
+                    "TaskDefinitionArn": "task_definition_arn",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Attachments": [
+                  {
+                    "Details": [
+                      {
+                        "Name": "subnetId",
+                        "Value": "subnet_value"
+                      },
+                      {
+                        "Name": "networkInterfaceId",
+                        "Value": "eni_value"
+                      },
+                      {
+                        "Name": "macAddress",
+                        "Value": "mac_value"
+                      },
+                      {
+                        "Name": "privateDnsName",
+                        "Value": "ip_value.<region>.compute.internal"
+                      },
+                      {
+                        "Name": "privateIPv4Address",
+                        "Value": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "Id": "<uuid:2>",
+                    "Status": "DELETED",
+                    "Type": "eni"
+                  }
+                ],
+                "Attributes": [
+                  {
+                    "Name": "ecs.cpu-architecture",
+                    "Value": "x86_64"
+                  }
+                ],
+                "AvailabilityZone": "<region>b",
+                "ClusterArn": "cluster_arn",
+                "Connectivity": "CONNECTED",
+                "ConnectivityAt": "time",
+                "Containers": [
+                  {
+                    "ContainerArn": "<container_arn:1>",
+                    "Cpu": "0",
+                    "ExitCode": 0,
+                    "GpuIds": [],
+                    "Image": "busybox",
+                    "ImageDigest": "<image_digest:1>",
+                    "LastStatus": "STOPPED",
+                    "ManagedAgents": [],
+                    "Name": "task_definition_container_name",
+                    "NetworkBindings": [],
+                    "NetworkInterfaces": [
+                      {
+                        "AttachmentId": "<uuid:2>",
+                        "PrivateIpv4Address": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "RuntimeId": "<runtime_id:1>",
+                    "TaskArn": "<task_arn:1>"
+                  }
+                ],
+                "Cpu": "256",
+                "CreatedAt": "time",
+                "DesiredStatus": "STOPPED",
+                "EnableExecuteCommand": false,
+                "EphemeralStorage": {
+                  "SizeInGiB": 20
+                },
+                "ExecutionStoppedAt": "time",
+                "Group": "family:task_definition_family",
+                "InferenceAccelerators": [],
+                "LastStatus": "STOPPED",
+                "LaunchType": "FARGATE",
+                "Memory": "512",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Command": [],
+                      "Environment": [],
+                      "EnvironmentFiles": [],
+                      "Name": "task_definition_container_name",
+                      "ResourceRequirements": []
+                    }
+                  ],
+                  "InferenceAcceleratorOverrides": []
+                },
+                "PlatformVersion": "1.4.0",
+                "PullStartedAt": "time",
+                "PullStoppedAt": "time",
+                "StartedAt": "time",
+                "StartedBy": "AWS Step Functions",
+                "StopCode": "EssentialContainerExited",
+                "StoppedAt": "time",
+                "StoppedReason": "Essential container in task exited",
+                "StoppingAt": "time",
+                "Tags": [],
+                "TaskArn": "<task_arn:1>",
+                "TaskDefinitionArn": "task_definition_arn",
+                "Version": 5
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "ecstask",
+              "output": {
+                "Attachments": [
+                  {
+                    "Details": [
+                      {
+                        "Name": "subnetId",
+                        "Value": "subnet_value"
+                      },
+                      {
+                        "Name": "networkInterfaceId",
+                        "Value": "eni_value"
+                      },
+                      {
+                        "Name": "macAddress",
+                        "Value": "mac_value"
+                      },
+                      {
+                        "Name": "privateDnsName",
+                        "Value": "ip_value.<region>.compute.internal"
+                      },
+                      {
+                        "Name": "privateIPv4Address",
+                        "Value": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "Id": "<uuid:2>",
+                    "Status": "DELETED",
+                    "Type": "eni"
+                  }
+                ],
+                "Attributes": [
+                  {
+                    "Name": "ecs.cpu-architecture",
+                    "Value": "x86_64"
+                  }
+                ],
+                "AvailabilityZone": "<region>b",
+                "ClusterArn": "cluster_arn",
+                "Connectivity": "CONNECTED",
+                "ConnectivityAt": "time",
+                "Containers": [
+                  {
+                    "ContainerArn": "<container_arn:1>",
+                    "Cpu": "0",
+                    "ExitCode": 0,
+                    "GpuIds": [],
+                    "Image": "busybox",
+                    "ImageDigest": "<image_digest:1>",
+                    "LastStatus": "STOPPED",
+                    "ManagedAgents": [],
+                    "Name": "task_definition_container_name",
+                    "NetworkBindings": [],
+                    "NetworkInterfaces": [
+                      {
+                        "AttachmentId": "<uuid:2>",
+                        "PrivateIpv4Address": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "RuntimeId": "<runtime_id:1>",
+                    "TaskArn": "<task_arn:1>"
+                  }
+                ],
+                "Cpu": "256",
+                "CreatedAt": "time",
+                "DesiredStatus": "STOPPED",
+                "EnableExecuteCommand": false,
+                "EphemeralStorage": {
+                  "SizeInGiB": 20
+                },
+                "ExecutionStoppedAt": "time",
+                "Group": "family:task_definition_family",
+                "InferenceAccelerators": [],
+                "LastStatus": "STOPPED",
+                "LaunchType": "FARGATE",
+                "Memory": "512",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Command": [],
+                      "Environment": [],
+                      "EnvironmentFiles": [],
+                      "Name": "task_definition_container_name",
+                      "ResourceRequirements": []
+                    }
+                  ],
+                  "InferenceAcceleratorOverrides": []
+                },
+                "PlatformVersion": "1.4.0",
+                "PullStartedAt": "time",
+                "PullStoppedAt": "time",
+                "StartedAt": "time",
+                "StartedBy": "AWS Step Functions",
+                "StopCode": "EssentialContainerExited",
+                "StoppedAt": "time",
+                "StoppedReason": "Essential container in task exited",
+                "StoppingAt": "time",
+                "Tags": [],
+                "TaskArn": "<task_arn:1>",
+                "TaskDefinitionArn": "task_definition_arn",
+                "Version": 5
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Attachments": [
+                  {
+                    "Details": [
+                      {
+                        "Name": "subnetId",
+                        "Value": "subnet_value"
+                      },
+                      {
+                        "Name": "networkInterfaceId",
+                        "Value": "eni_value"
+                      },
+                      {
+                        "Name": "macAddress",
+                        "Value": "mac_value"
+                      },
+                      {
+                        "Name": "privateDnsName",
+                        "Value": "ip_value.<region>.compute.internal"
+                      },
+                      {
+                        "Name": "privateIPv4Address",
+                        "Value": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "Id": "<uuid:2>",
+                    "Status": "DELETED",
+                    "Type": "eni"
+                  }
+                ],
+                "Attributes": [
+                  {
+                    "Name": "ecs.cpu-architecture",
+                    "Value": "x86_64"
+                  }
+                ],
+                "AvailabilityZone": "<region>b",
+                "ClusterArn": "cluster_arn",
+                "Connectivity": "CONNECTED",
+                "ConnectivityAt": "time",
+                "Containers": [
+                  {
+                    "ContainerArn": "<container_arn:1>",
+                    "Cpu": "0",
+                    "ExitCode": 0,
+                    "GpuIds": [],
+                    "Image": "busybox",
+                    "ImageDigest": "<image_digest:1>",
+                    "LastStatus": "STOPPED",
+                    "ManagedAgents": [],
+                    "Name": "task_definition_container_name",
+                    "NetworkBindings": [],
+                    "NetworkInterfaces": [
+                      {
+                        "AttachmentId": "<uuid:2>",
+                        "PrivateIpv4Address": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "RuntimeId": "<runtime_id:1>",
+                    "TaskArn": "<task_arn:1>"
+                  }
+                ],
+                "Cpu": "256",
+                "CreatedAt": "time",
+                "DesiredStatus": "STOPPED",
+                "EnableExecuteCommand": false,
+                "EphemeralStorage": {
+                  "SizeInGiB": 20
+                },
+                "ExecutionStoppedAt": "time",
+                "Group": "family:task_definition_family",
+                "InferenceAccelerators": [],
+                "LastStatus": "STOPPED",
+                "LaunchType": "FARGATE",
+                "Memory": "512",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Command": [],
+                      "Environment": [],
+                      "EnvironmentFiles": [],
+                      "Name": "task_definition_container_name",
+                      "ResourceRequirements": []
+                    }
+                  ],
+                  "InferenceAcceleratorOverrides": []
+                },
+                "PlatformVersion": "1.4.0",
+                "PullStartedAt": "time",
+                "PullStoppedAt": "time",
+                "StartedAt": "time",
+                "StartedBy": "AWS Step Functions",
+                "StopCode": "EssentialContainerExited",
+                "StoppedAt": "time",
+                "StoppedReason": "Essential container in task exited",
+                "StoppingAt": "time",
+                "Tags": [],
+                "TaskArn": "<task_arn:1>",
+                "TaskDefinitionArn": "task_definition_arn",
+                "Version": 5
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_task": {
+    "recorded-date": "25-02-2024, 23:19:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "state_machine_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ecstask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Cluster": "ip_value-central-1:111111111111:cluster/cluster_name",
+                "TaskDefinition": "task_definition_family",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet_value",
+                      "subnet_value"
+                    ],
+                    "SecurityGroups": [
+                      "sg_value"
+                    ]
+                  }
+                },
+                "LaunchType": "FARGATE",
+                "PlatformVersion": "1.4.0"
+              },
+              "region": "<region>",
+              "resource": "runTask",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "runTask",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "1562"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1562",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet_value"
+                          }
+                        ],
+                        "Id": "<uuid:2>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>b",
+                    "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                    "Containers": [
+                      {
+                        "ContainerArn": "<container_arn:1>",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "busybox",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "task_definition_container_name",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "<task_arn:1>"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": "time",
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:task_definition_family",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "task_definition_container_name",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "Tags": [],
+                    "TaskArn": "<task_arn:1>",
+                    "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:17",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "runTask",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "ecstask",
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "1562"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1562",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet_value"
+                          }
+                        ],
+                        "Id": "<uuid:2>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>b",
+                    "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                    "Containers": [
+                      {
+                        "ContainerArn": "<container_arn:1>",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "busybox",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "task_definition_container_name",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "<task_arn:1>"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": "time",
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:task_definition_family",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "task_definition_container_name",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "Tags": [],
+                    "TaskArn": "<task_arn:1>",
+                    "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:17",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "1562"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1562",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet_value"
+                          }
+                        ],
+                        "Id": "<uuid:2>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>b",
+                    "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                    "Containers": [
+                      {
+                        "ContainerArn": "<container_arn:1>",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "busybox",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "task_definition_container_name",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "<task_arn:1>"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": "time",
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:task_definition_family",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "task_definition_container_name",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "Tags": [],
+                    "TaskArn": "<task_arn:1>",
+                    "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:17",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_task_raise_failure": {
+    "recorded-date": "25-02-2024, 23:40:03",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "state_machine_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ecstask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Cluster": "ip_value-central-1:111111111111:cluster/cluster_name",
+                "TaskDefinition": "task_definition_family",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet_value",
+                      "subnet_value"
+                    ],
+                    "SecurityGroups": [
+                      "sg_value"
+                    ]
+                  }
+                },
+                "LaunchType": "FARGATE",
+                "PlatformVersion": "1.4.0"
+              },
+              "region": "<region>",
+              "resource": "runTask",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "runTask",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "1568"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1568",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet_value"
+                          }
+                        ],
+                        "Id": "<uuid:2>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>a",
+                    "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                    "Containers": [
+                      {
+                        "ContainerArn": "<container_arn:1>",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "no_such_image",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "task_definition_container_name",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "<task_arn:1>"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": "time",
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:task_definition_family",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "task_definition_container_name",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "Tags": [],
+                    "TaskArn": "<task_arn:1>",
+                    "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:18",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "runTask",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "ecstask",
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "1568"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1568",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet_value"
+                          }
+                        ],
+                        "Id": "<uuid:2>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>a",
+                    "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                    "Containers": [
+                      {
+                        "ContainerArn": "<container_arn:1>",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "no_such_image",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "task_definition_container_name",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "<task_arn:1>"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": "time",
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:task_definition_family",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "task_definition_container_name",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "Tags": [],
+                    "TaskArn": "<task_arn:1>",
+                    "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:18",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "1568"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1568",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet_value"
+                          }
+                        ],
+                        "Id": "<uuid:2>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>a",
+                    "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                    "Containers": [
+                      {
+                        "ContainerArn": "<container_arn:1>",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "no_such_image",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "task_definition_container_name",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "<task_arn:1>"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": "time",
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:task_definition_family",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "task_definition_container_name",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "Tags": [],
+                    "TaskArn": "<task_arn:1>",
+                    "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:18",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_task_sync_raise_failure": {
+    "recorded-date": "25-02-2024, 23:53:39",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "state_machine_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ecstask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Cluster": "ip_value-central-1:111111111111:cluster/cluster_name",
+                "TaskDefinition": "task_definition_family",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet_value",
+                      "subnet_value"
+                    ],
+                    "SecurityGroups": [
+                      "sg_value"
+                    ]
+                  }
+                },
+                "LaunchType": "FARGATE",
+                "PlatformVersion": "1.4.0",
+                "StartedBy": "AWS Step Functions"
+              },
+              "region": "<region>",
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "1601"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1601",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet_value"
+                          }
+                        ],
+                        "Id": "<uuid:2>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>b",
+                    "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                    "Containers": [
+                      {
+                        "ContainerArn": "<container_arn:1>",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "no_such_image",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "task_definition_container_name",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "<task_arn:1>"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": "time",
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:task_definition_family",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "task_definition_container_name",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "StartedBy": "AWS Step Functions",
+                    "Tags": [],
+                    "TaskArn": "<task_arn:1>",
+                    "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:19",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskFailedEventDetails": {
+              "cause": {
+                "Attachments": [
+                  {
+                    "Details": [
+                      {
+                        "Name": "subnetId",
+                        "Value": "subnet_value"
+                      },
+                      {
+                        "Name": "networkInterfaceId",
+                        "Value": "eni_value"
+                      },
+                      {
+                        "Name": "macAddress",
+                        "Value": "ip_value:d2:a7"
+                      },
+                      {
+                        "Name": "privateDnsName",
+                        "Value": "ip_value.<region>.compute.internal"
+                      },
+                      {
+                        "Name": "privateIPv4Address",
+                        "Value": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "Id": "<uuid:2>",
+                    "Status": "DELETED",
+                    "Type": "eni"
+                  }
+                ],
+                "Attributes": [
+                  {
+                    "Name": "ecs.cpu-architecture",
+                    "Value": "x86_64"
+                  }
+                ],
+                "AvailabilityZone": "<region>b",
+                "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                "Connectivity": "CONNECTED",
+                "ConnectivityAt": "time",
+                "Containers": [
+                  {
+                    "ContainerArn": "<container_arn:1>",
+                    "Cpu": "0",
+                    "GpuIds": [],
+                    "Image": "no_such_image",
+                    "LastStatus": "STOPPED",
+                    "ManagedAgents": [],
+                    "Name": "task_definition_container_name",
+                    "NetworkBindings": [],
+                    "NetworkInterfaces": [
+                      {
+                        "AttachmentId": "<uuid:2>",
+                        "PrivateIpv4Address": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "RuntimeId": "<runtime_id:1>",
+                    "TaskArn": "<task_arn:1>"
+                  }
+                ],
+                "Cpu": "256",
+                "CreatedAt": "time",
+                "DesiredStatus": "STOPPED",
+                "EnableExecuteCommand": false,
+                "EphemeralStorage": {
+                  "SizeInGiB": 20
+                },
+                "ExecutionStoppedAt": "time",
+                "Group": "family:task_definition_family",
+                "InferenceAccelerators": [],
+                "LastStatus": "STOPPED",
+                "LaunchType": "FARGATE",
+                "Memory": "512",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Command": [],
+                      "Environment": [],
+                      "EnvironmentFiles": [],
+                      "Name": "task_definition_container_name",
+                      "ResourceRequirements": []
+                    }
+                  ],
+                  "InferenceAcceleratorOverrides": []
+                },
+                "PlatformVersion": "1.4.0",
+                "StartedBy": "AWS Step Functions",
+                "StopCode": "TaskFailedToStart",
+                "StoppedAt": "time",
+                "StoppedReason": "CannotPullContainerError: pull image manifest has been retried 1 time(s): failed to resolve ref docker.io/library/no_such_image:latest: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed",
+                "StoppingAt": "time",
+                "Tags": [],
+                "TaskArn": "<task_arn:1>",
+                "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:19",
+                "Version": 4
+              },
+              "error": "States.TaskFailed",
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "Attachments": [
+                  {
+                    "Details": [
+                      {
+                        "Name": "subnetId",
+                        "Value": "subnet_value"
+                      },
+                      {
+                        "Name": "networkInterfaceId",
+                        "Value": "eni_value"
+                      },
+                      {
+                        "Name": "macAddress",
+                        "Value": "ip_value:d2:a7"
+                      },
+                      {
+                        "Name": "privateDnsName",
+                        "Value": "ip_value.<region>.compute.internal"
+                      },
+                      {
+                        "Name": "privateIPv4Address",
+                        "Value": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "Id": "<uuid:2>",
+                    "Status": "DELETED",
+                    "Type": "eni"
+                  }
+                ],
+                "Attributes": [
+                  {
+                    "Name": "ecs.cpu-architecture",
+                    "Value": "x86_64"
+                  }
+                ],
+                "AvailabilityZone": "<region>b",
+                "ClusterArn": "ip_value-central-1:111111111111:cluster/cluster_name",
+                "Connectivity": "CONNECTED",
+                "ConnectivityAt": "time",
+                "Containers": [
+                  {
+                    "ContainerArn": "<container_arn:1>",
+                    "Cpu": "0",
+                    "GpuIds": [],
+                    "Image": "no_such_image",
+                    "LastStatus": "STOPPED",
+                    "ManagedAgents": [],
+                    "Name": "task_definition_container_name",
+                    "NetworkBindings": [],
+                    "NetworkInterfaces": [
+                      {
+                        "AttachmentId": "<uuid:2>",
+                        "PrivateIpv4Address": "<private_ipv4_address:1>"
+                      }
+                    ],
+                    "RuntimeId": "<runtime_id:1>",
+                    "TaskArn": "<task_arn:1>"
+                  }
+                ],
+                "Cpu": "256",
+                "CreatedAt": "time",
+                "DesiredStatus": "STOPPED",
+                "EnableExecuteCommand": false,
+                "EphemeralStorage": {
+                  "SizeInGiB": 20
+                },
+                "ExecutionStoppedAt": "time",
+                "Group": "family:task_definition_family",
+                "InferenceAccelerators": [],
+                "LastStatus": "STOPPED",
+                "LaunchType": "FARGATE",
+                "Memory": "512",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Command": [],
+                      "Environment": [],
+                      "EnvironmentFiles": [],
+                      "Name": "task_definition_container_name",
+                      "ResourceRequirements": []
+                    }
+                  ],
+                  "InferenceAcceleratorOverrides": []
+                },
+                "PlatformVersion": "1.4.0",
+                "StartedBy": "AWS Step Functions",
+                "StopCode": "TaskFailedToStart",
+                "StoppedAt": "time",
+                "StoppedReason": "CannotPullContainerError: pull image manifest has been retried 1 time(s): failed to resolve ref docker.io/library/no_such_image:latest: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed",
+                "StoppingAt": "time",
+                "Tags": [],
+                "TaskArn": "<task_arn:1>",
+                "TaskDefinitionArn": "ip_value-central-1:111111111111:task-definition/task_definition_family:19",
+                "Version": 4
+              },
+              "error": "States.TaskFailed"
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

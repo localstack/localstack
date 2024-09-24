@@ -1,0 +1,369 @@
+{
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input0-SUCCEEDED]": {
+    "recorded-date": "02-08-2023, 11:58:05",
+    "recorded-content": {
+      "describe-execution-finished": {
+        "executionArn": "<execution-arn:1>",
+        "input": {
+          "SSN": "123-45-6789",
+          "Amount": 5000,
+          "Term": 30
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<name:1>",
+        "output": {
+          "SSN": "123-45-6789",
+          "Amount": 5000,
+          "Term": 30,
+          "Credit": {
+            "Score": 900,
+            "History": 10
+          },
+          "Banks": {
+            "BankAddress": [
+              "BankRecipientPawnShop",
+              "BankRecipientUniversal",
+              "BankRecipientPremium"
+            ]
+          },
+          "Quotes": [
+            {
+              "Quote": {
+                "rate": 15,
+                "bankId": "PawnShop"
+              }
+            },
+            {
+              "Quote": {
+                "rate": 14,
+                "bankId": "Universal"
+              }
+            },
+            {
+              "Quote": {
+                "rate": 13,
+                "bankId": "Premium"
+              }
+            }
+          ]
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "traceHeader": "<trace-header:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input1-SUCCEEDED]": {
+    "recorded-date": "02-08-2023, 11:58:07",
+    "recorded-content": {
+      "describe-execution-finished": {
+        "executionArn": "<execution-arn:1>",
+        "input": {
+          "SSN": "458-45-6789",
+          "Amount": 5000,
+          "Term": 30
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<name:1>",
+        "output": {
+          "SSN": "458-45-6789",
+          "Amount": 5000,
+          "Term": 30,
+          "Credit": {
+            "Score": 300,
+            "History": 13
+          },
+          "Banks": {
+            "BankAddress": [
+              "BankRecipientPawnShop",
+              "BankRecipientUniversal",
+              "BankRecipientPremium"
+            ]
+          },
+          "Quotes": [
+            {
+              "Quote": null
+            },
+            {
+              "Quote": null
+            },
+            {
+              "Quote": null
+            }
+          ]
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "traceHeader": "<trace-header:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input2-FAILED]": {
+    "recorded-date": "02-08-2023, 11:58:10",
+    "recorded-content": {
+      "describe-execution-finished": {
+        "cause": "An error occurred while executing the state 'Get Credit Score from credit bureau' (entered at the event id #2). The JSONPath '$.Payload.body.score' specified for the field 'Score.$' could not be found in the input '<json-input:1>'",
+        "error": "States.Runtime",
+        "executionArn": "<execution-arn:1>",
+        "input": {
+          "SSN": "inv-45-6789",
+          "Amount": 5000,
+          "Term": 30
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<name:1>",
+        "startDate": "datetime",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "FAILED",
+        "stopDate": "datetime",
+        "traceHeader": "<trace-header:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input3-FAILED]": {
+    "recorded-date": "02-08-2023, 11:58:10",
+    "recorded-content": {
+      "describe-execution-finished": {
+        "cause": "An error occurred while executing the state 'Get Credit Score from credit bureau' (entered at the event id #2). The JSONPath '$.SSN' specified for the field 'SSN.$' could not be found in the input '<json-input:1>'",
+        "error": "States.Runtime",
+        "executionArn": "<execution-arn:1>",
+        "input": {
+          "unexpected": "234-45-6789"
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<name:1>",
+        "startDate": "datetime",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "FAILED",
+        "stopDate": "datetime",
+        "traceHeader": "<trace-header:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input4-FAILED]": {
+    "recorded-date": "02-08-2023, 11:58:13",
+    "recorded-content": {
+      "describe-execution-finished": {
+        "cause": "An error occurred while executing the state 'Get all bank quotes' (entered at the event id #12). The JSONPath '$.Amount' specified for the field 'Amount.$' could not be found in the input '<json-input:1>'",
+        "error": "States.Runtime",
+        "executionArn": "<execution-arn:1>",
+        "input": {
+          "SSN": "234-45-6789"
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<name:1>",
+        "startDate": "datetime",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "FAILED",
+        "stopDate": "datetime",
+        "traceHeader": "<trace-header:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_prefill_dynamodb_table": {
+    "recorded-date": "24-08-2023, 16:33:21",
+    "recorded-content": {
+      "describe_table": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "Type",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "datetime"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "Type",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/LoanBrokerBanksTable",
+          "TableId": "<uuid:1>",
+          "TableName": "LoanBrokerBanksTable",
+          "TableSizeBytes": 0,
+          "TableStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_item": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_item_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "scan": {
+        "Count": 2,
+        "Items": [
+          {
+            "Hello": {
+              "S": "something"
+            },
+            "Type": {
+              "S": "Test"
+            }
+          },
+          {
+            "BankAddress": {
+              "L": [
+                {
+                  "S": "will be replaced"
+                }
+              ]
+            },
+            "Type": {
+              "S": "Home"
+            }
+          }
+        ],
+        "ScannedCount": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_item": {
+        "Item": {
+          "BankAddress": {
+            "L": [
+              {
+                "S": "will be replaced"
+              }
+            ]
+          },
+          "Type": {
+            "S": "Home"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_item": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_item2": {
+        "Item": {
+          "BankAddress": {
+            "L": [
+              {
+                "S": "BankRecipientPawnShop"
+              },
+              {
+                "S": "BankRecipientUniversal"
+              },
+              {
+                "S": "BankRecipientPremium"
+              }
+            ]
+          },
+          "Type": {
+            "S": "Home"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_item": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "scan_2": {
+        "Count": 1,
+        "Items": [
+          {
+            "BankAddress": {
+              "L": [
+                {
+                  "S": "BankRecipientPawnShop"
+                },
+                {
+                  "S": "BankRecipientUniversal"
+                },
+                {
+                  "S": "BankRecipientPremium"
+                }
+              ]
+            },
+            "Type": {
+              "S": "Home"
+            }
+          }
+        ],
+        "ScannedCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

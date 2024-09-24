@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/resources/test_events.py::test_cfn_event_api_destination_resource": {
+    "last_validated_date": "2024-04-16T06:36:56+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_events.py::test_rule_properties": {
+    "last_validated_date": "2023-12-01T14:03:52+00:00"
+  }
+}

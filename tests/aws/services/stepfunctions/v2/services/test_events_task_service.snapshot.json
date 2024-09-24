@@ -1,0 +1,578 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_base": {
+    "recorded-date": "12-09-2023, 10:45:20",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"HelloWorld0\"}",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld1"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld2"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source",
+                    "Resources": [
+                      "<sqs_queue_url>"
+                    ]
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"HelloWorld0\"}",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld1"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld2"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source",
+                    "Resources": [
+                      "<sqs_queue_url>"
+                    ]
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutEvents"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"HelloWorld0\"}",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld1"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld2"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source",
+                    "Resources": [
+                      "<sqs_queue_url>"
+                    ]
+                  }
+                ]
+              },
+              "region": "<region>",
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  },
+                  {
+                    "EventId": "<uuid:2>"
+                  },
+                  {
+                    "EventId": "<uuid:3>"
+                  }
+                ],
+                "FailedEntryCount": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "PutEvents",
+              "output": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  },
+                  {
+                    "EventId": "<uuid:2>"
+                  },
+                  {
+                    "EventId": "<uuid:3>"
+                  }
+                ],
+                "FailedEntryCount": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  },
+                  {
+                    "EventId": "<uuid:2>"
+                  },
+                  {
+                    "EventId": "<uuid:3>"
+                  }
+                ],
+                "FailedEntryCount": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stepfunctions_events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "<detail-type>",
+          "source": "some.source",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+          ],
+          "detail": {
+            "Message": "HelloWorld0"
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:2>",
+          "detail-type": "<detail-type>",
+          "source": "some.source",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+          ],
+          "detail": {
+            "Message": "HelloWorld1"
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:3>",
+          "detail-type": "<detail-type>",
+          "source": "some.source",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "<sqs_queue_url>",
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+          ],
+          "detail": {
+            "Message": "HelloWorld2"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_malformed_detail": {
+    "recorded-date": "12-09-2023, 10:51:57",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": "\"jsonstring\"",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": "\"jsonstring\"",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutEvents"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Entries": [
+                  {
+                    "Detail": "\"jsonstring\"",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "region": "<region>",
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "Entries": [
+                  {
+                    "ErrorCode": "MalformedDetail",
+                    "ErrorMessage": "Detail is malformed."
+                  }
+                ],
+                "FailedEntryCount": 1
+              },
+              "error": "EventBridge.FailedEntry",
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "Entries": [
+                  {
+                    "ErrorCode": "MalformedDetail",
+                    "ErrorMessage": "Detail is malformed."
+                  }
+                ],
+                "FailedEntryCount": 1
+              },
+              "error": "EventBridge.FailedEntry"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stepfunctions_events": []
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_no_source": {
+    "recorded-date": "12-09-2023, 13:17:16",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld1"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld"
+                    },
+                    "DetailType": "<detail-type>"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld1"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld"
+                    },
+                    "DetailType": "<detail-type>"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutEvents"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Entries": [
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld1"
+                    },
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": {
+                      "Message": "HelloWorld"
+                    },
+                    "DetailType": "<detail-type>"
+                  }
+                ]
+              },
+              "region": "<region>",
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  },
+                  {
+                    "ErrorCode": "InvalidArgument",
+                    "ErrorMessage": "Parameter Source is not valid. Reason: Source is a required argument."
+                  }
+                ],
+                "FailedEntryCount": 1
+              },
+              "error": "EventBridge.FailedEntry",
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  },
+                  {
+                    "ErrorCode": "InvalidArgument",
+                    "ErrorMessage": "Parameter Source is not valid. Reason: Source is a required argument."
+                  }
+                ],
+                "FailedEntryCount": 1
+              },
+              "error": "EventBridge.FailedEntry"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stepfunctions_events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "<detail-type>",
+          "source": "some.source",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+          ],
+          "detail": {
+            "Message": "HelloWorld1"
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "<detail-type>",
+          "source": "some.source",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+          ],
+          "detail": {
+            "Message": "HelloWorld1"
+          }
+        }
+      ]
+    }
+  }
+}

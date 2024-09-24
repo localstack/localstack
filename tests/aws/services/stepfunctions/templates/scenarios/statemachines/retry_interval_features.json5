@@ -1,0 +1,24 @@
+{
+  "Comment": "RETRY_INTERVAL_FEATURES",
+  "StartAt": "LambdaTask",
+  "States": {
+    "LambdaTask": {
+      "Type": "Task",
+      "Resource": "_tbd_",
+      "End": true,
+      "Retry": [
+        {
+          "Comment": "Includes all retry langauge features.",
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 3,
+          "MaxAttempts": 2,
+          "BackoffRate": 2,
+          "MaxDelaySeconds": 5,
+          "JitterStrategy": "FULL",
+        }
+      ]
+    }
+  }
+}

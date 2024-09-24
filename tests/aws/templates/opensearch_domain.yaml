@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  OpenSearchDomainName:
+    Type: String
+Resources:
+  OpenSearchServiceDomain:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      DomainName:
+        Ref: OpenSearchDomainName

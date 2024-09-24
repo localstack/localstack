@@ -1,0 +1,12 @@
+{
+  "Comment": "TASK_SERVICE_LAMBDA_LIST_FUNCTIONS",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:listFunctions",
+      "Parameters": {},
+      "End": true,
+    }
+  },
+}

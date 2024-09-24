@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_lambda": {
+    "last_validated_date": "2024-03-10T16:23:26+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda": {
+    "last_validated_date": "2024-03-10T16:47:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda_with_path": {
+    "last_validated_date": "2024-03-10T16:23:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_global_timeout": {
+    "last_validated_date": "2024-03-10T16:22:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_service_lambda_map_timeout": {
+    "last_validated_date": "2024-03-10T16:23:46+00:00"
+  }
+}

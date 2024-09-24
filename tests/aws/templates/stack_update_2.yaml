@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Topic1Name:
+    Type: String
+  Topic2Name:
+    Type: String
+  Topic3Name:
+    Type: String
+Resources:
+  topic1:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref Topic1Name
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  topic2:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref Topic2Name
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete

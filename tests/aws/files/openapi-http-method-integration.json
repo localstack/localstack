@@ -1,0 +1,89 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "test-http-method",
+    "description": "Test httpMethod for AWS integration",
+    "version": "2022-04-12T15:36:55Z"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "aws",
+          "httpMethod": "POST",
+          "uri": "${lambda_invocation_arn}",
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": "#set($allParams = $input.params())\n{\n  \"params\" : {\n    #foreach($type in $allParams.keySet())\n      #set($params = $allParams.get($type))\n      \"$type\" : {\n        #foreach($paramName in $params.keySet())\n          \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\n          #if($foreach.hasNext),#end\n        #end\n      }\n      #if($foreach.hasNext),#end\n    #end\n  }\n}\n"
+          },
+          "passthroughBehavior": "when_no_templates",
+          "contentHandling": "CONVERT_TO_TEXT"
+        }
+      },
+      "options": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            },
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "POST",
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "responses": {
+            "default": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "type": "mock"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Empty": {
+        "title": "Empty Schema",
+        "type": "object"
+      }
+    }
+  }
+}

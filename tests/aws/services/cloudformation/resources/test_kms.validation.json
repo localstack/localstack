@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/resources/test_kms.py::test_cfn_with_kms_resources": {
+    "last_validated_date": "2023-05-29T13:45:17+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_kms.py::test_deploy_stack_with_kms": {
+    "last_validated_date": "2024-07-02T20:23:47+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_kms.py::test_kms_key_disabled": {
+    "last_validated_date": "2024-07-02T20:12:46+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_list_map_runs_and_describe_map_run": {
+    "last_validated_date": "2023-09-21T19:21:35+00:00"
+  }
+}

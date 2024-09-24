@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  # IAM role for running the step function
+  ExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: !Sub states.${AWS::Region}.amazonaws.com
+          Action: "sts:AssumeRole"
+      Policies:
+      - PolicyName: StatesExecutionPolicy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action: "lambda:InvokeFunction"
+            Resource: "*"

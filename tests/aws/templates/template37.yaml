@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "100.0.0.0/20"
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: env
+        Value: production
+
+  SubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock: "100.0.0.0/24"
+      VpcId:
+        Ref: VPC
+
+  SubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock: "100.0.2.0/24"
+      VpcId:
+        Ref: VPC
+
+  RouteTableAssociationA:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId:
+        Ref: SubnetA
+      RouteTableId:
+        Ref: RouteTable
+    DependsOn:
+      - SubnetA
+      - RouteTable
+
+  RouteTableAssociationB:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId:
+        Ref: SubnetB
+      RouteTableId:
+        Ref: RouteTable
+    DependsOn:
+      - SubnetB
+      - RouteTable
+
+Outputs:
+  RouteTable:
+    Value:
+      Ref: RouteTable
+  VpcId:
+    Value:
+      Ref: VPC

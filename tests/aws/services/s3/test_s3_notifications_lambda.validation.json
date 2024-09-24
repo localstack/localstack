@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_create_object_by_presigned_request_via_dynamodb": {
+    "last_validated_date": "2023-07-13T17:19:13+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_create_object_put_via_dynamodb": {
+    "last_validated_date": "2023-07-13T16:06:28+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_invalid_lambda_arn": {
+    "last_validated_date": "2023-08-04T22:51:19+00:00"
+  }
+}

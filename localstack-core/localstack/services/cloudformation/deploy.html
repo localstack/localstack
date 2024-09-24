@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>LocalStack - CloudFormation Deployment</title>
+    <script src="https://unpkg.com/react/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1015.0/aws-sdk.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css"></link>
+    <style type="text/css">
+      div { padding: 8px; }
+      .wrapper { width: 80%; margin-left: 10%; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const REGIONS = <regions>;
+      const DEFAULT_REGION = "us-east-1";
+      const LOCALSTACK_ENDPOINT = `${window.location.protocol}//${window.location.host}`;
+      AWS.config.update({endpoint: LOCALSTACK_ENDPOINT, accessKeyId: "test", secretAccessKey: "test"});
+
+      // parameter placeholders - filled in by the server when final HTML page gets rendered
+      const templateBody = <templateBody>;
+      const defaultStackName = "<stackName>";
+      const initErrorMessage = <errorMessage>;
+
+      const queryParams = new URLSearchParams(window.location.search);
+      const passedRegion = queryParams.get("region") || DEFAULT_REGION;
+      const templateURL = queryParams.get("templateURL");
+      // TODO: allow passing stack parameter values via queryParams as well!
+
+      function StackDetails (props) {
+        const templateBodyStr = JSON.stringify(templateBody, undefined, 2);
+        const params = templateBody.Parameters || {};
+        const paramsMapped = Object.keys(params).map(p => ({ParameterKey: p, ParameterValue: params[p].Default || "", ... params[p]}));
+
+        const [region, setRegion] = React.useState(passedRegion);
+        const [stackName, setStackName] = React.useState(defaultStackName);
+        const [parameters, setParameters] = React.useState(paramsMapped);
+        const [errorMessage, setErrorMessage] = React.useState();
+
+        const handle = (handler) => (event) => handler(event.target.value);
+        const handleParam = (paramKey) => (event) => {
+          parameters.filter(p => p.ParameterKey === paramKey)[0].ParameterValue = event.target.value; setParameters([...parameters])
+        };
+        const deployStack = async () => {
+          setErrorMessage("");
+          AWS.config.update({region});
+          const client = new AWS.CloudFormation();
+          const stackParameters = [];
+          const params = {StackName: stackName, TemplateBody: templateBodyStr, Parameters: stackParameters};
+          try {
+            const result = await client.createStack(params).promise();
+            props.setResult(result);
+          } catch (e) {
+            setErrorMessage(`Error deploying CloudFormation stack: ${e}`);
+          }
+        };
+
+        return (
+          <table className="pure-table">
+            <tbody>
+              <tr>
+                <td>Template URL</td><td>{templateURL}</td>
+              </tr><tr>
+                <td>Template Body</td><td>
+                  <textarea rows="10" style={{width: "100%"}} disabled={true} defaultValue={templateBodyStr}></textarea>
+                </td>
+              </tr><tr>
+                <td>Stack Name</td><td><input name="stackName" value={stackName} onChange={handle(setStackName)}/></td>
+              </tr><tr>
+                <td>Stack Parameters</td><td>
+                  <table><tbody>
+                  {
+                    parameters.map(p => <tr key={p.ParameterKey}>
+                      <td>{p.ParameterKey} =</td><td><input type="text" value={p.ParameterValue} onChange={handleParam(p.ParameterKey)}/></td>
+                    </tr>)
+                  }
+                  </tbody></table>
+                </td>
+              </tr><tr>
+                <td>Target Region</td><td>
+                  <select name="region" value={region} onChange={handle(setRegion)}>
+                    {REGIONS.map(r => <option value={r} key={r}>{r}</option>)}
+                  </select>
+                </td>
+              </tr><tr>
+                <td></td><td><button onClick={deployStack}>Deploy Stack Locally</button><p>{errorMessage}</p></td>
+              </tr>
+            </tbody>
+          </table>
+        );
+      }
+
+      function RequestHandler (props) {
+        if (initErrorMessage) {
+          return <div>Error: {initErrorMessage}</div>
+        }
+        if (!templateURL) {
+          return (
+            <form method="GET">
+              <p>
+              Please specify stack template URL as <code>templateURL</code> query parameter, or in the field below:
+              </p>
+              <input type="text" name="templateURL" style={{width: "500px"}} />
+              <button type="submit">Continue</button>
+            </form>
+          );
+        }
+        const [deployResult, setDeployResult] = React.useState();
+        if (deployResult) {
+          return <>
+            <p>
+            Stack deployment successfully started - please check the logs in your LocalStack instance. Deployment response:
+            </p>
+            <pre style={{padding: "5px", border: "1px solid #000"}}>{JSON.stringify(deployResult, null, 4)}</pre>
+            <p>
+            <b>Note:</b> To interactively browse the state of the locally deployed resources, you may want to check out our Web UI at { }
+            <a href="https://app.localstack.cloud">https://app.localstack.cloud</a> !
+            </p>
+          </>
+        }
+        return <StackDetails setResult={setDeployResult} />;
+      }
+
+      function App (props) {
+        return (
+          <div className="wrapper">
+            <div>
+              <img style={{float: "left", width: "60px", margin: "12px"}} src="https://app.localstack.cloud/images/logos/localstack.png" />
+              <h2 style={{float: "left"}}>LocalStack</h2>
+            </div>
+            <h3 style={{clear: "both"}}>Deploy CloudFormation Stack</h3>
+            <RequestHandler />
+          </div>
+        );
+      }
+
+      ReactDOM.render(React.createElement(App), document.getElementById('root'));
+    </script>
+  </body>
+</html>

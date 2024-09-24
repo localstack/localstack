@@ -1,0 +1,1372 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_pipe": {
+    "recorded-date": "22-06-2023, 13:34:18",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {
+                "Return": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": {
+                "Return": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Return": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step2"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 8,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Return": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_2_name>"
+            },
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 10,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {
+                "Return": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "step2",
+              "output": {
+                "Return": {
+                  "Return": "HelloWorld"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Return": {
+                  "Return": "HelloWorld"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_bytes_payload": {
+    "recorded-date": "04-08-2023, 10:45:41",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "\"HelloWorld!\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "\"HelloWorld!\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "\"HelloWorld!\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[None]": {
+    "recorded-date": "04-08-2023, 14:57:19",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "null",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "null",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "null",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "null",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "null",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "null",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[HelloWorld]": {
+    "recorded-date": "04-08-2023, 16:13:17",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "\"HelloWorld\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "\"HelloWorld\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "\"HelloWorld\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "\"HelloWorld\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "\"HelloWorld\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "\"HelloWorld\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[0.0]": {
+    "recorded-date": "04-08-2023, 16:13:35",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "0.0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "0.0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "0.0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "0.0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "0.0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "0.0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[0_0]": {
+    "recorded-date": "04-08-2023, 16:13:53",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[0_1]": {
+    "recorded-date": "04-08-2023, 16:14:12",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "0",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "0",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[True]": {
+    "recorded-date": "04-08-2023, 16:14:30",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "true",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "true",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "true",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "true",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "true",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "true",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value6]": {
+    "recorded-date": "04-08-2023, 16:15:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "[]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "[]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "[]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value7]": {
+    "recorded-date": "04-08-2023, 14:59:25",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "[]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "[]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "[]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value5]": {
+    "recorded-date": "04-08-2023, 16:14:48",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_lambda_task_filter_parameters_input": {
+    "recorded-date": "22-09-2023, 22:36:51",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartCheckLoop"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "StartCheckLoop",
+              "output": {
+                "loop": {
+                  "count": 0
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "loop": {
+                  "count": 0
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CheckComplete"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "loop": {
+                  "count": 0
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_name"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 7,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {
+                "loop": {
+                  "count": 0
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "CheckComplete",
+              "output": {
+                "loop": {
+                  "count": 0
+                },
+                "result": {
+                  "loop": {
+                    "count": 0
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "loop": {
+                  "count": 0
+                },
+                "result": {
+                  "loop": {
+                    "count": 0
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_string_payload": {
+    "recorded-date": "25-03-2024, 22:25:45",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "\"HelloWorld\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "\"HelloWorld\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": "\"HelloWorld\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": "\"HelloWorld\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": "\"HelloWorld\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "\"HelloWorld\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "tests/aws/services/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionsResourceTypes::test_deploy_resource_type": {
+    "recorded-date": "28-02-2023, 12:48:27",
+    "recorded-content": {
+      "resource_description": {
+        "DriftInformation": {
+          "StackResourceDriftStatus": "NOT_CHECKED"
+        },
+        "LogicalResourceId": "MyCustomResource",
+        "PhysicalResourceId": "Test",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "ResourceType": "LocalStack::Testing::DeployableResource",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  }
+}

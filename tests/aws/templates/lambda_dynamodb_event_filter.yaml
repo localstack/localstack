@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  Sample SAM Template for Lambda fn Event-filtering with DynamoDB Streams
+
+Parameters:
+  FunctionName:
+    Type: String
+  TableName:
+    Type: String
+  Filter:
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource: !GetAtt StreamsSampleDDBTable.StreamArn
+
+  StreamsSampleDDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: "PK"
+          AttributeType: "S"
+        - AttributeName: "SK"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "PK"
+          KeyType: "HASH"
+        - AttributeName: "SK"
+          KeyType: "RANGE"
+      StreamSpecification:
+        StreamViewType: "NEW_AND_OLD_IMAGES"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  DBEventStreamProcessor:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Ref FunctionName
+      Timeout: 300
+      Role: !GetAtt LambdaExecutionRole.Arn
+      InlineCode: exports.handler = async (event, context) =>
+        {
+        console.log('Hello world!');
+        console.log(JSON.stringify(event))
+        }
+      Handler: index.handler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Events:
+        DBProfileEventStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt StreamsSampleDDBTable.StreamArn
+            ParallelizationFactor: 10
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 5
+            FilterCriteria:
+              Filters:
+                - Pattern: |
+                    {
+                      "dynamodb": {
+                        "NewImage": {
+                          "homemade": {
+                            "S": [
+                              {
+                                "exists": false
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+            Enabled: true

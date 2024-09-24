@@ -1,0 +1,12 @@
+Parameters:
+  BucketExportName:
+    Type: String
+Resources:
+  Bucket1:
+    Type: AWS::S3::Bucket
+    Properties: {}
+Outputs:
+  BucketName1:
+    Value: !Ref Bucket1
+    Export:
+      Name: !Ref BucketExportName

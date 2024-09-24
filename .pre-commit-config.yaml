@@ -1,0 +1,28 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.6.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      # Run the formatter.
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/localstack/pre-commit-hooks
+    rev: v1.2.1
+    hooks:
+      - id: check-pinned-deps-for-needed-upgrade
+
+  - repo: https://github.com/python-openapi/openapi-spec-validator
+    rev: 0.7.1
+    hooks:
+      - id: openapi-spec-validator
+        files: .*openapi.*\.(json|yaml|yml)

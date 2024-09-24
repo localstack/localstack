@@ -1,0 +1,25 @@
+{
+  "StartAt": "MapState",
+  "States": {
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "Iterator": {
+        "StartAt": "IteratorInner",
+        "States": {
+          "IteratorInner": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+        "ProcessorConfig": {
+          "Mode": "INLINE",
+        }
+      },
+      "Next": "Finish",
+    },
+    "Finish": {
+      "Type": "Succeed"
+    }
+  }
+}

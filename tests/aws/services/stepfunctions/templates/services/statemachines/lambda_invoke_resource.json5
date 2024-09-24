@@ -1,0 +1,11 @@
+{
+  "Comment": "LAMBDA_INVOKE_RESOURCE",
+  "StartAt": "step1",
+  "States": {
+    "step1": {
+      "Type": "Task",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
+      "End": true
+    },
+  },
+}

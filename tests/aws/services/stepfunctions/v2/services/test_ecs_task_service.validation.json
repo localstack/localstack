@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_machine_sync": {
+    "last_validated_date": "2024-02-23T19:20:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_task": {
+    "last_validated_date": "2024-02-25T23:19:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_task_raise_failure": {
+    "last_validated_date": "2024-02-25T23:40:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_task_sync_raise_failure": {
+    "last_validated_date": "2024-02-25T23:53:39+00:00"
+  }
+}

@@ -1,0 +1,4812 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api": {
+    "recorded-date": "15-04-2024, 21:30:21",
+    "recorded-content": {
+      "import_rest_api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "*/*"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
+    "recorded-date": "15-04-2024, 21:31:02",
+    "recorded-content": {
+      "import-swagger": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<rest-id:1>",
+        "name": "PetStore",
+        "rootResourceId": "<resource-id:1>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-authorizers": {
+        "items": [
+          {
+            "authType": "oauth2",
+            "authorizerCredentials": "<authorizer-credentials:1>",
+            "authorizerResultTtlInSeconds": 60,
+            "authorizerUri": "<authorizer-uri:1>",
+            "id": "<authorizer-id:1>",
+            "identitySource": "method.request.header.Authorization",
+            "identityValidationExpression": "^x-[a-z]+",
+            "name": "test-authorizer",
+            "type": "TOKEN"
+          },
+          {
+            "authType": "oauth2",
+            "authorizerCredentials": "<authorizer-credentials:1>",
+            "authorizerUri": "<authorizer-uri:1>",
+            "id": "<authorizer-id:2>",
+            "identitySource": "method.request.header.Authorization",
+            "identityValidationExpression": "^x-[a-z]+",
+            "name": "test-authorizer-not-used",
+            "type": "TOKEN"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "id": "<model-id:1>",
+            "name": "Empty",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:2>",
+            "name": "NewPet",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "$ref": "<model-base-url>/restapis/<rest-id:1>/models/PetType"
+                },
+                "price": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:3>",
+            "name": "NewPetResponse",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pet": {
+                  "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Pet"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:4>",
+            "name": "Pet",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "petid": {
+                  "type": "integer"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:5>",
+            "name": "PetType",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "dog",
+                "cat",
+                "fish",
+                "bird",
+                "gecko"
+              ]
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:6>",
+            "name": "Pets",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Pet"
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<resource-id:1>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {}
+            }
+          },
+          {
+            "id": "<resource-id:2>",
+            "parentId": "<resource-id:1>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {},
+              "POST": {}
+            }
+          },
+          {
+            "id": "<resource-id:3>",
+            "parentId": "<resource-id:2>",
+            "path": "/pets/{petId}",
+            "pathPart": "{petId}",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-root-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:1>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Content-Type": "'text/html'"
+              },
+              "responseTemplates": {
+                "text/html": "<html>\n    <head>\n        <style>\n        body {\n            color: #333;\n            font-family: Sans-serif;\n            max-width: 800px;\n            margin: auto;\n        }\n        </style>\n    </head>\n    <body>\n        <h1>Welcome to your Pet Store API</h1>\n        <p>\n            You have successfully deployed your first API. You are seeing this HTML page because the <code>GET</code> method to the root resource of your API returns this content as a Mock integration.\n        </p>\n        <p>\n            The Pet Store API contains the <code>/pets</code> and <code>/pets/{petId}</code> resources. By making a <a href=\"/$context.stage/pets/\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets</code> you can retrieve a list of Pets in your API. If you are looking for a specific pet, for example the pet with ID 1, you can make a <a href=\"/$context.stage/pets/1\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets/1</code>.\n        </p>\n        <p>\n            You can use a REST client such as <a href=\"https://www.getpostman.com/\" target=\"_blank\">Postman</a> to test the <code>POST</code> methods in your API to create a new pet. Use the sample body below to send the <code>POST</code> request:\n        </p>\n        <pre>\n{\n    \"type\" : \"cat\",\n    \"price\" : 123.11\n}\n        </pre>\n    </body>\n</html>"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Content-Type": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-get": {
+        "responseParameters": {
+          "method.response.header.Content-Type": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:1>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Content-Type": "'text/html'"
+            },
+            "responseTemplates": {
+              "text/html": "<html>\n    <head>\n        <style>\n        body {\n            color: #333;\n            font-family: Sans-serif;\n            max-width: 800px;\n            margin: auto;\n        }\n        </style>\n    </head>\n    <body>\n        <h1>Welcome to your Pet Store API</h1>\n        <p>\n            You have successfully deployed your first API. You are seeing this HTML page because the <code>GET</code> method to the root resource of your API returns this content as a Mock integration.\n        </p>\n        <p>\n            The Pet Store API contains the <code>/pets</code> and <code>/pets/{petId}</code> resources. By making a <a href=\"/$context.stage/pets/\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets</code> you can retrieve a list of Pets in your API. If you are looking for a specific pet, for example the pet with ID 1, you can make a <a href=\"/$context.stage/pets/1\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets/1</code>.\n        </p>\n        <p>\n            You can use a REST client such as <a href=\"https://www.getpostman.com/\" target=\"_blank\">Postman</a> to test the <code>POST</code> methods in your API to create a new pet. Use the sample body below to send the <code>POST</code> request:\n        </p>\n        <pre>\n{\n    \"type\" : \"cat\",\n    \"price\" : 123.11\n}\n        </pre>\n    </body>\n</html>"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-get": {
+        "responseParameters": {
+          "method.response.header.Content-Type": "'text/html'"
+        },
+        "responseTemplates": {
+          "text/html": "<html>\n    <head>\n        <style>\n        body {\n            color: #333;\n            font-family: Sans-serif;\n            max-width: 800px;\n            margin: auto;\n        }\n        </style>\n    </head>\n    <body>\n        <h1>Welcome to your Pet Store API</h1>\n        <p>\n            You have successfully deployed your first API. You are seeing this HTML page because the <code>GET</code> method to the root resource of your API returns this content as a Mock integration.\n        </p>\n        <p>\n            The Pet Store API contains the <code>/pets</code> and <code>/pets/{petId}</code> resources. By making a <a href=\"/$context.stage/pets/\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets</code> you can retrieve a list of Pets in your API. If you are looking for a specific pet, for example the pet with ID 1, you can make a <a href=\"/$context.stage/pets/1\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets/1</code>.\n        </p>\n        <p>\n            You can use a REST client such as <a href=\"https://www.getpostman.com/\" target=\"_blank\">Postman</a> to test the <code>POST</code> methods in your API to create a new pet. Use the sample body below to send the <code>POST</code> request:\n        </p>\n        <pre>\n{\n    \"type\" : \"cat\",\n    \"price\" : 123.11\n}\n        </pre>\n    </body>\n</html>"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.querystring.page": "method.request.querystring.page",
+            "integration.request.querystring.type": "method.request.querystring.type"
+          },
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Pets"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.querystring.page": false,
+          "method.request.querystring.type": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-get": {
+        "responseModels": {
+          "application/json": "Pets"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.querystring.page": "method.request.querystring.page",
+          "integration.request.querystring.type": "method.request.querystring.type"
+        },
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+                "method.response.header.Access-Control-Allow-Methods": "'POST,GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+              "method.response.header.Access-Control-Allow-Methods": "'POST,GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+          "method.response.header.Access-Control-Allow-Methods": "'POST,GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-post": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "connectionType": "INTERNET",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "NewPetResponse"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "operationName": "CreatePet",
+        "requestModels": {
+          "application/json": "NewPet"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-post": {
+        "responseModels": {
+          "application/json": "NewPetResponse"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-post": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-post": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets/{petId}-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:3>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.path.petId": "method.request.path.petId"
+          },
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Pet"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "operationName": "GetPet",
+        "requestParameters": {
+          "method.request.path.petId": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets/{petId}-get": {
+        "responseModels": {
+          "application/json": "Pet"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets/{petId}-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:3>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.path.petId": "method.request.path.petId"
+        },
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets/{petId}-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets/{petId}-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.path.petId": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets/{petId}-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets/{petId}-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets/{petId}-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_and_validate_rest_api[openapi.spec.tf.json]": {
+    "recorded-date": "15-04-2024, 21:31:22",
+    "recorded-content": {
+      "import_tf_rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:3>",
+        "version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "id": "<id:2>",
+            "name": "<name:2>",
+            "schema": {
+              "title": "<name:2> Schema",
+              "type": "object"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:3>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-root-get": {
+        "apiKeyRequired": true,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "AWS_PROXY",
+          "uri": "arn:<partition>:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:<partition>:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "<name:2>"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-get": {
+        "responseModels": {
+          "application/json": "<name:2>"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "contentHandling": "CONVERT_TO_TEXT",
+        "httpMethod": "POST",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:<partition>:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:<partition>:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-root-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "<name:2>"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-options": {
+        "responseModels": {
+          "application/json": "<name:2>"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_and_validate_rest_api[swagger-mock-cors.json]": {
+    "recorded-date": "15-04-2024, 21:31:41",
+    "recorded-content": {
+      "import_tf_rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-models": {
+        "items": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/product",
+            "pathPart": "product",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:3>",
+            "path": "/product/{product_id}",
+            "pathPart": "{product_id}",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-product-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "httpMethod": "POST",
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "AWS_PROXY",
+          "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produ-GetProductsFunction-c1359550:live/invocations"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-product-get": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "integration-product-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produ-GetProductsFunction-c1359550:live/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-product-get": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "method-product-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+                "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+              },
+              "responseTemplates": {
+                "application/json": {}
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-product-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-product-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+              "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+              "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+            },
+            "responseTemplates": {
+              "application/json": {}
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-product-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+          "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+          "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+        },
+        "responseTemplates": {
+          "application/json": {}
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-product/{product_id}-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:4>",
+          "httpMethod": "POST",
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "AWS_PROXY",
+          "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produc-GetProductFunction-28378339:live/invocations"
+        },
+        "requestParameters": {
+          "method.request.path.product_id": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-product/{product_id}-get": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "integration-product/{product_id}-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:4>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produc-GetProductFunction-28378339:live/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-product/{product_id}-get": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "method-product/{product_id}-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:4>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+                "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+              },
+              "responseTemplates": {
+                "application/json": {}
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.path.product_id": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-product/{product_id}-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-product/{product_id}-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:4>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+              "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+              "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+            },
+            "responseTemplates": {
+              "application/json": {}
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-product/{product_id}-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+          "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+          "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+        },
+        "responseTemplates": {
+          "application/json": {}
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[ignore]": {
+    "recorded-date": "15-04-2024, 21:33:04",
+    "recorded-content": {
+      "put-rest-api-swagger-json": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-swagger-json": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-no-base-path-swagger": {
+        "items": [
+          {
+            "id": "<id:4>",
+            "path": "/"
+          },
+          {
+            "id": "<id:5>",
+            "parentId": "<id:4>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {}
+            }
+          },
+          {
+            "id": "<id:6>",
+            "parentId": "<id:5>",
+            "path": "/pets/{petId}",
+            "pathPart": "{petId}",
+            "resourceMethods": {
+              "GET": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:5>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:5>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets/{petId}-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:6>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.path.id": "method.request.path.petId"
+          },
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.path.petId": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets/{petId}-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets/{petId}-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:6>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.path.id": "method.request.path.petId"
+        },
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets/{petId}-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[prepend]": {
+    "recorded-date": "15-04-2024, 21:34:01",
+    "recorded-content": {
+      "put-rest-api-swagger-json": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-swagger-json": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/base",
+            "pathPart": "base"
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:3>",
+            "path": "/base/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-base/test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:4>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-base/test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-base/test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:4>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-base/test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-base/test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:4>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-base/test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-base/test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:4>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-base/test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-no-base-path-swagger": {
+        "items": [
+          {
+            "id": "<id:5>",
+            "path": "/"
+          },
+          {
+            "id": "<id:6>",
+            "parentId": "<id:5>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {}
+            }
+          },
+          {
+            "id": "<id:7>",
+            "parentId": "<id:6>",
+            "path": "/pets/{petId}",
+            "pathPart": "{petId}",
+            "resourceMethods": {
+              "GET": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:6>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:6>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets/{petId}-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:7>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.path.id": "method.request.path.petId"
+          },
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.path.petId": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets/{petId}-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets/{petId}-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:7>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.path.id": "method.request.path.petId"
+        },
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets/{petId}-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[split]": {
+    "recorded-date": "15-04-2024, 21:34:50",
+    "recorded-content": {
+      "put-rest-api-swagger-json": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-swagger-json": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-no-base-path-swagger": {
+        "items": [
+          {
+            "id": "<id:4>",
+            "path": "/"
+          },
+          {
+            "id": "<id:5>",
+            "parentId": "<id:4>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {}
+            }
+          },
+          {
+            "id": "<id:6>",
+            "parentId": "<id:5>",
+            "path": "/pets/{petId}",
+            "pathPart": "{petId}",
+            "resourceMethods": {
+              "GET": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:5>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:5>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets/{petId}-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:6>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.path.id": "method.request.path.petId"
+          },
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.path.petId": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets/{petId}-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets/{petId}-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:6>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.path.id": "method.request.path.petId"
+        },
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets/{petId}-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[prepend]": {
+    "recorded-date": "15-04-2024, 21:36:04",
+    "recorded-content": {
+      "put-rest-api-oas30-srv-var": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-oas30-srv-var": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/base-var",
+            "pathPart": "base-var"
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:3>",
+            "path": "/base-var/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-base-var/test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:4>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-response-base-var/test-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-base-var/test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:4>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+        },
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-response-base-var/test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-base-var/test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:4>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-response-base-var/test-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-base-var/test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:4>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-response-base-var/test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-rest-api-oas30-srv-url": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-oas30-srv-url": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:5>",
+            "parentId": "<id:2>",
+            "path": "/base-url",
+            "pathPart": "base-url"
+          },
+          {
+            "id": "<id:6>",
+            "parentId": "<id:5>",
+            "path": "/base-url/part",
+            "pathPart": "part"
+          },
+          {
+            "id": "<id:7>",
+            "parentId": "<id:6>",
+            "path": "/base-url/part/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-base-url/part/test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:7>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-response-base-url/part/test-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-base-url/part/test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:7>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+        },
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-response-base-url/part/test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-base-url/part/test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:7>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-response-base-url/part/test-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-base-url/part/test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:7>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-response-base-url/part/test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[split]": {
+    "recorded-date": "15-04-2024, 21:36:26",
+    "recorded-content": {
+      "put-rest-api-oas30-srv-var": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-oas30-srv-var": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-response-test-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+        },
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-response-test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-response-test-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-response-test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-rest-api-oas30-srv-url": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-oas30-srv-url": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:2>",
+            "path": "/part",
+            "pathPart": "part"
+          },
+          {
+            "id": "<id:5>",
+            "parentId": "<id:4>",
+            "path": "/part/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-part/test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:5>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-response-part/test-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-part/test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:5>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+        },
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-response-part/test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-part/test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:5>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-response-part/test-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-part/test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:5>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-response-part/test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[ignore]": {
+    "recorded-date": "15-04-2024, 21:35:47",
+    "recorded-content": {
+      "put-rest-api-oas30-srv-var": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-oas30-srv-var": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-response-test-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+        },
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-response-test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-method-response-test-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-var-integration-response-test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-rest-api-oas30-srv-url": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {},
+        "version": "2.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-resources-oas30-srv-url": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/test",
+            "pathPart": "test",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-test-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-response-test-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-test-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+        },
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-response-test-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-test-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-method-response-test-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-test-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "srv-url-integration-response-test-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_global_api_key_authorizer": {
+    "recorded-date": "15-04-2024, 21:37:12",
+    "recorded-content": {
+      "import-swagger": {
+        "apiKeySource": "AUTHORIZER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:3>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-authorizers": {
+        "items": [
+          {
+            "authType": "custom",
+            "authorizerResultTtlInSeconds": 300,
+            "authorizerUri": "<authorizer-uri:1>",
+            "id": "<id:2>",
+            "identitySource": "method.request.header.Custom-Authorization",
+            "name": "<name:2>",
+            "type": "REQUEST"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:3>",
+            "path": "/"
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:3>",
+            "path": "/echo",
+            "pathPart": "echo"
+          },
+          {
+            "id": "<id:5>",
+            "parentId": "<id:4>",
+            "path": "/echo/{data}",
+            "pathPart": "{data}",
+            "resourceMethods": {
+              "ANY": {}
+            }
+          },
+          {
+            "id": "<id:6>",
+            "parentId": "<id:3>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-echo/{data}-any": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<id:2>",
+        "httpMethod": "ANY",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:5>",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {
+                "application/json": {
+                  "echo": "$input.params('data')",
+                  "response": "mocked"
+                }
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.path.data": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-echo/{data}-any": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-echo/{data}-any": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:5>",
+        "integrationResponses": {
+          "200": {
+            "responseTemplates": {
+              "application/json": {
+                "echo": "$input.params('data')",
+                "response": "mocked"
+              }
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_TEMPLATES",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-echo/{data}-any": {
+        "responseTemplates": {
+          "application/json": {
+            "echo": "$input.params('data')",
+            "response": "mocked"
+          }
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<id:2>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:6>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:6>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models": {
+    "recorded-date": "15-04-2024, 21:37:35",
+    "recorded-content": {
+      "import-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<rest-id:1>",
+        "name": "Circular model reference",
+        "rootResourceId": "<resource-id:1>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "id": "<model-id:1>",
+            "name": "Empty",
+            "schema": {
+              "title": "Empty Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "Where a Person can live",
+            "id": "<model-id:2>",
+            "name": "House",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "randomProperty": {
+                  "type": "string",
+                  "description": "Random property",
+                  "format": "byte"
+                },
+                "contains": {
+                  "minItems": 1,
+                  "type": "array",
+                  "description": "The information of who is living in the house",
+                  "items": {
+                    "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Person"
+                  }
+                }
+              },
+              "description": "Where a Person can live"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "Random person schema.",
+            "id": "<model-id:3>",
+            "name": "Person",
+            "schema": {
+              "required": [
+                "b",
+                "name"
+              ],
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Random property"
+                },
+                "b": {
+                  "type": "number"
+                },
+                "house": {
+                  "$ref": "<model-base-url>/restapis/<rest-id:1>/models/House"
+                }
+              },
+              "description": "Random person schema."
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<resource-id:1>",
+            "path": "/"
+          },
+          {
+            "id": "<resource-id:2>",
+            "parentId": "<resource-id:1>",
+            "path": "/person",
+            "pathPart": "person",
+            "resourceMethods": {
+              "POST": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-person-post": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {
+                "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "statusCode": "200"
+          }
+        },
+        "operationName": "CreatePerson",
+        "requestModels": {
+          "application/json": "Person"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-person-post": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-person-post": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseTemplates": {
+              "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_TEMPLATES",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-person-post": {
+        "responseTemplates": {
+          "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models_and_request_validation": {
+    "recorded-date": "15-04-2024, 21:38:12",
+    "recorded-content": {
+      "import-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<rest-id:1>",
+        "name": "Circular model reference",
+        "rootResourceId": "<resource-id:1>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "id": "<model-id:1>",
+            "name": "Empty",
+            "schema": {
+              "title": "Empty Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "Where a Person can live",
+            "id": "<model-id:2>",
+            "name": "House",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "randomProperty": {
+                  "type": "string",
+                  "description": "Random property",
+                  "format": "byte"
+                },
+                "contains": {
+                  "minItems": 1,
+                  "type": "array",
+                  "description": "The information of who is living in the house",
+                  "items": {
+                    "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Person"
+                  }
+                }
+              },
+              "description": "Where a Person can live"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "Random person schema.",
+            "id": "<model-id:3>",
+            "name": "Person",
+            "schema": {
+              "required": [
+                "b",
+                "name"
+              ],
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Random property"
+                },
+                "b": {
+                  "type": "number"
+                },
+                "house": {
+                  "$ref": "<model-base-url>/restapis/<rest-id:1>/models/House"
+                }
+              },
+              "description": "Random person schema."
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "request-validators": {
+        "items": [
+          {
+            "id": "<request-validator-id:1>",
+            "name": "basic",
+            "validateRequestBody": true,
+            "validateRequestParameters": true
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<resource-id:1>",
+            "path": "/"
+          },
+          {
+            "id": "<resource-id:2>",
+            "parentId": "<resource-id:1>",
+            "path": "/person",
+            "pathPart": "person",
+            "resourceMethods": {
+              "POST": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-person-post": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {
+                "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "statusCode": "200"
+          }
+        },
+        "operationName": "CreatePerson",
+        "requestModels": {
+          "application/json": "Person"
+        },
+        "requestValidatorId": "<request-validator-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-person-post": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-person-post": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseTemplates": {
+              "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_TEMPLATES",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-person-post": {
+        "responseTemplates": {
+          "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_http_method_integration": {
+    "recorded-date": "15-04-2024, 21:39:47",
+    "recorded-content": {
+      "resources": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-root-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:1>",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": "#set($allParams = $input.params())\n{\n  \"params\" : {\n    #foreach($type in $allParams.keySet())\n      #set($params = $allParams.get($type))\n      \"$type\" : {\n        #foreach($paramName in $params.keySet())\n          \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\n          #if($foreach.hasNext),#end\n        #end\n      }\n      #if($foreach.hasNext),#end\n    #end\n  }\n}\n"
+          },
+          "timeoutInMillis": 29000,
+          "type": "AWS",
+          "uri": "<uri:1>"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:1>",
+        "contentHandling": "CONVERT_TO_TEXT",
+        "httpMethod": "POST",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_TEMPLATES",
+        "requestParameters": {
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+        },
+        "requestTemplates": {
+          "application/json": "#set($allParams = $input.params())\n{\n  \"params\" : {\n    #foreach($type in $allParams.keySet())\n      #set($params = $allParams.get($type))\n      \"$type\" : {\n        #foreach($paramName in $params.keySet())\n          \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\n          #if($foreach.hasNext),#end\n        #end\n      }\n      #if($foreach.hasNext),#end\n    #end\n  }\n}\n"
+        },
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "<uri:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-root-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:1>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:1>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_stage_variables": {
+    "recorded-date": "12-08-2024, 13:42:20",
+    "recorded-content": {
+      "get-resp-from-http": {
+        "args": {
+          "qs_key": "qs_value"
+        },
+        "data": "",
+        "domain": "<domain:1>",
+        "method": "POST",
+        "origin": "<origin:1>",
+        "path": "/test-path"
+      },
+      "get-error-resp-from-http": {
+        "message": "Internal server error"
+      }
+    }
+  }
+}

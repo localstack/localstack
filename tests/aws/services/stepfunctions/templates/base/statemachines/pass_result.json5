@@ -1,0 +1,13 @@
+{
+  "Comment": "BASE_PASS_RESULT",
+  "StartAt": "State_1",
+  "States": {
+    "State_1": {
+      "Type": "Pass",
+      "Result": {
+        "Arg1": "argument1",
+      },
+      "End": true,
+    }
+  },
+}

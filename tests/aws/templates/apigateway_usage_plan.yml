@@ -1,0 +1,64 @@
+Parameters:
+  QuotaLimit:
+    Type: Number
+  TagValue:
+    Type: String
+  RestApiName:
+    Type: String
+Resources:
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Ref RestApiName
+  Stage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      DeploymentId:
+        Ref: ApiDeployment
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      ApiStages:
+        - ApiId:
+            Ref: RestApi
+          Stage:
+            Ref: Stage
+      Quota:
+        Limit:
+          Ref: QuotaLimit
+        Period: MONTH
+      Tags:
+        - Key: test
+          Value:
+            Ref: TagValue
+        - Key: test2
+          Value: hardcoded
+    DependsOn:
+      - Stage
+  MockMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !GetAtt
+        - RestApi
+        - RootResourceId
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      Description: Automatically created by the RestApi construct
+    DependsOn:
+      - MockMethod
+
+Outputs:
+    UsagePlanId:
+        Value: !Ref UsagePlan
+    RestApiId:
+        Value: !GetAtt RestApi.RestApiId

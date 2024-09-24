@@ -1,0 +1,49 @@
+{
+  "tests/aws/scenario/kinesis_firehose/test_kinesis_firehose.py::TestKinesisFirehoseScenario::test_kinesis_firehose_s3": {
+    "recorded-date": "15-02-2024, 19:31:48",
+    "recorded-content": {
+      "s3": [
+        {
+          "Id": "message_id_0",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_1",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_2",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_3",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_4",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_5",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_6",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_7",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_8",
+          "Data": "Test-message-2948294kdlsie"
+        },
+        {
+          "Id": "message_id_9",
+          "Data": "Test-message-2948294kdlsie"
+        }
+      ]
+    }
+  }
+}

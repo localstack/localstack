@@ -1,0 +1,23 @@
+Resources:
+  NewPrefixList:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      PrefixListName: "vpc-1-servers"
+      AddressFamily: "IPv4"
+      MaxEntries: 10
+      Entries:
+        - Cidr: "10.0.0.5/32"
+          Description: "Server 1"
+        - Cidr: "10.0.0.10/32"
+          Description: "Server 2"
+      Tags:
+        - Key: "Name"
+          Value: "VPC-1-Servers"
+
+Outputs:
+  PrefixRef:
+    Value: !Ref NewPrefixList
+  PrefixArn:
+    Value: !GetAtt NewPrefixList.Arn
+  PrefixId:
+    Value: !GetAtt NewPrefixList.PrefixListId

@@ -1,0 +1,25 @@
+name: Update Docker Hub Description
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - DOCKER.md
+      - .github/workflows/dockerhub-description.yml
+
+jobs:
+  dockerHubDescription:
+    name: Sync DockerHub Description
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Docker Hub Description
+      uses: peter-evans/dockerhub-description@v4
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        repository: localstack/localstack
+        short-description: ${{ github.event.repository.description }}
+        readme-filepath: DOCKER.md

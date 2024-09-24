@@ -1,0 +1,32 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_equals": {
+    "last_validated_date": "2023-06-22T11:15:27+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_equals_path": {
+    "last_validated_date": "2023-06-22T11:15:46+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than": {
+    "last_validated_date": "2023-06-22T11:16:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_equals": {
+    "last_validated_date": "2023-06-22T11:16:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_equals_path": {
+    "last_validated_date": "2023-06-22T11:16:54+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_path": {
+    "last_validated_date": "2023-06-22T11:16:20+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than": {
+    "last_validated_date": "2023-06-22T11:17:10+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals": {
+    "last_validated_date": "2023-06-22T11:17:43+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals_path": {
+    "last_validated_date": "2023-06-22T11:17:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_path": {
+    "last_validated_date": "2023-06-22T11:17:26+00:00"
+  }
+}

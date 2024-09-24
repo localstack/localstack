@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_integration.py::test_events_sqs_sns_lambda": {
+    "last_validated_date": "2024-07-02T18:43:06+00:00"
+  }
+}

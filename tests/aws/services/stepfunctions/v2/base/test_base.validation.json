@@ -1,0 +1,41 @@
+{
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_decl_version_1_0": {
+    "last_validated_date": "2024-02-07T13:52:02+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_event_bridge_events_base": {
+    "last_validated_date": "2024-02-07T13:56:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[0]]": {
+    "last_validated_date": "2024-08-16T15:52:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[10]]": {
+    "last_validated_date": "2024-08-16T15:53:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_query_context_object_values": {
+    "last_validated_date": "2024-07-15T13:00:19+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail": {
+    "last_validated_date": "2024-03-06T10:29:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_empty": {
+    "last_validated_date": "2024-03-06T10:24:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_intrinsic": {
+    "last_validated_date": "2024-02-07T13:49:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_path": {
+    "last_validated_date": "2024-02-07T13:49:36+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_regex_json_path_base": {
+    "last_validated_date": "2024-02-07T13:52:55+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result": {
+    "last_validated_date": "2024-02-07T13:50:16+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result_jsonpaths": {
+    "last_validated_date": "2024-02-07T13:50:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result_null_input_output_paths": {
+    "last_validated_date": "2024-02-07T13:52:29+00:00"
+  }
+}

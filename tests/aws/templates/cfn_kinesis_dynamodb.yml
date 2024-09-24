@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  TableName:
+    Type: String
+    Default: EventTable
+Resources:
+  EventStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: EventStream
+      ShardCount: 1
+  EventTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: pkey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pkey
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      KinesisStreamSpecification:
+        StreamArn: !GetAtt EventStream.Arn

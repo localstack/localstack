@@ -1,0 +1,108 @@
+Resources:
+  statemachineRole52044F93:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                Fn::FindInMap:
+                  - ServiceprincipalMap
+                  - Ref: AWS::Region
+                  - states
+        Version: "2012-10-17"
+  statemachineC5962F3E:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - statemachineRole52044F93
+          - Arn
+      DefinitionString: '{"StartAt":"Choice State","States":{"Choice State":{"Type":"Choice","Choices":[{"Not":{"Variable":"$.type","StringEquals":"Private"},"Next":"NEXT_STATE_ONE"},{"Variable":"$.value","NumericEquals":0,"Next":"NEXT_STATE_TWO"},{"And":[{"Variable":"$.value","NumericGreaterThanEquals":20},{"Variable":"$.value","NumericLessThan":30}],"Next":"NEXT_STATE_TWO"}],"Default":"DEFAULT_STATE"},"DEFAULT_STATE":{"Type":"Pass","End":true},"NEXT_STATE_ONE":{"Type":"Pass","End":true},"NEXT_STATE_TWO":{"Type":"Pass","End":true}}}'
+    DependsOn:
+      - statemachineRole52044F93
+Outputs:
+  StateMachineArn:
+    Value:
+      Ref: statemachineC5962F3E
+  StateMachineName:
+    Value:
+      Fn::GetAtt:
+        - statemachineC5962F3E
+        - Name
+  RoleArn:
+    Value:
+      Fn::GetAtt:
+        - statemachineRole52044F93
+        - Arn
+  RoleName:
+    Value:
+      Ref: statemachineRole52044F93
+Mappings:
+  ServiceprincipalMap:
+    af-south-1:
+      states: states.af-south-1.amazonaws.com
+    ap-east-1:
+      states: states.ap-east-1.amazonaws.com
+    ap-northeast-1:
+      states: states.ap-northeast-1.amazonaws.com
+    ap-northeast-2:
+      states: states.ap-northeast-2.amazonaws.com
+    ap-northeast-3:
+      states: states.ap-northeast-3.amazonaws.com
+    ap-south-1:
+      states: states.ap-south-1.amazonaws.com
+    ap-south-2:
+      states: states.ap-south-2.amazonaws.com
+    ap-southeast-1:
+      states: states.ap-southeast-1.amazonaws.com
+    ap-southeast-2:
+      states: states.ap-southeast-2.amazonaws.com
+    ap-southeast-3:
+      states: states.ap-southeast-3.amazonaws.com
+    ca-central-1:
+      states: states.ca-central-1.amazonaws.com
+    cn-north-1:
+      states: states.cn-north-1.amazonaws.com
+    cn-northwest-1:
+      states: states.cn-northwest-1.amazonaws.com
+    eu-central-1:
+      states: states.eu-central-1.amazonaws.com
+    eu-north-1:
+      states: states.eu-north-1.amazonaws.com
+    eu-south-1:
+      states: states.eu-south-1.amazonaws.com
+    eu-south-2:
+      states: states.eu-south-2.amazonaws.com
+    eu-west-1:
+      states: states.eu-west-1.amazonaws.com
+    eu-west-2:
+      states: states.eu-west-2.amazonaws.com
+    eu-west-3:
+      states: states.eu-west-3.amazonaws.com
+    me-central-1:
+      states: states.me-central-1.amazonaws.com
+    me-south-1:
+      states: states.me-south-1.amazonaws.com
+    sa-east-1:
+      states: states.sa-east-1.amazonaws.com
+    us-east-1:
+      states: states.us-east-1.amazonaws.com
+    us-east-2:
+      states: states.us-east-2.amazonaws.com
+    us-gov-east-1:
+      states: states.us-gov-east-1.amazonaws.com
+    us-gov-west-1:
+      states: states.us-gov-west-1.amazonaws.com
+    us-iso-east-1:
+      states: states.amazonaws.com
+    us-iso-west-1:
+      states: states.amazonaws.com
+    us-isob-east-1:
+      states: states.amazonaws.com
+    us-west-1:
+      states: states.us-west-1.amazonaws.com
+    us-west-2:
+      states: states.us-west-2.amazonaws.com

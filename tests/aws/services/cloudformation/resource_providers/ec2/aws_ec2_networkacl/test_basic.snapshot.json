@@ -1,0 +1,59 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/ec2/aws_ec2_networkacl/test_basic.py::TestBasicCRD::test_black_box": {
+    "recorded-date": "31-10-2023, 13:22:34",
+    "recorded-content": {
+      "stack-outputs": {
+        "NetworkAclId": "<network-acl-id:1>"
+      },
+      "describe-resource": {
+        "NetworkAcls": [
+          {
+            "Associations": [],
+            "Entries": [
+              {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": true,
+                "Protocol": "-1",
+                "RuleAction": "deny",
+                "RuleNumber": 32767
+              },
+              {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "Protocol": "-1",
+                "RuleAction": "deny",
+                "RuleNumber": 32767
+              }
+            ],
+            "IsDefault": false,
+            "NetworkAclId": "<network-acl-id:1>",
+            "OwnerId": "111111111111",
+            "Tags": [
+              {
+                "Key": "aws:cloudformation:stack-name",
+                "Value": "stack-a3136b58"
+              },
+              {
+                "Key": "Name",
+                "Value": "MyNetworkAcl"
+              },
+              {
+                "Key": "aws:cloudformation:stack-id",
+                "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-a3136b58/5678bc60-781a-11ee-a5d9-12b01e58fcd9"
+              },
+              {
+                "Key": "aws:cloudformation:logical-id",
+                "Value": "NetworkAcl"
+              }
+            ],
+            "VpcId": "vpc-0a70974840d8af0ba"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

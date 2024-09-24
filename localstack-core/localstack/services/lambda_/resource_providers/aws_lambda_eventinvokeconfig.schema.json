@@ -1,0 +1,77 @@
+{
+  "typeName": "AWS::Lambda::EventInvokeConfig",
+  "description": "Resource Type definition for AWS::Lambda::EventInvokeConfig",
+  "additionalProperties": false,
+  "properties": {
+    "FunctionName": {
+      "type": "string"
+    },
+    "MaximumRetryAttempts": {
+      "type": "integer"
+    },
+    "Qualifier": {
+      "type": "string"
+    },
+    "DestinationConfig": {
+      "$ref": "#/definitions/DestinationConfig"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "MaximumEventAgeInSeconds": {
+      "type": "integer"
+    }
+  },
+  "definitions": {
+    "DestinationConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "OnSuccess": {
+          "$ref": "#/definitions/OnSuccess"
+        },
+        "OnFailure": {
+          "$ref": "#/definitions/OnFailure"
+        }
+      }
+    },
+    "OnSuccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Destination": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Destination"
+      ]
+    },
+    "OnFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Destination": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Destination"
+      ]
+    }
+  },
+  "required": [
+    "FunctionName",
+    "Qualifier"
+  ],
+  "createOnlyProperties": [
+    "/properties/FunctionName",
+    "/properties/Qualifier"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

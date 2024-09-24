@@ -1,0 +1,13 @@
+{
+    "Comment": "ARRAY_PARTITION",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.ArrayPartition($.FunctionInput.fst, $.FunctionInput.snd)"
+            },
+            "End": true,
+        },
+    },
+}

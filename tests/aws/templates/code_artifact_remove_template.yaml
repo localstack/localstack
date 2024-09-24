@@ -1,0 +1,134 @@
+Resources:
+  TestBucket560B80BC:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: UpdateCdkStack/TestBucket/Resource
+  TestBucketPolicyBA12ED38:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: TestBucket560B80BC
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - TestBucket560B80BC
+                      - Arn
+                  - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: UpdateCdkStack/TestBucket/Policy/Resource
+  HestBucketABE4AE1C:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: UpdateCdkStack/HestBucket/Resource
+  HestBucketPolicy276ECA48:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: HestBucketABE4AE1C
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - HestBucketABE4AE1C
+                      - Arn
+                  - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: UpdateCdkStack/HestBucket/Policy/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/0XIQQqDMBCF4bO4T6ZaKXRdewDRA5R0jHSqzkAyUiR49yoWunr/+85QXCDP3Cda7AY70hNSqw4Hs9EjoXTeBaXeoULV810mR2xiCek24+DVbPirY2oZCZc/H39dd2l8lDmg37sS7khJeDX1oi/hUwlXKPLsHYlsmFlp8tAc+wUWGrSMpgAAAA==
+    Metadata:
+      aws:cdk:path: UpdateCdkStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2

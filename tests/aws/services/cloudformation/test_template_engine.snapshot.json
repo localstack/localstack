@@ -1,0 +1,677 @@
+{
+  "tests/aws/services/cloudformation/test_template_engine.py::TestTypes::test_implicit_type_conversion": {
+    "recorded-date": "29-08-2023, 15:21:22",
+    "recorded-content": {
+      "queue": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "2",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
+    "recorded-date": "30-01-2023, 20:14:48",
+    "recorded-content": {
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "ParameterName": {
+              "Value": {
+                "Ref": "Parameter"
+              }
+            }
+          },
+          "Parameters": {
+            "Substitution": {
+              "Default": "SubstitutionDefault",
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Parameter": {
+              "Properties": {
+                "Type": "String",
+                "Value": "new-value"
+              },
+              "Type": "AWS::SSM::Parameter"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope": {
+    "recorded-date": "06-12-2022, 09:44:49",
+    "recorded-content": {
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "Topic",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Parameters": {
+            "TopicName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Topic": {
+              "Properties": {
+                "ContentBasedDeduplication": true,
+                "FifoTopic": true,
+                "TopicName": {
+                  "Ref": "TopicName"
+                }
+              },
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_scope_order_and_parameters": {
+    "recorded-date": "07-12-2022, 09:08:26",
+    "recorded-content": {
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Resources": {
+            "Parameter": {
+              "Properties": {
+                "Type": "String",
+                "Value": "snippet-transform second-snippet-transform global-transform second-global-transform <replace-this>"
+              },
+              "Type": "AWS::SSM::Parameter"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.yml]": {
+    "recorded-date": "08-12-2022, 16:24:58",
+    "recorded-content": {
+      "original_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "Parameters:\n  TopicName:\n    Type: String\n\nResources:\n  Topic:\n    Type: AWS::SNS::Topic\n    Properties:\n      TopicName:\n        Ref: TopicName\n      Fn::Transform: ConvertTopicToFifo\n\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - Topic\n        - TopicName\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "Topic",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Parameters": {
+            "TopicName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Topic": {
+              "Properties": {
+                "ContentBasedDeduplication": true,
+                "FifoTopic": true,
+                "TopicName": {
+                  "Ref": "TopicName"
+                }
+              },
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.json]": {
+    "recorded-date": "08-12-2022, 16:25:43",
+    "recorded-content": {
+      "original_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "Topic",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Parameters": {
+            "TopicName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Topic": {
+              "Properties": {
+                "Fn::Transform": "ConvertTopicToFifo",
+                "TopicName": {
+                  "Ref": "TopicName"
+                }
+              },
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "Topic",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Parameters": {
+            "TopicName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Topic": {
+              "Properties": {
+                "ContentBasedDeduplication": true,
+                "FifoTopic": true,
+                "TopicName": {
+                  "Ref": "TopicName"
+                }
+              },
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
+    "recorded-date": "30-01-2023, 20:15:46",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InsufficientCapabilitiesException",
+          "Message": "Requires capabilities : [CAPABILITY_AUTO_EXPAND]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "ParameterName": {
+              "Value": {
+                "Ref": "Parameter"
+              }
+            }
+          },
+          "Resources": {
+            "Parameter": {
+              "Properties": {
+                "Type": "String",
+                "Value": "not-important"
+              },
+              "Type": "AWS::SSM::Parameter"
+            },
+            "Role": {
+              "Properties": {
+                "AssumeRolePolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "sts:AssumeRole",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "AWS": "*"
+                      }
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                  {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":iam::aws:policy/AdministratorAccess"
+                      ]
+                    ]
+                  }
+                ],
+                "RoleName": "<role-name:1>"
+              },
+              "Type": "AWS::IAM::Role"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
+    "recorded-date": "30-01-2023, 20:16:45",
+    "recorded-content": {
+      "event": {
+        "Event": {
+          "accountId": "111111111111",
+          "fragment": {
+            "Parameters": {
+              "ExampleParameter": {
+                "Type": "String",
+                "Default": "example-value"
+              }
+            },
+            "Resources": {
+              "Parameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                  "Value": "<replace-this>",
+                  "Type": "String"
+                }
+              }
+            }
+          },
+          "transformId": "111111111111::PrintInternals",
+          "requestId": "<uuid:1>",
+          "region": "<region>",
+          "params": {
+            "Input": "test-input"
+          },
+          "templateParameterValues": {
+            "ExampleParameter": "example-value"
+          }
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
+    "recorded-date": "30-01-2023, 20:17:04",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value '<template-body>' at 'templateBody' failed to satisfy constraint: Member must have length less than or equal to 51200",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_error_pass_macro_as_reference": {
+    "recorded-date": "30-01-2023, 20:17:05",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Key Name of transform definition must be a string.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_error_macro_param_as_reference": {
+    "recorded-date": "08-12-2022, 11:50:49",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_functions_and_references_during_transformation": {
+    "recorded-date": "30-01-2023, 20:17:55",
+    "recorded-content": {
+      "event": {
+        "Params": {
+          "Input": "CreateStackInput"
+        },
+        "FunctionValue": {
+          "Fn::Join": [
+            " ",
+            [
+              "Hello",
+              "World"
+            ]
+          ]
+        },
+        "ValueOfRef": {
+          "Ref": "Substitution"
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
+    "recorded-date": "30-01-2023, 20:18:45",
+    "recorded-content": {
+      "failed_description": {
+        "EventId": "<uuid:1>",
+        "LogicalResourceId": "<stack-name:1>",
+        "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+        "ResourceStatusReason": "Transform 111111111111::Unsuccessful failed with: failed because it is a test. Rollback requested by user.",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
+    "recorded-date": "30-01-2023, 20:19:35",
+    "recorded-content": {
+      "failed_description": {
+        "EventId": "<uuid:1>",
+        "LogicalResourceId": "<stack-name:1>",
+        "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+        "ResourceStatusReason": "Transform 111111111111::Unsuccessful failed without an error message.. Rollback requested by user.",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
+    "recorded-date": "30-01-2023, 20:20:30",
+    "recorded-content": {
+      "failed_description": {
+        "EventId": "<uuid:1>",
+        "LogicalResourceId": "<stack-name:1>",
+        "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+        "ResourceStatusReason": "Template format error: unsupported structure.. Rollback requested by user.",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_failed_state[raise_error.py]": {
+    "recorded-date": "30-01-2023, 20:21:20",
+    "recorded-content": {
+      "failed_description": {
+        "EventId": "<uuid:1>",
+        "LogicalResourceId": "<stack-name:1>",
+        "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+        "ResourceStatusReason": "Received malformed response from transform 111111111111::Unsuccessful. Rollback requested by user.",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
+    "recorded-date": "15-01-2023, 17:54:23",
+    "recorded-content": {
+      "stack-details": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "parameter123",
+            "ParameterValue": "<parameter-value:1>",
+            "ResolvedValue": "<resolved-value:1>"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      },
+      "topic-tags": {
+        "Tags": [
+          {
+            "Key": "param-value",
+            "Value": "param <resolved-value:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_macro_deployment": {
+    "recorded-date": "30-01-2023, 20:13:58",
+    "recorded-content": {
+      "stack_outputs": {
+        "MacroRef": "SubstitutionMacro"
+      },
+      "stack_resource_descriptions": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "Macro",
+            "PhysicalResourceId": "SubstitutionMacro",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Macro",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestStackEvents::test_invalid_stack_deploy": {
+    "recorded-date": "12-06-2023, 17:08:47",
+    "recorded-content": {
+      "failed_event": {
+        "EventId": "MyParameter-CREATE_FAILED-date",
+        "LogicalResourceId": "MyParameter",
+        "PhysicalResourceId": "",
+        "ResourceProperties": {
+          "Value": "abc123"
+        },
+        "ResourceStatus": "CREATE_FAILED",
+        "ResourceStatusReason": "Property validation failure: [The property {/Type} is required]",
+        "ResourceType": "AWS::SSM::Parameter",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_pyplate_param_type_list": {
+    "recorded-date": "17-05-2024, 06:19:03",
+    "recorded-content": {
+      "tags": [
+        [
+          "Application",
+          "MyApp"
+        ],
+        [
+          "BU",
+          "ModernisationTeam"
+        ],
+        [
+          "Env",
+          "Prod"
+        ]
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestImportValues::test_cfn_with_exports": {
+    "recorded-date": "21-06-2024, 18:37:15",
+    "recorded-content": {
+      "exports": [
+        {
+          "ExportingStackId": "<stack-id>",
+          "Name": "<stack-name>-TestExport-0",
+          "Value": "test"
+        },
+        {
+          "ExportingStackId": "<stack-id>",
+          "Name": "<stack-name>-TestExport-1",
+          "Value": "test"
+        },
+        {
+          "ExportingStackId": "<stack-id>",
+          "Name": "<stack-name>-TestExport-2",
+          "Value": "test"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestPseudoParameters::test_stack_id": {
+    "recorded-date": "18-07-2024, 08:56:47",
+    "recorded-content": {
+      "StackId": "<stack-id>"
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_change_set_with_ssm_parameter_list": {
+    "recorded-date": "08-08-2024, 21:21:23",
+    "recorded-content": {
+      "role-name": "<role-name:1>",
+      "iam_role_policy": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "*",
+              "Effect": "Allow",
+              "Resource": [
+                "arn:<partition>:ssm:<region>:111111111111:parameter/some/params",
+                "arn:<partition>:ssm:<region>:111111111111:parameter/some/other/params"
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "policy-123",
+        "RoleName": "<role-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

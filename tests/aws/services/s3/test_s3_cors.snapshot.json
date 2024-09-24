@@ -1,0 +1,787 @@
+{
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_http_options_no_config": {
+    "recorded-date": "31-07-2023, 18:24:51",
+    "recorded-content": {
+      "options-no-origin": {
+        "Error": {
+          "Code": "BadRequest",
+          "HostId": "host-id",
+          "Message": "Insufficient information. Origin request header needed.",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "options-with-origin-and-method": {
+        "Error": {
+          "Code": "AccessForbidden",
+          "HostId": "host-id",
+          "Message": "CORSResponse: CORS is not enabled for this bucket.",
+          "Method": "PUT",
+          "RequestId": "<request-id:2>",
+          "ResourceType": "BUCKET"
+        }
+      },
+      "options-with-origin-no-method": {
+        "Error": {
+          "Code": "AccessForbidden",
+          "HostId": "host-id",
+          "Message": "CORSResponse: CORS is not enabled for this bucket.",
+          "Method": "OPTIONS",
+          "RequestId": "<request-id:3>",
+          "ResourceType": "BUCKET"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_http_get_no_config": {
+    "recorded-date": "31-07-2023, 12:31:37",
+    "recorded-content": {}
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_http_options_non_existent_bucket": {
+    "recorded-date": "31-07-2023, 12:31:40",
+    "recorded-content": {
+      "options-no-origin": {
+        "Error": {
+          "Code": "BadRequest",
+          "HostId": "host-id",
+          "Message": "Insufficient information. Origin request header needed.",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "options-with-origin": {
+        "Error": {
+          "Code": "AccessForbidden",
+          "HostId": "host-id",
+          "Message": "CORSResponse: Bucket not found",
+          "Method": "OPTIONS",
+          "RequestId": "<request-id:2>",
+          "ResourceType": "BUCKET"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_origins": {
+    "recorded-date": "31-07-2023, 12:31:46",
+    "recorded-content": {
+      "opt-no-origin": {
+        "Body": {
+          "Error": {
+            "Code": "BadRequest",
+            "HostId": "<x-amz-id-2:1>",
+            "Message": "Insufficient information. Origin request header needed.",
+            "RequestId": "<x-amz-request-id:1>"
+          }
+        },
+        "Headers": {
+          "Connection": "close",
+          "Content-Type": "application/xml",
+          "Transfer-Encoding": "chunked",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 400
+      },
+      "get-no-origin": {
+        "Body": "test-cors",
+        "Headers": {
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:2>",
+          "x-amz-request-id": "<x-amz-request-id:2>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      },
+      "opt-referer": {
+        "Body": {
+          "Error": {
+            "Code": "BadRequest",
+            "HostId": "<x-amz-id-2:3>",
+            "Message": "Insufficient information. Origin request header needed.",
+            "RequestId": "<x-amz-request-id:3>"
+          }
+        },
+        "Headers": {
+          "Connection": "close",
+          "Content-Type": "application/xml",
+          "Transfer-Encoding": "chunked",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:3>",
+          "x-amz-request-id": "<x-amz-request-id:3>"
+        },
+        "StatusCode": 400
+      },
+      "get-referer": {
+        "Body": "test-cors",
+        "Headers": {
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:4>",
+          "x-amz-request-id": "<x-amz-request-id:4>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      },
+      "opt-right-origin": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET, PUT",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:5>",
+          "x-amz-request-id": "<x-amz-request-id:5>"
+        },
+        "StatusCode": 200
+      },
+      "get-right-origin": {
+        "Body": "test-cors",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET, PUT",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:6>",
+          "x-amz-request-id": "<x-amz-request-id:6>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      },
+      "opt-wrong-origin": {
+        "Body": {
+          "Error": {
+            "Code": "AccessForbidden",
+            "HostId": "<x-amz-id-2:7>",
+            "Message": "CORSResponse: This CORS request is not allowed. This is usually because the evalution of Origin, request method / Access-Control-Request-Method or Access-Control-Request-Headers are not whitelisted by the resource's CORS spec.",
+            "Method": "PUT",
+            "RequestId": "<x-amz-request-id:7>",
+            "ResourceType": "OBJECT"
+          }
+        },
+        "Headers": {
+          "Content-Type": "application/xml",
+          "Transfer-Encoding": "chunked",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:7>",
+          "x-amz-request-id": "<x-amz-request-id:7>"
+        },
+        "StatusCode": 403
+      },
+      "get-wrong-origin": {
+        "Body": "test-cors",
+        "Headers": {
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:8>",
+          "x-amz-request-id": "<x-amz-request-id:8>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      },
+      "opt-random-wildcard-origin": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Methods": "GET, PUT",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:9>",
+          "x-amz-request-id": "<x-amz-request-id:9>"
+        },
+        "StatusCode": 200
+      },
+      "get-random-wildcard-origin": {
+        "Body": "test-cors",
+        "Headers": {
+          "Access-Control-Allow-Methods": "GET, PUT",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:10>",
+          "x-amz-request-id": "<x-amz-request-id:10>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_methods": {
+    "recorded-date": "31-07-2023, 12:34:36",
+    "recorded-content": {
+      "opt-get": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 200
+      },
+      "get-wrong-op": {
+        "Body": "test-cors",
+        "Headers": {
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:2>",
+          "x-amz-request-id": "<x-amz-request-id:2>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      },
+      "get-op": {
+        "Body": "test-cors",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:3>",
+          "x-amz-request-id": "<x-amz-request-id:3>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      },
+      "opt-put": {
+        "Body": {
+          "Error": {
+            "Code": "AccessForbidden",
+            "HostId": "<x-amz-id-2:4>",
+            "Message": "CORSResponse: This CORS request is not allowed. This is usually because the evalution of Origin, request method / Access-Control-Request-Method or Access-Control-Request-Headers are not whitelisted by the resource's CORS spec.",
+            "Method": "PUT",
+            "RequestId": "<x-amz-request-id:4>",
+            "ResourceType": "OBJECT"
+          }
+        },
+        "Headers": {
+          "Content-Type": "application/xml",
+          "Transfer-Encoding": "chunked",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:4>",
+          "x-amz-request-id": "<x-amz-request-id:4>"
+        },
+        "StatusCode": 403
+      },
+      "put-op": {
+        "Body": "",
+        "Headers": {
+          "Content-Length": "0",
+          "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:5>",
+          "x-amz-request-id": "<x-amz-request-id:5>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_headers": {
+    "recorded-date": "02-01-2024, 16:08:41",
+    "recorded-content": {
+      "opt-get": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Headers": "x-amz-request-payer",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 200
+      },
+      "opt-get-two": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Headers": "x-amz-request-payer, x-amz-expected-bucket-owner",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:2>",
+          "x-amz-request-id": "<x-amz-request-id:2>"
+        },
+        "StatusCode": 200
+      },
+      "get-op": {
+        "Body": "test-cors",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:3>",
+          "x-amz-request-id": "<x-amz-request-id:3>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      },
+      "get-bucket-cors-casing": {
+        "CORSRules": [
+          {
+            "AllowedHeaders": [
+              "x-amz-expected-bucket-owner",
+              "x-amz-server-side-encryption-customer-algorithm",
+              "x-AMZ-server-SIDE-encryption"
+            ],
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "https://localhost:4200"
+            ],
+            "MaxAgeSeconds": 3000
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "opt-get-non-allowed": {
+        "Body": {
+          "Error": {
+            "Code": "AccessForbidden",
+            "HostId": "<x-amz-id-2:5>",
+            "Message": "CORSResponse: This CORS request is not allowed. This is usually because the evalution of Origin, request method / Access-Control-Request-Method or Access-Control-Request-Headers are not whitelisted by the resource's CORS spec.",
+            "Method": "GET",
+            "RequestId": "<x-amz-request-id:5>",
+            "ResourceType": "OBJECT"
+          }
+        },
+        "Headers": {
+          "Content-Type": "application/xml",
+          "Transfer-Encoding": "chunked",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:5>",
+          "x-amz-request-id": "<x-amz-request-id:5>"
+        },
+        "StatusCode": 403
+      },
+      "opt-get-allowed": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Headers": "x-amz-expected-bucket-owner",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:6>",
+          "x-amz-request-id": "<x-amz-request-id:6>"
+        },
+        "StatusCode": 200
+      },
+      "opt-get-allowed-diff-casing": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Headers": "x-amz-expected-bucket-owner, x-amz-server-side-encryption",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:7>",
+          "x-amz-request-id": "<x-amz-request-id:7>"
+        },
+        "StatusCode": 200
+      },
+      "get-non-allowed-with-acl": {
+        "Body": "test-cors",
+        "Headers": {
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:8>",
+          "x-amz-request-id": "<x-amz-request-id:8>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      },
+      "get-non-allowed": {
+        "Body": "test-cors",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "9",
+          "Content-Type": "binary/octet-stream",
+          "ETag": "\"e94e402d42b2ca551212dbac49d5a38b\"",
+          "Last-Modified": "last--modified",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "accept-ranges": "bytes",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:9>",
+          "x-amz-request-id": "<x-amz-request-id:9>",
+          "x-amz-server-side-encryption": "AES256"
+        },
+        "StatusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_get_cors": {
+    "recorded-date": "31-07-2023, 12:31:54",
+    "recorded-content": {
+      "get-cors-no-set": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchCORSConfiguration",
+          "Message": "The CORS configuration does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-cors-after-set": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_put_cors": {
+    "recorded-date": "31-07-2023, 12:31:56",
+    "recorded-content": {
+      "put-cors": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-cors": {
+        "CORSRules": [
+          {
+            "AllowedHeaders": [
+              "x-amz-expected-bucket-owner",
+              "x-amz-server-side-encryption-customer-algorithm"
+            ],
+            "AllowedMethods": [
+              "GET",
+              "PUT",
+              "HEAD"
+            ],
+            "AllowedOrigins": [
+              "https://test.com",
+              "https://app.test.com",
+              "http://test.com:80"
+            ],
+            "MaxAgeSeconds": 3000
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_put_cors_default_values": {
+    "recorded-date": "31-07-2023, 12:34:48",
+    "recorded-content": {
+      "opt-get": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "*",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 200
+      },
+      "opt-get-headers": {
+        "Body": {
+          "Error": {
+            "Code": "AccessForbidden",
+            "HostId": "<x-amz-id-2:2>",
+            "Message": "CORSResponse: This CORS request is not allowed. This is usually because the evalution of Origin, request method / Access-Control-Request-Method or Access-Control-Request-Headers are not whitelisted by the resource's CORS spec.",
+            "Method": "GET",
+            "RequestId": "<x-amz-request-id:2>",
+            "ResourceType": "OBJECT"
+          }
+        },
+        "Headers": {
+          "Content-Type": "application/xml",
+          "Transfer-Encoding": "chunked",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:2>",
+          "x-amz-request-id": "<x-amz-request-id:2>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_put_cors_invalid_rules": {
+    "recorded-date": "31-07-2023, 12:31:59",
+    "recorded-content": {
+      "put-cors-exc": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Found unsupported HTTP method in CORS config. Unsupported method is MYMETHOD"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-cors-exc-empty": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_delete_cors": {
+    "recorded-date": "31-07-2023, 12:32:03",
+    "recorded-content": {
+      "delete-cors-before-set": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "put-cors": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-cors": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-cors": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-cors-deleted": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchCORSConfiguration",
+          "Message": "The CORS configuration does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_expose_headers": {
+    "recorded-date": "31-07-2023, 12:34:45",
+    "recorded-content": {
+      "opt-get": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Expose-Headers": "x-amz-id-2, x-amz-request-id, x-amz-request-payer",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_put_cors_empty_origin": {
+    "recorded-date": "31-07-2023, 12:32:01",
+    "recorded-content": {
+      "get-cors-empty": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET",
+              "PUT",
+              "HEAD"
+            ],
+            "AllowedOrigins": [
+              ""
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_options_match_partial_origin": {
+    "recorded-date": "29-02-2024, 23:37:44",
+    "recorded-content": {
+      "options_match_partial_origin": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET, PUT",
+          "Access-Control-Allow-Origin": "http://test.origin.com",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_options_fails_partial_origin": {
+    "recorded-date": "01-03-2024, 00:50:41",
+    "recorded-content": {
+      "options_fails_partial_origin": {
+        "Body": {
+          "Error": {
+            "Code": "AccessForbidden",
+            "HostId": "<x-amz-id-2:1>",
+            "Message": "CORSResponse: This CORS request is not allowed. This is usually because the evalution of Origin, request method / Access-Control-Request-Method or Access-Control-Request-Headers are not whitelisted by the resource's CORS spec.",
+            "Method": "GET",
+            "RequestId": "<x-amz-request-id:1>",
+            "ResourceType": "BUCKET"
+          }
+        },
+        "Headers": {
+          "Content-Type": "application/xml",
+          "Transfer-Encoding": "chunked",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 403
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "tests/aws/services/cloudformation/api/test_drift_detection.py::test_drift_detection_on_lambda": {
+    "recorded-date": "11-11-2022, 08:44:20",
+    "recorded-content": {
+      "drift_detection": {
+        "StackResourceDrift": {
+          "ActualProperties": {
+            "Description": "different description",
+            "Environment": {
+              "Variables": {
+                "ENDPOINT_URL": "localhost.localstack.cloud"
+              }
+            },
+            "Handler": "index.handler",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+            "Runtime": "python3.8"
+          },
+          "ExpectedProperties": {
+            "Description": "function to test lambda function url",
+            "Environment": {
+              "Variables": {
+                "ENDPOINT_URL": "aws.amazon.com"
+              }
+            },
+            "Handler": "index.handler",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+            "Runtime": "python3.9"
+          },
+          "LogicalResourceId": "Function",
+          "PhysicalResourceId": "stack-0d03b713-Function-ijoJmdBJP4re",
+          "PropertyDifferences": [
+            {
+              "ActualValue": "different description",
+              "DifferenceType": "NOT_EQUAL",
+              "ExpectedValue": "function to test lambda function url",
+              "PropertyPath": "/Description"
+            },
+            {
+              "ActualValue": "localhost.localstack.cloud",
+              "DifferenceType": "NOT_EQUAL",
+              "ExpectedValue": "aws.amazon.com",
+              "PropertyPath": "/Environment/Variables/ENDPOINT_URL"
+            },
+            {
+              "ActualValue": "python3.8",
+              "DifferenceType": "NOT_EQUAL",
+              "ExpectedValue": "python3.9",
+              "PropertyPath": "/Runtime"
+            }
+          ],
+          "ResourceType": "AWS::Lambda::Function",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-0d03b713/<resource:2>",
+          "StackResourceDriftStatus": "MODIFIED",
+          "Timestamp": "timestamp"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

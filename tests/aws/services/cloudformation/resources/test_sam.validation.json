@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sam.py::test_cfn_handle_serverless_api_resource": {
+    "last_validated_date": "2024-06-20T20:16:01+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_sam.py::test_sam_policies": {
+    "last_validated_date": "2023-07-11T16:08:53+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_sam.py::test_sam_sqs_event": {
+    "last_validated_date": "2024-04-19T19:45:49+00:00"
+  }
+}

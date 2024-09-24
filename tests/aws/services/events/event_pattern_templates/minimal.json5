@@ -1,0 +1,15 @@
+// API: https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
+// Mandatory fields for events: id, account, source, time, region, resources, detail-type
+{
+  "Event": {
+    "id": "1",
+    "source": "test-source",
+    "detail-type": "test-detail-type",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z",
+  },
+  "EventPattern": {
+    "id": ["1"]
+  }
+}

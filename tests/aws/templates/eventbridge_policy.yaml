@@ -1,0 +1,25 @@
+Parameters:
+  EventBusName:
+    Type: String
+
+Resources:
+  bus707364D1:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Ref EventBusName
+  eventPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      StatementId: pol1
+      Action: events:PutEvents
+      EventBusName:
+        Ref: bus707364D1
+      Principal: "111122223333"
+  eventPolicy2:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      StatementId: pol2
+      Action: events:PutEvents
+      EventBusName:
+        Ref: bus707364D1
+      Principal: "*"

@@ -1,0 +1,34 @@
+{
+  "Comment": "TASK_SERVICE_LAMBDA_CATCH_TIMEOUT",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "TimeoutSeconds": 5,
+      "Parameters": {
+        "FunctionName.$": "$.FunctionName",
+        "Payload.$": "$.Payload",
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.Timeout"
+          ],
+          "Next": "EndWithHandler"
+        }
+      ],
+      "Next": "EndWithFinal",
+    },
+    "EndWithHandler": {
+      "Type": "Pass",
+      "ResultPath": "$.error",
+      "End": true
+    },
+    "EndWithFinal": {
+      "Type": "Pass",
+      "ResultPath": "$.final",
+      "End": true,
+    },
+  },
+}

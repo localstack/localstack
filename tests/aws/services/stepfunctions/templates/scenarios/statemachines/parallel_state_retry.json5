@@ -1,0 +1,34 @@
+{
+  "Comment": "PARALLEL_STATE_RETRY",
+  "StartAt": "ParallelState",
+  "States": {
+    "ParallelState": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Branch1",
+          "States": {
+            "Branch1": {
+              "Type": "Fail",
+              "Error": "FailureType",
+              "Cause": "Cause description"
+            }
+          }
+        },
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "FailureType"
+          ],
+          "MaxAttempts": 2,
+        },
+      ],
+      "Next": "Final",
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

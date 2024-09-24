@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_associate_vpc_with_hosted_zone": {
+    "last_validated_date": "2024-06-13T07:40:39+00:00"
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_hosted_zone": {
+    "last_validated_date": "2023-11-02T11:59:59+00:00"
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_hosted_zone_in_non_existent_vpc": {
+    "last_validated_date": "2024-04-10T15:47:22+00:00"
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_private_hosted_zone": {
+    "last_validated_date": "2024-04-11T14:03:14+00:00"
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_crud_health_check": {
+    "last_validated_date": "2024-06-13T08:05:47+00:00"
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_reusable_delegation_sets": {
+    "last_validated_date": "2024-06-13T07:43:08+00:00"
+  }
+}

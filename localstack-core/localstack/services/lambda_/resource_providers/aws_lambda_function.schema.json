@@ -1,0 +1,486 @@
+{
+  "handlers": {
+    "read": {
+      "permissions": [
+        "lambda:GetFunction",
+        "lambda:GetFunctionCodeSigningConfig"
+      ]
+    },
+    "create": {
+      "permissions": [
+        "lambda:CreateFunction",
+        "lambda:GetFunction",
+        "lambda:PutFunctionConcurrency",
+        "iam:PassRole",
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeVpcs",
+        "kms:Decrypt",
+        "lambda:GetCodeSigningConfig",
+        "lambda:GetFunctionCodeSigningConfig",
+        "lambda:GetRuntimeManagementConfig",
+        "lambda:PutRuntimeManagementConfig"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "lambda:DeleteFunctionConcurrency",
+        "lambda:GetFunction",
+        "lambda:PutFunctionConcurrency",
+        "lambda:ListTags",
+        "lambda:TagResource",
+        "lambda:UntagResource",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:UpdateFunctionCode",
+        "iam:PassRole",
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeVpcs",
+        "kms:Decrypt",
+        "lambda:PutFunctionCodeSigningConfig",
+        "lambda:DeleteFunctionCodeSigningConfig",
+        "lambda:GetCodeSigningConfig",
+        "lambda:GetFunctionCodeSigningConfig",
+        "lambda:GetRuntimeManagementConfig",
+        "lambda:PutRuntimeManagementConfig"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "lambda:ListFunctions"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "lambda:DeleteFunction",
+        "ec2:DescribeNetworkInterfaces"
+      ]
+    }
+  },
+  "typeName": "AWS::Lambda::Function",
+  "readOnlyProperties": [
+    "/properties/Arn",
+    "/properties/SnapStartResponse",
+    "/properties/SnapStartResponse/ApplyOn",
+    "/properties/SnapStartResponse/OptimizationStatus"
+  ],
+  "description": "Resource Type definition for AWS::Lambda::Function",
+  "writeOnlyProperties": [
+    "/properties/Code",
+    "/properties/Code/ImageUri",
+    "/properties/Code/S3Bucket",
+    "/properties/Code/S3Key",
+    "/properties/Code/S3ObjectVersion",
+    "/properties/Code/ZipFile"
+  ],
+  "createOnlyProperties": [
+    "/properties/FunctionName"
+  ],
+  "additionalProperties": false,
+  "primaryIdentifier": [
+    "/properties/FunctionName"
+  ],
+  "definitions": {
+    "ImageConfig": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "WorkingDirectory": {
+          "description": "WorkingDirectory.",
+          "type": "string"
+        },
+        "Command": {
+          "maxItems": 1500,
+          "uniqueItems": true,
+          "description": "Command.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "EntryPoint": {
+          "maxItems": 1500,
+          "uniqueItems": true,
+          "description": "EntryPoint.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "TracingConfig": {
+      "description": "The function's AWS X-Ray tracing configuration. To sample and record incoming requests, set Mode to Active.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "Mode": {
+          "description": "The tracing mode.",
+          "type": "string",
+          "enum": [
+            "Active",
+            "PassThrough"
+          ]
+        }
+      }
+    },
+    "VpcConfig": {
+      "description": "The VPC security groups and subnets that are attached to a Lambda function. When you connect a function to a VPC, Lambda creates an elastic network interface for each combination of security group and subnet in the function's VPC configuration. The function can only access resources and the internet through that VPC.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "SecurityGroupIds": {
+          "maxItems": 5,
+          "uniqueItems": false,
+          "description": "A list of VPC security groups IDs.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "SubnetIds": {
+          "maxItems": 16,
+          "uniqueItems": false,
+          "description": "A list of VPC subnet IDs.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "DeadLetterConfig": {
+      "description": "The dead-letter queue for failed asynchronous invocations.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "TargetArn": {
+          "pattern": "^(arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:.*)|()$",
+          "description": "The Amazon Resource Name (ARN) of an Amazon SQS queue or Amazon SNS topic.",
+          "type": "string"
+        }
+      }
+    },
+    "RuntimeManagementConfig": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "UpdateRuntimeOn": {
+          "description": "Trigger for runtime update",
+          "type": "string",
+          "enum": [
+            "Auto",
+            "FunctionUpdate",
+            "Manual"
+          ]
+        },
+        "RuntimeVersionArn": {
+          "description": "Unique identifier for a runtime version arn",
+          "type": "string"
+        }
+      },
+      "required": [
+        "UpdateRuntimeOn"
+      ]
+    },
+    "SnapStart": {
+      "description": "The function's SnapStart setting. When set to PublishedVersions, Lambda creates a snapshot of the execution environment when you publish a function version.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "ApplyOn": {
+          "description": "Applying SnapStart setting on function resource type.",
+          "type": "string",
+          "enum": [
+            "PublishedVersions",
+            "None"
+          ]
+        }
+      },
+      "required": [
+        "ApplyOn"
+      ]
+    },
+    "SnapStartResponse": {
+      "description": "The function's SnapStart Response. When set to PublishedVersions, Lambda creates a snapshot of the execution environment when you publish a function version.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "OptimizationStatus": {
+          "description": "Indicates whether SnapStart is activated for the specified function version.",
+          "type": "string",
+          "enum": [
+            "On",
+            "Off"
+          ]
+        },
+        "ApplyOn": {
+          "description": "Applying SnapStart setting on function resource type.",
+          "type": "string",
+          "enum": [
+            "PublishedVersions",
+            "None"
+          ]
+        }
+      }
+    },
+    "Code": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "S3ObjectVersion": {
+          "minLength": 1,
+          "description": "For versioned objects, the version of the deployment package object to use.",
+          "type": "string",
+          "maxLength": 1024
+        },
+        "S3Bucket": {
+          "minLength": 3,
+          "pattern": "^[0-9A-Za-z\\.\\-_]*(?<!\\.)$",
+          "description": "An Amazon S3 bucket in the same AWS Region as your function. The bucket can be in a different AWS account.",
+          "type": "string",
+          "maxLength": 63
+        },
+        "ZipFile": {
+          "description": "The source code of your Lambda function. If you include your function source inline with this parameter, AWS CloudFormation places it in a file named index and zips it to create a deployment package..",
+          "type": "string"
+        },
+        "S3Key": {
+          "minLength": 1,
+          "description": "The Amazon S3 key of the deployment package.",
+          "type": "string",
+          "maxLength": 1024
+        },
+        "ImageUri": {
+          "description": "ImageUri.",
+          "type": "string"
+        }
+      }
+    },
+    "Environment": {
+      "description": "A function's environment variable settings.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "Variables": {
+          "patternProperties": {
+            "[a-zA-Z][a-zA-Z0-9_]+": {
+              "type": "string"
+            }
+          },
+          "description": "Environment variable key-value pairs.",
+          "additionalProperties": false,
+          "type": "object"
+        }
+      }
+    },
+    "FileSystemConfig": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "Arn": {
+          "pattern": "^arn:aws[a-zA-Z-]*:elasticfilesystem:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:access-point/fsap-[a-f0-9]{17}$",
+          "description": "The Amazon Resource Name (ARN) of the Amazon EFS access point that provides access to the file system.",
+          "type": "string",
+          "maxLength": 200
+        },
+        "LocalMountPath": {
+          "pattern": "^/mnt/[a-zA-Z0-9-_.]+$",
+          "description": "The path where the function can access the file system, starting with /mnt/.",
+          "type": "string",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "Arn",
+        "LocalMountPath"
+      ]
+    },
+    "Tag": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "Value": {
+          "minLength": 0,
+          "description": "The value for the tag. You can specify a value that is 0 to 256 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
+          "type": "string",
+          "maxLength": 256
+        },
+        "Key": {
+          "minLength": 1,
+          "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "Key"
+      ]
+    },
+    "EphemeralStorage": {
+      "description": "A function's ephemeral storage settings.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "Size": {
+          "description": "The amount of ephemeral storage that your function has access to.",
+          "maximum": 10240,
+          "type": "integer",
+          "minimum": 512
+        }
+      },
+      "required": [
+        "Size"
+      ]
+    }
+  },
+  "required": [
+    "Code",
+    "Role"
+  ],
+  "properties": {
+    "Description": {
+      "description": "A description of the function.",
+      "type": "string",
+      "maxLength": 256
+    },
+    "TracingConfig": {
+      "description": "Set Mode to Active to sample and trace a subset of incoming requests with AWS X-Ray.",
+      "$ref": "#/definitions/TracingConfig"
+    },
+    "VpcConfig": {
+      "description": "For network connectivity to AWS resources in a VPC, specify a list of security groups and subnets in the VPC.",
+      "$ref": "#/definitions/VpcConfig"
+    },
+    "RuntimeManagementConfig": {
+      "description": "RuntimeManagementConfig",
+      "$ref": "#/definitions/RuntimeManagementConfig"
+    },
+    "ReservedConcurrentExecutions": {
+      "description": "The number of simultaneous executions to reserve for the function.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "SnapStart": {
+      "description": "The SnapStart setting of your function",
+      "$ref": "#/definitions/SnapStart"
+    },
+    "FileSystemConfigs": {
+      "maxItems": 1,
+      "description": "Connection settings for an Amazon EFS file system. To connect a function to a file system, a mount target must be available in every Availability Zone that your function connects to. If your template contains an AWS::EFS::MountTarget resource, you must also specify a DependsOn attribute to ensure that the mount target is created or updated before the function.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/FileSystemConfig"
+      }
+    },
+    "FunctionName": {
+      "minLength": 1,
+      "description": "The name of the Lambda function, up to 64 characters in length. If you don't specify a name, AWS CloudFormation generates one.",
+      "type": "string"
+    },
+    "Runtime": {
+      "description": "The identifier of the function's runtime.",
+      "type": "string"
+    },
+    "KmsKeyArn": {
+      "pattern": "^(arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:.*)|()$",
+      "description": "The ARN of the AWS Key Management Service (AWS KMS) key that's used to encrypt your function's environment variables. If it's not provided, AWS Lambda uses a default service key.",
+      "type": "string"
+    },
+    "PackageType": {
+      "description": "PackageType.",
+      "type": "string",
+      "enum": [
+        "Image",
+        "Zip"
+      ]
+    },
+    "CodeSigningConfigArn": {
+      "pattern": "arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:code-signing-config:csc-[a-z0-9]{17}",
+      "description": "A unique Arn for CodeSigningConfig resource",
+      "type": "string"
+    },
+    "Layers": {
+      "uniqueItems": false,
+      "description": "A list of function layers to add to the function's execution environment. Specify each layer by its ARN, including the version.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Tags": {
+      "uniqueItems": true,
+      "description": "A list of tags to apply to the function.",
+      "insertionOrder": false,
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "ImageConfig": {
+      "description": "ImageConfig",
+      "$ref": "#/definitions/ImageConfig"
+    },
+    "MemorySize": {
+      "description": "The amount of memory that your function has access to. Increasing the function's memory also increases its CPU allocation. The default value is 128 MB. The value must be a multiple of 64 MB.",
+      "type": "integer"
+    },
+    "DeadLetterConfig": {
+      "description": "A dead letter queue configuration that specifies the queue or topic where Lambda sends asynchronous events when they fail processing.",
+      "$ref": "#/definitions/DeadLetterConfig"
+    },
+    "Timeout": {
+      "description": "The amount of time that Lambda allows a function to run before stopping it. The default is 3 seconds. The maximum allowed value is 900 seconds.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "Handler": {
+      "pattern": "^[^\\s]+$",
+      "description": "The name of the method within your code that Lambda calls to execute your function. The format includes the file name. It can also include namespaces and other qualifiers, depending on the runtime",
+      "type": "string",
+      "maxLength": 128
+    },
+    "SnapStartResponse": {
+      "description": "The SnapStart response of your function",
+      "$ref": "#/definitions/SnapStartResponse"
+    },
+    "Code": {
+      "description": "The code for the function.",
+      "$ref": "#/definitions/Code"
+    },
+    "Role": {
+      "pattern": "^arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+$",
+      "description": "The Amazon Resource Name (ARN) of the function's execution role.",
+      "type": "string"
+    },
+    "Environment": {
+      "description": "Environment variables that are accessible from function code during execution.",
+      "$ref": "#/definitions/Environment"
+    },
+    "Arn": {
+      "description": "Unique identifier for function resources",
+      "type": "string"
+    },
+    "EphemeralStorage": {
+      "description": "A function's ephemeral storage settings.",
+      "$ref": "#/definitions/EphemeralStorage"
+    },
+    "Architectures": {
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "x86_64",
+          "arm64"
+        ]
+      }
+    }
+  }
+}

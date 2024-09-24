@@ -1,0 +1,245 @@
+{
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_put_subscription_filter_lambda": {
+    "recorded-date": "17-03-2023, 13:55:00",
+    "recorded-content": {
+      "add_permission": {
+        "Statement": {
+          "Sid": "<resource:1>",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "logs.<region>.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "AWS:SourceAccount": "111111111111"
+            },
+            "ArnLike": {
+              "AWS:SourceArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:<resource:2>"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put_subscription_filter": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_subscription_filter": {
+        "subscriptionFilters": [
+          {
+            "creationTime": "timestamp",
+            "destinationArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+            "distribution": "ByLogStream",
+            "filterName": "test",
+            "filterPattern": "",
+            "logGroupName": "<log-group-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_all_log_events": [
+        {
+          "id": "id",
+          "timestamp": "timestamp",
+          "message": "test"
+        },
+        {
+          "id": "id",
+          "timestamp": "timestamp",
+          "message": "test 2"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_list_tags_log_group": {
+    "recorded-date": "22-12-2022, 17:46:54",
+    "recorded-content": {
+      "list_tags_after_create_log_group": {
+        "tags": {
+          "env": "testing1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_log_group_after_tag_resource": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_tag_resource": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_log_group_after_tag_log_group": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2",
+          "test3": "val3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_tag_log_group": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2",
+          "test3": "val3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_log_group_after_untag": {
+        "tags": {
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_untag": {
+        "tags": {
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_stream": {
+    "recorded-date": "06-04-2023, 11:42:42",
+    "recorded-content": {
+      "describe-log-groups-prefix": {
+        "logGroups": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "logGroupName": "<log-group-name:1>",
+            "metricFilterCount": 0,
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-log-groups-pattern": {
+        "logGroups": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "logGroupName": "<log-group-name:1>"
+          }
+        ],
+        "nextToken": "<next_token>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error-describe-logs-group": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "logs_log_group": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "creationTime": "timestamp",
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "storedBytes": 0
+        }
+      ],
+      "error-describe-logs-streams": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "LogGroup name and LogGroup ARN are mutually exclusive parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "log_group_identifier": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "creationTime": "timestamp",
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "storedBytes": 0
+        }
+      ],
+      "log_group_identifier-arn": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "creationTime": "timestamp",
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "storedBytes": 0
+        }
+      ]
+    }
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_resource_does_not_exist": {
+    "recorded-date": "05-09-2024, 16:43:20",
+    "recorded-content": {
+      "error-log-group-does-not-exist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log group does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-log-stream-does-not-exist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log stream does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

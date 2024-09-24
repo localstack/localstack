@@ -1,0 +1,49 @@
+Resources:
+  fnServiceRole5D180AFD:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  fn5FF616E3:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+
+          def handler(event, context):
+              print(event)
+              return "hello"
+      Role:
+        Fn::GetAtt:
+          - fnServiceRole5D180AFD
+          - Arn
+      Handler: index.handler
+      Runtime: python3.9
+    DependsOn:
+      - fnServiceRole5D180AFD
+  fnVersion7BF8AE5A:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName:
+        Ref: fn5FF616E3
+      Description: test description
+Outputs:
+  FunctionName:
+    Value:
+      Ref: fn5FF616E3
+  FunctionVersion:
+    Value:
+      Fn::GetAtt:
+        - fnVersion7BF8AE5A
+        - Version

@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  Environment:
+    Type: String
+    Default: 'companyname-ci'
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: "100.0.0.0/20"
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: env
+        Value: production
+
+
+Outputs:
+  RouteTableId:
+    Value:
+      Ref: RouteTable

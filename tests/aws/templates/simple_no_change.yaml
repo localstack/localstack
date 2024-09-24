@@ -1,0 +1,3 @@
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic

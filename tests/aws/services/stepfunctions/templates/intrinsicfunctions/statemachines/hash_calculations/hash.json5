@@ -1,0 +1,13 @@
+{
+    "Comment": "HASH",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.Hash($.FunctionInput.fst, $.FunctionInput.snd)",
+            },
+            "End": true,
+        },
+    },
+}

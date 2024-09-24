@@ -1,0 +1,63 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Simple PetStore (Swagger)",
+    "version": "1.0.0"
+  },
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/pets": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "type": "http"
+        }
+      }
+    },
+    "/pets/{petId}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "requestParameters": {
+            "integration.request.path.id": "method.request.path.petId"
+          },
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}",
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "type": "http"
+        }
+      }
+    }
+  }
+}

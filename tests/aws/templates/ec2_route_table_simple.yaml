@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  myVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: RdsTestStack/vpc
+  myRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref myVPC
+      Tags:
+        - Key: Name
+          Value: Suspicious Route table
+Outputs:
+  RouteTableId:
+    Description: The ID of the created route table
+    Value: !Ref myRouteTable

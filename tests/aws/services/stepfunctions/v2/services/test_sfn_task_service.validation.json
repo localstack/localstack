@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution": {
+    "last_validated_date": "2023-06-28T09:07:54+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution_input_json": {
+    "last_validated_date": "2023-06-28T09:12:13+00:00"
+  }
+}

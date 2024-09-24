@@ -1,0 +1,74 @@
+{
+  "tests/aws/services/ses/test_ses.py::TestSES::test_cannot_create_event_for_no_topic": {
+    "last_validated_date": "2023-08-25T22:04:12+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_clone_receipt_rule_set": {
+    "last_validated_date": "2023-08-25T21:05:14+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_creating_event_destination_without_configuration_set": {
+    "last_validated_date": "2023-08-25T22:04:35+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_delete_template": {
+    "last_validated_date": "2023-08-25T17:14:04+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set": {
+    "last_validated_date": "2023-08-25T22:04:44+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set_event_destination": {
+    "last_validated_date": "2023-08-25T22:04:53+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
+    "last_validated_date": "2024-07-30T10:18:09+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-test]": {
+    "last_validated_date": "2024-07-30T10:18:09+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-]": {
+    "last_validated_date": "2024-07-30T10:18:09+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
+    "last_validated_date": "2024-07-30T10:18:08+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
+    "last_validated_date": "2024-07-30T10:18:07+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
+    "last_validated_date": "2024-07-30T10:18:08+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]": {
+    "last_validated_date": "2024-07-30T10:18:08+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]": {
+    "last_validated_date": "2024-07-30T10:18:08+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]": {
+    "last_validated_date": "2024-07-30T10:18:08+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_list_templates": {
+    "last_validated_date": "2023-08-25T16:33:54+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_sending_to_deleted_topic": {
+    "last_validated_date": "2023-08-25T22:02:43+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_sent_message_counter": {
+    "last_validated_date": "2023-08-25T21:40:26+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_email": {
+    "last_validated_date": "2023-08-25T21:53:37+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_raw_email": {
+    "last_validated_date": "2023-08-25T22:01:24+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_templated_email": {
+    "last_validated_date": "2023-08-25T22:00:04+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_special_tags_send_email[ses:feedback-id-a-this-marketing-campaign]": {
+    "last_validated_date": "2024-07-30T13:01:32+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_special_tags_send_email[ses:feedback-id-b-that-campaign]": {
+    "last_validated_date": "2024-07-30T13:01:32+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_trying_to_delete_event_destination_from_non_existent_configuration_set": {
+    "last_validated_date": "2023-08-25T22:05:02+00:00"
+  }
+}

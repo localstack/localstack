@@ -1,0 +1,28 @@
+{
+  "Comment": "CATCH_STATE_RUNTIME",
+  "StartAt": "RaiseRuntime",
+  "States": {
+    "RaiseRuntime": {
+      "Type": "Task",
+      "Resource": "_tbd_",
+      "OutputPath": "$.no.such.result.path",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.Runtime",
+          ],
+          "Next": "CaughtRuntime"
+        }
+      ],
+      "Next": "Final",
+    },
+    "CaughtRuntime": {
+      "Type": "Pass",
+      "End": true
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  },
+}

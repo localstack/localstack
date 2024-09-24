@@ -1,0 +1,74 @@
+{
+  "typeName": "AWS::Lambda::LayerVersion",
+  "description": "Resource Type definition for AWS::Lambda::LayerVersion",
+  "additionalProperties": false,
+  "properties": {
+    "CompatibleRuntimes": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "LicenseInfo": {
+      "type": "string"
+    },
+    "Description": {
+      "type": "string"
+    },
+    "LayerName": {
+      "type": "string"
+    },
+    "Content": {
+      "$ref": "#/definitions/Content"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "CompatibleArchitectures": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "definitions": {
+    "Content": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "S3ObjectVersion": {
+          "type": "string"
+        },
+        "S3Bucket": {
+          "type": "string"
+        },
+        "S3Key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "S3Bucket",
+        "S3Key"
+      ]
+    }
+  },
+  "required": [
+    "Content"
+  ],
+  "createOnlyProperties": [
+    "/properties/CompatibleRuntimes",
+    "/properties/LicenseInfo",
+    "/properties/CompatibleArchitectures",
+    "/properties/LayerName",
+    "/properties/Description",
+    "/properties/Content"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

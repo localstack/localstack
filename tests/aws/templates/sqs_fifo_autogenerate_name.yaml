@@ -1,0 +1,22 @@
+Parameters:
+  IsFifo:
+    Type: String
+
+Conditions:
+  IsFifo: !Equals [ !Ref IsFifo, "true"]
+
+Resources:
+  FooQueueA2A23E59:
+    Type: AWS::SQS::Queue
+    Properties:
+      ContentBasedDeduplication: !If [ IsFifo, "true", !Ref AWS::NoValue ]
+      FifoQueue: !If [ IsFifo, "true", !Ref AWS::NoValue ]
+      VisibilityTimeout: 300
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+Outputs:
+  FooQueueName:
+    Value:
+      Fn::GetAtt:
+        - FooQueueA2A23E59
+        - QueueName

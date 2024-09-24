@@ -1,0 +1,71 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/scheduler/test_scheduler.py::test_schedule_and_group": {
+    "recorded-date": "21-09-2023, 10:21:19",
+    "recorded-content": {
+      "Schedule": {
+        "DriftInformation": {
+          "StackResourceDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTimestamp": "timestamp",
+        "LogicalResourceId": "MySchedule",
+        "Metadata": {},
+        "PhysicalResourceId": "<physical_resource_id:1>",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "ResourceType": "AWS::Scheduler::Schedule",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>"
+      },
+      "Group": {
+        "DriftInformation": {
+          "StackResourceDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTimestamp": "timestamp",
+        "LogicalResourceId": "MyScheduleGroup",
+        "Metadata": {},
+        "PhysicalResourceId": "<physical_resource_id:2>",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "ResourceType": "AWS::Scheduler::ScheduleGroup",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>"
+      },
+      "ScheduleDesc": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/<physical_resource_id:2>/<physical_resource_id:1>",
+        "CreationDate": "datetime",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "<physical_resource_id:2>",
+        "LastModificationDate": "datetime",
+        "Name": "<physical_resource_id:1>",
+        "ScheduleExpression": "cron(0 0 * * ? *)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "GroupDesc": {
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<physical_resource_id:2>",
+        "CreationDate": "datetime",
+        "LastModificationDate": "datetime",
+        "Name": "<physical_resource_id:2>",
+        "State": "ACTIVE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

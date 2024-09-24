@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/resourcegroupstaggingapi/test_rgsa.py::TestRGSAIntegrations::test_get_resources": {
+    "last_validated_date": "2024-03-20T06:15:41+00:00"
+  }
+}

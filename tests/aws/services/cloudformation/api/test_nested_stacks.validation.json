@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/api/test_nested_stacks.py::test_deletion_of_failed_nested_stack": {
+    "last_validated_date": "2024-09-17T20:09:36+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_nested_stacks.py::test_nested_output_in_params": {
+    "last_validated_date": "2023-02-07T09:57:47+00:00"
+  }
+}

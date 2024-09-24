@@ -1,0 +1,57 @@
+Parameters:
+  EventBusName:
+    Type: String
+  EventRuleName:
+    Type: String
+  LogGroupName:
+    Type: String
+  PolicyName:
+    Type: String
+
+Resources:
+  TestBusF2C65FE8:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Ref EventBusName
+  TestLogGroup4EEF7AD4:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref LogGroupName
+      RetentionInDays: 731
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  TestRule98A50909:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName:
+        Ref: TestBusF2C65FE8
+      EventPattern:
+        version:
+          - "0"
+      Name: !Ref EventRuleName
+      State: ENABLED
+      Targets:
+        - Arn:
+            Fn::Join:
+              - ""
+              - - "arn:"
+                - Ref: AWS::Partition
+                - ":logs:"
+                - Ref: AWS::Region
+                - ":"
+                - Ref: AWS::AccountId
+                - ":log-group:"
+                - Ref: TestLogGroup4EEF7AD4
+          Id: Target0
+  TestLogEventResourcePolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyDocument:
+        Fn::Join:
+          - ""
+          - - '{"Statement":[{"Action":"*","Effect":"Allow","Principal":{"AWS":"*"},"Resource":"'
+            - Fn::GetAtt:
+                - TestLogGroup4EEF7AD4
+                - Arn
+            - '"}],"Version":"2012-10-17"}'
+      PolicyName: !Ref PolicyName

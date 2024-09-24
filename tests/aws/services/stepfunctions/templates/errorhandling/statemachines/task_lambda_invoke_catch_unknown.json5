@@ -1,0 +1,33 @@
+{
+  "Comment": "AWS_SDK_TASK_LAMBDA_CATCH_UNKNOWN",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
+      "Parameters": {
+        "FunctionName.$": "$.FunctionName",
+        "Payload.$": "$.Payload",
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "Lambda.Unknown"
+          ],
+          "Next": "EndWithHandler"
+        }
+      ],
+      "Next": "EndWithFinal",
+    },
+    "EndWithHandler": {
+      "Type": "Pass",
+      "ResultPath": "$.error",
+      "End": true
+    },
+    "EndWithFinal": {
+      "Type": "Pass",
+      "ResultPath": "$.final",
+      "End": true,
+    },
+  },
+}

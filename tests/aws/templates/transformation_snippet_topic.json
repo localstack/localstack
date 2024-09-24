@@ -1,0 +1,28 @@
+{
+  "Parameters": {
+    "TopicName": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "Topic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": {
+          "Ref": "TopicName"
+        },
+        "Fn::Transform": "ConvertTopicToFifo"
+      }
+    }
+  },
+  "Outputs": {
+    "TopicName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Topic",
+          "TopicName"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sfn.py::TestTaskServiceSfn::test_start_execution_no_such_arn": {
+    "recorded-date": "30-06-2023, 09:50:17",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartExecution"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Input": null,
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>",
+                "Name": "TestStartTarget"
+              },
+              "region": "<region>",
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>' (Service: AWSStepFunctions; Status Code: 400; Error Code: StateMachineDoesNotExist; Request ID: <request_id>; Proxy: null)",
+              "error": "StepFunctions.StateMachineDoesNotExistException",
+              "resource": "startExecution",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "State Machine Does Not Exist: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx><random_arn_part>' (Service: AWSStepFunctions; Status Code: 400; Error Code: StateMachineDoesNotExist; Request ID: <request_id>; Proxy: null)",
+              "error": "StepFunctions.StateMachineDoesNotExistException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

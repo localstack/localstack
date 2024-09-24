@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_cfn_handle_kinesis_firehose_resources": {
+    "last_validated_date": "2024-07-02T19:10:35+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_default_parameters_kinesis": {
+    "last_validated_date": "2024-07-02T18:59:10+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_describe_template": {
+    "last_validated_date": "2023-05-22T07:25:32+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_dynamodb_stream_response_with_cf": {
+    "last_validated_date": "2024-07-02T19:48:27+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_stream_creation": {
+    "last_validated_date": "2022-09-12T12:11:29+00:00"
+  }
+}

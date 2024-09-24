@@ -1,0 +1,10 @@
+Parameters:
+  Name:
+    Type: String
+
+Resources:
+  MyCustomResource:
+    Type: "LocalStack::Testing::DeployableResource"
+    Properties:
+      Name:
+        Ref: Name

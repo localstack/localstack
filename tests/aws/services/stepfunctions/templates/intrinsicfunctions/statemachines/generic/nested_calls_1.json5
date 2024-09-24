@@ -1,0 +1,13 @@
+{
+  "Comment": "NESTED_CALLS_1",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Parameters": {
+        "FunctionResult.$": "States.ArrayGetItem(States.StringSplit($$.StateMachine.Name, '-'), 0)"
+      },
+      "End": true
+    }
+  }
+}

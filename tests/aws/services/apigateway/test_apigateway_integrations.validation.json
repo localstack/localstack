@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_aws[AWS]": {
+    "last_validated_date": "2024-07-18T23:22:46+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_aws[AWS_PROXY]": {
+    "last_validated_date": "2024-07-18T23:23:04+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_http[HTTP]": {
+    "last_validated_date": "2024-07-17T18:34:51+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_http[HTTP_PROXY]": {
+    "last_validated_date": "2024-07-17T18:34:56+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_create_execute_api_vpc_endpoint": {
+    "last_validated_date": "2024-04-15T23:07:07+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_response_with_response_template": {
+    "last_validated_date": "2024-05-30T16:15:58+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_responses": {
+    "last_validated_date": "2023-05-26T17:44:45+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_validation": {
+    "last_validated_date": "2024-06-06T12:23:04+00:00"
+  }
+}

@@ -1,0 +1,29 @@
+Parameters:
+  ChildStackURL:
+    Type: String
+  BucketName:
+    Type: String
+
+Resources:
+  myStackWithParams:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref ChildStackURL
+      Parameters:
+        NameForBucketToCreate: !Ref BucketName
+
+  
+  parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !GetAtt [myStackWithParams, Outputs.BucketArn]
+    DependsOn:
+      - myStackWithParams
+
+Outputs:
+  arnOfImportedBucket:
+    Value:
+      Fn::GetAtt:
+        - parameter
+        - Value

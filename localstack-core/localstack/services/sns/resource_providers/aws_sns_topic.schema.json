@@ -1,0 +1,156 @@
+{
+  "typeName": "AWS::SNS::Topic",
+  "description": "Resource Type definition for AWS::SNS::Topic",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-sns",
+  "additionalProperties": false,
+  "properties": {
+    "DisplayName": {
+      "description": "The display name to use for an Amazon SNS topic with SMS subscriptions.",
+      "type": "string"
+    },
+    "KmsMasterKeyId": {
+      "description": "The ID of an AWS-managed customer master key (CMK) for Amazon SNS or a custom CMK. For more information, see Key Terms. For more examples, see KeyId in the AWS Key Management Service API Reference.\n\nThis property applies only to [server-side-encryption](https://docs.aws.amazon.com/sns/latest/dg/sns-server-side-encryption.html).",
+      "type": "string"
+    },
+    "DataProtectionPolicy": {
+      "description": "The body of the policy document you want to use for this topic.\n\nYou can only add one policy per topic.\n\nThe policy must be in JSON string format.\n\nLength Constraints: Maximum length of 30720",
+      "type": "object"
+    },
+    "Subscription": {
+      "description": "The SNS subscriptions (endpoints) for this topic.",
+      "type": "array",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Subscription"
+      }
+    },
+    "FifoTopic": {
+      "description": "Set to true to create a FIFO topic.",
+      "type": "boolean"
+    },
+    "ContentBasedDeduplication": {
+      "description": "Enables content-based deduplication for FIFO topics. By default, ContentBasedDeduplication is set to false. If you create a FIFO topic and this attribute is false, you must specify a value for the MessageDeduplicationId parameter for the Publish action.\n\nWhen you set ContentBasedDeduplication to true, Amazon SNS uses a SHA-256 hash to generate the MessageDeduplicationId using the body of the message (but not the attributes of the message).\n\n(Optional) To override the generated value, you can specify a value for the the MessageDeduplicationId parameter for the Publish action.\n\n",
+      "type": "boolean"
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "TopicName": {
+      "description": "The name of the topic you want to create. Topic names must include only uppercase and lowercase ASCII letters, numbers, underscores, and hyphens, and must be between 1 and 256 characters long. FIFO topic names must end with .fifo.\n\nIf you don't specify a name, AWS CloudFormation generates a unique physical ID and uses that ID for the topic name. For more information, see Name Type.",
+      "type": "string"
+    },
+    "TopicArn": {
+      "type": "string"
+    },
+    "SignatureVersion": {
+      "description": "Version of the Amazon SNS signature used. If the SignatureVersion is 1, Signature is a Base64-encoded SHA1withRSA signature of the Message, MessageId, Type, Timestamp, and TopicArn values. If the SignatureVersion is 2, Signature is a Base64-encoded SHA256withRSA signature of the Message, MessageId, Type, Timestamp, and TopicArn values.",
+      "type": "string"
+    },
+    "TracingConfig": {
+      "description": "Tracing mode of an Amazon SNS topic. By default TracingConfig is set to PassThrough, and the topic passes through the tracing header it receives from an SNS publisher to its subscriptions. If set to Active, SNS will vend X-Ray segment data to topic owner account if the sampled flag in the tracing header is true. Only supported on standard topics.",
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string",
+          "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, `_`, `.`, `/`, `=`, `+`, and `-`."
+        },
+        "Value": {
+          "type": "string",
+          "description": "The value for the tag. You can specify a value that is 0 to 256 characters in length."
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    },
+    "Subscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Endpoint": {
+          "type": "string"
+        },
+        "Protocol": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Endpoint",
+        "Protocol"
+      ]
+    }
+  },
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": true,
+    "tagProperty": "/properties/Tags"
+  },
+  "createOnlyProperties": [
+    "/properties/TopicName",
+    "/properties/FifoTopic"
+  ],
+  "primaryIdentifier": [
+    "/properties/TopicArn"
+  ],
+  "readOnlyProperties": [
+    "/properties/TopicArn"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "sns:CreateTopic",
+        "sns:TagResource",
+        "sns:Subscribe",
+        "sns:GetTopicAttributes",
+        "sns:PutDataProtectionPolicy"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "sns:GetTopicAttributes",
+        "sns:ListTagsForResource",
+        "sns:ListSubscriptionsByTopic",
+        "sns:GetDataProtectionPolicy"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "sns:SetTopicAttributes",
+        "sns:TagResource",
+        "sns:UntagResource",
+        "sns:Subscribe",
+        "sns:Unsubscribe",
+        "sns:GetTopicAttributes",
+        "sns:ListTagsForResource",
+        "sns:ListSubscriptionsByTopic",
+        "sns:GetDataProtectionPolicy",
+        "sns:PutDataProtectionPolicy"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "sns:DeleteTopic"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "sns:ListTopics"
+      ]
+    }
+  }
+}

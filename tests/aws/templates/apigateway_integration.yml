@@ -1,0 +1,201 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: The AWS CloudFormation template for this Serverless application
+Parameters:
+  RestApiName:
+    Type: String
+    Default: ApiGatewayRestApi
+  CodeBucket:
+    Type: String
+    Default: hofund-local-deployment
+  CodeKey:
+    Type: String
+    Default: serverless/hofund/local/1599143878432/authorizer.zip
+
+Resources:
+  AuthorizerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/hofund-local-authorizer
+  IamRoleLambdaExecution:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName:
+            Fn::Join:
+              - '-'
+              - - hofund
+                - local
+                - lambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:CreateLogGroup
+                Resource:
+                  - Fn::Sub: >-
+                      arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/hofund-local*:*
+              - Effect: Allow
+                Action:
+                  - logs:PutLogEvents
+                Resource:
+                  - Fn::Sub: >-
+                      arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/hofund-local*:*:*
+      Path: /
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - hofund
+            - local
+            - Ref: AWS::Region
+            - lambdaRole
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ''
+            - - 'arn:'
+              - Ref: AWS::Partition
+              - ':iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+  AuthorizerLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Ref: CodeBucket
+        S3Key:
+          Ref: CodeKey
+      FunctionName: hofund-local-authorizer
+      Handler: lambda_echo.handler
+      MemorySize: 128
+      Role:
+        Fn::GetAtt:
+          - IamRoleLambdaExecution
+          - Arn
+      Runtime: nodejs12.x
+      Timeout: 10
+      Tags:
+        - Key: env
+          Value: local
+      Environment:
+        Variables:
+          SESSION_URL: https://example.com/api/session
+    DependsOn:
+      - AuthorizerLogGroup
+  AuthorizerLambdaVersionVumzx5NsNjF8c8NmvUEtuiwF3vxgvSRAvSmkFWlajA:
+    Type: AWS::Lambda::Version
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName:
+        Ref: AuthorizerLambdaFunction
+  ApiGatewayApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: ApiGatewayApiKey421
+      Value: test123test123test123
+  ApiGatewayUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      Quota:
+        Limit: '5000'
+        Period: MONTH
+      ApiStages:
+        - ApiId:
+            Ref: ApiGatewayRestApi
+          Stage:
+            Ref: ApiGWStage
+      Throttle:
+        BurstLimit: '500'
+        RateLimit: '1000'
+  ApiGatewayUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId:
+        Ref: ApiGatewayApiKey
+      KeyType: API_KEY
+      UsagePlanId:
+        Ref: ApiGatewayUsagePlan
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name:
+        Ref: RestApiName
+      EndpointConfiguration:
+        Types:
+          - EDGE
+  ProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - ApiGatewayRestApi
+          - RootResourceId
+      PathPart: testproxy
+      RestApiId:
+        Ref: ApiGatewayRestApi
+  ProxyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      ResourceId:
+        Ref: ProxyResource
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      HttpMethod: GET
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+      Integration:
+        IntegrationHttpMethod: GET
+        Type: HTTP_PROXY
+        Uri: http://www.example.com
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,POST'"
+
+  ApiGWDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: foobar
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      StageName: local
+    DependsOn:
+      - ProxyMethod
+  ApiGWStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      Description: Test Stage 123
+      DeploymentId:
+        Ref: ApiGWDeployment
+      RestApiId:
+        Ref: ApiGatewayRestApi
+    DependsOn:
+      - ProxyMethod
+Outputs:
+  ServerlessDeploymentBucketName:
+    Value: hofund-local-deployment
+  AuthorizerLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value:
+      Ref: AuthorizerLambdaVersionVumzx5NsNjF8c8NmvUEtuiwF3vxgvSRAvSmkFWlajA
+  RestApiId:
+    Value:
+      Ref: ApiGatewayRestApi
+  ResourceId:
+    Value:
+      Ref: ProxyResource

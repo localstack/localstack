@@ -1,0 +1,62 @@
+{
+  "typeName": "AWS::Events::EventBus",
+  "description": "Resource Type definition for AWS::Events::EventBus",
+  "additionalProperties": false,
+  "properties": {
+    "Policy": {
+      "type": "string"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "Arn": {
+      "type": "string"
+    },
+    "EventSourceName": {
+      "type": "string"
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/TagEntry"
+      }
+    },
+    "Name": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "TagEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Value": {
+          "type": "string"
+        },
+        "Key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "required": [
+    "Name"
+  ],
+  "createOnlyProperties": [
+    "/properties/Name",
+    "/properties/EventSourceName"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id",
+    "/properties/Policy",
+    "/properties/Arn"
+  ]
+}

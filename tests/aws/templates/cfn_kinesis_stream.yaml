@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  KinesisStreamName:
+    Type: String
+  DeliveryStreamName:
+    Type: String
+  KinesisRoleName:
+    Type: String
+Resources:
+  MyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref KinesisRoleName
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Principal:
+              Service: firehose.amazonaws.com
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref "DeliveryStreamName"
+  KinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name : !Ref "KinesisStreamName"
+      ShardCount : 5
+  DeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Ref "DeliveryStreamName"
+      DeliveryStreamType: DirectPut
+      S3DestinationConfiguration:
+        BucketARN: !GetAtt "MyBucket.Arn"
+        BufferingHints:
+          IntervalInSeconds: 600
+          SizeInMBs: 50
+        CompressionFormat: UNCOMPRESSED
+        Prefix: raw/
+        RoleARN: !GetAtt "MyRole.Arn"
+Outputs:
+  MyStreamArn:
+    Value: !GetAtt "DeliveryStream.Arn"

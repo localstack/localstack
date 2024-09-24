@@ -1,0 +1,21 @@
+Parameters:
+  EventBusName:
+    Type: String
+  StatementId:
+    Type: String
+
+Resources:
+  LsEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Ref EventBusName
+  LsEventPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      StatementId: !Ref StatementId
+      Statement:
+        Effect: "Allow"
+        Principal: "*"
+        Action: "events:PutEvents"
+        Resource: !GetAtt LsEventBus.Arn
+      EventBusName: !Ref LsEventBus

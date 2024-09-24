@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  Environment:
+    Type: String
+    Default: 'companyname-ci'
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: "100.0.0.0/20"
+
+  RouteTableProduction:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: env
+        Value: production
+
+  RouteTableQa:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: env
+        Value: qa
+
+  RouteTableQa2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: env
+        Value: qa
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref RouteTableProduction
+      GatewayId: !Ref InternetGateway
+
+Outputs:
+  PublicRoute:
+    Value:
+      Ref: PublicRoute
+    Export:
+      Name: 'publicRoute-identify'
+  VPC:
+    Value:
+      Ref: VPC

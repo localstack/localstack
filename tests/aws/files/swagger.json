@@ -1,0 +1,104 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Import swagger JSON",
+    "version": "2"
+  },
+  "basePath": "/base",
+  "paths": {
+    "/test": {
+      "get": {
+        "security": [
+          {
+            "myapi-authorizer-0": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              }
+            }
+          },
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "passthroughBehavior": "when_no_match",
+          "type": "mock"
+        }
+      },
+      "options": {
+        "security": [
+          {
+            "myapi-authorizer-0": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Methods": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Headers": {
+                "type": "string"
+              }
+            },
+            "description": ""
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              }
+            }
+          },
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "passthroughBehavior": "when_no_match",
+          "type": "mock"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Empty": {
+      "title": "Empty Schema",
+      "type": "object"
+    }
+  },
+  "securityDefinitions": {
+    "myapi-authorizer-0": {
+      "in": "query",
+      "name": "auth",
+      "type": "apiKey",
+      "x-amazon-apigateway-authorizer": {
+        "authorizerCredentials": "arn:aws:iam::000000000000:role/myapi-authorizer-0-authorizer-role-3bd761a",
+        "authorizerUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:000000000000:function:myapi-authorizer-0-22ad13b/invocations",
+        "identitySource": "method.request.querystring.auth",
+        "type": "request"
+      },
+      "x-amazon-apigateway-authtype": "custom"
+    }
+  }
+}

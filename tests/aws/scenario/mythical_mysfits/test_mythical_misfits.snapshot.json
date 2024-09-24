@@ -1,0 +1,683 @@
+{
+  "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_deployed_infra_state": {
+    "recorded-date": "17-10-2023, 20:07:08",
+    "recorded-content": {
+      "outputs": {
+        "ClicksBucketDestinationName": "<clicks-bucket-destination-name:1>",
+        "DeliveryStreamArn": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>",
+        "DeliveryStreamName": "<delivery-stream-name:1>",
+        "<physical-resource-id:1>Name": "<physical-resource-id:1>",
+        "PopulateDbFunctionName": "<populate-db-function-name:1>",
+        "StreamProcessorFunctionName": "<stream-processor-function-name:1>",
+        "UserClicksServiceAPIEndpoint": "https://<user-clicks-service-a-p-i-id:1>.execute-api.<region>.amazonaws.com/<physical-resource-id:7>/",
+        "UserClicksServiceAPIEndpoint1DA4E100": "https://<user-clicks-service-a-p-i-id:1>.execute-api.<region>.amazonaws.com/<physical-resource-id:7>/",
+        "UserClicksServiceAPIId": "<user-clicks-service-a-p-i-id:1>"
+      },
+      "describe_stack": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/test-cs-ca7a7051/3d2a3934-f24e-4fd3-955f-9579c69b55ba",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "Outputs": [
+          {
+            "OutputKey": "StreamProcessorFunctionName",
+            "OutputValue": "<stream-processor-function-name:1>"
+          },
+          {
+            "OutputKey": "UserClicksServiceAPIEndpoint",
+            "OutputValue": "https://<user-clicks-service-a-p-i-id:1>.execute-api.<region>.amazonaws.com/<physical-resource-id:7>/"
+          },
+          {
+            "OutputKey": "UserClicksServiceAPIId",
+            "OutputValue": "<user-clicks-service-a-p-i-id:1>"
+          },
+          {
+            "OutputKey": "ClicksBucketDestinationName",
+            "OutputValue": "<clicks-bucket-destination-name:1>"
+          },
+          {
+            "OutputKey": "PopulateDbFunctionName",
+            "OutputValue": "<populate-db-function-name:1>"
+          },
+          {
+            "OutputKey": "DeliveryStreamArn",
+            "OutputValue": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>"
+          },
+          {
+            "OutputKey": "DeliveryStreamName",
+            "OutputValue": "<delivery-stream-name:1>"
+          },
+          {
+            "OutputKey": "UserClicksServiceAPIEndpoint1DA4E100",
+            "OutputValue": "https://<user-clicks-service-a-p-i-id:1>.execute-api.<region>.amazonaws.com/<physical-resource-id:7>/"
+          },
+          {
+            "OutputKey": "<physical-resource-id:1>Name",
+            "OutputValue": "<physical-resource-id:1>"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "<stack-id:1>",
+        "StackName": "MythicalMisfitsStack",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      },
+      "describe_stack_resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:1>",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::DynamoDB::Table",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:2>",
+            "PhysicalResourceId": "<populate-db-function-name:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:3>",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:4>",
+            "PhysicalResourceId": "<physical-resource-id:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:5>",
+            "PhysicalResourceId": "<physical-resource-id:4>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Account",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:6>",
+            "PhysicalResourceId": "<physical-resource-id:5>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:7>",
+            "PhysicalResourceId": "<user-clicks-service-a-p-i-id:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::RestApi",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:8>",
+            "PhysicalResourceId": "<physical-resource-id:6>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Deployment",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:9>",
+            "PhysicalResourceId": "<physical-resource-id:7>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Stage",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:10>",
+            "PhysicalResourceId": "<physical-resource-id:8>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Resource",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:11>",
+            "PhysicalResourceId": "<physical-resource-id:9>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Method",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:12>",
+            "PhysicalResourceId": "<physical-resource-id:10>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Method",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:13>",
+            "PhysicalResourceId": "<physical-resource-id:11>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:14>",
+            "PhysicalResourceId": "<physical-resource-id:12>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:15>",
+            "PhysicalResourceId": "<clicks-bucket-destination-name:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::S3::Bucket",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:16>",
+            "PhysicalResourceId": "<delivery-stream-name:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::KinesisFirehose::DeliveryStream",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:17>",
+            "PhysicalResourceId": "<physical-resource-id:13>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:18>",
+            "PhysicalResourceId": "<physical-resource-id:14>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:19>",
+            "PhysicalResourceId": "<stream-processor-function-name:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:20>",
+            "PhysicalResourceId": "MythicalMisfitsStack-<logical-resource-id:20>-z6K0tP6e6kbE",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:21>",
+            "PhysicalResourceId": "<physical-resource-id:16>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "<logical-resource-id:22>",
+            "PhysicalResourceId": "<physical-resource-id:17>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "<stack-id:1>",
+            "StackName": "MythicalMisfitsStack",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "AWS::DynamoDB::Table-1": {
+          "Table": {
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "GoodEvil",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "LawChaos",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "MysfitId",
+                "AttributeType": "S"
+              }
+            ],
+            "CreationDateTime": "datetime",
+            "DeletionProtectionEnabled": false,
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<physical-resource-id:1>/index/LawChaosIndex",
+                "IndexName": "LawChaosIndex",
+                "IndexSizeBytes": 0,
+                "IndexStatus": "ACTIVE",
+                "ItemCount": 0,
+                "KeySchema": [
+                  {
+                    "AttributeName": "LawChaos",
+                    "KeyType": "HASH"
+                  },
+                  {
+                    "AttributeName": "MysfitId",
+                    "KeyType": "RANGE"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                },
+                "ProvisionedThroughput": {
+                  "NumberOfDecreasesToday": 0,
+                  "ReadCapacityUnits": 5,
+                  "WriteCapacityUnits": 5
+                }
+              },
+              {
+                "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<physical-resource-id:1>/index/GoodEvilIndex",
+                "IndexName": "GoodEvilIndex",
+                "IndexSizeBytes": 0,
+                "IndexStatus": "ACTIVE",
+                "ItemCount": 0,
+                "KeySchema": [
+                  {
+                    "AttributeName": "GoodEvil",
+                    "KeyType": "HASH"
+                  },
+                  {
+                    "AttributeName": "MysfitId",
+                    "KeyType": "RANGE"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                },
+                "ProvisionedThroughput": {
+                  "NumberOfDecreasesToday": 0,
+                  "ReadCapacityUnits": 5,
+                  "WriteCapacityUnits": 5
+                }
+              }
+            ],
+            "ItemCount": 0,
+            "KeySchema": [
+              {
+                "AttributeName": "MysfitId",
+                "KeyType": "HASH"
+              }
+            ],
+            "ProvisionedThroughput": {
+              "NumberOfDecreasesToday": 0,
+              "ReadCapacityUnits": 5,
+              "WriteCapacityUnits": 5
+            },
+            "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<physical-resource-id:1>",
+            "TableId": "<uuid:1>",
+            "TableName": "<physical-resource-id:1>",
+            "TableSizeBytes": 0,
+            "TableStatus": "ACTIVE"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "AWS::KinesisFirehose::DeliveryStream-1": {
+          "DeliveryStreamDescription": {
+            "CreateTimestamp": "timestamp",
+            "DeliveryStreamARN": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<delivery-stream-name:1>",
+            "DeliveryStreamEncryptionConfiguration": {
+              "Status": "DISABLED"
+            },
+            "DeliveryStreamName": "<delivery-stream-name:1>",
+            "DeliveryStreamStatus": "ACTIVE",
+            "DeliveryStreamType": "DirectPut",
+            "Destinations": [
+              {
+                "DestinationId": "destinationId-000000000001",
+                "ExtendedS3DestinationDescription": {
+                  "BucketARN": "arn:<partition>:s3:::<clicks-bucket-destination-name:1>",
+                  "BufferingHints": {
+                    "IntervalInSeconds": 60,
+                    "SizeInMBs": 50
+                  },
+                  "CloudWatchLoggingOptions": {
+                    "Enabled": false
+                  },
+                  "CompressionFormat": "UNCOMPRESSED",
+                  "EncryptionConfiguration": {
+                    "NoEncryptionConfig": "NoEncryption"
+                  },
+                  "Prefix": "firehose/",
+                  "ProcessingConfiguration": {
+                    "Enabled": true,
+                    "Processors": [
+                      {
+                        "Parameters": [
+                          {
+                            "ParameterName": "LambdaArn",
+                            "ParameterValue": "arn:<partition>:lambda:<region>:111111111111:function:<stream-processor-function-name:1>"
+                          },
+                          {
+                            "ParameterName": "NumberOfRetries",
+                            "ParameterValue": "3"
+                          },
+                          {
+                            "ParameterName": "RoleArn",
+                            "ParameterValue": "arn:<partition>:iam::111111111111:role/<physical-resource-id:13>"
+                          },
+                          {
+                            "ParameterName": "BufferSizeInMBs",
+                            "ParameterValue": "1"
+                          },
+                          {
+                            "ParameterName": "BufferIntervalInSeconds",
+                            "ParameterValue": "60"
+                          }
+                        ],
+                        "Type": "Lambda"
+                      }
+                    ]
+                  },
+                  "RoleARN": "arn:<partition>:iam::111111111111:role/<physical-resource-id:13>",
+                  "S3BackupMode": "Disabled"
+                },
+                "S3DestinationDescription": {
+                  "BucketARN": "arn:<partition>:s3:::<clicks-bucket-destination-name:1>",
+                  "BufferingHints": {
+                    "IntervalInSeconds": 60,
+                    "SizeInMBs": 50
+                  },
+                  "CloudWatchLoggingOptions": {
+                    "Enabled": false
+                  },
+                  "CompressionFormat": "UNCOMPRESSED",
+                  "EncryptionConfiguration": {
+                    "NoEncryptionConfig": "NoEncryption"
+                  },
+                  "Prefix": "firehose/",
+                  "RoleARN": "arn:<partition>:iam::111111111111:role/<physical-resource-id:13>"
+                }
+              }
+            ],
+            "HasMoreDestinations": false,
+            "VersionId": "1"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "AWS::Lambda::Function-1": {
+          "Code": {
+            "Location": "<location>",
+            "RepositoryType": "S3"
+          },
+          "Configuration": {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "La3zLdqIsk/cKmJeuZNs23JiacBxEf3rYPe3mqPK3o0=",
+            "CodeSize": "<code-size>",
+            "Description": "",
+            "Environment": {
+              "Variables": {
+                "mysfitsTable": "<physical-resource-id:1>"
+              }
+            },
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<populate-db-function-name:1>",
+            "FunctionName": "<populate-db-function-name:1>",
+            "Handler": "index.insertMysfits",
+            "LastModified": "date",
+            "LastUpdateStatus": "Successful",
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:2>",
+            "Role": "arn:<partition>:iam::111111111111:role/<physical-resource-id:2>",
+            "Runtime": "python3.10",
+            "RuntimeVersionConfig": {
+              "RuntimeVersionArn": "<runtime-version-arn:1>"
+            },
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "State": "Active",
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "$LATEST"
+          },
+          "Tags": {
+            "aws:cloudformation:logical-id": "<logical-resource-id:2>",
+            "aws:cloudformation:stack-id": "<stack-id:1>",
+            "aws:cloudformation:stack-name": "MythicalMisfitsStack"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "AWS::Lambda::Function-2": {
+          "Code": {
+            "Location": "<location>",
+            "RepositoryType": "S3"
+          },
+          "Configuration": {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "CrubTvLPal4InFdsTyMWcbfFxsSdPgBKKkp7on4dVRQ=",
+            "CodeSize": "<code-size>",
+            "Description": "An Amazon Kinesis Firehose stream processor that enriches click records to not just include a mysfitId, but also other attributes that can be analyzed later.",
+            "Environment": {
+              "Variables": {
+                "MYSFITS_TABLE_NAME": "<physical-resource-id:1>"
+              }
+            },
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<stream-processor-function-name:1>",
+            "FunctionName": "<stream-processor-function-name:1>",
+            "Handler": "index.processRecord",
+            "LastModified": "date",
+            "LastUpdateStatus": "Successful",
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:3>",
+            "Role": "arn:<partition>:iam::111111111111:role/<physical-resource-id:16>",
+            "Runtime": "python3.10",
+            "RuntimeVersionConfig": {
+              "RuntimeVersionArn": "<runtime-version-arn:1>"
+            },
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "State": "Active",
+            "Timeout": 30,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "$LATEST"
+          },
+          "Tags": {
+            "aws:cloudformation:logical-id": "<logical-resource-id:19>",
+            "aws:cloudformation:stack-id": "<stack-id:1>",
+            "aws:cloudformation:stack-name": "MythicalMisfitsStack"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_user_clicks_are_stored": {
+    "recorded-date": "17-10-2023, 20:12:30",
+    "recorded-content": {
+      "cors-req-headers": {
+        "Access-Control-Allow-Credentials": "false",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent",
+        "Access-Control-Allow-Methods": "OPTIONS,GET,PUT,POST,DELETE",
+        "Access-Control-Allow-Origin": "*",
+        "Connection": "keep-alive",
+        "Content-Length": "0",
+        "Content-Type": "application/json",
+        "Date": "<date:1>",
+        "x-amz-apigw-id": "<x-amz-apigw-id:1>",
+        "x-amzn-RequestId": "<x-amzn--request-id:1>"
+      },
+      "list-objects": {
+        "Contents": [
+          {
+            "ETag": "\"aba09441934e92fa1d8e444d79def8fe\"",
+            "Key": "<key:1>",
+            "LastModified": "datetime",
+            "Size": 140,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "firehose/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-first-click": {
+        "goodevil": "Evil",
+        "lawchaos": "Chaotic",
+        "mysfitId": "<uuid:1>",
+        "species": "Troll",
+        "userId": "randomuser"
+      }
+    }
+  }
+}

@@ -1,0 +1,482 @@
+{
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_update_without_parameters": {
+    "recorded-date": "31-05-2022, 09:32:02",
+    "recorded-content": {
+      "create_change_set": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<change-set-id:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      },
+      "describe_change_set": {
+        "ChangeSetName": "<change-set-name:1>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<change-set-name:1>/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "Status": "CREATE_COMPLETE",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "Capabilities": [],
+        "Changes": [
+          {
+            "Type": "Resource",
+            "ResourceChange": {
+              "Action": "Modify",
+              "LogicalResourceId": "topic123",
+              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+              "ResourceType": "AWS::SNS::Topic",
+              "Replacement": "True",
+              "Scope": [
+                "Properties"
+              ],
+              "Details": [
+                {
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "TopicName",
+                    "RequiresRecreation": "Always"
+                  },
+                  "Evaluation": "Static",
+                  "ChangeSource": "DirectModification"
+                }
+              ]
+            }
+          }
+        ],
+        "IncludeNestedStacks": false,
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      },
+      "list_change_set": {
+        "Summaries": [
+          {
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<change-set-name:1>/<resource:3>",
+            "ChangeSetName": "<change-set-name:1>",
+            "ExecutionStatus": "AVAILABLE",
+            "Status": "CREATE_COMPLETE",
+            "CreationTime": "datetime",
+            "IncludeNestedStacks": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_empty_changeset": {
+    "recorded-date": "10-08-2022, 10:52:55",
+    "recorded-content": {
+      "first_changeset": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>"
+      },
+      "describe_first_cs": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "CDKMetadata",
+              "ResourceType": "AWS::CDK::Metadata",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE"
+      },
+      "nochange_changeset": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>"
+      },
+      "describe_nochange": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:2>",
+        "Changes": [],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "UNAVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "FAILED",
+        "StatusReason": "The submitted information didn't contain changes. Submit different information to create a change set."
+      },
+      "error_execute_failed": "An error occurred (InvalidChangeSetStatus) when calling the ExecuteChangeSet operation: ChangeSet [arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>] cannot be executed in its current status of [FAILED]"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_deleted_changeset": {
+    "recorded-date": "11-08-2022, 11:11:47",
+    "recorded-content": {
+      "create": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:2>"
+      },
+      "postdelete_changeset_notfound": "An error occurred (ChangeSetNotFound) when calling the DescribeChangeSet operation: ChangeSet [arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>] does not exist"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_describe_change_set_nonexisting": {
+    "recorded-date": "11-08-2022, 13:22:01",
+    "recorded-content": {
+      "exception": "An error occurred (ValidationError) when calling the DescribeChangeSet operation: Stack [somestack] does not exist"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_delete_change_set_exception": {
+    "recorded-date": "11-08-2022, 14:07:38",
+    "recorded-content": {
+      "e1": "<ExceptionInfo ClientError('An error occurred (ValidationError) when calling the DeleteChangeSet operation: Stack [nostack] does not exist') tblen=3>",
+      "e2": "<ExceptionInfo ClientError('An error occurred (ValidationError) when calling the DeleteChangeSet operation: StackName must be specified if ChangeSetName is not specified as an ARN.') tblen=3>"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_name_conflicts": {
+    "recorded-date": "22-11-2023, 10:58:04",
+    "recorded-content": {
+      "create_changeset_existingstack_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack [<stack-name:1>] already exists and cannot be created again with the changeSet [<change-set-name:1>].",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "new_stack_desc": {
+        "Stacks": [
+          {
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "NotificationARNs": [],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "REVIEW_IN_PROGRESS",
+            "StackStatusReason": "User Initiated",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_id_desc": {
+        "Stacks": [
+          {
+            "CreationTime": "datetime",
+            "DeletionTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "DELETE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "new_stack_id_desc": {
+        "Stacks": [
+          {
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "NotificationARNs": [],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "REVIEW_IN_PROGRESS",
+            "StackStatusReason": "User Initiated",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "initial_changeset_id_desc": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "SimpleParam",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "EXECUTE_COMPLETE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_initial_changeset_id_desc": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:4>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "SimpleParam",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_while_in_review": {
+    "recorded-date": "22-11-2023, 08:49:15",
+    "recorded-content": {
+      "create_stack_while_in_review": {
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_stack": {
+        "Stacks": [
+          {
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "NotificationARNs": [],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "CREATE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_change_set": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:2>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "SimpleParam",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "OBSOLETE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_template_rendering_with_list": {
+    "recorded-date": "23-11-2023, 09:23:26",
+    "recorded-content": {
+      "resolved-template": {
+        "d": [
+          {
+            "userid": 1
+          },
+          1,
+          "string"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_changeset_with_stack_id": {
+    "recorded-date": "28-11-2023, 07:48:23",
+    "recorded-content": {
+      "describe_stack": {
+        "Stacks": [
+          {
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "NotificationARNs": [],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "REVIEW_IN_PROGRESS",
+            "StackStatusReason": "User Initiated",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recreate_deleted_with_id_exception": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack [arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>] already exists and cannot be created again with the changeSet [revived-stack-changeset].",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_multiple_create_changeset": {
+    "recorded-date": "28-11-2023, 07:38:49",
+    "recorded-content": {
+      "initial_changeset": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "SimpleParam",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "additional_changeset": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

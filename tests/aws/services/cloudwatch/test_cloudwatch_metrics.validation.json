@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/cloudwatch/test_cloudwatch_metrics.py::TestCloudWatchLambdaMetrics::test_lambda_invoke_error": {
+    "last_validated_date": "2023-11-15T18:49:06+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch_metrics.py::TestCloudWatchLambdaMetrics::test_lambda_invoke_successful": {
+    "last_validated_date": "2023-11-15T18:46:04+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch_metrics.py::TestSqsApproximateMetrics::test_sqs_approximate_metrics": {
+    "last_validated_date": "2024-01-02T11:33:18+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch_metrics.py::TestSQSMetrics::test_alarm_number_of_messages_sent": {
+    "last_validated_date": "2024-01-03T12:05:01+00:00"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "typeName": "AWS::EC2::KeyPair",
+  "description": "The AWS::EC2::KeyPair creates an SSH key pair",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+  "definitions": {
+    "Tag": {
+      "description": "A key-value pair to associate with a resource.",
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "Value": {
+          "type": "string",
+          "description": "The value for the tag. You can specify a value that is 0 to 256 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
+          "minLength": 0,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "KeyName": {
+      "description": "The name of the SSH key pair",
+      "type": "string"
+    },
+    "KeyType": {
+      "description": "The crypto-system used to generate a key pair.",
+      "type": "string",
+      "default": "rsa",
+      "enum": [
+        "rsa",
+        "ed25519"
+      ]
+    },
+    "KeyFormat": {
+      "description": "The format of the private key",
+      "type": "string",
+      "default": "pem",
+      "enum": [
+        "pem",
+        "ppk"
+      ]
+    },
+    "PublicKeyMaterial": {
+      "description": "Plain text public key to import",
+      "type": "string"
+    },
+    "KeyFingerprint": {
+      "description": "A short sequence of bytes used for public key verification",
+      "type": "string"
+    },
+    "KeyPairId": {
+      "description": "An AWS generated ID for the key pair",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "An array of key-value pairs to apply to this resource.",
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "KeyName"
+  ],
+  "primaryIdentifier": [
+    "/properties/KeyName"
+  ],
+  "additionalIdentifiers": [
+    [
+      "/properties/KeyPairId"
+    ]
+  ],
+  "createOnlyProperties": [
+    "/properties/KeyName",
+    "/properties/KeyType",
+    "/properties/KeyFormat",
+    "/properties/PublicKeyMaterial",
+    "/properties/Tags"
+  ],
+  "writeOnlyProperties": [
+    "/properties/KeyFormat"
+  ],
+  "readOnlyProperties": [
+    "/properties/KeyPairId",
+    "/properties/KeyFingerprint"
+  ],
+  "tagging": {
+    "taggable": true,
+    "tagUpdatable": false,
+    "cloudFormationSystemTags": false
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateKeyPair",
+        "ec2:ImportKeyPair",
+        "ec2:CreateTags",
+        "ssm:PutParameter"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeKeyPairs"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeKeyPairs"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DeleteKeyPair",
+        "ssm:DeleteParameter",
+        "ec2:DescribeKeyPairs"
+      ]
+    }
+  }
+}

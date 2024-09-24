@@ -1,0 +1,31 @@
+{
+  "StartAt": "ParallelStateL1",
+  "States": {
+    "ParallelStateL1": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "ParallelStateL2",
+          "States": {
+            "ParallelStateL2": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [
+                {
+                  "StartAt": "BranchL2",
+                  "States": {
+                    "BranchL2": {
+                      "Type": "Pass",
+                      "End": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

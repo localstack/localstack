@@ -1,0 +1,44 @@
+{
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_add_tags_to_stream": {
+    "last_validated_date": "2022-08-25T06:56:43+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_cbor_blob_handling": {
+    "last_validated_date": "2024-07-31T11:17:28+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_create_stream_without_shard_count": {
+    "last_validated_date": "2022-08-26T07:30:59+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_create_stream_without_stream_name_raises": {
+    "last_validated_date": "2024-06-10T09:38:19+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_get_records": {
+    "last_validated_date": "2024-07-04T14:57:38+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_get_records_empty_stream": {
+    "last_validated_date": "2024-07-04T14:59:11+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_record_lifecycle_data_integrity": {
+    "last_validated_date": "2022-08-25T10:39:44+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_stream_consumers": {
+    "last_validated_date": "2022-08-26T08:23:46+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard": {
+    "last_validated_date": "2022-08-26T07:33:29+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_at_timestamp": {
+    "last_validated_date": "2024-06-21T15:20:46+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_at_timestamp_cbor": {
+    "last_validated_date": "2024-07-30T14:49:34+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_sequence_number_as_iterator": {
+    "last_validated_date": "2022-08-26T07:29:21+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesisJavaSDK::test_subscribe_to_shard_with_java_sdk_v2_lambda": {
+    "last_validated_date": "2024-07-31T11:18:43+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::test_subscribe_to_shard_with_at_timestamp_cbor": {
+    "last_validated_date": "2024-07-04T07:13:22+00:00"
+  }
+}

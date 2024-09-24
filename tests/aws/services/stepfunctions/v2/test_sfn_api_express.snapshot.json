@@ -1,0 +1,221 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_create_describe_delete": {
+    "recorded-date": "26-06-2024, 19:06:21",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "EXPRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deletion_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_start_async_describe_history_execution": {
+    "recorded-date": "03-07-2024, 17:14:50",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "end_event": {
+        "details": {
+          "output": {
+            "Arg1": "argument1"
+          },
+          "outputDetails": {
+            "truncated": false
+          }
+        },
+        "event_timestamp": "timestamp",
+        "execution_arn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<ExpressExecArn_Part1_0idx>:<ExpressExecArn_Part2_0idx>",
+        "id": "4",
+        "previous_event_id": "3",
+        "redrive_count": "0",
+        "type": "ExecutionSucceeded"
+      },
+      "list_executions_error": {
+        "Error": {
+          "Code": "StateMachineTypeNotSupported",
+          "Message": "This operation is not supported by this type of state machine"
+        },
+        "message": "This operation is not supported by this type of state machine",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe_execution_error": {
+        "Error": {
+          "Code": "InvalidArn",
+          "Message": "Invalid Arn: 'Resource type not valid in this context: express'"
+        },
+        "message": "Invalid Arn: 'Resource type not valid in this context: express'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "stop_execution_error": {
+        "Error": {
+          "Code": "InvalidArn",
+          "Message": "Invalid Arn: 'Resource type not valid in this context: express'"
+        },
+        "message": "Invalid Arn: 'Resource type not valid in this context: express'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_execution_history_error": {
+        "Error": {
+          "Code": "InvalidArn",
+          "Message": "Invalid Arn: 'Resource type not valid in this context: express'"
+        },
+        "message": "Invalid Arn: 'Resource type not valid in this context: express'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_start_sync_execution": {
+    "recorded-date": "26-06-2024, 19:06:54",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_sync_response": {
+        "billingDetails": {
+          "billedDurationInMilliseconds": 100,
+          "billedMemoryUsedInMB": 64
+        },
+        "executionArn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<SyncExecArn_Part1_0idx>",
+        "output": {
+          "Arg1": "argument1"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_callbacks[WAIT_FOR_TASK_TOKEN]": {
+    "recorded-date": "03-07-2024, 19:43:10",
+    "recorded-content": {
+      "creation_error": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support '.waitForTaskToken' service integration  at /States/Publish/Resource'"
+        },
+        "message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support '.waitForTaskToken' service integration  at /States/Publish/Resource'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_callbacks[SYNC]": {
+    "recorded-date": "03-07-2024, 19:43:23",
+    "recorded-content": {
+      "creation_error": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support '.sync' service integration at /States/StartExecution/Resource'"
+        },
+        "message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support '.sync' service integration at /States/StartExecution/Resource'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_express.py::TestSfnApiExpress::test_illegal_activity_task": {
+    "recorded-date": "03-07-2024, 19:27:25",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "creation_error": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support Activity ARN at /States/ActivityTask/Resource'"
+        },
+        "message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: Express state machine does not support Activity ARN at /States/ActivityTask/Resource'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

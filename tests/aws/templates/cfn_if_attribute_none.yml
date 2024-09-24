@@ -1,0 +1,42 @@
+Parameters:
+  Value1:
+    Type: String
+    Default: "Value1"
+  Value2:
+    Type: String
+    Default: "Value2"
+  CreateParameter:
+    Type: String
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+Conditions:
+  UseParameter1: !Equals [!Ref CreateParameter, "false"]
+  UseParameter2: !Equals [!Ref CreateParameter, "true"]
+
+Resources:
+  Parameter1:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Ref Value1
+
+  Parameter2:
+    Condition: UseParameter2
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Ref Value2
+
+  Parameter3:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !If [UseParameter1, !Ref Value1, !Ref Value2]
+
+Outputs:
+  Result:
+    Value:
+      Fn::GetAtt: [Parameter3, Value]

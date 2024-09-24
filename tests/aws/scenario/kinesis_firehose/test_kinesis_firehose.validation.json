@@ -1,0 +1,5 @@
+{
+  "tests/aws/scenario/kinesis_firehose/test_kinesis_firehose.py::TestKinesisFirehoseScenario::test_kinesis_firehose_s3": {
+    "last_validated_date": "2024-02-14T15:02:06+00:00"
+  }
+}

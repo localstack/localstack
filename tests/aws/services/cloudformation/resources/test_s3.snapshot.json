@@ -1,0 +1,175 @@
+{
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_cors_configuration": {
+    "recorded-date": "20-04-2023, 20:17:17",
+    "recorded-content": {
+      "cors-info-optional": {
+        "CORSRules": [
+          {
+            "AllowedHeaders": [
+              "*",
+              "x-amz-*"
+            ],
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ],
+            "ExposeHeaders": [
+              "Date"
+            ],
+            "ID": "test-cors-id",
+            "MaxAgeSeconds": 3600
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cors-info-only-required": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_website_configuration": {
+    "recorded-date": "02-06-2023, 18:24:39",
+    "recorded-content": {
+      "get_bucket_website": {
+        "ErrorDocument": {
+          "Key": "error.html"
+        },
+        "IndexDocument": {
+          "Suffix": "index.html"
+        },
+        "RoutingRules": [
+          {
+            "Condition": {
+              "HttpErrorCodeReturnedEquals": "404",
+              "KeyPrefixEquals": "out1/"
+            },
+            "Redirect": {
+              "ReplaceKeyWith": "redirected.html"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_object_lock_configuration": {
+    "recorded-date": "15-01-2024, 02:31:58",
+    "recorded-content": {
+      "object-lock-info-with-configuration": {
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled",
+          "Rule": {
+            "DefaultRetention": {
+              "Days": 2,
+              "Mode": "GOVERNANCE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-lock-info-only-enabled": {
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_bucketpolicy": {
+    "recorded-date": "31-05-2024, 13:41:44",
+    "recorded-content": {
+      "bucket": {
+        "BucketName": "<bucket-name:1>"
+      },
+      "get-policy-true": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Action": [
+              "s3:GetObject*",
+              "s3:GetBucket*",
+              "s3:List*"
+            ],
+            "Resource": [
+              "arn:<partition>:s3:::<bucket-name:1>",
+              "arn:<partition>:s3:::<bucket-name:1>/*"
+            ]
+          }
+        ]
+      },
+      "no-policy": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucketPolicy",
+          "Message": "The bucket policy does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_cfn_handle_s3_notification_configuration": {
+    "recorded-date": "20-06-2024, 16:57:13",
+    "recorded-content": {
+      "get_bucket_notification_configuration": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Id": "<id:1>",
+            "QueueArn": "<queue-arn:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_bucket_notification_configuration_error": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  }
+}

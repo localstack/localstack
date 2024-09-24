@@ -1,0 +1,621 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_states_errors.py::TestStatesErrors::test_service_task_lambada_data_limit_exceeded_on_large_utf8_response": {
+    "recorded-date": "21-03-2024, 15:34:54",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit.",
+              "error": "States.DataLimitExceeded",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambda",
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleDataLimitExceeded"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "HandleDataLimitExceeded",
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_states_errors.py::TestStatesErrors::test_service_task_lambada_catch_state_all_data_limit_exceeded_on_large_utf8_response": {
+    "recorded-date": "21-03-2024, 15:35:11",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit.",
+              "error": "States.DataLimitExceeded",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambda",
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleGeneralError"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "HandleGeneralError",
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'lambda' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_states_errors.py::TestStatesErrors::test_task_lambda_data_limit_exceeded_on_large_utf8_response": {
+    "recorded-date": "21-03-2024, 15:35:27",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit.",
+              "error": "States.DataLimitExceeded"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambda",
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleDataLimitExceeded"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "HandleDataLimitExceeded",
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_states_errors.py::TestStatesErrors::test_task_lambda_catch_state_all_data_limit_exceeded_on_large_utf8_response": {
+    "recorded-date": "21-03-2024, 15:35:43",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit.",
+              "error": "States.DataLimitExceeded"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambda",
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleGeneralError"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "HandleGeneralError",
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "States.DataLimitExceeded",
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_states_errors.py::TestStatesErrors::test_start_large_input": {
+    "recorded-date": "21-03-2024, 16:07:09",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "The state/task 'State_1' returned a result with a size exceeding the maximum number of bytes service limit.",
+              "error": "States.DataLimitExceeded"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

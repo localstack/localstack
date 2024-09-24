@@ -1,0 +1,23 @@
+{
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_basic_update": {
+    "last_validated_date": "2022-11-21T07:27:37+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_diff_after_update": {
+    "last_validated_date": "2024-04-09T06:19:23+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_no_template_error": {
+    "last_validated_date": "2022-11-21T07:57:45+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_invalid_rollback_configuration_errors": {
+    "last_validated_date": "2022-11-21T14:36:32+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_previous_parameter_value": {
+    "last_validated_date": "2022-11-21T09:38:33+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_resource_types": {
+    "last_validated_date": "2022-11-19T13:34:18+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_role_without_permissions": {
+    "last_validated_date": "2022-11-21T13:14:52+00:00"
+  }
+}

@@ -1,0 +1,130 @@
+# base: Stage which installs necessary runtime dependencies (OS packages, filesystem...)
+FROM python:3.11.10-slim-bookworm@sha256:669bbd08353610485a94d5d0c976b4b6498c55280fe42c00f7581f85ee9f3121 AS base
+ARG TARGETARCH
+
+# set workdir
+RUN mkdir -p /opt/code/localstack
+RUN mkdir /opt/code/localstack/localstack-core
+WORKDIR /opt/code/localstack/
+
+# Install runtime OS package dependencies
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+        # Install dependencies to add additional repos
+        apt-get install -y --no-install-recommends \
+            # Runtime packages (groff-base is necessary for AWS CLI help)
+             ca-certificates curl make openssl
+# TODO: add this if we need the DNS server: iputils-ping iproute2
+
+SHELL [ "/bin/bash", "-c" ]
+
+# create localstack user and filesystem hierarchy, perform some permission fixes
+RUN chmod 777 . && \
+    useradd -ms /bin/bash localstack && \
+    mkdir -p /var/lib/localstack && \
+    chmod -R 777 /var/lib/localstack && \
+    mkdir -p /usr/lib/localstack && \
+    mkdir /tmp/localstack && \
+    chmod -R 777 /tmp/localstack && \
+    touch /tmp/localstack/.marker
+
+# install the entrypoint script
+ADD bin/docker-entrypoint.sh /usr/local/bin/
+# add the shipped hosts file to prevent performance degredation in windows container mode on windows
+# (where hosts file is not mounted) See https://github.com/localstack/localstack/issues/5178
+ADD bin/hosts /etc/hosts
+
+# expose default environment
+# Set edge bind host so localstack can be reached by other containers
+# set library path and default LocalStack hostname
+ENV USER=localstack
+ENV PYTHONUNBUFFERED=1
+
+
+# builder: Stage which installs the dependencies of LocalStack Community
+FROM base AS builder
+ARG TARGETARCH
+
+# Install build dependencies to base
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+        # Install dependencies to add additional repos
+        apt-get install -y gcc
+
+# upgrade python build tools
+RUN --mount=type=cache,target=/root/.cache \
+    (python3 -m venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools setuptools_scm build)
+
+# add files necessary to install all dependencies
+ADD Makefile pyproject.toml requirements-base-runtime.txt ./
+# add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
+ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
+
+# Install dependencies for running the LocalStack base runtime (for S3)
+RUN --mount=type=cache,target=/root/.cache \
+    . .venv/bin/activate && pip3 install -r requirements-base-runtime.txt
+
+# delete the botocore specs for other services (>80mb)
+# TODO: well now it's compressed and it's much lighter: 20mb maybe not worth it
+RUN find .venv/lib/python3.11/site-packages/botocore/data/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
+
+
+# final stage: Builds upon base stage and copies resources from builder stages
+FROM base
+COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
+# The build version is set in the docker-helper.sh script to be the output of setuptools_scm
+ARG LOCALSTACK_BUILD_VERSION
+
+# add project files necessary to install all dependencies
+ADD Makefile pyproject.toml requirements-base-runtime.txt ./
+# add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
+ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
+
+# add the code as late as possible
+ADD localstack-core/ /opt/code/localstack/localstack-core
+
+# Install LocalStack Community and generate the version file while doing so
+RUN --mount=type=cache,target=/root/.cache \
+    . .venv/bin/activate && \
+    SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
+    pip install -e .[base-runtime]
+
+# Generate the plugin entrypoints
+RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
+    make entrypoints
+
+# link the python package installer virtual environments into the localstack venv
+RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \
+    mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
+RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
+    mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
+
+# expose edge service and debugpy
+EXPOSE 4566 5678
+
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD .venv/bin/localstack status services --format=json
+
+# default volume directory
+VOLUME /var/lib/localstack
+
+# mark the image version
+RUN touch /usr/lib/localstack/.s3-version
+
+LABEL authors="LocalStack Contributors"
+LABEL maintainer="LocalStack Team (info@localstack.cloud)"
+LABEL description="LocalStack S3 Docker image"
+
+# Add the build date and git hash at last (changes everytime)
+ARG LOCALSTACK_BUILD_DATE
+ARG LOCALSTACK_BUILD_GIT_HASH
+ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
+ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
+ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
+ENV EAGER_SERVICE_LOADING=1
+ENV SERVICES=s3
+ENV GATEWAY_SERVER=twisted
+# TODO: do we need DNS for the S3 image?
+ENV DNS_ADDRESS=false
+
+# define command at startup
+ENTRYPOINT ["docker-entrypoint.sh"]

@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  ApiName:
+    Type: String
+
+Resources:
+  Api:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name:
+        Ref: ApiName
+  Bucket:
+    Type: AWS::S3::Bucket

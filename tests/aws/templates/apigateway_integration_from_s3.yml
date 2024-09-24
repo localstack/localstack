@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: The AWS CloudFormation template for this Serverless application
+Parameters:
+  S3BodyBucket:
+    Type: String
+  S3BodyKey:
+    Type: String
+  S3BodyETag:
+    Type: String
+
+Resources:
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      BodyS3Location:
+        Bucket:
+          Ref: S3BodyBucket
+        Key:
+          Ref: S3BodyKey
+        ETag:
+          Ref: S3BodyETag
+
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  ApiGWDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: foobar
+      RestApiId:
+        Ref: ApiGatewayRestApi
+
+  ApiGWStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      Description: Test Stage 123
+      DeploymentId:
+        Ref: ApiGWDeployment
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      StageName: local
+      TracingEnabled: true
+      MethodSettings:
+        - LoggingLevel: ERROR
+          DataTraceEnabled: true
+          HttpMethod: "*"
+          MetricsEnabled: true
+          ResourcePath: "/*"
+      Variables:
+        TestCasing: "myvar"
+        testCasingTwo: "myvar2"
+        testlowcasing: "myvar3"
+
+
+Outputs:
+  RestApiId:
+    Value:
+      Ref: ApiGatewayRestApi

@@ -1,0 +1,11 @@
+{
+  "Comment": "BASE_ACTIVITY_TASK",
+  "StartAt": "ActivityTask",
+  "States": {
+    "ActivityTask": {
+      "Type": "Task",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,322 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_dynamodb.py::TestTaskServiceDynamoDB::test_put_item_no_such_table": {
+    "recorded-date": "12-05-2023, 15:39:16",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Requested resource not found (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "error": "DynamoDB.ResourceNotFoundException",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Requested resource not found (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "error": "DynamoDB.ResourceNotFoundException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_dynamodb.py::TestTaskServiceDynamoDB::test_put_item_invalid_table_name": {
+    "recorded-date": "12-05-2023, 17:15:45",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "/<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "/<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "/<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "1 validation error detected: Value '/<test-table>' at 'tableName' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+ (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: <request_id>; Proxy: null)",
+              "error": "DynamoDB.AmazonDynamoDBException",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "1 validation error detected: Value '/<test-table>' at 'tableName' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+ (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: <request_id>; Proxy: null)",
+              "error": "DynamoDB.AmazonDynamoDBException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_dynamodb.py::TestTaskServiceDynamoDB::test_invalid_param": {
+    "recorded-date": "16-05-2023, 22:11:36",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Key": null,
+                "Item": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Key": null,
+                "Item": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Item": null
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "1 validation error detected: Value null at 'item' failed to satisfy constraint: Member must not be null (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: <request_id>; Proxy: null)",
+              "error": "DynamoDB.AmazonDynamoDBException",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "1 validation error detected: Value null at 'item' failed to satisfy constraint: Member must not be null (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: <request_id>; Proxy: null)",
+              "error": "DynamoDB.AmazonDynamoDBException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

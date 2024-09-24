@@ -1,0 +1,13 @@
+{
+  "Type": "Pass",
+  "InputPath": "$.initialData",
+  "Parameters": {
+    "staticValue": "some value",
+    "inputValue.$": "$.fieldFromInput"
+  },
+  "Result": {
+    "resultKey": "result value"
+  },
+  "ResultPath": "$.modifiedData",
+  "End": true
+}

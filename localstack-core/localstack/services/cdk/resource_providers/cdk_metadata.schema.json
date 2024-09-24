@@ -1,0 +1,22 @@
+{
+  "typeName": "AWS::CDK::Metadata" ,
+  "description": "Resource Type definition for AWS::CDK::Metadata",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+  },
+  "required": [
+  ],
+  "createOnlyProperties": [
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

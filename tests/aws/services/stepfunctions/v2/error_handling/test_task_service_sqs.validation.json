@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_empty_body": {
+    "last_validated_date": "2023-06-22T11:32:07+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue": {
+    "last_validated_date": "2023-06-22T11:31:36+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue_no_catch": {
+    "last_validated_date": "2023-06-22T11:31:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_sqs_failure_in_wait_for_task_tok": {
+    "last_validated_date": "2024-04-18T06:27:04+00:00"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary": {
+    "recorded-date": "24-05-2023, 15:05:00",
+    "recorded-content": {
+      "template-summary": {
+        "Metadata": "{'TopicName': 'sns-topic-simple'}",
+        "Parameters": [],
+        "ResourceIdentifierSummaries": [
+          {
+            "LogicalResourceIds": [
+              "topic123"
+            ],
+            "ResourceType": "AWS::SNS::Topic"
+          }
+        ],
+        "ResourceTypes": [
+          "AWS::SNS::Topic"
+        ],
+        "Version": "2010-09-09",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[s3_url]": {
+    "recorded-date": "11-10-2023, 00:03:44",
+    "recorded-content": {
+      "create-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "S3 error: Domain name specified in <bucket_name> is not a valid S3 domain",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_path]": {
+    "recorded-date": "11-10-2023, 00:03:53",
+    "recorded-content": {
+      "matching-topic": [
+        {
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<topic_name>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_host]": {
+    "recorded-date": "11-10-2023, 00:04:02",
+    "recorded-content": {
+      "matching-topic": [
+        {
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<topic_name>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_invalid]": {
+    "recorded-date": "11-10-2023, 00:04:04",
+    "recorded-content": {
+      "create-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "TemplateURL must be a supported URL.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_validate_template": {
+    "recorded-date": "18-06-2024, 17:23:30",
+    "recorded-content": {
+      "validate-template": {
+        "Parameters": [
+          {
+            "Description": "The EC2 Key Pair to allow SSH access to the instance",
+            "NoEcho": false,
+            "ParameterKey": "KeyExample"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_validate_invalid_json_template_should_fail": {
+    "recorded-date": "18-06-2024, 17:25:49",
+    "recorded-content": {
+      "validate-invalid-json": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: JSON not well-formed. (line 1, column 25)",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "tests/aws/services/cloudformation/resources/test_cloudformation.py::test_waitconditionhandle": {
+    "recorded-date": "17-05-2023, 15:55:08",
+    "recorded-content": {
+      "waithandle_ref": "https://cloudformation-waitcondition-<region>.s3.<region>.amazonaws.com/arn%3Aaws%3Acloudformation%3A<region>%3A111111111111%3Astack/stack-03ad7786/c7b3de40-f4c2-11ed-b84b-0a57ddc705d2/WaitHandle?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20230517T145504Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86399&X-Amz-Credential=AKIAYYGVRKE7CKDBHLUS%2F20230517%2F<region>%2Fs3%2Faws4_request&X-Amz-Signature=3c79384f6647bd2c655ac78e6811ea0fff9b3a52a9bd751005d35f2a04f6533c"
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_cloudformation.py::test_waitcondition": {
+    "recorded-date": "18-05-2023, 11:09:21",
+    "recorded-content": {
+      "waitcondition_ref": {
+        "WaitConditionName": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-6cc1b50e/f9764ac0-f563-11ed-82f7-061d4a7b8a1e/WaitHandle"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_cloudformation.py::test_create_macro": {
+    "recorded-date": "09-06-2023, 14:30:11",
+    "recorded-content": {
+      "stack-outputs": {
+        "MacroRef": "<macro-name>"
+      }
+    }
+  }
+}

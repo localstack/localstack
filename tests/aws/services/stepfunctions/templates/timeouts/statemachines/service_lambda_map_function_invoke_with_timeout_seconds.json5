@@ -1,0 +1,29 @@
+{
+  "Comment": "SERVICE_LAMBDA_MAP_FUNCTION_INVOKE_WITH_TIMEOUT_SECONDS_5",
+  "StartAt": "MapWait",
+  "States": {
+    "MapWait": {
+      "Type": "Map",
+      "InputPath": "$.Inputs",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "LambdaInvoke",
+        "States": {
+          "LambdaInvoke": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "TimeoutSeconds": 5,
+            "Parameters": {
+              "FunctionName.$": "$.FunctionName",
+              "Payload.$": "$.Payload",
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

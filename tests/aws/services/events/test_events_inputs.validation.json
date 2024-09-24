@@ -1,0 +1,41 @@
+{
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path": {
+    "last_validated_date": "2024-05-13T12:27:07+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_max_level_depth": {
+    "last_validated_date": "2024-05-13T12:27:13+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_multiple_targets": {
+    "last_validated_date": "2024-05-13T12:27:16+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail0]": {
+    "last_validated_date": "2024-05-13T12:27:09+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail1]": {
+    "last_validated_date": "2024-05-13T12:27:11+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
+    "last_validated_date": "2024-06-11T08:33:10+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[{\"originalEvent\": <aws.events.event>, \"originalEventJson\": <aws.events.event.json>}]": {
+    "last_validated_date": "2024-06-11T08:33:13+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_json": {
+    "last_validated_date": "2024-06-11T08:33:04+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string": {
+    "last_validated_date": "2024-05-13T12:27:20+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>\"]": {
+    "last_validated_date": "2024-06-11T08:32:56+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"{[/Check with special starting characters for event of <detail-type> type\"]": {
+    "last_validated_date": "2024-06-11T08:33:00+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
+    "last_validated_date": "2024-06-11T08:33:07+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transformer": {
+    "last_validated_date": "2024-05-13T13:01:15+00:00"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_context_json_path": {
+    "last_validated_date": "2023-11-26T14:15:56+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_escape_sequence": {
+    "last_validated_date": "2023-11-30T16:58:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_format_1": {
+    "last_validated_date": "2023-02-09T09:21:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_format_2": {
+    "last_validated_date": "2023-02-09T09:21:23+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_nested_calls_1": {
+    "last_validated_date": "2023-11-30T16:29:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_nested_calls_2": {
+    "last_validated_date": "2023-11-30T16:34:01+00:00"
+  }
+}

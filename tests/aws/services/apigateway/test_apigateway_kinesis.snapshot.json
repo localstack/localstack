@@ -1,0 +1,27 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_kinesis.py::test_apigateway_to_kinesis": {
+    "recorded-date": "12-07-2024, 20:32:13",
+    "recorded-content": {
+      "apigateway_response": {
+        "SequenceNumber": "<sequence_number:1>",
+        "ShardId": "<shard_id:1>"
+      },
+      "kinesis_records": {
+        "MillisBehindLatest": 0,
+        "NextShardIterator": "<next_shard_iterator:1>",
+        "Records": [
+          {
+            "ApproximateArrivalTimestamp": "timestamp",
+            "Data": "b'{\"kinesis\": \"snapshot\"}'",
+            "PartitionKey": "test",
+            "SequenceNumber": "<sequence_number:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

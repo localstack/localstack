@@ -1,0 +1,120 @@
+name: Generate pytest marker report / Open marker report GH issue
+on:
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Execute a Dry-Run? A Dry-Run will not create any issues and only print the issue content in the logs instead'
+        required: false
+        type: boolean
+        default: false
+      updateExistingIssue:
+        description: 'Select the empty string "" to open duplicate issues, "true" to update duplicate issues and "false" to skip duplicate issues'
+        required: false
+        type: choice
+        default: ''
+        options:
+          - ''
+          - 'false'
+          - 'true'
+      createIssue:
+        description: 'Open marker report github issue'
+        required: false
+        type: boolean
+        default: false
+
+  push:
+    paths:
+      - "tests/**"
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  marker-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache LocalStack community dependencies (venv)
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('requirements-dev.txt') }}
+
+      - name: Install dependencies
+        run: make install-dev
+
+      - name: Collect marker report
+        if: ${{ !inputs.createIssue }}
+        env:
+          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
+          MARKER_REPORT_PROJECT_NAME: localstack
+          MARKER_REPORT_TINYBIRD_TOKEN: ${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}
+          MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
+        run: |
+          . ./.venv/bin/activate
+          python -m pytest tests/aws/
+
+        # makes use of the marker report plugin localstack.testing.pytest.marker_report
+      - name: Generate marker report
+        env:
+          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s --co --disable-warnings --marker-report --marker-report-path './target'"
+          MARKER_REPORT_PROJECT_NAME: localstack
+          MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
+        run: |
+          . ./.venv/bin/activate
+          pip install codeowners
+          python -m pytest tests/aws/
+          mv ./target/marker-report*.json ./target/marker-report.json
+
+      - name: Enrich and render marker report
+        if: ${{ inputs.createIssue }}
+        env:
+          MARKER_REPORT_PATH: ./target/marker-report.json
+          CODEOWNERS_PATH: ./CODEOWNERS
+          TEMPLATE_PATH: ./.github/bot_templates/MARKER_REPORT_ISSUE.md.j2
+          OUTPUT_PATH: ./target/MARKER_REPORT_ISSUE.md
+          GITHUB_REPO: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          . ./.venv/bin/activate
+          pip install codeowners
+          python scripts/render_marker_report.py
+
+      - name: Print generated markdown
+        if: ${{ inputs.createIssue }}
+        run: |
+          cat ./target/MARKER_REPORT_ISSUE.md
+
+      - name: Upload generated markdown
+        if: ${{ inputs.createIssue }}
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./target/MARKER_REPORT_ISSUE.md
+
+      - name: Create GH issue from template
+        if: inputs.dryRun != true && inputs.createIssue == true
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}
+        with:
+          # `update_existing` actually has 3 possible values:
+          # 1. not set => will always open duplicates
+          # 2. false => will not update and will not open duplicates (NOOP if title conflict detected)
+          # 3. true => will update an existing one if conflict detected
+          update_existing: ${{ inputs.updateExistingIssue || '' }}
+#          search_existing: open
+          filename: ./target/MARKER_REPORT_ISSUE.md

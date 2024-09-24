@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_not_exist": {
+    "last_validated_date": "2023-08-04T22:52:39+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_notifications_with_filter": {
+    "last_validated_date": "2023-08-04T22:52:37+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_invalid_topic_arn": {
+    "last_validated_date": "2023-08-04T22:52:42+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_object_created_put": {
+    "last_validated_date": "2023-08-04T22:52:31+00:00"
+  }
+}

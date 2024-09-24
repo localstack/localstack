@@ -1,0 +1,33 @@
+{
+  "Comment": "TASK_SERVICE_LAMBDA_CATCH_UNKNOWN",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName.$": "$.FunctionName",
+        "Payload.$": "$.Payload",
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "Lambda.Unknown"
+          ],
+          "Next": "EndWithHandler"
+        }
+      ],
+      "Next": "EndWithFinal",
+    },
+    "EndWithHandler": {
+      "Type": "Pass",
+      "ResultPath": "$.error",
+      "End": true
+    },
+    "EndWithFinal": {
+      "Type": "Pass",
+      "ResultPath": "$.final",
+      "End": true,
+    },
+  },
+}

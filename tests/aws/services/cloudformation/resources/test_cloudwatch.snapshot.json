@@ -1,0 +1,119 @@
+{
+  "tests/aws/services/cloudformation/resources/test_cloudwatch.py::test_alarm_creation": {
+    "recorded-date": "25-09-2023, 10:28:42",
+    "recorded-content": {
+      "alarm_outputs": {
+        "AlarmArnFromAtt": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<resource:1>",
+        "AlarmName": "<resource:1>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_cloudwatch.py::test_composite_alarm_creation": {
+    "recorded-date": "16-07-2024, 10:41:22",
+    "recorded-content": {
+      "composite_alarm": [
+        {
+          "ActionsEnabled": true,
+          "AlarmActions": [
+            "arn:<partition>:sns:<region>:111111111111:<alarm-action-name:1>"
+          ],
+          "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighResourceUsage",
+          "AlarmConfigurationUpdatedTimestamp": "timestamp",
+          "AlarmDescription": "Indicates that the system resource usage is high while no known deployment is in progress",
+          "AlarmName": "HighResourceUsage",
+          "AlarmRule": "(ALARM(HighCPUUsage) OR ALARM(HighMemoryUsage))",
+          "InsufficientDataActions": [],
+          "OKActions": [],
+          "StateReason": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighResourceUsage was created and its alarm rule evaluates to OK",
+          "StateReasonData": {
+            "triggeringAlarms": [
+              {
+                "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighCPUUsage",
+                "state": {
+                  "value": "INSUFFICIENT_DATA",
+                  "timestamp": "date"
+                }
+              },
+              {
+                "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighMemoryUsage",
+                "state": {
+                  "value": "INSUFFICIENT_DATA",
+                  "timestamp": "date"
+                }
+              }
+            ]
+          },
+          "StateUpdatedTimestamp": "timestamp",
+          "StateValue": "OK",
+          "StateTransitionedTimestamp": "timestamp"
+        }
+      ],
+      "metric_alarm": [
+        {
+          "AlarmName": "HighMemoryUsage",
+          "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighMemoryUsage",
+          "AlarmDescription": "Memory usage is high",
+          "AlarmConfigurationUpdatedTimestamp": "timestamp",
+          "ActionsEnabled": true,
+          "OKActions": [],
+          "AlarmActions": [],
+          "InsufficientDataActions": [],
+          "StateValue": "INSUFFICIENT_DATA",
+          "StateReason": "Unchecked: Initial alarm creation",
+          "StateUpdatedTimestamp": "timestamp",
+          "MetricName": "MemoryUsage",
+          "Namespace": "CustomNamespace",
+          "Statistic": "Average",
+          "Dimensions": [],
+          "Period": 60,
+          "EvaluationPeriods": 1,
+          "Threshold": 65.0,
+          "ComparisonOperator": "GreaterThanThreshold",
+          "TreatMissingData": "breaching",
+          "StateTransitionedTimestamp": "timestamp"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_cloudwatch.py::test_alarm_no_statistic": {
+    "recorded-date": "27-11-2023, 10:08:09",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/resources/test_cloudwatch.py::test_alarm_ext_statistic": {
+    "recorded-date": "27-11-2023, 10:09:46",
+    "recorded-content": {
+      "simple_alarm": [
+        {
+          "AlarmName": "<alarm-name:1>",
+          "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+          "AlarmDescription": "uses extended statistic",
+          "AlarmConfigurationUpdatedTimestamp": "timestamp",
+          "ActionsEnabled": true,
+          "OKActions": [],
+          "AlarmActions": [],
+          "InsufficientDataActions": [],
+          "StateValue": "INSUFFICIENT_DATA",
+          "StateReason": "Unchecked: Initial alarm creation",
+          "StateUpdatedTimestamp": "timestamp",
+          "MetricName": "Duration",
+          "Namespace": "<namespace:1>",
+          "ExtendedStatistic": "p99",
+          "Dimensions": [
+            {
+              "Name": "FunctionName",
+              "Value": "my-function"
+            }
+          ],
+          "Period": 300,
+          "Unit": "Count",
+          "EvaluationPeriods": 3,
+          "DatapointsToAlarm": 3,
+          "Threshold": 10.0,
+          "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+          "TreatMissingData": "ignore",
+          "StateTransitionedTimestamp": "timestamp"
+        }
+      ]
+    }
+  }
+}

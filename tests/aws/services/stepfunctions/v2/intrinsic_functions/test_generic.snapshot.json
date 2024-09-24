@@ -1,0 +1,1371 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_format_1": {
+    "recorded-date": "09-02-2023, 10:21:18",
+    "recorded-content": {
+      "exec_hist_resp_0": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": ""
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": ""
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting argument ."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting argument ."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_1": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": " "
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": " "
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting argument  ."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting argument  ."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_2": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting argument HelloWorld."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting argument HelloWorld."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_3": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting argument null."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting argument null."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_4": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": 1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": 1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting argument 1."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting argument 1."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_5": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": 1.1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": 1.1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting argument 1.1."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting argument 1.1."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_6": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": "{\"Arg1\": 1, \"Arg2\": []}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": "{\"Arg1\": 1, \"Arg2\": []}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting argument {\"Arg1\": 1, \"Arg2\": []}."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting argument {\"Arg1\": 1, \"Arg2\": []}."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_format_2": {
+    "recorded-date": "09-02-2023, 10:21:23",
+    "recorded-content": {
+      "exec_hist_resp_0": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": "",
+                  "snd": ""
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": "",
+                  "snd": ""
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst= and snd=."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst= and snd=."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_1": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": " ",
+                  "snd": " "
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": " ",
+                  "snd": " "
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst=  and snd= ."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst=  and snd= ."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_2": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": "HelloWorld",
+                  "snd": "HelloWorld"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": "HelloWorld",
+                  "snd": "HelloWorld"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst=HelloWorld and snd=HelloWorld."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst=HelloWorld and snd=HelloWorld."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_3": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": null,
+                  "snd": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": null,
+                  "snd": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst=null and snd=null."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst=null and snd=null."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_4": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": 1,
+                  "snd": 1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": 1,
+                  "snd": 1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst=1 and snd=1."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst=1 and snd=1."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_5": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": 1.1,
+                  "snd": 1.1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": 1.1,
+                  "snd": 1.1
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst=1.1 and snd=1.1."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst=1.1 and snd=1.1."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_6": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": "{\"Arg1\": 1, \"Arg2\": []}",
+                  "snd": "{\"Arg1\": 1, \"Arg2\": []}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": "{\"Arg1\": 1, \"Arg2\": []}",
+                  "snd": "{\"Arg1\": 1, \"Arg2\": []}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst={\"Arg1\": 1, \"Arg2\": []} and snd={\"Arg1\": 1, \"Arg2\": []}."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst={\"Arg1\": 1, \"Arg2\": []} and snd={\"Arg1\": 1, \"Arg2\": []}."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_7": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": {
+                    "Arg1": 1,
+                    "Arg2": []
+                  },
+                  "snd": {
+                    "Arg1": 1,
+                    "Arg2": []
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": {
+                    "Arg1": 1,
+                    "Arg2": []
+                  },
+                  "snd": {
+                    "Arg1": 1,
+                    "Arg2": []
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst={Arg1=1, Arg2=[]} and snd={Arg1=1, Arg2=[]}."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst={Arg1=1, Arg2=[]} and snd={Arg1=1, Arg2=[]}."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_context_json_path": {
+    "recorded-date": "26-11-2023, 15:15:56",
+    "recorded-content": {
+      "exec_hist_resp_0": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": "Formatting arguments fst=<ExecArnPart_0idx> and snd={Id=arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>, Name=<ArnPart_0idx>}."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "Formatting arguments fst=<ExecArnPart_0idx> and snd={Id=arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>, Name=<ArnPart_0idx>}."
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_nested_calls_1": {
+    "recorded-date": "30-11-2023, 17:29:44",
+    "recorded-content": {
+      "exec_hist_resp_0": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": {
+                "FunctionResult": "<ArnPart_0idx>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "<ArnPart_0idx>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_nested_calls_2": {
+    "recorded-date": "30-11-2023, 17:34:01",
+    "recorded-content": {
+      "exec_hist_resp_0": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": {
+                "FunctionResult": "<ArnPart_0idx>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": "<ArnPart_0idx>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_escape_sequence": {
+    "recorded-date": "30-11-2023, 17:58:53",
+    "recorded-content": {
+      "exec_hist_resp_0": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": {
+                "FunctionResult": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

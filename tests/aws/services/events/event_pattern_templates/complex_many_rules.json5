@@ -1,0 +1,58 @@
+// Based on the test case (not AWS validated!):
+// tests.aws.services.events.test_events_rules.test_put_event_with_content_base_rule_in_pattern
+{
+  "Event": {
+    "id": "1",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z",
+    "EventBusName": "my-event-bus-name",
+    "source": "core.update-account-command",
+    "detail-type": "core.app.backend",
+    "detail": {
+      "description": "this-is-event-details",
+      "amount": 200,
+      "salary": 2000,
+      "env": "prod",
+      "user": "user3",
+      "admins": "admin",
+      "test1": 300,
+      "test2": "test22",
+      "test3": "test333",
+      "test4": "this test4",
+      "ip": "10.102.1.100",
+      "num-test1": 100,
+      "num-test2": 200,
+      "num-test3": 300,
+      "num-test4": 200,
+      "num-test5": 500,
+      "num-test6": 300,
+      "num-test7": 300,
+    }
+  },
+  "EventPattern": {
+    "source": [{"exists": true}],
+    "detail-type": [{"prefix": "core.app"}],
+    "detail": {
+      "description": ["this-is-event-details"],
+      "amount": [200],
+      "salary": [2000, 4000],
+      "env": ["dev", "prod"],
+      "user": ["user1", "user2", "user3"],
+      "admins": ["skyli", {"prefix": "hey"}, {"prefix": "ad"}],
+      "test1": [{"anything-but": 200}],
+      "test2": [{"anything-but": "test2"}],
+      "test3": [{"anything-but": ["test3", "test33"]}],
+      "test4": [{"anything-but": {"prefix": "test4"}}],
+//      TODO: implement IP matching in LocalStack
+//      "ip": [{"cidr": "10.102.1.0/24"}],
+      "num-test1": [{"numeric": ["<", 200]}],
+      "num-test2": [{"numeric": ["<=", 200]}],
+      "num-test3": [{"numeric": [">", 200]}],
+      "num-test4": [{"numeric": [">=", 200]}],
+      "num-test5": [{"numeric": [">=", 200, "<=", 500]}],
+      "num-test6": [{"numeric": [">", 200, "<", 500]}],
+      "num-test7": [{"numeric": [">=", 200, "<", 500]}],
+    }
+  }
+}

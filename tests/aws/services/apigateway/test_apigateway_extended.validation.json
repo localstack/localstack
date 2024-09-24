@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
+    "last_validated_date": "2024-04-15T21:45:02+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETS]": {
+    "last_validated_date": "2024-04-15T21:45:04+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_swagger_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
+    "last_validated_date": "2024-04-15T21:43:24+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_swagger_openapi[TEST_IMPORT_PETS]": {
+    "last_validated_date": "2024-04-15T21:43:30+00:00"
+  }
+}

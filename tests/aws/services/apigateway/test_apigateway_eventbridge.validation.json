@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_eventbridge.py::test_apigateway_to_eventbridge": {
+    "last_validated_date": "2024-07-12T17:42:38+00:00"
+  }
+}

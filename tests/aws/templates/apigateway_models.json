@@ -1,0 +1,155 @@
+{
+ "Resources": {
+  "apiC8550315": {
+   "Type": "AWS::ApiGateway::RestApi",
+   "Properties": {
+    "Name": "test-cdk-models-json"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ValidatorExampleStack/api/Resource"
+   }
+  },
+  "apiDeployment149F12947655b29bb65dd29c4fa41b0e0ff8358d": {
+   "Type": "AWS::ApiGateway::Deployment",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "apiC8550315"
+    },
+    "Description": "Automatically created by the RestApi construct"
+   },
+   "DependsOn": [
+    "apivalidatedANY5D963C0D",
+    "apivalidatedA453B5EB",
+    "jsonmodelCE5E769A",
+    "requestvalidatorBE19E57D"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ValidatorExampleStack/api/Deployment/Resource"
+   }
+  },
+  "apiDeploymentStagelocal2DF7037D": {
+   "Type": "AWS::ApiGateway::Stage",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "apiC8550315"
+    },
+    "DeploymentId": {
+     "Ref": "apiDeployment149F12947655b29bb65dd29c4fa41b0e0ff8358d"
+    },
+    "StageName": "local"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ValidatorExampleStack/api/DeploymentStage.local/Resource"
+   }
+  },
+  "apivalidatedA453B5EB": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "apiC8550315",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "validated",
+    "RestApiId": {
+     "Ref": "apiC8550315"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ValidatorExampleStack/api/Default/validated/Resource"
+   }
+  },
+  "apivalidatedANY5D963C0D": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "HttpMethod": "ANY",
+    "ResourceId": {
+     "Ref": "apivalidatedA453B5EB"
+    },
+    "RestApiId": {
+     "Ref": "apiC8550315"
+    },
+    "AuthorizationType": "NONE",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "StatusCode": "200"
+      }
+     ],
+     "PassthroughBehavior": "NEVER",
+     "RequestTemplates": {
+      "application/json": "{ \"statusCode\": 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "StatusCode": "200"
+     }
+    ],
+    "RequestModels": {
+     "application/json": {
+      "Ref": "jsonmodelCE5E769A"
+     }
+    },
+    "RequestValidatorId": {
+     "Ref": "requestvalidatorBE19E57D"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ValidatorExampleStack/api/Default/validated/ANY/Resource"
+   }
+  },
+  "requestvalidatorBE19E57D": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "apiC8550315"
+    },
+    "Name": "require-valid-body",
+    "ValidateRequestBody": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "ValidatorExampleStack/request-validator/Resource"
+   }
+  },
+  "jsonmodelCE5E769A": {
+   "Type": "AWS::ApiGateway::Model",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "apiC8550315"
+    },
+    "ContentType": "application/json",
+    "Name": "TestModel",
+    "Schema": {
+     "title": "TestModel",
+     "$schema": "http://json-schema.org/draft-04/schema#",
+     "type": "object",
+     "properties": {
+      "string_field": {
+       "type": "string"
+      },
+      "integer_field": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "string_field",
+      "integer_field"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ValidatorExampleStack/json-model/Resource"
+   }
+  }
+ },
+ "Outputs": {
+  "RestApiId": {
+   "Value": {
+    "Ref": "apiC8550315"
+   }
+  }
+ }
+}

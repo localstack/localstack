@@ -1,0 +1,84 @@
+PUT /my-bucket1 HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Content-Length: 0
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-acl;x-amz-content-sha256;x-amz-date, Signature=9c77d3e18671d2a8822c3991f05be22f454b553db07edf1dd15d8b073d571d67
+X-Amz-Acl: private
+X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+X-Amz-Date: 20210202T193629Z
+Accept-Encoding: gzip
+
+---
+PUT /my-bucket1?lifecycle= HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Content-Length: 630
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=content-length;content-md5;host;x-amz-content-sha256;x-amz-date, Signature=a15568e48d4ecfed7eaaf13d2835fbd243077676f8aa35862a8a98ce765b718e
+Content-Md5: xBH78LMVM8QIMl+Lsqr65A==
+X-Amz-Content-Sha256: c307a764adc9d632ade1deaf0eaca0bc461f9cefc5d24c0547fde1dd1dfa86dc
+X-Amz-Date: 20210202T193629Z
+Accept-Encoding: gzip
+
+<LifecycleConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Rule><Expiration><Days>90</Days></Expiration><Filter><And><Prefix>log/</Prefix><Tag><Key>rule</Key><Value>log</Value></Tag><Tag><Key>autoclean</Key><Value>true</Value></Tag></And></Filter><ID>log</ID><Status>Enabled</Status><Transition><Days>30</Days><StorageClass>STANDARD_IA</StorageClass></Transition><Transition><Days>60</Days><StorageClass>GLACIER</StorageClass></Transition></Rule><Rule><Filter><Prefix>tmp/</Prefix></Filter><ID>tmp</ID><Status>Enabled</Status><Expiration><Date>2016-01-12T00:00:00Z</Date></Expiration></Rule></LifecycleConfiguration>
+
+---
+HEAD /my-bucket1 HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=49e1a182f6ad51da6bf1679f35c56946bb0a86cf51ddf107ad71efd60ac72e62
+X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+X-Amz-Date: 20210202T193629Z
+
+---
+GET /my-bucket1?acl= HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=89444441a7bc8265e5c60ebdeed26650f8063b8c9346745d967c66171be45d15
+X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+X-Amz-Date: 20210202T193629Z
+Accept-Encoding: gzip
+
+---
+GET /my-bucket1?versioning= HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=8bb5397c1c8aa5aa896ac8feaa1b7915517fd89a40bfd20b005753a1aa903b8a
+X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+X-Amz-Date: 20210202T193629Z
+Accept-Encoding: gzip
+
+---
+GET /my-bucket1?accelerate= HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=b0e8dbba2aad46b7f3cece7327e95c902e20a9b7b922415414300a907d1880a8
+X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+X-Amz-Date: 20210202T193629Z
+Accept-Encoding: gzip
+
+---
+GET /my-bucket1?requestPayment= HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=ab3be1500e4bd36b071d1a5385664558d0819f4364bd3524b8fa4437b509e214
+X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+X-Amz-Date: 20210202T193629Z
+Accept-Encoding: gzip
+
+---
+GET /my-bucket1?logging= HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=89c78ecbb898f8088850b0f0eb7aa34fd6659c14d05092733202d0969c6cf524
+X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+X-Amz-Date: 20210202T193629Z
+Accept-Encoding: gzip
+
+---
+GET /my-bucket1?lifecycle= HTTP/1.1
+Host: localhost:4566
+User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
+Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=ce9347b0372072036e0dd11752faba54a6251f89c3588bb838a6a19dee13cff7
+X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+X-Amz-Date: 20210202T193629Z
+Accept-Encoding: gzip

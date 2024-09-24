@@ -1,0 +1,26 @@
+{
+  "Comment": "DYNAMODB_PUT_GET_ITEM",
+  "StartAt": "PutItem",
+  "States": {
+    "PutItem": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "Item.$": "$.Item"
+      },
+      "ResultPath": "$.putItemOutput",
+      "Next": "GetItem"
+    },
+    "GetItem": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "ResultPath": "$.getItemOutput",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "Key.$": "$.Key"
+      },
+      "End": true
+    }
+  }
+}

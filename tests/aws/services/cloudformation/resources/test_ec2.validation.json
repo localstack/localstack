@@ -1,0 +1,35 @@
+{
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_cfn_update_ec2_instance_type": {
+    "last_validated_date": "2024-06-19T19:56:42+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_cfn_with_multiple_route_table_associations": {
+    "last_validated_date": "2024-07-02T15:29:41+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_dhcp_options": {
+    "last_validated_date": "2023-10-19T12:51:28+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_ec2_security_group_id_with_vpc": {
+    "last_validated_date": "2024-07-19T15:53:16+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_internet_gateway_ref_and_attr": {
+    "last_validated_date": "2023-02-13T16:13:41+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_keypair_create_import": {
+    "last_validated_date": "2024-08-12T21:51:36+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_simple_route_table_creation": {
+    "last_validated_date": "2024-07-01T20:13:48+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_simple_route_table_creation_without_vpc": {
+    "last_validated_date": "2024-07-01T20:10:52+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
+    "last_validated_date": "2024-03-28T06:48:11+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_vpc_creates_default_sg": {
+    "last_validated_date": "2024-04-01T11:21:54+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_vpc_with_route_table": {
+    "last_validated_date": "2024-06-19T16:48:31+00:00"
+  }
+}

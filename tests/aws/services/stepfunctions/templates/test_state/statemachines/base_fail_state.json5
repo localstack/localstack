@@ -1,0 +1,5 @@
+{
+  "Type": "Fail",
+  "Error": "SomeFailure",
+  "Cause": "This state machines raises a 'SomeFailure' failure."
+}

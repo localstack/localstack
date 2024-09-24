@@ -1,0 +1,117 @@
+{
+  "tests/aws/services/cloudformation/resources/test_ssm.py::test_deploy_patch_baseline": {
+    "recorded-date": "05-07-2023, 10:13:24",
+    "recorded-content": {
+      "patch_baseline": {
+        "DriftInformation": {
+          "StackResourceDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTimestamp": "timestamp",
+        "LogicalResourceId": "myPatchBaseline",
+        "Metadata": {},
+        "PhysicalResourceId": "<physical_resource_id:1>",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "ResourceType": "AWS::SSM::PatchBaseline",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_ssm.py::test_maintenance_window": {
+    "recorded-date": "14-07-2023, 14:06:23",
+    "recorded-content": {
+      "MaintenanceWindow": [
+        {
+          "StackName": "<stack-name:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "LogicalResourceId": "PatchBaselineAML",
+          "PhysicalResourceId": "<physical_resource_id:1>",
+          "ResourceType": "AWS::SSM::PatchBaseline",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          }
+        },
+        {
+          "StackName": "<stack-name:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "LogicalResourceId": "PatchBaselineAML2",
+          "PhysicalResourceId": "<physical_resource_id:2>",
+          "ResourceType": "AWS::SSM::PatchBaseline",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          }
+        },
+        {
+          "StackName": "<stack-name:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "LogicalResourceId": "PatchServerMaintenanceWindow",
+          "PhysicalResourceId": "<physical_resource_id:3>",
+          "ResourceType": "AWS::SSM::MaintenanceWindow",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          }
+        },
+        {
+          "StackName": "<stack-name:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "LogicalResourceId": "PatchServerMaintenanceWindowTarget",
+          "PhysicalResourceId": "<physical_resource_id:4>",
+          "ResourceType": "AWS::SSM::MaintenanceWindowTarget",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          }
+        },
+        {
+          "StackName": "<stack-name:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "LogicalResourceId": "PatchServerTask",
+          "PhysicalResourceId": "<physical_resource_id:5>",
+          "ResourceType": "AWS::SSM::MaintenanceWindowTask",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_ssm.py::test_parameter_defaults": {
+    "recorded-date": "03-07-2024, 20:30:04",
+    "recorded-content": {
+      "ssm_parameter": {
+        "Parameter": {
+          "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<name:1>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "<name:1>",
+          "Type": "String",
+          "Value": "<value:1>",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "ssm_parameter_not_found": {
+        "Error": {
+          "Code": "ParameterNotFound",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_boolean": {
+    "last_validated_date": "2023-06-22T11:08:16+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_null": {
+    "last_validated_date": "2023-06-22T11:09:08+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_numeric": {
+    "last_validated_date": "2023-06-22T11:09:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_present": {
+    "last_validated_date": "2023-06-22T11:11:07+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_string": {
+    "last_validated_date": "2023-06-22T11:12:11+00:00"
+  }
+}

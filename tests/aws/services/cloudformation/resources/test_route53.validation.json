@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_route53.py::test_create_health_check": {
+    "last_validated_date": "2023-09-22T11:50:49+00:00"
+  }
+}

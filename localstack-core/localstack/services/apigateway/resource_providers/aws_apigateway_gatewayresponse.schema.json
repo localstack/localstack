@@ -1,0 +1,84 @@
+{
+  "typeName": "AWS::ApiGateway::GatewayResponse",
+  "description": "Resource Type definition for AWS::ApiGateway::GatewayResponse",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "description": "A Cloudformation auto generated ID.",
+      "type": "string"
+    },
+    "RestApiId": {
+      "description": "The identifier of the API.",
+      "type": "string"
+    },
+    "ResponseType": {
+      "description": "The type of the Gateway Response.",
+      "type": "string"
+    },
+    "StatusCode": {
+      "description": "The HTTP status code for the response.",
+      "type": "string"
+    },
+    "ResponseParameters": {
+      "description": "The response parameters (paths, query strings, and headers) for the response.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "[a-zA-Z0-9]+": {
+          "type": "string"
+        }
+      }
+    },
+    "ResponseTemplates": {
+      "description": "The response templates for the response.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "[a-zA-Z0-9]+": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "ResponseType",
+    "RestApiId"
+  ],
+  "createOnlyProperties": [
+    "/properties/ResponseType",
+    "/properties/RestApiId"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ],
+  "taggable": false,
+  "handlers": {
+    "create": {
+      "permissions": [
+        "apigateway:PUT",
+        "apigateway:GET"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "apigateway:GET",
+        "apigateway:PUT"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "apigateway:GET",
+        "apigateway:DELETE"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "apigateway:GET"
+      ]
+    }
+  }
+}

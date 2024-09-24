@@ -1,0 +1,270 @@
+{
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path": {
+    "recorded-date": "13-05-2024, 12:27:07",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail0]": {
+    "recorded-date": "13-05-2024, 12:27:09",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "acc_id": "0a787ecb-4015",
+            "sf_id": "baz"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail1]": {
+    "recorded-date": "13-05-2024, 12:27:11",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "acc_id": "0a787ecb-4015",
+            "payload": {
+              "message": "baz",
+              "id": "123"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_max_level_depth": {
+    "recorded-date": "13-05-2024, 12:27:13",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"baz\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_multiple_targets": {
+    "recorded-date": "13-05-2024, 12:27:16",
+    "recorded-content": {
+      "message-queue-1": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ],
+      "message-queue-2": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:3>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string": {
+    "recorded-date": "13-05-2024, 12:27:20",
+    "recorded-content": {
+      "custom-variables-match-all": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail update-account\""
+        }
+      ],
+      "custom-variables-not-match-all": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail \""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_json": {
+    "recorded-date": "11-06-2024, 08:33:04",
+    "recorded-content": {
+      "custom-variables-match-all": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "detailType": "core.update-account-command",
+            "time": "date",
+            "command": "update-account"
+          }
+        }
+      ],
+      "custom-variables-not-match-all": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "detailType": "core.update-account-command",
+            "time": "date",
+            "command": ""
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
+    "recorded-date": "11-06-2024, 08:33:07",
+    "recorded-content": {
+      "missing-key-exception-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutTargets operation: InputTemplate for target <target-id> contains invalid placeholder notdefinedkey.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
+    "recorded-date": "11-06-2024, 08:33:10",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"Message containing all pre defined variables arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name> <rule-name> date\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[{\"originalEvent\": <aws.events.event>, \"originalEventJson\": <aws.events.event.json>}]": {
+    "recorded-date": "11-06-2024, 08:33:13",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "originalEvent": {
+              "id": "<uuid:2>",
+              "account": "111111111111",
+              "detailType": "core.update-account-command",
+              "time": "<ingestion-time>",
+              "source": "core.update-account-command",
+              "region": "<region>",
+              "resources": [],
+              "version": "0"
+            },
+            "originalEventJson": {
+              "version": "0",
+              "id": "<uuid:2>",
+              "detail-type": "core.update-account-command",
+              "source": "core.update-account-command",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [],
+              "detail": {
+                "command": "update-account",
+                "payload": {
+                  "acc_id": "0a787ecb-4015",
+                  "sf_id": "baz"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transformer": {
+    "recorded-date": "13-05-2024, 13:01:15",
+    "recorded-content": {
+      "duplicated-input-operations-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutTargets operation: Only one of Input, InputPath, or InputTransformer must be provided for target <target-id>.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>\"]": {
+    "recorded-date": "11-06-2024, 08:32:56",
+    "recorded-content": {
+      "custom-variables-match-all": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail update-account\""
+        }
+      ],
+      "custom-variables-not-match-all": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail \""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"{[/Check with special starting characters for event of <detail-type> type\"]": {
+    "recorded-date": "11-06-2024, 08:33:00",
+    "recorded-content": {
+      "custom-variables-match-all": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"{[/Check with special starting characters for event of core.update-account-command type\""
+        }
+      ],
+      "custom-variables-not-match-all": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"{[/Check with special starting characters for event of core.update-account-command type\""
+        }
+      ]
+    }
+  }
+}

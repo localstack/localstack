@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+  SNS Topics for stuff
+
+Parameters:
+  CompanyName:
+    Type: String
+    Description: 'Customer/Company name, commonly known-by name'
+    AllowedPattern: '[A-Za-z0-9-]{5,}'
+    ConstraintDescription: 'String must be 5 or more characters, letters, numbers and -'
+
+  MyEmail1:
+    Type: String
+    Description: Email address for stuff
+    Default: ""
+
+  MyEmail2:
+    Type: String
+    Description: Email address for stuff
+    Default: ""
+
+Conditions:
+  HasMyEmail1: !Not [!Equals [!Ref MyEmail1, '']]
+  HasMyEmail2: !Not [!Equals [!Ref MyEmail2, '']]
+
+  SetupMy: !Or
+                - Condition: HasMyEmail1
+                - Condition: HasMyEmail2
+
+Resources:
+  MyTopic:
+    Condition: SetupMy
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub "${CompanyName} AWS MyTopic"
+      Subscription:
+        - !If
+          - HasMyEmail1
+          -
+            Endpoint: !Ref MyEmail1
+            Protocol: email
+          - !Ref AWS::NoValue
+        - !If
+          - HasMyEmail2
+          -
+            Endpoint: !Ref MyEmail2
+            Protocol: email
+          - !Ref AWS::NoValue
+
+Outputs:
+  StackName:
+    Description: 'Stack name'
+    Value: !Sub '${AWS::StackName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-StackName'
+
+  MyTopic:
+    Condition: SetupMy
+    Description: 'My arn'
+    Value: !Ref MyTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-MyTopicArn'
+
+  MyTopicName:
+    Condition: SetupMy
+    Description: 'My Name'
+    Value: !GetAtt MyTopic.TopicName
+    Export:
+      Name: !Sub '${AWS::StackName}-MyTopicName'

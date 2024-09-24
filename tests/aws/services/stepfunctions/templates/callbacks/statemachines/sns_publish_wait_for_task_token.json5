@@ -1,0 +1,19 @@
+{
+  "Comment": "SNS_PUBLISH_WAIT_FOR_TASK_TOKEN",
+  "StartAt": "Publish",
+  "States": {
+    "Publish": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish.waitForTaskToken",
+      "Parameters": {
+        "TopicArn.$": "$.TopicArn",
+        "Message": {
+          "TaskToken.$": "$$.Task.Token",
+          "arg1.$": "$.body.arg1",
+          "arg2.$": "$.body.arg2",
+        }
+      },
+      "End": true
+    }
+  }
+}

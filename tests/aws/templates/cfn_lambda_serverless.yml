@@ -1,0 +1,243 @@
+{
+  "Parameters": {
+    "LambdaCodeBucket": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "LambdaCodeBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "LambdaCodeBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "LambdaCodeBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "FailingLambdaLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/dlq-local-failingLambda"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "dlq",
+                  "local",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup",
+                    "logs:TagResource"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/dlq-local*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/dlq-local*:*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "dlq",
+              "local",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "FailingLambdaLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "LambdaCodeBucket"
+          },
+          "S3Key": "serverless/dlq/local/1701682216701-2023-12-04T09:30:16.701Z/dlq.zip"
+        },
+        "Handler": "handler.handler",
+        "Runtime": "python3.10",
+        "FunctionName": "dlq-local-failingLambda",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "DeadLetterConfig": {
+          "TargetArn": {
+            "Fn::GetAtt": [
+              "lambdaDlq",
+              "Arn"
+            ]
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "FailingLambdaLogGroup"
+      ]
+    },
+    "FailingLambdaLambdaVersionnC6v2YCTPSMh0eRfuXJo0SItS8bZeDb7nxV6QJyTSg": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "FailingLambdaLambdaFunction"
+        }
+      }
+    },
+    "FailingLambdaLambdaEvConf": {
+      "Type": "AWS::Lambda::EventInvokeConfig",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "FailingLambdaLambdaFunction"
+        },
+        "DestinationConfig": {},
+        "Qualifier": "$LATEST",
+        "MaximumRetryAttempts": 0
+      }
+    },
+    "lambdaDlq": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "lambdaDlq"
+      }
+    },
+  },
+  "Outputs": {
+    "FailingLambdaLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "FailingLambdaLambdaVersionnC6v2YCTPSMh0eRfuXJo0SItS8bZeDb7nxV6QJyTSg"
+      },
+      "Export": {
+        "Name": "sls-dlq-local-FailingLambdaLambdaFunctionQualifiedArn"
+      }
+    },
+    "LambdaName": {
+      "Description": "Current lambda function name",
+      "Value": {
+        "Ref": "FailingLambdaLambdaFunction"
+      },
+      "Export": {
+        "Name": "LambdaName"
+      }
+    },
+    "DLQName": {
+      "Description": "Current DLQ name",
+      "Value": {
+        "Ref": "lambdaDlq"
+      },
+      "Export": {
+        "Name": "DLQName"
+      }
+    },
+  }
+}

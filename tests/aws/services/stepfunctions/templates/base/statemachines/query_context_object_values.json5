@@ -1,0 +1,37 @@
+{
+  "Comment": "QUERY_CONTEXT_OBJECT_VALUES",
+  "StartAt": "QueryValues1",
+  "States": {
+    "QueryValues1": {
+      "Type": "Pass",
+      "Next": "QueryValues2",
+      "ResultPath": "$.query_values_1",
+      "Parameters": {
+        "context_object.$": "$$",
+
+        "execution.$": "$$.Execution",
+        "execution_id.$": "$$.Execution.Id",
+        "execution_input.$": "$$.Execution.Input",
+        "execution_name.$": "$$.Execution.Name",
+        "execution_rolearn.$": "$$.Execution.RoleArn",
+        "execution_starttime.$": "$$.Execution.StartTime",
+
+        "state.$": "$$.State",
+        "state_enteredtime.$": "$$.State.EnteredTime",
+        "state_name.$": "$$.State.Name",
+
+        "statemachine.$": "$$.StateMachine",
+        "statemachine_id.$": "$$.StateMachine.Id",
+        "statemachine_name.$": "$$.StateMachine.Name",
+      }
+    },
+    "QueryValues2": {
+      "Type": "Pass",
+      "End": true,
+      "ResultPath": "$.query_values_2",
+      "Parameters": {
+        "context_object.$": "$$",
+      }
+    }
+  }
+}

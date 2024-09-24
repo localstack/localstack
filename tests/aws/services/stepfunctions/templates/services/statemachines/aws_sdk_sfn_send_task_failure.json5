@@ -1,0 +1,14 @@
+{
+  "Comment": "AWS_SDK_SFN_SEND_TASK_FAILURE",
+  "StartAt": "StartExecution",
+  "States": {
+    "StartExecution": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskFailure",
+      "Parameters": {
+        "TaskToken.$": "$$.Execution.Input.TaskToken"
+      },
+      "End": true
+    }
+  }
+}

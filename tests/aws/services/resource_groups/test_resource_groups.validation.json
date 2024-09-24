@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_cloudformation_query": {
+    "last_validated_date": "2023-09-13T16:41:46+00:00"
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_create_group": {
+    "last_validated_date": "2023-09-13T15:21:22+00:00"
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_resource_groups_different_region": {
+    "last_validated_date": "2023-09-13T15:51:28+00:00"
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_resource_groups_tag_query": {
+    "last_validated_date": "2023-09-13T15:31:56+00:00"
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_resource_type_filters": {
+    "last_validated_date": "2023-09-13T15:56:20+00:00"
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_search_resources": {
+    "last_validated_date": "2023-09-13T17:06:38+00:00"
+  }
+}

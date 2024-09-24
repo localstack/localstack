@@ -1,0 +1,65 @@
+{
+  "typeName": "AWS::CloudFormation::Stack",
+  "description": "Resource Type definition for AWS::CloudFormation::Stack",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "type": "string"
+    },
+    "NotificationARNs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Parameters": {
+      "type": "object",
+      "patternProperties": {
+        "[a-zA-Z0-9]+": {
+          "type": "string"
+        }
+      }
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "TemplateURL": {
+      "type": "string"
+    },
+    "TimeoutInMinutes": {
+      "type": "integer"
+    }
+  },
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "required": [
+    "TemplateURL"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP]": {
+    "last_validated_date": "2024-04-01T21:45:48+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP_PROXY]": {
+    "last_validated_date": "2024-04-01T21:46:23+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_method[HTTP]": {
+    "last_validated_date": "2024-07-05T17:00:39+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_method[HTTP_PROXY]": {
+    "last_validated_date": "2024-07-05T17:00:46+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda[HTTP]": {
+    "last_validated_date": "2024-08-07T18:37:12+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda[HTTP_PROXY]": {
+    "last_validated_date": "2024-08-07T18:37:25+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_proxy_integration_request_data_mappings": {
+    "last_validated_date": "2024-07-18T13:59:19+00:00"
+  }
+}

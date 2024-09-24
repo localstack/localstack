@@ -1,0 +1,35 @@
+{
+  "Resources": {
+    "TableCD117FA1": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH"
+          }
+        ],
+        "TimeToLiveSpecification": {
+          "AttributeName": "expire_at",
+          "Enabled": true
+        }
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    }
+  },
+  "Outputs": {
+    "TableName": {
+      "Value": {
+        "Ref": "TableCD117FA1"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+Parameters:
+  BucketName:
+    Type: String
+Resources:
+  bucket43879C71:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicPolicy: False
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  {% if include_policy %}
+  bucketPolicy638F945D:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: bucket43879C71
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetObject*
+              - s3:GetBucket*
+              - s3:List*
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Resource:
+              - Fn::GetAtt:
+                  - bucket43879C71
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - bucket43879C71
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+  {% endif %}

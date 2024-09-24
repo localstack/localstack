@@ -1,0 +1,36 @@
+{
+  "Comment": "BASE_PASS_RESULT_REGEX_JSON_PATH",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Parameters": {
+        "FromInput.$": "$.users[?(@.status == 0)]"
+      },
+      "OutputPath": "$.FromInput",
+      "Next": "State1",
+    },
+    "State1": {
+      "Type": "Pass",
+      "Parameters": {
+        "FromInput.$": "$[?(@.year <= 1999)]"
+      },
+      "OutputPath": "$.FromInput",
+      "Next": "State2",
+    },
+    "State2": {
+      "Type": "Pass",
+      "Parameters": {
+        "InputValue.$": "$",
+        "FromInput.$": "States.JsonToString($.[?(@.year <= 1998)])"
+      },
+      "Next": "State3"
+    },
+    "State3": {
+      "Type": "Pass",
+      "InputPath": "$.InputValue",
+      "OutputPath": "$.[?(@.year < 1999)].name",
+      "End": true,
+    }
+  }
+}

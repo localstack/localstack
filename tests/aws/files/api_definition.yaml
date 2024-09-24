@@ -1,0 +1,76 @@
+openapi: 3.0.1
+info:
+  title: wait-for-seconds
+  description: Test API for asynchronous Lambda invocation
+  version: 2022-04-12T15:36:55Z
+paths:
+  "/echo/{data}":
+    x-amazon-apigateway-any-method:
+      responses:
+        "200":
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      x-amazon-apigateway-integration:
+        type: mock
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: >
+                {"data": $input.params(\"data\"), "response": "mocked"}
+        requestTemplates:
+          application/json: '{"data", $input.params(\"data\"), "statusCode": 200}'
+        passthroughBehavior: when_no_templates
+  "/wait/{seconds}":
+    x-amazon-apigateway-any-method:
+      parameters:
+        - name: seconds
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      x-amazon-apigateway-integration:
+        type: aws
+        httpMethod: POST
+        uri: ${lambda_invocation_arn}
+        responses:
+          default:
+            statusCode: "200"
+        requestParameters:
+          integration.request.header.X-Amz-Invocation-Type: "'Event'"
+        requestTemplates:
+          application/json: >
+            #set($allParams = $input.params())
+
+            {
+              "params" : {
+                #foreach($type in $allParams.keySet())
+                  #set($params = $allParams.get($type))
+                  "$type" : {
+                    #foreach($paramName in $params.keySet())
+                      "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                      #if($foreach.hasNext),#end
+                    #end
+                  }
+                  #if($foreach.hasNext),#end
+                #end
+              }
+            }
+        passthroughBehavior: when_no_templates
+        contentHandling: CONVERT_TO_TEXT
+        credentials: ${credentials}
+components:
+  schemas:
+    Empty:
+      title: Empty Schema
+      type: object

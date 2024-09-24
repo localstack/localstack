@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  TopicName:
+    Type: String
+    Default: topic-name
+Resources:
+  topic123:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref TopicName
+      FifoTopic: true
+      ContentBasedDeduplication: true
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete

@@ -1,0 +1,15 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_eventbridge.py::test_apigateway_to_eventbridge": {
+    "recorded-date": "12-07-2024, 17:42:38",
+    "recorded-content": {
+      "eventbridge-put-events-response": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          }
+        ],
+        "FailedEntryCount": 0
+      }
+    }
+  }
+}

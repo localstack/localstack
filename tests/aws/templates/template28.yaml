@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  Environment:
+    Type: String
+    Default: 'companyname-ci'
+
+  Ec2KeyPairName:
+    Type: String
+
+  RegmonSnsTopicSendEmails:
+    Default: false
+    Type: String
+    AllowedValues: [true, false]
+
+# <sensitive: template succeeds if removed>
+Conditions:
+  ShouldSnsTopicSendEmails: !Equals [true, !Ref RegmonSnsTopicSendEmails]
+# </sensitive>
+
+Resources:
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub
+        - '${Env}-slack-topic'
+        - { Env: !Select [0, !Split ["-" , !Ref Environment]] }
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: some-role
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+            - ssm.amazonaws.com
+          Action:
+          - sts:AssumeRole
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: InstanceRole
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: "100.0.0.0/20"
+
+  PublicSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: "Enable SSH access via port 22"
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: -1
+        FromPort: 22
+        ToPort: 22
+
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock: "100.0.0.0/24"
+      VpcId:
+        Ref: VPC
+
+  Ec2Instance:
+    Type: "AWS::EC2::Instance"
+    # <sensitive: template succeeds if removed>
+    DependsOn:
+    - InstanceProfile
+    # </sensitive>
+    Properties:
+      InstanceType: "t3.small"
+      # The following image is initialised in EC2 Pro provider init hook
+      ImageId: ami-a33ac4f1069a
+      KeyName: !Ref Ec2KeyPairName
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds:
+      - Ref: PublicSG
+      SubnetId:
+        Ref: PublicSubnetA
+
+  Ec2InstanceNoSGs:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: "t3.small"
+      # The following image is initialised in EC2 Pro provider init hook
+      ImageId: ami-a33ac4f1069a
+
+  CloudWatchAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+
+  CloudWatchCompositeAlarm:
+    Type: AWS::CloudWatch::CompositeAlarm
+    Properties:
+      AlarmName: comp-alarm-7391
+      AlarmRule: 'ALARM("alarm-name or alarm-ARN") is TRUE'
+
+Outputs:
+  InstanceId:
+    Value: !Ref Ec2Instance
+    Export:
+      Name: RegmonEc2InstanceId
+  RoleArn:
+    Value: !GetAtt InstanceRole.Arn
+    Export:
+      Name: RegmonRoleArn
+  PublicSubnetA:
+    Value:
+      Ref: PublicSubnetA
+    Export:
+      Name: 'public-sn-a'

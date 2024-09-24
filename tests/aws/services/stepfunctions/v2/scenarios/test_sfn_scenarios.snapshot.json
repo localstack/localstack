@@ -1,0 +1,1716 @@
+{
+  "tests/aws/services/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_path_based_on_data": {
+    "recorded-date": "04-03-2023, 10:00:55",
+    "recorded-content": {
+      "describe_statemachine": {
+        "creationDate": "datetime",
+        "definition": {
+          "StartAt": "Choice State",
+          "States": {
+            "Choice State": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.type",
+                    "StringEquals": "Private"
+                  },
+                  "Next": "NEXT_STATE_ONE"
+                },
+                {
+                  "Variable": "$.value",
+                  "NumericEquals": 0,
+                  "Next": "NEXT_STATE_TWO"
+                },
+                {
+                  "And": [
+                    {
+                      "Variable": "$.value",
+                      "NumericGreaterThanEquals": 20
+                    },
+                    {
+                      "Variable": "$.value",
+                      "NumericLessThan": 30
+                    }
+                  ],
+                  "Next": "NEXT_STATE_TWO"
+                }
+              ],
+              "Default": "DEFAULT_STATE"
+            },
+            "DEFAULT_STATE": {
+              "Type": "Pass",
+              "End": true
+            },
+            "NEXT_STATE_ONE": {
+              "Type": "Pass",
+              "End": true
+            },
+            "NEXT_STATE_TWO": {
+              "Type": "Pass",
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<state-machine-name>",
+        "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_path__start_execution_result": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_path__describe_ex_done": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
+        "input": {
+          "type": "Public",
+          "value": 3
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-first_path>",
+        "output": {
+          "type": "Public",
+          "value": 3
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_path__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Choice State"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Choice State",
+              "output": {
+                "type": "Public",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "NEXT_STATE_ONE"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "NEXT_STATE_ONE",
+              "output": {
+                "type": "Public",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "type": "Public",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_path__start_execution_result": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_path__describe_ex_done": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
+        "input": {
+          "type": "Private",
+          "value": 25
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-second_path>",
+        "output": {
+          "type": "Private",
+          "value": 25
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_path__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 25
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 25
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Choice State"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Choice State",
+              "output": {
+                "type": "Private",
+                "value": 25
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 25
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "NEXT_STATE_TWO"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "NEXT_STATE_TWO",
+              "output": {
+                "type": "Private",
+                "value": 25
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "type": "Private",
+                "value": 25
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default_path__start_execution_result": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default_path__describe_ex_done": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
+        "input": {
+          "type": "Private",
+          "value": 3
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-default_path>",
+        "output": {
+          "type": "Private",
+          "value": 3
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default_path__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Choice State"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Choice State",
+              "output": {
+                "type": "Private",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "DEFAULT_STATE"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "DEFAULT_STATE",
+              "output": {
+                "type": "Private",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "type": "Private",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_wait_for_callback": {
+    "recorded-date": "04-03-2023, 10:05:28",
+    "recorded-content": {
+      "describe_statemachine": {
+        "creationDate": "datetime",
+        "definition": {
+          "StartAt": "Start Task And Wait For Callback",
+          "States": {
+            "Start Task And Wait For Callback": {
+              "Next": "Succeed State",
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "Next": "Fail State"
+                }
+              ],
+              "Type": "Task",
+              "Resource": "arn:<partition>:states:::sqs:sendMessage.waitForTaskToken",
+              "Parameters": {
+                "QueueUrl": "<queue-url:1>",
+                "MessageBody": {
+                  "MessageTitle": "Task started by Step Functions. Waiting for callback with task token.",
+                  "ShouldFail.$": "$.shouldfail",
+                  "TaskToken.$": "$$.Task.Token"
+                }
+              }
+            },
+            "Succeed State": {
+              "Type": "Succeed"
+            },
+            "Fail State": {
+              "Type": "Fail"
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<state-machine-name>",
+        "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "success__start_execution_result": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "success__describe_ex_done": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
+        "input": {
+          "shouldfail": "no"
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-success>",
+        "output": {
+          "message": "Successfully executed lambda"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "success__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "shouldfail": "no"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "shouldfail": "no"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start Task And Wait For Callback"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "<queue-url:1>",
+                "MessageBody": {
+                  "MessageTitle": "Task started by Step Functions. Waiting for callback with task token.",
+                  "ShouldFail": "no",
+                  "TaskToken": "<task-token:1>"
+                }
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "<date>",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "<date>",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "message": "Successfully executed lambda"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "Start Task And Wait For Callback",
+              "output": {
+                "message": "Successfully executed lambda"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": {
+                "message": "Successfully executed lambda"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Succeed State"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Succeed State",
+              "output": {
+                "message": "Successfully executed lambda"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "message": "Successfully executed lambda"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "failure__start_execution_result": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "failure__describe_ex_done": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
+        "input": {
+          "shouldfail": "yes"
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-failure>",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "FAILED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "failure__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "shouldfail": "yes"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "shouldfail": "yes"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start Task And Wait For Callback"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "<queue-url:1>",
+                "MessageBody": {
+                  "MessageTitle": "Task started by Step Functions. Waiting for callback with task token.",
+                  "ShouldFail": "yes",
+                  "TaskToken": "<task-token:2>"
+                }
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:2>",
+                "MessageId": "<uuid:3>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:4>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "<date>",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "<date>",
+                    "x-amzn-RequestId": "<uuid:4>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:4>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskFailedEventDetails": {
+              "cause": "Intentional failure",
+              "error": "IntentionalFail",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "Start Task And Wait For Callback",
+              "output": {
+                "Error": "IntentionalFail",
+                "Cause": "Intentional failure"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "IntentionalFail",
+                "Cause": "Intentional failure"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fail State"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {},
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_step_functions_calling_api_gateway": {
+    "recorded-date": "04-03-2023, 10:06:48",
+    "recorded-content": {
+      "describe_statemachine": {
+        "creationDate": "datetime",
+        "definition": {
+          "StartAt": "Add Pet to Store",
+          "States": {
+            "Add Pet to Store": {
+              "Next": "Pet was Added Successfully?",
+              "Type": "Task",
+              "Resource": "arn:<partition>:states:::apigateway:invoke",
+              "Parameters": {
+                "ApiEndpoint": "<api-endpoint:1>",
+                "Method": "POST",
+                "Stage": "dev",
+                "RequestBody.$": "$",
+                "AuthType": "NO_AUTH"
+              }
+            },
+            "Pet was Added Successfully?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.ResponseBody.errors",
+                  "IsPresent": true,
+                  "Next": "Failure"
+                }
+              ],
+              "Default": "Success"
+            },
+            "Success": {
+              "Type": "Succeed"
+            },
+            "Failure": {
+              "Type": "Fail"
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<state-machine-name>",
+        "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "success__start_execution_result": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "success__describe_ex_done": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
+        "input": {
+          "fail": true
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-success>",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "FAILED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "success__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "fail": true
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "fail": true
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Add Pet to Store"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "ApiEndpoint": "<api-endpoint:1>",
+                "Method": "POST",
+                "Stage": "dev",
+                "AuthType": "NO_AUTH",
+                "RequestBody": {
+                  "fail": true
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "apigateway"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "apigateway"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "30"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "errors": [
+                    "Errors.Failure"
+                  ]
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "invoke",
+              "resourceType": "apigateway"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Add Pet to Store",
+              "output": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "30"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "errors": [
+                    "Errors.Failure"
+                  ]
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "30"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "errors": [
+                    "Errors.Failure"
+                  ]
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pet was Added Successfully?"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Pet was Added Successfully?",
+              "output": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "30"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "errors": [
+                    "Errors.Failure"
+                  ]
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "30"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "errors": [
+                    "Errors.Failure"
+                  ]
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Failure"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {},
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "failure__start_execution_result": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "failure__describe_ex_done": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
+        "input": {
+          "fail": false
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-failure>",
+        "output": {
+          "Headers": {
+            "Connection": [
+              "keep-alive"
+            ],
+            "Content-Length": [
+              "18"
+            ],
+            "Content-Type": [
+              "application/json"
+            ],
+            "Date": "date",
+            "Via": "via",
+            "x-amz-apigw-id": "x-amz-apigw-id",
+            "X-Amz-Cf-Id": "x--amz--cf--id",
+            "X-Amz-Cf-Pop": "x--amz--cf--pop",
+            "x-amzn-RequestId": "x-amzn--request-id",
+            "X-Amzn-Trace-Id": "x--amzn--trace--id",
+            "X-Cache": [
+              "Miss from cloudfront"
+            ]
+          },
+          "ResponseBody": {
+            "hello": "world"
+          },
+          "StatusCode": 200,
+          "StatusText": "OK"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "failure__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "fail": false
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "fail": false
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Add Pet to Store"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "ApiEndpoint": "<api-endpoint:1>",
+                "Method": "POST",
+                "Stage": "dev",
+                "AuthType": "NO_AUTH",
+                "RequestBody": {
+                  "fail": false
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "apigateway"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "apigateway"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "18"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "hello": "world"
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "invoke",
+              "resourceType": "apigateway"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Add Pet to Store",
+              "output": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "18"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "hello": "world"
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "18"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "hello": "world"
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pet was Added Successfully?"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Pet was Added Successfully?",
+              "output": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "18"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "hello": "world"
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "18"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "hello": "world"
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Success"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "name": "Success",
+              "output": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "18"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "hello": "world"
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Headers": {
+                  "Connection": [
+                    "keep-alive"
+                  ],
+                  "Content-Length": [
+                    "18"
+                  ],
+                  "Content-Type": [
+                    "application/json"
+                  ],
+                  "Date": "date",
+                  "Via": "via",
+                  "x-amz-apigw-id": "x-amz-apigw-id",
+                  "X-Amz-Cf-Id": "x--amz--cf--id",
+                  "X-Amz-Cf-Pop": "x--amz--cf--pop",
+                  "x-amzn-RequestId": "x-amzn--request-id",
+                  "X-Amzn-Trace-Id": "x--amzn--trace--id",
+                  "X-Cache": [
+                    "Miss from cloudfront"
+                  ]
+                },
+                "ResponseBody": {
+                  "hello": "world"
+                },
+                "StatusCode": 200,
+                "StatusText": "OK"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 11,
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_group": {
+    "last_validated_date": "2024-05-24T13:57:11+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_stream": {
+    "last_validated_date": "2023-04-06T09:42:42+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_filter_log_events_response_header": {
+    "last_validated_date": "2024-05-24T13:58:30+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_list_tags_log_group": {
+    "last_validated_date": "2022-12-22T16:46:54+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_metric_filters": {
+    "last_validated_date": "2024-05-24T14:17:33+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_put_events_multi_bytes_msg": {
+    "last_validated_date": "2024-05-24T14:23:19+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_put_subscription_filter_lambda": {
+    "last_validated_date": "2023-03-17T12:55:00+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_resource_does_not_exist": {
+    "last_validated_date": "2024-09-05T16:43:20+00:00"
+  }
+}

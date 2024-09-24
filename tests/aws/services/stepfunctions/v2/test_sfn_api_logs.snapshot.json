@@ -1,0 +1,734 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[ALL-False]": {
+    "recorded-date": "01-06-2024, 10:17:53",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": false,
+          "level": "ALL"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[ALL-True]": {
+    "recorded-date": "01-06-2024, 10:18:07",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": true,
+          "level": "ALL"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[FATAL-False]": {
+    "recorded-date": "01-06-2024, 10:18:21",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": false,
+          "level": "FATAL"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[FATAL-True]": {
+    "recorded-date": "01-06-2024, 10:18:35",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": true,
+          "level": "FATAL"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[ERROR-False]": {
+    "recorded-date": "01-06-2024, 10:18:50",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": false,
+          "level": "ERROR"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[ERROR-True]": {
+    "recorded-date": "01-06-2024, 10:19:06",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": true,
+          "level": "ERROR"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[OFF-False]": {
+    "recorded-date": "01-06-2024, 10:19:20",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[OFF-True]": {
+    "recorded-date": "01-06-2024, 10:19:34",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": true,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_incomplete_logging_configuration[logging_configuration0]": {
+    "recorded-date": "01-06-2024, 10:19:47",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_incomplete_logging_configuration[logging_configuration1]": {
+    "recorded-date": "01-06-2024, 10:20:01",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [],
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_invalid_logging_configuration[logging_configuration0]": {
+    "recorded-date": "01-06-2024, 10:20:15",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidLoggingConfiguration",
+        "exception_value": "An error occurred (InvalidLoggingConfiguration) when calling the CreateStateMachine operation: Invalid Logging Configuration: Must specify exactly one Log Destination."
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_invalid_logging_configuration[logging_configuration1]": {
+    "recorded-date": "01-06-2024, 10:20:28",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidLoggingConfiguration",
+        "exception_value": "An error occurred (InvalidLoggingConfiguration) when calling the CreateStateMachine operation: Invalid Logging Configuration: Must specify exactly one Log Destination."
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_invalid_logging_configuration[logging_configuration2]": {
+    "recorded-date": "01-06-2024, 10:20:37",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidLoggingConfiguration",
+        "exception_value": "An error occurred (InvalidLoggingConfiguration) when calling the CreateStateMachine operation: Invalid Logging Configuration: Must specify exactly one Log Destination."
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_deleted_log_group": {
+    "recorded-date": "01-06-2024, 10:21:03",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidLoggingConfiguration",
+        "exception_value": "An error occurred (InvalidLoggingConfiguration) when calling the CreateStateMachine operation: Invalid Logging Configuration: Log Destination not found."
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_multiple_destinations": {
+    "recorded-date": "01-06-2024, 10:21:19",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidLoggingConfiguration",
+        "exception_value": "An error occurred (InvalidLoggingConfiguration) when calling the CreateStateMachine operation: Invalid Logging Configuration: Must specify exactly one Log Destination."
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_update_logging_configuration": {
+    "recorded-date": "03-06-2024, 08:40:57",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": true,
+          "level": "ALL"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_log_level": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": true,
+          "level": "FATAL"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:1>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_no_change": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": true,
+          "level": "FATAL"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:1>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_resp_flag": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
+              }
+            }
+          ],
+          "includeExecutionData": false,
+          "level": "FATAL"
+        },
+        "name": "<ArnPart_0idx>",
+        "revisionId": "<uuid:2>",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exception_multiple_endpoints": {
+        "exception_typename": "InvalidLoggingConfiguration",
+        "exception_value": "An error occurred (InvalidLoggingConfiguration) when calling the UpdateStateMachine operation: Invalid Logging Configuration: Must specify exactly one Log Destination."
+      },
+      "exception_invalid": {
+        "exception_typename": "InvalidLoggingConfiguration",
+        "exception_value": "An error occurred (InvalidLoggingConfiguration) when calling the UpdateStateMachine operation: Invalid Logging Configuration: Must specify exactly one Log Destination."
+      }
+    }
+  }
+}

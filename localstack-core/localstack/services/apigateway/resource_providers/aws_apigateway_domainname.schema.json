@@ -1,0 +1,124 @@
+{
+  "typeName": "AWS::ApiGateway::DomainName",
+  "description": "Resource Type definition for AWS::ApiGateway::DomainName.",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+  "definitions": {
+    "EndpointConfiguration": {
+      "type": "object",
+      "properties": {
+        "Types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "MutualTlsAuthentication": {
+      "type": "object",
+      "properties": {
+        "TruststoreUri": {
+          "type": "string"
+        },
+        "TruststoreVersion": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Tag": {
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "DomainName": {
+      "type": "string"
+    },
+    "DistributionDomainName": {
+      "type": "string"
+    },
+    "DistributionHostedZoneId": {
+      "type": "string"
+    },
+    "EndpointConfiguration": {
+      "$ref": "#/definitions/EndpointConfiguration"
+    },
+    "MutualTlsAuthentication": {
+      "$ref": "#/definitions/MutualTlsAuthentication"
+    },
+    "RegionalDomainName": {
+      "type": "string"
+    },
+    "RegionalHostedZoneId": {
+      "type": "string"
+    },
+    "CertificateArn": {
+      "type": "string"
+    },
+    "RegionalCertificateArn": {
+      "type": "string"
+    },
+    "OwnershipVerificationCertificateArn": {
+      "type": "string"
+    },
+    "SecurityPolicy": {
+      "type": "string"
+    },
+    "Tags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "primaryIdentifier": [
+    "/properties/DomainName"
+  ],
+  "createOnlyProperties": [
+    "/properties/DomainName"
+  ],
+  "readOnlyProperties": [
+    "/properties/RegionalHostedZoneId",
+    "/properties/DistributionDomainName",
+    "/properties/RegionalDomainName",
+    "/properties/DistributionHostedZoneId"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "apigateway:*"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "apigateway:*"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "apigateway:*"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "apigateway:*"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "apigateway:*"
+      ]
+    }
+  }
+}

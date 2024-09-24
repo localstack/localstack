@@ -1,0 +1,281 @@
+name: S3 Image Integration Tests
+
+on:
+  push:
+    paths:
+      - .github/workflows/tests-s3-image.yml
+      - localstack-core/localstack/aws/*.py
+      - localstack-core/localstack/aws/handlers/*¨
+      - localstack-core/localstack/aws/protocol/**
+      - localstack-core/localstack/aws/serving/**
+      - localstack-core/localstack/aws/api/s3/**
+      - localstack-core/localstack/http/**
+      - localstack-core/localstack/runtime/**
+      - localstack-core/localstack/services/s3/**
+      - localstack-core/localstack/*.py
+      - tests/aws/services/s3/**
+      - Dockerfile.s3
+      - requirements-*.txt
+      - setup.cfg
+      - Makefile
+    branches:
+      - master
+  pull_request:
+    paths:
+      - .github/workflows/tests-s3-image.yml
+      - localstack-core/localstack/aws/*.py
+      - localstack-core/localstack/aws/handlers/*¨
+      - localstack-core/localstack/aws/protocol/**
+      - localstack-core/localstack/aws/serving/**
+      - localstack-core/localstack/aws/api/s3/**
+      - localstack-core/localstack/http/**
+      - localstack-core/localstack/runtime/**
+      - localstack-core/localstack/services/s3/**
+      - localstack-core/localstack/*.py
+      - tests/aws/services/s3/**
+      - Dockerfile.s3
+      - requirements-*.txt
+      - setup.cfg
+      - Makefile
+  workflow_dispatch:
+    inputs:
+      publishDockerImage:
+        description: 'Publish S3-only images on Dockerhub'
+        required: false
+        type: boolean
+        default: false
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
+
+# Only one pull-request triggered run should be executed at a time
+# (head_ref is only set for PR events, otherwise fallback to run_id which differs for every run).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # Configure PyTest log level
+  PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: community_tests_s3_image
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+  # report to tinybird if executed on master
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+
+
+jobs:
+  build-test-s3:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: buildjet-2vcpu-ubuntu-2204-arm
+    name: "Build and Test S3 image"
+    env:
+      PLATFORM: ${{ matrix.arch }}
+      IMAGE_NAME: "localstack/localstack"
+      DEFAULT_TAG: "s3-latest"
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+        # (i.e. do not execute job for workflows coming from forks)
+        if: >-
+          (
+            github.event_name != 'pull_request' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          )
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install docker build dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
+      - name: Build S3 Docker Image
+        env:
+          DOCKERFILE: "./Dockerfile.s3"
+        run: ./bin/docker-helper.sh build
+
+      - name: Run S3 Image tests
+        timeout-minutes: 10
+        env:
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy --junitxml=target/pytest-junit-s3-image-${{ matrix.arch }}.xml"
+          TEST_PATH: "tests/aws/services/s3"
+          DEBUG: 1
+        run: |
+          mkdir target
+          make docker-run-tests-s3-only
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-s3-image-${{ matrix.arch }}
+          path: target/pytest-junit-s3-image-${{ matrix.arch }}.xml
+          retention-days: 30
+
+      - name: Save the S3 image
+        id: save-image
+        run: ./bin/docker-helper.sh save
+
+      - name: Store Docker image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: localstack-s3-image-${{ matrix.arch }}
+          path: ${{ steps.save-image.outputs.IMAGE_FILENAME }}
+          retention-days: 1
+
+  publish-test-results:
+    name: "Publish S3 Image Test Results"
+    needs: build-test-s3
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (success() || failure()) && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    steps:
+      - name: Download AMD64 Results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-s3-image-amd64
+
+      - name: Download ARM64 Results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-s3-image-arm64
+
+      - name: Publish S3 Image Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: pytest-junit-*.xml
+          check_name: "S3 Image Test Results (AMD64 / ARM64)"
+          action_fail_on_inconclusive: true
+
+  push-s3-image:
+    name: "Push S3 images and manifest"
+    runs-on: ubuntu-latest
+    needs:
+      - build-test-s3
+    if: inputs.publishDockerImage
+    env:
+      IMAGE_NAME: "localstack/localstack"
+      DEFAULT_TAG: "s3-latest"
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install docker build dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
+      - name: Download AMD64 image
+        uses: actions/download-artifact@v4
+        with:
+          name: localstack-s3-image-amd64
+
+      - name: Download ARM64 image
+        uses: actions/download-artifact@v4
+        with:
+          name: localstack-s3-image-arm64
+
+      - name: Load AMD64 image
+        env:
+          PLATFORM: amd64
+        run: ./bin/docker-helper.sh load
+
+      - name: Push AMD64 image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+          PLATFORM: amd64
+        run: ./bin/docker-helper.sh push
+
+      - name: Load ARM64 image
+        env:
+          PLATFORM: arm64
+        run: ./bin/docker-helper.sh load
+
+      - name: Push ARM64 image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+          PLATFORM: arm64
+        run: ./bin/docker-helper.sh push
+
+      - name: Create and push manifest
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: ./bin/docker-helper.sh push-manifests
+
+  cleanup:
+    name: "Clean up"
+    runs-on: ubuntu-latest
+    if: success()
+    needs: push-s3-image
+    steps:
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: localstack-s3-image-*
+          failOnError: false
+
+  push-to-tinybird:
+    if: always() && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs: push-s3-image
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v3
+        with:
+          workflow_id: "tests_s3_image"
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"

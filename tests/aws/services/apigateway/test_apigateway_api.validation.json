@@ -1,0 +1,140 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiAuthorizer::test_authorizer_crud_no_api": {
+    "last_validated_date": "2024-04-15T18:43:45+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_doc_parts_crud_no_api": {
+    "last_validated_date": "2024-04-15T20:52:33+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_documentation_part_lifecycle": {
+    "last_validated_date": "2024-04-15T20:52:34+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_import_documentation_parts": {
+    "last_validated_date": "2024-04-15T20:56:45+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_create_documentation_part_operations": {
+    "last_validated_date": "2024-04-15T20:53:48+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_delete_documentation_part": {
+    "last_validated_date": "2024-04-15T20:54:20+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_part": {
+    "last_validated_date": "2024-04-15T20:52:39+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_parts": {
+    "last_validated_date": "2024-04-15T20:53:15+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_update_documentation_part": {
+    "last_validated_date": "2024-04-15T20:53:16+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_method_lifecycle": {
+    "last_validated_date": "2024-04-15T21:22:46+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_method_request_parameters": {
+    "last_validated_date": "2024-04-15T21:22:51+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_put_method_model": {
+    "last_validated_date": "2024-04-15T21:23:29+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_put_method_validation": {
+    "last_validated_date": "2024-04-15T21:23:49+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_update_method": {
+    "last_validated_date": "2024-04-15T21:24:42+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_update_method_validation": {
+    "last_validated_date": "2024-04-15T21:26:29+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiModels::test_model_lifecycle": {
+    "last_validated_date": "2024-04-15T21:02:18+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiModels::test_model_validation": {
+    "last_validated_date": "2024-04-15T20:33:07+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiModels::test_update_model": {
+    "last_validated_date": "2024-04-15T20:33:55+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_create_request_validator_invalid_api_id": {
+    "last_validated_date": "2024-04-15T20:45:24+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_delete_request_validator": {
+    "last_validated_date": "2024-04-15T20:44:56+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_get_request_validator": {
+    "last_validated_date": "2024-04-15T20:44:24+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_get_request_validators": {
+    "last_validated_date": "2024-04-15T20:44:55+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_update_request_validator_operations": {
+    "last_validated_date": "2024-04-15T20:45:26+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_request_validator_lifecycle": {
+    "last_validated_date": "2024-04-15T20:44:21+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_validators_crud_no_api": {
+    "last_validated_date": "2024-04-15T20:44:19+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_create_proxy_resource": {
+    "last_validated_date": "2024-04-15T17:31:19+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_create_proxy_resource_validation": {
+    "last_validated_date": "2024-04-15T17:31:32+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_create_resource_parent_invalid": {
+    "last_validated_date": "2024-04-15T17:30:24+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_delete_resource": {
+    "last_validated_date": "2024-04-15T17:29:41+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_resource_lifecycle": {
+    "last_validated_date": "2024-04-15T17:29:03+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_update_resource_behaviour": {
+    "last_validated_date": "2024-04-15T17:29:08+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_optional_params": {
+    "last_validated_date": "2024-04-15T15:10:32+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_tags": {
+    "last_validated_date": "2024-04-15T15:11:51+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_get_api_case_insensitive": {
+    "last_validated_date": "2024-04-15T15:09:49+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_list_and_delete_apis": {
+    "last_validated_date": "2024-04-15T15:08:47+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_behaviour": {
+    "last_validated_date": "2024-04-15T15:13:30+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_compression": {
+    "last_validated_date": "2024-04-15T15:12:36+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_invalid_api_id": {
+    "last_validated_date": "2024-04-15T15:14:15+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_operation_add_remove": {
+    "last_validated_date": "2024-04-15T15:12:34+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_crud": {
+    "last_validated_date": "2024-04-15T20:46:20+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_put": {
+    "last_validated_date": "2024-06-20T22:01:44+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_validation": {
+    "last_validated_date": "2024-04-15T20:46:24+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_update_gateway_response": {
+    "last_validated_date": "2024-04-15T20:47:11+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_response_validation": {
+    "last_validated_date": "2024-08-21T15:09:28+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_wrong_type": {
+    "last_validated_date": "2024-04-15T20:48:47+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayTestInvoke::test_invoke_test_method": {
+    "last_validated_date": "2024-04-15T20:48:35+00:00"
+  }
+}

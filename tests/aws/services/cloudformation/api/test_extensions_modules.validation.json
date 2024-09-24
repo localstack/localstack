@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/api/test_extensions_modules.py::TestExtensionsModules::test_module_usage": {
+    "last_validated_date": "2023-02-27T15:06:45+00:00"
+  }
+}

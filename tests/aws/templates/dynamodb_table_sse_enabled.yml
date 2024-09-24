@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyDynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: MyTable
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      SSESpecification:
+        SSEEnabled: True
+        SSEType: KMS
+      TimeToLiveSpecification:
+        AttributeName: expire_at
+        Enabled: true
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+Outputs:
+  TableName:
+    Value: !Ref MyDynamoDBTable

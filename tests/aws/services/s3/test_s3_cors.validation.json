@@ -1,0 +1,47 @@
+{
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_expose_headers": {
+    "last_validated_date": "2023-07-31T10:34:45+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_http_get_no_config": {
+    "last_validated_date": "2023-07-31T10:31:37+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_http_options_no_config": {
+    "last_validated_date": "2023-07-31T16:24:51+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_http_options_non_existent_bucket": {
+    "last_validated_date": "2023-07-31T10:31:40+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_headers": {
+    "last_validated_date": "2024-01-02T16:08:41+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_methods": {
+    "last_validated_date": "2023-07-31T10:34:36+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_origins": {
+    "last_validated_date": "2023-07-31T10:31:46+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_options_fails_partial_origin": {
+    "last_validated_date": "2024-03-01T00:50:41+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_options_match_partial_origin": {
+    "last_validated_date": "2024-02-29T23:37:44+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_delete_cors": {
+    "last_validated_date": "2023-07-31T10:32:03+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_get_cors": {
+    "last_validated_date": "2023-07-31T10:31:54+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_put_cors": {
+    "last_validated_date": "2023-07-31T10:31:56+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_put_cors_default_values": {
+    "last_validated_date": "2023-07-31T10:34:48+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_put_cors_empty_origin": {
+    "last_validated_date": "2023-07-31T10:32:01+00:00"
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_put_cors_invalid_rules": {
+    "last_validated_date": "2023-07-31T10:31:59+00:00"
+  }
+}

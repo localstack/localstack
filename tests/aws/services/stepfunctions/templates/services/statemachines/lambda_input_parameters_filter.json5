@@ -1,0 +1,23 @@
+{
+  "Comment": "LAMBDA_INPUT_PARAMETERS_FILTER",
+  "StartAt": "StartCheckLoop",
+  "States": {
+    "StartCheckLoop": {
+      "Type": "Pass",
+      "Result": {
+        "count": 0
+      },
+      "ResultPath": "$.loop",
+      "Next": "CheckComplete"
+    },
+    "CheckComplete": {
+      "Type": "Task",
+      "Resource": "_TBD_",
+      "Parameters": {
+        "loop.$": "$.loop"
+      },
+      "ResultPath": "$.result",
+      "End": true
+    }
+  }
+}

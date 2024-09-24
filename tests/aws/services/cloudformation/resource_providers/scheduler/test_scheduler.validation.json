@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/scheduler/test_scheduler.py::test_schedule_and_group": {
+    "last_validated_date": "2023-09-21T08:21:19+00:00"
+  }
+}

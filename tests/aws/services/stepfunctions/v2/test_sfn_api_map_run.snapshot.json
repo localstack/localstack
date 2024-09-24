@@ -1,0 +1,1480 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_list_map_runs_and_describe_map_run": {
+    "recorded-date": "21-09-2023, 21:21:35",
+    "recorded-content": {
+      "list_map_runs": {
+        "mapRuns": [
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>",
+            "startDate": "start-date",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>/<MapRunArnPart0_0idx>",
+            "stopDate": "stop-date"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_map_run": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionCounts": {
+          "aborted": 0,
+          "failed": 0,
+          "pending": 0,
+          "resultsWritten": 2,
+          "running": 0,
+          "succeeded": 2,
+          "timedOut": 0,
+          "total": 2
+        },
+        "itemCounts": {
+          "aborted": 0,
+          "failed": 0,
+          "pending": 0,
+          "resultsWritten": 2,
+          "running": 0,
+          "succeeded": 2,
+          "timedOut": 0,
+          "total": 2
+        },
+        "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>",
+        "maxConcurrency": 1,
+        "startDate": "start-date",
+        "status": "SUCCEEDED",
+        "stopDate": "stop-date",
+        "toleratedFailureCount": 0,
+        "toleratedFailurePercentage": 0.0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[ ]": {
+    "recorded-date": "20-07-2024, 15:10:57",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: ' '\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_ \", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: ' '\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_ \", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[?]": {
+    "recorded-date": "20-07-2024, 15:10:57",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '?'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_?\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '?'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_?\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[*]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '*'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_*\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '*'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_*\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[<]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '<'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_<\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '<'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_<\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[>]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '>'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_>\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '>'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_>\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[{]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '{'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_{\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '{'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_{\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[}]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '}'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_}\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '}'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_}\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[[]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '['\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_[\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '['\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_[\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[]]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: ']'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_]\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: ']'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_]\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[:]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: ':'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_:\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: ':'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_:\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[;]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: ';'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_;\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: ';'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_;\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[,]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: ','\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_,\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: ','\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_,\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\\\]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\\\\\'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\\\\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\\\\\'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\\\\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[|]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '|'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_|\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '|'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_|\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[^]": {
+    "recorded-date": "20-07-2024, 15:10:58",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '^'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_^\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '^'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_^\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[~]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '~'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_~\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '~'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_~\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[$]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '$'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_$\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '$'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_$\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[#]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '#'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_#\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '#'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_#\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[%]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '%'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_%\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '%'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_%\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[&]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '&'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_&\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '&'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_&\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[`]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '`'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_`\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '`'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_`\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\"]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=['Label contains invalid character: \\'\"\\''] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\\"\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=['Label contains invalid character: \\'\"\\''] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\\"\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x00]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x00'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0000\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x00'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0000\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x01]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x01'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0001\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x01'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0001\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x02]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x02'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0002\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x02'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0002\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x03]": {
+    "recorded-date": "20-07-2024, 15:10:59",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x03'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0003\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x03'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0003\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x04]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x04'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0004\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x04'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0004\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x05]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x05'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0005\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x05'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0005\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x06]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x06'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0006\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x06'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0006\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x07]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x07'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0007\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x07'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0007\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x08]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x08'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\b\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x08'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\b\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\t]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\t'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\t\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\t'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\t\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\n]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\n'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\n\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\n'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\n\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x0b]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x0b'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u000b\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x0b'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u000b\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x0c]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x0c'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\f\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x0c'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\f\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\r]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\r'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\r\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\r'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\r\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x0e]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x0e'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u000e\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x0e'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u000e\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x0f]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x0f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u000f\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x0f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u000f\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x10]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x10'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0010\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x10'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0010\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x11]": {
+    "recorded-date": "20-07-2024, 15:11:00",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x11'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0011\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x11'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0011\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x12]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x12'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0012\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x12'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0012\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x13]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x13'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0013\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x13'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0013\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x14]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x14'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0014\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x14'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0014\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x15]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x15'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0015\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x15'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0015\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x16]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x16'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0016\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x16'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0016\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x17]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x17'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0017\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x17'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0017\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x18]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x18'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0018\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x18'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0018\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x19]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x19'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0019\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x19'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0019\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x1a]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1a'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001a\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1a'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001a\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x1b]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1b'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001b\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1b'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001b\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x1c]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1c'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001c\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1c'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001c\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x1d]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1d'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001d\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1d'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001d\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x1e]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1e'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001e\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1e'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001e\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x1f]": {
+    "recorded-date": "20-07-2024, 15:11:01",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001f\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x1f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u001f\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x7f]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x7f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u007f\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x7f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u007f\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x80]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x80'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0080\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x80'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0080\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x81]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x81'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0081\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x81'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0081\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x82]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x82'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0082\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x82'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0082\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x83]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x83'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0083\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x83'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0083\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x84]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x84'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0084\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x84'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0084\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x85]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x85'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0085\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x85'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0085\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x86]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x86'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0086\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x86'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0086\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x87]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x87'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0087\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x87'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0087\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x88]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x88'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0088\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x88'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0088\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x89]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x89'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0089\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x89'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0089\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x8a]": {
+    "recorded-date": "20-07-2024, 15:11:02",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8a'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008a\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8a'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008a\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x8b]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8b'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008b\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8b'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008b\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x8c]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8c'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008c\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8c'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008c\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x8d]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8d'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008d\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8d'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008d\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x8e]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8e'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008e\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8e'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008e\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x8f]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008f\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x8f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u008f\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x90]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x90'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0090\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x90'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0090\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x91]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x91'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0091\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x91'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0091\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x92]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x92'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0092\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x92'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0092\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x93]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x93'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0093\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x93'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0093\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x94]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x94'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0094\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x94'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0094\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x95]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x95'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0095\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x95'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0095\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x96]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x96'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0096\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x96'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0096\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x97]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x97'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0097\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x97'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0097\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x98]": {
+    "recorded-date": "20-07-2024, 15:11:03",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x98'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0098\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x98'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0098\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x99]": {
+    "recorded-date": "20-07-2024, 15:11:04",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x99'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0099\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x99'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u0099\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x9a]": {
+    "recorded-date": "20-07-2024, 15:11:04",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9a'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009a\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9a'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009a\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x9b]": {
+    "recorded-date": "20-07-2024, 15:11:04",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9b'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009b\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9b'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009b\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x9c]": {
+    "recorded-date": "20-07-2024, 15:11:04",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9c'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009c\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9c'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009c\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x9d]": {
+    "recorded-date": "20-07-2024, 15:11:04",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9d'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009d\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9d'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009d\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x9e]": {
+    "recorded-date": "20-07-2024, 15:11:04",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9e'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009e\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9e'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009e\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_invalid_char_fail[\\x9f]": {
+    "recorded-date": "20-07-2024, 15:11:04",
+    "recorded-content": {
+      "map_state_label_invalid_char_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009f\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=[\"Label contains invalid character: '\\\\x9f'\"] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"label_\\u009f\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_empty_fail": {
+    "recorded-date": "20-07-2024, 15:14:54",
+    "recorded-content": {
+      "map_state_label_empty_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=['Label cannot be empty'] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=['Label cannot be empty'] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_map_state_label_too_long_fail": {
+    "recorded-date": "20-07-2024, 15:15:52",
+    "recorded-content": {
+      "map_state_label_too_long_fail": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Error=ValueError Args=['Label cannot exceed 40 characters'] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"12345678901234567890123456789012345678901\", \"End\": true}}}'."
+        },
+        "message": "Error=ValueError Args=['Label cannot exceed 40 characters'] in definition '{\"Comment\": \"MAP_STATE_LABEL_JSON\", \"StartAt\": \"MapState\", \"States\": {\"MapState\": {\"Type\": \"Map\", \"ItemProcessor\": {\"ProcessorConfig\": {\"Mode\": \"DISTRIBUTED\", \"ExecutionType\": \"STANDARD\"}, \"StartAt\": \"IteratorInner\", \"States\": {\"IteratorInner\": {\"Type\": \"Pass\", \"End\": true}}}, \"Label\": \"12345678901234567890123456789012345678901\", \"End\": true}}}'.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

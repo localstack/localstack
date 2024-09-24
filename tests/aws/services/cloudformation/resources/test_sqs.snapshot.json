@@ -1,0 +1,119 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_queue_no_change": {
+    "recorded-date": "08-12-2023, 21:11:26",
+    "recorded-content": {
+      "outputs-1": {
+        "QueueArn": "<queue-arn>",
+        "QueueUrl": "<queue-url>"
+      },
+      "outputs-2": {
+        "QueueArn": "<queue-arn>",
+        "QueueUrl": "<queue-url>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_sqs_queuepolicy": {
+    "recorded-date": "27-03-2024, 20:30:24",
+    "recorded-content": {
+      "policy1": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+              "sqs:SendMessage",
+              "sqs:GetQueueAttributes",
+              "sqs:GetQueueUrl"
+            ],
+            "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
+          }
+        ]
+      },
+      "policy2": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": [
+              "sqs:SendMessage",
+              "sqs:GetQueueAttributes",
+              "sqs:GetQueueUrl"
+            ],
+            "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_sqs_queue_policy": {
+    "recorded-date": "03-07-2024, 19:49:04",
+    "recorded-content": {
+      "policy": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_cfn_handle_sqs_resource": {
+    "recorded-date": "03-07-2024, 20:03:51",
+    "recorded-content": {
+      "queue": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue-name>.fifo",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.NonExistentQueue",
+          "Message": "The specified queue does not exist.",
+          "QueryErrorCode": "QueueDoesNotExist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

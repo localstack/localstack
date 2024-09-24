@@ -1,0 +1,50 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration": {
+    "recorded-date": "30-05-2024, 17:27:58",
+    "recorded-content": {
+      "sqs-aws-integration": {
+        "message": "great success!"
+      },
+      "sqs-message": {
+        "foo": "bar"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_request_and_response_xml_templates_integration": {
+    "recorded-date": "12-07-2024, 16:27:03",
+    "recorded-content": {
+      "sqs-json-response": {
+        "messageId": "<uuid:1>",
+        "requestId": "<uuid:2>"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration_with_message_attribute[MessageAttribute]": {
+    "recorded-date": "06-06-2024, 00:38:25",
+    "recorded-content": {
+      "sqs-message-body": {
+        "foo": "bar"
+      },
+      "sqs-message-attributes": {
+        "user-agent": {
+          "DataType": "String",
+          "StringValue": "BAR-Header"
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration_with_message_attribute[MessageAttributes]": {
+    "recorded-date": "06-06-2024, 00:38:34",
+    "recorded-content": {
+      "sqs-message-body": {
+        "foo": "bar"
+      },
+      "sqs-message-attributes": {
+        "user-agent": {
+          "DataType": "String",
+          "StringValue": "BAR-Header"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "typeName": "AWS::Lambda::LayerVersionPermission",
+  "description": "Resource Type definition for AWS::Lambda::LayerVersionPermission",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "type": "string"
+    },
+    "Action": {
+      "type": "string"
+    },
+    "LayerVersionArn": {
+      "type": "string"
+    },
+    "OrganizationId": {
+      "type": "string"
+    },
+    "Principal": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "LayerVersionArn",
+    "Action",
+    "Principal"
+  ],
+  "createOnlyProperties": [
+    "/properties/OrganizationId",
+    "/properties/Principal",
+    "/properties/Action",
+    "/properties/LayerVersionArn"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

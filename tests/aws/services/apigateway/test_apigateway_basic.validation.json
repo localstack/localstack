@@ -1,0 +1,71 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_api_gateway_lambda_asynchronous_invocation": {
+    "last_validated_date": "2024-05-29T19:36:34+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_api_gateway_mock_integration": {
+    "last_validated_date": "2024-05-29T20:06:17+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigateway_with_custom_authorization_method": {
+    "last_validated_date": "2024-04-12T22:31:50+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigw_stage_variables[dev]": {
+    "last_validated_date": "2024-07-12T20:04:21+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigw_stage_variables[local]": {
+    "last_validated_date": "2024-07-12T20:04:15+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigw_test_invoke_method_api": {
+    "last_validated_date": "2024-02-04T18:48:24+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_update_rest_api_deployment": {
+    "last_validated_date": "2024-04-12T21:24:49+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[NEVER-UrlType.HOST_BASED-GET]": {
+    "last_validated_date": "2024-05-30T00:10:53+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[NEVER-UrlType.HOST_BASED-POST]": {
+    "last_validated_date": "2024-05-30T00:11:00+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[NEVER-UrlType.PATH_BASED-GET]": {
+    "last_validated_date": "2024-05-30T00:10:28+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[NEVER-UrlType.PATH_BASED-POST]": {
+    "last_validated_date": "2024-05-30T00:10:42+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_MATCH-UrlType.HOST_BASED-GET]": {
+    "last_validated_date": "2024-05-30T00:10:09+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_MATCH-UrlType.HOST_BASED-POST]": {
+    "last_validated_date": "2024-05-30T00:10:20+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_MATCH-UrlType.PATH_BASED-GET]": {
+    "last_validated_date": "2024-05-30T00:09:54+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_MATCH-UrlType.PATH_BASED-POST]": {
+    "last_validated_date": "2024-05-30T00:10:00+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_TEMPLATES-UrlType.HOST_BASED-GET]": {
+    "last_validated_date": "2024-05-30T00:11:22+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_TEMPLATES-UrlType.HOST_BASED-POST]": {
+    "last_validated_date": "2024-05-30T00:11:32+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_TEMPLATES-UrlType.PATH_BASED-GET]": {
+    "last_validated_date": "2024-05-30T00:11:09+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_TEMPLATES-UrlType.PATH_BASED-POST]": {
+    "last_validated_date": "2024-05-30T00:11:14+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[UrlType.HOST_BASED-ANY]": {
+    "last_validated_date": "2024-05-29T23:33:41+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[UrlType.HOST_BASED-GET]": {
+    "last_validated_date": "2024-05-29T23:33:12+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[path_based_url-ANY]": {
+    "last_validated_date": "2024-05-29T23:32:43+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[path_based_url-GET]": {
+    "last_validated_date": "2024-05-29T23:32:08+00:00"
+  }
+}

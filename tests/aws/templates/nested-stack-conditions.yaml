@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  S3BucketPath:
+    Type: String
+  S3BucketName:
+    Type: String
+
+Resources:
+  Bucket:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:
+        Fn::Join:
+          - ""
+          - - https://s3.
+            - Ref: AWS::Region
+            - "."
+            - Ref: AWS::URLSuffix
+            - Ref: S3BucketPath
+      Parameters:
+        BucketBaseName: !Ref S3BucketName
+        Mode: prod
+Outputs:
+  ProdBucket:
+    Value: !GetAtt Bucket.Outputs.ProdBucket
+  NestedStackArn:
+    Value: !Ref Bucket

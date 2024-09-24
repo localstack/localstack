@@ -1,0 +1,223 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_object_created_put": {
+    "recorded-date": "05-08-2023, 00:52:31",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "Message": {
+              "Records": [
+                {
+                  "eventVersion": "2.1",
+                  "eventSource": "aws:s3",
+                  "awsRegion": "<region>",
+                  "eventTime": "date",
+                  "eventName": "ObjectCreated:Put",
+                  "userIdentity": {
+                    "principalId": "<principal-id:2>"
+                  },
+                  "requestParameters": {
+                    "sourceIPAddress": "<ip-address:1>"
+                  },
+                  "responseElements": {
+                    "x-amz-request-id": "amz-request-id",
+                    "x-amz-id-2": "amz-id"
+                  },
+                  "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "configurationId": "<config-id:1>",
+                    "bucket": {
+                      "name": "<resource:1>",
+                      "ownerIdentity": {
+                        "principalId": "<principal-id:1>"
+                      },
+                      "arn": "arn:<partition>:s3:::<resource:1>"
+                    },
+                    "object": {
+                      "key": "bucket-key",
+                      "size": 11,
+                      "eTag": "c8e3a3027a133355210f85cfbb1acc35",
+                      "sequencer": "sequencer"
+                    }
+                  }
+                }
+              ]
+            },
+            "MessageId": "<uuid:1>",
+            "Signature": "<signature>",
+            "SignatureVersion": "1",
+            "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+            "Subject": "Amazon S3 Notification",
+            "Timestamp": "date",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>",
+            "Type": "Notification",
+            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:3>"
+          },
+          {
+            "Message": {
+              "Records": [
+                {
+                  "eventVersion": "2.1",
+                  "eventSource": "aws:s3",
+                  "awsRegion": "<region>",
+                  "eventTime": "date",
+                  "eventName": "ObjectCreated:Put",
+                  "userIdentity": {
+                    "principalId": "<principal-id:2>"
+                  },
+                  "requestParameters": {
+                    "sourceIPAddress": "<ip-address:1>"
+                  },
+                  "responseElements": {
+                    "x-amz-request-id": "amz-request-id",
+                    "x-amz-id-2": "amz-id"
+                  },
+                  "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "configurationId": "<config-id:1>",
+                    "bucket": {
+                      "name": "<resource:1>",
+                      "ownerIdentity": {
+                        "principalId": "<principal-id:1>"
+                      },
+                      "arn": "arn:<partition>:s3:::<resource:1>"
+                    },
+                    "object": {
+                      "key": "bucket-key",
+                      "size": 12,
+                      "eTag": "05c7c1b96e20928f6e55a881b5ca1c45",
+                      "sequencer": "sequencer"
+                    }
+                  }
+                }
+              ]
+            },
+            "MessageId": "<uuid:2>",
+            "Signature": "<signature>",
+            "SignatureVersion": "1",
+            "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+            "Subject": "Amazon S3 Notification",
+            "Timestamp": "date",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>",
+            "Type": "Notification",
+            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:3>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_notifications_with_filter": {
+    "recorded-date": "05-08-2023, 00:52:37",
+    "recorded-content": {
+      "message": {
+        "Message": {
+          "Records": [
+            {
+              "eventVersion": "2.1",
+              "eventSource": "aws:s3",
+              "awsRegion": "<region>",
+              "eventTime": "date",
+              "eventName": "ObjectCreated:Put",
+              "userIdentity": {
+                "principalId": "<principal-id:2>"
+              },
+              "requestParameters": {
+                "sourceIPAddress": "<ip-address:1>"
+              },
+              "responseElements": {
+                "x-amz-request-id": "amz-request-id",
+                "x-amz-id-2": "amz-id"
+              },
+              "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "<config-id:1>",
+                "bucket": {
+                  "name": "<resource:1>",
+                  "ownerIdentity": {
+                    "principalId": "<principal-id:1>"
+                  },
+                  "arn": "arn:<partition>:s3:::<resource:1>"
+                },
+                "object": {
+                  "key": "testupload/dir1/testfile.txt",
+                  "size": 35,
+                  "eTag": "f5260f0f41af2722d9fe17a57dfa9da5",
+                  "sequencer": "sequencer"
+                }
+              }
+            }
+          ]
+        },
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+        "Subject": "Amazon S3 Notification",
+        "Timestamp": "date",
+        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>",
+        "Type": "Notification",
+        "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:3>"
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_invalid_topic_arn": {
+    "recorded-date": "05-08-2023, 00:52:42",
+    "recorded-content": {
+      "invalid_not_skip": {
+        "Error": {
+          "ArgumentName": "Topic",
+          "ArgumentValue": "invalid-topic",
+          "Code": "InvalidArgument",
+          "Message": "The ARN could not be parsed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_skip": {
+        "Error": {
+          "ArgumentName": "Topic",
+          "ArgumentValue": "invalid-topic",
+          "Code": "InvalidArgument",
+          "Message": "The ARN could not be parsed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "skip_destination_validation": {
+        "TopicConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Id": "id123",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:my-topic"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_not_exist": {
+    "recorded-date": "05-08-2023, 00:52:39",
+    "recorded-content": {
+      "bucket_not_exists": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,206 @@
+Parameters:
+  FunctionName:
+    Type: String
+  QueueName:
+    Type: String
+  TopicName:
+    Type: String
+  BusName:
+    Type: String
+  RuleName:
+    Type: String
+Resources:
+  LogFnServiceRoleA176C900:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  LogFnServiceRoleDefaultPolicy9B17FD14:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - sqs:ReceiveMessage
+              - sqs:ChangeMessageVisibility
+              - sqs:GetQueueUrl
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - queue276F7297
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: LogFnServiceRoleDefaultPolicy9B17FD14
+      Roles:
+        - Ref: LogFnServiceRoleA176C900
+  LogFn234F4FB3:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+
+          def handler(event,context):
+              print(event)
+              return "Hello World"
+      Role:
+        Fn::GetAtt:
+          - LogFnServiceRoleA176C900
+          - Arn
+      FunctionName: !Ref FunctionName
+      Handler: index.handler
+      Runtime: python3.11
+    DependsOn:
+      - LogFnServiceRoleDefaultPolicy9B17FD14
+      - LogFnServiceRoleA176C900
+  LogFnEventInvokeConfigD2016CD9:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName:
+        Ref: LogFn234F4FB3
+      Qualifier: $LATEST
+      MaximumRetryAttempts: 0
+  LogFnSqsEventSourceGovTestEventsStackqueue8C97EB0598728401:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      FunctionName:
+        Ref: LogFn234F4FB3
+      BatchSize: 1
+      EventSourceArn:
+        Fn::GetAtt:
+          - queue276F7297
+          - Arn
+  LogFnAllowInvokeGovTestEventsStacktopic8E8111AE4FC418DD:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - LogFn234F4FB3
+          - Arn
+      Principal: sns.amazonaws.com
+      SourceArn:
+        Ref: topic69831491
+  LogFntopic224FEF02:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: lambda
+      TopicArn:
+        Ref: topic69831491
+      Endpoint:
+        Fn::GetAtt:
+          - LogFn234F4FB3
+          - Arn
+  queue276F7297:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref QueueName
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  queuePolicy89DB7105:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - sqs:SendMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  Fn::GetAtt:
+                    - ruleF2C1DCDC
+                    - Arn
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Resource:
+              Fn::GetAtt:
+                - queue276F7297
+                - Arn
+        Version: "2012-10-17"
+      Queues:
+        - Ref: queue276F7297
+  topic69831491:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref TopicName
+  topicPolicyBC9D8025:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: sns:Publish
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Resource:
+              Ref: topic69831491
+            Sid: "0"
+        Version: "2012-10-17"
+      Topics:
+        - Ref: topic69831491
+  bus707364D1:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Ref BusName
+  ruleF2C1DCDC:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName:
+        Ref: bus707364D1
+      EventPattern:
+        version:
+          - "0"
+      Name: !Ref RuleName
+      State: ENABLED
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - queue276F7297
+              - Arn
+          Id: Target0
+        - Arn:
+            Ref: topic69831491
+          Id: Target1
+Outputs:
+  TopicArn:
+    Value:
+      Ref: topic69831491
+  QueueArn:
+    Value:
+      Fn::GetAtt:
+        - queue276F7297
+        - Arn
+  QueueUrl:
+    Value:
+      Ref: queue276F7297
+  FnArn:
+    Value:
+      Fn::GetAtt:
+        - LogFn234F4FB3
+        - Arn
+  FnName:
+    Value:
+      Ref: LogFn234F4FB3
+  EventBusArn:
+    Value:
+      Fn::GetAtt:
+        - bus707364D1
+        - Arn
+  EventBusName:
+    Value:
+      Ref: bus707364D1

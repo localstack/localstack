@@ -1,0 +1,36 @@
+{
+  "Comment": "MAP_ITEM_READER_BASE_CSV_HEADERS_DECL",
+  "StartAt": "MapState",
+  "States": {
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemReader": {
+        "ReaderConfig": {
+          "InputType": "CSV",
+          "CSVHeaderLocation": "GIVEN",
+          "CSVHeaders": "__TBD__"
+        },
+        "Resource": "arn:aws:states:::s3:getObject",
+        "Parameters": {
+          "Bucket.$": "$.Bucket",
+          "Key.$": "$.Key"
+        }
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "PassItem",
+        "States": {
+          "PassItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+      },
+      "End": true
+    }
+  }
+}

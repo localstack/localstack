@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message": {
+    "last_validated_date": "2024-08-21T15:47:00+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_attributes": {
+    "last_validated_date": "2024-08-22T10:04:56+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_unsupported_parameters": {
+    "last_validated_date": "2024-04-18T06:37:24+00:00"
+  }
+}

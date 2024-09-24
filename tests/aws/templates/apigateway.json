@@ -1,0 +1,126 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Metadata": {
+        "AWS::CloudFormation::Designer": {
+            "4e9c399b-368e-4495-a045-96af5bbee06f": {
+                "size": {
+                    "width": 150,
+                    "height": 150
+                },
+                "position": {
+                    "x": 30,
+                    "y": 150
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "142518f2-8391-448a-a136-2ebef0aec574": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 70,
+                    "y": 30
+                },
+                "z": 1,
+                "embeds": [],
+                "iscontainedinside": [
+                    "4e9c399b-368e-4495-a045-96af5bbee06f"
+                ]
+            },
+            "2aab1c39-8387-4dce-8c2f-7e23dd8b15bc": {
+                "source": {
+                    "id": "142518f2-8391-448a-a136-2ebef0aec574"
+                },
+                "target": {
+                    "id": "4e9c399b-368e-4495-a045-96af5bbee06f"
+                },
+                "z": 11
+            }
+        }
+    },
+    "Resources": {
+        "AGRA16EMH": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+                "Name": {
+                    "Fn::Join": [
+                        "_",
+                        [
+                            "DemoApi",
+                            {
+                                "Ref": "StageName"
+                            }
+                        ]
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "4e9c399b-368e-4495-a045-96af5bbee06f"
+                }
+            },
+            "Condition": "Create"
+        },
+        "AGM1P07R": {
+            "Type": "AWS::ApiGateway::Model",
+            "Properties": {
+                "RestApiId": {
+                    "Ref": "AGRA16EMH"
+                },
+                "ContentType": "application/json",
+                "Schema": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "title": "PetsModelNoFlatten",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "number": {
+                                "type": "integer"
+                            },
+                            "class": {
+                                "type": "string"
+                            },
+                            "salesPrice": {
+                                "type": "number"
+                            }
+                        }
+                    }
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "142518f2-8391-448a-a136-2ebef0aec574"
+                }
+            },
+            "Condition": "Create"
+        }
+    },
+    "Conditions": {
+        "Create": {
+            "Fn::Equals": [
+                {
+                    "Ref": "Create"
+                },
+                "True"
+            ]
+        }
+    },
+    "Parameters": {
+        "Create": {
+            "Type": "String",
+            "Default": "False",
+            "AllowedValues": [
+                "True",
+                "False"
+            ],
+            "Description": "True to create all of the things."
+        },
+        "StageName": {
+            "Type": "String",
+            "Default": "dev"
+        }
+    }
+}

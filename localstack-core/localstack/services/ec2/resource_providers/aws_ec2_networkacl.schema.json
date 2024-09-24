@@ -1,0 +1,92 @@
+{
+  "typeName": "AWS::EC2::NetworkAcl",
+  "description": "Resource Type definition for AWS::EC2::NetworkAcl",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-ec2.git",
+  "additionalProperties": false,
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "properties": {
+    "Id": {
+      "type": "string"
+    },
+    "Tags": {
+      "description": "The tags to assign to the network ACL.",
+      "type": "array",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "VpcId": {
+      "description": "The ID of the VPC.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "VpcId"
+  ],
+  "createOnlyProperties": [
+    "/properties/VpcId"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": true,
+    "tagProperty": "/properties/Tags"
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateNetworkAcl",
+        "ec2:DescribeNetworkAcls"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeNetworkAcls"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:DescribeNetworkAcls",
+        "ec2:DeleteTags",
+        "ec2:CreateTags"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DeleteNetworkAcl",
+        "ec2:DescribeNetworkAcls"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeNetworkAcls"
+      ]
+    }
+  }
+}

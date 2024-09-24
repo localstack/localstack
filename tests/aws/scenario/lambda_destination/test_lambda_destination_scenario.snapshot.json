@@ -1,0 +1,212 @@
+{
+  "tests/aws/scenario/lambda_destination/test_lambda_destination_scenario.py::TestLambdaDestinationScenario::test_infra": {
+    "recorded-date": "17-04-2024, 07:04:49",
+    "recorded-content": {
+      "get_fn_1": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha-256>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.10",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "replaced-value",
+          "aws:cloudformation:stack-id": "replaced-value",
+          "aws:cloudformation:stack-name": "LambdaTestStack"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_fn_2": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha-256>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:2>",
+          "FunctionName": "<function-name:2>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:2>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:3>",
+          "Runtime": "python3.10",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "aws:cloudformation:logical-id": "replaced-value",
+          "aws:cloudformation:stack-id": "replaced-value",
+          "aws:cloudformation:stack-name": "LambdaTestStack"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "event_invoke_config": {
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+          },
+          "OnSuccess": {
+            "Destination": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+          }
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 60,
+        "MaximumRetryAttempts": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "topic_attributes": {
+        "Attributes": {
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/lambda_destination/test_lambda_destination_scenario.py::TestLambdaDestinationScenario::test_destination_sns": {
+    "recorded-date": "04-10-2023, 16:05:34",
+    "recorded-content": {
+      "successful_invoke": {
+        "Payload": "",
+        "StatusCode": 202,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "unsuccessful_invoke": {
+        "Payload": "",
+        "StatusCode": 202,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
+  }
+}

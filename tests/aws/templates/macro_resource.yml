@@ -1,0 +1,20 @@
+Parameters:
+  FunctionName:
+    Type: String
+  MacroName:
+    Type: String
+
+Resources:
+  Macro:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Name:
+        Ref: MacroName
+      FunctionName:
+        Ref: FunctionName
+
+Outputs:
+  MacroRef:
+    Value:
+      Ref: Macro
+

@@ -1,0 +1,8 @@
+{
+  "tests/aws/scenario/lambda_destination/test_lambda_destination_scenario.py::TestLambdaDestinationScenario::test_destination_sns": {
+    "last_validated_date": "2023-10-04T14:05:34+00:00"
+  },
+  "tests/aws/scenario/lambda_destination/test_lambda_destination_scenario.py::TestLambdaDestinationScenario::test_infra": {
+    "last_validated_date": "2024-04-17T07:04:49+00:00"
+  }
+}

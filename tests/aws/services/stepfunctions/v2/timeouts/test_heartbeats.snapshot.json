@@ -1,0 +1,423 @@
+{
+  "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_timeout": {
+    "recorded-date": "18-04-2024, 06:27:58",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 5,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "test_message_txt",
+                  "TaskToken": "<task_token:1>"
+                },
+                "QueueUrl": "<sqs_queue_url>"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_path_timeout": {
+    "recorded-date": "18-04-2024, 06:28:23",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "HeartbeatSecondsPath": 5
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "HeartbeatSecondsPath": 5
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 5,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "test_message_txt",
+                  "TaskToken": "<task_token:1>"
+                },
+                "QueueUrl": "<sqs_queue_url>"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_no_timeout": {
+    "recorded-date": "18-04-2024, 06:29:19",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 5,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "test_message_txt",
+                  "TaskToken": "<task_token:1>"
+                },
+                "QueueUrl": "<sqs_queue_url>"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

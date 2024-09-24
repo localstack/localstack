@@ -1,0 +1,23 @@
+{
+  "Comment": "SQS_SEND_MESSAGE_AND_WAIT",
+  "StartAt": "SendSQS",
+  "States": {
+    "SendSQS": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody": {
+          "Message": "SQS_SEND_MESSAGE_AND_WAIT",
+          "TaskToken.$": "$.TaskToken"
+        }
+      },
+      "Next": "WaitState"
+    },
+    "WaitState": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "End": true
+    }
+  }
+}

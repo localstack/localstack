@@ -1,0 +1,18 @@
+{
+  "Comment": "SQS_WAIT_FOR_TASK_TOKEN_NO_TOKEN_PARAMETER",
+  "StartAt": "State1",
+  "States": {
+    "State1": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "TimeoutSeconds": 5,
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody": {
+          "Context.$": "$",
+        }
+      },
+      "End": true
+    },
+  }
+}

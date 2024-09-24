@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_instance_with_key_pair": {
+    "last_validated_date": "2024-01-30T21:09:52+00:00"
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_prefix_list": {
+    "last_validated_date": "2024-04-26T16:18:18+00:00"
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_security_group_with_tags": {
+    "last_validated_date": "2024-08-16T19:09:00+00:00"
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_vpc_endpoint": {
+    "last_validated_date": "2024-04-30T20:01:19+00:00"
+  }
+}

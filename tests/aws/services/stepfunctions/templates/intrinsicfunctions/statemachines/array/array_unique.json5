@@ -1,0 +1,13 @@
+{
+    "Comment": "ARRAY_UNIQUE",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.ArrayUnique($.FunctionInput)"
+            },
+            "End": true,
+        },
+    },
+}

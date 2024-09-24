@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  Sub1TemplateUrl:
+    Type: String
+  Sub2TemplateUrl:
+    Type: String
+  TopicName:
+    Type: String
+  RoleName:
+    Type: String
+
+Resources:
+  Sub1:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref Sub1TemplateUrl
+      Parameters:
+        TopicName: !Ref TopicName
+
+  Sub2:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - Sub1
+    Properties:
+      TemplateURL: !Ref Sub2TemplateUrl
+      Parameters:
+        TopicArn: !GetAtt Sub1.Outputs.OutputA
+        RoleName: !Ref RoleName

@@ -1,0 +1,279 @@
+{
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_stream_creation": {
+    "recorded-date": "12-09-2022, 14:11:29",
+    "recorded-content": {
+      "stack_output": {
+        "StreamArnFromAtt": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "StreamNameFromRef": "<resource:1>"
+      },
+      "resource_description": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "TestStream",
+            "PhysicalResourceId": "<resource:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Kinesis::Stream",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stream_description": {
+        "StreamDescription": {
+          "EncryptionType": "NONE",
+          "EnhancedMonitoring": [
+            {
+              "ShardLevelMetrics": []
+            }
+          ],
+          "HasMoreShards": false,
+          "RetentionPeriodHours": 24,
+          "Shards": [
+            {
+              "HashKeyRange": {
+                "EndingHashKey": "<ending-hash-key:1>",
+                "StartingHashKey": "0"
+              },
+              "SequenceNumberRange": {
+                "StartingSequenceNumber": "<sequence-number:1>"
+              },
+              "ShardId": "shard-id"
+            }
+          ],
+          "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+          "StreamCreationTimestamp": "timestamp",
+          "StreamModeDetails": {
+            "StreamMode": "PROVISIONED"
+          },
+          "StreamName": "<resource:1>",
+          "StreamStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_describe_template": {
+    "recorded-date": "22-05-2023, 09:25:32",
+    "recorded-content": {
+      "get_template_summary_by_url": {
+        "Capabilities": [
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "CapabilitiesReason": "The following resource(s) require capabilities: [AWS::IAM::Role]",
+        "Parameters": [
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "KinesisRoleName",
+            "ParameterType": "String"
+          },
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "DeliveryStreamName",
+            "ParameterType": "String"
+          },
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "KinesisStreamName",
+            "ParameterType": "String"
+          }
+        ],
+        "ResourceIdentifierSummaries": [
+          {
+            "LogicalResourceIds": [
+              "MyBucket"
+            ],
+            "ResourceIdentifiers": [
+              "BucketName"
+            ],
+            "ResourceType": "AWS::S3::Bucket"
+          },
+          {
+            "LogicalResourceIds": [
+              "MyRole"
+            ],
+            "ResourceIdentifiers": [
+              "RoleName"
+            ],
+            "ResourceType": "AWS::IAM::Role"
+          },
+          {
+            "LogicalResourceIds": [
+              "KinesisStream"
+            ],
+            "ResourceIdentifiers": [
+              "Name"
+            ],
+            "ResourceType": "AWS::Kinesis::Stream"
+          },
+          {
+            "LogicalResourceIds": [
+              "DeliveryStream"
+            ],
+            "ResourceIdentifiers": [
+              "DeliveryStreamName"
+            ],
+            "ResourceType": "AWS::KinesisFirehose::DeliveryStream"
+          }
+        ],
+        "ResourceTypes": [
+          "AWS::Kinesis::Stream",
+          "AWS::IAM::Role",
+          "AWS::S3::Bucket",
+          "AWS::KinesisFirehose::DeliveryStream"
+        ],
+        "Version": "2010-09-09",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_template_summary_by_body": {
+        "Capabilities": [
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "CapabilitiesReason": "The following resource(s) require capabilities: [AWS::IAM::Role]",
+        "Parameters": [
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "KinesisRoleName",
+            "ParameterType": "String"
+          },
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "DeliveryStreamName",
+            "ParameterType": "String"
+          },
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "KinesisStreamName",
+            "ParameterType": "String"
+          }
+        ],
+        "ResourceIdentifierSummaries": [
+          {
+            "LogicalResourceIds": [
+              "MyBucket"
+            ],
+            "ResourceIdentifiers": [
+              "BucketName"
+            ],
+            "ResourceType": "AWS::S3::Bucket"
+          },
+          {
+            "LogicalResourceIds": [
+              "MyRole"
+            ],
+            "ResourceIdentifiers": [
+              "RoleName"
+            ],
+            "ResourceType": "AWS::IAM::Role"
+          },
+          {
+            "LogicalResourceIds": [
+              "KinesisStream"
+            ],
+            "ResourceIdentifiers": [
+              "Name"
+            ],
+            "ResourceType": "AWS::Kinesis::Stream"
+          },
+          {
+            "LogicalResourceIds": [
+              "DeliveryStream"
+            ],
+            "ResourceIdentifiers": [
+              "DeliveryStreamName"
+            ],
+            "ResourceType": "AWS::KinesisFirehose::DeliveryStream"
+          }
+        ],
+        "ResourceTypes": [
+          "AWS::Kinesis::Stream",
+          "AWS::IAM::Role",
+          "AWS::S3::Bucket",
+          "AWS::KinesisFirehose::DeliveryStream"
+        ],
+        "Version": "2010-09-09",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_default_parameters_kinesis": {
+    "recorded-date": "02-07-2024, 18:59:10",
+    "recorded-content": {
+      "describe_stream": {
+        "StreamDescription": {
+          "EncryptionType": "NONE",
+          "EnhancedMonitoring": [
+            {
+              "ShardLevelMetrics": []
+            }
+          ],
+          "HasMoreShards": false,
+          "RetentionPeriodHours": 24,
+          "Shards": [
+            {
+              "HashKeyRange": {
+                "EndingHashKey": "340282366920938463463374607431768211455",
+                "StartingHashKey": "0"
+              },
+              "SequenceNumberRange": {
+                "StartingSequenceNumber": "<starting-sequence-number:1>"
+              },
+              "ShardId": "<shard-id:1>"
+            }
+          ],
+          "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name:1>",
+          "StreamCreationTimestamp": "timestamp",
+          "StreamModeDetails": {
+            "StreamMode": "PROVISIONED"
+          },
+          "StreamName": "<stream-name:1>",
+          "StreamStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_dynamodb_stream_response_with_cf": {
+    "recorded-date": "02-07-2024, 19:48:27",
+    "recorded-content": {
+      "describe_kinesis_streaming_destination": {
+        "KinesisDataStreamDestinations": [
+          {
+            "DestinationStatus": "ACTIVE",
+            "StreamArn": "arn:<partition>:kinesis:<region>:111111111111:stream/EventStream"
+          }
+        ],
+        "TableName": "<table-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

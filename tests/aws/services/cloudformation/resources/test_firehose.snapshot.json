@@ -1,0 +1,99 @@
+{
+  "tests/aws/services/cloudformation/resources/test_firehose.py::test_firehose_stack_with_kinesis_as_source": {
+    "recorded-date": "14-09-2022, 11:19:29",
+    "recorded-content": {
+      "outputs": {
+        "deliveryStreamRef": "<resource:1>"
+      },
+      "delivery_stream": {
+        "DeliveryStreamDescription": {
+          "CreateTimestamp": "timestamp",
+          "DeliveryStreamARN": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<resource:1>",
+          "DeliveryStreamName": "<resource:1>",
+          "DeliveryStreamStatus": "ACTIVE",
+          "DeliveryStreamType": "KinesisStreamAsSource",
+          "Destinations": [
+            {
+              "DestinationId": "destinationId-000000000001",
+              "ExtendedS3DestinationDescription": {
+                "BucketARN": "arn:<partition>:s3:::<resource:2>",
+                "BufferingHints": {
+                  "IntervalInSeconds": 60,
+                  "SizeInMBs": 64
+                },
+                "CloudWatchLoggingOptions": {
+                  "Enabled": false
+                },
+                "CompressionFormat": "UNCOMPRESSED",
+                "DataFormatConversionConfiguration": {
+                  "Enabled": false
+                },
+                "DynamicPartitioningConfiguration": {
+                  "Enabled": true,
+                  "RetryOptions": {
+                    "DurationInSeconds": 300
+                  }
+                },
+                "EncryptionConfiguration": {
+                  "NoEncryptionConfig": "NoEncryption"
+                },
+                "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
+                "Prefix": "firehoseTest/!{partitionKeyFromQuery:s3Prefix}",
+                "ProcessingConfiguration": {
+                  "Enabled": true,
+                  "Processors": [
+                    {
+                      "Parameters": [
+                        {
+                          "ParameterName": "MetadataExtractionQuery",
+                          "ParameterValue": "{s3Prefix: .tableName}"
+                        },
+                        {
+                          "ParameterName": "JsonParsingEngine",
+                          "ParameterValue": "JQ-1.6"
+                        }
+                      ],
+                      "Type": "MetadataExtraction"
+                    }
+                  ]
+                },
+                "RoleARN": "arn:<partition>:iam::111111111111:role/<resource:3>",
+                "S3BackupMode": "Disabled"
+              },
+              "S3DestinationDescription": {
+                "BucketARN": "arn:<partition>:s3:::<resource:2>",
+                "BufferingHints": {
+                  "IntervalInSeconds": 60,
+                  "SizeInMBs": 64
+                },
+                "CloudWatchLoggingOptions": {
+                  "Enabled": false
+                },
+                "CompressionFormat": "UNCOMPRESSED",
+                "EncryptionConfiguration": {
+                  "NoEncryptionConfig": "NoEncryption"
+                },
+                "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
+                "Prefix": "firehoseTest/!{partitionKeyFromQuery:s3Prefix}",
+                "RoleARN": "arn:<partition>:iam::111111111111:role/<resource:3>"
+              }
+            }
+          ],
+          "HasMoreDestinations": false,
+          "Source": {
+            "KinesisStreamSourceDescription": {
+              "DeliveryStartTimestamp": "timestamp",
+              "KinesisStreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:4>",
+              "RoleARN": "arn:<partition>:iam::111111111111:role/<resource:3>"
+            }
+          },
+          "VersionId": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

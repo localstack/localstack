@@ -1,0 +1,14 @@
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Value: "not-important"
+      Type: String
+
+Outputs:
+  ParameterName:
+    Value:
+      Ref: Parameter
+
+Transform:
+  - AddRole

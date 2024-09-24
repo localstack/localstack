@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_kinesis_firehose_s3_as_destination_with_file_extension": {
+    "last_validated_date": "2024-05-22T18:18:59+00:00"
+  },
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_multiple_delivery_streams_with_kinesis_as_source": {
+    "last_validated_date": "2024-01-25T10:54:39+00:00"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestComments::test_comment_in_parameters": {
+    "last_validated_date": "2024-02-09T12:06:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestComments::test_comments_as_per_docs": {
+    "last_validated_date": "2024-02-09T11:23:55+00:00"
+  }
+}

@@ -1,0 +1,16 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  QueueName:
+    Type: String
+    Default: test-queue
+    Description: The name of the SQS queue
+Resources:
+  MyQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: !Ref QueueName
+Outputs:
+  TestOutput26:
+    Value: !GetAtt MyQueue.Arn
+    Export:
+      Name: TestQueueArn26

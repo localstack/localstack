@@ -1,0 +1,146 @@
+{
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_hosted_zone": {
+    "recorded-date": "02-11-2023, 12:59:59",
+    "recorded-content": {
+      "create_hosted_zone_response": {
+        "ChangeInfo": {
+          "Id": "/change/<change-id>",
+          "Status": "<status:1>",
+          "SubmittedAt": "datetime"
+        },
+        "DelegationSet": {
+          "NameServers": "<name-server>"
+        },
+        "HostedZone": {
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "PrivateZone": false
+          },
+          "Id": "/hostedzone/<zone-id:1>",
+          "Name": "<zone_name:1>",
+          "ResourceRecordSetCount": 2
+        },
+        "Location": "https://route53.amazonaws.com/2013-04-01/hostedzone/<zone-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_hosted_zone": {
+        "DelegationSet": {
+          "NameServers": "<name-server>"
+        },
+        "HostedZone": {
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "PrivateZone": false
+          },
+          "Id": "/hostedzone/<zone-id:1>",
+          "Name": "<zone_name:1>",
+          "ResourceRecordSetCount": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_private_hosted_zone": {
+    "recorded-date": "11-04-2024, 14:03:14",
+    "recorded-content": {
+      "create-hosted-zone-response": {
+        "ChangeInfo": {
+          "Id": "/change/<change-id>",
+          "Status": "<status:1>",
+          "SubmittedAt": "datetime"
+        },
+        "HostedZone": {
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "Comment": "test",
+            "PrivateZone": true
+          },
+          "Id": "/hostedzone/<zone-id:1>",
+          "Name": "<zone_name:1>",
+          "ResourceRecordSetCount": 2
+        },
+        "Location": "https://route53.amazonaws.com/2013-04-01/hostedzone/<zone-id:1>",
+        "VPC": {
+          "VPCId": "<v-p-c-id:1>",
+          "VPCRegion": "<region>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_hosted_zone": {
+        "HostedZone": {
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "Comment": "test",
+            "PrivateZone": true
+          },
+          "Id": "/hostedzone/<zone-id:1>",
+          "Name": "<zone_name:1>",
+          "ResourceRecordSetCount": 2
+        },
+        "VPCs": [
+          {
+            "VPCId": "<v-p-c-id:1>",
+            "VPCRegion": "<region>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_hosted_zones_by_vpc": {
+        "HostedZoneSummaries": [
+          {
+            "HostedZoneId": "<zone-id:1>",
+            "Name": "<zone_name:1>",
+            "Owner": {
+              "OwningAccount": "111111111111"
+            }
+          }
+        ],
+        "MaxItems": "100",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_hosted_zones": [
+        {
+          "Id": "/hostedzone/<zone-id:1>",
+          "Name": "<zone_name:1>",
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "Comment": "test",
+            "PrivateZone": true
+          },
+          "ResourceRecordSetCount": 2
+        }
+      ]
+    }
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_hosted_zone_in_non_existent_vpc": {
+    "recorded-date": "10-04-2024, 15:47:22",
+    "recorded-content": {
+      "failure-response": {
+        "Error": {
+          "Code": "InvalidVPCId",
+          "Message": "The VPC ID is invalid.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

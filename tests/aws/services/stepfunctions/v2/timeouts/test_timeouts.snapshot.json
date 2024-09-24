@@ -1,0 +1,711 @@
+{
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_lambda": {
+    "recorded-date": "10-03-2024, 16:23:26",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_1_name>",
+              "timeoutInSeconds": 5
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionTimedOutEventDetails": {
+              "error": "States.Timeout"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionTimedOut"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda": {
+    "recorded-date": "10-03-2024, 16:47:40",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null,
+                "TimeoutSecondsValue": 5
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null,
+                "TimeoutSecondsValue": 5
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "timeoutInSeconds": 5
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_service_lambda_map_timeout": {
+    "recorded-date": "10-03-2024, 16:23:46",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Inputs": [
+                  {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Payload": null
+                  },
+                  {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Payload": null
+                  },
+                  {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Payload": null
+                  },
+                  {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Payload": null
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Inputs": [
+                  {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Payload": null
+                  },
+                  {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Payload": null
+                  },
+                  {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Payload": null
+                  },
+                  {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Payload": null
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapWait"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 4
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapWait"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapWait"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 6,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "MapWait"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 7,
+            "mapIterationStartedEventDetails": {
+              "index": 3,
+              "name": "MapWait"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "LambdaInvoke"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "timeoutInSeconds": 5
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 5,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "LambdaInvoke"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "timeoutInSeconds": 5
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 12,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "LambdaInvoke"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "timeoutInSeconds": 5
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 14,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "LambdaInvoke"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "timeoutInSeconds": 5
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 16,
+            "previousEventId": 9,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 17,
+            "previousEventId": 11,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 18,
+            "previousEventId": 13,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 19,
+            "previousEventId": 15,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 20,
+            "previousEventId": 16,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "id": 21,
+            "previousEventId": 18,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "id": 22,
+            "previousEventId": 17,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "id": 23,
+            "previousEventId": 19,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "id": 24,
+            "mapIterationFailedEventDetails": {
+              "index": 0,
+              "name": "MapWait"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationFailed"
+          },
+          {
+            "id": 25,
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 26,
+            "mapIterationAbortedEventDetails": {
+              "index": 1,
+              "name": "MapWait"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationAborted"
+          },
+          {
+            "id": 27,
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 28,
+            "mapIterationAbortedEventDetails": {
+              "index": 2,
+              "name": "MapWait"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationAborted"
+          },
+          {
+            "id": 29,
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 30,
+            "mapIterationAbortedEventDetails": {
+              "index": 3,
+              "name": "MapWait"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationAborted"
+          },
+          {
+            "id": 31,
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 32,
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapStateFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 33,
+            "previousEventId": 32,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda_with_path": {
+    "recorded-date": "10-03-2024, 16:23:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TimeoutSecondsValue": 5,
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TimeoutSecondsValue": 5,
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "timeoutInSeconds": 5
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_global_timeout": {
+    "recorded-date": "10-03-2024, 16:22:15",
+    "recorded-content": {
+      "describe_execution": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<execution-name>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-name>",
+        "redriveCount": 0,
+        "redriveStatus": "REDRIVABLE",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "TIMED_OUT",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

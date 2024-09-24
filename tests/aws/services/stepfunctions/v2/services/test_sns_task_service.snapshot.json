@@ -1,0 +1,2715 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[HelloWorld]": {
+    "recorded-date": "03-09-2023, 13:33:23",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[message1]": {
+    "recorded-date": "03-09-2023, 13:33:39",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[1]": {
+    "recorded-date": "03-09-2023, 13:33:55",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[True]": {
+    "recorded-date": "03-09-2023, 13:34:10",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[None]": {
+    "recorded-date": "03-09-2023, 13:34:25",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[]": {
+    "recorded-date": "03-09-2023, 13:34:40",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes": {
+    "recorded-date": "03-09-2023, 13:34:55",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "HelloWorld!",
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "HelloWorld!",
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageAttributes": {
+                  "my_attribute_no_1": {
+                    "DataType": "String",
+                    "StringValue": "Hello"
+                  },
+                  "my_attribute_no_2": {
+                    "DataType": "String",
+                    "StringValue": "World!"
+                  }
+                },
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "HelloWorld!"
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base_error_topic_arn": {
+    "recorded-date": "03-09-2023, 13:35:10",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Topic does not exist (Service: AmazonSNS; Status Code: 404; Error Code: NotFound; Request ID: <request_id>; Proxy: null)",
+              "error": "SNS.NotFoundException",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Topic does not exist (Service: AmazonSNS; Status Code: 404; Error Code: NotFound; Request ID: <request_id>; Proxy: null)",
+              "error": "SNS.NotFoundException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[HelloWorld]": {
+    "recorded-date": "01-02-2024, 20:47:52",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "HelloWorld",
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "HelloWorld",
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageAttributes": {
+                  "my_attribute_no_1": {
+                    "DataType": "String",
+                    "StringValue": "Hello"
+                  },
+                  "my_attribute_no_2": {
+                    "DataType": "String",
+                    "StringValue": "World!"
+                  }
+                },
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "HelloWorld"
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Message": "HelloWorld",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "MessageAttributes": {
+            "my_attribute_no_2": {
+              "Type": "String",
+              "Value": "World!"
+            },
+            "my_attribute_no_1": {
+              "Type": "String",
+              "Value": "Hello"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[\"HelloWorld\"]": {
+    "recorded-date": "01-02-2024, 20:48:07",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "\"HelloWorld\"",
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "\"HelloWorld\"",
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageAttributes": {
+                  "my_attribute_no_1": {
+                    "DataType": "String",
+                    "StringValue": "Hello"
+                  },
+                  "my_attribute_no_2": {
+                    "DataType": "String",
+                    "StringValue": "World!"
+                  }
+                },
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "\"HelloWorld\""
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Message": "\"HelloWorld\"",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "MessageAttributes": {
+            "my_attribute_no_2": {
+              "Type": "String",
+              "Value": "World!"
+            },
+            "my_attribute_no_1": {
+              "Type": "String",
+              "Value": "Hello"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[{}]": {
+    "recorded-date": "01-02-2024, 20:48:22",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "{}",
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "{}",
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageAttributes": {
+                  "my_attribute_no_1": {
+                    "DataType": "String",
+                    "StringValue": "Hello"
+                  },
+                  "my_attribute_no_2": {
+                    "DataType": "String",
+                    "StringValue": "World!"
+                  }
+                },
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": "{}"
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Message": {},
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "MessageAttributes": {
+            "my_attribute_no_2": {
+              "Type": "String",
+              "Value": "World!"
+            },
+            "my_attribute_no_1": {
+              "Type": "String",
+              "Value": "Hello"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[message_value3]": {
+    "recorded-date": "01-02-2024, 20:48:37",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {},
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {},
+                "MessageAttributeValue1": "Hello",
+                "MessageAttributeValue2": "World!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageAttributes": {
+                  "my_attribute_no_1": {
+                    "DataType": "String",
+                    "StringValue": "Hello"
+                  },
+                  "my_attribute_no_2": {
+                    "DataType": "String",
+                    "StringValue": "World!"
+                  }
+                },
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {}
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Message": {},
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "MessageAttributes": {
+            "my_attribute_no_2": {
+              "Type": "String",
+              "Value": "World!"
+            },
+            "my_attribute_no_1": {
+              "Type": "String",
+              "Value": "Hello"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_fifo_message_attribute[input_params0-True]": {
+    "recorded-date": "08-02-2024, 10:06:30",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Message": {
+                  "Message": "HelloWorld!"
+                },
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Message": {
+                  "Message": "HelloWorld!"
+                },
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Invalid parameter: The MessageGroupId parameter is required for FIFO topics (Service: AmazonSNS; Status Code: 400; Error Code: InvalidParameter; Request ID: <request_id>; Proxy: null)",
+              "error": "SNS.InvalidParameterException",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Invalid parameter: The MessageGroupId parameter is required for FIFO topics (Service: AmazonSNS; Status Code: 400; Error Code: InvalidParameter; Request ID: <request_id>; Proxy: null)",
+              "error": "SNS.InvalidParameterException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_fifo_message_attribute[input_params1-False]": {
+    "recorded-date": "08-02-2024, 10:06:49",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Message": {
+                  "Message": "HelloWorld!"
+                },
+                "MessageGroupId": "a-group",
+                "MessageDeduplicationId": "dedup-1",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Message": {
+                  "Message": "HelloWorld!"
+                },
+                "MessageGroupId": "a-group",
+                "MessageDeduplicationId": "dedup-1",
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Message": {
+                  "Message": "HelloWorld!"
+                },
+                "MessageGroupId": "a-group",
+                "MessageDeduplicationId": "dedup-1"
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "352"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "352",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                },
+                "SequenceNumber": "<sequence-number:1>"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "352"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "352",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                },
+                "SequenceNumber": "<sequence-number:1>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "352"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "352",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                },
+                "SequenceNumber": "<sequence-number:1>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

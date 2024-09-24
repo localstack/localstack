@@ -1,0 +1,20 @@
+{
+  "Comment": "SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT",
+  "StartAt": "SendMessageWithWait",
+  "States": {
+    "SendMessageWithWait": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "TimeoutSeconds": 600,
+      "HeartbeatSeconds": 5,
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody": {
+          "Message.$": "$.Message",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_basic_move_task_workflow": {
+    "recorded-date": "30-04-2024, 10:22:14",
+    "recorded-content": {
+      "start-message-move-task-response": {
+        "TaskHandle": "<task-handle:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-message-move-task-response": {
+        "Results": [
+          {
+            "ApproximateNumberOfMessagesMoved": 2,
+            "ApproximateNumberOfMessagesToMove": 2,
+            "DestinationArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+            "StartedTimestamp": "timestamp",
+            "Status": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_source_needs_redrive_policy": {
+    "recorded-date": "30-04-2024, 10:22:04",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Source queue must be configured as a Dead Letter Queue.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_task_handle": {
+    "recorded-date": "30-04-2024, 10:22:02",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value for parameter TaskHandle is invalid.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_source_arn_in_task_handle": {
+    "recorded-date": "30-04-2024, 10:22:02",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource that you specified for the SourceArn parameter doesn't exist.",
+          "QueryErrorCode": "ResourceNotFoundException",
+          "Type": "Sender"
+        },
+        "message": "The resource that you specified for the SourceArn parameter doesn't exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_task_id_in_task_handle": {
+    "recorded-date": "30-04-2024, 10:22:03",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Task does not exist.",
+          "QueryErrorCode": "ResourceNotFoundException",
+          "Type": "Sender"
+        },
+        "message": "Task does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_with_throughput_limit": {
+    "recorded-date": "30-04-2024, 10:22:54",
+    "recorded-content": {
+      "start-message-move-task-response": {
+        "TaskHandle": "<task-handle:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_destination_needs_to_exist": {
+    "recorded-date": "30-04-2024, 10:22:06",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource that you specified for the DestinationArn parameter doesn't exist.",
+          "QueryErrorCode": "ResourceNotFoundException",
+          "Type": "Sender"
+        },
+        "message": "The resource that you specified for the DestinationArn parameter doesn't exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_cancel": {
+    "recorded-date": "30-04-2024, 10:23:25",
+    "recorded-content": {
+      "list-while": {
+        "Results": [
+          {
+            "ApproximateNumberOfMessagesMoved": 2,
+            "ApproximateNumberOfMessagesToMove": 10,
+            "DestinationArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "MaxNumberOfMessagesPerSecond": 1,
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+            "StartedTimestamp": "timestamp",
+            "Status": "RUNNING",
+            "TaskHandle": "<task-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel": {
+        "ApproximateNumberOfMessagesMoved": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after": {
+        "Results": [
+          {
+            "ApproximateNumberOfMessagesMoved": 8,
+            "ApproximateNumberOfMessagesToMove": 10,
+            "DestinationArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "MaxNumberOfMessagesPerSecond": 1,
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+            "StartedTimestamp": "timestamp",
+            "Status": "CANCELLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_delete_destination_queue_while_running": {
+    "recorded-date": "30-04-2024, 10:24:05",
+    "recorded-content": {
+      "list": {
+        "Results": [
+          {
+            "ApproximateNumberOfMessagesMoved": 3,
+            "ApproximateNumberOfMessagesToMove": 10,
+            "DestinationArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "FailureReason": "AWS.SimpleQueueService.NonExistentQueue",
+            "MaxNumberOfMessagesPerSecond": 1,
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+            "StartedTimestamp": "timestamp",
+            "Status": "FAILED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_start_multiple_move_tasks": {
+    "recorded-date": "30-04-2024, 10:24:13",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "There is already a task running. Only one active task is allowed for a source queue arn at a given time.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_default_destination": {
+    "recorded-date": "30-04-2024, 10:22:20",
+    "recorded-content": {
+      "source-arn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+      "original-source": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+      "start-message-move-task-response": {
+        "TaskHandle": "<task-handle:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-message-move-task-response": {
+        "Results": [
+          {
+            "ApproximateNumberOfMessagesMoved": 2,
+            "ApproximateNumberOfMessagesToMove": 2,
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "StartedTimestamp": "timestamp",
+            "Status": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_multiple_sources_as_default_destination": {
+    "recorded-date": "30-04-2024, 10:22:29",
+    "recorded-content": {
+      "source-arn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+      "original-source-1": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+      "original-source-2": "arn:<partition>:sqs:<region>:111111111111:<resource:3>",
+      "start-message-move-task-response": {
+        "TaskHandle": "<task-handle:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-message-move-task-response": {
+        "Results": [
+          {
+            "ApproximateNumberOfMessagesMoved": 4,
+            "ApproximateNumberOfMessagesToMove": 4,
+            "SourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "StartedTimestamp": "timestamp",
+            "Status": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

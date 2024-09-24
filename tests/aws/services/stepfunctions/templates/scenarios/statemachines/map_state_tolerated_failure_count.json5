@@ -1,0 +1,26 @@
+{
+  "Comment": "MAP_STATE_TOLERATED_FAILURE_COUNT",
+  "StartAt": "MapState",
+  "States": {
+    "MapState": {
+      "Type": "Map",
+      "InputPath": "$",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "ToleratedFailureCount": 10,
+      "End": true,
+    }
+  }
+}

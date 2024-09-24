@@ -1,0 +1,15 @@
+name: Sync Labels
+
+on:
+  schedule:
+  # once a day at midnight
+  - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync-labels:
+    uses: localstack/meta/.github/workflows/sync-labels.yml@main
+    with:
+        categories: status,aws,semver
+    secrets:
+      github-token: ${{ secrets.PRO_ACCESS_TOKEN }}

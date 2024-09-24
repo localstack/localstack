@@ -1,0 +1,116 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_fifo_with_deduplication": {
+    "recorded-date": "27-11-2023, 21:27:29",
+    "recorded-content": {
+      "get-topic-attrs": {
+        "Attributes": {
+          "ContentBasedDeduplication": "true",
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "<topic-arn:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "<topic-arn:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_update_subscription": {
+    "recorded-date": "29-03-2024, 21:16:26",
+    "recorded-content": {
+      "subscription-1": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-2": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_with_attributes": {
+    "recorded-date": "16-08-2024, 15:44:50",
+    "recorded-content": {
+      "topic-archive-policy": {
+        "MessageRetentionPeriod": "30"
+      }
+    }
+  }
+}

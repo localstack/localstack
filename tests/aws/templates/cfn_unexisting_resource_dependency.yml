@@ -1,0 +1,7 @@
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter::Value<String>
+    Properties:
+      Value: test
+      Type: String
+    DependsOn: UnexistingResource

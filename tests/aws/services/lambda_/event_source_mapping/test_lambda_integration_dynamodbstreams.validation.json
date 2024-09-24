@@ -1,0 +1,50 @@
+{
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_deletion_event_source_mapping_with_dynamodb": {
+    "last_validated_date": "2024-09-03T14:54:58+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_disabled_dynamodb_event_source_mapping": {
+    "last_validated_date": "2024-09-03T15:51:30+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_duplicate_event_source_mappings": {
+    "last_validated_date": "2024-09-03T14:53:04+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_filter_type]": {
+    "last_validated_date": "2024-09-03T15:05:30+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_multiple_filters]": {
+    "last_validated_date": "2024-09-03T15:03:28+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_or_filter]": {
+    "last_validated_date": "2024-09-03T15:01:38+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[date_time_conversion]": {
+    "last_validated_date": "2024-09-03T15:10:01+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_false_filter]": {
+    "last_validated_date": "2024-04-11T20:56:30+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter_type]": {
+    "last_validated_date": "2024-09-03T15:06:44+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[insert_same_entry_twice]": {
+    "last_validated_date": "2024-09-03T14:59:49+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[numeric_filter]": {
+    "last_validated_date": "2024-04-11T20:57:38+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[prefix_filter]": {
+    "last_validated_date": "2024-09-03T15:08:34+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
+    "last_validated_date": "2024-09-03T14:52:46+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
+    "last_validated_date": "2024-09-03T14:58:05+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
+    "last_validated_date": "2024-09-03T15:10:35+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
+    "last_validated_date": "2024-09-03T15:10:17+00:00"
+  }
+}

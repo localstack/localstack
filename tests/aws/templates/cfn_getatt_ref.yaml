@@ -1,0 +1,25 @@
+Parameters:
+  MyParam:
+    Type: String
+
+  CustomOutputName:
+    Type: String
+
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref MyParam
+
+Outputs:
+  MyTopicRef:
+    Value: !Ref MyTopic
+  MyTopicName:
+    Value: !GetAtt MyTopic.TopicName
+  MyTopicArn:
+    Value: !GetAtt MyTopic.TopicArn
+  MyTopicCustom:
+    Value:
+      Fn::GetAtt:
+        - MyTopic
+        - !Ref CustomOutputName

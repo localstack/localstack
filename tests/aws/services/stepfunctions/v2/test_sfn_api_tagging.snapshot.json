@@ -1,0 +1,543 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_keys0]": {
+    "recorded-date": "25-08-2023, 19:28:20",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [
+          {
+            "key": "key1",
+            "value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_keys1]": {
+    "recorded-date": "25-08-2023, 19:28:35",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_keys2]": {
+    "recorded-date": "25-08-2023, 19:28:50",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_keys3]": {
+    "recorded-date": "25-08-2023, 19:29:05",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list0]": {
+    "recorded-date": "25-08-2023, 20:18:59",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list2]": {
+    "recorded-date": "25-08-2023, 20:19:28",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [
+          {
+            "key": "key1",
+            "value": ""
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list3]": {
+    "recorded-date": "25-08-2023, 20:19:41",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [
+          {
+            "key": "key1",
+            "value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[tag_list0]": {
+    "recorded-date": "25-08-2023, 19:37:31",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resource_not_found": "Parameter validation failed:\nInvalid length for parameter tags[0].key, value: 0, valid min length: 1"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[tag_list1]": {
+    "recorded-date": "25-08-2023, 20:20:27",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": "Parameter validation failed:\nInvalid length for parameter tags[0].key, value: 0, valid min length: 1"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[tag_list3]": {
+    "recorded-date": "25-08-2023, 20:20:55",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": "Parameter validation failed:\nInvalid type for parameter tags[0].value, value: None, type: <class 'NoneType'>, valid types: <class 'str'>"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list1]": {
+    "recorded-date": "25-08-2023, 20:19:13",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [
+          {
+            "key": "key1",
+            "value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list4]": {
+    "recorded-date": "25-08-2023, 20:19:55",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [
+          {
+            "key": "key1",
+            "value": "value1"
+          },
+          {
+            "key": "key2",
+            "value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[tag_list2]": {
+    "recorded-date": "25-08-2023, 20:20:41",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": "Parameter validation failed:\nInvalid type for parameter tags[0].key, value: None, type: <class 'NoneType'>, valid types: <class 'str'>"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine_version": {
+    "recorded-date": "25-08-2023, 20:21:09",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish_resp": {
+        "creationDate": "datetime",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": "An error occurred (ResourceNotFound) when calling the TagResource operation: Resource not found: 'arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1'"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_untag_state_machine[tag_keys0]": {
+    "recorded-date": "25-08-2023, 20:21:22",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [
+          {
+            "key": "key1",
+            "value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_untag_state_machine[tag_keys1]": {
+    "recorded-date": "25-08-2023, 20:21:37",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_untag_state_machine[tag_keys2]": {
+    "recorded-date": "25-08-2023, 20:21:51",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_untag_state_machine[tag_keys3]": {
+    "recorded-date": "25-08-2023, 20:22:05",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[None]": {
+    "recorded-date": "25-08-2023, 20:20:14",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": "Parameter validation failed:\nInvalid type for parameter tags, value: None, type: <class 'NoneType'>, valid types: <class 'list'>, <class 'tuple'>"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_create_state_machine": {
+    "recorded-date": "25-08-2023, 20:35:47",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_resources_res": {
+        "tags": [
+          {
+            "key": "key1",
+            "value": "value1"
+          },
+          {
+            "key": "key2",
+            "value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_basic_move_task_workflow": {
+    "last_validated_date": "2024-04-30T10:22:14+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_source_arn_in_task_handle": {
+    "last_validated_date": "2024-04-30T10:22:02+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_task_handle": {
+    "last_validated_date": "2024-04-30T10:22:02+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_task_id_in_task_handle": {
+    "last_validated_date": "2024-04-30T10:22:03+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_destination_needs_to_exist": {
+    "last_validated_date": "2024-04-30T10:22:06+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_cancel": {
+    "last_validated_date": "2024-04-30T10:23:24+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_delete_destination_queue_while_running": {
+    "last_validated_date": "2024-04-30T10:24:04+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_with_throughput_limit": {
+    "last_validated_date": "2024-04-30T10:22:53+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_default_destination": {
+    "last_validated_date": "2024-04-30T10:22:19+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_multiple_sources_as_default_destination": {
+    "last_validated_date": "2024-04-30T10:22:28+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_source_needs_redrive_policy": {
+    "last_validated_date": "2024-04-30T10:22:04+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_start_multiple_move_tasks": {
+    "last_validated_date": "2024-04-30T10:24:12+00:00"
+  }
+}

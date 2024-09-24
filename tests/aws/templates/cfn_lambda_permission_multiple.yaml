@@ -1,0 +1,65 @@
+Resources:
+  FunctionServiceRole675BB04A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  Function76856677:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {"hello": "world"}
+      Role:
+        Fn::GetAtt:
+          - FunctionServiceRole675BB04A
+          - Arn
+      Handler: index.handler
+      Runtime: python3.9
+    DependsOn:
+      - FunctionServiceRole675BB04A
+  FunctionInvoketnlpEgfIKpZyEIAINyVhXFSIfV5EJ7IaMp0cNGOcC4227DF5:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - Function76856677
+          - Arn
+      Principal: states.amazonaws.com
+  FunctionInvokearOgSVH4Ts0qbAOHNp0VMi6g5gzMbVQFH2pumFohAQA578E6CA:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - Function76856677
+          - Arn
+      Principal: lambda.amazonaws.com
+Outputs:
+  LambdaName:
+    Value:
+      Ref: Function76856677
+  LambdaArn:
+    Value:
+      Fn::GetAtt:
+        - Function76856677
+        - Arn
+  PermissionLambda:
+    Value:
+      Ref: FunctionInvokearOgSVH4Ts0qbAOHNp0VMi6g5gzMbVQFH2pumFohAQA578E6CA
+  PermissionStates:
+    Value:
+      Ref: FunctionInvoketnlpEgfIKpZyEIAINyVhXFSIfV5EJ7IaMp0cNGOcC4227DF5

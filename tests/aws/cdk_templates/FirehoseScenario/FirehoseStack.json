@@ -1,0 +1,271 @@
+{
+  "Resources": {
+    "KinesisStream46752A3E": {
+      "Type": "AWS::Kinesis::Stream",
+      "Properties": {
+        "Name": "kinesis-stream",
+        "RetentionPeriodHours": 24,
+        "ShardCount": 1,
+        "StreamEncryption": {
+          "Fn::If": [
+            "AwsCdkKinesisEncryptedStreamsUnsupportedRegions",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            {
+              "EncryptionType": "KMS",
+              "KeyId": "alias/aws/kinesis"
+            }
+          ]
+        },
+        "StreamModeDetails": {
+          "StreamMode": "PROVISIONED"
+        }
+      }
+    },
+    "S3Bucket07682993": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "firehose-raw-data"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "FirehoseKinesisRole0AD86762": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "firehose.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "RoleName": "firehose-kinesis-role"
+      }
+    },
+    "FirehoseKinesisPolicy67670C20": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "kinesis:DescribeStream",
+                "kinesis:GetShardIterator",
+                "kinesis:GetRecords",
+                "kinesis:ListShards"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "KinesisStream46752A3E",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "firehose-kinesis-policy",
+        "Roles": [
+          {
+            "Ref": "FirehoseKinesisRole0AD86762"
+          }
+        ]
+      }
+    },
+    "FirehoseLogGroup1B45149B": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "firehose-s3-log-group",
+        "RetentionInDays": 731
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "FirehoseLogGroupfirehoses3logstream5C74CF37": {
+      "Type": "AWS::Logs::LogStream",
+      "Properties": {
+        "LogGroupName": {
+          "Ref": "FirehoseLogGroup1B45149B"
+        }
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "FirehoseS3Role226C92CC": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "firehose.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "RoleName": "firehose-s3-role"
+      }
+    },
+    "FirehoseS3Policy3A414B80": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:AbortMultipartUpload",
+                "s3:GetBucketLocation",
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+                "s3:PutObject"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "S3Bucket07682993",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "S3Bucket07682993",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": [
+                "logs:PutLogEvents",
+                "logs:CreateLogStream"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "FirehoseLogGroup1B45149B",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "firehose-s3-policy",
+        "Roles": [
+          {
+            "Ref": "FirehoseS3Role226C92CC"
+          }
+        ]
+      }
+    },
+    "FirehoseDeliveryStream": {
+      "Type": "AWS::KinesisFirehose::DeliveryStream",
+      "Properties": {
+        "DeliveryStreamName": "firehose-deliverystream",
+        "DeliveryStreamType": "KinesisStreamAsSource",
+        "ExtendedS3DestinationConfiguration": {
+          "BucketARN": {
+            "Fn::GetAtt": [
+              "S3Bucket07682993",
+              "Arn"
+            ]
+          },
+          "BufferingHints": {
+            "IntervalInSeconds": 1,
+            "SizeInMBs": 1
+          },
+          "CloudWatchLoggingOptions": {
+            "Enabled": true,
+            "LogGroupName": "firehose-s3-log-group",
+            "LogStreamName": "firehose-s3-log-stream"
+          },
+          "CompressionFormat": "UNCOMPRESSED",
+          "EncryptionConfiguration": {
+            "NoEncryptionConfig": "NoEncryption"
+          },
+          "ErrorOutputPrefix": "firehose-raw-data/errors/",
+          "Prefix": "firehose-raw-data/",
+          "RoleARN": {
+            "Fn::GetAtt": [
+              "FirehoseS3Role226C92CC",
+              "Arn"
+            ]
+          },
+          "S3BackupMode": "Disabled"
+        },
+        "KinesisStreamSourceConfiguration": {
+          "KinesisStreamARN": {
+            "Fn::GetAtt": [
+              "KinesisStream46752A3E",
+              "Arn"
+            ]
+          },
+          "RoleARN": {
+            "Fn::GetAtt": [
+              "FirehoseKinesisRole0AD86762",
+              "Arn"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "Conditions": {
+    "AwsCdkKinesisEncryptedStreamsUnsupportedRegions": {
+      "Fn::Or": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "AWS::Region"
+            },
+            "cn-north-1"
+          ]
+        },
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "AWS::Region"
+            },
+            "cn-northwest-1"
+          ]
+        }
+      ]
+    }
+  },
+  "Outputs": {
+    "KinesisStreamName": {
+      "Value": {
+        "Ref": "KinesisStream46752A3E"
+      }
+    },
+    "FirehoseDeliveryStreamName": {
+      "Value": "firehose-deliverystream"
+    },
+    "BucketName": {
+      "Value": {
+        "Ref": "S3Bucket07682993"
+      }
+    }
+  }
+}

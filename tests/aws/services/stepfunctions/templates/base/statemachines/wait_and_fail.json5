@@ -1,0 +1,16 @@
+{
+  "Comment": "WAIT_AND_FAIL",
+  "StartAt": "State_1",
+  "States": {
+    "State_1": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "Next": "State_2"
+    },
+    "State_2": {
+      "Type": "Fail",
+      "Error": "SomeFailure",
+      "Cause": "This state machines raises a 'SomeFailure' failure."
+    }
+  },
+}

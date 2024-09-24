@@ -1,0 +1,1757 @@
+{
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_without_source": {
+    "recorded-date": "19-06-2024, 10:40:50",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "InvalidArgument",
+            "ErrorMessage": "Parameter Source is not valid. Reason: Source is a required argument."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail": {
+    "recorded-date": "19-06-2024, 10:40:51",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "InvalidArgument",
+            "ErrorMessage": "Parameter Detail is not valid. Reason: Detail is a required argument."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
+    "recorded-date": "27-08-2024, 10:02:33",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "short time"
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "new time"
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "<receipt-handle:3>",
+          "MD5OfBody": "<m-d5-of-body:3>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "long time"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_exceed_limit_ten_entries[custom]": {
+    "recorded-date": "19-06-2024, 10:40:54",
+    "recorded-content": {
+      "put-events-exceed-limit-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null)]' at 'entries' failed to satisfy constraint: Member must have length less than or equal to 10"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_exceed_limit_ten_entries[default]": {
+    "recorded-date": "19-06-2024, 10:40:55",
+    "recorded-content": {
+      "put-events-exceed-limit-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null), PutEventsRequestEntry(time=null, source=core.update-account-command, resources=null, detailType=core.update-account-command, detail={\"command\": \"update-account\", \"payload\": {\"acc_id\": \"0a787ecb-4015\", \"sf_id\": \"baz\"}}, eventBusName=<bus-name>, traceHeader=null, kmsKeyIdentifier=null, internalMetadata=null)]' at 'entries' failed to satisfy constraint: Member must have length less than or equal to 10"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
+    "recorded-date": "19-06-2024, 10:54:07",
+    "recorded-content": {
+      "create-custom-event-bus-us-east-1": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
+    "recorded-date": "19-06-2024, 10:54:09",
+    "recorded-content": {
+      "create-custom-event-bus-us-east-1": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-us-west-1": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-west-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-west-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-eu-central-1": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-eu-central-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-eu-central-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-west-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-west-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-eu-central-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-eu-central-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
+    "recorded-date": "19-06-2024, 10:41:05",
+    "recorded-content": {
+      "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus <bus-name> already exists.') tblen=4>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_describe_delete_not_existing_event_bus": {
+    "recorded-date": "19-06-2024, 10:41:07",
+    "recorded-content": {
+      "describe-not-existing-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>",
+      "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_delete_default_event_bus": {
+    "recorded-date": "19-06-2024, 10:41:07",
+    "recorded-content": {
+      "delete-default-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the DeleteEventBus operation: Cannot delete event bus default.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_prefix": {
+    "recorded-date": "19-06-2024, 10:49:27",
+    "recorded-content": {
+      "list-event-buses-prefix-complete-name": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-prefix": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_limit": {
+    "recorded-date": "19-06-2024, 10:50:45",
+    "recorded-content": {
+      "list-event-buses-limit": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name-prefix>-0",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name-prefix>-0"
+          },
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name-prefix>-1",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name-prefix>-1"
+          },
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name-prefix>-2",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name-prefix>-2"
+          }
+        ],
+        "NextToken": "<next_token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-limit-next-token": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name-prefix>-3",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name-prefix>-3"
+          },
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name-prefix>-4",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name-prefix>-4"
+          },
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name-prefix>-5",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name-prefix>-5"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
+    "recorded-date": "19-06-2024, 10:41:14",
+    "recorded-content": {
+      "put-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission-multiple-principals": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "<sid:1>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:2>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:3>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "<sid:1>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:2>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:3>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:4>",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-permission-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission-policy": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "<sid:5>",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              },
+              "Action": "events:ListRules",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
+    "recorded-date": "19-06-2024, 10:41:15",
+    "recorded-content": {
+      "put-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission-multiple-principals": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "<sid:1>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:2>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:3>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "<sid:1>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:2>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:3>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:4>",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-permission-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission-policy": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "<sid:5>",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              },
+              "Action": "events:ListRules",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission_non_existing_event_bus": {
+    "recorded-date": "19-06-2024, 10:41:15",
+    "recorded-content": {
+      "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the PutPermission operation: Event bus <bus-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
+    "recorded-date": "19-06-2024, 10:41:17",
+    "recorded-content": {
+      "remove-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-remove-permission": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "<sid:1>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-permission-all": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-remove-permission-all": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
+    "recorded-date": "19-06-2024, 10:41:18",
+    "recorded-content": {
+      "remove-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-remove-permission": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "<sid:1>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-permission-all": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-remove-permission-all": {
+        "Arn": "arn:<partition>:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-custom]": {
+    "recorded-date": "19-06-2024, 10:41:18",
+    "recorded-content": {
+      "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-default]": {
+    "recorded-date": "19-06-2024, 10:41:19",
+    "recorded-content": {
+      "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-custom]": {
+    "recorded-date": "19-06-2024, 10:41:20",
+    "recorded-content": {
+      "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-default]": {
+    "recorded-date": "19-06-2024, 10:41:21",
+    "recorded-content": {
+      "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
+    "recorded-date": "19-06-2024, 10:41:47",
+    "recorded-content": {
+      "create-custom-event-bus": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-rule-1": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-rule-2": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<resource:1>/<resource:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-target-1": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-target-2": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": {
+        "Messages": [
+          {
+            "Body": {
+              "version": "0",
+              "id": "<uuid:1>",
+              "detail-type": "Object Created",
+              "source": "aws.s3",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [
+                "arn:<partition>:s3:::<bucket-name:1>"
+              ],
+              "detail": {
+                "version": "0",
+                "bucket": {
+                  "name": "<bucket-name:1>"
+                },
+                "object": {
+                  "key": "<key-name:1>",
+                  "size": 4,
+                  "etag": "8d777f385d3dfec8815d20f7496026dc",
+                  "sequencer": "object-sequencer"
+                },
+                "request-id": "request-id",
+                "requester": "<requester>",
+                "source-ip-address": "<ip-address:1>",
+                "reason": "PutObject"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
+    "recorded-date": "19-06-2024, 10:45:41",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          },
+          {
+            "EventId": "<uuid:2>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "CustomType",
+            "source": "MySource",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "for the default event bus"
+            }
+          }
+        }
+      ],
+      "non-existent-bus-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <custom-event-bus> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[custom]": {
+    "recorded-date": "19-06-2024, 10:42:07",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name>",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "<bus-name>",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules-after-delete": {
+        "Rules": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[default]": {
+    "recorded-date": "19-06-2024, 10:42:08",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name>",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "default",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules-after-delete": {
+        "Rules": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_put_multiple_rules_with_same_name": {
+    "recorded-date": "19-06-2024, 10:42:09",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "re-put-rule": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name>",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_with_limit": {
+    "recorded-date": "19-06-2024, 10:42:12",
+    "recorded-content": {
+      "list-rules-limit": {
+        "NextToken": "<next_token:1>",
+        "Rules": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-0",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name-prefix>-0",
+            "State": "ENABLED"
+          },
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-1",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name-prefix>-1",
+            "State": "ENABLED"
+          },
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-2",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name-prefix>-2",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules-limit-next-token": {
+        "Rules": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-3",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name-prefix>-3",
+            "State": "ENABLED"
+          },
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-4",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name-prefix>-4",
+            "State": "ENABLED"
+          },
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-5",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name-prefix>-5",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_describe_nonexistent_rule": {
+    "recorded-date": "19-06-2024, 10:42:14",
+    "recorded-content": {
+      "describe-not-existing-rule-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeRule operation: Rule <rule-name> does not exist on EventBus default.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[custom]": {
+    "recorded-date": "19-06-2024, 10:42:15",
+    "recorded-content": {
+      "disable-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule-disabled": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "<bus-name>",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "DISABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "enable-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule-enabled": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "<bus-name>",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[default]": {
+    "recorded-date": "19-06-2024, 10:42:17",
+    "recorded-content": {
+      "disable-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule-disabled": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "default",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "DISABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "enable-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule-enabled": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "default",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_delete_rule_with_targets": {
+    "recorded-date": "19-06-2024, 10:42:18",
+    "recorded-content": {
+      "delete-rule-with-targets-error": "<ExceptionInfo ClientError(\"An error occurred (ValidationException) when calling the DeleteRule operation: Rule can't be deleted since it has targets.\") tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_update_rule_with_targets": {
+    "recorded-date": "19-06-2024, 10:42:20",
+    "recorded-content": {
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-rule": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-after-update": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_with_values_in_array": {
+    "recorded-date": "19-06-2024, 10:42:28",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "event": {
+              "data": {
+                "type": [
+                  "3",
+                  "1"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "event": {
+              "data": {
+                "type": [
+                  "2"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_nested": {
+    "recorded-date": "19-06-2024, 10:42:40",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "event": {
+              "data": {
+                "type": "1"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[custom]": {
+    "recorded-date": "19-06-2024, 10:42:42",
+    "recorded-content": {
+      "put-target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-after-delete": {
+        "Targets": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[default]": {
+    "recorded-date": "19-06-2024, 10:42:44",
+    "recorded-content": {
+      "put-target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-after-delete": {
+        "Targets": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_add_exceed_fife_targets_per_rule": {
+    "recorded-date": "19-06-2024, 10:42:45",
+    "recorded-content": {
+      "put-targets-client-error": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the PutTargets operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_list_target_by_rule_limit": {
+    "recorded-date": "19-06-2024, 10:42:47",
+    "recorded-content": {
+      "list-targets-limit": {
+        "NextToken": "<next_token:1>",
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>0"
+          },
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>1"
+          },
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-limit-next-token": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>3"
+          },
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>4"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_target_id_validation": {
+    "recorded-date": "19-06-2024, 10:42:49",
+    "recorded-content": {
+      "put-targets-invalid-id-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '!@#$@!#$' at 'targets.1.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-targets-length-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'second-invalid-target-id' at 'targets.1.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[standard]": {
+    "recorded-date": "20-06-2024, 08:47:59",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[domain]": {
+    "recorded-date": "20-06-2024, 08:48:13",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[path]": {
+    "recorded-date": "20-06-2024, 08:48:28",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

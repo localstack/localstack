@@ -1,0 +1,61 @@
+{
+  "typeName": "AWS::KMS::Alias",
+  "description": "The AWS::KMS::Alias resource specifies a display name for an AWS KMS key in AWS Key Management Service (AWS KMS). You can use an alias to identify an AWS KMS key in cryptographic operations.",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+  "properties": {
+    "AliasName": {
+      "description": "Specifies the alias name. This value must begin with alias/ followed by a name, such as alias/ExampleAlias. The alias name cannot begin with alias/aws/. The alias/aws/ prefix is reserved for AWS managed keys.",
+      "type": "string",
+      "pattern": "^(alias/)[a-zA-Z0-9:/_-]+$",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "TargetKeyId": {
+      "description": "Identifies the AWS KMS key to which the alias refers. Specify the key ID or the Amazon Resource Name (ARN) of the AWS KMS key. You cannot specify another alias. For help finding the key ID and ARN, see Finding the Key ID and ARN in the AWS Key Management Service Developer Guide.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "AliasName",
+    "TargetKeyId"
+  ],
+  "createOnlyProperties": [
+    "/properties/AliasName"
+  ],
+  "primaryIdentifier": [
+    "/properties/AliasName"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "kms:CreateAlias"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "kms:ListAliases"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "kms:UpdateAlias"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "kms:DeleteAlias"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "kms:ListAliases"
+      ]
+    }
+  }
+}

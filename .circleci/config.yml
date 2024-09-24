@@ -1,0 +1,1080 @@
+version: 2.1
+
+parameters:
+  ubuntu-amd64-machine-image:
+    type: string
+    default: "ubuntu-2204:2023.02.1"
+  ubuntu-arm64-machine-image:
+    type: string
+    default: "ubuntu-2204:2023.02.1"
+  PYTEST_LOGLEVEL:
+    type: string
+    default: "WARNING"
+  skip_test_selection:
+    type: boolean
+    default: false
+  randomize-aws-credentials:
+    type: boolean
+    default: false
+  only-acceptance-tests:
+    type: boolean
+    default: false
+
+executors:
+  ubuntu-machine-amd64:
+    machine:
+      image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+
+commands:
+  prepare-acceptance-tests:
+    steps:
+      - run:
+          name: Check if only Acceptance Tests are running
+          command: |
+             only_acceptance_tests="<< pipeline.parameters.only-acceptance-tests >>"
+             trigger_source="<< pipeline.trigger_source >>"
+             git_branch="<< pipeline.git.branch >>"
+             echo "only-acceptance-tests: $only_acceptance_tests"
+             # GitHub event: webhook, Scheduled run: scheduled_pipeline, Manual run: api
+             echo "trigger_source: $trigger_source"
+             echo "git branch: $git_branch"
+
+             # Function to set environment variables
+             set_env_vars() {
+                 echo "export ONLY_ACCEPTANCE_TESTS=$1" >> $BASH_ENV
+                 echo "export DEFAULT_TAG='$2'" >> $BASH_ENV
+                 echo "$3"
+             }
+
+             if [[ "$only_acceptance_tests" == "true" ]]; then
+                 set_env_vars "true" "latest" "Only acceptance tests run, the default tag is 'latest'"
+             elif [[ "$git_branch" == "master" ]] && [[ "$trigger_source" == "webhook" ]]; then
+                 set_env_vars "true" "latest" "Regular push run to master means only acceptance test run, the default tag is 'latest'"
+             else
+                 set_env_vars "false" "latest" "All tests run, the default tag is 'latest'"
+             fi
+
+             source $BASH_ENV
+
+  prepare-testselection:
+    steps:
+      - unless:
+          condition: << pipeline.parameters.skip_test_selection >>
+          steps:
+            - run:
+                name: Setup test selection environment variable
+                command: |
+                  if [[ -n "$CI_PULL_REQUEST" ]] ; then
+                    echo "export TESTSELECTION_PYTEST_ARGS='--path-filter=target/testselection/test-selection.txt '" >> $BASH_ENV
+                  fi
+
+  prepare-pytest-tinybird:
+    steps:
+      - run:
+          name: Setup Environment Variables
+          command: |
+            if [[ $CIRCLE_BRANCH == "master" ]] ; then
+              echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
+            fi
+            if << pipeline.parameters.randomize-aws-credentials >> ; then
+              echo "export TINYBIRD_DATASOURCE=community_tests_circleci_ma_mr" >> $BASH_ENV
+            elif [[ $ONLY_ACCEPTANCE_TESTS == "true" ]] ; then
+              echo "export TINYBIRD_DATASOURCE=community_tests_circleci_acceptance" >> $BASH_ENV
+            else
+              echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
+            fi
+            echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
+            echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
+            echo "export CI_COMMIT_SHA=${CIRCLE_SHA1}" >> $BASH_ENV
+            echo "export CI_JOB_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
+            # workflow ID as the job name to associate the tests with workflows in TB
+            echo "export CI_JOB_NAME=${CIRCLE_WORKFLOW_ID}" >> $BASH_ENV
+            echo "export CI_JOB_ID=${CIRCLE_JOB}" >> $BASH_ENV
+            source $BASH_ENV
+
+  prepare-account-region-randomization:
+    steps:
+      - when:
+          condition: << pipeline.parameters.randomize-aws-credentials >>
+          steps:
+            - run:
+                name: Generate Random AWS Account ID
+                command: |
+                  # Generate a random 12-digit number for TEST_AWS_ACCOUNT_ID
+                  export TEST_AWS_ACCOUNT_ID=$(LC_ALL=C tr -dc '0-9' < /dev/urandom | fold -w 12 | head -n 1)
+                  export TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCOUNT_ID
+                  # Set TEST_AWS_REGION_NAME to a random AWS region other than us-east-1
+                  export AWS_REGIONS=("us-east-2" "us-west-1" "us-west-2" "ap-southeast-2" "ap-northeast-1" "eu-central-1" "eu-west-1")
+                  export TEST_AWS_REGION_NAME=${AWS_REGIONS[$RANDOM % ${#AWS_REGIONS[@]}]}
+                  echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> $BASH_ENV
+                  echo "export TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" >> $BASH_ENV
+                  echo "export TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" >> $BASH_ENV
+                  source $BASH_ENV
+
+
+jobs:
+  ################
+  ## Build Jobs ##
+  ################
+  docker-build:
+    parameters:
+      platform:
+        description: "Platform to build for"
+        default: "amd64"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    environment:
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "<< parameters.platform >>"
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Install global python dependencies
+          command: |
+            pip install --upgrade setuptools setuptools_scm
+      - run:
+          name: Build community docker image
+          command: ./bin/docker-helper.sh build
+      - run:
+          name: Save docker image
+          working_directory: target
+          command: ../bin/docker-helper.sh save
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/
+
+  install:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - checkout
+      - restore_cache:
+          key: python-requirements-{{ checksum "requirements-dev.txt" }}
+      - run:
+          name: Setup environment
+          command: |
+            make install
+            mkdir -p target/reports
+            mkdir -p target/coverage
+      - save_cache:
+          key: python-requirements-{{ checksum "requirements-dev.txt" }}
+          paths:
+            - "~/.cache/pip"
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo
+
+
+  ##########################
+  ## Acceptance Test Jobs ##
+  ##########################
+  preflight:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Linting
+          command: make lint
+      - run:
+          name: Checking AWS compatibility markers
+          command: make check-aws-markers
+
+  # can't completely skip it since we need the dependency from other tasks => conditional in run step
+  test-selection:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - unless:
+          condition: << pipeline.parameters.skip_test_selection >>
+          steps:
+            - run:
+                # script expects an environment variable $GITHUB_API_TOKEN to be set to fetch PR details
+                name: Generate test selection filters from changed files
+                command: |
+                  if [[ -z "$CI_PULL_REQUEST" ]] ; then
+                    echo "Skipping test selection"
+                    circleci-agent step halt
+                  else
+                    source .venv/bin/activate
+                    PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.generate_test_selection /tmp/workspace/repo target/testselection/test-selection.txt --pr-url $CI_PULL_REQUEST
+                    cat target/testselection/test-selection.txt
+                  fi
+
+            - persist_to_workspace:
+                root:
+                  /tmp/workspace
+                paths:
+                  - repo/target/testselection/
+
+  unit-tests:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Unit tests
+          environment:
+            TEST_PATH: "tests/unit"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.unit.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" \
+            make test-coverage
+      - store_test_results:
+          path: target/reports/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+
+  acceptance-tests:
+    parameters:
+      platform:
+        description: "Platform to run on"
+        default: "amd64"
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "<< parameters.platform >>"
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          working_directory: target
+          command: ../bin/docker-helper.sh load
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Acceptance tests
+          environment:
+            TEST_PATH: "tests/aws/"
+            COVERAGE_ARGS: "-p"
+            COVERAGE_FILE: "target/coverage/.coverage.acceptance.<< parameters.platform >>"
+            PYTEST_ARGS: "${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance-test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml -o junit_suite_name='acceptance_test'"
+            LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
+            DEBUG: 1
+          command: |
+            make docker-run-tests
+      - store_test_results:
+          path: target/reports/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/reports/
+            - repo/target/metric_reports/
+            - repo/target/coverage/
+
+
+  ###########################
+  ## Integration Test Jobs ##
+  ###########################
+  integration-tests:
+    parameters:
+      platform:
+        description: "Platform to build for"
+        default: "amd64"
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    parallelism: 4
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "<< parameters.platform >>"
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          working_directory: target
+          command: ../bin/docker-helper.sh load
+      # Prebuild and cache Lambda multiruntime test functions, supporting both architectures: amd64 and arm64
+      # Currently, all runners prebuild the Lambda functions, not just the one(s) executing Lambda multiruntime tests.
+      - run:
+          name: Compute Lambda build hashes
+          # Any change in the Lambda function source code (i.e., **/src/**) or build process (i.e., **/Makefile) invalidates the cache
+          command: |
+            find tests/aws/services/lambda_/functions/common -type f \( -path '**/src/**' -o -path '**/Makefile' \) | xargs sha256sum > /tmp/common-functions-checksums
+      - restore_cache:
+          key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
+      - run:
+          name: Pre-build Lambda common test packages
+          command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
+      - save_cache:
+          key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
+          paths:
+            - "tests/aws/services/lambda_/functions/common"
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Run integration tests
+          # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
+          # if we're doing performing a test selection, we need to filter the list of files before splitting by timings
+          command: |
+            if [ -z $TESTSELECTION_PYTEST_ARGS ] ; then
+              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+            else
+              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.filter_by_test_selection target/testselection/test-selection.txt | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+            fi
+            echo $TEST_FILES
+            if [[ -z "$TEST_FILES" ]] ; then
+              echo "Skipping test execution because no tests were selected"
+              circleci-agent step halt
+            else
+              PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+              COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
+              TEST_PATH=$TEST_FILES \
+              DEBUG=1 \
+              make docker-run-tests
+            fi
+      - store_test_results:
+          path: target/reports/
+      - store_artifacts:
+          path: target/reports/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/reports/
+            - repo/target/coverage/
+            - repo/target/metric_reports
+
+  bootstrap-tests:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "amd64"
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          working_directory: target
+          command: ../bin/docker-helper.sh load
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Run bootstrap tests
+          environment:
+            TEST_PATH: "tests/bootstrap"
+            COVERAGE_ARGS: "-p"
+          command: |
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
+      - store_test_results:
+          path: target/reports/
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+
+
+  ######################
+  ## Custom Test Jobs ##
+  ######################
+  itest-sfn-legacy-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test SFN Legacy provider
+          environment:
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
+            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-s3-v2-legacy-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test S3 v2 legacy provider
+          environment:
+            PROVIDER_OVERRIDE_S3: "legacy_v2"
+            TEST_PATH: "tests/aws/services/s3/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-cloudwatch-v1-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test CloudWatch v1 provider
+          environment:
+            PROVIDER_OVERRIDE_CLOUDWATCH: "v1"
+            TEST_PATH: "tests/aws/services/cloudwatch/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV1.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v1.xml -o junit_suite_name='cloudwatch_v1'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-events-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test EventBridge v2 provider
+          environment:
+            PROVIDER_OVERRIDE_EVENTS: "v2"
+            TEST_PATH: "tests/aws/services/events/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.eventsV2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v2.xml -o junit_suite_name='events_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-apigw-ng-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test ApiGateway Next Gen provider
+          environment:
+            PROVIDER_OVERRIDE_APIGATEWAY: "next_gen"
+            TEST_PATH: "tests/aws/services/apigateway/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.apigwNG.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/apigw_ng.xml -o junit_suite_name='apigw_ng'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-lambda-event-source-mapping-v2-feature:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test Lambda Event Source Mapping v2 feature
+          environment:
+            LAMBDA_EVENT_SOURCE_MAPPING: "v2"
+            TEST_PATH: "tests/aws/services/lambda_/event_source_mapping"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.lambda_event_source_mappingV2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/lambda_event_source_mapping_v2.xml -o junit_suite_name='lambda_event_source_mapping_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+
+  #########################
+  ## Parity Metrics Jobs ##
+  #########################
+  capture-not-implemented:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "amd64"
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          working_directory: target
+          command: ../bin/docker-helper.sh load
+      - run:
+          name: Run localstack
+          command: |
+            source .venv/bin/activate
+            DEBUG=1 DISABLE_EVENTS="1" IMAGE_NAME="localstack/localstack:latest" localstack start -d
+            localstack wait -t 120 || (python -m localstack.cli.main logs && false)
+      - run:
+          name: Run capture-not-implemented
+          command: |
+            source .venv/bin/activate
+            cd scripts
+            python -m capture_notimplemented_responses
+      - run:
+          name: Print the logs
+          command: |
+            source .venv/bin/activate
+            localstack logs
+      - run:
+          name: Stop localstack
+          command: |
+            source .venv/bin/activate
+            localstack stop
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/scripts/implementation_coverage_aggregated.csv
+            - repo/scripts/implementation_coverage_full.csv
+
+
+  ############################
+  ## Result Publishing Jobs ##
+  ############################
+  report:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Collect isolated acceptance coverage
+          command: |
+            source .venv/bin/activate
+            mkdir target/coverage/acceptance
+            cp target/coverage/.coverage.acceptance.* target/coverage/acceptance
+            cd target/coverage/acceptance
+            coverage combine
+            mv .coverage ../../../.coverage.acceptance
+      - store_artifacts:
+          path: .coverage.acceptance
+      - run:
+          name: Collect coverage
+          command: |
+            source .venv/bin/activate
+            cd target/coverage
+            ls -la
+            coverage combine
+            mv .coverage ../../
+      - run:
+          name: Report coverage statistics
+          command: |
+            if [ -z "${CI_PULL_REQUEST}" ]; then
+              source .venv/bin/activate
+              coverage report || true
+              coverage html || true
+              coveralls || true
+            else
+              echo "Skipping coverage reporting for pull request."
+            fi
+      - run:
+          name: Store acceptance parity metrics
+          command: |
+            mkdir acceptance_parity_metrics
+            mv target/metric_reports/metric-report*acceptance* acceptance_parity_metrics/
+      - run:
+          name: Upload test metrics and implemented coverage data to tinybird
+          command: |
+            if [ -z "$CIRCLE_PR_REPONAME" ]  ; then
+              # check if a fork-only env var is set (https://circleci.com/docs/variables/)
+              source .venv/bin/activate
+              mkdir parity_metrics && mv target/metric_reports/metric-report-raw-data-*amd64*.csv parity_metrics
+              METRIC_REPORT_DIR_PATH=parity_metrics \
+              IMPLEMENTATION_COVERAGE_FILE=scripts/implementation_coverage_full.csv \
+              SOURCE_TYPE=community \
+              python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
+            else
+              echo "Skipping parity reporting to tinybird (no credentials, running on fork)..."
+            fi
+
+      - run:
+          name: Create Coverage Diff (Code Coverage)
+          # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
+          # but we still want cirecleci to continue with the tasks, so we return 0.
+          # From the docs:
+          # Upon exit, the diff command may return various exit codes:
+          #    0: all changes are covered, no new uncovered statements have been introduced
+          #    1: some exception occurred (likely due to inappropriate usage or a bug in pycobertura)
+          #    2: the changes worsened the overall coverage
+          #    3: the changes introduced uncovered statements but the overall coverage is still better than before
+          command: |
+            source .venv/bin/activate
+            pip install pycobertura
+            coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack-core/localstack/services/*/**" --omit="*/**/__init__.py"
+            coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack-core/localstack/services/*/**"  --omit="*/**/__init__.py"
+            pycobertura show --format html acceptance.coverage.report.xml -o coverage-acceptance.html
+            bash -c "pycobertura diff --format html all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 1 ]] ; then exit 1 ; else exit 0 ; fi"
+      - run:
+          name: Create Metric Coverage Diff (API Coverage)
+          environment:
+            COVERAGE_DIR_ALL: "parity_metrics"
+            COVERAGE_DIR_ACCEPTANCE: "acceptance_parity_metrics"
+            OUTPUT_DIR: "api-coverage"
+          command: |
+            source .venv/bin/activate
+            mkdir api-coverage
+            python -m scripts.metrics_coverage.diff_metrics_coverage
+      - store_artifacts:
+          path: api-coverage/
+      - store_artifacts:
+          path: coverage-acceptance.html
+      - store_artifacts:
+          path: coverage-diff.html
+      - store_artifacts:
+          path: parity_metrics/
+      - store_artifacts:
+          path: acceptance_parity_metrics/
+      - store_artifacts:
+          path: scripts/implementation_coverage_aggregated.csv
+          destination: community/implementation_coverage_aggregated.csv
+      - store_artifacts:
+          path: scripts/implementation_coverage_full.csv
+          destination: community/implementation_coverage_full.csv
+      - store_artifacts:
+          path: .coverage
+
+  push:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      IMAGE_NAME: "localstack/localstack"
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Install global python dependencies
+          command: |
+            pip install --upgrade setuptools setuptools_scm
+      - run:
+          name: Load docker image - amd64
+          working_directory: target
+          environment:
+            PLATFORM: amd64
+          command: ../bin/docker-helper.sh load
+      - run:
+          name: Log in to ECR registry
+          command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+      - run:
+          name: Push docker image - amd64
+          environment:
+            PLATFORM: amd64
+          command: |
+            # Push to Docker Hub
+            ./bin/docker-helper.sh push
+            # Push to Amazon Public ECR
+            TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
+      # Load and push per architecture (load overwrites the previous ones)
+      - run:
+          name: Load docker image - arm64
+          working_directory: target
+          environment:
+            PLATFORM: arm64
+          command: ../bin/docker-helper.sh load
+      - run:
+          name: Push docker image - arm64
+          environment:
+            PLATFORM: arm64
+          command: |
+            # Push to Docker Hub
+            ./bin/docker-helper.sh push
+            # Push to Amazon Public ECR
+            TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
+      - run:
+          name: Create multi-platform manifests
+          command: |
+            # Push to Docker Hub
+            ./bin/docker-helper.sh push-manifests
+            # Push to Amazon Public ECR
+            IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push-manifests
+      - run:
+          name: Publish a dev release
+          command: |
+            if git describe --exact-match --tags >/dev/null 2>&1; then
+              echo "not publishing a dev release as this is a tagged commit"
+            else
+              source .venv/bin/activate
+              make publish || echo "dev release failed (maybe it is already published)"
+            fi
+
+  push-to-tinybird:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - prepare-acceptance-tests
+      - run:
+          name: Wait for the workflow to complete
+          command: |
+            # Record the time this step started
+            START_TIME=$(date +%s)
+
+            # Determine if reporting the workflow even is necessary and what the workflow variant is
+            if [[ << pipeline.parameters.randomize-aws-credentials >> == "true" ]] && [[ $ONLY_ACCEPTANCE_TESTS == "true" ]] ; then
+              echo "Don't report only-acceptance-test workflows with randomized aws credentials"
+              circleci-agent step halt
+            elif [[ << pipeline.parameters.randomize-aws-credentials >> == "true" ]] ; then
+              TINYBIRD_WORKFLOW=tests_circleci_ma_mr
+            elif [[ $ONLY_ACCEPTANCE_TESTS == "true" ]] ; then
+              TINYBIRD_WORKFLOW=tests_circleci_acceptance
+            else
+              TINYBIRD_WORKFLOW=tests_circleci
+            fi
+
+
+            # wait for the workflow to be done
+            while [[ $(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job"| jq -r '.items[]|select(.name != "push-to-tinybird" and .name != "push" and .name != "report")|.status' | grep -c "running") -gt 0 ]]; do
+              sleep 10
+            done
+
+            # check if a step failed / determine the outcome
+            FAILED_COUNT=$(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job" | jq -r '.items[]|.status' | grep -c "failed") || true
+            echo "failed count: $FAILED_COUNT"
+            if [[ $FAILED_COUNT -eq 0 ]]; then
+                OUTCOME="success"
+            else
+                OUTCOME="failure"
+            fi
+            echo "outcome: $OUTCOME"
+
+            # Record the time this step is done
+            END_TIME=$(date +%s)
+
+            # Build the payload
+            echo '{"workflow": "'$TINYBIRD_WORKFLOW'", "attempt": 1, "run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'", "workflow_url": "'$CIRCLE_BUILD_URL'"}' > stats.json
+            echo 'Sending: '$(cat stats.json)
+
+            # Send the data to Tinybird
+            curl -X POST "https://api.tinybird.co/v0/events?name=ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats.json
+
+            # Fail this step depending on the success to trigger a rerun of this step together with others in case of a "rerun failed"
+            [[ $OUTCOME = "success" ]] && exit 0 || exit 1
+
+
+####################
+## Workflow setup ##
+####################
+workflows:
+  acceptance-only-run:
+    # this workflow only runs when only-acceptance-tests is explicitly set
+    # or when the pipeline is running on the master branch but is neither scheduled nor a manual run
+    # (basically the opposite of the full-run workflow)
+    when:
+      or:
+        - << pipeline.parameters.only-acceptance-tests >>
+        - and:
+          - equal: [ master,  << pipeline.git.branch>> ]
+          - equal: [ webhook, << pipeline.trigger_source >> ]
+    jobs:
+      - push-to-tinybird:
+          filters:
+            branches:
+              only: master
+      - install
+      - preflight:
+          requires:
+            - install
+      - unit-tests:
+          requires:
+            - preflight
+      - docker-build:
+          name: docker-build-amd64
+          platform: amd64
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          resource_class: medium
+          requires:
+            - preflight
+      - docker-build:
+          name: docker-build-arm64
+          platform: arm64
+          # The latest version of ubuntu is not yet supported for ARM:
+          # https://circleci.com/docs/2.0/arm-resources/
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+          resource_class: arm.medium
+          requires:
+            - preflight
+      - acceptance-tests:
+          name: acceptance-tests-arm64
+          platform: arm64
+          resource_class: arm.medium
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+          requires:
+            - docker-build-arm64
+      - acceptance-tests:
+          name: acceptance-tests-amd64
+          platform: amd64
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          resource_class: medium
+          requires:
+            - docker-build-amd64
+      - push:
+          filters:
+            branches:
+              only: master
+          requires:
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - unit-tests
+  full-run:
+    # this workflow only runs when only-acceptance-tests is not explicitly set (the default)
+    # or when the pipeline is running on the master branch because of a Github event (webhook)
+    # (basically the opposite of the acceptance-only-run workflow)
+    unless:
+      or:
+        - << pipeline.parameters.only-acceptance-tests >>
+        - and:
+          - equal: [ master,  << pipeline.git.branch>> ]
+          - equal: [ webhook, << pipeline.trigger_source >> ]
+    jobs:
+      - push-to-tinybird:
+          filters:
+            branches:
+              only: master
+      - install
+      - preflight:
+          requires:
+            - install
+      - test-selection:
+          requires:
+            - install
+      - itest-sfn-legacy-provider:
+          requires:
+            - preflight
+            - test-selection
+      - itest-s3-v2-legacy-provider:
+          requires:
+            - preflight
+            - test-selection
+      - itest-cloudwatch-v1-provider:
+          requires:
+            - preflight
+            - test-selection
+      - itest-events-v2-provider:
+          requires:
+            - preflight
+            - test-selection
+      - itest-apigw-ng-provider:
+          requires:
+            - preflight
+            - test-selection
+      - itest-lambda-event-source-mapping-v2-feature:
+          requires:
+            - preflight
+            - test-selection
+      - unit-tests:
+          requires:
+            - preflight
+      - docker-build:
+          name: docker-build-amd64
+          platform: amd64
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          resource_class: medium
+          requires:
+            - preflight
+      - docker-build:
+          name: docker-build-arm64
+          platform: arm64
+          # The latest version of ubuntu is not yet supported for ARM:
+          # https://circleci.com/docs/2.0/arm-resources/
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+          resource_class: arm.medium
+          requires:
+            - preflight
+      - acceptance-tests:
+          name: acceptance-tests-arm64
+          platform: arm64
+          resource_class: arm.medium
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+          requires:
+            - docker-build-arm64
+      - acceptance-tests:
+          name: acceptance-tests-amd64
+          platform: amd64
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          resource_class: medium
+          requires:
+            - docker-build-amd64
+      - integration-tests:
+          name: integration-tests-arm64
+          platform: arm64
+          resource_class: arm.medium
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+          requires:
+            - docker-build-arm64
+            - test-selection
+      - integration-tests:
+          name: integration-tests-amd64
+          platform: amd64
+          resource_class: medium
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          requires:
+            - docker-build-amd64
+            - test-selection
+      - bootstrap-tests:
+          requires:
+            - docker-build-amd64
+      - capture-not-implemented:
+          name: collect-not-implemented
+          requires:
+            - docker-build-amd64
+      - report:
+          requires:
+            - itest-sfn-legacy-provider
+            - itest-s3-v2-legacy-provider
+            - itest-cloudwatch-v1-provider
+            - itest-events-v2-provider
+            - itest-apigw-ng-provider
+            - itest-lambda-event-source-mapping-v2-feature
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - integration-tests-amd64
+            - integration-tests-arm64
+            - collect-not-implemented
+            - unit-tests
+      - push:
+          filters:
+            branches:
+              only: master
+          requires:
+            - itest-sfn-legacy-provider
+            - itest-s3-v2-legacy-provider
+            - itest-cloudwatch-v1-provider
+            - itest-events-v2-provider
+            - itest-apigw-ng-provider
+            - itest-lambda-event-source-mapping-v2-feature
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - integration-tests-amd64
+            - integration-tests-arm64
+            - unit-tests

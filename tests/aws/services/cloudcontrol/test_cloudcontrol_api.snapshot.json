@@ -1,0 +1,562 @@
+{
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases": {
+    "recorded-date": "01-02-2023, 08:26:30",
+    "recorded-content": {
+      "create_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel_in_success_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Request <request-token:1> is already in status SUCCESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[SUCCESS]": {
+    "recorded-date": "01-02-2023, 09:01:58",
+    "recorded-content": {
+      "create_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel_in_success_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Request <request-token:1> is already in status SUCCESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[FAIL]": {
+    "recorded-date": "01-02-2023, 09:02:30",
+    "recorded-content": {
+      "create_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel_in_success_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Request <request-token:1> is already in status SUCCESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_list_request_status": {
+    "recorded-date": "01-02-2023, 09:01:18",
+    "recorded-content": {
+      "create_bucket_resource": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_requests_response_filtered": {
+        "ResourceRequestStatusSummaries": [
+          {
+            "EventTime": "datetime",
+            "Identifier": "<identifier:1>",
+            "Operation": "CREATE",
+            "OperationStatus": "IN_PROGRESS",
+            "RequestToken": "<request-token:1>",
+            "RetryAfter": "datetime",
+            "TypeName": "AWS::S3::Bucket"
+          }
+        ]
+      },
+      "list_requests_response_filtered_update": {
+        "ResourceRequestStatusSummaries": []
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_invalid_request_token_exc": {
+    "recorded-date": "01-02-2023, 09:00:47",
+    "recorded-content": {
+      "get_token_not_found": {
+        "Error": {
+          "Code": "RequestTokenNotFoundException",
+          "Message": "Request with token DOESNOTEXIST was not found"
+        },
+        "Message": "Request with token DOESNOTEXIST was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "cancel_token_not_found": {
+        "Error": {
+          "Code": "RequestTokenNotFoundException",
+          "Message": "Request with token DOESNOTEXIST was not found"
+        },
+        "Message": "Request with token DOESNOTEXIST was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_request": {
+    "recorded-date": "01-02-2023, 09:01:26",
+    "recorded-content": {
+      "create_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel_request_status": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "CANCEL_COMPLETE",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel_again_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "CANCEL_COMPLETE",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_lifecycle": {
+    "recorded-date": "01-02-2023, 09:20:37",
+    "recorded-content": {
+      "create_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_status_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "SUCCESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_response": {
+        "ResourceDescription": {
+          "Identifier": "<identifier:1>",
+          "Properties": {
+            "BucketName": "<identifier:1>",
+            "RegionalDomainName": "<identifier:1>.s3.<region>.amazonaws.com",
+            "DomainName": "<identifier:1>.s3.amazonaws.com",
+            "WebsiteURL": "http://<identifier:1>.s3-website-<region>.amazonaws.com",
+            "DualStackDomainName": "<identifier:1>.s3.dualstack.<region>.amazonaws.com",
+            "Arn": "arn:<partition>:s3:::<identifier:1>"
+          }
+        },
+        "TypeName": "AWS::S3::Bucket",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "DELETE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:2>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_request_status_response_postdelete": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "DELETE",
+          "OperationStatus": "SUCCESS",
+          "RequestToken": "<request-token:2>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "res_not_found_exc": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "AWS::S3::Bucket Handler returned status FAILED: Bucket not found (HandlerErrorCode: NotFound, RequestToken: uuid)"
+        },
+        "Message": "AWS::S3::Bucket Handler returned status FAILED: Bucket not found (HandlerErrorCode: NotFound, RequestToken: uuid)",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_api_exceptions": {
+    "recorded-date": "01-02-2023, 09:20:39",
+    "recorded-content": {
+      "create_nonexistingtype": {
+        "Error": {
+          "Code": "TypeNotFoundException",
+          "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found."
+        },
+        "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete_nonexistingtype": {
+        "Error": {
+          "Code": "TypeNotFoundException",
+          "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found."
+        },
+        "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete_nonexistingresource": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "DELETE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_nonexistingtype": {
+        "Error": {
+          "Code": "TypeNotFoundException",
+          "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found."
+        },
+        "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update_nonexistingtype": {
+        "Error": {
+          "Code": "TypeNotFoundException",
+          "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found."
+        },
+        "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update_invalidpatchdocument": {
+        "Error": {
+          "Code": "TypeNotFoundException",
+          "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found."
+        },
+        "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_nonexistingtype": {
+        "Error": {
+          "Code": "TypeNotFoundException",
+          "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found."
+        },
+        "Message": "The type 'AWS::LocalStack::DoesNotExist' cannot be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_list_resources": {
+    "recorded-date": "01-02-2023, 09:21:18",
+    "recorded-content": {
+      "list_paginated_all_filtered": {
+        "ResourceDescriptions": [
+          {
+            "Identifier": "<identifier:1>",
+            "Properties": {
+              "BucketName": "<identifier:1>"
+            }
+          },
+          {
+            "Identifier": "<identifier:2>",
+            "Properties": {
+              "BucketName": "<identifier:2>"
+            }
+          }
+        ],
+        "TypeName": "AWS::S3::Bucket"
+      },
+      "list_typenotfound_exc": {
+        "Error": {
+          "Code": "TypeNotFoundException",
+          "Message": "The type 'AWS::DoesNot::Exist' cannot be found."
+        },
+        "Message": "The type 'AWS::DoesNot::Exist' cannot be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_double_create_with_client_token": {
+    "recorded-date": "01-02-2023, 09:21:50",
+    "recorded-content": {
+      "create_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_response_duplicate_exc": {
+        "Error": {
+          "Code": "ClientTokenConflictException",
+          "Message": "ClientToken <client-token is already associated with an existing operation with RequestToken <request-token:1>"
+        },
+        "Message": "ClientToken <client-token is already associated with an existing operation with RequestToken <request-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_create_exceptions": {
+    "recorded-date": "01-02-2023, 09:23:04",
+    "recorded-content": {
+      "create_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:1>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_duplicate_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:2>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "duplicate_post_wait_response": {
+        "ProgressEvent": {
+          "ErrorCode": "AlreadyExists",
+          "EventTime": "datetime",
+          "Identifier": "<identifier:1>",
+          "Operation": "CREATE",
+          "OperationStatus": "FAILED",
+          "RequestToken": "<request-token:2>",
+          "StatusMessage": "The bucket Already Exists",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_missingproperty_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Operation": "CREATE",
+          "OperationStatus": "IN_PROGRESS",
+          "RequestToken": "<request-token:3>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "missing_post_wait_response": {
+        "ProgressEvent": {
+          "EventTime": "datetime",
+          "Identifier": "<identifier:2>",
+          "Operation": "CREATE",
+          "OperationStatus": "SUCCESS",
+          "RequestToken": "<request-token:3>",
+          "TypeName": "AWS::S3::Bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_extra_property_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Model validation failed (#: extraneous key [BucketSomething] is not permitted)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_create_invalid_desiredstate": {
+    "recorded-date": "01-02-2023, 09:23:05",
+    "recorded-content": {
+      "create_invalid_state_exc_invalid_field": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Model validation failed (#: extraneous key [DOESNOTEXIST] is not permitted)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_invalid_state_exc_invalid_type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Model validation failed (#/BucketName: expected type: String, found: Boolean)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_update": {
+    "recorded-date": "01-02-2023, 09:24:31",
+    "recorded-content": {
+      "update_createonlyproperty_exc": {
+        "Error": {
+          "Code": "NotUpdatableException",
+          "Message": "Invalid patch update: createOnlyProperties [/properties/BucketName] cannot be updated"
+        },
+        "Message": "Invalid patch update: createOnlyProperties [/properties/BucketName] cannot be updated",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

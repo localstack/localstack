@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/resources/test_kms.py::test_cfn_with_kms_resources": {
+    "recorded-date": "29-05-2023, 15:45:17",
+    "recorded-content": {
+      "stack-outputs": {
+        "KeyAlias": "<key-alias:1>",
+        "KeyArn": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>"
+      }
+    }
+  }
+}

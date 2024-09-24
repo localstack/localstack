@@ -1,0 +1,666 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_raise_exception": {
+    "recorded-date": "22-06-2023, 13:29:17",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function": {
+    "recorded-date": "22-06-2023, 13:29:54",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "error": "Lambda.ResourceNotFoundException",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "error": "Lambda.ResourceNotFoundException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_raise_exception_catch": {
+    "recorded-date": "22-06-2023, 13:29:36",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithStateTaskFailedHandler"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndWithStateTaskFailedHandler",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}",
+                "task_failed_error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}",
+                "task_failed_error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function_catch": {
+    "recorded-date": "22-06-2023, 13:30:13",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "error": "Lambda.ResourceNotFoundException",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "Error": "Lambda.ResourceNotFoundException",
+                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Lambda.ResourceNotFoundException",
+                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithStateTaskFailedHandler"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndWithStateTaskFailedHandler",
+              "output": {
+                "Error": "Lambda.ResourceNotFoundException",
+                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+                "task_failed_error": {
+                  "Error": "Lambda.ResourceNotFoundException",
+                  "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Lambda.ResourceNotFoundException",
+                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+                "task_failed_error": {
+                  "Error": "Lambda.ResourceNotFoundException",
+                  "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_invoke_timeout": {
+    "recorded-date": "10-03-2024, 16:41:35",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "timeoutInSeconds": 5
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "Error": "States.Timeout",
+                "Cause": ""
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "States.Timeout",
+                "Cause": ""
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithHandler"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndWithHandler",
+              "output": {
+                "Error": "States.Timeout",
+                "Cause": "",
+                "error": {
+                  "Error": "States.Timeout",
+                  "Cause": ""
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "States.Timeout",
+                "Cause": "",
+                "error": {
+                  "Error": "States.Timeout",
+                  "Cause": ""
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+Resources:
+  Cluster:
+    Type: AWS::Redshift::Cluster
+    Properties:
+      ClusterIdentifier: mysamplecluster
+      ClusterType: single-node
+      DBName: db
+      MasterUserPassword: MasterPassword123
+      MasterUsername: masteruser
+      NodeType: ra3.xlplus
+
+Outputs:
+  ClusterRef:
+    Value: !Ref Cluster
+  ClusterAttEndpointPort:
+    Value: !GetAtt Cluster.Endpoint.Port
+  ClusterAttEndpointAddress:
+    Value: !GetAtt Cluster.Endpoint.Address

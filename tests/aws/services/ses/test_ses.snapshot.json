@@ -1,0 +1,919 @@
+{
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_email": {
+    "recorded-date": "25-08-2023, 23:53:37",
+    "recorded-content": {
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:2>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Send",
+            "mail": {
+              "timestamp": "timestamp",
+              "source": "<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [
+                {
+                  "name": "From",
+                  "value": "<sender-email-address>"
+                },
+                {
+                  "name": "To",
+                  "value": "<recipient-email-address>"
+                },
+                {
+                  "name": "Subject",
+                  "value": "SOME_SUBJECT"
+                },
+                {
+                  "name": "MIME-Version",
+                  "value": "1.0"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "multipart/alternative;  boundary=\"----=_Part_444254_355072649.1693000415859\""
+                }
+              ],
+              "commonHeaders": {
+                "from": [
+                  "<sender-email-address>"
+                ],
+                "to": [
+                  "<recipient-email-address>"
+                ],
+                "messageId": "<message-id:1>",
+                "subject": "SOME_SUBJECT"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendEmail"
+                ],
+                "ses:configuration-set": [
+                  "<config-set-name>"
+                ],
+                "ses:source-ip": [
+                  "<ses-source-ip:1>"
+                ],
+                "ses:from-domain": [
+                  "<ses-from-domain:1>"
+                ],
+                "custom-tag": [
+                  "tag-value"
+                ],
+                "ses:caller-identity": [
+                  "<ses-caller-identity:1>"
+                ]
+              }
+            },
+            "send": {}
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Delivery",
+            "mail": {
+              "timestamp": "timestamp",
+              "source": "<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [
+                {
+                  "name": "From",
+                  "value": "<sender-email-address>"
+                },
+                {
+                  "name": "To",
+                  "value": "<recipient-email-address>"
+                },
+                {
+                  "name": "Subject",
+                  "value": "SOME_SUBJECT"
+                },
+                {
+                  "name": "MIME-Version",
+                  "value": "1.0"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "multipart/alternative;  boundary=\"----=_Part_444254_355072649.1693000415859\""
+                }
+              ],
+              "commonHeaders": {
+                "from": [
+                  "<sender-email-address>"
+                ],
+                "to": [
+                  "<recipient-email-address>"
+                ],
+                "messageId": "<message-id:1>",
+                "subject": "SOME_SUBJECT"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendEmail"
+                ],
+                "ses:configuration-set": [
+                  "<config-set-name>"
+                ],
+                "ses:source-ip": [
+                  "<ses-source-ip:1>"
+                ],
+                "ses:from-domain": [
+                  "<ses-from-domain:1>"
+                ],
+                "custom-tag": [
+                  "tag-value"
+                ],
+                "ses:caller-identity": [
+                  "<ses-caller-identity:1>"
+                ],
+                "ses:outgoing-ip": [
+                  "<ses-outgoing-ip:1>"
+                ]
+              }
+            },
+            "delivery": {
+              "timestamp": "date",
+              "processingTimeMillis": "processing-time",
+              "recipients": [
+                "<recipient-email-address>"
+              ],
+              "smtpResponse": "250 2.0.0 OK DMARC:Quarantine 1693000416 l9-20020a05620a28c900b0076d9e089c17si1864617qkp.664 - gsmtp",
+              "reportingMTA": "a8-77.smtp-out.amazonses.com"
+            }
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_templated_email": {
+    "recorded-date": "26-08-2023, 00:00:04",
+    "recorded-content": {
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:2>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Send",
+            "mail": {
+              "timestamp": "timestamp",
+              "source": "<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [
+                {
+                  "name": "From",
+                  "value": "<sender-email-address>"
+                },
+                {
+                  "name": "To",
+                  "value": "<recipient-email-address>"
+                },
+                {
+                  "name": "MIME-Version",
+                  "value": "1.0"
+                }
+              ],
+              "commonHeaders": {
+                "from": [
+                  "<sender-email-address>"
+                ],
+                "to": [
+                  "<recipient-email-address>"
+                ],
+                "messageId": "<message-id:1>"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendTemplatedEmail"
+                ],
+                "ses:configuration-set": [
+                  "<config-set-name>"
+                ],
+                "ses:source-ip": [
+                  "<ses-source-ip:1>"
+                ],
+                "ses:from-domain": [
+                  "<ses-from-domain:1>"
+                ],
+                "custom-tag": [
+                  "tag-value"
+                ],
+                "ses:caller-identity": [
+                  "<ses-caller-identity:1>"
+                ]
+              }
+            },
+            "send": {}
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Delivery",
+            "mail": {
+              "timestamp": "timestamp",
+              "source": "<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [
+                {
+                  "name": "Date",
+                  "value": "Fri, 25 Aug 2023 22:00:03 +0000"
+                },
+                {
+                  "name": "From",
+                  "value": "<sender-email-address>"
+                },
+                {
+                  "name": "To",
+                  "value": "<recipient-email-address>"
+                },
+                {
+                  "name": "Subject",
+                  "value": "Email template c51cf868"
+                },
+                {
+                  "name": "MIME-Version",
+                  "value": "1.0"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "text/plain; charset=UTF-8"
+                },
+                {
+                  "name": "Content-Transfer-Encoding",
+                  "value": "7bit"
+                }
+              ],
+              "commonHeaders": {
+                "from": [
+                  "<sender-email-address>"
+                ],
+                "date": "Fri, 25 Aug 2023 22:00:03 +0000",
+                "to": [
+                  "<recipient-email-address>"
+                ],
+                "messageId": "<message-id:1>",
+                "subject": "Email template c51cf868"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendTemplatedEmail"
+                ],
+                "ses:configuration-set": [
+                  "<config-set-name>"
+                ],
+                "ses:source-ip": [
+                  "<ses-source-ip:1>"
+                ],
+                "ses:from-domain": [
+                  "<ses-from-domain:1>"
+                ],
+                "custom-tag": [
+                  "tag-value"
+                ],
+                "ses:caller-identity": [
+                  "<ses-caller-identity:1>"
+                ],
+                "ses:outgoing-ip": [
+                  "<ses-outgoing-ip:1>"
+                ]
+              }
+            },
+            "delivery": {
+              "timestamp": "date",
+              "processingTimeMillis": "processing-time",
+              "recipients": [
+                "<recipient-email-address>"
+              ],
+              "smtpResponse": "250 2.0.0 OK DMARC:Quarantine 1693000804 o10-20020a05622a138a00b004120c782853si1668341qtk.699 - gsmtp",
+              "reportingMTA": "a48-118.smtp-out.amazonses.com"
+            }
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_raw_email": {
+    "recorded-date": "26-08-2023, 00:01:24",
+    "recorded-content": {
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:2>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Send",
+            "mail": {
+              "timestamp": "timestamp",
+              "source": "<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [],
+              "commonHeaders": {
+                "messageId": "<message-id:1>"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendRawEmail"
+                ],
+                "ses:configuration-set": [
+                  "<config-set-name>"
+                ],
+                "ses:source-ip": [
+                  "<ses-source-ip:1>"
+                ],
+                "custom-tag": [
+                  "tag-value"
+                ],
+                "ses:caller-identity": [
+                  "<ses-caller-identity:1>"
+                ]
+              }
+            },
+            "send": {}
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Delivery",
+            "mail": {
+              "timestamp": "timestamp",
+              "source": "<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [],
+              "commonHeaders": {
+                "messageId": "<message-id:1>"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendRawEmail"
+                ],
+                "ses:configuration-set": [
+                  "<config-set-name>"
+                ],
+                "ses:source-ip": [
+                  "<ses-source-ip:1>"
+                ],
+                "custom-tag": [
+                  "tag-value"
+                ],
+                "ses:caller-identity": [
+                  "<ses-caller-identity:1>"
+                ],
+                "ses:outgoing-ip": [
+                  "<ses-outgoing-ip:1>"
+                ]
+              }
+            },
+            "delivery": {
+              "timestamp": "date",
+              "processingTimeMillis": "processing-time",
+              "recipients": [
+                "<recipient-email-address>"
+              ],
+              "smtpResponse": "250 2.0.0 OK DMARC:Quarantine 1693000884 v14-20020a05622a130e00b004053819f665si191486qtk.608 - gsmtp",
+              "reportingMTA": "a48-119.smtp-out.amazonses.com"
+            }
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_cannot_create_event_for_no_topic": {
+    "recorded-date": "26-08-2023, 00:04:12",
+    "recorded-content": {
+      "create-error": {
+        "Error": {
+          "Code": "InvalidSNSDestination",
+          "Message": "SNS topic <<arn>> not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set": {
+    "recorded-date": "26-08-2023, 00:04:44",
+    "recorded-content": {
+      "delete-error": {
+        "Error": {
+          "Code": "ConfigurationSetDoesNotExist",
+          "Message": "Configuration set <<config-set>> does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set_event_destination": {
+    "recorded-date": "26-08-2023, 00:04:53",
+    "recorded-content": {
+      "delete-error": {
+        "Error": {
+          "Code": "EventDestinationDoesNotExist",
+          "Message": "No EventDestination found for <config-set>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_sending_to_deleted_topic": {
+    "recorded-date": "26-08-2023, 00:02:43",
+    "recorded-content": {
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+          "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_creating_event_destination_without_configuration_set": {
+    "recorded-date": "26-08-2023, 00:04:35",
+    "recorded-content": {
+      "create-error": {
+        "Error": {
+          "Code": "ConfigurationSetDoesNotExist",
+          "Message": "Configuration set <<config-set>> does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_trying_to_delete_event_destination_from_non_existent_configuration_set": {
+    "recorded-date": "26-08-2023, 00:05:02",
+    "recorded-content": {
+      "delete-error": {
+        "Error": {
+          "Code": "ConfigurationSetDoesNotExist",
+          "Message": "Configuration set <non-existent-configuration-set> does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
+    "recorded-date": "30-07-2024, 10:18:07",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
+    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag value <test_invalid_value:123>: only alphanumeric ASCII characters, '_',  '-' , '.', '@' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
+    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]": {
+    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Tag name cannot exceed 255 characters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]": {
+    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Tag value cannot exceed 255 characters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]": {
+    "recorded-date": "30-07-2024, 10:18:08",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name@123>: only alphanumeric ASCII characters, '_',  '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
+    "recorded-date": "30-07-2024, 10:18:09",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The tag name must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-test]": {
+    "recorded-date": "30-07-2024, 10:18:09",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The tag name must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-]": {
+    "recorded-date": "30-07-2024, 10:18:09",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The tag value must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_list_templates": {
+    "recorded-date": "25-08-2023, 18:33:54",
+    "recorded-content": {
+      "create-template": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-templates-1": {
+        "TemplatesMetadata": [
+          {
+            "CreatedTimestamp": "timestamp",
+            "Name": "hello-world"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-templates-2": {
+        "TemplatesMetadata": [
+          {
+            "CreatedTimestamp": "timestamp",
+            "Name": "hello-world"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_delete_template": {
+    "recorded-date": "25-08-2023, 19:14:04",
+    "recorded-content": {
+      "list-templates-empty": {
+        "TemplatesMetadata": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-templates-after-create": {
+        "TemplatesMetadata": [
+          {
+            "CreatedTimestamp": "timestamp",
+            "Name": "hello-world"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-template": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-templates-after-delete": {
+        "TemplatesMetadata": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_clone_receipt_rule_set": {
+    "recorded-date": "25-08-2023, 23:05:14",
+    "recorded-content": {
+      "create-receipt-rule-set": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "clone-receipt-rule-set": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "original-rule-set": {
+        "Metadata": {
+          "CreatedTimestamp": "timestamp",
+          "Name": "RuleSetToClone"
+        },
+        "Rules": [
+          {
+            "Actions": [
+              {
+                "AddHeaderAction": {
+                  "HeaderName": "test-header",
+                  "HeaderValue": "test"
+                }
+              }
+            ],
+            "Enabled": true,
+            "Name": "MyRule1",
+            "ScanEnabled": true,
+            "TlsPolicy": "Optional"
+          },
+          {
+            "Actions": [
+              {
+                "S3Action": {
+                  "BucketName": "<bucket-name:1>",
+                  "ObjectKeyPrefix": "template"
+                }
+              }
+            ],
+            "Enabled": true,
+            "Name": "MyRule2",
+            "ScanEnabled": true,
+            "TlsPolicy": "Optional"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cloned-rule-set": {
+        "Metadata": {
+          "CreatedTimestamp": "timestamp",
+          "Name": "RuleSetToCreate"
+        },
+        "Rules": [
+          {
+            "Actions": [
+              {
+                "AddHeaderAction": {
+                  "HeaderName": "test-header",
+                  "HeaderValue": "test"
+                }
+              }
+            ],
+            "Enabled": true,
+            "Name": "MyRule1",
+            "ScanEnabled": true,
+            "TlsPolicy": "Optional"
+          },
+          {
+            "Actions": [
+              {
+                "S3Action": {
+                  "BucketName": "<bucket-name:1>",
+                  "ObjectKeyPrefix": "template"
+                }
+              }
+            ],
+            "Enabled": true,
+            "Name": "MyRule2",
+            "ScanEnabled": true,
+            "TlsPolicy": "Optional"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_sent_message_counter": {
+    "recorded-date": "25-08-2023, 23:40:26",
+    "recorded-content": {
+      "get-quota-0": {
+        "Max24HourSend": 200.0,
+        "MaxSendRate": 1.0,
+        "SentLast24Hours": 0.0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

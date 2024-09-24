@@ -1,0 +1,9 @@
+Resources:
+  NewKeyPair:
+    Type: 'AWS::EC2::KeyPair'
+    Properties:
+      KeyName: !Sub 'keypair-${AWS::StackName}'
+
+Outputs:
+  KeyPairName:
+    Value: !Ref NewKeyPair

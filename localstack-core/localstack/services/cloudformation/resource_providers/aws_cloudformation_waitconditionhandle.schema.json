@@ -1,0 +1,16 @@
+{
+  "typeName": "AWS::CloudFormation::WaitConditionHandle",
+  "description": "Resource Type definition for AWS::CloudFormation::WaitConditionHandle",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "type": "string"
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

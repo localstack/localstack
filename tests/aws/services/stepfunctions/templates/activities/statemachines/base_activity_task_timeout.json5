@@ -1,0 +1,12 @@
+{
+  "Comment": "BASE_ACTIVITY_TASK_TIMEOUT",
+  "StartAt": "ActivityTask",
+  "States": {
+    "ActivityTask": {
+      "Type": "Task",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
+      "TimeoutSeconds": 5,
+      "End": true
+    }
+  }
+}

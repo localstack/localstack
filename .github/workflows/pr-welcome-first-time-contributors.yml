@@ -1,0 +1,81 @@
+name: Welcome First Time Contributors ✨
+
+on:
+  pull_request_target:
+    types:
+      - opened
+  issues:
+    types:
+      - opened
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
+        script: |
+          const issueMessage = `Welcome to LocalStack! Thanks for reporting your first issue and our team will be working towards fixing the issue for you or reach out for more background information. We recommend joining our [Slack Community](https://localstack.cloud/contact/) for real-time help and drop a message to LocalStack Pro Support if you are a Pro user! If you are willing to contribute towards fixing this issue, please have a look at our [contributing guidelines](https://github.com/localstack/.github/blob/main/CONTRIBUTING.md) and our [contributing guide](https://docs.localstack.cloud/contributing/).`;
+          const prMessage = `Welcome to LocalStack! Thanks for raising your first Pull Request and landing in your contributions. Our team will reach out with any reviews or feedbacks that we have shortly. We recommend joining our [Slack Community](https://localstack.cloud/contact/) and share your PR on the **#community** channel to share your contributions with us. Please make sure you are following our [contributing guidelines](https://github.com/localstack/.github/blob/main/CONTRIBUTING.md) and our [Code of Conduct](https://github.com/localstack/.github/blob/main/CODE_OF_CONDUCT.md).`;
+
+          if (!issueMessage && !prMessage) {
+              throw new Error('Action should have either issueMessage or prMessage set');
+          }
+
+          const isIssue = !!context.payload.issue;
+          let isFirstContribution;
+          if (isIssue) {
+              const query = `query($owner:String!, $name:String!, $contributor:String!) {
+              repository(owner:$owner, name:$name){
+                issues(first: 1, filterBy: {createdBy:$contributor}){
+                  totalCount
+                }
+              }
+            }`;
+
+            const variables = {
+              owner: context.repo.owner,
+              name: context.repo.repo,
+              contributor: context.payload.sender.login
+            };
+
+            const { repository: { issues: { totalCount } } } = await github.graphql(query, variables);
+            isFirstContribution = totalCount === 1;
+          } else {
+              const query = `query($qstr: String!) {
+                search(query: $qstr, type: ISSUE, first: 1) {
+                   issueCount
+                 }
+              }`;
+            const variables = {
+              "qstr": `repo:${context.repo.owner}/${context.repo.repo} type:pr author:${context.payload.sender.login}`,
+            };
+            const { search: { issueCount } } = await github.graphql(query, variables);
+            isFirstContribution = issueCount === 1;
+          }
+
+          if (!isFirstContribution) {
+              return;
+          }
+
+          const message = isIssue ? issueMessage : prMessage;
+          if (isIssue) {
+              const issueNumber = context.payload.issue.number;
+              await github.rest.issues.createComment({
+                  owner: context.payload.repository.owner.login,
+                  repo: context.payload.repository.name,
+                  issue_number: issueNumber,
+                  body: message
+              });
+          }
+          else {
+            const pullNumber = context.payload.pull_request.number;
+              await github.rest.pulls.createReview({
+                  owner: context.payload.repository.owner.login,
+                  repo: context.payload.repository.name,
+                  pull_number: pullNumber,
+                  body: message,
+                  event: 'COMMENT'
+              });
+          }

@@ -1,0 +1,234 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Example Pet Store",
+    "description": "A Pet Store API.",
+    "version": "1.0"
+  },
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "GET HTTP",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pets"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "HTTP_PROXY",
+          "httpMethod": "GET",
+          "uri": "http://petstore.execute-api.us-west-1.amazonaws.com/petstore/pets",
+          "payloadFormatVersion": 1.0
+        }
+      },
+      "post": {
+        "operationId": "Create Pet",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewPetResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "$ref": "#/components/x-amazon-apigateway-integrations/NewPet"
+        }
+      }
+    },
+    "/pets/{petId}": {
+      "get": {
+        "operationId": "Get Pet",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            }
+          }
+        },
+        "security" : [{
+          "myAuthorizer": []
+        }],
+        "x-amazon-apigateway-integration": {
+          "type": "HTTP_PROXY",
+          "httpMethod": "GET",
+          "uri": "http://petstore.execute-api.us-west-1.amazonaws.com/petstore/pets/{petId}",
+          "payloadFormatVersion": 1.0
+        }
+      }
+    }
+  },
+  "x-amazon-apigateway-cors": {
+    "allowOrigins": [
+      "*"
+    ],
+    "allowMethods": [
+      "GET",
+      "OPTIONS",
+      "POST"
+    ],
+    "allowHeaders": [
+      "x-amzm-header",
+      "x-apigateway-header",
+      "x-api-key",
+      "authorization",
+      "x-amz-date",
+      "content-type"
+    ]
+  },
+  "components": {
+    "securitySchemes": {
+      "myAuthorizer": {
+        "type": "apiKey",
+        "name": "my-auth-gw-imported",
+        "in": "header",
+        "x-amazon-apigateway-authorizer": {
+          "identitySource": "method.request.header.Authorization",
+          "authorizerUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations",
+          "authorizerResultTtlInSeconds": 300,
+          "type": "request",
+          "enableSimpleResponses": false
+        },
+        "x-amazon-apigateway-authtype": "Custom scheme with corporate claims"
+      }
+    },
+    "schemas": {
+      "Pets": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Pet"
+        }
+      },
+      "Empty": {
+        "type": "object"
+      },
+      "NewPetResponse": {
+        "type": "object",
+        "properties": {
+          "pet": {
+            "$ref": "#/components/schemas/Pet"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Pet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      },
+      "NewPet": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/PetType"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      },
+      "PetType": {
+        "type": "string",
+        "enum": [
+          "dog",
+          "cat",
+          "fish",
+          "bird",
+          "gecko"
+        ]
+      }
+    },
+    "x-amazon-apigateway-integrations":{
+      "NewPet": {
+        "type": "HTTP_PROXY",
+        "httpMethod": "POST",
+        "uri": "http://petstore.execute-api.us-west-1.amazonaws.com/petstore/pets",
+        "payloadFormatVersion": 1.0
+      }
+    }
+  }
+}

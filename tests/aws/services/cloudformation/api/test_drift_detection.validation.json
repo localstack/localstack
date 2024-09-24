@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/api/test_drift_detection.py::test_drift_detection_on_lambda": {
+    "last_validated_date": "2022-11-11T07:44:20+00:00"
+  }
+}

@@ -1,0 +1,224 @@
+{
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_create_stream_without_shard_count": {
+    "recorded-date": "26-08-2022, 09:30:59",
+    "recorded-content": {
+      "Shards": [
+        {
+          "ShardId": "<shard_id:1>",
+          "HashKeyRange": {
+            "StartingHashKey": "starting_hash",
+            "EndingHashKey": "ending_hash"
+          },
+          "SequenceNumberRange": {
+            "StartingSequenceNumber": "<starting_sequence_number:1>"
+          }
+        },
+        {
+          "ShardId": "<shard_id:2>",
+          "HashKeyRange": {
+            "StartingHashKey": "starting_hash",
+            "EndingHashKey": "ending_hash"
+          },
+          "SequenceNumberRange": {
+            "StartingSequenceNumber": "<starting_sequence_number:2>"
+          }
+        },
+        {
+          "ShardId": "<shard_id:3>",
+          "HashKeyRange": {
+            "StartingHashKey": "starting_hash",
+            "EndingHashKey": "ending_hash"
+          },
+          "SequenceNumberRange": {
+            "StartingSequenceNumber": "<starting_sequence_number:3>"
+          }
+        },
+        {
+          "ShardId": "<shard_id:4>",
+          "HashKeyRange": {
+            "StartingHashKey": "starting_hash",
+            "EndingHashKey": "ending_hash"
+          },
+          "SequenceNumberRange": {
+            "StartingSequenceNumber": "<starting_sequence_number:4>"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_add_tags_to_stream": {
+    "recorded-date": "25-08-2022, 08:56:43",
+    "recorded-content": {
+      "Tags": {
+        "Key": "foo",
+        "Value": "bar"
+      }
+    }
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_record_lifecycle_data_integrity": {
+    "recorded-date": "25-08-2022, 12:39:44",
+    "recorded-content": {
+      "Records": [
+        {
+          "SequenceNumber": "<sequence_number:1>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b''",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:2>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:3>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'test'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:4>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'\\xc3\\xbcnic\\xc3\\xb6d\\xc3\\xa9 \\xe7\\xbb\\x9f\\xe4\\xb8\\x80\\xe7\\xa0\\x81 \\xf0\\x9f\\x92\\xa3\\xf0\\x9f\\x92\\xbb\\xf0\\x9f\\x94\\xa5'",
+          "PartitionKey": "1"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_sequence_number_as_iterator": {
+    "recorded-date": "26-08-2022, 09:29:21",
+    "recorded-content": {
+      "Records": [
+        {
+          "SequenceNumber": "<sequence_number:1>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_0'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:2>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_1'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:3>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_2'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:4>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_3'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:5>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_4'",
+          "PartitionKey": "1"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_stream_consumers": {
+    "recorded-date": "26-08-2022, 10:23:46",
+    "recorded-content": {
+      "One_consumer_by_list_stream": [
+        {
+          "ConsumerName": "consumer",
+          "ConsumerARN": "arn:<partition>:kinesis:<region>:111111111111:<stream-name>/<stream-consumer>",
+          "ConsumerStatus": "ACTIVE",
+          "ConsumerCreationTimestamp": "timestamp"
+        }
+      ],
+      "One_consumer_by_describe_stream": {
+        "ConsumerARN": "arn:<partition>:kinesis:<region>:111111111111:<stream-name>/<stream-consumer>",
+        "ConsumerCreationTimestamp": "timestamp",
+        "ConsumerName": "consumer",
+        "ConsumerStatus": "ACTIVE",
+        "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:<stream-name>"
+      }
+    }
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard": {
+    "recorded-date": "26-08-2022, 09:33:29",
+    "recorded-content": {
+      "Records": [
+        {
+          "SequenceNumber": "<sequence_number:1>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_0'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:2>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_1'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:3>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_2'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:4>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_3'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:5>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_4'",
+          "PartitionKey": "1"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_cbor_at_timestamp": {
+    "recorded-date": "21-06-2024, 15:18:03",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_at_timestamp": {
+    "recorded-date": "21-06-2024, 15:19:50",
+    "recorded-content": {
+      "Records": [
+        {
+          "SequenceNumber": "<sequence_number:1>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_0'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:2>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_1'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:3>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_2'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:4>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_3'",
+          "PartitionKey": "1"
+        },
+        {
+          "SequenceNumber": "<sequence_number:5>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": "b'Hello world_4'",
+          "PartitionKey": "1"
+        }
+      ]
+    }
+  }
+}

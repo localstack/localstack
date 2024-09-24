@@ -1,0 +1,422 @@
+{
+  "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestComments::test_comments_as_per_docs": {
+    "recorded-date": "09-02-2024, 11:23:55",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SetupInitialCondition"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "SetupInitialCondition",
+              "output": {
+                "status": "incomplete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "status": "incomplete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TaskStateCatchRetry"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "status": "incomplete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_1_name"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 7,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {
+                "status": "incomplete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "TaskStateCatchRetry",
+              "output": {
+                "status": "incomplete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": {
+                "status": "incomplete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IsComplete"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "name": "IsComplete",
+              "output": {
+                "status": "incomplete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": {
+                "status": "incomplete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "WaitState",
+              "output": {
+                "status": "incomplete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "stateEnteredEventDetails": {
+              "input": {
+                "status": "incomplete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CorrectCondition"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "stateExitedEventDetails": {
+              "name": "CorrectCondition",
+              "output": {
+                "status": "complete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateEnteredEventDetails": {
+              "input": {
+                "status": "complete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TaskStateCatchRetry"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 16,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "status": "complete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_1_name"
+            },
+            "previousEventId": 15,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 18,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {
+                "status": "complete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 19,
+            "previousEventId": 18,
+            "stateExitedEventDetails": {
+              "name": "TaskStateCatchRetry",
+              "output": {
+                "status": "complete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 20,
+            "previousEventId": 19,
+            "stateEnteredEventDetails": {
+              "input": {
+                "status": "complete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IsComplete"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 21,
+            "previousEventId": 20,
+            "stateExitedEventDetails": {
+              "name": "IsComplete",
+              "output": {
+                "status": "complete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 22,
+            "previousEventId": 21,
+            "stateEnteredEventDetails": {
+              "input": {
+                "status": "complete"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SuccessState"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 23,
+            "previousEventId": 22,
+            "stateExitedEventDetails": {
+              "name": "SuccessState",
+              "output": {
+                "status": "complete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "status": "complete"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 24,
+            "previousEventId": 23,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestComments::test_comment_in_parameters": {
+    "recorded-date": "09-02-2024, 12:06:30",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "StartState",
+              "output": {
+                "Comment": "Comment text",
+                "comment": "comment text",
+                "constant": "constant text"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Comment": "Comment text",
+                "comment": "comment text",
+                "constant": "constant text"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

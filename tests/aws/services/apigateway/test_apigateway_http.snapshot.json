@@ -1,0 +1,303 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda[HTTP]": {
+    "recorded-date": "07-08-2024, 18:37:12",
+    "recorded-content": {
+      "api_id": {
+        "rest_api_id": "<rest_api_id:1>"
+      },
+      "http-invocation-lambda-url": {
+        "content": {
+          "args": {},
+          "data": {
+            "message": "hello world"
+          },
+          "domain": "<domain:1>",
+          "headers": {
+            "accept": "application/json",
+            "content-length": "26",
+            "content-type": "application/json",
+            "host": "<domain:1>",
+            "user-agent": "AmazonAPIGateway_<rest_api_id:1>",
+            "x-amzn-apigateway-api-id": "<rest_api_id:1>",
+            "x-amzn-tls-cipher-suite": "<x-amzn-tls-cipher-suite:1>",
+            "x-amzn-tls-version": "<x-amzn-tls-version:1>",
+            "x-amzn-trace-id": "<x-amzn-trace-id:1>",
+            "x-forwarded-for": "<origin:1>",
+            "x-forwarded-port": "<x-forwarded-port:1>",
+            "x-forwarded-proto": "<x-forwarded-proto:1>"
+          },
+          "method": "POST",
+          "origin": "<origin:1>",
+          "path": "/"
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "date": "<date:1>",
+          "x-amz-apigw-id": "<x-amz-apigw-id:1>",
+          "x-amzn-requestid": "<x-amzn-requestid:1>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:2>"
+        },
+        "status_code": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda[HTTP_PROXY]": {
+    "recorded-date": "07-08-2024, 18:37:25",
+    "recorded-content": {
+      "api_id": {
+        "rest_api_id": "<rest_api_id:1>"
+      },
+      "http-invocation-lambda-url": {
+        "content": {
+          "args": {},
+          "data": {
+            "message": "hello world"
+          },
+          "domain": "<domain:1>",
+          "headers": {
+            "accept": "application/xml",
+            "accept-encoding": "gzip, deflate",
+            "content-length": "26",
+            "content-type": "application/json",
+            "host": "<domain:1>",
+            "user-agent": "test/integration",
+            "x-amzn-apigateway-api-id": "<rest_api_id:1>",
+            "x-amzn-tls-cipher-suite": "<x-amzn-tls-cipher-suite:1>",
+            "x-amzn-tls-version": "<x-amzn-tls-version:1>",
+            "x-amzn-trace-id": "<x-amzn-trace-id:1>",
+            "x-forwarded-for": "<x-forwarded-for:1>",
+            "x-forwarded-port": "<x-forwarded-port:1>",
+            "x-forwarded-proto": "<x-forwarded-proto:1>"
+          },
+          "method": "POST",
+          "origin": "<origin:1>",
+          "path": "/"
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "date": "<date:1>",
+          "x-amz-apigw-id": "<x-amz-apigw-id:1>",
+          "x-amzn-remapped-connection": "keep-alive",
+          "x-amzn-remapped-content-length": "<content_length:1>",
+          "x-amzn-remapped-date": "<date>",
+          "x-amzn-remapped-x-amzn-requestid": "<uuid:1>",
+          "x-amzn-requestid": "<x-amzn-requestid:1>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:2>"
+        },
+        "status_code": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP]": {
+    "recorded-date": "01-04-2024, 21:02:52",
+    "recorded-content": {
+      "matching-response": {
+        "body": {
+          "message": "",
+          "status_code": 200
+        },
+        "status_code": 200
+      },
+      "non-matching-response": {
+        "body": {
+          "message": "",
+          "status_code": 400
+        },
+        "status_code": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP_PROXY]": {
+    "recorded-date": "01-04-2024, 20:44:46",
+    "recorded-content": {
+      "matching-response": {
+        "body": {
+          "message": "",
+          "status_code": 200
+        },
+        "status_code": 200
+      },
+      "non-matching-response": {
+        "body": {
+          "message": "",
+          "status_code": 400
+        },
+        "status_code": 400
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_method[HTTP]": {
+    "recorded-date": "05-07-2024, 17:00:39",
+    "recorded-content": {
+      "api_id": {
+        "rest_api_id": "<rest_api_id:1>"
+      },
+      "http-invocation-lambda-url-post": {
+        "args": {},
+        "data": {
+          "message": "hello world"
+        },
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "application/json",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "host": "<domain:1>",
+          "user-agent": "AmazonAPIGateway_<rest_api_id:1>"
+        },
+        "method": "POST",
+        "origin": "<origin:1>",
+        "path": "/"
+      },
+      "http-invocation-lambda-url-put": {
+        "args": {},
+        "data": {
+          "message": "hello world"
+        },
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "application/json",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "host": "<domain:1>",
+          "user-agent": "AmazonAPIGateway_<rest_api_id:1>"
+        },
+        "method": "POST",
+        "origin": "<origin:2>",
+        "path": "/"
+      },
+      "http-invocation-lambda-url-get": {
+        "args": {},
+        "data": {
+          "message": "hello world"
+        },
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "application/json",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "host": "<domain:1>",
+          "user-agent": "AmazonAPIGateway_<rest_api_id:1>"
+        },
+        "method": "POST",
+        "origin": "<origin:3>",
+        "path": "/"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_method[HTTP_PROXY]": {
+    "recorded-date": "05-07-2024, 17:00:46",
+    "recorded-content": {
+      "api_id": {
+        "rest_api_id": "<rest_api_id:1>"
+      },
+      "http-invocation-lambda-url-post": {
+        "args": {},
+        "data": {
+          "message": "hello world"
+        },
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "application/json",
+          "accept-encoding": "gzip, deflate",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "host": "<domain:1>",
+          "user-agent": "test/integration"
+        },
+        "method": "POST",
+        "origin": "<origin:1>",
+        "path": "/"
+      },
+      "http-invocation-lambda-url-put": {
+        "args": {},
+        "data": {
+          "message": "hello world"
+        },
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "application/json",
+          "accept-encoding": "gzip, deflate",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "host": "<domain:1>",
+          "user-agent": "test/integration"
+        },
+        "method": "POST",
+        "origin": "<origin:2>",
+        "path": "/"
+      },
+      "http-invocation-lambda-url-get": {
+        "args": {},
+        "data": {
+          "message": "hello world"
+        },
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "application/json",
+          "accept-encoding": "gzip, deflate",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "host": "<domain:1>",
+          "user-agent": "test/integration"
+        },
+        "method": "POST",
+        "origin": "<origin:3>",
+        "path": "/"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_proxy_integration_request_data_mappings": {
+    "recorded-date": "18-07-2024, 13:59:19",
+    "recorded-content": {
+      "api_id": {
+        "rest_api_id": "<rest_api_id:1>"
+      },
+      "http-proxy-invocation": {
+        "content": {
+          "args": {
+            "queryString": "foo",
+            "testQs": "bar,foo",
+            "testQueryString": "foo",
+            "testVar": "foobar,bar"
+          },
+          "data": {
+            "message": "hello world"
+          },
+          "domain": "<domain:1>",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate",
+            "content-length": "26",
+            "content-type": "application/json",
+            "foobar": "mapped-value",
+            "headervar": "mapped-value",
+            "host": "<domain:1>",
+            "user-agent": "test/integration"
+          },
+          "method": "POST",
+          "origin": "<origin:1>",
+          "path": "/"
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "<content_length:1>",
+          "content-type": "application/json",
+          "date": "<date:1>",
+          "x-amz-apigw-id": "<x-amz-apigw-id:1>",
+          "x-amzn-remapped-connection": "keep-alive",
+          "x-amzn-remapped-content-length": "<content_length:1>",
+          "x-amzn-remapped-date": "<date>",
+          "x-amzn-remapped-x-amzn-requestid": "<uuid:1>",
+          "x-amzn-requestid": "<x-amzn-requestid:1>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:1>"
+        },
+        "status_code": 200
+      }
+    }
+  }
+}

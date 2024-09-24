@@ -1,0 +1,92 @@
+{
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_duplicate_resources": {
+    "recorded-date": "15-04-2024, 22:51:13",
+    "recorded-content": {
+      "api-details": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<id:2>",
+        "tags": {
+          "aws:cloudformation:logical-id": "RestApi",
+          "aws:cloudformation:stack-id": "<aws:cloudformation:stack-id:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        },
+        "version": "1.2.3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "api-resources": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_transformer_property_level": {
+    "recorded-date": "06-06-2024, 10:37:03",
+    "recorded-content": {
+      "original_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "\nParameters:\n  BucketName:\n    Type: String\nResources:\n  MyParameter:\n    Type: AWS::SSM::Parameter\n    Properties:\n      Description: hello\n      Type: String\n      \"Fn::Transform\":\n        Name: \"AWS::Include\"\n        Parameters:\n          Location: !Sub \"s3://${BucketName}/data.yaml\"\nOutputs:\n  ParameterName:\n    Value: !Ref MyParameter\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "ParameterName": {
+              "Value": {
+                "Ref": "MyParameter"
+              }
+            }
+          },
+          "Parameters": {
+            "BucketName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "MyParameter": {
+              "Properties": {
+                "Description": "hello",
+                "Type": "String",
+                "Value": "from_transformation"
+              },
+              "Type": "AWS::SSM::Parameter"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

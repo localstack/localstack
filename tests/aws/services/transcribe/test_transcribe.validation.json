@@ -1,0 +1,38 @@
+{
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_failing_deletion": {
+    "last_validated_date": "2023-10-06T15:10:47+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_failing_start_transcription_job": {
+    "last_validated_date": "2023-10-06T15:07:27+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_get_transcription_job": {
+    "last_validated_date": "2023-10-06T15:11:58+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_list_transcription_jobs": {
+    "last_validated_date": "2023-10-06T15:11:25+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_happy_path": {
+    "last_validated_date": "2023-10-06T15:09:11+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_start_job[None-None]": {
+    "last_validated_date": "2023-05-03T18:04:18+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-2-None]": {
+    "last_validated_date": "2023-05-03T18:01:19+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-3-test-output]": {
+    "last_validated_date": "2023-05-03T18:01:44+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-4-test-output.json]": {
+    "last_validated_date": "2023-05-03T18:02:06+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-5-test-files/test-output.json]": {
+    "last_validated_date": "2023-05-03T18:03:12+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-6-test-files/test-output]": {
+    "last_validated_date": "2023-05-03T18:03:34+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_start_job_same_name": {
+    "last_validated_date": "2023-05-09T20:50:14+00:00"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "tests/aws/services/cloudformation/api/test_nested_stacks.py::test_nested_output_in_params": {
+    "recorded-date": "07-02-2023, 10:57:47",
+    "recorded-content": {
+      "get_role_response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Description": "",
+          "MaxSessionDuration": 3600,
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<role-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "role_policies": {
+        "IsTruncated": false,
+        "PolicyNames": [
+          "PolicyA"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "actual_policy": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sns:Publish"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:<partition>:sns:<region>:111111111111:<topic>"
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "PolicyA",
+        "RoleName": "<role-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_nested_stacks.py::test_deletion_of_failed_nested_stack": {
+    "recorded-date": "17-09-2024, 20:09:36",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack with id <nested-stack-name> does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

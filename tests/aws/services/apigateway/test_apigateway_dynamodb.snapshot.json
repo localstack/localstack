@@ -1,0 +1,195 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_error_aws_proxy_not_supported": {
+    "recorded-date": "26-02-2023, 12:45:17",
+    "recorded-content": {
+      "create-integration-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations."
+        },
+        "message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[PutItem]": {
+    "recorded-date": "19-07-2024, 19:53:50",
+    "recorded-content": {
+      "result-put-item": {
+        "content": {},
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "content-length",
+          "content-type": "application/json",
+          "date": "date",
+          "x-amz-apigw-id": "x-amz-apigw-id",
+          "x-amzn-requestid": "<uuid:1>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:1>"
+        },
+        "status_code": 200
+      },
+      "result-scan": {
+        "Count": 4,
+        "Items": [
+          {
+            "id": {
+              "S": "test"
+            }
+          },
+          {
+            "id": {
+              "S": "test 3"
+            }
+          },
+          {
+            "id": {
+              "S": "test-new"
+            }
+          },
+          {
+            "id": {
+              "S": "test2"
+            }
+          }
+        ],
+        "ScannedCount": 4,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Query]": {
+    "recorded-date": "19-07-2024, 19:54:08",
+    "recorded-content": {
+      "result-test": {
+        "content": {
+          "Count": 1,
+          "Items": [
+            {
+              "id": {
+                "S": "test"
+              }
+            }
+          ],
+          "ScannedCount": 1
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "content-length",
+          "content-type": "application/json",
+          "date": "date",
+          "x-amz-apigw-id": "x-amz-apigw-id",
+          "x-amzn-requestid": "<uuid:1>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:1>"
+        },
+        "status_code": 200
+      },
+      "result-test2": {
+        "content": {
+          "Count": 1,
+          "Items": [
+            {
+              "id": {
+                "S": "test2"
+              }
+            }
+          ],
+          "ScannedCount": 1
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "content-length",
+          "content-type": "application/json",
+          "date": "date",
+          "x-amz-apigw-id": "x-amz-apigw-id",
+          "x-amzn-requestid": "<uuid:2>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:2>"
+        },
+        "status_code": 200
+      },
+      "result-test 3": {
+        "content": {
+          "Count": 1,
+          "Items": [
+            {
+              "id": {
+                "S": "test 3"
+              }
+            }
+          ],
+          "ScannedCount": 1
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "content-length",
+          "content-type": "application/json",
+          "date": "date",
+          "x-amz-apigw-id": "x-amz-apigw-id",
+          "x-amzn-requestid": "<uuid:3>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:3>"
+        },
+        "status_code": 200
+      },
+      "result-invalid": {
+        "content": {
+          "Count": 0,
+          "Items": [],
+          "ScannedCount": 0
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "content-length",
+          "content-type": "application/json",
+          "date": "date",
+          "x-amz-apigw-id": "x-amz-apigw-id",
+          "x-amzn-requestid": "<uuid:4>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:4>"
+        },
+        "status_code": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Scan]": {
+    "recorded-date": "19-07-2024, 19:54:29",
+    "recorded-content": {
+      "result-scan": {
+        "content": {
+          "Count": 3,
+          "Items": [
+            {
+              "id": {
+                "S": "test"
+              }
+            },
+            {
+              "id": {
+                "S": "test 3"
+              }
+            },
+            {
+              "id": {
+                "S": "test2"
+              }
+            }
+          ],
+          "ScannedCount": 3
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "content-length",
+          "content-type": "application/json",
+          "date": "date",
+          "x-amz-apigw-id": "x-amz-apigw-id",
+          "x-amzn-requestid": "<uuid:1>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:1>"
+        },
+        "status_code": 200
+      }
+    }
+  }
+}

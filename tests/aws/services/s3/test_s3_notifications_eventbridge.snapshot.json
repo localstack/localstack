@@ -1,0 +1,472 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put": {
+    "recorded-date": "05-08-2023, 00:41:37",
+    "recorded-content": {
+      "object_deleted": {
+        "account": "111111111111",
+        "detail": {
+          "bucket": {
+            "name": "<bucket-name:1>"
+          },
+          "deletion-type": "Permanently Deleted",
+          "object": {
+            "key": "<key-name:1>",
+            "sequencer": "object-sequencer"
+          },
+          "reason": "DeleteObject",
+          "request-id": "request-id",
+          "requester": "<requester>",
+          "source-ip-address": "<ip-address:1>",
+          "version": "0"
+        },
+        "detail-type": "Object Deleted",
+        "id": "<uuid:1>",
+        "region": "<region>",
+        "resources": [
+          "arn:<partition>:s3:::<bucket-name:1>"
+        ],
+        "source": "aws.s3",
+        "time": "date",
+        "version": "0"
+      },
+      "object_created": {
+        "account": "111111111111",
+        "detail": {
+          "bucket": {
+            "name": "<bucket-name:1>"
+          },
+          "object": {
+            "etag": "8d777f385d3dfec8815d20f7496026dc",
+            "key": "<key-name:1>",
+            "sequencer": "object-sequencer",
+            "size": 4
+          },
+          "reason": "PutObject",
+          "request-id": "request-id",
+          "requester": "<requester>",
+          "source-ip-address": "<ip-address:1>",
+          "version": "0"
+        },
+        "detail-type": "Object Created",
+        "id": "<uuid:2>",
+        "region": "<region>",
+        "resources": [
+          "arn:<partition>:s3:::<bucket-name:1>"
+        ],
+        "source": "aws.s3",
+        "time": "date",
+        "version": "0"
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_put_acl": {
+    "recorded-date": "05-08-2023, 01:08:43",
+    "recorded-content": {
+      "messages": {
+        "messages": [
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>"
+              },
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object ACL Updated",
+            "id": "<uuid:1>",
+            "region": "<region>",
+            "resources": [
+              "arn:<partition>:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>"
+              },
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object ACL Updated",
+            "id": "<uuid:2>",
+            "region": "<region>",
+            "resources": [
+              "arn:<partition>:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>"
+              },
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object ACL Updated",
+            "id": "<uuid:3>",
+            "region": "<region>",
+            "resources": [
+              "arn:<partition>:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>",
+                "sequencer": "object-sequencer",
+                "size": 9
+              },
+              "reason": "PutObject",
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object Created",
+            "id": "<uuid:4>",
+            "region": "<region>",
+            "resources": [
+              "arn:<partition>:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_restore_object": {
+    "recorded-date": "13-07-2023, 02:00:37",
+    "recorded-content": {
+      "messages": {
+        "messages": [
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>",
+                "size": 9
+              },
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "source-storage-class": "GLACIER",
+              "version": "0"
+            },
+            "detail-type": "Object Restore Initiated",
+            "id": "<uuid:1>",
+            "region": "<region>",
+            "resources": [
+              "arn:<partition>:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>",
+                "size": 9
+              },
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "restore-expiry-time": "date",
+              "source-storage-class": "GLACIER",
+              "version": "0"
+            },
+            "detail-type": "Object Restore Completed",
+            "id": "<uuid:2>",
+            "region": "<region>",
+            "resources": [
+              "arn:<partition>:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put_in_different_region": {
+    "recorded-date": "18-10-2023, 01:26:55",
+    "recorded-content": {
+      "object-created-different-regions": {
+        "messages": [
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "8d777f385d3dfec8815d20f7496026dc",
+                "key": "<key-name:1>",
+                "sequencer": "object-sequencer",
+                "size": 4
+              },
+              "reason": "PutObject",
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object Created",
+            "id": "<uuid:1>",
+            "region": "<region:1>",
+            "resources": [
+              "arn:<partition>:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "8d777f385d3dfec8815d20f7496026dc",
+                "key": "<key-name:1>",
+                "sequencer": "object-sequencer",
+                "size": 4
+              },
+              "reason": "PutObject",
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object Created",
+            "id": "<uuid:2>",
+            "region": "<region:1>",
+            "resources": [
+              "arn:<partition>:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put_versioned": {
+    "recorded-date": "03-09-2024, 14:18:13",
+    "recorded-content": {
+      "obj-ver1": {
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "obj-ver2": {
+        "ETag": "\"6869c34ca384e0ed836d49214f881e87\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-version": {
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "message-versioning-active": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "Object Created",
+          "source": "aws.s3",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:s3:::<bucket-name:1>"
+          ],
+          "detail": {
+            "version": "0",
+            "bucket": {
+              "name": "<bucket-name:1>"
+            },
+            "object": {
+              "key": "<key-name:1>",
+              "size": 13,
+              "etag": "2fb1d4988881168bbcd6432d7593be5a",
+              "sequencer": "object-sequencer"
+            },
+            "request-id": "request-id",
+            "requester": "<requester>",
+            "source-ip-address": "<ip-address:1>",
+            "reason": "PutObject"
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:2>",
+          "detail-type": "Object Deleted",
+          "source": "aws.s3",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:s3:::<bucket-name:1>"
+          ],
+          "detail": {
+            "version": "0",
+            "bucket": {
+              "name": "<bucket-name:1>"
+            },
+            "object": {
+              "key": "<key-name:1>",
+              "version-id": "<version-id:3>",
+              "sequencer": "object-sequencer"
+            },
+            "request-id": "request-id",
+            "requester": "<requester>",
+            "source-ip-address": "<ip-address:1>",
+            "reason": "DeleteObject",
+            "deletion-type": "Permanently Deleted"
+          }
+        }
+      ],
+      "add-null-version": {
+        "ETag": "\"2fb1d4988881168bbcd6432d7593be5a\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "message-versioning-suspended": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "Object Created",
+          "source": "aws.s3",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:s3:::<bucket-name:1>"
+          ],
+          "detail": {
+            "version": "0",
+            "bucket": {
+              "name": "<bucket-name:1>"
+            },
+            "object": {
+              "key": "<key-name:1>",
+              "size": 13,
+              "etag": "2fb1d4988881168bbcd6432d7593be5a",
+              "sequencer": "object-sequencer"
+            },
+            "request-id": "request-id",
+            "requester": "<requester>",
+            "source-ip-address": "<ip-address:1>",
+            "reason": "PutObject"
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:2>",
+          "detail-type": "Object Deleted",
+          "source": "aws.s3",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:s3:::<bucket-name:1>"
+          ],
+          "detail": {
+            "version": "0",
+            "bucket": {
+              "name": "<bucket-name:1>"
+            },
+            "object": {
+              "key": "<key-name:1>",
+              "version-id": "<version-id:3>",
+              "sequencer": "object-sequencer"
+            },
+            "request-id": "request-id",
+            "requester": "<requester>",
+            "source-ip-address": "<ip-address:1>",
+            "reason": "DeleteObject",
+            "deletion-type": "Permanently Deleted"
+          }
+        }
+      ]
+    }
+  }
+}

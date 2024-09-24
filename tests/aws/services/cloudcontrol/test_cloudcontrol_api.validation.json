@@ -1,0 +1,38 @@
+{
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_api_exceptions": {
+    "last_validated_date": "2023-02-01T08:20:39+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_create_exceptions": {
+    "last_validated_date": "2023-02-01T08:23:04+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_create_invalid_desiredstate": {
+    "last_validated_date": "2023-02-01T08:23:05+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_double_create_with_client_token": {
+    "last_validated_date": "2023-02-01T08:21:50+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_lifecycle": {
+    "last_validated_date": "2023-02-01T08:20:37+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_list_resources": {
+    "last_validated_date": "2023-02-01T08:21:18+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_update": {
+    "last_validated_date": "2023-02-01T08:24:31+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[FAIL]": {
+    "last_validated_date": "2023-02-01T08:02:30+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[SUCCESS]": {
+    "last_validated_date": "2023-02-01T08:01:58+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_request": {
+    "last_validated_date": "2023-02-01T08:01:26+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_invalid_request_token_exc": {
+    "last_validated_date": "2023-02-01T08:00:47+00:00"
+  },
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_list_request_status": {
+    "last_validated_date": "2023-02-01T08:01:18+00:00"
+  }
+}

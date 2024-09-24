@@ -1,0 +1,28 @@
+{
+  "StartAt": "CheckResult",
+  "States": {
+    "CheckResult": {
+      "Choices": [
+        {
+          "BooleanEquals": true,
+          "Next": "FinishTrue",
+          "Variable": "$.result.done"
+        },
+        {
+          "BooleanEquals": false,
+          "Next": "FinishFalse",
+          "Variable": "$.result.done"
+        }
+      ],
+      "Type": "Choice"
+    },
+    "FinishTrue": {
+      "End": true,
+      "Type": "Pass"
+    },
+    "FinishFalse": {
+      "End": true,
+      "Type": "Pass"
+    }
+  }
+}

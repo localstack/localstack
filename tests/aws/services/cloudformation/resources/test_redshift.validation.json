@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_redshift.py::test_redshift_cluster": {
+    "last_validated_date": "2024-02-28T12:42:35+00:00"
+  }
+}

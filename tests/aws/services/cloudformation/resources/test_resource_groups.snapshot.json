@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/cloudformation/resources/test_resource_groups.py::test_group_defaults": {
+    "recorded-date": "16-07-2024, 15:15:11",
+    "recorded-content": {
+      "resource-group": {
+        "Group": {
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/testgroup",
+          "Name": "testgroup"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

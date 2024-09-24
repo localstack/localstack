@@ -1,0 +1,18 @@
+{
+  "StartAt": "SendMessageWithWaitAndTimeout",
+  "States": {
+    "SendMessageWithWaitAndTimeout": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "TimeoutSeconds": 5,
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody": {
+          "Message.$": "$.Message",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "End": true
+    }
+  }
+}

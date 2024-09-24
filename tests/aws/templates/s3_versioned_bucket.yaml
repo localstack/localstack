@@ -1,0 +1,17 @@
+Resources:
+  Bucket83908E77:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+Outputs:
+  BucketName:
+    Value:
+      Ref: Bucket83908E77

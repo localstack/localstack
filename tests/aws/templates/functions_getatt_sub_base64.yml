@@ -1,0 +1,20 @@
+Parameters:
+  OriginalString:
+    Type: String
+Resources:
+  SsmParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::Base64:
+          Fn::Sub:
+            - "${value}"
+            - value:
+                Ref: OriginalString
+Outputs:
+  Encoded:
+    Value:
+      Fn::GetAtt:
+        - SsmParameter
+        - Value
