@@ -2397,7 +2397,7 @@ class TestSecretsManager:
         sm_snapshot.match("mismatch_version_id_and_stage", exc.value.response)
 
     @markers.aws.validated
-    def test_get_secret_value_to_fix_11319(
+    def test_get_secret_value(
         self, aws_client, aws_http_client_factory, region_name, create_secret, sm_snapshot
     ):
         """
