@@ -254,7 +254,7 @@ paths:
   /_aws/dynamodb/expired:
     delete:
       description: Delete expired items from TTL-enabled DynamoDB tables
-      operationId: delete_expired_items
+      operationId: delete_ddb_expired_items
       tags: [aws]
       responses:
         '200':
@@ -555,7 +555,7 @@ paths:
           description: Current LocalStack configuration
     post:
       description: Configuration option to update with new value
-      operationId: update_configuration_option
+      operationId: update_config_option
       tags: [internal]
       requestBody:
         content:
@@ -702,7 +702,7 @@ paths:
   /_localstack/health:
     get:
       description: Get available LocalStack features and AWS services
-      operationId: get_ls_features_and_services
+      operationId: get_features_and_services
       tags: [internal]
       parameters:
       - allowEmptyValue: true
@@ -748,7 +748,7 @@ paths:
           description: ''
     post:
       description: Restart or terminate LocalStack session
-      operationId: restart_or_terminate_session
+      operationId: manage_session
       tags: [internal]
       requestBody:
         content:
