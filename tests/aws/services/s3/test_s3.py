@@ -2893,6 +2893,11 @@ class TestS3:
         # https://github.com/localstack/localstack/issues/1685
         # TODO: should we have a config var to not deleted immediately in the new provider? and schedule it?
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "ExpiresString", reference_replacement=False, value_replacement="<expires>"
+            )
+        )
         # put object
         short_expire = datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(seconds=1)
         object_key_expired = "key-object-expired"
@@ -10986,13 +10991,12 @@ class TestS3PresignedPost:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..ContentLength",
-            "$..ETag",
-        ],  # FIXME: in CI, it fails sporadically and the form is empty
-    )
     def test_post_object_with_metadata(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "ExpiresString", reference_replacement=False, value_replacement="<expires>"
+            )
+        )
         object_key = "test-presigned-post-key-metadata"
         object_expires = rfc_1123_datetime(
             datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(minutes=10)
@@ -11220,6 +11224,9 @@ class TestS3PresignedPost:
                     "HostId", reference_replacement=False, value_replacement="<host-id>"
                 ),
                 snapshot.transform.key_value("RequestId"),
+                snapshot.transform.key_value(
+                    "ExpiresString", reference_replacement=False, value_replacement="<expires>"
+                ),
             ]
         )
         object_key = "validate-policy-1"
