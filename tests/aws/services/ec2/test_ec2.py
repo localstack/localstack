@@ -655,10 +655,12 @@ class TestEc2FlowLogs:
     def test_ec2_flow_logs_s3_validation(
         self, aws_client, create_vpc, create_flow_logs, s3_bucket, snapshot
     ):
+        bad_bucket_name = f"{s3_bucket}-{short_uid()}-{short_uid()}"
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("ClientToken"),
                 snapshot.transform.key_value("ResourceId"),
+                snapshot.transform.regex(bad_bucket_name, replacement="<bad-bucket-name>"),
             ]
         )
         vpc = create_vpc(
@@ -667,11 +669,14 @@ class TestEc2FlowLogs:
         )
         vpc_id = vpc["Vpc"]["VpcId"]
 
+        # TODO: write an IAM test if the bucket exists but there are no permissions:
+        # the error would be the following if the bucket exists:
+        # Access Denied for LogDestination: bad-bucket. Please check LogDestination permission
         non_existent_bucket = create_flow_logs(
             ResourceIds=[vpc_id],
             ResourceType="VPC",
             LogDestinationType="s3",
-            LogDestination="arn:aws:s3:::bad-bucket",
+            LogDestination=f"arn:aws:s3:::{bad_bucket_name}",
             TrafficType="ALL",
         )
         snapshot.match("non-existent-bucket", non_existent_bucket)

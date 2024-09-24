@@ -270,7 +270,7 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3_validation": {
-    "recorded-date": "24-09-2024, 23:02:25",
+    "recorded-date": "24-09-2024, 23:26:43",
     "recorded-content": {
       "non-existent-bucket": {
         "ClientToken": "<client-token:1>",
@@ -279,7 +279,7 @@
           {
             "Error": {
               "Code": "400",
-              "Message": "Access Denied for LogDestination: bad-bucket. Please check LogDestination permission"
+              "Message": "LogDestination: <bad-bucket-name> does not exist"
             },
             "ResourceId": "<resource-id:1>"
           }

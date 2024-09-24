@@ -509,7 +509,8 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
                 s3_client.head_bucket(Bucket=bucket_name)
             except Exception as e:
                 LOG.debug(
-                    "An exception occured when trying to create FlowLogs with S3 destination: %s", e
+                    "An exception occurred when trying to create FlowLogs with S3 destination: %s",
+                    e,
                 )
                 return CreateFlowLogsResult(
                     FlowLogIds=[],
@@ -517,7 +518,7 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
                         UnsuccessfulItem(
                             Error=UnsuccessfulItemError(
                                 Code="400",
-                                Message=f"Access Denied for LogDestination: {bucket_name}. Please check LogDestination permission",
+                                Message=f"LogDestination: {bucket_name} does not exist",
                             ),
                             ResourceId=resource_id,
                         )
