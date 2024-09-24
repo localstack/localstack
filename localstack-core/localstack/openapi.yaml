@@ -190,6 +190,11 @@ paths:
   /_aws/cloudwatch/metrics/raw:
     get:
       description: Retrieve CloudWatch metrics
+<<<<<<< HEAD
+=======
+      operationId: get_cloudwatch_metrics
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -252,6 +257,11 @@ paths:
   /_aws/dynamodb/expired:
     delete:
       description: Delete expired items from TTL-enabled DynamoDB tables
+<<<<<<< HEAD
+=======
+      operationId: delete_ddb_expired_items
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -269,6 +279,11 @@ paths:
   /_aws/events/rules/{rule_arn}/trigger:
     get:
       description: Trigger a scheduled EventBridge rule
+<<<<<<< HEAD
+=======
+      operationId: trigger_event_bridge_rule
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - description: EventBridge rule ARN
         in: path
@@ -284,6 +299,11 @@ paths:
   /_aws/lambda/init:
     get:
       description: Retrieve Lambda runtime init binary
+<<<<<<< HEAD
+=======
+      operationId: get_lambda_init
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -292,6 +312,11 @@ paths:
   /_aws/lambda/runtimes:
     get:
       description: List available Lambda runtimes
+<<<<<<< HEAD
+=======
+      operationId: get_lambda_runtimes
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - in: query
         name: filter
@@ -321,6 +346,11 @@ paths:
   /_aws/ses:
     delete:
       description: Discard sent SES messages
+<<<<<<< HEAD
+=======
+      operationId: discard_ses_messages
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - $ref: '#/components/parameters/SesMessageId'
       responses:
@@ -328,6 +358,11 @@ paths:
           description: Message was successfully discarded
     get:
       description: Retrieve sent SES messages
+<<<<<<< HEAD
+=======
+      operationId: get_ses_messages
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - $ref: '#/components/parameters/SesMessageId'
       - description: Source of the message (`source` field of SES message)
@@ -354,6 +389,11 @@ paths:
   /_aws/sns/platform-endpoint-messages:
     delete:
       description: Discard SNS platform endpoint messages
+<<<<<<< HEAD
+=======
+      operationId: discard_sns_messages
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
       - $ref: '#/components/parameters/SnsRegion'
@@ -363,6 +403,11 @@ paths:
           description: Platform endpoint message was discarded
     get:
       description: Retrieve SNS platform endpoint messages
+<<<<<<< HEAD
+=======
+      operationId: get_sns_messages
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
       - $ref: '#/components/parameters/SnsRegion'
@@ -386,6 +431,11 @@ paths:
   /_aws/sns/sms-messages:
     delete:
       description: Discard SNS SMS messages
+<<<<<<< HEAD
+=======
+      operationId: discard_sns_sms_messages
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
       - $ref: '#/components/parameters/SnsRegion'
@@ -397,6 +447,11 @@ paths:
           description: SMS message was discarded
     get:
       description: Retrieve SNS SMS messages
+<<<<<<< HEAD
+=======
+      operationId: get_sns_sms_messages
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
       - $ref: '#/components/parameters/SnsRegion'
@@ -420,6 +475,11 @@ paths:
   /_aws/sns/subscription-tokens/{subscription_arn}:
     get:
       description: Retrieve SNS subscription token for confirmation
+<<<<<<< HEAD
+=======
+      operationId: get_sns_subscription_token
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - description: '`subscriptionArn` resource of subscription token'
         in: path
@@ -458,6 +518,11 @@ paths:
   /_aws/sqs/messages:
     get:
       description: List SQS queue messages without side effects
+<<<<<<< HEAD
+=======
+      operationId: list_all_sqs_messages
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - description: SQS queue URL
         in: query
@@ -481,6 +546,11 @@ paths:
   /_aws/sqs/messages/{region}/{account_id}/{queue_name}:
     get:
       description: List SQS messages without side effects
+<<<<<<< HEAD
+=======
+      operationId: list_sqs_messages
+      tags: [aws]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - description: SQS queue region
         in: path
@@ -516,6 +586,11 @@ paths:
   /_localstack/config:
     get:
       description: Get current LocalStack configuration
+<<<<<<< HEAD
+=======
+      operationId: get_config
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -524,6 +599,12 @@ paths:
                 type: object
           description: Current LocalStack configuration
     post:
+<<<<<<< HEAD
+=======
+      description: Configuration option to update with new value
+      operationId: update_config_option
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       requestBody:
         content:
           application/json:
@@ -541,7 +622,10 @@ paths:
               - variable
               - value
               type: object
+<<<<<<< HEAD
         description: Configuration option to update with new value
+=======
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
         required: true
       responses:
         '200':
@@ -568,6 +652,11 @@ paths:
   /_localstack/diagnose:
     get:
       description: Get diagnostics report
+<<<<<<< HEAD
+=======
+      operationId: get_diagnostics
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -668,6 +757,11 @@ paths:
   /_localstack/health:
     get:
       description: Get available LocalStack features and AWS services
+<<<<<<< HEAD
+=======
+      operationId: get_features_and_services
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - allowEmptyValue: true
         in: query
@@ -703,6 +797,11 @@ paths:
                 type: object
           description: Available LocalStack features and AWS services
     head:
+<<<<<<< HEAD
+=======
+      tags: [localstack]
+      operationId: health
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -710,6 +809,11 @@ paths:
           description: ''
     post:
       description: Restart or terminate LocalStack session
+<<<<<<< HEAD
+=======
+      operationId: manage_session
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       requestBody:
         content:
           application/json:
@@ -737,6 +841,11 @@ paths:
           description: Bad request
     put:
       description: Store arbitrary data to in-memory state
+<<<<<<< HEAD
+=======
+      operationId: store_data
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       requestBody:
         content:
           application/json:
@@ -759,6 +868,11 @@ paths:
   /_localstack/info:
     get:
       description: Get information about the current LocalStack session
+<<<<<<< HEAD
+=======
+      operationId: get_session_info
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -769,6 +883,11 @@ paths:
   /_localstack/init:
     get:
       description: Get information about init scripts
+<<<<<<< HEAD
+=======
+      operationId: get_init_script_info
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -779,6 +898,11 @@ paths:
   /_localstack/init/{stage}:
     get:
       description: Get information about init scripts in a specific stage
+<<<<<<< HEAD
+=======
+      operationId: get_init_script_info_stage
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       parameters:
       - in: path
         name: stage
@@ -795,6 +919,11 @@ paths:
   /_localstack/plugins:
     get:
       description: ''
+<<<<<<< HEAD
+=======
+      operationId: get_plugins
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
@@ -803,6 +932,11 @@ paths:
   /_localstack/usage:
     get:
       description: ''
+<<<<<<< HEAD
+=======
+      operationId: get_usage
+      tags: [localstack]
+>>>>>>> 1b8a1892c17c0e946c9b665969e04c7ac7c24c20
       responses:
         '200':
           content:
