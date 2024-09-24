@@ -600,7 +600,7 @@ paths:
   /_localstack/diagnose:
     get:
       description: Get diagnostics report
-      operationId: get_diagnose
+      operationId: get_diagnostic
       tags: [internal]
       responses:
         '200':
