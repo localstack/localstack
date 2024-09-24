@@ -525,8 +525,14 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
                     ],
                 )
 
-            response = call_moto_with_request(context, service_request)
-
+            response: CreateFlowLogsResult = call_moto_with_request(context, service_request)
+            moto_backend = get_moto_backend(context)
+            for flow_log_id in response["FlowLogIds"]:
+                if flow_log := moto_backend.flow_logs.get(flow_log_id):
+                    # just to be sure to not override another value, we only replace if it's the placeholder
+                    flow_log.log_destination_type = flow_log.log_destination_type.replace(
+                        "__placeholder__", "s3"
+                    )
         else:
             response = call_moto(context)
 

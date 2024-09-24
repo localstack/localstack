@@ -603,12 +603,21 @@ class TestEc2FlowLogs:
         except Exception:
             LOG.debug("Error while cleaning up FlowLogs %s", flow_logs)
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # not returned by Moto
+            "$..FlowLogs..DestinationOptions",
+            "$..FlowLogs..Tags",
+        ],
+    )
     @markers.aws.validated
     def test_ec2_flow_logs_s3(self, aws_client, create_vpc, s3_bucket, create_flow_logs, snapshot):
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("ClientToken"),
-                snapshot.transform.jsonpath("$..FlowLogIds[0]", value_replacement="flow-log-id"),
+                snapshot.transform.key_value("FlowLogId"),
+                snapshot.transform.key_value("ResourceId"),
+                snapshot.transform.resource_name(),
             ]
         )
         vpc = create_vpc(
@@ -626,6 +635,9 @@ class TestEc2FlowLogs:
         )
         snapshot.match("create-flow-logs-s3", response)
 
+        describe_flow_logs = aws_client.ec2.describe_flow_logs(FlowLogIds=response["FlowLogIds"])
+        snapshot.match("describe-flow-logs", describe_flow_logs)
+
     @markers.aws.validated
     def test_ec2_flow_logs_s3_validation(
         self, aws_client, create_vpc, create_flow_logs, s3_bucket, snapshot
@@ -636,7 +648,6 @@ class TestEc2FlowLogs:
                 snapshot.transform.key_value("ResourceId"),
             ]
         )
-
         vpc = create_vpc(
             cidr_block="10.0.0.0/24",
             tag_specifications=[],

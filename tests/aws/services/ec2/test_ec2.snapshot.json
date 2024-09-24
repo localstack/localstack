@@ -217,7 +217,7 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3": {
-    "recorded-date": "24-09-2024, 22:58:17",
+    "recorded-date": "24-09-2024, 23:10:19",
     "recorded-content": {
       "create-flow-logs-s3": {
         "ClientToken": "<client-token:1>",
@@ -225,6 +225,32 @@
           "<flow-log-id:1>"
         ],
         "Unsuccessful": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-flow-logs": {
+        "FlowLogs": [
+          {
+            "CreationTime": "<datetime>",
+            "DeliverLogsStatus": "SUCCESS",
+            "DestinationOptions": {
+              "FileFormat": "plain-text",
+              "HiveCompatiblePartitions": false,
+              "PerHourPartition": false
+            },
+            "FlowLogId": "<flow-log-id:1>",
+            "FlowLogStatus": "ACTIVE",
+            "LogDestination": "arn:<partition>:s3:::<resource:1>",
+            "LogDestinationType": "s3",
+            "LogFormat": "${version} ${account-id} ${interface-id} ${srcaddr} ${dstaddr} ${srcport} ${dstport} ${protocol} ${packets} ${bytes} ${start} ${end} ${action} ${log-status}",
+            "MaxAggregationInterval": 600,
+            "ResourceId": "<resource-id:1>",
+            "Tags": [],
+            "TrafficType": "ALL"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

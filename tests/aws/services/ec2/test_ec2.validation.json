@@ -1,6 +1,6 @@
 {
   "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3": {
-    "last_validated_date": "2024-09-24T22:58:17+00:00"
+    "last_validated_date": "2024-09-24T23:10:19+00:00"
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3_validation": {
     "last_validated_date": "2024-09-24T23:02:24+00:00"
