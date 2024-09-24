@@ -618,6 +618,10 @@ class TestEc2FlowLogs:
                 snapshot.transform.key_value("FlowLogId"),
                 snapshot.transform.key_value("ResourceId"),
                 snapshot.transform.resource_name(),
+                snapshot.transform.jsonpath(
+                    "$.create-flow-logs-s3-subfolder.FlowLogIds[0]",
+                    value_replacement="flow-log-id-sub",
+                ),
             ]
         )
         vpc = create_vpc(
@@ -637,6 +641,15 @@ class TestEc2FlowLogs:
 
         describe_flow_logs = aws_client.ec2.describe_flow_logs(FlowLogIds=response["FlowLogIds"])
         snapshot.match("describe-flow-logs", describe_flow_logs)
+
+        response = create_flow_logs(
+            ResourceIds=[vpc_id],
+            ResourceType="VPC",
+            LogDestinationType="s3",
+            LogDestination=f"arn:aws:s3:::{s3_bucket}/subfolder/",
+            TrafficType="ALL",
+        )
+        snapshot.match("create-flow-logs-s3-subfolder", response)
 
     @markers.aws.validated
     def test_ec2_flow_logs_s3_validation(

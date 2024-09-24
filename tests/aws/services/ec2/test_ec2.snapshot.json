@@ -217,7 +217,7 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3": {
-    "recorded-date": "24-09-2024, 23:10:19",
+    "recorded-date": "24-09-2024, 23:19:46",
     "recorded-content": {
       "create-flow-logs-s3": {
         "ClientToken": "<client-token:1>",
@@ -251,6 +251,17 @@
             "TrafficType": "ALL"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-flow-logs-s3-subfolder": {
+        "ClientToken": "<client-token:1>",
+        "FlowLogIds": [
+          "<flow-log-id-sub:1>"
+        ],
+        "Unsuccessful": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
