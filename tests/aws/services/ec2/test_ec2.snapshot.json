@@ -215,5 +215,73 @@
         "VpnGatewayId": "<vpn-gateway-id:1>"
       }
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3": {
+    "recorded-date": "24-09-2024, 22:58:17",
+    "recorded-content": {
+      "create-flow-logs-s3": {
+        "ClientToken": "<client-token:1>",
+        "FlowLogIds": [
+          "<flow-log-id:1>"
+        ],
+        "Unsuccessful": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3_validation": {
+    "recorded-date": "24-09-2024, 23:02:25",
+    "recorded-content": {
+      "non-existent-bucket": {
+        "ClientToken": "<client-token:1>",
+        "FlowLogIds": [],
+        "Unsuccessful": [
+          {
+            "Error": {
+              "Code": "400",
+              "Message": "Access Denied for LogDestination: bad-bucket. Please check LogDestination permission"
+            },
+            "ResourceId": "<resource-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "with-log-group-name": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Please only provide LogGroupName or only provide LogDestination."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "no-log-destination": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "LogDestination can't be empty if LogGroupName is not provided."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "log-group-name-s3-destination": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "LogDestination type must be cloud-watch-logs if LogGroupName is provided."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
