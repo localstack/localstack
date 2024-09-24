@@ -600,7 +600,7 @@ paths:
   /_localstack/diagnose:
     get:
       description: Get diagnostics report
-      operationId: get_diagnostic
+      operationId: get_diagnostics
       tags: [localstack]
       responses:
         '200':
@@ -740,7 +740,7 @@ paths:
           description: Available LocalStack features and AWS services
     head:
       tags: [localstack]
-      operationId: heath
+      operationId: health
       responses:
         '200':
           content:
