@@ -544,8 +544,8 @@ paths:
   /_localstack/config:
     get:
       description: Get current LocalStack configuration
-      operationId: get_localstack_config
-      tags: [internal]
+      operationId: get_config
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -556,7 +556,7 @@ paths:
     post:
       description: Configuration option to update with new value
       operationId: update_config_option
-      tags: [internal]
+      tags: [localstack]
       requestBody:
         content:
           application/json:
@@ -601,7 +601,7 @@ paths:
     get:
       description: Get diagnostics report
       operationId: get_diagnostic
-      tags: [internal]
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -703,7 +703,7 @@ paths:
     get:
       description: Get available LocalStack features and AWS services
       operationId: get_features_and_services
-      tags: [internal]
+      tags: [localstack]
       parameters:
       - allowEmptyValue: true
         in: query
@@ -739,7 +739,7 @@ paths:
                 type: object
           description: Available LocalStack features and AWS services
     head:
-      tags: [internal]
+      tags: [localstack]
       operationId: heath
       responses:
         '200':
@@ -749,7 +749,7 @@ paths:
     post:
       description: Restart or terminate LocalStack session
       operationId: manage_session
-      tags: [internal]
+      tags: [localstack]
       requestBody:
         content:
           application/json:
@@ -778,7 +778,7 @@ paths:
     put:
       description: Store arbitrary data to in-memory state
       operationId: store_data
-      tags: [internal]
+      tags: [localstack]
       requestBody:
         content:
           application/json:
@@ -802,7 +802,7 @@ paths:
     get:
       description: Get information about the current LocalStack session
       operationId: get_session_info
-      tags: [internal]
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -814,7 +814,7 @@ paths:
     get:
       description: Get information about init scripts
       operationId: get_init_script_info
-      tags: [internal]
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -826,7 +826,7 @@ paths:
     get:
       description: Get information about init scripts in a specific stage
       operationId: get_init_script_info_stage
-      tags: [internal]
+      tags: [localstack]
       parameters:
       - in: path
         name: stage
@@ -844,7 +844,7 @@ paths:
     get:
       description: ''
       operationId: get_plugins
-      tags: [internal]
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -854,7 +854,7 @@ paths:
     get:
       description: ''
       operationId: get_usage
-      tags: [internal]
+      tags: [localstack]
       responses:
         '200':
           content:
