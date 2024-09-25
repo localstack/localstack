@@ -1,4 +1,6 @@
+import copy
 import json
+import logging
 import re
 from abc import ABC
 from datetime import datetime, timezone
@@ -8,6 +10,7 @@ from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
 from moto.ec2.models import (
     EC2Backend,
+    FlowLogsBackend,
     SubnetBackend,
     TransitGatewayAttachmentBackend,
     VPCBackend,
@@ -16,10 +19,12 @@ from moto.ec2.models import (
 from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
 from moto.ec2.models.subnets import Subnet
 
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.ec2 import (
     AvailabilityZone,
     Boolean,
+    CreateFlowLogsRequest,
+    CreateFlowLogsResult,
     CreateLaunchTemplateRequest,
     CreateLaunchTemplateResult,
     CreateSubnetRequest,
@@ -68,12 +73,15 @@ from localstack.aws.api.ec2 import (
     String,
     SubnetConfigurationsList,
     Tenancy,
+    UnsuccessfulItem,
+    UnsuccessfulItemError,
     VpcEndpointId,
     VpcEndpointRouteTableIdList,
     VpcEndpointSecurityGroupIdList,
     VpcEndpointSubnetIdList,
     scope,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.ec2.exceptions import (
     InvalidLaunchTemplateIdError,
     InvalidLaunchTemplateNameError,
@@ -81,10 +89,12 @@ from localstack.services.ec2.exceptions import (
 )
 from localstack.services.ec2.models import get_ec2_backend
 from localstack.services.ec2.patches import apply_patches
-from localstack.services.moto import call_moto
+from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.patch import patch
 from localstack.utils.strings import first_char_to_upper, long_uid, short_uid
+
+LOG = logging.getLogger(__name__)
 
 # additional subnet attributes not yet supported upstream
 ADDITIONAL_SUBNET_ATTRS = ("private_dns_name_options_on_launch", "enable_dns64")
@@ -463,6 +473,72 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
 
         return result
 
+    @handler("CreateFlowLogs", expand=False)
+    def create_flow_logs(
+        self,
+        context: RequestContext,
+        request: CreateFlowLogsRequest,
+        **kwargs,
+    ) -> CreateFlowLogsResult:
+        if request.get("LogDestination") and request.get("LogGroupName"):
+            raise CommonServiceException(
+                code="InvalidParameter",
+                message="Please only provide LogGroupName or only provide LogDestination.",
+            )
+        if request.get("LogDestinationType") == "s3":
+            if request.get("LogGroupName"):
+                raise CommonServiceException(
+                    code="InvalidParameter",
+                    message="LogDestination type must be cloud-watch-logs if LogGroupName is provided.",
+                )
+            elif not (bucket_arn := request.get("LogDestination")):
+                raise CommonServiceException(
+                    code="InvalidParameter",
+                    message="LogDestination can't be empty if LogGroupName is not provided.",
+                )
+
+            # Moto will check in memory whether the bucket exists in Moto itself
+            # we modify the request to not send a destination, so that the validation does not happen
+            # we can add the validation ourselves
+            service_request = copy.deepcopy(request)
+            service_request["LogDestinationType"] = "__placeholder__"
+            bucket_name = bucket_arn.split(":", 5)[5].split("/")[0]
+            # TODO: validate how IAM is enforced? probably with DeliverLogsPermissionArn
+            s3_client = connect_to().s3
+            try:
+                s3_client.head_bucket(Bucket=bucket_name)
+            except Exception as e:
+                LOG.debug(
+                    "An exception occurred when trying to create FlowLogs with S3 destination: %s",
+                    e,
+                )
+                return CreateFlowLogsResult(
+                    FlowLogIds=[],
+                    Unsuccessful=[
+                        UnsuccessfulItem(
+                            Error=UnsuccessfulItemError(
+                                Code="400",
+                                Message=f"LogDestination: {bucket_name} does not exist",
+                            ),
+                            ResourceId=resource_id,
+                        )
+                        for resource_id in request.get("ResourceIds", [])
+                    ],
+                )
+
+            response: CreateFlowLogsResult = call_moto_with_request(context, service_request)
+            moto_backend = get_moto_backend(context)
+            for flow_log_id in response["FlowLogIds"]:
+                if flow_log := moto_backend.flow_logs.get(flow_log_id):
+                    # just to be sure to not override another value, we only replace if it's the placeholder
+                    flow_log.log_destination_type = flow_log.log_destination_type.replace(
+                        "__placeholder__", "s3"
+                    )
+        else:
+            response = call_moto(context)
+
+        return response
+
 
 @patch(SubnetBackend.modify_subnet_attribute)
 def modify_subnet_attribute(fn, self, subnet_id, attr_name, attr_value):
@@ -501,3 +577,27 @@ def delete_transit_gateway_vpc_attachment(fn, self, transit_gateway_attachment_i
     transit_gateway_attachment = self.transit_gateway_attachments.get(transit_gateway_attachment_id)
     transit_gateway_attachment.state = "deleted"
     return transit_gateway_attachment
+
+
+@patch(FlowLogsBackend._validate_request)
+def _validate_request(
+    fn,
+    self,
+    log_group_name: str,
+    log_destination: str,
+    log_destination_type: str,
+    max_aggregation_interval: str,
+    deliver_logs_permission_arn: str,
+) -> None:
+    if not log_destination_type and log_destination:
+        # this is to fix the S3 destination issue, the validation will occur in the provider
+        return
+
+    fn(
+        self,
+        log_group_name,
+        log_destination,
+        log_destination_type,
+        max_aggregation_interval,
+        deliver_logs_permission_arn,
+    )
