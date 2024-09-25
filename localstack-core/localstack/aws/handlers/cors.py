@@ -55,7 +55,7 @@ CORS_ALLOWED_HEADERS = [
     "amz-sdk-invocation-id",
     "amz-sdk-request",
     # for lambda
-    "x-amz-log-type"
+    "x-amz-log-type",
 ]
 if EXTRA_CORS_ALLOWED_HEADERS:
     CORS_ALLOWED_HEADERS += EXTRA_CORS_ALLOWED_HEADERS.split(",")
