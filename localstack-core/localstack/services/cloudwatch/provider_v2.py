@@ -75,6 +75,7 @@ from localstack.http import Request
 from localstack.services.cloudwatch import feature_catalog
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.cloudwatch.cloudwatch_database_helper import CloudwatchDatabase
+from localstack.services.cloudwatch.feature_catalog import cloudwatch_feature  # noqa
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
     LocalStackAlarm,
@@ -401,8 +402,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         """
         return {"metrics": self.cloudwatch_database.get_all_metric_data() or []}
 
-    @feature_catalog.cloudwatch_feature.MetricAlarm
     @handler("PutMetricAlarm", expand=False)
+    @feature_catalog.cloudwatch_feature.MetricAlarm
     def put_metric_alarm(self, context: RequestContext, request: PutMetricAlarmInput) -> None:
         # missing will be the default, when not set (but it will not explicitly be set)
         if request.get("TreatMissingData", "missing") not in [
@@ -454,8 +455,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             store.alarms[alarm_arn] = metric_alarm
             self.alarm_scheduler.schedule_metric_alarm(alarm_arn)
 
-    @feature_catalog.cloudwatch_feature.CompositeAlarm
     @handler("PutCompositeAlarm", expand=False)
+    @feature_catalog.cloudwatch_feature.CompositeAlarm
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
         composite_to_metric_alarm = {
             "AlarmName": request.get("AlarmName"),
