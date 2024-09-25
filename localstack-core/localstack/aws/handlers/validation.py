@@ -73,7 +73,10 @@ class OpenAPIValidator(Handler):
     open_apis: list["OpenAPI"]
 
     def __init__(self) -> None:
-        # avoid to load the specs if we don't have to perform any validation
+        self._load_specs()
+
+    def _load_specs(self) -> None:
+        """Load the openapi spec plugins iff at least one between request and response validation is set."""
         if not (config.OPENAPI_VALIDATE_REQUEST or config.OPENAPI_VALIDATE_RESPONSE):
             return
         specs = PluginManager("localstack.openapi.spec").load_all()
@@ -92,6 +95,7 @@ class OpenAPIRequestValidator(OpenAPIValidator):
         if not config.OPENAPI_VALIDATE_REQUEST:
             return
 
+        hasattr(self, "open_apis") or self._load_specs()
         path = context.request.path
 
         if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
@@ -119,6 +123,7 @@ class OpenAPIResponseValidator(OpenAPIValidator):
         if not config.OPENAPI_VALIDATE_RESPONSE:
             return
 
+        hasattr(self, "open_apis") or self._load_specs()
         path = context.request.path
 
         if path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/"):
