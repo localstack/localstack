@@ -744,8 +744,10 @@ class TestIAMIntegrations:
         )
         snapshot.match("valid_policy_arn", attach_policy_response)
 
+
+class TestIAMPolicyEncoding:
     @markers.aws.validated
-    def test_put_policy_encoding(self, snapshot, aws_client, create_user, region_name):
+    def test_put_user_policy_encoding(self, snapshot, aws_client, create_user, region_name):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
         target_arn = quote_plus(f"arn:aws:apigateway:{region_name}::/restapis/aaeeieije")
@@ -760,7 +762,7 @@ class TestIAMIntegrations:
             ],
         }
 
-        user_name = f"test-role-{short_uid()}"
+        user_name = f"test-user-{short_uid()}"
         policy_name = f"test-policy-{short_uid()}"
         create_user(UserName=user_name)
 
@@ -769,5 +771,81 @@ class TestIAMIntegrations:
         )
         get_policy_response = aws_client.iam.get_user_policy(
             UserName=user_name, PolicyName=policy_name
+        )
+        snapshot.match("get-policy-response", get_policy_response)
+
+    @markers.aws.validated
+    def test_put_role_policy_encoding(self, snapshot, aws_client, create_role, region_name):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        target_arn = quote_plus(f"arn:aws:apigateway:{region_name}::/restapis/aaeeieije")
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["apigatway:PUT"],
+                    "Resource": [f"arn:aws:apigateway:{region_name}::/tags/{target_arn}"],
+                }
+            ],
+        }
+        assume_policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"Service": "lambda.amazonaws.com"},
+                    "Effect": "Allow",
+                    "Condition": {"StringEquals": {"aws:SourceArn": target_arn}},
+                }
+            ],
+        }
+
+        role_name = f"test-role-{short_uid()}"
+        policy_name = f"test-policy-{short_uid()}"
+        create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(assume_policy_document))
+
+        aws_client.iam.put_role_policy(
+            RoleName=role_name, PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
+        )
+        get_policy_response = aws_client.iam.get_role_policy(
+            RoleName=role_name, PolicyName=policy_name
+        )
+        snapshot.match("get-policy-response", get_policy_response)
+
+        get_role_response = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-response", get_role_response)
+
+    @markers.aws.validated
+    def test_put_group_policy_encoding(self, snapshot, aws_client, region_name, cleanups):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        # create quoted target arn
+        target_arn = quote_plus(f"arn:aws:apigateway:{region_name}::/restapis/aaeeieije")
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["apigatway:PUT"],
+                    "Resource": [f"arn:aws:apigateway:{region_name}::/tags/{target_arn}"],
+                }
+            ],
+        }
+
+        group_name = f"test-group-{short_uid()}"
+        policy_name = f"test-policy-{short_uid()}"
+        aws_client.iam.create_group(GroupName=group_name)
+        cleanups.append(lambda: aws_client.iam.delete_group(GroupName=group_name))
+
+        aws_client.iam.put_group_policy(
+            GroupName=group_name, PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
+        )
+        cleanups.append(
+            lambda: aws_client.iam.delete_group_policy(GroupName=group_name, PolicyName=policy_name)
+        )
+
+        get_policy_response = aws_client.iam.get_group_policy(
+            GroupName=group_name, PolicyName=policy_name
         )
         snapshot.match("get-policy-response", get_policy_response)

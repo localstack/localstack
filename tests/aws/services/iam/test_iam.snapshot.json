@@ -387,8 +387,8 @@
       }
     }
   },
-  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_put_policy_encoding": {
-    "recorded-date": "23-09-2024, 12:33:47",
+  "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_user_policy_encoding": {
+    "recorded-date": "25-09-2024, 15:10:45",
     "recorded-content": {
       "get-policy-response": {
         "PolicyDocument": {
@@ -407,6 +407,92 @@
         },
         "PolicyName": "<policy-name:1>",
         "UserName": "<user-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_role_policy_encoding": {
+    "recorded-date": "25-09-2024, 15:10:46",
+    "recorded-content": {
+      "get-policy-response": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "apigatway:PUT"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:<partition>:apigateway:<region>::/tags/arn%3Aaws%3Aapigateway%3A<region>%3A%3A%2Frestapis%2Faaeeieije"
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
+        "RoleName": "<role-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-role-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:SourceArn": "arn%3Aaws%3Aapigateway%3A<region>%3A%3A%2Frestapis%2Faaeeieije"
+                  }
+                },
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "MaxSessionDuration": 3600,
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_group_policy_encoding": {
+    "recorded-date": "25-09-2024, 15:10:47",
+    "recorded-content": {
+      "get-policy-response": {
+        "GroupName": "<group-name:1>",
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "apigatway:PUT"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:<partition>:apigateway:<region>::/tags/arn%3Aaws%3Aapigateway%3A<region>%3A%3A%2Frestapis%2Faaeeieije"
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
