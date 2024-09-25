@@ -158,7 +158,7 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
         is_user_request = (
             ".execute-api." in context.request.host
             or (path.startswith("/restapis/") and f"/{PATH_USER_REQUEST}" in context.request.path)
-            or (path.startswith("/_aws/apigateway/execute-api"))
+            or (path.startswith("/_aws/execute-api"))
         )
         if is_user_request:
             return False

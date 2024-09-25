@@ -662,9 +662,7 @@ def path_based_url(api_id: str, stage_name: str, path: str) -> str:
 
 def localstack_path_based_url(api_id: str, stage_name: str, path: str) -> str:
     """Return URL for inbound API gateway for given API ID, stage name, and path on the _aws namespace"""
-    return (
-        f"{config.external_service_url()}/_aws/apigateway/execute-api/{api_id}/{stage_name}{path}"
-    )
+    return f"{config.external_service_url()}/_aws/execute-api/{api_id}/{stage_name}{path}"
 
 
 def host_based_url(rest_api_id: str, path: str, stage_name: str = None):

@@ -77,10 +77,10 @@ class InvocationRequestParser(RestApiGatewayHandler):
             # in this format, the stage is before `_user_request_`, so we don't need to remove it
             raw_uri = raw_uri.partition("_user_request_")[2]
         else:
-            if raw_uri.startswith("/_aws/apigateway/execute-api"):
+            if raw_uri.startswith("/_aws/execute-api"):
                 # the API can be cased in the path, so we need to ignore it to remove it
                 raw_uri = re.sub(
-                    f"^/_aws/apigateway/execute-api/{context.api_id}",
+                    f"^/_aws/execute-api/{context.api_id}",
                     "",
                     raw_uri,
                     flags=re.IGNORECASE,

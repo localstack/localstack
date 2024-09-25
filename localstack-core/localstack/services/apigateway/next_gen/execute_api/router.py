@@ -105,7 +105,7 @@ class ApiGatewayEndpoint:
 class ApiGatewayRouter:
     router: Router[Handler]
     handler: ApiGatewayEndpoint
-    EXECUTE_API_INTERNAL_PATH = "/_aws/apigateway/execute-api"
+    EXECUTE_API_INTERNAL_PATH = "/_aws/execute-api"
 
     def __init__(self, router: Router[Handler] = None, handler: ApiGatewayEndpoint = None):
         self.router = router or ROUTER

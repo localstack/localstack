@@ -165,8 +165,8 @@ class TestParsingHandler:
         # simulate a path request
         request = Request(
             "GET",
-            path=f"/_aws/apigateway/execute-api/{TEST_API_ID}/{TEST_API_STAGE}/foo/bar/ed",
-            raw_path=f"/_aws/apigateway/execute-api/{TEST_API_ID}/{TEST_API_STAGE}//foo%2Fbar/ed",
+            path=f"/_aws/execute-api/{TEST_API_ID}/{TEST_API_STAGE}/foo/bar/ed",
+            raw_path=f"/_aws/execute-api/{TEST_API_ID}/{TEST_API_STAGE}//foo%2Fbar/ed",
         )
 
         context = get_invocation_context(request)
@@ -186,7 +186,7 @@ class TestParsingHandler:
         if addressing == "host":
             full_path = f"/{TEST_API_STAGE}/{path}"
         elif addressing == "path_style":
-            full_path = f"/_aws/apigateway/execute-api/{TEST_API_ID}/{TEST_API_STAGE}/{path}"
+            full_path = f"/_aws/execute-api/{TEST_API_ID}/{TEST_API_STAGE}/{path}"
         else:
             full_path = f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/{path}"
 
@@ -207,7 +207,7 @@ class TestParsingHandler:
         self, dummy_deployment, parse_handler_chain, get_invocation_context, addressing
     ):
         if addressing == "path_style":
-            full_path = f"/_aws/apigateway/execute-api/TestApi/{TEST_API_STAGE}/test"
+            full_path = f"/_aws/execute-api/TestApi/{TEST_API_STAGE}/test"
         else:
             full_path = f"/restapis/{TEST_API_ID}/TestApi/_user_request_/test"
 
@@ -382,7 +382,7 @@ class TestRoutingHandler:
             return f"/restapis/{TEST_API_ID}/{TEST_API_STAGE}/_user_request_/{path}"
         else:
             # this new style allows following the regular order in an easier way, stage is always before path
-            return f"/_aws/apigateway/execute-api/{TEST_API_ID}/{TEST_API_STAGE}{path}"
+            return f"/_aws/execute-api/{TEST_API_ID}/{TEST_API_STAGE}{path}"
 
     @pytest.mark.parametrize("addressing", ["host", "user_request", "path_style"])
     def test_route_request_no_param(
