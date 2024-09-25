@@ -1314,6 +1314,11 @@
       "op": "add",
       "path": "/operations/UpdateRoute/http/responseCode",
       "value": 201
+    },
+    {
+      "op": "add",
+      "path": "/operations/CreateApiMapping/http/responseCode",
+      "value": 200
     }
   ]
 }
