@@ -494,6 +494,7 @@ def _resolve_refs_recursively(
                 raise Exception(
                     f"Cannot find map key '{first_level_attribute}' in mapping '{mapping_id}'"
                 )
+            first_level_mapping = selected_map[first_level_attribute]
 
             second_level_attribute = value[keys_list[0]][2]
             if not isinstance(second_level_attribute, str):
@@ -507,8 +508,12 @@ def _resolve_refs_recursively(
                     parameters,
                     second_level_attribute,
                 )
+            if second_level_attribute not in first_level_mapping:
+                raise Exception(
+                    f"Cannot find map key '{second_level_attribute}' in mapping '{mapping_id}' under key '{first_level_attribute}'"
+                )
 
-            return selected_map.get(first_level_attribute).get(second_level_attribute)
+            return first_level_mapping[second_level_attribute]
 
         if stripped_fn_lower == "importvalue":
             import_value_key = resolve_refs_recursively(

@@ -91,6 +91,29 @@ class TestCloudFormationMappings:
 
         assert "Cannot find map key 'C' in mapping 'TopicSuffixMap'" in str(exc_info.value)
 
+    @markers.aws.only_localstack
+    def test_async_mapping_error_second_level(self, deploy_cfn_template):
+        """
+        Similar to the `test_async_mapping_error_first_level` test above, but
+        checking the second level of mapping lookup
+        """
+        topic_name = f"test-topic-{short_uid()}"
+        with pytest.raises(StackDeployError) as exc_info:
+            deploy_cfn_template(
+                template_path=os.path.join(
+                    THIS_DIR,
+                    "../../../templates/mappings/simple-mapping.yaml",
+                ),
+                parameters={
+                    "TopicName": topic_name,
+                    "TopicNameSuffixSelector": "A",
+                    "TopicAttributeSelector": "NotValid",
+                },
+            )
+
+        assert "Cannot find map key 'NotValid' in mapping 'TopicSuffixMap' under key 'A'" in str(
+            exc_info.value
+        )
 
     @markers.aws.validated
     @pytest.mark.skip(reason="not implemented")
