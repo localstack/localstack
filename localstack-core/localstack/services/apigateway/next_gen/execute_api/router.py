@@ -118,7 +118,7 @@ class ApiGatewayRouter:
         deprecated_route_endpoint = deprecated_endpoint(
             endpoint=self.handler,
             previous_path="/restapis/<api_id>/<stage>/_user_request_",
-            deprecation_version="3.7.0",
+            deprecation_version="3.8.0",
             new_path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/<stage>",
         )
         rules = [
@@ -146,7 +146,7 @@ class ApiGatewayRouter:
             self.router.add(
                 path="/restapis/<api_id>/<stage>/_user_request_",
                 endpoint=deprecated_route_endpoint,
-                defaults={"path": ""},
+                defaults={"path": "", "random": "?"},
             ),
             self.router.add(
                 path="/restapis/<api_id>/<stage>/_user_request_/<greedy_path:path>",
