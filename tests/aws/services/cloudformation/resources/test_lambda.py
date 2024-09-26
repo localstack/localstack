@@ -486,6 +486,25 @@ def test_multiple_lambda_permissions_for_singlefn(deploy_cfn_template, snapshot,
     snapshot.match("policy", policy)
 
 
+@markers.aws.validated
+def test_lambda_function_tags(deploy_cfn_template, aws_client):
+    function_name = f"fn-{short_uid()}"
+    environment = f"dev-{short_uid()}"
+    deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/cfn_lambda_with_tags.yml",
+        ),
+        parameters={
+            "FunctionName": function_name,
+            "Environment": environment,
+        },
+    )
+
+    get_function_result = aws_client.lambda_.get_function(FunctionName=function_name)
+    assert get_function_result["Tags"]["Environment"] == environment
+
+
 class TestCfnLambdaIntegrations:
     @markers.snapshot.skip_snapshot_verify(
         paths=[

@@ -32,6 +32,9 @@
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_code_signing_config": {
     "last_validated_date": "2024-04-09T07:19:51+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_function_tags": {
+    "last_validated_date": "2024-09-26T16:33:07+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version": {
     "last_validated_date": "2024-04-09T07:21:37+00:00"
   },
