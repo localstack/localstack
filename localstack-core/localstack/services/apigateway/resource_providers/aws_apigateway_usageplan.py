@@ -210,6 +210,6 @@ class ApiGatewayUsagePlanProvider(ResourceProvider[ApiGatewayUsagePlanProperties
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=model,
+            resource_model={**request.previous_state, **request.desired_state},
             custom_context=request.custom_context,
         )
