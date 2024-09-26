@@ -490,6 +490,11 @@ def _resolve_refs_recursively(
                 first_level_attribute,
             )
 
+            if first_level_attribute not in selected_map:
+                raise Exception(
+                    f"Cannot find map key '{first_level_attribute}' in mapping '{mapping_id}'"
+                )
+
             second_level_attribute = value[keys_list[0]][2]
             if not isinstance(second_level_attribute, str):
                 second_level_attribute = resolve_refs_recursively(
