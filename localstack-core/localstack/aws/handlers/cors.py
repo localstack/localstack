@@ -65,6 +65,10 @@ CORS_ALLOWED_METHODS = ("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS", "PATC
 CORS_EXPOSE_HEADERS = (
     "etag",
     "x-amz-version-id",
+    # for lambda
+    "x-amz-log-result",
+    "x-amz-executed-version",
+    "x-amz-function-error",
 )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(","))
