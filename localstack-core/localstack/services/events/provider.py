@@ -1342,6 +1342,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if event_failed_validation := validate_event(entry):
             processed_entries.append(event_failed_validation)
             failed_entry_count["count"] += 1
+            LOG.info(json.dumps(event_failed_validation))
             return
         region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
         if encoded_trace_header := get_trace_header_encoded_region_account(
@@ -1355,19 +1356,36 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         except ResourceNotFoundException:
             # ignore events for non-existing event buses but add processed event
             processed_entries.append({"EventId": event_formatted["id"]})
+            LOG.info(
+                json.dumps(
+                    {
+                        "ErrorCode": "ResourceNotFoundException at get_event_bus",
+                        "ErrorMessage": f"Event_bus {event_bus_name} does not exist",
+                    }
+                )
+            )
             return
         self._proxy_capture_input_event(event_formatted)
-        matching_rules = [rule for rule in event_bus.rules.values()]
-        for rule in matching_rules:
-            self._process_matched_rules(
-                rule, region, account_id, event_formatted, processed_entries, failed_entry_count
+        if configured_rules := list(event_bus.rules.values()):
+            for rule in configured_rules:
+                self._process_rules(
+                    rule, region, account_id, event_formatted, processed_entries, failed_entry_count
+                )
+        else:
+            LOG.info(
+                json.dumps(
+                    {
+                        "InfoCode": "InternalInfoEvents at process_rules",
+                        "InfoMessage": f"No rules attached to event_bus: {event_bus_name}",
+                    }
+                )
             )
 
     def _proxy_capture_input_event(self, event: FormattedEvent) -> None:
         # only required for eventstudio to capture input event if no rule is configured
         pass
 
-    def _process_matched_rules(
+    def _process_rules(
         self,
         rule: Rule,
         region: str,
@@ -1379,6 +1397,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_pattern = rule.event_pattern
         event_str = to_json_str(event_formatted)
         if matches_rule(event_str, event_pattern):
+            if not rule.targets:
+                LOG.info(
+                    json.dumps(
+                        {
+                            "InfoCode": "InternalInfoEvents at iterate over targets",
+                            "InfoMessage": f"No target configured for matched rule: {rule}",
+                        }
+                    )
+                )
             for target in rule.targets.values():
                 target_arn = target["Arn"]
                 if is_archive_arn(target_arn):
@@ -1401,3 +1428,20 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                             }
                         )
                         failed_entry_count["count"] += 1
+                        LOG.info(
+                            json.dumps(
+                                {
+                                    "ErrorCode": "InternalException at process_entries",
+                                    "ErrorMessage": str(error),
+                                }
+                            )
+                        )
+        else:
+            LOG.info(
+                json.dumps(
+                    {
+                        "InfoCode": "InternalInfoEvents at matches_rule",
+                        "InfoMessage": f"No rules matched for formatted event: {event_formatted}",
+                    }
+                )
+            )
