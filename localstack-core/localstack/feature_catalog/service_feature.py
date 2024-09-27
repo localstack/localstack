@@ -36,3 +36,14 @@ class ServiceFeature:
 
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
+
+
+class ApiCoverage:
+    implementation_status: ImplementationStatus
+
+    def __init__(self, func):
+        self.func = func
+        wraps(func)(self)
+
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
