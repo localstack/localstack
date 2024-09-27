@@ -64,6 +64,7 @@ class LambdaCodeSigningConfigProvider(ResourceProvider[LambdaCodeSigningConfigPr
 
         response = lambda_client.create_code_signing_config(**model)
         model["CodeSigningConfigArn"] = response["CodeSigningConfig"]["CodeSigningConfigArn"]
+        model["CodeSigningConfigId"] = response["CodeSigningConfig"]["CodeSigningConfigId"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
