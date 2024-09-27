@@ -102,11 +102,14 @@ class OpenAPIRequestValidator(OpenAPIValidator):
             for openapi in self.open_apis:
                 try:
                     openapi.validate_request(WerkzeugOpenAPIRequest(context.request))
+                    # We stop the handler at the first succeeded validation, as the other spec might not even specify
+                    #   this path.
+                    break
                 except RequestValidationError as e:
                     # Note: in this handler we only check validation errors, e.g., wrong body, missing required.
                     response.status_code = 400
                     response.set_json({"error": "Bad Request", "message": str(e)})
-                    chain.stop()
+                    chain.terminate()
                 except OpenAPIError:
                     # Other errors can be raised when validating a request against the OpenAPI specification.
                     #   The most common are: ServerNotFound, OperationNotFound, or PathNotFound.
@@ -133,8 +136,12 @@ class OpenAPIResponseValidator(OpenAPIValidator):
                         WerkzeugOpenAPIRequest(context.request),
                         WerkzeugOpenAPIResponse(response),
                     )
+                    break
                 except ResponseValidationError as exc:
                     LOG.error("Response validation failed for %s: $s", path, exc)
                     response.status_code = 500
                     response.set_json({"error": exc.__class__.__name__, "message": str(exc)})
-                    chain.stop()
+                    chain.terminate()
+                except OpenAPIError:
+                    # Same logic from the request validator applies here.
+                    pass
