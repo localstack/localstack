@@ -2285,3 +2285,9 @@ def clean_up(
             call_safe(_delete_log_group)
 
     yield _clean_up
+
+
+@pytest.fixture
+def enable_openapi_validation(monkeypatch):
+    monkeypatch.setattr(config, "OPENAPI_VALIDATE_RESPONSE", "true")
+    monkeypatch.setattr(config, "OPENAPI_VALIDATE_REQUEST", "true")
