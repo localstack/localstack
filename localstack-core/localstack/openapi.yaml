@@ -186,6 +186,60 @@ components:
       - error
       - subscription_arn
       type: object
+    CloudWatchMetrics:
+      additionalProperties: false
+      properties:
+        metrics:
+          items:
+            additionalProperties: false
+            properties:
+              account:
+                description: Account ID
+                type: string
+              d:
+                description: Dimensions
+                items:
+                  additionalProperties: false
+                  properties:
+                    n:
+                      description: Dimension name
+                      type: string
+                    v:
+                      description: Dimension value
+                      type: string
+                  required:
+                    - n
+                    - v
+                  type: object
+                type: array
+              n:
+                description: Metric name
+                type: string
+              ns:
+                description: Namespace
+                type: string
+              region:
+                description: Region name
+                type: string
+              t:
+                description: Timestamp
+                type: number
+              v:
+                description: Metric value
+                type: string
+            required:
+              - ns
+              - n
+              - v
+              - t
+              - d
+              - account
+              - region
+            type: object
+          type: array
+      required:
+        - metrics
+      type: object
 paths:
   /_aws/cloudwatch/metrics/raw:
     get:
@@ -197,59 +251,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  metrics:
-                    items:
-                      additionalProperties: false
-                      properties:
-                        account:
-                          description: Account ID
-                          type: string
-                        d:
-                          description: Dimensions
-                          items:
-                            additionalProperties: false
-                            properties:
-                              n:
-                                description: Dimension name
-                                type: string
-                              v:
-                                description: Dimension value
-                                type: string
-                            required:
-                            - n
-                            - v
-                            type: object
-                          type: array
-                        n:
-                          description: Metric name
-                          type: string
-                        ns:
-                          description: Namespace
-                          type: string
-                        region:
-                          description: Region name
-                          type: string
-                        t:
-                          description: Timestamp
-                          type: number
-                        v:
-                          description: Metric value
-                          type: string
-                      required:
-                      - ns
-                      - n
-                      - v
-                      - t
-                      - d
-                      - account
-                      - region
-                      type: object
-                    type: array
-                required:
-                - metrics
-                type: object
+                $ref: '#/components/schemas/CloudWatchMetrics'
           description: CloudWatch metrics
   /_aws/dynamodb/expired:
     delete:
@@ -733,7 +735,6 @@ paths:
                     type: string
                 required:
                 - edition
-                - features
                 - services
                 - version
                 type: object
