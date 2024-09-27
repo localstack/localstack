@@ -37,11 +37,12 @@ class EsmConfigFactory:
             service = get_standardized_service_name(parsed_arn["service"])
 
         default_source_parameters = {}
-        user_state_reason = EsmStateReason.USER_ACTION
+        default_source_parameters["UUID"] = long_uid()
+        default_source_parameters["StateTransitionReason"] = EsmStateReason.USER_ACTION
         if service == "sqs":
             default_source_parameters["BatchSize"] = 10
             default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
-            user_state_reason = EsmStateReason.USER_INITIATED
+            default_source_parameters["StateTransitionReason"] = EsmStateReason.USER_INITIATED
         elif service == "kinesis":
             # TODO: test all defaults
             default_source_parameters["BatchSize"] = 100
@@ -53,6 +54,7 @@ class EsmConfigFactory:
             default_source_parameters["ParallelizationFactor"] = 1
             default_source_parameters["StartingPosition"] = EventSourcePosition.TRIM_HORIZON
             default_source_parameters["TumblingWindowInSeconds"] = 0
+            default_source_parameters["LastProcessingResult"] = EsmStateReason.NO_RECORDS_PROCESSED
         elif service == "dynamodbstreams":
             # TODO: test all defaults
             default_source_parameters["BatchSize"] = 100
@@ -64,6 +66,7 @@ class EsmConfigFactory:
             default_source_parameters["ParallelizationFactor"] = 1
             default_source_parameters["StartingPosition"] = EventSourcePosition.TRIM_HORIZON
             default_source_parameters["TumblingWindowInSeconds"] = 0
+            default_source_parameters["LastProcessingResult"] = EsmStateReason.NO_RECORDS_PROCESSED
         else:
             lambda_hooks.set_event_source_config_defaults.run(
                 default_source_parameters, self.request, service
@@ -88,12 +91,10 @@ class EsmConfigFactory:
         state = EsmState.CREATING if self.request.get("Enabled", True) else EsmState.DISABLED
         esm_config = EventSourceMappingConfiguration(
             **derived_source_parameters,
-            UUID=long_uid(),
             FunctionArn=self.function_arn,
             # TODO: last modified => does state transition affect this?
             LastModified=datetime.datetime.now(),
             State=state,
-            StateTransitionReason=user_state_reason,
             # TODO: complete missing fields
         )
         return esm_config
