@@ -361,6 +361,9 @@ jobs:
       - prepare-account-region-randomization
       - run:
           name: Run integration tests
+          environment:
+            OPENAPI_VALIDATE_REQUEST: 1
+            OPENAPI_VALIDATE_RESPONSE: 1
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           # if we're doing performing a test selection, we need to filter the list of files before splitting by timings
           command: |
