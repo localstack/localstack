@@ -62,7 +62,7 @@ hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-idna==3.8
+idna==3.10
     # via
     #   hyperlink
     #   localstack-twisted
@@ -185,7 +185,7 @@ typing-extensions==4.12.2
     # via
     #   localstack-twisted
     #   readerwriterlock
-urllib3==2.2.2
+urllib3==2.2.3
     # via
     #   botocore
     #   docker
