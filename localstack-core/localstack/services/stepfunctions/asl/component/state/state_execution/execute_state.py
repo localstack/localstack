@@ -35,6 +35,7 @@ from localstack.services.stepfunctions.asl.component.state.state import CommonSt
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+from localstack.utils.common import TMP_THREADS
 
 LOG = logging.getLogger(__name__)
 
@@ -183,8 +184,10 @@ class ExecutionState(CommonStateField, abc.ABC):
                 execution_exceptions.append(ex)
             terminated_event.set()
 
-        thread = Thread(target=_exec_and_notify)
+        thread = Thread(target=_exec_and_notify, daemon=True)
+        TMP_THREADS.append(thread)
         thread.start()
+
         finished_on_time: bool = terminated_event.wait(timeout_seconds)
         frame.set_ended()
         env.close_frame(frame)
