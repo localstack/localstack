@@ -71,12 +71,25 @@ def test_user_defined_network(
     assert container_ip in stdout.decode().splitlines()
 
 
+@pytest.mark.parametrize(
+    "prefix,suffix",
+    [("", ""), ("'", "'"), ('"', '"'), ("\"'", "'\""), ("'  ", "'  ")],
+    ids=[
+        "no-quotes",
+        "single-quotes",
+        "double-quotes",
+        "single-and-double-quotes",
+        "single-quotes-with-spaces",
+    ],
+)
 def test_skip_pattern(
     docker_network,
     container_factory: ContainerFactory,
     stream_container_logs,
     wait_for_localstack_ready,
     dns_query_from_container,
+    prefix,
+    suffix,
 ):
     """
     Add a skip pattern of localhost.localstack.cloud to ensure that we prioritise skips before
@@ -89,48 +102,7 @@ def test_skip_pattern(
             ContainerConfigurators.network(docker_network),
             ContainerConfigurators.env_vars(
                 {
-                    "DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM": r".*localhost.localstack.cloud",
-                }
-            ),
-        ]
-    )
-    running_ls_container = ls_container.start()
-    stream_container_logs(ls_container)
-    wait_for_localstack_ready(running_ls_container)
-
-    container_ip = running_ls_container.ip_address(docker_network=docker_network)
-    stdout, _ = dns_query_from_container(
-        name=LOCALHOST_HOSTNAME, ip_address=container_ip, network=docker_network
-    )
-    assert container_ip not in stdout.decode().splitlines()
-    assert constants.LOCALHOST_IP in stdout.decode().splitlines()
-
-    stdout, _ = dns_query_from_container(
-        name=f"foo.{LOCALHOST_HOSTNAME}", ip_address=container_ip, network=docker_network
-    )
-    assert container_ip not in stdout.decode().splitlines()
-    assert constants.LOCALHOST_IP in stdout.decode().splitlines()
-
-
-def test_skip_pattern_with_surrounding_quotes(
-    docker_network,
-    container_factory: ContainerFactory,
-    stream_container_logs,
-    wait_for_localstack_ready,
-    dns_query_from_container,
-):
-    """
-    Add a skip pattern of localhost.localstack.cloud to ensure that we prioritise skips before
-    local name resolution
-    """
-    ls_container = container_factory(
-        configurators=[
-            ContainerConfigurators.debug,
-            ContainerConfigurators.mount_docker_socket,
-            ContainerConfigurators.network(docker_network),
-            ContainerConfigurators.env_vars(
-                {
-                    "DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM": r"'.*localhost.localstack.cloud'",
+                    "DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM": rf"{prefix}.*localhost.localstack.cloud{suffix}",
                 }
             ),
         ]
