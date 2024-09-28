@@ -32,7 +32,7 @@ c = Console()
 STATUS_TIMEOUT_ERROR = 901
 STATUS_PARSING_ERROR = 902
 STATUS_CONNECTION_ERROR = 903
-# dict of operations that should be skipped for a service, currently only contains s3.PostObject (which we added for internal use)
+# dict of operations that should be skipped for a service, currently contains only s3.PostObject (which we added for internal use)
 PHANTOM_OPERATIONS = {"s3": ["PostObject"]}
 
 # will only include available services
@@ -187,7 +187,7 @@ def _make_api_call(client, service: str, op: str, parameters: Optional[Instance]
 
 def map_to_notimplemented(row: RowEntry) -> bool:
     """
-    Some simple heuristics to check the API responses and classify them into implemented/notimplemented
+    Some simple heuristics to check the API responses and classify them into implemented/not-implemented
 
     Ideally they all should behave the same way when receiving requests for not yet implemented endpoints
     (501 with a "not yet implemented" message)
