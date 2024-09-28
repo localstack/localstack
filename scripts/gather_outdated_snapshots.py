@@ -17,7 +17,7 @@ def get_outdated_snapshots_for_directory(
     :param path: The directory where to look for snapshot files.
     :param date_limit: All snapshots whose recorded-date is older than date-limit are considered outdated.
             Format of the date-string must be "DD-MM-YYYY".
-    :param check_sub_directories: Whether to look for snapshots in subdirectories
+    :param check_sub_directories: Whether to look for snapshots in sub directories
     :param combine_parametrized: Whether to combine versions of the same test and treat them as the same or not
     :return: List of test names whose snapshots (if any) are outdated.
     """
