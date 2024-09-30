@@ -28,12 +28,12 @@ def apply_patches():
         vpc_id: str = args[0] if len(args) >= 1 else kwargs["vpc_id"]
 
         if custom_id:
-             # Check if custom id is unique within a given VPC
+            # Check if custom id is unique within a given VPC
             for az_subnets in self.subnets.values():
                 for subnet in az_subnets.values():
                     if subnet.vpc_id == vpc_id and subnet.id == custom_id:
                         raise InvalidSubnetDuplicateCustomIdError(custom_id)
-            
+
             # Create default network ACL to prevent `self.associate_default_network_acl_with_subnet(subnet_id, vpc_id)`
             # From throwing an exception that it does not exist for the given custom-id VPC
             self.create_network_acl(

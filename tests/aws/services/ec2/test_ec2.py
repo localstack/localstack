@@ -564,7 +564,6 @@ class TestEc2Integrations:
         assert subnet["SubnetId"] == custom_subnet_id
         assert subnet["VpcId"] == custom_vpc_id
 
-
     @markers.aws.only_localstack
     def test_create_security_group_with_custom_id(self, aws_client, create_vpc):
         custom_id = random_security_group_id()
