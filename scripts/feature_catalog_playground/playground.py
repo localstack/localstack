@@ -2,13 +2,14 @@ import importlib
 import inspect
 import json
 import pkgutil
+from enum import Enum
 
-import localstack.services.cloudwatch.feature_catalog as cloudwatch_features
+import localstack.feature_catalog.services as feature_catalog
 from localstack.feature_catalog.service_feature import ServiceFeature
 
 # Automatically import all modules in the feature_catalog package
-for _, module_name, _ in pkgutil.iter_modules(cloudwatch_features.__path__):
-    importlib.import_module(f"{cloudwatch_features.__name__}.{module_name}")
+for _, module_name, _ in pkgutil.iter_modules(feature_catalog.__path__):
+    importlib.import_module(f"{feature_catalog.__name__}.{module_name}")
 
 
 def get_class_hierarchy(cls, level=0):
@@ -18,37 +19,87 @@ def get_class_hierarchy(cls, level=0):
         get_class_hierarchy(subclass, level + 1)  # Recursively get the hierarchy of subclasses
 
 
+# Custom JSON Encoder for handling Enums
+class EnumEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Enum):
+            return str(obj)  # Serialize enum by returning its value
+        return json.JSONEncoder.default(self, obj)
+
+
 def get_class_hierarchy_dict(cls):
-    hierarchy = {cls.__name__: []}  # Dictionary with class name as key and subclasses as list
+    hierarchy = {}
+    docs = {
+        key: value
+        for key, value in vars(cls).items()
+        if not callable(value) and not key.startswith("__")
+    }
+    if docs:
+        hierarchy["docs"] = docs
     for subclass in cls.__subclasses__():
-        hierarchy[cls.__name__].append(get_class_hierarchy_dict(subclass))  # Recursive call
+        hierarchy[subclass.__name__] = get_class_hierarchy_dict(subclass)
+
+        # Recursive call
     return hierarchy
 
 
-print(json.dumps(get_class_hierarchy_dict(ServiceFeature), indent=2))
-
-
-def find_decorated_functions_and_methods(module, decorator_attr):
+def find_decorated_functions_and_methods(module):
     decorated_functions = []
 
     # Search all members of the module
     for name, obj in inspect.getmembers(module):
         # If it's a function (not inside a class)
         if feature := getattr(obj, "feature", None):
-            decorated_functions.append({"name": name, "feature": feature})
+            while (wrapped := getattr(obj, "__wrapped__", False)) and isinstance(
+                wrapped, ServiceFeature
+            ):
+                # if the operation on the subclass has a decorator, unwrap it
+                obj = wrapped
+            feature_catalog_name = obj.__class__.__name__
+            base_class = obj.__class__
+            while base := base_class.__base__:
+                if base.__name__ == "object":
+                    break
+                feature_catalog_name = f"{base.__name__}.{feature_catalog_name}"
+                base_class = base
+            decorated_functions.append(
+                {
+                    "feature_catalog_name": feature_catalog_name,
+                    "name": name,
+                    "feature": feature,
+                    "fully_qualified_name": f"{module.__name__}.{name}",
+                }
+            )
 
         # If it's a class, check its methods
         elif inspect.isclass(obj):
             for method_name, method in inspect.getmembers(obj):
                 if feature := getattr(method, "feature", None):
+                    while (wrapped := getattr(method, "__wrapped__", False)) and isinstance(
+                        wrapped, ServiceFeature
+                    ):
+                        # if the operation on the subclass has a decorator, unwrap it
+                        method = wrapped
+                    feature_catalog_name = method.__class__.__name__
+                    base_class = method.__class__
+                    while base := base_class.__base__:
+                        if base.__name__ == "object":
+                            break
+                        feature_catalog_name = f"{base.__name__}.{feature_catalog_name}"
+                        base_class = base
                     decorated_functions.append(
-                        {"name": f"{name}.{method_name}", "feature": feature}
+                        {
+                            "feature_catalog_name": feature_catalog_name,
+                            "name": f"{name}.{method_name}",
+                            "feature": feature,
+                            "fully_qualified_name": f"{module.__name__}.{name}.{method_name}",
+                        }
                     )
 
     return decorated_functions
 
 
-def find_decorated_functions_in_package(package, decorator_attr):
+def find_decorated_functions_in_package(package):
     decorated_functions = []
 
     # Iterate through all modules in the package
@@ -56,63 +107,40 @@ def find_decorated_functions_in_package(package, decorator_attr):
         module = importlib.import_module(f"{package.__name__}.{module_info.name}")
 
         # Find decorated functions and methods within the module
-        features = find_decorated_functions_and_methods(module, decorator_attr)
+        features = find_decorated_functions_and_methods(module)
         if features:
             decorated_functions.append({"module": module.__name__, "features": features})
 
     return decorated_functions
 
 
+def recursive_add_operation(keys, current_dict, operation_name):
+    key = keys[0]  # Take the first key
+    for item in current_dict:
+        if key in item:
+            if len(keys) == 1:
+                current_dict[key].setdefault("operations", []).append(operation_name)
+            else:
+                # Continue recursively with the remaining keys
+                recursive_add_operation(keys[1:], current_dict[key], operation_name)
+
+
 # Usage: Find all decorated functions in the entire cloudwatch package
 import localstack.services.cloudwatch as cloudwatch_package
+import localstack.services.kms as kms_package
 
-decorated_funcs = find_decorated_functions_in_package(cloudwatch_package, "is_decorated_by_alarm")
+features = {"ServiceFeature": get_class_hierarchy_dict(ServiceFeature)}
+# print(json.dumps(features, indent=2, cls=EnumEncoder))
+decorated_funcs = find_decorated_functions_in_package(cloudwatch_package)
+decorated_funcs += find_decorated_functions_in_package(kms_package)
 
 for details in decorated_funcs:
     module = details.get("module")
     for feature in details.get("features"):
-        print(
-            f"Function '{module}.{feature.get('name')}' is decorated with @{feature.get('feature')}"
-        )
+        # print(
+        #     f"Function '{module}.{feature.get('name')}' is decorated with @{feature.get('feature')}, ({feature.get('feature_catalog_name')})"
+        # )
+        feature_catalog_keys = feature.get("feature_catalog_name").split(".")
+        recursive_add_operation(feature_catalog_keys, features, feature.get("fully_qualified_name"))
 
-
-# def find_decorators_in_function(func):
-#     """Return a list of decorators applied to the given function."""
-#     decorators = []
-#
-#     # Check if the function has attributes for known decorators
-#     if feature := getattr(func, "feature", None):
-#         decorators.append(feature)
-#
-#     # You can check for additional decorators here
-#
-#     return decorators
-#
-#
-# def find_all_decorators(module):
-#     """Find all decorators applied to functions and methods in the given module."""
-#     all_decorators = {}
-#
-#     # Loop through all members of the module
-#     for name, obj in inspect.getmembers(module):
-#         # If it's a function (not inside a class)
-#         if isinstance(obj, types.FunctionType):
-#             decorators = find_decorators_in_function(obj)
-#             if decorators:
-#                 all_decorators[name] = decorators
-#
-#         # If it's a class, check its methods
-#         if inspect.isclass(obj):
-#             for method_name, method in inspect.getmembers(obj, predicate=inspect.isfunction):
-#                 decorators = find_decorators_in_function(method)
-#                 if decorators:
-#                     all_decorators[f"{obj.__name__}.{method_name}"] = decorators
-#
-#     return all_decorators
-#
-#
-# # Example usage
-# decorators_found = find_all_decorators(cloudwatch_package)
-#
-# for func_name, decorators in decorators_found.items():
-#     print(f"Function '{func_name}' has decorators: {', '.join(decorators)}")
+print(json.dumps(features, indent=2, cls=EnumEncoder))
