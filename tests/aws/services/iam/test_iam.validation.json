@@ -24,7 +24,7 @@
     "last_validated_date": "2024-09-25T15:12:26+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_role_policy_encoding": {
-    "last_validated_date": "2024-09-25T15:12:24+00:00"
+    "last_validated_date": "2024-09-30T15:17:41+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_user_policy_encoding": {
     "last_validated_date": "2024-09-25T15:12:23+00:00"

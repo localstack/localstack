@@ -803,7 +803,14 @@ class TestIAMPolicyEncoding:
 
         role_name = f"test-role-{short_uid()}"
         policy_name = f"test-policy-{short_uid()}"
-        create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(assume_policy_document))
+        path = f"/{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.key_value("Path"))
+        create_role_response = create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(assume_policy_document),
+            Path=path,
+        )
+        snapshot.match("create-role-response", create_role_response)
 
         aws_client.iam.put_role_policy(
             RoleName=role_name, PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
@@ -815,6 +822,9 @@ class TestIAMPolicyEncoding:
 
         get_role_response = aws_client.iam.get_role(RoleName=role_name)
         snapshot.match("get-role-response", get_role_response)
+
+        list_roles_response = aws_client.iam.list_roles(PathPrefix=path)
+        snapshot.match("list-roles-response", list_roles_response)
 
     @markers.aws.validated
     def test_put_group_policy_encoding(self, snapshot, aws_client, region_name, cleanups):

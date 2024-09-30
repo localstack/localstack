@@ -415,8 +415,38 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_role_policy_encoding": {
-    "recorded-date": "25-09-2024, 15:10:46",
+    "recorded-date": "30-09-2024, 15:17:42",
     "recorded-content": {
+      "create-role-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role<path:1><role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:SourceArn": "arn%3Aaws%3Aapigateway%3A<region>%3A%3A%2Frestapis%2Faaeeieije"
+                  }
+                },
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "datetime",
+          "Path": "<path:1>",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "get-policy-response": {
         "PolicyDocument": {
           "Statement": [
@@ -441,7 +471,7 @@
       },
       "get-role-response": {
         "Role": {
-          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "Arn": "arn:<partition>:iam::111111111111:role<path:1><role-name:1>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -461,11 +491,45 @@
           },
           "CreateDate": "datetime",
           "MaxSessionDuration": 3600,
-          "Path": "/",
+          "Path": "<path:1>",
           "RoleId": "<role-id:1>",
           "RoleLastUsed": {},
           "RoleName": "<role-name:1>"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-roles-response": {
+        "IsTruncated": false,
+        "Roles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role<path:1><role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Condition": {
+                    "StringEquals": {
+                      "aws:SourceArn": "arn%3Aaws%3Aapigateway%3A<region>%3A%3A%2Frestapis%2Faaeeieije"
+                    }
+                  },
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "datetime",
+            "MaxSessionDuration": 3600,
+            "Path": "<path:1>",
+            "RoleId": "<role-id:1>",
+            "RoleName": "<role-name:1>"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
