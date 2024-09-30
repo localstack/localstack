@@ -70,17 +70,13 @@ OrganizationId = str
 Origin = str
 ParallelizationFactor = int
 Pattern = str
-PolicyResourceArn = str
 PositiveInteger = int
 Principal = str
 PrincipalOrgID = str
-PublicAccessBlockResourceArn = str
 Qualifier = str
 Queue = str
 ReservedConcurrentExecutions = int
 ResourceArn = str
-ResourcePolicy = str
-RevisionId = str
 RoleArn = str
 RuntimeVersionArn = str
 S3Bucket = str
@@ -525,13 +521,6 @@ class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
     code: str = "ProvisionedConcurrencyConfigNotFoundException"
     sender_fault: bool = False
     status_code: int = 404
-    Type: Optional[String]
-
-
-class PublicPolicyException(ServiceException):
-    code: str = "PublicPolicyException"
-    sender_fault: bool = False
-    status_code: int = 400
     Type: Optional[String]
 
 
@@ -1019,11 +1008,6 @@ class DeleteProvisionedConcurrencyConfigRequest(ServiceRequest):
     Qualifier: Qualifier
 
 
-class DeleteResourcePolicyRequest(ServiceRequest):
-    ResourceArn: PolicyResourceArn
-    RevisionId: Optional[RevisionId]
-
-
 class EnvironmentError(TypedDict, total=False):
     ErrorCode: Optional[String]
     Message: Optional[SensitiveString]
@@ -1344,28 +1328,6 @@ class GetProvisionedConcurrencyConfigResponse(TypedDict, total=False):
     LastModified: Optional[Timestamp]
 
 
-class GetPublicAccessBlockConfigRequest(ServiceRequest):
-    ResourceArn: PublicAccessBlockResourceArn
-
-
-class PublicAccessBlockConfig(TypedDict, total=False):
-    BlockPublicPolicy: Optional[NullableBoolean]
-    RestrictPublicResource: Optional[NullableBoolean]
-
-
-class GetPublicAccessBlockConfigResponse(TypedDict, total=False):
-    PublicAccessBlockConfig: Optional[PublicAccessBlockConfig]
-
-
-class GetResourcePolicyRequest(ServiceRequest):
-    ResourceArn: PolicyResourceArn
-
-
-class GetResourcePolicyResponse(TypedDict, total=False):
-    Policy: Optional[ResourcePolicy]
-    RevisionId: Optional[RevisionId]
-
-
 class GetRuntimeManagementConfigRequest(ServiceRequest):
     FunctionName: NamespacedFunctionName
     Qualifier: Optional[Qualifier]
@@ -1683,26 +1645,6 @@ class PutProvisionedConcurrencyConfigResponse(TypedDict, total=False):
     Status: Optional[ProvisionedConcurrencyStatusEnum]
     StatusReason: Optional[String]
     LastModified: Optional[Timestamp]
-
-
-class PutPublicAccessBlockConfigRequest(ServiceRequest):
-    ResourceArn: PublicAccessBlockResourceArn
-    PublicAccessBlockConfig: PublicAccessBlockConfig
-
-
-class PutPublicAccessBlockConfigResponse(TypedDict, total=False):
-    PublicAccessBlockConfig: Optional[PublicAccessBlockConfig]
-
-
-class PutResourcePolicyRequest(ServiceRequest):
-    ResourceArn: PolicyResourceArn
-    Policy: ResourcePolicy
-    RevisionId: Optional[RevisionId]
-
-
-class PutResourcePolicyResponse(TypedDict, total=False):
-    Policy: Optional[ResourcePolicy]
-    RevisionId: Optional[RevisionId]
 
 
 class PutRuntimeManagementConfigRequest(ServiceRequest):
@@ -2063,16 +2005,6 @@ class LambdaApi:
     ) -> None:
         raise NotImplementedError
 
-    @handler("DeleteResourcePolicy")
-    def delete_resource_policy(
-        self,
-        context: RequestContext,
-        resource_arn: PolicyResourceArn,
-        revision_id: RevisionId = None,
-        **kwargs,
-    ) -> None:
-        raise NotImplementedError
-
     @handler("GetAccountSettings")
     def get_account_settings(self, context: RequestContext, **kwargs) -> GetAccountSettingsResponse:
         raise NotImplementedError
@@ -2193,18 +2125,6 @@ class LambdaApi:
     def get_provisioned_concurrency_config(
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier, **kwargs
     ) -> GetProvisionedConcurrencyConfigResponse:
-        raise NotImplementedError
-
-    @handler("GetPublicAccessBlockConfig")
-    def get_public_access_block_config(
-        self, context: RequestContext, resource_arn: PublicAccessBlockResourceArn, **kwargs
-    ) -> GetPublicAccessBlockConfigResponse:
-        raise NotImplementedError
-
-    @handler("GetResourcePolicy")
-    def get_resource_policy(
-        self, context: RequestContext, resource_arn: PolicyResourceArn, **kwargs
-    ) -> GetResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("GetRuntimeManagementConfig")
@@ -2465,27 +2385,6 @@ class LambdaApi:
         provisioned_concurrent_executions: PositiveInteger,
         **kwargs,
     ) -> PutProvisionedConcurrencyConfigResponse:
-        raise NotImplementedError
-
-    @handler("PutPublicAccessBlockConfig")
-    def put_public_access_block_config(
-        self,
-        context: RequestContext,
-        resource_arn: PublicAccessBlockResourceArn,
-        public_access_block_config: PublicAccessBlockConfig,
-        **kwargs,
-    ) -> PutPublicAccessBlockConfigResponse:
-        raise NotImplementedError
-
-    @handler("PutResourcePolicy")
-    def put_resource_policy(
-        self,
-        context: RequestContext,
-        resource_arn: PolicyResourceArn,
-        policy: ResourcePolicy,
-        revision_id: RevisionId = None,
-        **kwargs,
-    ) -> PutResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("PutRuntimeManagementConfig")
