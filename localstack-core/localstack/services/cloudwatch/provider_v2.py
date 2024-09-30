@@ -71,11 +71,10 @@ from localstack.aws.api.cloudwatch import (
     UntagResourceOutput,
 )
 from localstack.aws.connect import connect_to
+from localstack.feature_catalog.services import cloudwatch_feature
 from localstack.http import Request
-from localstack.services.cloudwatch import feature_catalog
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.cloudwatch.cloudwatch_database_helper import CloudwatchDatabase
-from localstack.services.cloudwatch.feature_catalog import cloudwatch_feature  # noqa
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
     LocalStackAlarm,
@@ -107,7 +106,7 @@ _STORE_LOCK = threading.RLock()
 AWS_MAX_DATAPOINTS_ACCEPTED: int = 1440
 
 
-@feature_catalog.cloudwatch_feature.Alarm
+@cloudwatch_feature.Alarm
 def delete_alarms_helper():
     pass
 
@@ -202,7 +201,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self.alarm_scheduler.shutdown_scheduler()
         self.alarm_scheduler = None
 
-    @feature_catalog.cloudwatch_feature.Alarm
+    @cloudwatch_feature.Alarm
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames, **kwargs) -> None:
         """
         Delete alarms.
@@ -216,7 +215,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 store = self.get_store(context.account_id, context.region)
                 store.alarms.pop(alarm_arn, None)
 
-    @feature_catalog.cloudwatch_feature.Metric
+    @cloudwatch_feature.Metric
     def put_metric_data(
         self, context: RequestContext, namespace: Namespace, metric_data: MetricData, **kwargs
     ) -> None:
@@ -226,7 +225,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             context.account_id, context.region, namespace, metric_data
         )
 
-    @feature_catalog.cloudwatch_feature.Metric
+    @cloudwatch_feature.Metric
     def get_metric_data(
         self,
         context: RequestContext,
@@ -302,7 +301,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
         return GetMetricDataOutput(MetricDataResults=results, NextToken=nxt, Messages=messages)
 
-    @feature_catalog.cloudwatch_feature.Alarm
+    @cloudwatch_feature.Alarm
     def set_alarm_state(
         self,
         context: RequestContext,
@@ -403,7 +402,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         return {"metrics": self.cloudwatch_database.get_all_metric_data() or []}
 
     @handler("PutMetricAlarm", expand=False)
-    @feature_catalog.cloudwatch_feature.MetricAlarm
+    @cloudwatch_feature.MetricAlarm
     def put_metric_alarm(self, context: RequestContext, request: PutMetricAlarmInput) -> None:
         # missing will be the default, when not set (but it will not explicitly be set)
         if request.get("TreatMissingData", "missing") not in [
@@ -456,7 +455,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             self.alarm_scheduler.schedule_metric_alarm(alarm_arn)
 
     @handler("PutCompositeAlarm", expand=False)
-    @feature_catalog.cloudwatch_feature.CompositeAlarm
+    @cloudwatch_feature.CompositeAlarm
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
         composite_to_metric_alarm = {
             "AlarmName": request.get("AlarmName"),
@@ -474,7 +473,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             "Composite Alarms configuration is not yet supported, alarm state will not be evaluated"
         )
 
-    @feature_catalog.cloudwatch_feature.Alarm
+    @cloudwatch_feature.Alarm
     def describe_alarms(
         self,
         context: RequestContext,
@@ -507,7 +506,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         composite_alarms = [a for a in alarms if a.get("AlarmRule") is not None]
         return DescribeAlarmsOutput(CompositeAlarms=composite_alarms, MetricAlarms=metric_alarms)
 
-    @feature_catalog.cloudwatch_feature.Alarm
+    @cloudwatch_feature.Alarm
     def describe_alarms_for_metric(
         self,
         context: RequestContext,
@@ -632,7 +631,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             DashboardEntries=entries,
         )
 
-    @feature_catalog.cloudwatch_feature.Metric
+    @cloudwatch_feature.Metric
     def list_metrics(
         self,
         context: RequestContext,
@@ -669,7 +668,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         )
         return ListMetricsOutput(Metrics=page, NextToken=nxt)
 
-    @feature_catalog.cloudwatch_feature.Metric
+    @cloudwatch_feature.Metric
     def get_metric_statistics(
         self,
         context: RequestContext,
@@ -803,13 +802,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             alarm.alarm["StateReasonData"] = json.dumps(state_reason_data)
         alarm.alarm["StateUpdatedTimestamp"] = current_time
 
-    @feature_catalog.cloudwatch_feature.Alarm
+    @cloudwatch_feature.Alarm
     def disable_alarm_actions(
         self, context: RequestContext, alarm_names: AlarmNames, **kwargs
     ) -> None:
         self._set_alarm_actions(context, alarm_names, enabled=False)
 
-    @feature_catalog.cloudwatch_feature.Alarm
+    @cloudwatch_feature.Alarm
     def enable_alarm_actions(
         self, context: RequestContext, alarm_names: AlarmNames, **kwargs
     ) -> None:
@@ -825,7 +824,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if alarm:
                 alarm.alarm["ActionsEnabled"] = enabled
 
-    @feature_catalog.cloudwatch_feature.Alarm
+    @cloudwatch_feature.Alarm
     def describe_alarm_history(
         self,
         context: RequestContext,
