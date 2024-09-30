@@ -38,7 +38,6 @@ def apply_patches():
             # From throwing an exception that it does not exist for the given custom-id VPC
             self.create_network_acl(
                 vpc_id=vpc_id,
-                # tags=tags,
                 default=True,
             )
 
