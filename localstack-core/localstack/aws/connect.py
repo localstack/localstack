@@ -647,6 +647,7 @@ class ExternalAwsClientFactory(ClientFactory):
 
 
 IGNORE_DNS = ContextVar("ignore_dns", default=False)
+"""ContextVar that tracks whether HTTP requests should bypass the DNS server (i.e. transparent endpoint injection) or not."""
 
 
 def resolve_dns_from_upstream(hostname: str) -> str:
