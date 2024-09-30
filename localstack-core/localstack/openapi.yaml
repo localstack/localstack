@@ -206,7 +206,9 @@ components:
                       type: string
                     v:
                       description: Dimension value
-                      type: string
+                      oneOf:
+                        - type: string
+                        - type: integer
                   required:
                     - n
                     - v
@@ -226,7 +228,9 @@ components:
                 type: number
               v:
                 description: Metric value
-                type: string
+                oneOf:
+                  - type: string
+                  - type: integer
             required:
               - ns
               - n
