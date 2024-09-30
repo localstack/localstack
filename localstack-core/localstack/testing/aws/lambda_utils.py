@@ -283,6 +283,7 @@ s3_lambda_permission = {
             "Effect": "Allow",
             "Action": [
                 "sqs:*",
+                "sns:*",
                 "dynamodb:DescribeStream",
                 "dynamodb:GetRecords",
                 "dynamodb:GetShardIterator",

@@ -983,7 +983,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_object_expiry": {
-    "recorded-date": "03-08-2023, 04:16:18",
+    "recorded-date": "23-09-2024, 10:59:12",
     "recorded-content": {
       "head-object-expired": {
         "AcceptRanges": "bytes",
@@ -991,6 +991,7 @@
         "ContentType": "binary/octet-stream",
         "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
         "Expires": "datetime",
+        "ExpiresString": "<expires>",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
@@ -1006,6 +1007,7 @@
         "ContentType": "binary/octet-stream",
         "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
         "Expires": "datetime",
+        "ExpiresString": "<expires>",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
@@ -2767,7 +2769,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_header_overrides": {
-    "recorded-date": "03-08-2023, 04:23:46",
+    "recorded-date": "23-09-2024, 10:59:50",
     "recorded-content": {
       "get-object": {
         "AcceptRanges": "bytes",
@@ -2780,6 +2782,7 @@
         "ContentType": "image/jpeg",
         "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
         "Expires": "datetime",
+        "ExpiresString": "Wed, 21 Oct 2015 07:28:00 GMT",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
@@ -10195,7 +10198,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_metadata": {
-    "recorded-date": "14-08-2023, 19:54:15",
+    "recorded-date": "23-09-2024, 11:01:18",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -10203,6 +10206,7 @@
         "ContentType": "text/plain",
         "ETag": "\"a7d8531d918474360de3e2eaeb110cda\"",
         "Expires": "datetime",
+        "ExpiresString": "<expires>",
         "LastModified": "datetime",
         "Metadata": {
           "test-1": "test-meta-1",
@@ -11718,7 +11722,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
-    "recorded-date": "24-05-2024, 15:10:58",
+    "recorded-date": "23-09-2024, 11:02:16",
     "recorded-content": {
       "invalid-condition-eq": {
         "Error": {
@@ -11758,6 +11762,7 @@
         "ContentType": "text/plain",
         "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
         "Expires": "datetime",
+        "ExpiresString": "<expires>",
         "LastModified": "datetime",
         "Metadata": {
           "test-1": "test-meta-1",

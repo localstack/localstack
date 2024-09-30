@@ -1,0 +1,21 @@
+Resources:
+  UnknownResource:
+    Type: AWS::LocalStack::Unknown
+    Properties:
+      ComputePlatform: Lambda
+
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::Sub:
+         -  "The value of the attribute is: ${value}"
+         - value: !GetAtt UnknownResource.NotReal
+
+Outputs:
+  reference:
+    Value: !Ref UnknownResource
+
+  parameter:
+    Value: !GetAtt Parameter.Value

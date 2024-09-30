@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from localstack.services.cloudformation.engine.template_deployer import MOCK_REFERENCE
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
@@ -83,3 +84,22 @@ def test_sub_resolving(deploy_cfn_template, aws_client, snapshot):
     # Verify resource was created
     topic_arns = [t["TopicArn"] for t in aws_client.sns.list_topics()["Topics"]]
     assert topic_arn in topic_arns
+
+
+@markers.aws.only_localstack
+def test_reference_unsupported_resource(deploy_cfn_template, aws_client):
+    """
+    This test verifies that templates can be deployed even when unsupported resources are references
+    Make sure to update the template as coverage of resources increases.
+    """
+
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_ref_unsupported.yml"
+        ),
+    )
+
+    ref_of_unsupported = deployment.outputs["reference"]
+    value_of_unsupported = deployment.outputs["parameter"]
+    assert ref_of_unsupported == MOCK_REFERENCE
+    assert value_of_unsupported == f"The value of the attribute is: {MOCK_REFERENCE}"

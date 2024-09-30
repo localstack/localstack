@@ -1575,5 +1575,71 @@
         ]
       }
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_sns_on_failure_destination_config": {
+    "recorded-date": "16-09-2024, 16:08:03",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "failure_sns_message": {
+        "Message": {
+          "requestContext": {
+            "requestId": "<uuid:2>",
+            "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+            "condition": "RetryAttemptsExhausted",
+            "approximateInvokeCount": 2
+          },
+          "responseContext": {
+            "statusCode": 200,
+            "executedVersion": "$LATEST",
+            "functionError": "Unhandled"
+          },
+          "version": "1.0",
+          "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+          "KinesisBatchInfo": {
+            "shardId": "shardId-000000000000",
+            "startSequenceNumber": "<start-sequence-number:1>",
+            "endSequenceNumber": "<start-sequence-number:1>",
+            "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+            "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+            "batchSize": 1,
+            "streamArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+          }
+        },
+        "MessageId": "<uuid:3>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+        "Timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:4>"
+      }
+    }
   }
 }

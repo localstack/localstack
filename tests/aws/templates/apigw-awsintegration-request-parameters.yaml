@@ -21,7 +21,6 @@ Resources:
             Principal:
               AWS: "*"
         Version: "2012-10-17"
-      RoleName: MyRole
   MyRoleDefaultPolicyA36BE1DD:
     Type: AWS::IAM::Policy
     Properties:
@@ -52,12 +51,12 @@ Resources:
   RestApi0C43BF4B:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: 
+      Name:
         Ref: ApiName
       Tags:
-      - Key: 
-          Ref: CustomTagKey 
-        Value: 
+      - Key:
+          Ref: CustomTagKey
+        Value:
           Ref: CustomTagValue
   RestApiCloudWatchRoleE3ED6605:
     Type: AWS::IAM::Role
@@ -145,9 +144,9 @@ Resources:
           - REGIONAL
       RegionalCertificateArn: arn:aws:acm:us-east-1:000000000000:certificate/00000000-0000-0000-0000-000000000000
       Tags:
-      - Key: 
-          Ref: CustomTagKey 
-        Value: 
+      - Key:
+          Ref: CustomTagKey
+        Value:
           Ref: CustomTagValue
   RestApiCustomDomainMapMyStackLocalRestApiE67E15D45F8B292A:
     Type: AWS::ApiGateway::BasePathMapping

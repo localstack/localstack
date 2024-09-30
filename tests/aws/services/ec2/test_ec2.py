@@ -1,4 +1,5 @@
 import contextlib
+import logging
 
 import pytest
 from botocore.exceptions import ClientError
@@ -13,6 +14,8 @@ from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+
+LOG = logging.getLogger(__name__)
 
 # public amazon image used for ec2 launch templates
 PUBLIC_AMAZON_LINUX_IMAGE = "ami-06c39ed6b42908a36"
@@ -577,6 +580,136 @@ class TestEc2Integrations:
 
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
         assert e.value.response["Error"]["Code"] == "InvalidSecurityGroupId.DuplicateCustomId"
+
+
+@markers.snapshot.skip_snapshot_verify(
+    # Moto and LS do not return the ClientToken
+    paths=["$..ClientToken"],
+)
+class TestEc2FlowLogs:
+    @pytest.fixture
+    def create_flow_logs(self, aws_client):
+        flow_logs = []
+
+        def _create(**kwargs):
+            response = aws_client.ec2.create_flow_logs(**kwargs)
+            flow_logs.extend(response.get("FlowLogIds", []))
+            return response
+
+        yield _create
+
+        try:
+            aws_client.ec2.delete_flow_logs(FlowLogIds=flow_logs)
+        except Exception:
+            LOG.debug("Error while cleaning up FlowLogs %s", flow_logs)
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # not returned by Moto
+            "$..FlowLogs..DestinationOptions",
+            "$..FlowLogs..Tags",
+        ],
+    )
+    @markers.aws.validated
+    def test_ec2_flow_logs_s3(self, aws_client, create_vpc, s3_bucket, create_flow_logs, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("ClientToken"),
+                snapshot.transform.key_value("FlowLogId"),
+                snapshot.transform.key_value("ResourceId"),
+                snapshot.transform.resource_name(),
+                snapshot.transform.jsonpath(
+                    "$.create-flow-logs-s3-subfolder.FlowLogIds[0]",
+                    value_replacement="flow-log-id-sub",
+                ),
+            ]
+        )
+        vpc = create_vpc(
+            cidr_block="10.0.0.0/24",
+            tag_specifications=[],
+        )
+        vpc_id = vpc["Vpc"]["VpcId"]
+
+        response = create_flow_logs(
+            ResourceIds=[vpc_id],
+            ResourceType="VPC",
+            LogDestinationType="s3",
+            LogDestination=f"arn:aws:s3:::{s3_bucket}",
+            TrafficType="ALL",
+        )
+        snapshot.match("create-flow-logs-s3", response)
+
+        describe_flow_logs = aws_client.ec2.describe_flow_logs(FlowLogIds=response["FlowLogIds"])
+        snapshot.match("describe-flow-logs", describe_flow_logs)
+
+        response = create_flow_logs(
+            ResourceIds=[vpc_id],
+            ResourceType="VPC",
+            LogDestinationType="s3",
+            LogDestination=f"arn:aws:s3:::{s3_bucket}/subfolder/",
+            TrafficType="ALL",
+        )
+        snapshot.match("create-flow-logs-s3-subfolder", response)
+
+    @markers.aws.validated
+    def test_ec2_flow_logs_s3_validation(
+        self, aws_client, create_vpc, create_flow_logs, s3_bucket, snapshot
+    ):
+        bad_bucket_name = f"{s3_bucket}-{short_uid()}-{short_uid()}"
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("ClientToken"),
+                snapshot.transform.key_value("ResourceId"),
+                snapshot.transform.regex(bad_bucket_name, replacement="<bad-bucket-name>"),
+            ]
+        )
+        vpc = create_vpc(
+            cidr_block="10.0.0.0/24",
+            tag_specifications=[],
+        )
+        vpc_id = vpc["Vpc"]["VpcId"]
+
+        # TODO: write an IAM test if the bucket exists but there are no permissions:
+        # the error would be the following if the bucket exists:
+        # Access Denied for LogDestination: bad-bucket. Please check LogDestination permission
+        non_existent_bucket = create_flow_logs(
+            ResourceIds=[vpc_id],
+            ResourceType="VPC",
+            LogDestinationType="s3",
+            LogDestination=f"arn:aws:s3:::{bad_bucket_name}",
+            TrafficType="ALL",
+        )
+        snapshot.match("non-existent-bucket", non_existent_bucket)
+
+        with pytest.raises(ClientError) as e:
+            create_flow_logs(
+                ResourceIds=[vpc_id],
+                ResourceType="VPC",
+                LogDestinationType="s3",
+                LogDestination=f"arn:aws:s3:::{s3_bucket}",
+                LogGroupName="test-group-name",
+                TrafficType="ALL",
+            )
+        snapshot.match("with-log-group-name", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            create_flow_logs(
+                ResourceIds=[vpc_id],
+                ResourceType="VPC",
+                LogDestinationType="s3",
+                TrafficType="ALL",
+            )
+        snapshot.match("no-log-destination", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            create_flow_logs(
+                ResourceIds=[vpc_id],
+                ResourceType="VPC",
+                LogDestinationType="s3",
+                LogGroupName="test",
+                TrafficType="ALL",
+            )
+        snapshot.match("log-group-name-s3-destination", e.value.response)
 
 
 @markers.aws.validated

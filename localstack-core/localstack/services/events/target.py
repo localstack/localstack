@@ -26,8 +26,8 @@ from localstack.utils.aws.arns import (
     extract_region_from_arn,
     extract_service_from_arn,
     firehose_name,
-    sqs_queue_url_for_arn,
     parse_arn,
+    sqs_queue_url_for_arn,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import extract_jsonpath
@@ -143,16 +143,7 @@ class TargetSender(ABC):
     def send_event(self, event: FormattedEvent | TransformedEvent):
         pass
 
-    def proxy_send_event(
-        self, event: FormattedEvent | TransformedEvent, context: RequestContext
-    ):  # context required by eventstudio
-        """Proxy method to process the event and send it to the target,
-        in addition it removes the field event-bus-name from the event,
-        required for EventStudio extension"""
-        self.send_event(event)
-
-    def process_event(self, event: FormattedEvent, context: RequestContext):
-        # context required by eventstudio
+    def process_event(self, event: FormattedEvent):
         """Processes the event and send it to the target."""
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
@@ -160,7 +151,7 @@ class TargetSender(ABC):
             event = transform_event_with_target_input_path(input_path, event)
         if input_transformer := self.target.get("InputTransformer"):
             event = self.transform_event_with_target_input_transformer(input_transformer, event)
-        self.proxy_send_event(event, context)
+        self.send_event(event)
 
     def transform_event_with_target_input_transformer(
         self, input_transformer: InputTransformer, event: FormattedEvent
@@ -246,6 +237,7 @@ class ApiGatewayTargetSender(TargetSender):
     """
     ApiGatewayTargetSender is a TargetSender that sends events to an API Gateway target.
     """
+
     PROHIBITED_HEADERS = [
         "authorization",
         "connection",
@@ -260,8 +252,8 @@ class ApiGatewayTargetSender(TargetSender):
         "via",
         "www-authenticate",
         "x-forwarded-for",
-    ] # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-gateway-target.html
-    
+    ]  # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-gateway-target.html
+
     ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
     def send_event(self, event):
@@ -337,13 +329,13 @@ class ApiGatewayTargetSender(TargetSender):
                 method=http_method, url=url, headers=headers, data=event_json, timeout=5
             )
             if not response.ok:
-                LOG.warn(
+                LOG.warning(
                     "API Gateway target invocation failed with status code %s, response: %s",
                     response.status_code,
                     response.text,
                 )
         except requests.RequestException as e:
-            LOG.warn("Request failed: %s", e)
+            LOG.warning("Request failed: %s", e)
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)

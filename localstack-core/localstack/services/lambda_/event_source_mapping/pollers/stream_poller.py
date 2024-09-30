@@ -287,8 +287,10 @@ class StreamPoller(Poller):
                 dlq_url = get_queue_url(dlq_arn)
                 # TODO: validate no FIFO queue because they are unsupported
                 sqs_client.send_message(QueueUrl=dlq_url, MessageBody=json.dumps(dlq_event))
+            elif service == "sns":
+                sns_client = get_internal_client(dlq_arn)
+                sns_client.publish(TopicArn=dlq_arn, Message=json.dumps(dlq_event))
             else:
-                # TODO: implement sns DLQ
                 LOG.warning("Unsupported DLQ service %s", service)
 
     def create_dlq_event(self, shard_id: str, events: list[dict], context: dict) -> dict:

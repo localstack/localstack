@@ -2690,6 +2690,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         allowed_publishers: AllowedPublishers,
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
+        tags: Tags = None,
         **kwargs,
     ) -> CreateCodeSigningConfigResponse:
         account = context.account_id

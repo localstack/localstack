@@ -63,6 +63,9 @@ LOG = logging.getLogger(__name__)
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ["AWS::Region", "AWS::Partition", "AWS::StackName", "AWS::AccountId"]
 
+# Mock value for unsupported type references
+MOCK_REFERENCE = "unknown"
+
 
 class NoStackUpdates(Exception):
     """Exception indicating that no actions are to be performed in a stack update (which is not allowed)"""
@@ -82,6 +85,14 @@ def get_attr_from_model_instance(
     resource_id: str,
     attribute_sub_name: Optional[str] = None,
 ) -> str:
+    if resource["PhysicalResourceId"] == MOCK_REFERENCE:
+        LOG.warning(
+            "Attribute '%s' requested from unsupported resource with id %s",
+            attribute_name,
+            resource_id,
+        )
+        return MOCK_REFERENCE
+
     properties = resource.get("Properties", {})
     # if there's no entry in VALID_GETATT_PROPERTIES for the resource type we still default to "open" and accept anything
     valid_atts = VALID_GETATT_PROPERTIES.get(resource_type)
@@ -318,7 +329,9 @@ def _resolve_refs_recursively(
             if ref is None:
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
+
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
+
             ref = resolve_refs_recursively(
                 account_id,
                 region_name,
@@ -351,10 +364,11 @@ def _resolve_refs_recursively(
             )
             resource = resources.get(resource_logical_id)
 
+            resource_type = get_resource_type(resource)
             resolved_getatt = get_attr_from_model_instance(
                 resource,
                 attribute_name,
-                get_resource_type(resource),
+                resource_type,
                 resource_logical_id,
                 attribute_sub_name,
             )
@@ -365,6 +379,7 @@ def _resolve_refs_recursively(
                     resource_ids=resource_logical_id,
                     message=f"Could not resolve attribute '{attribute_name}' on resource '{resource_logical_id}'",
                 )
+
             return resolved_getatt
 
         if stripped_fn_lower == "join":
@@ -1270,6 +1285,7 @@ class TemplateDeployer:
                 resource_provider, resource, resource_provider_payload
             )
         else:
+            resource["PhysicalResourceId"] = MOCK_REFERENCE
             progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
         # TODO: clean up the surrounding loop (do_apply_changes_in_loop) so that the responsibilities are clearer
