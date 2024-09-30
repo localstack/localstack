@@ -104,8 +104,12 @@ def check_provider_signature(sub_class: type, base_class: type, method_name: str
         raise AttributeError(
             f"Given method name ('{method_name}') is not a method of the sub class ('{sub_class.__name__}')."
         )
+    while isinstance(sub_function, ServiceFeature) and (
+        wrapped := getattr(sub_function, "__wrapped__", False)
+    ):
+        sub_function = wrapped
 
-    if not isinstance(sub_function, FunctionType) and not isinstance(sub_function, ServiceFeature):
+    if not isinstance(sub_function, FunctionType):
         raise AttributeError(
             f"Given method name ('{method_name}') is not a method of the sub class ('{sub_class.__name__}')."
         )
