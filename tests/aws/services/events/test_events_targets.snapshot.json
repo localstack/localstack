@@ -671,7 +671,7 @@
     }
   },
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetApiGateway::test_put_events_with_target_api_gateway": {
-    "recorded-date": "21-09-2024, 07:40:28",
+    "recorded-date": "30-09-2024, 07:53:35",
     "recorded-content": {
       "create_lambda_response": {
         "CreateEventSourceMappingResponse": null,
@@ -755,7 +755,7 @@
       "put_events_response": {
         "Entries": [
           {
-            "EventId": "<event-id>"
+            "EventId": "event-id"
           }
         ],
         "FailedEntryCount": 0,

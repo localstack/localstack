@@ -59,7 +59,7 @@ class TestEventsTargetApiGateway:
             snapshot.transform.apigateway_api(),
             snapshot.transform.apigatewayv2_lambda_proxy_event(),
             snapshot.transform.key_value("CodeSha256"),
-            snapshot.transform.regex(r'"EventId":\s*"[^"]+"', '"EventId": "<event-id>"'),
+            snapshot.transform.key_value("EventId", reference_replacement=False),
             snapshot.transform.key_value(
                 "headers", value_replacement="<headers>", reference_replacement=False
             ),
@@ -104,7 +104,7 @@ class TestEventsTargetApiGateway:
         # Step b: Set up an API Gateway
         api_id, _, root = create_rest_apigw(
             name=f"test-api-${short_uid()}",
-            description="Test Integration with SQS",
+            description="Test Integration with EventBridge",
         )
 
         # Get the root resource ID

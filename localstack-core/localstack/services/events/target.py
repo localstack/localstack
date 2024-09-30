@@ -27,6 +27,7 @@ from localstack.utils.aws.arns import (
     extract_service_from_arn,
     firehose_name,
     sqs_queue_url_for_arn,
+    parse_arn,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import extract_jsonpath
@@ -242,6 +243,9 @@ TargetSenderDict = dict[Arn, TargetSender]
 
 
 class ApiGatewayTargetSender(TargetSender):
+    """
+    ApiGatewayTargetSender is a TargetSender that sends events to an API Gateway target.
+    """
     PROHIBITED_HEADERS = [
         "authorization",
         "connection",
@@ -256,14 +260,15 @@ class ApiGatewayTargetSender(TargetSender):
         "via",
         "www-authenticate",
         "x-forwarded-for",
-    ]
+    ] # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-gateway-target.html
+    
     ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
     def send_event(self, event):
         # Parse the ARN to extract api_id, stage_name, http_method, and resource path
         # Example ARN: arn:aws:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
-        arn_parts = self.target["Arn"].split(":")
-        api_gateway_info = arn_parts[5]  # e.g., 'myapi/dev/POST/pets/*/*'
+        arn_parts = parse_arn(self.target["Arn"])
+        api_gateway_info = arn_parts["resource"]  # e.g., 'myapi/dev/POST/pets/*/*'
         api_gateway_info_parts = api_gateway_info.split("/")
 
         api_id = api_gateway_info_parts[0]
@@ -332,13 +337,13 @@ class ApiGatewayTargetSender(TargetSender):
                 method=http_method, url=url, headers=headers, data=event_json, timeout=5
             )
             if not response.ok:
-                LOG.error(
+                LOG.warn(
                     "API Gateway target invocation failed with status code %s, response: %s",
                     response.status_code,
                     response.text,
                 )
         except requests.RequestException as e:
-            LOG.error("Request failed: %s", e)
+            LOG.warn("Request failed: %s", e)
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
