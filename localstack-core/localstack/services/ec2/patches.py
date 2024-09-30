@@ -27,12 +27,20 @@ def apply_patches():
         custom_id: Optional[str] = tags.get("subnet", {}).get(TAG_KEY_CUSTOM_ID)
         vpc_id: str = args[0] if len(args) >= 1 else kwargs["vpc_id"]
 
-        # Check if custom id is unique within a given VPC
         if custom_id:
+             # Check if custom id is unique within a given VPC
             for az_subnets in self.subnets.values():
                 for subnet in az_subnets.values():
                     if subnet.vpc_id == vpc_id and subnet.id == custom_id:
                         raise InvalidSubnetDuplicateCustomIdError(custom_id)
+            
+            # Create default network ACL to prevent `self.associate_default_network_acl_with_subnet(subnet_id, vpc_id)`
+            # From throwing an exception that it does not exist for the given custom-id VPC
+            self.create_network_acl(
+                vpc_id=vpc_id,
+                # tags=tags,
+                default=True,
+            )
 
         # Generate subnet with moto library
         result: ec2_models.subnets.Subnet = fn(self, *args, tags=tags, **kwargs)
