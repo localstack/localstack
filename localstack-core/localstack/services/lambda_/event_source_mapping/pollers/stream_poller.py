@@ -219,10 +219,7 @@ class StreamPoller(Poller):
 
                 # This shouldn't be possible since a PartialBatchFailureError was raised
                 if len(failed_sequence_ids) == 0:
-                    LOG.error(
-                        "Invalid state encountered: PartialBatchFailureError raised but no batch item failures found."
-                    )
-                    assert failed_sequence_ids
+                    assert failed_sequence_ids, "Invalid state encountered: PartialBatchFailureError raised but no batch item failures found."
 
                 lowest_sequence_id: str = min(failed_sequence_ids, key=int)
 
