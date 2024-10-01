@@ -70,6 +70,11 @@ class Poller(ABC):
         """Poll events polled from the event source and matching at least one filter criteria and invoke the target processor."""
         pass
 
+    def close(self) -> None:
+        """Closes a target poller alongside all associated internal polling/consuming clients.
+        Only implemented for supported pollers. Therefore, the default implementation is empty."""
+        pass
+
     def send_events_to_dlq(self, events, context) -> None:
         """Send failed events to a DLQ configured on the source.
         Only implemented for supported pollers. Therefore, the default implementation is empty."""
