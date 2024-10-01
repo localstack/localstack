@@ -345,31 +345,6 @@ class ApiGatewayTargetSender(TargetSender):
         if not collections.get_safe(target, "$.RoleArn"):
             raise ValueError("RoleArn is required for ApiGateway target")
 
-    def process_event(self, event: Dict[str, Any], context: RequestContext):
-        """Processes the event, applies transformations, and sends it to the target."""
-        # Remove the 'event-bus-name' field if present
-        if isinstance(event, dict):
-            event.pop("event-bus-name", None)
-        # Handle 'Input' parameter
-        if "Input" in self.target:
-            event = json.loads(self.target["Input"])
-        elif "InputTransformer" in self.target:
-            input_transformer = self.target["InputTransformer"]
-            template_replacements = get_template_replacements(input_transformer, event)
-            predefined_template_replacements = self._get_predefined_template_replacements(event)
-            template_replacements.update(predefined_template_replacements)
-            input_template = input_transformer["InputTemplate"]
-            is_json_format = input_template.strip().startswith(("{"))
-            event = replace_template_placeholders(
-                input_template, template_replacements, is_json_format
-            )
-        elif "InputPath" in self.target:
-            event = transform_event_with_target_input_path(self.target["InputPath"], event)
-        else:
-            pass
-
-        self.send_event(event)
-
     def _get_predefined_template_replacements(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """Extracts predefined values from the event."""
         predefined_template_replacements = {}
