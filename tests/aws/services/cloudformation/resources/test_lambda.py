@@ -487,9 +487,22 @@ def test_multiple_lambda_permissions_for_singlefn(deploy_cfn_template, snapshot,
 
 
 @markers.aws.validated
-def test_lambda_function_tags(deploy_cfn_template, aws_client):
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # Added by CloudFormation
+        "$..Tags.'aws:cloudformation:logical-id'",
+        "$..Tags.'aws:cloudformation:stack-id'",
+        "$..Tags.'aws:cloudformation:stack-name'",
+    ]
+)
+def test_lambda_function_tags(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
+
     function_name = f"fn-{short_uid()}"
     environment = f"dev-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(environment, "<environment>"))
+
     deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__),
@@ -502,7 +515,7 @@ def test_lambda_function_tags(deploy_cfn_template, aws_client):
     )
 
     get_function_result = aws_client.lambda_.get_function(FunctionName=function_name)
-    assert get_function_result["Tags"]["Environment"] == environment
+    snapshot.match("get_function_result", get_function_result)
 
 
 class TestCfnLambdaIntegrations:

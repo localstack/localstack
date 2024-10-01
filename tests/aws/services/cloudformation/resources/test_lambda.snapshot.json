@@ -1529,5 +1529,65 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_function_tags": {
+    "recorded-date": "01-10-2024, 11:13:51",
+    "recorded-content": {
+      "get_function_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "Environment": "<environment>",
+          "aws:cloudformation:logical-id": "TestFunction",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-df418b45/<resource:3>",
+          "aws:cloudformation:stack-name": "stack-df418b45",
+          "lambda:createdBy": "SAM"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
