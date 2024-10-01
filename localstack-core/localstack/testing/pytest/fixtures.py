@@ -2288,6 +2288,6 @@ def clean_up(
 
 
 @pytest.fixture
-def enable_openapi_validation(monkeypatch):
+def openapi_validate(monkeypatch):
     monkeypatch.setattr(config, "OPENAPI_VALIDATE_RESPONSE", "true")
     monkeypatch.setattr(config, "OPENAPI_VALIDATE_REQUEST", "true")

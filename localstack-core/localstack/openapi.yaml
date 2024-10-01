@@ -225,7 +225,10 @@ components:
                 type: string
               t:
                 description: Timestamp
-                type: number
+                oneOf:
+                  - type: string
+                    format: date-time
+                  - type: number
               v:
                 description: Metric value
                 oneOf:
