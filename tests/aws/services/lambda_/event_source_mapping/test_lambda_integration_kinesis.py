@@ -560,10 +560,11 @@ class TestKinesisSource:
             "$..Records",  # FIXME Figure out why there is an extra log record
         ],
     )
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_kinesis_report_batch_item_failures(
         self,
         create_lambda_function,
+        create_event_source_mapping,
         sqs_get_queue_arn,
         sqs_create_queue,
         create_iam_role_with_policy,
@@ -609,7 +610,7 @@ class TestKinesisSource:
         destination_queue = sqs_get_queue_arn(queue_event_source_mapping)
         destination_config = {"OnFailure": {"Destination": destination_queue}}
 
-        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+        create_event_source_mapping_response = create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=3,
             StartingPosition="TRIM_HORIZON",
@@ -618,9 +619,6 @@ class TestKinesisSource:
             MaximumRetryAttempts=3,
             DestinationConfig=destination_config,
             FunctionResponseTypes=["ReportBatchItemFailures"],
-        )
-        cleanups.append(
-            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_uuid)
         )
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
@@ -686,10 +684,10 @@ class TestKinesisSource:
     def test_kinesis_report_batch_item_failure_scenarios(
         self,
         create_lambda_function,
+        create_event_source_mapping,
         kinesis_create_stream,
         lambda_su_role,
         wait_for_stream_ready,
-        cleanups,
         snapshot,
         aws_client,
         set_lambda_response,
@@ -723,7 +721,7 @@ class TestKinesisSource:
         destination_queue = sqs_get_queue_arn(queue_event_source_mapping)
         destination_config = {"OnFailure": {"Destination": destination_queue}}
 
-        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+        create_event_source_mapping_response = create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="TRIM_HORIZON",
@@ -735,7 +733,6 @@ class TestKinesisSource:
         )
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
         _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
         aws_client.kinesis.put_record(

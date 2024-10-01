@@ -830,12 +830,12 @@ class TestDynamoDBEventSourceMapping:
     def test_dynamodb_report_batch_item_failures(
         self,
         create_lambda_function,
+        create_event_source_mapping,
         sqs_get_queue_arn,
         sqs_create_queue,
         create_iam_role_with_policy,
         dynamodb_create_table,
         snapshot,
-        cleanups,
         aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
@@ -882,7 +882,7 @@ class TestDynamoDBEventSourceMapping:
         queue_failure_event_source_mapping_arn = sqs_get_queue_arn(destination_queue)
         destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
 
-        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+        create_event_source_mapping_response = create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=3,
             StartingPosition="TRIM_HORIZON",
@@ -895,9 +895,6 @@ class TestDynamoDBEventSourceMapping:
 
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         event_source_uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(
-            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_uuid)
-        )
         _await_event_source_mapping_enabled(aws_client.lambda_, event_source_uuid)
 
         dynamodb_items = [
@@ -962,7 +959,7 @@ class TestDynamoDBEventSourceMapping:
         self,
         create_lambda_function,
         dynamodb_create_table,
-        cleanups,
+        create_event_source_mapping,
         wait_for_dynamodb_stream_ready,
         sqs_get_queue_arn,
         sqs_create_queue,
@@ -1003,7 +1000,7 @@ class TestDynamoDBEventSourceMapping:
         queue_failure_event_source_mapping_arn = sqs_get_queue_arn(destination_queue)
         destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
 
-        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+        create_event_source_mapping_response = create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=3,
             StartingPosition="TRIM_HORIZON",
@@ -1015,10 +1012,6 @@ class TestDynamoDBEventSourceMapping:
         )
 
         event_source_uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(
-            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_uuid)
-        )
-
         _await_event_source_mapping_enabled(aws_client.lambda_, event_source_uuid)
         aws_client.dynamodb.put_item(TableName=table_name, Item=db_item)
 
@@ -1061,8 +1054,8 @@ class TestDynamoDBEventSourceMapping:
     def test_dynamodb_report_batch_item_success_scenarios(
         self,
         create_lambda_function,
+        create_event_source_mapping,
         dynamodb_create_table,
-        cleanups,
         wait_for_dynamodb_stream_ready,
         snapshot,
         aws_client,
@@ -1094,7 +1087,7 @@ class TestDynamoDBEventSourceMapping:
         assert wait_for_dynamodb_stream_ready(stream_arn)
 
         retry_attempts = 2
-        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+        create_event_source_mapping_response = create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="TRIM_HORIZON",
@@ -1105,10 +1098,6 @@ class TestDynamoDBEventSourceMapping:
         )
 
         event_source_uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(
-            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_uuid)
-        )
-
         _await_event_source_mapping_enabled(aws_client.lambda_, event_source_uuid)
         aws_client.dynamodb.put_item(TableName=table_name, Item=db_item)
 
