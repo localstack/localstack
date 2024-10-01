@@ -27,7 +27,7 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.204
+aws-cdk-asset-awscli-v1==2.2.205
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
@@ -85,7 +85,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.15.1
+cfn-lint==1.15.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -343,7 +343,7 @@ pydantic-core==2.23.4
     # via pydantic
 pygments==2.18.0
     # via rich
-pymongo==4.9.1
+pymongo==4.10.0
     # via localstack-core
 pyopenssl==24.2.1
     # via
@@ -353,7 +353,7 @@ pypandoc==1.13
     # via localstack-core (pyproject.toml)
 pyparsing==3.1.4
     # via moto-ext
-pyproject-hooks==1.1.0
+pyproject-hooks==1.2.0
     # via build
 pytest==8.3.3
     # via
@@ -485,7 +485,7 @@ urllib3==2.2.3
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.26.5
+virtualenv==20.26.6
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
