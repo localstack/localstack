@@ -146,9 +146,9 @@ class TargetSender(ABC):
         """Processes the event and send it to the target."""
         if input_ := self.target.get("Input"):
             event = json.loads(input_)
-        else:
-            if isinstance(event, dict):
-                event.pop("event-bus-name", None)
+        if isinstance(event, dict):
+            event.pop("event-bus-name", None)
+        if not input_:
             if input_path := self.target.get("InputPath"):
                 event = transform_event_with_target_input_path(input_path, event)
             if input_transformer := self.target.get("InputTransformer"):
