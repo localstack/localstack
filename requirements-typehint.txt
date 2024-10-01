@@ -27,7 +27,7 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.204
+aws-cdk-asset-awscli-v1==2.2.205
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
@@ -53,7 +53,7 @@ boto3==1.35.29
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.35.28
+boto3-stubs==1.35.30
     # via localstack-core (pyproject.toml)
 botocore==1.35.29
     # via
@@ -64,7 +64,7 @@ botocore==1.35.29
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.35.28
+botocore-stubs==1.35.30
     # via boto3-stubs
 build==1.2.2
     # via
@@ -89,7 +89,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.15.1
+cfn-lint==1.15.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -411,7 +411,7 @@ mypy-boto3-redshift==1.35.0
     # via boto3-stubs
 mypy-boto3-redshift-data==1.35.10
     # via boto3-stubs
-mypy-boto3-resource-groups==1.35.0
+mypy-boto3-resource-groups==1.35.30
     # via boto3-stubs
 mypy-boto3-resourcegroupstaggingapi==1.35.0
     # via boto3-stubs
@@ -435,7 +435,7 @@ mypy-boto3-servicediscovery==1.35.0
     # via boto3-stubs
 mypy-boto3-ses==1.35.3
     # via boto3-stubs
-mypy-boto3-sesv2==1.35.0
+mypy-boto3-sesv2==1.35.29
     # via boto3-stubs
 mypy-boto3-sns==1.35.0
     # via boto3-stubs
@@ -541,7 +541,7 @@ pydantic-core==2.23.4
     # via pydantic
 pygments==2.18.0
     # via rich
-pymongo==4.9.1
+pymongo==4.10.0
     # via localstack-core
 pyopenssl==24.2.1
     # via
@@ -551,7 +551,7 @@ pypandoc==1.13
     # via localstack-core
 pyparsing==3.1.4
     # via moto-ext
-pyproject-hooks==1.1.0
+pyproject-hooks==1.2.0
     # via build
 pytest==8.3.3
     # via
@@ -785,7 +785,7 @@ urllib3==2.2.3
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.26.5
+virtualenv==20.26.6
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
