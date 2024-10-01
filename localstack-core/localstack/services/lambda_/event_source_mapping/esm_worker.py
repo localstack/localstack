@@ -130,7 +130,8 @@ class EsmWorker:
             except Exception as e:
                 LOG.error(
                     "Error while polling messages for event source %s: %s",
-                    self.esm_config["EventSourceArn"],
+                    self.esm_config.get("EventSourceArn")
+                    or self.esm_config.get("SelfManagedEventSource"),
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )

@@ -34,7 +34,7 @@ class LambdaSender(Sender):
         self.payload_dict = payload_dict
         self.report_batch_item_failures = report_batch_item_failures
 
-    def send_events(self, events: list[dict]) -> dict:
+    def send_events(self, events: list[dict] | dict) -> dict:
         if self.payload_dict:
             events = {"Records": events}
         # TODO: test qualified + unqualified Lambda invoke

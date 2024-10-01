@@ -199,6 +199,7 @@ Ipv6PoolMaxResults = int
 KernelId = str
 KeyPairId = str
 KeyPairName = str
+KeyPairNameWithResolver = str
 KmsKeyArn = str
 KmsKeyId = str
 LaunchTemplateElasticInferenceAcceleratorCount = int
@@ -991,6 +992,8 @@ class FleetCapacityReservationTenancy(StrEnum):
 
 class FleetCapacityReservationUsageStrategy(StrEnum):
     use_capacity_reservations_first = "use-capacity-reservations-first"
+    use_capacity_reservations_only = "use-capacity-reservations-only"
+    none = "none"
 
 
 class FleetEventType(StrEnum):
@@ -2078,6 +2081,14 @@ class InstanceType(StrEnum):
     r8g_metal_24xl = "r8g.metal-24xl"
     r8g_metal_48xl = "r8g.metal-48xl"
     mac2_m1ultra_metal = "mac2-m1ultra.metal"
+    g6e_xlarge = "g6e.xlarge"
+    g6e_2xlarge = "g6e.2xlarge"
+    g6e_4xlarge = "g6e.4xlarge"
+    g6e_8xlarge = "g6e.8xlarge"
+    g6e_12xlarge = "g6e.12xlarge"
+    g6e_16xlarge = "g6e.16xlarge"
+    g6e_24xlarge = "g6e.24xlarge"
+    g6e_48xlarge = "g6e.48xlarge"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -9470,7 +9481,7 @@ class DeleteIpamScopeResult(TypedDict, total=False):
 
 
 class DeleteKeyPairRequest(ServiceRequest):
-    KeyName: Optional[KeyPairName]
+    KeyName: Optional[KeyPairNameWithResolver]
     KeyPairId: Optional[KeyPairId]
     DryRun: Optional[Boolean]
 
@@ -10251,8 +10262,8 @@ class DescribeByoipCidrsResult(TypedDict, total=False):
 
 class DescribeCapacityBlockOfferingsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
-    InstanceType: String
-    InstanceCount: Integer
+    InstanceType: Optional[String]
+    InstanceCount: Optional[Integer]
     StartDateRange: Optional[MillisecondDateTime]
     EndDateRange: Optional[MillisecondDateTime]
     CapacityDurationHours: Integer
@@ -20608,7 +20619,7 @@ class Ec2Api:
     def delete_key_pair(
         self,
         context: RequestContext,
-        key_name: KeyPairName = None,
+        key_name: KeyPairNameWithResolver = None,
         key_pair_id: KeyPairId = None,
         dry_run: Boolean = None,
         **kwargs,
@@ -21348,10 +21359,10 @@ class Ec2Api:
     def describe_capacity_block_offerings(
         self,
         context: RequestContext,
-        instance_type: String,
-        instance_count: Integer,
         capacity_duration_hours: Integer,
         dry_run: Boolean = None,
+        instance_type: String = None,
+        instance_count: Integer = None,
         start_date_range: MillisecondDateTime = None,
         end_date_range: MillisecondDateTime = None,
         next_token: String = None,

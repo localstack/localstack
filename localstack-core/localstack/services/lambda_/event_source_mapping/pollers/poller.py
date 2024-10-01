@@ -31,8 +31,8 @@ LOG = logging.getLogger(__name__)
 
 
 class Poller(ABC):
-    source_arn: str
-    aws_region: str
+    source_arn: str | None
+    aws_region: str | None
     source_parameters: dict
     filter_patterns: list[dict[str, Any]]
     source_client: BaseClient
@@ -42,18 +42,20 @@ class Poller(ABC):
 
     def __init__(
         self,
-        source_arn: str,
+        source_arn: str | None = None,
         source_parameters: dict | None = None,
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
     ):
         # TODO: handle pollers without an ARN (e.g., Apache Kafka)
-        self.source_arn = source_arn
-        self.aws_region = parse_arn(source_arn)["region"]
+        if source_arn:
+            self.source_arn = source_arn
+            self.aws_region = parse_arn(source_arn)["region"]
+            self.source_client = source_client or get_internal_client(source_arn)
+
         self.source_parameters = source_parameters or {}
         filters = self.source_parameters.get("FilterCriteria", {}).get("Filters", [])
         self.filter_patterns = [json.loads(event_filter["Pattern"]) for event_filter in filters]
-        self.source_client = source_client or get_internal_client(source_arn)
 
         # Target processor
         self.processor = processor or NoOpsEventProcessor()
