@@ -326,19 +326,16 @@ class ApiGatewayTargetSender(TargetSender):
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
 
-        try:
-            # Send the HTTP request
-            response = requests.request(
-                method=http_method, url=url, headers=headers, data=event_json, timeout=5
+         # Send the HTTP request
+        response = requests.request(
+            method=http_method, url=url, headers=headers, data=event_json, timeout=5
+        )
+        if not response.ok:
+            LOG.warning(
+                "API Gateway target invocation failed with status code %s, response: %s",
+                response.status_code,
+                response.text,
             )
-            if not response.ok:
-                LOG.warning(
-                    "API Gateway target invocation failed with status code %s, response: %s",
-                    response.status_code,
-                    response.text,
-                )
-        except requests.RequestException as e:
-            LOG.warning("Request failed: %s", e)
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
