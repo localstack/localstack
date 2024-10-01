@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Type
+from typing import Callable
 
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
@@ -33,6 +33,12 @@ from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import 
 from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
+
+
+class PollerHolder:
+    """Holds a `Callable` function `create_poller_fn` used to create a Poller. Useful when creating Pollers downstream via hooks."""
+
+    create_poller_fn: Callable[..., Poller] | None = None
 
 
 class EsmWorkerFactory:
@@ -157,20 +163,17 @@ class EsmWorkerFactory:
                 processor=esm_processor,
             )
         else:
-            poller_holder = {"create_poller": None}
+            poller_holder = PollerHolder()
             lambda_hooks.create_event_source_poller.run(
                 poller_holder, source_service, self.esm_config
             )
 
-            create_poller: Optional[Callable[..., Type[Poller]]] = poller_holder.get(
-                "create_poller"
-            )
-            if not create_poller:
+            if not poller_holder.create_poller_fn:
                 raise Exception(
                     f"Unsupported event source mapping source service {source_service}. Please upvote or create a feature request."
                 )
 
-            poller: Type[Poller] = create_poller(
+            poller: Poller = poller_holder.create_poller_fn(
                 arn=source_arn,
                 client=source_client,
                 processor=esm_processor,
