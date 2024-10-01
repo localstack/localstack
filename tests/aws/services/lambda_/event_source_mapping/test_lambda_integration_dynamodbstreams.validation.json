@@ -59,6 +59,9 @@
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[invalid_key_foo_null_value_failure]": {
     "last_validated_date": "2024-09-12T21:14:16+00:00"
   },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[item_identifier_not_present_failure]": {
+    "last_validated_date": "2024-10-01T17:32:19+00:00"
+  },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[null_item_identifier_failure]": {
     "last_validated_date": "2024-09-12T21:09:41+00:00"
   },

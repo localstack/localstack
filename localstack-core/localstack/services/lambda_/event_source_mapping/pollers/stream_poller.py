@@ -201,11 +201,16 @@ class StreamPoller(Poller):
                     )
                 error_payload = ex.error
 
+                # Extract all sequence numbers from events in batch. This allows us to fail the whole batch if
+                # an unknown itemidentifier is returned.
+                batch_sequence_numbers = {
+                    self.get_sequence_number(event) for event in matching_events
+                }
+
                 # If the batchItemFailures array contains multiple items, Lambda uses the record with the lowest sequence number as the checkpoint.
                 # Lambda then retries all records starting from that checkpoint.
-
                 failed_sequence_ids: list[int] | None = get_batch_item_failures(
-                    ex.partial_failure_payload
+                    ex.partial_failure_payload, batch_sequence_numbers
                 )
 
                 # If None is returned, consider the entire batch a failure.

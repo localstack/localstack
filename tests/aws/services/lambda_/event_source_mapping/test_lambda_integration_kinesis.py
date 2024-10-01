@@ -666,6 +666,7 @@ class TestKinesisSource:
         "set_lambda_response",
         [
             # Failures
+            {"batchItemFailures": [{"itemIdentifier": 123}]},
             {"batchItemFailures": [{"itemIdentifier": ""}]},
             {"batchItemFailures": [{"itemIdentifier": None}]},
             {"batchItemFailures": [{"foo": 123}]},
@@ -675,6 +676,7 @@ class TestKinesisSource:
         ],
         ids=[
             # Failures
+            "item_identifier_not_present_failure",
             "empty_string_item_identifier_failure",
             "null_item_identifier_failure",
             "invalid_key_foo_failure",
