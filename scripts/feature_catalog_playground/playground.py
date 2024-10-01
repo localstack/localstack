@@ -74,6 +74,9 @@ def find_decorated_functions_and_methods(module):
         # If it's a class, check its methods
         elif inspect.isclass(obj):
             for method_name, method in inspect.getmembers(obj):
+                limitation = getattr(method, "api_limitation_message", None)
+
+                # TODO currently limitations are only collected if the api operation also has a feature decorator
                 if feature := getattr(method, "feature", None):
                     while (wrapped := getattr(method, "__wrapped__", False)) and isinstance(
                         wrapped, ServiceFeature
@@ -90,9 +93,10 @@ def find_decorated_functions_and_methods(module):
                     decorated_functions.append(
                         {
                             "feature_catalog_name": feature_catalog_name,
-                            "name": f"{name}.{method_name}",
+                            "function_name": f"{name}.{method_name}",
                             "feature": feature,
                             "fully_qualified_name": f"{module.__name__}.{name}.{method_name}",
+                            "limitations": limitation or "",
                         }
                     )
 
@@ -114,15 +118,19 @@ def find_decorated_functions_in_package(package):
     return decorated_functions
 
 
-def recursive_add_operation(keys, current_dict, operation_name):
+def recursive_add_operation(keys, current_dict, operation_name, limitations):
     key = keys[0]  # Take the first key
     for item in current_dict:
         if key in item:
             if len(keys) == 1:
                 current_dict[key].setdefault("operations", []).append(operation_name)
+                if limitations:
+                    current_dict[key].setdefault("api_limitations", {})[operation_name] = (
+                        limitations
+                    )
             else:
                 # Continue recursively with the remaining keys
-                recursive_add_operation(keys[1:], current_dict[key], operation_name)
+                recursive_add_operation(keys[1:], current_dict[key], operation_name, limitations)
 
 
 # Usage: Find all decorated functions in the entire cloudwatch package
@@ -141,6 +149,11 @@ for details in decorated_funcs:
         #     f"Function '{module}.{feature.get('name')}' is decorated with @{feature.get('feature')}, ({feature.get('feature_catalog_name')})"
         # )
         feature_catalog_keys = feature.get("feature_catalog_name").split(".")
-        recursive_add_operation(feature_catalog_keys, features, feature.get("fully_qualified_name"))
+        recursive_add_operation(
+            feature_catalog_keys,
+            features,
+            feature.get("fully_qualified_name"),
+            feature.get("limitations"),
+        )
 
 print(json.dumps(features, indent=2, cls=EnumEncoder))

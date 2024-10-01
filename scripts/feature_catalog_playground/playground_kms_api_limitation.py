@@ -3,13 +3,13 @@ import inspect
 import json
 import pkgutil
 
-import localstack.services.kms.feature_catalog as kms_features
+import localstack.feature_catalog.services as feature_catalog
 from localstack.feature_catalog.service_feature import ApiCoverage, ServiceFeature
-from localstack.services.kms.feature_catalog import kms_api, kms_feature  # noqa
+from localstack.feature_catalog.services import kms_api, kms_feature
 
 # Automatically import all modules in the feature_catalog package
-for _, module_name, _ in pkgutil.iter_modules(kms_features.__path__):
-    importlib.import_module(f"{kms_features.__name__}.{module_name}")
+for _, module_name, _ in pkgutil.iter_modules(feature_catalog.__path__):
+    importlib.import_module(f"{feature_catalog.__name__}.{module_name}")
 
 
 def get_class_hierarchy(cls, level=0):
