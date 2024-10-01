@@ -101,9 +101,9 @@ from localstack.aws.api.kms import (
     VerifyResponse,
     WrappingKeySpec,
 )
-from localstack.feature_catalog.services import kms_feature
+from localstack.feature_catalog.api_limitation import ApiLimitation
+from localstack.feature_catalog.services import kms_api, kms_feature
 from localstack.services.kms.exceptions import ValidationException
-from localstack.services.kms.feature_catalog import kms_api  # noqa
 from localstack.services.kms.models import (
     MULTI_REGION_PATTERN,
     PATTERN_UUID,
@@ -372,6 +372,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     @handler("CreateKey", expand=False)
     @kms_feature.Provisioning
     @kms_api.CreateKey
+    @ApiLimitation(limitation="Status 'Updating' is not supported.")
     def create_key(
         self,
         context: RequestContext,
