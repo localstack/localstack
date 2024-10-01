@@ -544,7 +544,7 @@ def _resolve_refs_recursively(
         if stripped_fn_lower == "if":
             condition, option1, option2 = value[keys_list[0]]
             condition = conditions.get(condition)
-            if not condition:
+            if condition is None:
                 LOG.warning(
                     "Cannot find condition '%s' in conditions mapping: '%s'",
                     condition,
