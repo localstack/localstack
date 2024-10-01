@@ -4301,6 +4301,7 @@ class TestSNSPublishDelivery:
         snapshot.match("delivery-events", events)
 
 
+@pytest.mark.usefixtures("openapi_validate")
 class TestSNSRetrospectionEndpoints:
     @markers.aws.only_localstack
     def test_publish_to_platform_endpoint_can_retrospect(
