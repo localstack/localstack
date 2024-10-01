@@ -1,11 +1,13 @@
 import logging
 import re
+from binascii import crc32
 from typing import Dict, List, Optional
 
 from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 from cachetools import TTLCache
 from moto.core.exceptions import JsonRESTError
 
+from localstack.aws.api import RequestContext
 from localstack.aws.api.dynamodb import (
     AttributeMap,
     BatchGetRequestMap,
@@ -20,7 +22,8 @@ from localstack.aws.api.dynamodb import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
-from localstack.utils.aws.arns import dynamodb_table_arn
+from localstack.http import Response
+from localstack.utils.aws.arns import dynamodb_table_arn, get_partition
 from localstack.utils.json import canonical_json
 from localstack.utils.testutil import list_all_resources
 
@@ -305,3 +308,28 @@ def de_dynamize_record(item: dict) -> dict:
     """
     deserializer = TypeDeserializer()
     return {k: deserializer.deserialize(v) for k, v in item.items()}
+
+
+def modify_ddblocal_arns(chain, context: RequestContext, response: Response):
+    """A service response handler that modifies the dynamodb backend response."""
+    if response_content := response.get_data(as_text=True):
+
+        def _convert_arn(matchobj):
+            key = matchobj.group(1)
+            partition = get_partition(context.region)
+            table_name = matchobj.group(2)
+            return f'{key}: "arn:{partition}:dynamodb:{context.region}:{context.account_id}:{table_name}"'
+
+        # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
+        content_replaced = re.sub(
+            r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:[a-z-]+:dynamodb:ddblocal:000000000000:([^"]+)"',
+            _convert_arn,
+            response_content,
+        )
+        if content_replaced != response_content:
+            response.data = content_replaced
+            # make sure the service response is parsed again later
+            context.service_response = None
+
+    # update x-amz-crc32 header required by some clients
+    response.headers["x-amz-crc32"] = crc32(response.data) & 0xFFFFFFFF

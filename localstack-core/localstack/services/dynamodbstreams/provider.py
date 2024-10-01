@@ -1,40 +1,24 @@
-import copy
 import logging
 
-from bson.json_util import loads
-
-from localstack.aws.api import RequestContext, handler
+from localstack.aws import handlers
+from localstack.aws.api import RequestContext, ServiceRequest, ServiceResponse, handler
 from localstack.aws.api.dynamodbstreams import (
+    DescribeStreamInput,
     DescribeStreamOutput,
     DynamodbstreamsApi,
-    ExpiredIteratorException,
     GetRecordsInput,
     GetRecordsOutput,
+    GetShardIteratorInput,
     GetShardIteratorOutput,
+    ListStreamsInput,
     ListStreamsOutput,
-    PositiveIntegerObject,
-    ResourceNotFoundException,
-    SequenceNumber,
-    ShardId,
-    ShardIteratorType,
-    Stream,
-    StreamArn,
-    StreamDescription,
     StreamStatus,
-    TableName,
 )
-from localstack.aws.connect import connect_to
-from localstack.services.dynamodbstreams.dynamodbstreams_api import (
-    get_dynamodbstreams_store,
-    get_kinesis_client,
-    get_kinesis_stream_name,
-    get_shard_id,
-    kinesis_shard_id,
-    stream_name_from_stream_arn,
-    table_name_from_stream_arn,
-)
+from localstack.services.dynamodb.provider import DynamoDBProvider
+from localstack.services.dynamodb.server import DynamodbServer
+from localstack.services.dynamodb.utils import modify_ddblocal_arns
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.collections import select_from_typed_dict
+from localstack.utils.aws.arns import parse_arn
 
 LOG = logging.getLogger(__name__)
 
@@ -47,107 +31,49 @@ STREAM_STATUS_MAP = {
 
 
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
+    def __init__(self):
+        self.server = DynamodbServer.get()
+
+    def on_after_init(self):
+        # add response processor specific to ddblocal
+        handlers.modify_service_response.append(self.service, modify_ddblocal_arns)
+
+    def forward_request(
+        self, context: RequestContext, service_request: ServiceRequest = None
+    ) -> ServiceResponse:
+        """
+        Forward a request to DynamoDB Local.
+        """
+        DynamoDBProvider.prepare_request_headers(
+            context.request.headers, account_id=context.account_id, region_name=context.region
+        )
+        return self.server.proxy(context, service_request)
+
+    def modify_stream_arn_for_ddb_local(self, stream_arn: str) -> str:
+        parsed_arn = parse_arn(stream_arn)
+
+        return f"arn:aws:dynamodb:ddblocal:000000000000:{parsed_arn['resource']}"
+
+    @handler("DescribeStream", expand=False)
     def describe_stream(
         self,
         context: RequestContext,
-        stream_arn: StreamArn,
-        limit: PositiveIntegerObject = None,
-        exclusive_start_shard_id: ShardId = None,
-        **kwargs,
+        payload: DescribeStreamInput,
     ) -> DescribeStreamOutput:
-        store = get_dynamodbstreams_store(context.account_id, context.region)
-        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
-        for stream in store.ddb_streams.values():
-            if stream["StreamArn"] == stream_arn:
-                # get stream details
-                dynamodb = connect_to(
-                    aws_access_key_id=context.account_id, region_name=context.region
-                ).dynamodb
-                table_name = table_name_from_stream_arn(stream["StreamArn"])
-                stream_name = get_kinesis_stream_name(table_name)
-                stream_details = kinesis.describe_stream(StreamName=stream_name)
-                table_details = dynamodb.describe_table(TableName=table_name)
-                stream["KeySchema"] = table_details["Table"]["KeySchema"]
-                stream["StreamStatus"] = STREAM_STATUS_MAP.get(
-                    stream_details["StreamDescription"]["StreamStatus"]
-                )
-
-                # Replace Kinesis ShardIDs with ones that mimic actual
-                # DynamoDBStream ShardIDs.
-                stream_shards = copy.deepcopy(stream_details["StreamDescription"]["Shards"])
-                start_index = 0
-                for index, shard in enumerate(stream_shards):
-                    shard["ShardId"] = get_shard_id(stream, shard["ShardId"])
-                    shard.pop("HashKeyRange", None)
-                    # we want to ignore the shards before exclusive_start_shard_id parameters
-                    # we store the index where we encounter then slice the shards
-                    if exclusive_start_shard_id and exclusive_start_shard_id == shard["ShardId"]:
-                        start_index = index
-
-                if exclusive_start_shard_id:
-                    # slicing the resulting shards after the exclusive_start_shard_id parameters
-                    stream_shards = stream_shards[start_index + 1 :]
-
-                stream["Shards"] = stream_shards
-                stream_description = select_from_typed_dict(StreamDescription, stream)
-                return DescribeStreamOutput(StreamDescription=stream_description)
-
-        raise ResourceNotFoundException(f"Stream {stream_arn} was not found.")
+        payload["StreamArn"] = self.modify_stream_arn_for_ddb_local(payload.get("StreamArn", ""))
+        return self.forward_request(context, payload)
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
-        prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
-        try:
-            kinesis_records = kinesis.get_records(**payload)
-        except kinesis.exceptions.ExpiredIteratorException:
-            LOG.debug("Shard iterator for underlying kinesis stream expired")
-            raise ExpiredIteratorException("Shard iterator has expired")
-        result = {
-            "Records": [],
-            "NextShardIterator": f"{prefix}|{kinesis_records.get('NextShardIterator')}",
-        }
-        for record in kinesis_records["Records"]:
-            record_data = loads(record["Data"])
-            record_data["dynamodb"]["SequenceNumber"] = record["SequenceNumber"]
-            result["Records"].append(record_data)
-        return GetRecordsOutput(**result)
+        return self.forward_request(context, payload)
 
+    @handler("GetShardIterator", expand=False)
     def get_shard_iterator(
-        self,
-        context: RequestContext,
-        stream_arn: StreamArn,
-        shard_id: ShardId,
-        shard_iterator_type: ShardIteratorType,
-        sequence_number: SequenceNumber = None,
-        **kwargs,
+        self, context: RequestContext, payload: GetShardIteratorInput
     ) -> GetShardIteratorOutput:
-        stream_name = stream_name_from_stream_arn(stream_arn)
-        stream_shard_id = kinesis_shard_id(shard_id)
-        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
+        payload["StreamArn"] = self.modify_stream_arn_for_ddb_local(payload.get("StreamArn", ""))
+        return self.forward_request(context, payload)
 
-        kwargs = {"StartingSequenceNumber": sequence_number} if sequence_number else {}
-        result = kinesis.get_shard_iterator(
-            StreamName=stream_name,
-            ShardId=stream_shard_id,
-            ShardIteratorType=shard_iterator_type,
-            **kwargs,
-        )
-        del result["ResponseMetadata"]
-        # TODO not quite clear what the |1| exactly denotes, because at AWS it's sometimes other numbers
-        result["ShardIterator"] = f"{stream_arn}|1|{result['ShardIterator']}"
-        return GetShardIteratorOutput(**result)
-
-    def list_streams(
-        self,
-        context: RequestContext,
-        table_name: TableName = None,
-        limit: PositiveIntegerObject = None,
-        exclusive_start_stream_arn: StreamArn = None,
-        **kwargs,
-    ) -> ListStreamsOutput:
-        store = get_dynamodbstreams_store(context.account_id, context.region)
-        result = [select_from_typed_dict(Stream, res) for res in store.ddb_streams.values()]
-        if table_name:
-            result = [res for res in result if res["TableName"] == table_name]
-        return ListStreamsOutput(Streams=result)
+    @handler("ListStreams", expand=False)
+    def list_streams(self, context: RequestContext, payload: ListStreamsInput) -> ListStreamsOutput:
+        return self.forward_request(context, payload)

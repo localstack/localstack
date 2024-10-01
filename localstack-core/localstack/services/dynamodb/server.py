@@ -11,6 +11,7 @@ from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed
+from localstack.utils.objects import singleton_factory
 from localstack.utils.run import FuncThread, run
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry, synchronized
@@ -71,6 +72,11 @@ class DynamodbServer(Server):
         self.cors = os.getenv("DYNAMODB_CORS", None)
         self.proxy = AwsRequestProxy(self.url)
 
+    @staticmethod
+    @singleton_factory
+    def get() -> "DynamodbServer":
+        return DynamodbServer(config.DYNAMODB_LOCAL_PORT)
+
     def start_dynamodb(self) -> bool:
         """Start the DynamoDB server."""
 
@@ -80,6 +86,7 @@ class DynamodbServer(Server):
         # - ...
         # The cleaning is now done via the reset endpoint
 
+        self._stopped.clear()
         started = self.start()
         self.wait_for_dynamodb()
         return started

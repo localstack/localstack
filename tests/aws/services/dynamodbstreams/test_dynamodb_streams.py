@@ -4,7 +4,6 @@ import re
 import aws_cdk as cdk
 import pytest
 
-from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
@@ -54,7 +53,6 @@ class TestDynamoDBStreams:
     @markers.aws.only_localstack
     def test_stream_spec_and_region_replacement(self, aws_client, region_name):
         ddbstreams = aws_client.dynamodbstreams
-        kinesis = aws_client.kinesis
         table_name = f"ddb-{short_uid()}"
         resources.create_dynamodb_table(
             table_name,
@@ -80,8 +78,6 @@ class TestDynamoDBStreams:
         ]
         assert table_name in stream_tables
         assert len(stream_tables) == 1
-        stream_name = get_kinesis_stream_name(table_name)
-        assert stream_name in kinesis.list_streams()["StreamNames"]
 
         # assert shard ID formats
         result = ddbstreams.describe_stream(StreamArn=table["LatestStreamArn"])["StreamDescription"]
@@ -92,13 +88,12 @@ class TestDynamoDBStreams:
         # clean up
         aws_client.dynamodb.delete_table(TableName=table_name)
 
-        def _assert_stream_deleted():
-            stream_tables = [s["TableName"] for s in ddbstreams.list_streams()["Streams"]]
-            assert table_name not in stream_tables
-            assert stream_name not in kinesis.list_streams()["StreamNames"]
+        def _assert_stream_disabled():
+            result = aws_client.dynamodbstreams.describe_stream(StreamArn=table["LatestStreamArn"])
+            assert result["StreamDescription"]["StreamStatus"] == "DISABLED"
 
         # assert stream has been deleted
-        retry(_assert_stream_deleted, sleep=0.4, retries=5)
+        retry(_assert_stream_disabled, sleep=1, retries=20)
 
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Flaky")
     @markers.aws.validated
