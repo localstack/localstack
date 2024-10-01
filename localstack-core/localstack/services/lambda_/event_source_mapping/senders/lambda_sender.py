@@ -19,9 +19,20 @@ class LambdaSender(Sender):
     # Flag to enable the payload dict using the "Records" key used for Lambda event source mapping
     payload_dict: bool
 
-    def __init__(self, target_arn, target_parameters=None, target_client=None, payload_dict=False):
+    # Flag to enable partial successes/failures when processing batched events through a Lambda event source mapping
+    report_batch_item_failures: bool
+
+    def __init__(
+        self,
+        target_arn,
+        target_parameters=None,
+        target_client=None,
+        payload_dict=False,
+        report_batch_item_failures=False,
+    ):
         super().__init__(target_arn, target_parameters, target_client)
         self.payload_dict = payload_dict
+        self.report_batch_item_failures = report_batch_item_failures
 
     def send_events(self, events: list[dict] | dict) -> dict:
         if self.payload_dict:
@@ -72,11 +83,9 @@ class LambdaSender(Sender):
                 error=error,
             )
 
-        # TODO: test all success, partial, and failure conditions:
-        #   https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-dynamodb.html#pipes-ddb-batch-failures
         # The payload can contain the key "batchItemFailures" with a list of partial batch failures:
         # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-batching-concurrency.html
-        if has_batch_item_failures(payload):
+        if self.report_batch_item_failures and has_batch_item_failures(payload):
             error = {
                 "message": "Target invocation failed partially.",
                 "httpStatusCode": invoke_result["StatusCode"],
@@ -84,6 +93,7 @@ class LambdaSender(Sender):
                 "requestId": invoke_result["ResponseMetadata"]["RequestId"],
                 "exceptionType": "BadRequest",
                 "resourceArn": self.target_arn,
+                "executedVersion": invoke_result.get("ExecutedVersion", "$LATEST"),
             }
             raise PartialFailureSenderError(error=error, partial_failure_payload=payload)
 

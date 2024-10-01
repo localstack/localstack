@@ -83,7 +83,9 @@ class EsmConfigFactory:
         # c) Are FilterCriteria.Filters merged or replaced upon update?
         # TODO: can we ignore extra parameters from the request (e.g., Kinesis params for SQS source)?
         derived_source_parameters = merge_recursive(default_source_parameters, self.request)
-        if service in ("sqs", "kinesis", "dynamodbstreams"):
+
+        # TODO What happens when FunctionResponseTypes value or target service is invalid?
+        if service in ["sqs", "kinesis", "dynamodbstreams"]:
             derived_source_parameters["FunctionResponseTypes"] = derived_source_parameters.get(
                 "FunctionResponseTypes", []
             )

@@ -123,8 +123,23 @@ def has_batch_item_failures(
     try:
         failed_items_ids = parse_batch_item_failures(result, valid_item_ids)
         return len(failed_items_ids) > 0
-    except KeyError:
+    except (KeyError, ValueError):
         return True
+
+
+def get_batch_item_failures(
+    result: dict | str | None, valid_item_ids: set[str] | None = None
+) -> list[str] | None:
+    """
+    Returns a list of failed batch item IDs. If an empty list is returned, then the batch should be considered as a complete success.
+
+    If `None` is returned, the batch should be considered a complete failure.
+    """
+    try:
+        failed_items_ids = parse_batch_item_failures(result, valid_item_ids)
+        return failed_items_ids
+    except (KeyError, ValueError):
+        return None
 
 
 def parse_batch_item_failures(
@@ -180,6 +195,8 @@ def parse_batch_item_failures(
             raise KeyError(f"missing itemIdentifier in batchItemFailure record {item}")
 
         item_identifier = item["itemIdentifier"]
+        if not item_identifier:
+            raise ValueError("itemIdentifier cannot be empty or null")
 
         # Optionally validate whether the item_identifier is part of the batch
         if valid_item_ids and item_identifier not in valid_item_ids:
