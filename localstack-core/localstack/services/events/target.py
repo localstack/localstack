@@ -11,7 +11,6 @@ import requests
 from botocore.client import BaseClient
 
 from localstack import config
-from localstack.aws.api import RequestContext
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
@@ -326,7 +325,7 @@ class ApiGatewayTargetSender(TargetSender):
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
 
-         # Send the HTTP request
+        # Send the HTTP request
         response = requests.request(
             method=http_method, url=url, headers=headers, data=event_json, timeout=5
         )
