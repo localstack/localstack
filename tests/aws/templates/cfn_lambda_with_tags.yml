@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  FunctionName:
+      Type: String
+  Environment:
+      Type: String
+
+Resources:
+  TestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Ref FunctionName
+      InlineCode: |
+        def handler(event, context):
+            return {'body': 'Hello World!', 'statusCode': 200}
+      Handler: index.handler
+      Runtime: python3.11
+      Tags:
+        Environment: !Ref Environment
+
+Outputs:
+  FunctionName:
+    Value: !Ref TestFunction
