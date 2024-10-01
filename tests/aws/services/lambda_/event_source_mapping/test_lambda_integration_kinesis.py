@@ -20,7 +20,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from tests.aws.services.lambda_.event_source_mapping.utils import (
-    LAMBDA_KINESIS_BATCH_ITEM_FAILURE,
     create_lambda_with_response,
     is_old_esm,
     is_v2_esm,
@@ -33,6 +32,9 @@ from tests.aws.services.lambda_.test_lambda import (
 
 TEST_LAMBDA_PARALLEL_FILE = FUNCTIONS_PATH / "lambda_parallel.py"
 TEST_LAMBDA_KINESIS_LOG = FUNCTIONS_PATH / "kinesis_log.py"
+TEST_LAMBDA_KINESIS_BATCH_ITEM_FAILURE = (
+    FUNCTIONS_PATH / "lambda_report_batch_item_failures_kinesis.py"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -590,7 +592,7 @@ class TestKinesisSource:
         )
 
         create_lambda_function(
-            handler_file=LAMBDA_KINESIS_BATCH_ITEM_FAILURE,
+            handler_file=TEST_LAMBDA_KINESIS_BATCH_ITEM_FAILURE,
             func_name=function_name,
             runtime=Runtime.python3_12,
             role=role_arn,

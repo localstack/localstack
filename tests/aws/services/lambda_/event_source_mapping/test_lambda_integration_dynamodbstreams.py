@@ -20,14 +20,18 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 from tests.aws.services.lambda_.event_source_mapping.utils import (
-    LAMBDA_DYNAMODB_BATCH_ITEM_FAILURE,
     create_lambda_with_response,
     is_old_esm,
     is_v2_esm,
 )
+from tests.aws.services.lambda_.functions import FUNCTIONS_PATH
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+)
+
+TEST_LAMBDA_DYNAMODB_BATCH_ITEM_FAILURE = (
+    FUNCTIONS_PATH / "lambda_report_batch_item_failures_dynamodb.py"
 )
 
 
@@ -860,7 +864,7 @@ class TestDynamoDBEventSourceMapping:
         )
 
         create_lambda_function(
-            handler_file=LAMBDA_DYNAMODB_BATCH_ITEM_FAILURE,
+            handler_file=TEST_LAMBDA_DYNAMODB_BATCH_ITEM_FAILURE,
             func_name=function_name,
             runtime=Runtime.python3_12,
             role=role_arn,
