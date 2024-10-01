@@ -139,6 +139,9 @@ class EsmWorker:
                 # Wait some time between retries to avoid running into the problem right again
                 self._shutdown_event.wait(2)
 
+        # Optionally closes internal components of Poller. This is a no-op for unimplemented pollers.
+        self.poller.close()
+
         try:
             # Update state in store after async stop or delete
             if self.enabled and self.current_state == EsmState.DELETING:
