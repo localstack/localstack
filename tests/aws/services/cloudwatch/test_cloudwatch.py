@@ -520,7 +520,6 @@ class TestCloudwatch:
         sleep_before = 2 if is_aws_cloud() else 0
         retry(assert_results, retries=retries, sleep_before=sleep_before)
 
-    @pytest.mark.usefixtures("openapi_validate")
     @markers.aws.only_localstack
     # this feature was a customer request and added with https://github.com/localstack/localstack/pull/3535
     def test_raw_metric_data(self, aws_client, region_name):

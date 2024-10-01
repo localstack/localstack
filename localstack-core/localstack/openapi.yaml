@@ -99,6 +99,31 @@ components:
       - completed
       - scripts
       type: object
+    InitScriptsStage:
+      additionalProperties: false
+      properties:
+        completed:
+          type: boolean
+        scripts:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              stage:
+                type: string
+              state:
+                type: string
+            required:
+              - stage
+              - name
+              - state
+            type: object
+          type: array
+      required:
+        - completed
+        - scripts
+      type: object
     SesSentEmail:
       additionalProperties: false
       properties:
@@ -846,7 +871,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InitScripts'
+                $ref: '#/components/schemas/InitScriptsStage'
           description: Information about init scripts in a specific stage
   /_localstack/plugins:
     get:

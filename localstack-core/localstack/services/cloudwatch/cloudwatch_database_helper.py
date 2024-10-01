@@ -450,7 +450,7 @@ class CloudwatchDatabase:
                     "n": r[1],
                     "v": r[2],
                     "t": r[3],
-                    "d": r[4] or [],
+                    "d": r[4],
                     "account": r[5],
                     "region": r[6],
                 }
