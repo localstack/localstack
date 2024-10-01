@@ -42,6 +42,7 @@ from tests.aws.services.lambda_.test_lambda import (
 #   - Sagemaker (pro)
 class TestEventsTargetApiGateway:
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_put_events_with_target_api_gateway(
         self,
         create_lambda_function,
