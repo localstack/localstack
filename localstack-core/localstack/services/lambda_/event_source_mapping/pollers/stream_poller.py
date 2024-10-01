@@ -351,6 +351,10 @@ class StreamPoller(Poller):
     def bisect_events(
         self, sequence_number: str, events: list[dict]
     ) -> tuple[list[dict], list[dict]]:
+        """Splits list of events in two, where a sequence number equals a passed parameter `sequence_number`.
+        This is used for:
+          - `ReportBatchItemFailures`: Discarding events in a batch following a failure when is set.
+          - `BisectBatchOnFunctionError`: Used to split a failed batch in two when doing a retry (not implemented)."""
         for i, event in enumerate(events):
             if self.get_sequence_number(event) == sequence_number:
                 return events[:i], events[i:]

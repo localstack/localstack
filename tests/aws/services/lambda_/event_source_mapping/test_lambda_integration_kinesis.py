@@ -557,6 +557,8 @@ class TestKinesisSource:
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            # FIXME Conflict between shardId and AWS account number when transforming
+            # i.e "shardId-000000000000" versus AWS Account ID 000000000000
             "$..Messages..Body.KinesisBatchInfo.shardId",
             "$..Messages..Body.KinesisBatchInfo.streamArn",
             "$..Records",  # FIXME Figure out why there is an extra log record

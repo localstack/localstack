@@ -823,7 +823,10 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("exception_event_source_creation", expected.value.response)
         expected.match(InvalidParameterValueException.code)
 
-    @pytest.mark.skipif(is_old_esm(), reason="ReportBatchItemFailures: Partial ")
+    @pytest.mark.skipif(
+        is_old_esm(),
+        reason="ReportBatchItemFailures: Partial batch failure handling not implemented in ESM v1",
+    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TableDescription.TableId",
