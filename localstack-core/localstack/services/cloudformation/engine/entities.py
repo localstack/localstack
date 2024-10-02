@@ -9,6 +9,7 @@ from localstack.services.cloudformation.engine.parameters import (
 )
 from localstack.utils.aws import arns
 from localstack.utils.collections import select_attributes
+from localstack.utils.id_generator import generate_short_uid
 from localstack.utils.json import clone_safe
 from localstack.utils.objects import recurse_object
 from localstack.utils.strings import long_uid, short_uid
@@ -93,7 +94,13 @@ class Stack:
         # initialize stack template attributes
         stack_id = self.metadata.get("StackId") or arns.cloudformation_stack_arn(
             self.stack_name,
-            stack_id=short_uid(),
+            stack_id=generate_short_uid(
+                account_id=account_id,
+                region=region_name,
+                service="cloudformation",
+                resource="stack",
+                name=metadata.get("StackName"),
+            ),
             account_id=account_id,
             region_name=region_name,
         )
