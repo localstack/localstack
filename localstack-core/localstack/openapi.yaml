@@ -211,6 +211,29 @@ components:
       - error
       - subscription_arn
       type: object
+    ReceiveMessageResult:
+      type: object
+      description: https://github.com/boto/botocore/blob/develop/botocore/data/sqs/2012-11-05/service-2.json
+      properties:
+        Messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Message:
+      type: object
+      properties:
+        MessageId:
+          type: [string, 'null']
+        ReceiptHandle:
+          type: [string, 'null']
+        MD5OfBody:
+          type: [string, 'null']
+        Body:
+          type: [string, 'null']
+        Attributes:
+          type: object
+        MessageAttributes:
+          type: object
     CloudWatchMetrics:
       additionalProperties: false
       properties:
@@ -529,7 +552,9 @@ paths:
         '200':
           content:
             text/xml: {}
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
           description: SQS queue messages
         '400':
           content:
@@ -569,7 +594,9 @@ paths:
         '200':
           content:
             text/xml: {}
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
           description: SQS queue messages
         '400':
           content:
