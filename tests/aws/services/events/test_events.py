@@ -45,7 +45,7 @@ TEST_EVENT_PATTERN_NO_DETAIL = {
 TEST_EVENT_PATTERN_DETAIL_TOO_BIG = {
     "source": ["core.update-account-command"],
     "detail-type": ["core.update-account-command"],
-    "detail": {"payload": ["p"*(256*1024-17)]}
+    "detail": {"payload": ["p" * (256 * 1024 - 17)]},
 }
 
 TEST_EVENT_PATTERN_NO_SOURCE = {
