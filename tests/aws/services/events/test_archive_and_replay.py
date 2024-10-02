@@ -15,6 +15,7 @@ from tests.aws.services.events.test_events import (
     EVENT_DETAIL,
     TEST_EVENT_PATTERN,
     TEST_EVENT_PATTERN_NO_DETAIL,
+
 )
 
 
