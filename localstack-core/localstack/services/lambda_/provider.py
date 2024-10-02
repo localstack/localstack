@@ -360,6 +360,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
                         # Note: a worker is created in the DISABLED state if not enabled
                         esm_worker.create()
+                        # TODO: assigning the esm_worker to the dict only works after .create(). Could it cause a race
+                        #  condition if we get a shutdown here and have a worker thread spawned but not accounted for?
+                        self.esm_workers[esm_worker.uuid] = esm_worker
                     else:
                         # Restore event source listeners
                         EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
