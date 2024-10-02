@@ -330,9 +330,39 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                                 exc_info=True,
                             )
 
-                # Restore event source listeners
                 for esm in state.event_source_mappings.values():
-                    EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
+                    if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
+                        # Restores event source workers
+                        function_arn = esm.get("FunctionArn")
+
+                        # TODO: How do we know the event source is up?
+                        # A basic poll to see if the mapped Lambda function is active/failed
+                        if not poll_condition(
+                            lambda: get_function_version_from_arn(function_arn).config.state.state
+                            in [State.Active, State.Failed],
+                            timeout=10,
+                        ):
+                            LOG.warning(
+                                "Creating ESM for Lambda that is not in running state: %s",
+                                function_arn,
+                            )
+
+                        function_version = get_function_version_from_arn(function_arn)
+                        function_role = function_version.config.role
+
+                        is_esm_enabled = esm.get("State", EsmState.DISABLED) not in (
+                            EsmState.DISABLED,
+                            EsmState.DISABLING,
+                        )
+                        esm_worker = EsmWorkerFactory(
+                            esm, function_role, is_esm_enabled
+                        ).get_esm_worker()
+
+                        # Note: a worker is created in the DISABLED state if not enabled
+                        esm_worker.create()
+                    else:
+                        # Restore event source listeners
+                        EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
 
     def on_after_init(self):
         self.router.register_routes()

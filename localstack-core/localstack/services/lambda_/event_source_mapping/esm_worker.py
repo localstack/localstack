@@ -86,6 +86,7 @@ class EsmWorker:
             with self._state_lock:
                 self.current_state = EsmState.DISABLED
                 self.state_transition_reason = self.user_state_reason
+            self.update_esm_state_in_store(EsmState.DISABLED)
 
     def start(self):
         with self._state_lock:
