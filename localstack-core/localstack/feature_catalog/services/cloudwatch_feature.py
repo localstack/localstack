@@ -4,6 +4,13 @@ from localstack.feature_catalog.service_feature import (
     SupportStatus,
 )
 
+"""
+This is only a PoC on how features could be divided
+For CloudWatch the features are not yet complete, only experimented with a couple of features and hierarchies
+
+Attributes are subject to discussion as well
+"""
+
 
 class CloudWatchFeature(ServiceFeature):
     implementation_status: ImplementationStatus = ImplementationStatus.PARTIALLY_IMPLEMENTED

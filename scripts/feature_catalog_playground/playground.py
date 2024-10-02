@@ -1,3 +1,86 @@
+"""
+This is a PoC script that will create a json-output from the features defined in `localstack/feature_catalog/services`
+In order to get additional information, e.g., which functions use these as decorators, the script also iterates through
+(currently only considering selected) services-packages, and collects the function names.
+
+At the end we are able to provide a mapping, e.g., functions and api-operation-names that belong to a specific feature.
+
+In the following example, the attributes for "operations" and "api-limitations" are dynamically collected,
+depending on the used decorators:
+
+{
+  "ServiceFeature": {
+    "CloudWatchFeature": {
+      "docs": {
+        "implementation_status": "ImplementationStatus.PARTIALLY_IMPLEMENTED"
+      },
+      ....
+      "Alarm": {
+        "docs": {
+          "general_docs": "Alarms are used to set thresholds for metrics and trigger actions",
+          "supported": "SupportStatus.SUPPORTED_PARTIALLY_EMULATED",
+          "implementation_status": "ImplementationStatus.PARTIALLY_IMPLEMENTED",
+          "aws_docs_link": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html"
+        },
+        "CompositeAlarm": {
+          "docs": {
+            "supported": "SupportStatus.SUPPORTED_MOCKED_ONLY",
+            "aws_docs_link": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Create_Composite_Alarm.html"
+          },
+          "operations": [
+            "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.put_composite_alarm"
+          ]
+        },
+        "MetricAlarm": {
+          "docs": {
+            "supported": "SupportStatus.SUPPORTED",
+            "supported_triggers": [
+              "SNS",
+              "Lambda"
+            ]
+          },
+          "operations": [
+            "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.put_metric_alarm"
+          ]
+        },
+        "operations": [
+          "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.delete_alarms",
+          "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.describe_alarm_history",
+          "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.describe_alarms",
+          "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.describe_alarms_for_metric",
+          "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.disable_alarm_actions",
+          "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.enable_alarm_actions",
+          "localstack.services.cloudwatch.provider_v2.CloudwatchProvider.set_alarm_state",
+          "localstack.services.cloudwatch.provider_v2.delete_alarms_helper"
+        ]
+      }
+    },
+    "KMSFeature": {
+      "docs": {
+        "implementation_status": "ImplementationStatus.PARTIALLY_IMPLEMENTED"
+      },
+        "Provisioning": {
+          "docs": {
+            "general_docs": "Manage the creation and modification of the keys.",
+            "implementation_status": "ImplementationStatus.FULLY_IMPLEMENTED",
+            "support_type": "SupportStatus.SUPPORTED",
+            "aws_docs_link": "https://docs.aws.amazon.com/kms/latest/developerguide/create-keys.html",
+            "api_operations": [
+              "CreateKey"
+            ]
+          },
+          "operations": [
+            "localstack.services.kms.provider.KmsProvider.create_key",
+            "localstack.services.kms.provider.KmsProvider.update_key_description"
+          ],
+          "api_limitations": {
+            "localstack.services.kms.provider.KmsProvider.create_key": "Status 'Updating' is not supported."
+          }
+        },
+    ...
+    }
+"""
+
 import importlib
 import inspect
 import json
@@ -13,8 +96,8 @@ for _, module_name, _ in pkgutil.iter_modules(feature_catalog.__path__):
 
 
 def get_class_hierarchy(cls, level=0):
-    indent = " " * (level * 4)  # Indentation to reflect the level in the hierarchy
-    print(f"{indent}{cls.__name__}")  # Print the current class name
+    # indent = " " * (level * 4)  # Indentation to reflect the level in the hierarchy
+    # print(f"{indent}{cls.__name__}")  # Print the current class name
     for subclass in cls.__subclasses__():
         get_class_hierarchy(subclass, level + 1)  # Recursively get the hierarchy of subclasses
 
@@ -83,6 +166,9 @@ def find_decorated_functions_and_methods(module):
                     ):
                         # if the operation on the subclass has a decorator, unwrap it
                         method = wrapped
+                    # construct the feature_catalog_name, e.g. the hierarchy of the feature
+                    # this will be used later on iterate the dict, and make sure the operation is added for the
+                    # correct feature
                     feature_catalog_name = method.__class__.__name__
                     base_class = method.__class__
                     while base := base_class.__base__:
@@ -145,9 +231,6 @@ decorated_funcs += find_decorated_functions_in_package(kms_package)
 for details in decorated_funcs:
     module = details.get("module")
     for feature in details.get("features"):
-        # print(
-        #     f"Function '{module}.{feature.get('name')}' is decorated with @{feature.get('feature')}, ({feature.get('feature_catalog_name')})"
-        # )
         feature_catalog_keys = feature.get("feature_catalog_name").split(".")
         recursive_add_operation(
             feature_catalog_keys,
