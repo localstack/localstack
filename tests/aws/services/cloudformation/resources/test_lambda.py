@@ -6,7 +6,6 @@ from io import BytesIO
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
-from aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
 from localstack.testing.aws.util import in_default_partition
@@ -18,6 +17,7 @@ from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive, get_lambda_log_events
+from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 
 
 # TODO: Fix for new Lambda provider (was tested for old provider)
