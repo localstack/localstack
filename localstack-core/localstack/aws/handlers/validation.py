@@ -109,7 +109,7 @@ class OpenAPIRequestValidator(OpenAPIValidator):
                     # Note: in this handler we only check validation errors, e.g., wrong body, missing required.
                     response.status_code = 400
                     response.set_json({"error": "Bad Request", "message": str(e)})
-                    chain.terminate()
+                    chain.stop()
                 except OpenAPIError:
                     # Other errors can be raised when validating a request against the OpenAPI specification.
                     #   The most common are: ServerNotFound, OperationNotFound, or PathNotFound.
