@@ -86,6 +86,7 @@ class EsmWorker:
             with self._state_lock:
                 self.current_state = EsmState.DISABLED
                 self.state_transition_reason = self.user_state_reason
+            self.update_esm_state_in_store(EsmState.DISABLED)
 
     def start(self):
         with self._state_lock:
@@ -130,13 +131,17 @@ class EsmWorker:
             except Exception as e:
                 LOG.error(
                     "Error while polling messages for event source %s: %s",
-                    self.esm_config["EventSourceArn"],
+                    self.esm_config.get("EventSourceArn")
+                    or self.esm_config.get("SelfManagedEventSource"),
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
                 # TODO: implement some backoff here and stop poller upon continuous errors
                 # Wait some time between retries to avoid running into the problem right again
                 self._shutdown_event.wait(2)
+
+        # Optionally closes internal components of Poller. This is a no-op for unimplemented pollers.
+        self.poller.close()
 
         try:
             # Update state in store after async stop or delete

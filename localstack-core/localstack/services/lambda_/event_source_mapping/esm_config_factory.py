@@ -6,6 +6,7 @@ from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
     EventSourcePosition,
 )
+from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.event_source_mapping.esm_worker import EsmState, EsmStateReason
 from localstack.services.lambda_.event_source_mapping.pipe_utils import (
     get_standardized_service_name,
@@ -29,17 +30,19 @@ class EsmConfigFactory:
         * CreatePipe API: https://docs.aws.amazon.com/eventbridge/latest/pipes-reference/API_CreatePipe.html
         The CreatePipe API covers largely the same parameters, but is better structured using hierarchical parameters.
         """
-        # TODO: handle special case where the "EventSourceArn" is optional (e.g., Apache Kafka: https://aws.amazon.com/blogs/compute/using-self-hosted-apache-kafka-as-an-event-source-for-aws-lambda/)
-        source_arn = self.request["EventSourceArn"]
-        parsed_arn = parse_arn(source_arn)
-        service = get_standardized_service_name(parsed_arn["service"])
+
+        service = ""
+        if source_arn := self.request.get("EventSourceArn"):
+            parsed_arn = parse_arn(source_arn)
+            service = get_standardized_service_name(parsed_arn["service"])
 
         default_source_parameters = {}
-        user_state_reason = EsmStateReason.USER_ACTION
+        default_source_parameters["UUID"] = long_uid()
+        default_source_parameters["StateTransitionReason"] = EsmStateReason.USER_ACTION
         if service == "sqs":
             default_source_parameters["BatchSize"] = 10
             default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
-            user_state_reason = EsmStateReason.USER_INITIATED
+            default_source_parameters["StateTransitionReason"] = EsmStateReason.USER_INITIATED
         elif service == "kinesis":
             # TODO: test all defaults
             default_source_parameters["BatchSize"] = 100
@@ -51,6 +54,7 @@ class EsmConfigFactory:
             default_source_parameters["ParallelizationFactor"] = 1
             default_source_parameters["StartingPosition"] = EventSourcePosition.TRIM_HORIZON
             default_source_parameters["TumblingWindowInSeconds"] = 0
+            default_source_parameters["LastProcessingResult"] = EsmStateReason.NO_RECORDS_PROCESSED
         elif service == "dynamodbstreams":
             # TODO: test all defaults
             default_source_parameters["BatchSize"] = 100
@@ -62,10 +66,16 @@ class EsmConfigFactory:
             default_source_parameters["ParallelizationFactor"] = 1
             default_source_parameters["StartingPosition"] = EventSourcePosition.TRIM_HORIZON
             default_source_parameters["TumblingWindowInSeconds"] = 0
+            default_source_parameters["LastProcessingResult"] = EsmStateReason.NO_RECORDS_PROCESSED
         else:
-            raise Exception(
-                f"Default Lambda Event Source Mapping parameters not implemented for service {service}."
+            lambda_hooks.set_event_source_config_defaults.run(
+                default_source_parameters, self.request, service
             )
+
+            if not default_source_parameters:
+                raise Exception(
+                    f"Default Lambda Event Source Mapping parameters not implemented for service {service}. req={self.request} dict={default_source_parameters}"
+                )
 
         # TODO: test whether merging actually happens recursively. Examples:
         # a) What happens if only one of the parameters for DocumentDBEventSourceConfig change?
@@ -73,19 +83,20 @@ class EsmConfigFactory:
         # c) Are FilterCriteria.Filters merged or replaced upon update?
         # TODO: can we ignore extra parameters from the request (e.g., Kinesis params for SQS source)?
         derived_source_parameters = merge_recursive(default_source_parameters, self.request)
-        derived_source_parameters["FunctionResponseTypes"] = derived_source_parameters.get(
-            "FunctionResponseTypes", []
-        )
+
+        # TODO What happens when FunctionResponseTypes value or target service is invalid?
+        if service in ["sqs", "kinesis", "dynamodbstreams"]:
+            derived_source_parameters["FunctionResponseTypes"] = derived_source_parameters.get(
+                "FunctionResponseTypes", []
+            )
 
         state = EsmState.CREATING if self.request.get("Enabled", True) else EsmState.DISABLED
         esm_config = EventSourceMappingConfiguration(
             **derived_source_parameters,
-            UUID=long_uid(),
             FunctionArn=self.function_arn,
             # TODO: last modified => does state transition affect this?
             LastModified=datetime.datetime.now(),
             State=state,
-            StateTransitionReason=user_state_reason,
             # TODO: complete missing fields
         )
         return esm_config

@@ -2104,5 +2104,2173 @@
         "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:5>"
       }
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failures": {
+    "recorded-date": "11-09-2024, 18:47:32",
+    "recorded-content": {
+      "create_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "<datetime>"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+          "LatestStreamLabel": "<resource:2>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_IMAGE"
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "UPDATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_event_source_mapping_response": {
+        "BatchSize": 3,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 3,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "destination_queue_messages": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:3>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 4
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": null
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "DDBStreamBatchInfo": {
+                "shardId": "<shard-id:1>",
+                "startSequenceNumber": "<sequence-number:6>",
+                "endSequenceNumber": "<sequence-number:6>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_records": {
+        "Records": [
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId0"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId0"
+                },
+                "should_fail": {
+                  "BOOL": false
+                }
+              },
+              "SequenceNumber": "<sequence-number:1>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:1>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId1"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId1"
+                },
+                "should_fail": {
+                  "BOOL": false
+                }
+              },
+              "SequenceNumber": "<sequence-number:2>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:2>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId2"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId2"
+                },
+                "should_fail": {
+                  "BOOL": false
+                }
+              },
+              "SequenceNumber": "<sequence-number:3>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:3>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId3"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId3"
+                },
+                "should_fail": {
+                  "BOOL": false
+                }
+              },
+              "SequenceNumber": "<sequence-number:4>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:4>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId4"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId4"
+                },
+                "should_fail": {
+                  "BOOL": false
+                }
+              },
+              "SequenceNumber": "<sequence-number:5>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:5>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId5"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId5"
+                },
+                "should_fail": {
+                  "BOOL": true
+                }
+              },
+              "SequenceNumber": "<sequence-number:6>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:6>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId5"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId5"
+                },
+                "should_fail": {
+                  "BOOL": true
+                }
+              },
+              "SequenceNumber": "<sequence-number:6>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:6>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId5"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId5"
+                },
+                "should_fail": {
+                  "BOOL": true
+                }
+              },
+              "SequenceNumber": "<sequence-number:6>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:6>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId5"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId5"
+                },
+                "should_fail": {
+                  "BOOL": true
+                }
+              },
+              "SequenceNumber": "<sequence-number:6>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:6>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+              "Keys": {
+                "my_partition_key": {
+                  "S": "testId5"
+                }
+              },
+              "NewImage": {
+                "my_partition_key": {
+                  "S": "testId5"
+                },
+                "should_fail": {
+                  "BOOL": true
+                }
+              },
+              "SequenceNumber": "<sequence-number:6>",
+              "SizeBytes": 58,
+              "StreamViewType": "NEW_IMAGE"
+            },
+            "eventID": "<event-i-d:6>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+            "eventVersion": "1.1"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failures_with_on_failure_destination_config": {
+    "recorded-date": "11-09-2024, 11:52:02",
+    "recorded-content": {
+      "create_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "<datetime>"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+          "LatestStreamLabel": "<resource:2>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_IMAGE"
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "UPDATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_event_source_mapping_response": {
+        "BatchSize": 3,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 3,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "destination_queue_messages": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:3>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 4
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": null
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "DDBStreamBatchInfo": {
+                "shardId": "<shard-id:1>",
+                "startSequenceNumber": "<start-sequence-number:1>",
+                "endSequenceNumber": "<start-sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[empty_string_item_identifier_failure]": {
+    "recorded-date": "12-09-2024, 21:07:42",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "destination_queue_messages": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 4
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": null
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "DDBStreamBatchInfo": {
+                "shardId": "<shard-id:1>",
+                "startSequenceNumber": "<sequence-number:1>",
+                "endSequenceNumber": "<sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[null_item_identifier_failure]": {
+    "recorded-date": "12-09-2024, 21:09:44",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "destination_queue_messages": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 4
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": null
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "DDBStreamBatchInfo": {
+                "shardId": "<shard-id:1>",
+                "startSequenceNumber": "<sequence-number:1>",
+                "endSequenceNumber": "<sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[invalid_key_foo_failure]": {
+    "recorded-date": "12-09-2024, 21:12:32",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "destination_queue_messages": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 4
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": null
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "DDBStreamBatchInfo": {
+                "shardId": "<shard-id:1>",
+                "startSequenceNumber": "<sequence-number:1>",
+                "endSequenceNumber": "<sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[invalid_key_foo_null_value_failure]": {
+    "recorded-date": "12-09-2024, 21:14:19",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "destination_queue_messages": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 4
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": null
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "DDBStreamBatchInfo": {
+                "shardId": "<shard-id:1>",
+                "startSequenceNumber": "<sequence-number:1>",
+                "endSequenceNumber": "<sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[unhandled_exception_in_function]": {
+    "recorded-date": "12-09-2024, 21:18:09",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "destination_queue_messages": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 4
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": "Unhandled"
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "DDBStreamBatchInfo": {
+                "shardId": "<shard-id:1>",
+                "startSequenceNumber": "<sequence-number:1>",
+                "endSequenceNumber": "<sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_list_success]": {
+    "recorded-date": "11-09-2024, 19:13:50",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[null_success]": {
+    "recorded-date": "11-09-2024, 19:15:36",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_dict_success]": {
+    "recorded-date": "11-09-2024, 19:17:40",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_batch_item_failure_success]": {
+    "recorded-date": "11-09-2024, 19:19:26",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[null_batch_item_failure_success]": {
+    "recorded-date": "11-09-2024, 19:20:35",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[item_identifier_not_present_failure]": {
+    "recorded-date": "01-10-2024, 17:32:22",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "destination_queue_messages": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 4
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": null
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "DDBStreamBatchInfo": {
+                "shardId": "<shard-id:1>",
+                "startSequenceNumber": "<sequence-number:1>",
+                "endSequenceNumber": "<sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dynamodb_events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "binary_key": {
+                    "B": "Zm9vYmFy"
+                  },
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 70,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:3>"
+            }
+          ]
+        }
+      ]
+    }
   }
 }
