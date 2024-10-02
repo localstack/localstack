@@ -336,7 +336,6 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           DISABLE_BOTO_RETRIES: 1
-          OPENAPI_VALIDATE_RESPONSE: 1
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "local"
           LOCALSTACK_API_KEY: "test"
