@@ -26,6 +26,7 @@ from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_from_typed_dict
+from localstack.utils.id_generator import set_custom_id
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 from localstack.utils.time import today_no_time
@@ -2445,6 +2446,16 @@ class TestSecretsManager:
             TransformerUtility.jsonpath("$..CreatedDate", "datetime", reference_replacement=False)
         )
         sm_snapshot.match("secret_value_http_response", json_response)
+
+    @markers.aws.only_localstack
+    def test_create_secret_with_custom_id(self, account_id, region_name, create_secret):
+        secret_name = short_uid()
+        custom_id = "TestID"
+        set_custom_id(account_id, region_name, "secretsmanager", "secret", secret_name, custom_id)
+
+        secret = create_secret(Name=secret_name, SecretBinary="test-secret")
+
+        assert secret["ARN"].split(":")[-1] == "-".join((secret_name, custom_id))
 
 
 class TestSecretsManagerMultiAccounts:
