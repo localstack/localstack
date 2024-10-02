@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 
 from moto.ec2 import models as ec2_models
+from moto.ec2.exceptions import DependencyViolationError
 
 from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.ec2.exceptions import (
@@ -33,13 +34,6 @@ def apply_patches():
                 for subnet in az_subnets.values():
                     if subnet.vpc_id == vpc_id and subnet.id == custom_id:
                         raise InvalidSubnetDuplicateCustomIdError(custom_id)
-
-            # Create default network ACL to prevent `self.associate_default_network_acl_with_subnet(subnet_id, vpc_id)`
-            # From throwing an exception that it does not exist for the given custom-id VPC
-            self.create_network_acl(
-                vpc_id=vpc_id,
-                default=True,
-            )
 
         # Generate subnet with moto library
         result: ec2_models.subnets.Subnet = fn(self, *args, tags=tags, **kwargs)
@@ -116,11 +110,29 @@ def apply_patches():
                     vpc_id=vpc_id,
                 )
 
+            # Delete route table if only main route table remains.
+            route_tables = self.describe_route_tables(filters={"vpc-id": vpc_id})  # type: ignore[attr-defined]
+            if len(route_tables) > 1:
+                raise DependencyViolationError(
+                    f"The vpc {vpc_id} has dependencies and cannot be deleted."
+                )
+            for route_table in route_tables:
+                self.delete_route_table(route_table.id)  # type: ignore[attr-defined]
+
             # Remove the VPC from the default dict and add it back with the custom id
             self.vpcs.pop(vpc_id)
             result.id = custom_id
             self.vpcs[custom_id] = result
 
+            # Create default network ACL, route table, and security group for custom ID VPC
+            self.create_route_table(
+                vpc_id=custom_id,
+                main=True,
+            )
+            self.create_network_acl(
+                vpc_id=custom_id,
+                default=True,
+            )
             # Associate default security group with custom ID VPC
             if not default:
                 self.create_security_group(
