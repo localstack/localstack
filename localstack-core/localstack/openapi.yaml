@@ -529,14 +529,17 @@ paths:
         '200':
           content:
             text/xml: {}
+            application/json: {}
           description: SQS queue messages
         '400':
           content:
             text/xml: {}
+            application/json: {}
           description: Bad request
         '404':
           content:
             text/xml: {}
+            application/json: {}
           description: Not found
   /_aws/sqs/messages/{region}/{account_id}/{queue_name}:
     get:
@@ -566,14 +569,17 @@ paths:
         '200':
           content:
             text/xml: {}
+            application/json: {}
           description: SQS queue messages
         '400':
           content:
             text/xml: {}
+            application/json: {}
           description: Bad request
         '404':
           content:
             text/xml: {}
+            application/json: {}
           description: Not found
   /_localstack/config:
     get:
