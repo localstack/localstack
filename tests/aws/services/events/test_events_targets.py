@@ -7,6 +7,9 @@ import time
 
 import aws_cdk as cdk
 import pytest
+from localstack_snapshot.snapshots.transformer import (
+    JsonpathTransformer,
+)
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
@@ -21,7 +24,11 @@ from tests.aws.services.events.helper_functions import is_old_provider, sqs_coll
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 from tests.aws.services.firehose.helper_functions import get_firehose_iam_documents
 from tests.aws.services.kinesis.helper_functions import get_shard_iterator
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_AWS_PROXY_FORMAT,
+    TEST_LAMBDA_PYTHON_ECHO,
+)
+
 
 # TODO:
 #  Add tests for the following services:
@@ -33,6 +40,208 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 #   - Container (pro)
 #   - Redshift (pro)
 #   - Sagemaker (pro)
+class TestEventsTargetApiGateway:
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    def test_put_events_with_target_api_gateway(
+        self,
+        create_lambda_function,
+        create_rest_apigw,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+        create_role_with_policy,
+        region_name,
+        account_id,
+    ):
+        transformers = [
+            snapshot.transform.lambda_api(),
+            snapshot.transform.apigateway_api(),
+            snapshot.transform.apigatewayv2_lambda_proxy_event(),
+            snapshot.transform.key_value("CodeSha256"),
+            snapshot.transform.key_value("EventId", reference_replacement=False),
+            snapshot.transform.key_value(
+                "headers", value_replacement="<headers>", reference_replacement=False
+            ),
+            snapshot.transform.key_value(
+                "multiValueHeaders",
+                value_replacement="<multiValueHeaders>",
+                reference_replacement=False,
+            ),
+            JsonpathTransformer(
+                jsonpath="$..pathParameters",
+                replacement="<pathParameters>",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                jsonpath="$..requestContext",
+                replacement="<requestContext>",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                jsonpath="$..stageVariables",
+                replacement="<stageVariables>",
+                replace_reference=False,
+            ),
+        ]
+
+        for transformer in transformers:
+            snapshot.add_transformer(transformer)
+
+        # Step a: Create a Lambda function with a unique name using the existing fixture
+        function_name = f"test-lambda-{short_uid()}"
+
+        # Create the Lambda function with the correct handler
+        create_lambda_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_AWS_PROXY_FORMAT,
+            handler="lambda_aws_proxy_format.handler",
+            runtime=Runtime.python3_9,
+        )
+        lambda_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+        snapshot.match("create_lambda_response", create_lambda_response)
+
+        # Step b: Set up an API Gateway
+        api_id, _, root = create_rest_apigw(
+            name=f"test-api-${short_uid()}",
+            description="Test Integration with EventBridge",
+        )
+
+        # Get the root resource ID
+        resources = aws_client.apigateway.get_resources(restApiId=api_id)
+        root_resource_id = next(
+            (resource["id"] for resource in resources["items"] if resource["path"] == "/"), None
+        )
+
+        # Create a resource under the root
+        resource_response = aws_client.apigateway.create_resource(
+            restApiId=api_id,
+            parentId=root_resource_id,
+            pathPart="test",
+        )
+        resource_id = resource_response["id"]
+
+        # Set up POST method
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+        )
+
+        # Define source_arn
+        source_arn = f"arn:aws:execute-api:{region_name}:{account_id}:{api_id}/*/POST/test"
+
+        # Integrate the method with the Lambda function
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            type="AWS_PROXY",
+            integrationHttpMethod="POST",
+            uri=f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        )
+
+        # Give permission to API Gateway to invoke Lambda
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId=f"sid-{short_uid()}",
+            Action="lambda:InvokeFunction",
+            Principal="apigateway.amazonaws.com",
+            SourceArn=source_arn,
+        )
+
+        # Deploy the API to a 'test' stage
+        stage_name = "test"
+        deployment = aws_client.apigateway.create_deployment(
+            restApiId=api_id,
+            stageName=stage_name,
+        )
+        snapshot.match("deployment_response", deployment)
+
+        # Step c: Create a new event bus
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_response = events_create_event_bus(Name=event_bus_name)
+        snapshot.match("event_bus_response", event_bus_response)
+
+        # Step d: Create a rule on this bus
+        rule_name = f"test-rule-{short_uid()}"
+        event_pattern = {"source": ["test.source"], "detail-type": ["test.detail.type"]}
+        rule_response = events_put_rule(
+            Name=rule_name,
+            EventBusName=event_bus_name,
+            EventPattern=json.dumps(event_pattern),
+        )
+        snapshot.match("rule_response", rule_response)
+
+        # Step e: Create an IAM Role for EventBridge to invoke API Gateway
+        assume_role_policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        role_name, role_arn = create_role_with_policy(
+            effect="Allow",
+            actions="execute-api:Invoke",
+            assume_policy_doc=json.dumps(assume_role_policy_document),
+            resource=source_arn,
+            attach=False,  # Since we're using put_role_policy, not attach_role_policy
+        )
+
+        # Allow some time for IAM role propagation (only needed in AWS)
+        if is_aws_cloud():
+            time.sleep(10)
+
+        # Step f: Add the API Gateway as a target with the RoleArn
+        target_id = f"target-{short_uid()}"
+        api_target_arn = (
+            f"arn:aws:execute-api:{region_name}:{account_id}:{api_id}/{stage_name}/POST/test"
+        )
+
+        put_targets_response = aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": api_target_arn,
+                    "RoleArn": role_arn,
+                    "Input": json.dumps({"message": "Hello from EventBridge"}),
+                    "RetryPolicy": {"MaximumRetryAttempts": 0},
+                }
+            ],
+        )
+        snapshot.match("put_targets_response", put_targets_response)
+        assert put_targets_response["FailedEntryCount"] == 0
+
+        # Step g: Send an event to EventBridge
+        event_entry = {
+            "EventBusName": event_bus_name,
+            "Source": "test.source",
+            "DetailType": "test.detail.type",
+            "Detail": json.dumps({"message": "Hello from EventBridge"}),
+        }
+        put_events_response = aws_client.events.put_events(Entries=[event_entry])
+        snapshot.match("put_events_response", put_events_response)
+        assert put_events_response["FailedEntryCount"] == 0
+
+        # Step h: Verify the Lambda invocation
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=10,
+            sleep_before=10,
+            function_name=function_name,
+            expected_length=1,
+            logs_client=aws_client.logs,
+        )
+        snapshot.match("lambda_logs", events)
 
 
 class TestEventsTargetEvents:
