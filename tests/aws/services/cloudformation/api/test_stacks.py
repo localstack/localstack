@@ -14,6 +14,7 @@ from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
+from localstack.utils.id_generator import set_custom_id
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 
@@ -399,6 +400,32 @@ class TestStacksApi:
             if resource["ResourceStatus"] in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
         ]
         assert len(updated_resources) == length_expected
+
+    @markers.aws.only_localstack
+    def test_create_stack_with_custom_id(self, aws_client, cleanups, account_id, region_name):
+        stack_name = f"stack-{short_uid()}"
+        custom_id = short_uid()
+
+        set_custom_id(
+            account_id=account_id,
+            region=region_name,
+            service="cloudformation",
+            resource="stack",
+            name=stack_name,
+            custom_id=custom_id,
+        )
+        template = open(
+            os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"),
+            "r",
+        ).read()
+
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+        )
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+
+        assert stack["StackId"].split("/")[-1] == custom_id
 
 
 def stack_process_is_finished(cfn_client, stack_name):
