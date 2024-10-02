@@ -119,6 +119,7 @@ class EsmWorker:
     def poller_loop(self, *args, **kwargs):
         with self._state_lock:
             self.current_state = EsmState.ENABLED
+            self.update_esm_state_in_store(EsmState.ENABLED)
             self.state_transition_reason = self.user_state_reason
 
         while not self._shutdown_event.is_set():

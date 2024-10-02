@@ -17,6 +17,7 @@ from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive, get_lambda_log_events
+from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 
 
 # TODO: Fix for new Lambda provider (was tested for old provider)
@@ -717,8 +718,12 @@ class TestCfnLambdaIntegrations:
     #  tests.aws.services.lambda_.test_lambda_integration_dynamodbstreams.TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
     @markers.aws.validated
     def test_lambda_dynamodb_event_filter(
-        self, dynamodb_wait_for_table_active, deploy_cfn_template, aws_client
+        self, dynamodb_wait_for_table_active, deploy_cfn_template, aws_client, monkeypatch
     ):
+        if is_v2_esm():
+            # Filtering is broken with the Python rule engine for this specific case (exists:false) in ESM v2
+            # -> using java engine as workaround.
+            monkeypatch.setattr(config, "EVENT_RULE_ENGINE", "java")
         function_name = f"test-fn-{short_uid()}"
         table_name = f"ddb-tbl-{short_uid()}"
 

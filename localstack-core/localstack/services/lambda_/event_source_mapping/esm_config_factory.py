@@ -99,4 +99,8 @@ class EsmConfigFactory:
             State=state,
             # TODO: complete missing fields
         )
+        # TODO: check whether we need to remove any more fields that are present in the request but should not be in the
+        #  esm_config
+        esm_config.pop("Enabled", "")
+        esm_config.pop("FunctionName", "")
         return esm_config
