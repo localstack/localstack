@@ -2,7 +2,6 @@ import logging
 from typing import Optional
 
 from moto.ec2 import models as ec2_models
-from moto.ec2.exceptions import DependencyViolationError
 
 from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.ec2.exceptions import (
