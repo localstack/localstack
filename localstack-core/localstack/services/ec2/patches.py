@@ -111,12 +111,7 @@ def apply_patches():
                 )
 
             # Delete route table if only main route table remains.
-            route_tables = self.describe_route_tables(filters={"vpc-id": vpc_id})  # type: ignore[attr-defined]
-            if len(route_tables) > 1:
-                raise DependencyViolationError(
-                    f"The vpc {vpc_id} has dependencies and cannot be deleted."
-                )
-            for route_table in route_tables:
+            for route_table in self.describe_route_tables(filters={"vpc-id": vpc_id}):
                 self.delete_route_table(route_table.id)  # type: ignore[attr-defined]
 
             # Remove the VPC from the default dict and add it back with the custom id
