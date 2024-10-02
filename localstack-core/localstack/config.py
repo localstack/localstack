@@ -896,7 +896,7 @@ LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 # Additional flags passed to Docker run|create commands.
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
-# PUBLIC: v1 (default), v2 (preview) Version of the Lambda Event Source Mapping implementation
+# PUBLIC: v2 (default), v1 (deprecated) Version of the Lambda Event Source Mapping implementation
 LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v1").strip()
 
 # PUBLIC: 0 (default)
