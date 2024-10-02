@@ -397,6 +397,9 @@ except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
     LOADED_PROFILES = None
 
+# loaded components name - default aws
+LOADED_COMPONENTS_NAME = os.environ.get("LOADED_COMPONENTS_NAME", "aws")
+
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
