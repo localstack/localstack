@@ -27,8 +27,8 @@ def apply_patches():
         custom_id: Optional[str] = tags.get("subnet", {}).get(TAG_KEY_CUSTOM_ID)
         vpc_id: str = args[0] if len(args) >= 1 else kwargs["vpc_id"]
 
-        # Check if custom id is unique within a given VPC
         if custom_id:
+            # Check if custom id is unique within a given VPC
             for az_subnets in self.subnets.values():
                 for subnet in az_subnets.values():
                     if subnet.vpc_id == vpc_id and subnet.id == custom_id:
@@ -109,11 +109,24 @@ def apply_patches():
                     vpc_id=vpc_id,
                 )
 
+            # Delete route table if only main route table remains.
+            for route_table in self.describe_route_tables(filters={"vpc-id": vpc_id}):
+                self.delete_route_table(route_table.id)  # type: ignore[attr-defined]
+
             # Remove the VPC from the default dict and add it back with the custom id
             self.vpcs.pop(vpc_id)
             result.id = custom_id
             self.vpcs[custom_id] = result
 
+            # Create default network ACL, route table, and security group for custom ID VPC
+            self.create_route_table(
+                vpc_id=custom_id,
+                main=True,
+            )
+            self.create_network_acl(
+                vpc_id=custom_id,
+                default=True,
+            )
             # Associate default security group with custom ID VPC
             if not default:
                 self.create_security_group(
