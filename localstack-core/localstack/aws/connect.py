@@ -729,7 +729,6 @@ class ExternalBypassDnsSession(URLLib3Session):
 
 connect_to = InternalClientFactory(use_ssl=localstack_config.DISTRIBUTED_MODE)
 connect_externally_to = ExternalClientFactory()
-connect_bypass_dns = ExternalBypassDnsClientFactory()
 
 
 #
