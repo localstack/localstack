@@ -182,12 +182,10 @@ def create_from_environment() -> LocalstackRuntime:
         try:
             component = plugin_manager.load(config.RUNTIME_COMPONENTS)
             return LocalstackRuntime(component)
-        except ValueError as e:
-            LOG.error(
-                "Could not load runtime component %s: %s. Falling back to loading all components.",
-                config.RUNTIME_COMPONENTS,
-                e,
-            )
+        except Exception as e:
+            raise ValueError(
+                f"Could not load runtime components from config RUNTIME_COMPONENTS={config.RUNTIME_COMPONENTS}: {e}."
+            ) from e
     components = plugin_manager.load_all()
 
     if not components:
