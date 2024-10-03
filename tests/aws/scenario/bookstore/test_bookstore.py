@@ -207,10 +207,6 @@ class TestBookstoreApplication:
         result = json.load(result["Payload"])
         assert len(json.loads(result["body"])) == 56
 
-    # Flaky examples with 1-off assertion error: assert 25 == 26
-    # https://app.circleci.com/pipelines/github/localstack/localstack?branch=switch-to-new-lambda-event-source-mapping
-    # What's confusing is that I would expect 25 given the search query in `search.py` with size 25, but we expect 26.
-    @pytest.mark.skip(reason="flaky against ESM v2 with 1-off error")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$.._shards.successful", "$.._shards.total"])
     def test_search_books(self, aws_client, infrastructure, snapshot):
@@ -242,6 +238,7 @@ class TestBookstoreApplication:
             )
             res = json.load(res["Payload"])
             search_res = json.loads(res["body"])["hits"]["total"]["value"]
+            # compare total hits with expected results, total hits are not bound by the size limit of the query
             assert search_res == expected_amount
             return res
 
