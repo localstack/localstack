@@ -677,6 +677,7 @@ class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
         super().__init__(use_ssl=True, verify=True, session=session, config=config)
 
     def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
+        client = super()._get_client_post_hook(client)
         client._endpoint.http_session = ExternalBypassDnsSession()
         return client
 
