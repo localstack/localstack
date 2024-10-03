@@ -433,7 +433,7 @@ def test_delete_change_set_exception(snapshot, aws_client):
 
 @markers.aws.validated
 def test_create_delete_create(aws_client, cleanups, deploy_cfn_template):
-    # create stack
+    """ test the re-use of a changeset name with a re-used stack name """
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"cs-{short_uid()}"
 
