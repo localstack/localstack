@@ -850,7 +850,11 @@ class CloudformationProvider(CloudformationApi):
         **kwargs,
     ) -> ExecuteChangeSetOutput:
         change_set = find_change_set(
-            context.account_id, context.region, change_set_name, stack_name=stack_name
+            context.account_id,
+            context.region,
+            change_set_name,
+            stack_name=stack_name,
+            active_only=True,
         )
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
