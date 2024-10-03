@@ -668,12 +668,24 @@ class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
     Client factory that makes requests against AWS ensuring that DNS resolution is not affected by the LocalStack DNS
     server.
     """
+
+    def __init__(
+        self,
+        session: Session = None,
+        config: Config = None,
+    ):
+        super().__init__(use_ssl=True, verify=True, session=session, config=config)
+
     def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
-        client._endpoint.http_session = CustomDNSSession()
+        client._endpoint.http_session = ExternalBypassDnsSession()
         return client
 
 
-class CustomHTTPConnectionCls(AWSHTTPConnection):
+class ExternalBypassDnsHTTPConnection(AWSHTTPConnection):
+    """
+    Connection class that bypasses the LocalStack DNS server for HTTP connections
+    """
+
     def _new_conn(self) -> socket:
         orig_host = self._dns_host
         try:
@@ -683,7 +695,10 @@ class CustomHTTPConnectionCls(AWSHTTPConnection):
             self._dns_host = orig_host
 
 
-class CustomHTTPSConnectionCls(AWSHTTPSConnection):
+class ExternalBypassDnsHTTPSConnection(AWSHTTPSConnection):
+    """
+    Connection class that bypasses the LocalStack DNS server for HTTPS connections
+    """
     def _new_conn(self) -> socket:
         orig_host = self._dns_host
         try:
@@ -693,26 +708,28 @@ class CustomHTTPSConnectionCls(AWSHTTPSConnection):
             self._dns_host = orig_host
 
 
-class CustomHTTPConnectionPool(AWSHTTPConnectionPool):
-    ConnectionCls = CustomHTTPConnectionCls
+class ExternalBypassDnsHTTPConnectionPool(AWSHTTPConnectionPool):
+    ConnectionCls = ExternalBypassDnsHTTPConnection
 
 
-class CustomHTTPSConnectionPool(AWSHTTPSConnectionPool):
-    ConnectionCls = CustomHTTPSConnectionCls
+class ExternalBypassDnsHTTPSConnectionPool(AWSHTTPSConnectionPool):
+    ConnectionCls = ExternalBypassDnsHTTPSConnection
 
 
-class CustomDNSSession(URLLib3Session):
+class ExternalBypassDnsSession(URLLib3Session):
+    """
+    urllib3 session wrapper that uses our custom connection pool.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._pool_classes_by_scheme["https"] = CustomHTTPSConnectionPool
-        self._pool_classes_by_scheme["http"] = CustomHTTPConnectionPool
-        # TODO: HTTP
+        self._pool_classes_by_scheme["https"] = ExternalBypassDnsHTTPSConnectionPool
+        self._pool_classes_by_scheme["http"] = ExternalBypassDnsHTTPConnectionPool
 
 
 connect_to = InternalClientFactory(use_ssl=localstack_config.DISTRIBUTED_MODE)
 connect_externally_to = ExternalClientFactory()
-connect_bypass_dns = ExternalBypassDnsClientFactory(use_ssl=True, verify=True)
+connect_bypass_dns = ExternalBypassDnsClientFactory()
 
 
 #
