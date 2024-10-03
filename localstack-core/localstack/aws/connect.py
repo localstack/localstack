@@ -699,6 +699,7 @@ class ExternalBypassDnsHTTPSConnection(AWSHTTPSConnection):
     """
     Connection class that bypasses the LocalStack DNS server for HTTPS connections
     """
+
     def _new_conn(self) -> socket:
         orig_host = self._dns_host
         try:
@@ -720,6 +721,7 @@ class ExternalBypassDnsSession(URLLib3Session):
     """
     urllib3 session wrapper that uses our custom connection pool.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
