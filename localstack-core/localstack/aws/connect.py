@@ -5,23 +5,29 @@ This module provides the interface to perform cross-service communication betwee
 LocalStack providers.
 """
 
-import functools
 import json
 import logging
 import re
 import threading
 from abc import ABC, abstractmethod
-from contextvars import ContextVar, copy_context
 from functools import lru_cache, partial
 from random import choice
+from socket import socket
 from typing import Any, Callable, Generic, Optional, TypedDict, TypeVar
 
-import dns
+import dns.message
+import dns.query
 from boto3.session import Session
+from botocore.awsrequest import (
+    AWSHTTPConnection,
+    AWSHTTPConnectionPool,
+    AWSHTTPSConnection,
+    AWSHTTPSConnectionPool,
+)
 from botocore.client import BaseClient
 from botocore.config import Config
+from botocore.httpsession import URLLib3Session
 from botocore.waiter import Waiter
-from urllib3.util import connection
 
 from localstack import config as localstack_config
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH
@@ -646,10 +652,6 @@ class ExternalAwsClientFactory(ClientFactory):
         )
 
 
-IGNORE_DNS = ContextVar("ignore_dns", default=False)
-"""ContextVar that tracks whether HTTP requests should bypass the DNS server (i.e. transparent endpoint injection) or not."""
-
-
 def resolve_dns_from_upstream(hostname: str) -> str:
     upstream_dns = get_fallback_dns_server()
     request = dns.message.make_query(hostname, "A")
@@ -661,77 +663,51 @@ def resolve_dns_from_upstream(hostname: str) -> str:
     return choice(ip_addresses).address
 
 
-@patch(target=connection.create_connection)
-def patched_create_connection(orig_create_connection, address, *args, **kwargs):
-    """Wrap urllib3's create_connection to resolve the name elsewhere"""
-    if not IGNORE_DNS.get():
-        return orig_create_connection(address, *args, **kwargs)
-
-    host, port = address
-    ip_address = resolve_dns_from_upstream(host)
-
-    return orig_create_connection((ip_address, port), *args, **kwargs)
-
-
-class ContextVarInjector(Generic[T]):
-    """
-    Injector that enables custom DNS resolution if enabled by a contextvar
-    """
-
-    def __init__(self, client: T, params: dict[str, str] | None = None):
-        self.inner_wrapper = MetadataRequestInjector(client, params)
-
-    def __getattr__(self, item):
-        target = getattr(self.inner_wrapper, item)
-        if isinstance(target, Callable):
-            return self.wrap_function(target)
-        return target
-
-    def wrap_function(self, target: Callable):
-        @functools.wraps(target)
-        def _inner(*args, **kwargs):
-            """
-            Run the target function inside a context where LocalStack DNS resolution is disabled by a patch in
-            `urllib3`.
-            """
-            ctx = copy_context()
-
-            def _inner_inner(*args, **kwargs):
-                IGNORE_DNS.set(True)
-                return target(*args, **kwargs)
-
-            return ctx.run(_inner_inner, *args, **kwargs)
-
-        return _inner
-
-
 class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
     """
     Client factory that makes requests against AWS ensuring that DNS resolution is not affected by the LocalStack DNS
     server.
     """
+    def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
+        client._endpoint.http_session = CustomDNSSession()
+        return client
 
-    def __call__(
-        self,
-        *,
-        region_name: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None,
-        endpoint_url: str = None,
-        config: Config = None,
-    ) -> ServiceLevelClientFactory:
-        params = {
-            "region_name": region_name,
-            "aws_access_key_id": aws_access_key_id,
-            "aws_secret_access_key": aws_secret_access_key,
-            "aws_session_token": aws_session_token,
-            "endpoint_url": endpoint_url,
-            "config": config,
-        }
-        return ServiceLevelClientFactory(
-            factory=self, client_creation_params=params, request_wrapper_clazz=ContextVarInjector
-        )
+
+class CustomHTTPConnectionCls(AWSHTTPConnection):
+    def _new_conn(self) -> socket:
+        orig_host = self._dns_host
+        try:
+            self._dns_host = resolve_dns_from_upstream(self._dns_host)
+            return super()._new_conn()
+        finally:
+            self._dns_host = orig_host
+
+
+class CustomHTTPSConnectionCls(AWSHTTPSConnection):
+    def _new_conn(self) -> socket:
+        orig_host = self._dns_host
+        try:
+            self._dns_host = resolve_dns_from_upstream(self._dns_host)
+            return super()._new_conn()
+        finally:
+            self._dns_host = orig_host
+
+
+class CustomHTTPConnectionPool(AWSHTTPConnectionPool):
+    ConnectionCls = CustomHTTPConnectionCls
+
+
+class CustomHTTPSConnectionPool(AWSHTTPSConnectionPool):
+    ConnectionCls = CustomHTTPSConnectionCls
+
+
+class CustomDNSSession(URLLib3Session):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._pool_classes_by_scheme["https"] = CustomHTTPSConnectionPool
+        self._pool_classes_by_scheme["http"] = CustomHTTPConnectionPool
+        # TODO: HTTP
 
 
 connect_to = InternalClientFactory(use_ssl=localstack_config.DISTRIBUTED_MODE)
