@@ -37,7 +37,8 @@ def start_jvm() -> None:
 def get_jpype_lib_paths() -> Tuple[Path, Path]:
     """
     Downloads Event Ruler, its dependencies and returns a tuple of:
-    - Path to libjvm.so to be used by JPype as jvmpath
+    - Path to libjvm.so to be used by JPype as jvmpath. JPype requires this to start the JVM.
+        See https://jpype.readthedocs.io/en/latest/userguide.html#path-to-the-jvm
     - Path to Event Ruler libraries to be used by JPype as classpath
     """
     installer = event_ruler_package.get_installer()
