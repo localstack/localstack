@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+from localstack.aws.api.cloudformation import StackStatus
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet, StackSet
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
@@ -111,7 +112,7 @@ def find_change_set(
 ) -> Optional[StackChangeSet]:
     store = get_cloudformation_store(account_id, region_name)
     for stack in store.stacks.values():
-        if active_only and stack.status == "DELETE_COMPLETE":
+        if active_only and stack.status == StackStatus.DELETE_COMPLETE:
             continue
         if stack_name in (stack.stack_name, stack.stack_id, None):
             for change_set in stack.change_sets:
