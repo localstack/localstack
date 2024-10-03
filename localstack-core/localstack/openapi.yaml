@@ -99,6 +99,31 @@ components:
       - completed
       - scripts
       type: object
+    InitScriptsStage:
+      additionalProperties: false
+      properties:
+        completed:
+          type: boolean
+        scripts:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              stage:
+                type: string
+              state:
+                type: string
+            required:
+              - stage
+              - name
+              - state
+            type: object
+          type: array
+      required:
+        - completed
+        - scripts
+      type: object
     SesSentEmail:
       additionalProperties: false
       properties:
@@ -186,6 +211,67 @@ components:
       - error
       - subscription_arn
       type: object
+    CloudWatchMetrics:
+      additionalProperties: false
+      properties:
+        metrics:
+          items:
+            additionalProperties: false
+            properties:
+              account:
+                description: Account ID
+                type: string
+              d:
+                description: Dimensions
+                items:
+                  additionalProperties: false
+                  properties:
+                    n:
+                      description: Dimension name
+                      type: string
+                    v:
+                      description: Dimension value
+                      oneOf:
+                        - type: string
+                        - type: integer
+                  required:
+                    - n
+                    - v
+                  type: object
+                type: array
+              n:
+                description: Metric name
+                type: string
+              ns:
+                description: Namespace
+                type: string
+              region:
+                description: Region name
+                type: string
+              t:
+                description: Timestamp
+                oneOf:
+                  - type: string
+                    format: date-time
+                  - type: number
+              v:
+                description: Metric value
+                oneOf:
+                  - type: string
+                  - type: integer
+            required:
+              - ns
+              - n
+              - v
+              - t
+              - d
+              - account
+              - region
+            type: object
+          type: array
+      required:
+        - metrics
+      type: object
 paths:
   /_aws/cloudwatch/metrics/raw:
     get:
@@ -197,59 +283,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  metrics:
-                    items:
-                      additionalProperties: false
-                      properties:
-                        account:
-                          description: Account ID
-                          type: string
-                        d:
-                          description: Dimensions
-                          items:
-                            additionalProperties: false
-                            properties:
-                              n:
-                                description: Dimension name
-                                type: string
-                              v:
-                                description: Dimension value
-                                type: string
-                            required:
-                            - n
-                            - v
-                            type: object
-                          type: array
-                        n:
-                          description: Metric name
-                          type: string
-                        ns:
-                          description: Namespace
-                          type: string
-                        region:
-                          description: Region name
-                          type: string
-                        t:
-                          description: Timestamp
-                          type: number
-                        v:
-                          description: Metric value
-                          type: string
-                      required:
-                      - ns
-                      - n
-                      - v
-                      - t
-                      - d
-                      - account
-                      - region
-                      type: object
-                    type: array
-                required:
-                - metrics
-                type: object
+                $ref: '#/components/schemas/CloudWatchMetrics'
           description: CloudWatch metrics
   /_aws/dynamodb/expired:
     delete:
@@ -733,7 +767,6 @@ paths:
                     type: string
                 required:
                 - edition
-                - features
                 - services
                 - version
                 type: object
@@ -838,7 +871,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InitScripts'
+                $ref: '#/components/schemas/InitScriptsStage'
           description: Information about init scripts in a specific stage
   /_localstack/plugins:
     get:

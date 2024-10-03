@@ -54,6 +54,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
+from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
@@ -5257,6 +5258,7 @@ class TestLambdaEventSourceMappings:
         snapshot.match("error", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_v2_esm, reason="ESM v2 validation for Kafka poller only works with ext")
     def test_create_event_source_self_managed(
         self,
         create_lambda_function,

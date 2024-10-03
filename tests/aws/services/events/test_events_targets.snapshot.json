@@ -669,5 +669,119 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetApiGateway::test_put_events_with_target_api_gateway": {
+    "recorded-date": "30-09-2024, 07:53:35",
+    "recorded-content": {
+      "create_lambda_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:<account-id:1>:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "lambda_aws_proxy_format.handler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:<partition>:iam::<account-id:1>:role/<resource:1>",
+          "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "deployment_response": {
+        "createdDate": "datetime",
+        "id": "<id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "event_bus_response": {
+        "EventBusArn": "arn:<partition>:events:<region>:<account-id:1>:event-bus/<resource:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rule_response": {
+        "RuleArn": "arn:<partition>:events:<region>:<account-id:1>:rule/<resource:3>/<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_targets_response": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_events_response": {
+        "Entries": [
+          {
+            "EventId": "event-id"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lambda_logs": [
+        {
+          "resource": "/test",
+          "path": "/test/",
+          "httpMethod": "POST",
+          "headers": "<headers>",
+          "multiValueHeaders": "<multiValueHeaders>",
+          "queryStringParameters": null,
+          "multiValueQueryStringParameters": null,
+          "pathParameters": "<pathParameters>",
+          "stageVariables": "<stageVariables>",
+          "requestContext": "<requestContext>",
+          "body": {
+            "message": "Hello from EventBridge"
+          },
+          "isBase64Encoded": false
+        }
+      ]
+    }
   }
 }

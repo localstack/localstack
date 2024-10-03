@@ -238,6 +238,7 @@ class TestBookstoreApplication:
             )
             res = json.load(res["Payload"])
             search_res = json.loads(res["body"])["hits"]["total"]["value"]
+            # compare total hits with expected results, total hits are not bound by the size limit of the query
             assert search_res == expected_amount
             return res
 
