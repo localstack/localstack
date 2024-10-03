@@ -210,7 +210,6 @@ class TestBookstoreApplication:
     # Flaky examples with 1-off assertion error: assert 25 == 26
     # https://app.circleci.com/pipelines/github/localstack/localstack?branch=switch-to-new-lambda-event-source-mapping
     # What's confusing is that I would expect 25 given the search query in `search.py` with size 25, but we expect 26.
-    @pytest.mark.skip(reason="flaky against ESM v2 with 1-off error")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$.._shards.successful", "$.._shards.total"])
     def test_search_books(self, aws_client, infrastructure, snapshot):

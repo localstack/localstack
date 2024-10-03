@@ -125,17 +125,17 @@ class StreamPoller(Poller):
             self.iterator_over_shards = iter(self.shards.items())
 
         current_shard_tuple = next(self.iterator_over_shards, None)
-        if current_shard_tuple:
-            try:
-                self.poll_events_from_shard(*current_shard_tuple)
-            # TODO: implement exponential back-off for errors in general
-            except PipeInternalError:
-                # TODO: standardize logging
-                # Ignore and wait for the next polling interval, which will do retry
-                pass
-        else:
-            # Set current shard iterator to None to re-start round-robin at the first shard
-            self.iterator_over_shards = None
+        if not current_shard_tuple:
+            self.iterator_over_shards = iter(self.shards.items())
+            current_shard_tuple = next(self.iterator_over_shards, None)
+
+        try:
+            self.poll_events_from_shard(*current_shard_tuple)
+        # TODO: implement exponential back-off for errors in general
+        except PipeInternalError:
+            # TODO: standardize logging
+            # Ignore and wait for the next polling interval, which will do retry
+            pass
 
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
         abort_condition = None
