@@ -1977,6 +1977,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
                     Type="User",
                 )
+        # Can either have a FunctionName (i.e CreateEventSourceMapping request) or
+        # an internal EventSourceMappingConfiguration representation
         request_function_name = request.get("FunctionArn") or request.get("FunctionName")
         # can be either a partial arn or a full arn for the version/alias
         function_name, qualifier, account, region = function_locators_from_arn(
@@ -2153,21 +2155,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )  # TODO: test?
 
-        # remove the FunctionName field
-        function_name_or_arn = request_data.pop("FunctionName", None) or request_data.get(
-            "FunctionArn"
-        )
-
-        # # normalize values to overwrite
+        # normalize values to overwrite
+        # This rids the event_source_mapping of extra field names (i.e FunctionName)
         event_source_mapping = old_event_source_mapping | request_data
-
-        if function_name_or_arn:
-            event_source_mapping["FunctionArn"] = function_name_or_arn
 
         temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
 
         # Validate the newly updated ESM object. We ignore the output here since we only care whether an Exception is raised.
         function_arn, _, _ = self.validate_event_source_mapping(context, event_source_mapping)
+
+        # remove the FunctionName field
+        event_source_mapping.pop("FunctionName", None)
+
+        if function_arn:
+            event_source_mapping["FunctionArn"] = function_arn
 
         old_esm_worker = self.esm_workers[uuid]
         if request.get("Enabled") is not None:
