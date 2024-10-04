@@ -1,6 +1,6 @@
-from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.packages import Package, PackageInstaller
 from localstack.packages.core import MavenPackageInstaller
-from localstack.packages.java import java_package
+from localstack.packages.java import JavaInstallerMixin
 
 # Map of Event Ruler version to Jackson version
 # https://central.sonatype.com/artifact/software.amazon.event.ruler/event-ruler
@@ -23,18 +23,16 @@ class EventRulerPackage(Package):
         return EventRulerPackageInstaller(version)
 
 
-class EventRulerPackageInstaller(MavenPackageInstaller):
+class EventRulerPackageInstaller(JavaInstallerMixin, MavenPackageInstaller):
     def __init__(self, version: str):
         jackson_version = EVENT_RULER_VERSIONS[version]
+
         super().__init__(
             f"pkg:maven/software.amazon.event.ruler/event-ruler@{version}",
             f"pkg:maven/com.fasterxml.jackson.core/jackson-annotations@{jackson_version}",
             f"pkg:maven/com.fasterxml.jackson.core/jackson-core@{jackson_version}",
             f"pkg:maven/com.fasterxml.jackson.core/jackson-databind@{jackson_version}",
         )
-
-    def _prepare_installation(self, target: InstallTarget) -> None:
-        java_package.install(target=target)
 
 
 event_ruler_package = EventRulerPackage()

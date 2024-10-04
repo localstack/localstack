@@ -4,7 +4,6 @@ from functools import cache
 from pathlib import Path
 from typing import Tuple
 
-from localstack.packages.java import java_package
 from localstack.services.events.models import InvalidEventPatternException
 from localstack.services.events.packages import event_ruler_package
 from localstack.utils.objects import singleton_factory
@@ -44,7 +43,7 @@ def get_jpype_lib_paths() -> Tuple[Path, Path]:
     installer = event_ruler_package.get_installer()
     installer.install()
 
-    java_home = java_package.get_installer(installer.java_version).get_java_home()
+    java_home = installer.get_java_home()
     jvm_lib = Path(java_home) / "lib" / "server" / "libjvm.so"
 
     return jvm_lib, Path(installer.get_installed_dir())

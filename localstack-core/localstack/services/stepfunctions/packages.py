@@ -9,7 +9,7 @@ import requests
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.core import ExecutableInstaller
-from localstack.packages.java import java_package
+from localstack.packages.java import JavaInstallerMixin
 from localstack.utils.archives import add_file_to_jar, untar, update_jar_manifest
 from localstack.utils.files import file_exists_not_empty, mkdir, new_tmp_file, rm_rf
 from localstack.utils.http import download
@@ -74,12 +74,9 @@ class StepFunctionsLocalPackage(Package):
         return StepFunctionsLocalPackageInstaller("stepfunctions-local", version)
 
 
-class StepFunctionsLocalPackageInstaller(ExecutableInstaller):
+class StepFunctionsLocalPackageInstaller(JavaInstallerMixin, ExecutableInstaller):
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(install_dir, "StepFunctionsLocal.jar")
-
-    def _prepare_installation(self, target: InstallTarget) -> None:
-        java_package.install(target=target)
 
     def _install(self, target: InstallTarget) -> None:
         """

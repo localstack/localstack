@@ -7,7 +7,6 @@ from localstack.aws.connect import connect_externally_to
 from localstack.aws.forwarder import AwsRequestProxy
 from localstack.config import is_env_true
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
-from localstack.packages.java import java_package
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.functions import run_safe
@@ -151,17 +150,13 @@ class DynamodbServer(Server):
         return cmd + parameters
 
     def do_start_thread(self) -> FuncThread:
-        dynamodblocal_package.install()
-
-        java_home = java_package.get_installer().get_java_home()
-
-        path = f"{java_home}/bin:{os.getenv('PATH')}"
+        dynamodblocal_installer = dynamodblocal_package.get_installer()
+        dynamodblocal_installer.install()
 
         cmd = self._create_shell_command()
         env_vars = {
             "DDB_LOCAL_TELEMETRY": "0",
-            "JAVA_HOME": java_home,
-            "PATH": path,
+            **dynamodblocal_installer.get_java_env_vars(),
         }
 
         LOG.debug("Starting DynamoDB Local: %s", cmd)

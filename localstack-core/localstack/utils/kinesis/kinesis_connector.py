@@ -39,7 +39,6 @@ CHECKPOINT_RETRIES = 5
 CHECKPOINT_SLEEP_SECS = 5
 CHECKPOINT_FREQ_SECS = 60
 
-
 ListenerFunction = Callable[[list], Any]
 
 
@@ -247,7 +246,6 @@ def _start_kcl_client_process(
     java_installer = java_package.get_installer()
     java_installer.install()
     java_home = java_installer.get_java_home()
-    path = f"{java_home}/bin:{os.getenv('PATH')}"
 
     # disable CBOR protocol, enforce use of plain JSON
     # TODO evaluate why?
@@ -256,7 +254,7 @@ def _start_kcl_client_process(
         "AWS_ACCESS_KEY_ID": account_id,
         "AWS_SECRET_ACCESS_KEY": account_id,
         "JAVA_HOME": java_home,
-        "PATH": path,
+        "PATH": f"{java_home}/bin:{os.getenv('PATH')}",
     }
 
     events_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.fifo")
