@@ -18,7 +18,6 @@ from localstack.constants import (
     OPENSEARCH_PLUGIN_LIST,
 )
 from localstack.packages import InstallTarget, Package, PackageInstaller
-from localstack.packages.java import java_package
 from localstack.services.opensearch import versions
 from localstack.utils.archives import download_and_extract_with_retry
 from localstack.utils.files import chmod_r, load_file, mkdir, rm_rf, save_file
@@ -49,15 +48,6 @@ class OpensearchPackage(Package):
 class OpensearchPackageInstaller(PackageInstaller):
     def __init__(self, version: str):
         super().__init__("opensearch", version)
-
-        # JRE version to use
-        # OpenSearch has the widest compatibility with Java 11
-        # See: https://opensearch.org/docs/latest/install-and-configure/install-opensearch/index/#java-compatibility
-        self.java_version = "11"
-
-    def _prepare_installation(self, target: InstallTarget) -> None:
-        # OpenSearch ships with a bundled JRE, but we still use LocalStack's JRE for predictability
-        java_package.get_installer(self.java_version).install(target)
 
     def _install(self, target: InstallTarget):
         # locally import to avoid having a dependency on ASF when starting the CLI
@@ -225,15 +215,6 @@ class OpensearchPackageInstaller(PackageInstaller):
 class ElasticsearchPackageInstaller(PackageInstaller):
     def __init__(self, version: str):
         super().__init__("elasticsearch", version)
-
-        # JRE version to use
-        # ElasticSearch has the widest compatibility with Java 8
-        # See: https://www.elastic.co/support/matrix
-        self.java_version = "8"
-
-    def _prepare_installation(self, target: InstallTarget) -> None:
-        # ElasticSearch ships with a bundled JRE, but we still use LocalStack's JRE for predictability
-        java_package.get_installer(self.java_version).install(target)
 
     def _install(self, target: InstallTarget):
         # locally import to avoid having a dependency on ASF when starting the CLI
