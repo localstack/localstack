@@ -1951,6 +1951,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def validate_event_source_mapping(self, context, request):
         # TODO: test whether stream ARNs are valid sources for Pipes or ESM or whether only DynamoDB table ARNs work
+        is_create_esm_request = context.operation.name == self.create_event_source_mapping.operation
 
         service = None
         if "SelfManagedEventSource" in request:
@@ -1963,12 +1964,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException("Unrecognized event source.", Type="User")
         if service is None:
             service = extract_service_from_arn(request["EventSourceArn"])
+
+        batch_size = api_utils.validate_and_set_batch_size(service, request.get("BatchSize"))
         if service in ["dynamodb", "kinesis"] and "StartingPosition" not in request:
             raise InvalidParameterValueException(
                 "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
                 Type="User",
             )
-        request_function_name = request["FunctionName"]
+        if service in ["sqs", "sqs-fifo"]:
+            if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
+                raise InvalidParameterValueException(
+                    "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+                    Type="User",
+                )
+        request_function_name = request.get("FunctionArn") or request.get("FunctionName")
         # can be either a partial arn or a full arn for the version/alias
         function_name, qualifier, account, region = function_locators_from_arn(
             request_function_name
@@ -1999,48 +2008,51 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         else:
             fn_arn = api_utils.unqualified_lambda_arn(function_name, account, region)
 
-        def _get_mapping_sources(mapping: dict[str, Any]) -> list[str]:
-            if event_source_arn := mapping.get("EventSourceArn"):
-                return [event_source_arn]
-            return (
-                mapping.get("SelfManagedEventSource", {})
-                .get("Endpoints", {})
-                .get("KAFKA_BOOTSTRAP_SERVERS", [])
-            )
+        # Check we are validating a CreateEventSourceMapping request
+        if is_create_esm_request:
 
-        # check for event source duplicates
-        # TODO: currently validated for sqs, kinesis, and dynamodb
-        service_id = load_service(service).service_id
-        for uuid, mapping in state.event_source_mappings.items():
-            mapping_sources = _get_mapping_sources(mapping)
-            request_sources = _get_mapping_sources(request)
-            if mapping["FunctionArn"] == fn_arn and (
-                set(mapping_sources).intersection(request_sources)
-            ):
-                if service == "sqs":
-                    # *shakes fist at SQS*
-                    raise ResourceConflictException(
-                        f'An event source mapping with {service_id} arn (" {mapping["EventSourceArn"]} ") '
-                        f'and function (" {function_name} ") already exists. Please update or delete the '
-                        f"existing mapping with UUID {uuid}",
-                        Type="User",
-                    )
-                elif service == "kafka":
-                    if set(mapping["Topics"]).intersection(request["Topics"]):
+            def _get_mapping_sources(mapping: dict[str, Any]) -> list[str]:
+                if event_source_arn := mapping.get("EventSourceArn"):
+                    return [event_source_arn]
+                return (
+                    mapping.get("SelfManagedEventSource", {})
+                    .get("Endpoints", {})
+                    .get("KAFKA_BOOTSTRAP_SERVERS", [])
+                )
+
+            # check for event source duplicates
+            # TODO: currently validated for sqs, kinesis, and dynamodb
+            service_id = load_service(service).service_id
+            for uuid, mapping in state.event_source_mappings.items():
+                mapping_sources = _get_mapping_sources(mapping)
+                request_sources = _get_mapping_sources(request)
+                if mapping["FunctionArn"] == fn_arn and (
+                    set(mapping_sources).intersection(request_sources)
+                ):
+                    if service == "sqs":
+                        # *shakes fist at SQS*
                         raise ResourceConflictException(
-                            f'An event source mapping with event source ("{",".join(request_sources)}"), '
-                            f'function ("{fn_arn}"), '
-                            f'topics ("{",".join(request["Topics"])}") already exists. Please update or delete the '
+                            f'An event source mapping with {service_id} arn (" {mapping["EventSourceArn"]} ") '
+                            f'and function (" {function_name} ") already exists. Please update or delete the '
                             f"existing mapping with UUID {uuid}",
                             Type="User",
                         )
-                else:
-                    raise ResourceConflictException(
-                        f'The event source arn (" {mapping["EventSourceArn"]} ") and function '
-                        f'(" {function_name} ") provided mapping already exists. Please update or delete the '
-                        f"existing mapping with UUID {uuid}",
-                        Type="User",
-                    )
+                    elif service == "kafka":
+                        if set(mapping["Topics"]).intersection(request["Topics"]):
+                            raise ResourceConflictException(
+                                f'An event source mapping with event source ("{",".join(request_sources)}"), '
+                                f'function ("{fn_arn}"), '
+                                f'topics ("{",".join(request["Topics"])}") already exists. Please update or delete the '
+                                f"existing mapping with UUID {uuid}",
+                                Type="User",
+                            )
+                    else:
+                        raise ResourceConflictException(
+                            f'The event source arn (" {mapping["EventSourceArn"]} ") and function '
+                            f'(" {function_name} ") provided mapping already exists. Please update or delete the '
+                            f"existing mapping with UUID {uuid}",
+                            Type="User",
+                        )
         return fn_arn, function_name, state
 
     @handler("UpdateEventSourceMapping", expand=False)
@@ -2142,7 +2154,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )  # TODO: test?
 
         # remove the FunctionName field
-        function_name_or_arn = request_data.pop("FunctionName", None)
+        function_name_or_arn = request_data.pop("FunctionName", None) or request_data.get(
+            "FunctionArn"
+        )
 
         # normalize values to overwrite
         event_source_mapping = old_event_source_mapping | request_data
@@ -2159,19 +2173,28 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
 
-        esm_worker = self.esm_workers[uuid]
-        # Only apply update if the desired state differs
-        enabled = request.get("Enabled")
-        if enabled is not None:
-            if enabled and old_event_source_mapping["State"] != EsmState.ENABLED:
-                esm_worker.start()
-                event_source_mapping["State"] = EsmState.ENABLING
-            # TODO: What happens when trying to update during an update or failed state?!
-            elif not enabled and old_event_source_mapping["State"] == EsmState.ENABLED:
-                esm_worker.stop()
-                event_source_mapping["State"] = EsmState.DISABLING
+        # Validate the newly updated ESM object. We ignore the output here since we only care whether an Exception is raised.
+        _ = self.validate_event_source_mapping(context, event_source_mapping)
+
+        # TODO: Currently, we re-create the entire ESM worker. Look into approach with better performance.
+        old_esm_worker = self.esm_workers[uuid]
+        old_esm_worker.update_esm_state_in_store(EsmState.UPDATING)
+        event_source_mapping["State"] = EsmState.UPDATING
+
+        function_version = get_function_version_from_arn(function_name_or_arn)
+        function_role = function_version.config.role
+        worker_factory = EsmWorkerFactory(
+            event_source_mapping, function_role, request.get("Enabled", old_esm_worker.enabled)
+        )
+
+        old_esm_worker.stop()
+        updated_esm_worker = worker_factory.get_esm_worker()
+
+        updated_esm_worker.create()
 
         state.event_source_mappings[uuid] = event_source_mapping
+        self.esm_workers[uuid] = updated_esm_worker
+
         return {**event_source_mapping, **temp_params}
 
     def delete_event_source_mapping(

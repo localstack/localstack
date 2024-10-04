@@ -952,14 +952,11 @@ def test_fifo_message_group_parallelism(
     ],
 )
 class TestSQSEventSourceMapping:
-    # TODO refactor
-    @pytest.mark.skipif(
-        is_v2_esm(), reason="ESM v2 does not implement create and update validations yet"
-    )
     @markers.aws.validated
     def test_event_source_mapping_default_batch_size(
         self,
         create_lambda_function,
+        create_event_source_mapping,
         sqs_create_queue,
         sqs_get_queue_arn,
         lambda_su_role,
@@ -973,47 +970,42 @@ class TestSQSEventSourceMapping:
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
         queue_arn_1 = sqs_get_queue_arn(queue_url_1)
 
-        try:
-            create_lambda_function(
-                func_name=function_name,
-                handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=Runtime.python3_12,
-                role=lambda_su_role,
-            )
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
 
+        rs = create_event_source_mapping(EventSourceArn=queue_arn_1, FunctionName=function_name)
+        snapshot.match("create-event-source-mapping", rs)
+
+        uuid = rs["UUID"]
+        assert DEFAULT_SQS_BATCH_SIZE == rs["BatchSize"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        with pytest.raises(ClientError) as e:
+            # Update batch size with invalid value
+            rs = aws_client.lambda_.update_event_source_mapping(
+                UUID=uuid,
+                FunctionName=function_name,
+                BatchSize=MAX_SQS_BATCH_SIZE_FIFO + 1,
+            )
+        snapshot.match("invalid-update-event-source-mapping", e.value.response)
+        e.match(InvalidParameterValueException.code)
+
+        queue_url_2 = sqs_create_queue(QueueName=queue_name_2)
+        queue_arn_2 = sqs_get_queue_arn(queue_url_2)
+
+        with pytest.raises(ClientError) as e:
+            # Create event source mapping with invalid batch size value
             rs = aws_client.lambda_.create_event_source_mapping(
-                EventSourceArn=queue_arn_1, FunctionName=function_name
+                EventSourceArn=queue_arn_2,
+                FunctionName=function_name,
+                BatchSize=MAX_SQS_BATCH_SIZE_FIFO + 1,
             )
-            snapshot.match("create-event-source-mapping", rs)
-
-            uuid = rs["UUID"]
-            assert DEFAULT_SQS_BATCH_SIZE == rs["BatchSize"]
-            _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
-
-            with pytest.raises(ClientError) as e:
-                # Update batch size with invalid value
-                rs = aws_client.lambda_.update_event_source_mapping(
-                    UUID=uuid,
-                    FunctionName=function_name,
-                    BatchSize=MAX_SQS_BATCH_SIZE_FIFO + 1,
-                )
-            snapshot.match("invalid-update-event-source-mapping", e.value.response)
-            e.match(InvalidParameterValueException.code)
-
-            queue_url_2 = sqs_create_queue(QueueName=queue_name_2)
-            queue_arn_2 = sqs_get_queue_arn(queue_url_2)
-
-            with pytest.raises(ClientError) as e:
-                # Create event source mapping with invalid batch size value
-                rs = aws_client.lambda_.create_event_source_mapping(
-                    EventSourceArn=queue_arn_2,
-                    FunctionName=function_name,
-                    BatchSize=MAX_SQS_BATCH_SIZE_FIFO + 1,
-                )
-            snapshot.match("invalid-create-event-source-mapping", e.value.response)
-            e.match(InvalidParameterValueException.code)
-        finally:
-            aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
+        snapshot.match("invalid-create-event-source-mapping", e.value.response)
+        e.match(InvalidParameterValueException.code)
 
     @markers.aws.validated
     def test_sqs_event_source_mapping(
@@ -1244,9 +1236,6 @@ class TestSQSEventSourceMapping:
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
         expected.match(InvalidParameterValueException.code)
 
-    @pytest.mark.skipif(
-        is_v2_esm(), reason="ESM v2 does not yet implement update_event_source_mapping properly"
-    )
     @markers.aws.validated
     def test_sqs_event_source_mapping_update(
         self,
