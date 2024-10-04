@@ -758,8 +758,10 @@ def resolve_placeholders_in_string(
     """
 
     def _validate_result_type(value: str):
-        if value == account_id:
-            return account_id
+        is_another_account_id = value.isdigit() and len(value) == len(account_id)
+        if value == account_id or is_another_account_id:
+            return value
+
         if value.isdigit():
             return int(value)
         else:
