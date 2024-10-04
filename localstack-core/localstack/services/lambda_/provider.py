@@ -2158,30 +2158,33 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             "FunctionArn"
         )
 
-        # normalize values to overwrite
+        # # normalize values to overwrite
         event_source_mapping = old_event_source_mapping | request_data
 
         if function_name_or_arn:
-            # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
-            account_id, region = api_utils.get_account_and_region(function_name_or_arn, context)
-            function_name, qualifier = api_utils.get_name_and_qualifier(
-                function_name_or_arn, None, context
-            )
-            event_source_mapping["FunctionArn"] = api_utils.qualified_lambda_arn(
-                function_name, qualifier, account_id, region
-            )
+            event_source_mapping["FunctionArn"] = function_name_or_arn
 
         temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
 
         # Validate the newly updated ESM object. We ignore the output here since we only care whether an Exception is raised.
-        _ = self.validate_event_source_mapping(context, event_source_mapping)
+        function_arn, _, _ = self.validate_event_source_mapping(context, event_source_mapping)
+
+        old_esm_worker = self.esm_workers[uuid]
+        if request.get("Enabled") is not None:
+            if request["Enabled"]:
+                esm_state = EsmState.ENABLED
+                temp_params["State"] = EsmState.ENABLING
+            else:
+                esm_state = EsmState.DISABLED
+                temp_params["State"] = EsmState.DISABLING
+            old_esm_worker.update_esm_state_in_store(temp_params["State"])
+            event_source_mapping["State"] = esm_state
+        else:
+            old_esm_worker.update_esm_state_in_store(EsmState.UPDATING)
+            event_source_mapping["State"] = EsmState.UPDATING
 
         # TODO: Currently, we re-create the entire ESM worker. Look into approach with better performance.
-        old_esm_worker = self.esm_workers[uuid]
-        old_esm_worker.update_esm_state_in_store(EsmState.UPDATING)
-        event_source_mapping["State"] = EsmState.UPDATING
-
-        function_version = get_function_version_from_arn(function_name_or_arn)
+        function_version = get_function_version_from_arn(function_arn)
         function_role = function_version.config.role
         worker_factory = EsmWorkerFactory(
             event_source_mapping, function_role, request.get("Enabled", old_esm_worker.enabled)
