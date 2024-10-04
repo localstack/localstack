@@ -151,10 +151,9 @@ class DynamodbServer(Server):
         return cmd + parameters
 
     def do_start_thread(self) -> FuncThread:
-        dynamodblocal_installer = dynamodblocal_package.get_installer()
-        dynamodblocal_installer.install()
+        dynamodblocal_package.install()
 
-        java_home = java_package.get_installer(dynamodblocal_installer.java_version).get_java_home()
+        java_home = java_package.get_installer().get_java_home()
 
         path = f"{java_home}/bin:{os.getenv('PATH')}"
 

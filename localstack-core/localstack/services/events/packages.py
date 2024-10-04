@@ -9,10 +9,12 @@ EVENT_RULER_VERSIONS = {
     "1.7.3": "2.16.2",
 }
 
+EVENT_RULER_DEFAULT_VERSION = "1.7.3"
+
 
 class EventRulerPackage(Package):
     def __init__(self):
-        super().__init__("EventRulerLibs", list(EVENT_RULER_VERSIONS.keys()))
+        super().__init__("EventRulerLibs", EVENT_RULER_DEFAULT_VERSION)
 
     def get_versions(self) -> list[str]:
         return list(EVENT_RULER_VERSIONS.keys())
@@ -31,10 +33,8 @@ class EventRulerPackageInstaller(MavenPackageInstaller):
             f"pkg:maven/com.fasterxml.jackson.core/jackson-databind@{jackson_version}",
         )
 
-        self.java_version = "11"
-
     def _prepare_installation(self, target: InstallTarget) -> None:
-        java_package.get_installer(self.java_version).install(target)
+        java_package.install(target=target)
 
 
 event_ruler_package = EventRulerPackage()

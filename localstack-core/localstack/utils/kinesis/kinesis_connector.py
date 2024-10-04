@@ -27,7 +27,6 @@ DEFAULT_DDB_LEASE_TABLE_SUFFIX = "-kclapp"
 
 # define Java class names
 MULTI_LANG_DAEMON_CLASS = "software.amazon.kinesis.multilang.MultiLangDaemon"
-KCL_JAVA_VERSION = "11"
 
 # set up local logger
 LOG = logging.getLogger(__name__)
@@ -245,7 +244,7 @@ def _start_kcl_client_process(
     stream_name = arns.kinesis_stream_name(stream_name)
 
     # install Java
-    java_installer = java_package.get_installer(KCL_JAVA_VERSION)
+    java_installer = java_package.get_installer()
     java_installer.install()
     java_home = java_installer.get_java_home()
     path = f"{java_home}/bin:{os.getenv('PATH')}"
