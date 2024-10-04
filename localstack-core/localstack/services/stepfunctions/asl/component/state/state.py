@@ -178,7 +178,7 @@ class CommonStateField(EvalComponent, ABC):
         output = env.stack[-1]
 
         # CatcherOutputs (i.e. outputs of Catch blocks) are never subjects of output normalisers,
-        # the entire value is instead passed by value as input ot the next state, or program output.
+        # the entire value is instead passed by value as input to the next state, or program output.
         if isinstance(output, CatcherOutput):
             env.inp = copy.deepcopy(output)
         else:
