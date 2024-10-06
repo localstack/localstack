@@ -7,9 +7,6 @@ import time
 
 import aws_cdk as cdk
 import pytest
-from localstack_snapshot.snapshots.transformer import (
-    JsonpathTransformer,
-)
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
@@ -42,7 +39,59 @@ from tests.aws.services.lambda_.test_lambda import (
 #   - Sagemaker (pro)
 class TestEventsTargetApiGateway:
     @markers.aws.validated
-    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    @pytest.mark.skipif(
+        condition=is_old_provider() and not is_aws_cloud(),
+        reason="not supported by the old provider",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: those headers are sent by Events via the SDK, we should at least populate X-Amz-Source-Account
+            #  and X-Amz-Source-Arn
+            "$..headers.amz-sdk-invocation-id",
+            "$..headers.amz-sdk-request",
+            "$..headers.amz-sdk-retry",
+            "$..headers.X-Amz-Security-Token",
+            "$..headers.X-Amz-Source-Account",
+            "$..headers.X-Amz-Source-Arn",
+            # seems like this one can vary in casing between runs?
+            "$..headers.x-amz-date",
+            "$..headers.X-Amz-Date",
+            # those headers are missing in API Gateway
+            "$..headers.CloudFront-Forwarded-Proto",
+            "$..headers.CloudFront-Is-Desktop-Viewer",
+            "$..headers.CloudFront-Is-Mobile-Viewer",
+            "$..headers.CloudFront-Is-SmartTV-Viewer",
+            "$..headers.CloudFront-Is-Tablet-Viewer",
+            "$..headers.CloudFront-Viewer-ASN",
+            "$..headers.CloudFront-Viewer-Country",
+            "$..headers.X-Amz-Cf-Id",
+            "$..headers.Via",
+            # sent by `requests` library by default
+            "$..headers.Accept-Encoding",
+            "$..headers.Accept",
+        ]
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not config.APIGW_NEXT_GEN_PROVIDER,
+        paths=[
+            # parity issue from previous APIGW implementation
+            "$..headers.x-localstack-edge",
+            "$..headers.Connection",
+            "$..headers.Content-Length",
+            "$..headers.accept-encoding",
+            "$..headers.accept",
+            "$..headers.X-Amzn-Trace-Id",
+            "$..headers.X-Forwarded-Port",
+            "$..headers.X-Forwarded-Proto",
+            "$..pathParameters",
+            "$..requestContext.authorizer",
+            "$..requestContext.deploymentId",
+            "$..requestContext.extendedRequestId",
+            "$..requestContext.identity",
+            "$..requestContext.requestId",
+            "$..stageVariables",
+        ],
+    )
     def test_put_events_with_target_api_gateway(
         self,
         create_lambda_function,
@@ -55,39 +104,42 @@ class TestEventsTargetApiGateway:
         region_name,
         account_id,
     ):
-        transformers = [
-            snapshot.transform.lambda_api(),
-            snapshot.transform.apigateway_api(),
-            snapshot.transform.apigatewayv2_lambda_proxy_event(),
-            snapshot.transform.key_value("CodeSha256"),
-            snapshot.transform.key_value("EventId", reference_replacement=False),
-            snapshot.transform.key_value(
-                "headers", value_replacement="<headers>", reference_replacement=False
-            ),
-            snapshot.transform.key_value(
-                "multiValueHeaders",
-                value_replacement="<multiValueHeaders>",
-                reference_replacement=False,
-            ),
-            JsonpathTransformer(
-                jsonpath="$..pathParameters",
-                replacement="<pathParameters>",
-                replace_reference=False,
-            ),
-            JsonpathTransformer(
-                jsonpath="$..requestContext",
-                replacement="<requestContext>",
-                replace_reference=False,
-            ),
-            JsonpathTransformer(
-                jsonpath="$..stageVariables",
-                replacement="<stageVariables>",
-                replace_reference=False,
-            ),
-        ]
-
-        for transformer in transformers:
-            snapshot.add_transformer(transformer)
+        snapshot.add_transformers_list(
+            [
+                *snapshot.transform.lambda_api(),
+                *snapshot.transform.apigateway_api(),
+                *snapshot.transform.apigateway_proxy_event(),
+                snapshot.transform.key_value("CodeSha256"),
+                snapshot.transform.key_value("EventId", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "multiValueHeaders",
+                    value_replacement="<multiValueHeaders>",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.key_value("apiId"),
+                snapshot.transform.key_value("amz-sdk-request"),
+                snapshot.transform.key_value("amz-sdk-retry"),
+                snapshot.transform.key_value("X-Amz-Date"),
+                snapshot.transform.key_value("x-amz-date"),
+                # Events use the Java SDK to forward the event, and the User-Agent reflects that
+                snapshot.transform.key_value("User-Agent"),
+                snapshot.transform.key_value("X-Forwarded-For", reference_replacement=False),
+                snapshot.transform.key_value("X-Forwarded-Port", reference_replacement=False),
+                snapshot.transform.key_value("X-Forwarded-Proto", reference_replacement=False),
+            ]
+        )
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("X-Amz-Security-Token", reference_replacement=False),
+                snapshot.transform.key_value("domainName"),
+                snapshot.transform.key_value("amz-sdk-invocation-id", reference_replacement=False),
+                snapshot.transform.key_value("CloudFront-Viewer-ASN", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "CloudFront-Viewer-Country", reference_replacement=False
+                ),
+            ],
+            priority=-2,
+        )
 
         # Step a: Create a Lambda function with a unique name using the existing fixture
         function_name = f"test-lambda-{short_uid()}"
@@ -97,27 +149,21 @@ class TestEventsTargetApiGateway:
             func_name=function_name,
             handler_file=TEST_LAMBDA_AWS_PROXY_FORMAT,
             handler="lambda_aws_proxy_format.handler",
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         lambda_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
         snapshot.match("create_lambda_response", create_lambda_response)
 
         # Step b: Set up an API Gateway
-        api_id, _, root = create_rest_apigw(
+        api_id, _, root_id = create_rest_apigw(
             name=f"test-api-${short_uid()}",
             description="Test Integration with EventBridge",
-        )
-
-        # Get the root resource ID
-        resources = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_resource_id = next(
-            (resource["id"] for resource in resources["items"] if resource["path"] == "/"), None
         )
 
         # Create a resource under the root
         resource_response = aws_client.apigateway.create_resource(
             restApiId=api_id,
-            parentId=root_resource_id,
+            parentId=root_id,
             pathPart="test",
         )
         resource_id = resource_response["id"]
@@ -204,6 +250,7 @@ class TestEventsTargetApiGateway:
             f"arn:aws:execute-api:{region_name}:{account_id}:{api_id}/{stage_name}/POST/test"
         )
 
+        # TODO: test path parameters, headers and query strings
         put_targets_response = aws_client.events.put_targets(
             Rule=rule_name,
             EventBusName=event_bus_name,
@@ -236,7 +283,7 @@ class TestEventsTargetApiGateway:
             check_expected_lambda_log_events_length,
             retries=10,
             sleep=10,
-            sleep_before=10,
+            sleep_before=10 if is_aws_cloud() else 1,
             function_name=function_name,
             expected_length=1,
             logs_client=aws_client.logs,
