@@ -54,8 +54,6 @@ CORS_ALLOWED_HEADERS = [
     # for AWS SDK v3
     "amz-sdk-invocation-id",
     "amz-sdk-request",
-    # for lambda
-    "x-amz-log-type",
 ]
 if EXTRA_CORS_ALLOWED_HEADERS:
     CORS_ALLOWED_HEADERS += EXTRA_CORS_ALLOWED_HEADERS.split(",")
@@ -65,10 +63,9 @@ CORS_ALLOWED_METHODS = ("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS", "PATC
 CORS_EXPOSE_HEADERS = (
     "etag",
     "x-amz-version-id",
-    # for lambda
-    "x-amz-log-result",
-    "x-amz-executed-version",
-    "x-amz-function-error",
+    "x-amzn-requestid",
+    "x-amzn-request-id",
+    "x-amzn-errortype",
 )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(","))
@@ -251,10 +248,11 @@ class CorsResponseEnricher(Handler):
         ):
             return
 
-        self.add_cors_headers(request_headers, response_headers=headers)
+        self.add_default_cors_headers(request_headers, response_headers=headers)
+        self.add_service_specific_cors_headers(context, request_headers, headers)
 
     @staticmethod
-    def add_cors_headers(request_headers: Headers, response_headers: Headers):
+    def add_default_cors_headers(request_headers: Headers, response_headers: Headers):
         if ACL_ORIGIN not in response_headers:
             response_headers[ACL_ORIGIN] = (
                 request_headers["Origin"]
@@ -266,7 +264,7 @@ class CorsResponseEnricher(Handler):
         if ACL_METHODS not in response_headers:
             response_headers[ACL_METHODS] = ",".join(CORS_ALLOWED_METHODS)
         if ACL_ALLOW_HEADERS not in response_headers:
-            requested_headers = response_headers.get(ACL_REQUEST_HEADERS, "")
+            requested_headers = request_headers.get(ACL_REQUEST_HEADERS, "")
             requested_headers = re.split(r"[,\s]+", requested_headers) + CORS_ALLOWED_HEADERS
             response_headers[ACL_ALLOW_HEADERS] = ",".join([h for h in requested_headers if h])
         if ACL_EXPOSE_HEADERS not in response_headers:
@@ -279,3 +277,31 @@ class CorsResponseEnricher(Handler):
 
         # we conditionally apply CORS headers depending on the Origin, so add it to `Vary`
         response_headers["Vary"] = "Origin"
+
+    @staticmethod
+    def add_service_specific_cors_headers(
+        context: RequestContext, request_headers: Headers, response_headers: Headers
+    ):
+        if not context.service:
+            return
+
+        shape = None
+        expose_headers = []
+
+        if context.service_exception:
+            shape = context.service.shape_for_error_code(context.service_exception.code)
+
+        elif context.operation and context.operation.output_shape:
+            shape = context.operation.output_shape
+
+        if not shape:
+            return
+
+        for member_name, member_shape in shape.members.items():
+            if member_shape.serialization.get("location") == "header":
+                expose_headers.append(member_shape.serialization.get("name", member_name))
+
+        if existing_header := response_headers.get(ACL_EXPOSE_HEADERS):
+            expose_headers.append(existing_header)
+
+        response_headers[ACL_EXPOSE_HEADERS] = ",".join(expose_headers)
