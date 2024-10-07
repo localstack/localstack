@@ -22,7 +22,8 @@ from localstack.aws.connect import (
 )
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.helpers import (
+from localstack.services.apigateway.legacy.context import ApiInvocationContext
+from localstack.services.apigateway.legacy.helpers import (
     ApiGatewayIntegrationError,
     IntegrationParameters,
     RequestParametersResolver,
@@ -33,7 +34,6 @@ from localstack.services.apigateway.helpers import (
     make_error_response,
     multi_value_dict_for_list,
 )
-from localstack.services.apigateway.legacy.context import ApiInvocationContext
 from localstack.services.apigateway.legacy.templates import (
     MappingTemplates,
     RequestTemplates,

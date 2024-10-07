@@ -13,10 +13,12 @@ from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ModelResolver,
     get_apigateway_store_for_invocation,
+)
+from localstack.services.apigateway.legacy.context import ApiInvocationContext
+from localstack.services.apigateway.legacy.helpers import (
     get_cors_response,
     make_error_response,
 )
-from localstack.services.apigateway.legacy.context import ApiInvocationContext
 from localstack.services.apigateway.legacy.integration import (
     ApiGatewayIntegrationError,
     DynamoDBIntegration,
