@@ -103,16 +103,24 @@ class EsmWorker:
         )
         self._poller_thread.start()
 
+    def update(self):
+        with self._state_lock:
+            self.current_state = EsmState.UPDATING
+            self.state_transition_reason = self.user_state_reason
+        self.start()
+
     def stop(self):
         with self._state_lock:
             self.enabled = False
             self.current_state = EsmState.DISABLING
+            self.update_esm_state_in_store(EsmState.DISABLING)
             self.state_transition_reason = self.user_state_reason
         self._shutdown_event.set()
 
     def delete(self):
         with self._state_lock:
             self.current_state = EsmState.DELETING
+            self.update_esm_state_in_store(EsmState.DELETING)
             self.state_transition_reason = self.user_state_reason
         self._shutdown_event.set()
 

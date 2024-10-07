@@ -1979,7 +1979,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
         # Can either have a FunctionName (i.e CreateEventSourceMapping request) or
         # an internal EventSourceMappingConfiguration representation
-        request_function_name = request.get("FunctionArn") or request.get("FunctionName")
+        request_function_name = request.get("FunctionName") or request.get("FunctionArn")
         # can be either a partial arn or a full arn for the version/alias
         function_name, qualifier, account, region = function_locators_from_arn(
             request_function_name
@@ -2155,8 +2155,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )  # TODO: test?
 
+        if old_event_source_mapping["State"] == EsmState.UPDATING:
+            raise ResourceConflictException("Already updating", Type="User")
+
         # normalize values to overwrite
-        # This rids the event_source_mapping of extra field names (i.e FunctionName)
         event_source_mapping = old_event_source_mapping | request_data
 
         temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
@@ -2170,34 +2172,37 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if function_arn:
             event_source_mapping["FunctionArn"] = function_arn
 
-        old_esm_worker = self.esm_workers[uuid]
-        if request.get("Enabled") is not None:
-            if request["Enabled"]:
-                esm_state = EsmState.ENABLED
-                temp_params["State"] = EsmState.ENABLING
-            else:
-                esm_state = EsmState.DISABLED
-                temp_params["State"] = EsmState.DISABLING
-            old_esm_worker.update_esm_state_in_store(temp_params["State"])
-            event_source_mapping["State"] = esm_state
+        esm_worker = self.esm_workers[uuid]
+        # Only apply update if the desired state differs
+        enabled = request.get("Enabled")
+        if enabled is not None:
+            if enabled and old_event_source_mapping["State"] != EsmState.ENABLED:
+                event_source_mapping["State"] = EsmState.ENABLING
+            # TODO: What happens when trying to update during an update or failed state?!
+            elif not enabled and old_event_source_mapping["State"] == EsmState.ENABLED:
+                event_source_mapping["State"] = EsmState.DISABLING
         else:
-            old_esm_worker.update_esm_state_in_store(EsmState.UPDATING)
             event_source_mapping["State"] = EsmState.UPDATING
+
+        # To ensure parity, certain responses need to be immediately returned
+        temp_params["State"] = event_source_mapping["State"]
+
+        state.event_source_mappings[uuid] = event_source_mapping
 
         # TODO: Currently, we re-create the entire ESM worker. Look into approach with better performance.
         function_version = get_function_version_from_arn(function_arn)
         function_role = function_version.config.role
         worker_factory = EsmWorkerFactory(
-            event_source_mapping, function_role, request.get("Enabled", old_esm_worker.enabled)
+            event_source_mapping, function_role, request.get("Enabled", esm_worker.enabled)
         )
 
-        old_esm_worker.stop()
+        # Get a new ESM worker object but do not active it, since the factory holds all logic for creating new worker from configuration.
         updated_esm_worker = worker_factory.get_esm_worker()
-
-        updated_esm_worker.create()
-
-        state.event_source_mappings[uuid] = event_source_mapping
         self.esm_workers[uuid] = updated_esm_worker
+
+        # We should stop() the worker since the delete() will remove the ESM from the state mapping.
+        esm_worker.stop()
+        updated_esm_worker.start()
 
         return {**event_source_mapping, **temp_params}
 
