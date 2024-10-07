@@ -443,41 +443,6 @@ class KmsKey:
             )
         return h
 
-    # def construct_sign_verify_hasher(
-    #     self, signing_algorithm: SigningAlgorithmSpec, message_type: MessageType
-    # ) -> (
-    #     Prehashed | hashes.SHA256 | hashes.SHA384 | hashes.SHA512,
-    #     Prehashed | hashes.SHA256 | hashes.SHA384 | hashes.SHA512,
-    # ):
-    #     if "SHA_256" in signing_algorithm:
-    #         hasher = hashes.SHA256()
-    #     elif "SHA_384" in signing_algorithm:
-    #         hasher = hashes.SHA384()
-    #     elif "SHA_512" in signing_algorithm:
-    #         hasher = hashes.SHA512()
-    #     else:
-    #         raise ValidationException(
-    #             f"Unsupported hash type in SigningAlgorithm '{signing_algorithm}'"
-    #         )
-    #
-    #     wrapped_hasher = hasher
-    #     if message_type == MessageType.DIGEST:
-    #         wrapped_hasher = utils.Prehashed(hasher)
-    #     return hasher, wrapped_hasher
-
-    # def construct_sign_verify_padding(
-    #     self,
-    #     signing_algorithm: SigningAlgorithmSpec,
-    #     hasher: Prehashed | hashes.SHA256 | hashes.SHA384 | hashes.SHA512,
-    # ) -> PKCS1v15 | PSS:
-    #     if signing_algorithm.startswith("RSA"):
-    #         if "PKCS" in signing_algorithm:
-    #             return padding.PKCS1v15()
-    #         elif "PSS" in signing_algorithm:
-    #             return padding.PSS(mgf=padding.MGF1(hasher), salt_length=padding.PSS.DIGEST_LENGTH)
-    #         else:
-    #             LOG.warning("Unsupported padding in SigningAlgorithm '%s'", signing_algorithm)
-
     # Not a comment, rather some possibly relevant links for the future.
     # https://docs.aws.amazon.com/kms/latest/developerguide/asymm-create-key.html
     # "You cannot create an elliptic curve key pair for encryption and decryption."
