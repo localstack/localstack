@@ -19,8 +19,10 @@ from localstack.constants import (
 from localstack.services.apigateway.helpers import (
     ModelResolver,
     OpenAPISpecificationResolver,
-    RequestParametersResolver,
     apply_json_patch_safe,
+)
+from localstack.services.apigateway.legacy.helpers import (
+    RequestParametersResolver,
     extract_path_params,
     extract_query_string_params,
     get_resource_for_path,

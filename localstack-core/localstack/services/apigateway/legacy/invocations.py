@@ -8,7 +8,6 @@ from werkzeug.exceptions import NotFound
 
 from localstack.aws.connect import connect_to
 from localstack.constants import APPLICATION_JSON
-from localstack.services.apigateway import helpers
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ModelResolver,
@@ -17,7 +16,10 @@ from localstack.services.apigateway.helpers import (
 from localstack.services.apigateway.legacy.context import ApiInvocationContext
 from localstack.services.apigateway.legacy.helpers import (
     get_cors_response,
+    get_event_request_context,
+    get_target_resource_details,
     make_error_response,
+    set_api_id_stage_invocation_path,
 )
 from localstack.services.apigateway.legacy.integration import (
     ApiGatewayIntegrationError,
@@ -256,7 +258,7 @@ def update_content_length(response: Response):
 
 
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
-    helpers.set_api_id_stage_invocation_path(invocation_context)
+    set_api_id_stage_invocation_path(invocation_context)
     try:
         return invoke_rest_api(invocation_context)
     except AuthorizationError as e:
@@ -275,7 +277,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     method = invocation_context.method
     headers = invocation_context.headers
 
-    extracted_path, resource = helpers.get_target_resource_details(invocation_context)
+    extracted_path, resource = get_target_resource_details(invocation_context)
     if not resource:
         return make_error_response("Unable to find path %s" % invocation_context.path, 404)
 
@@ -351,7 +353,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     if (re.match(f"{ARN_PARTITION_REGEX}:apigateway:", uri) and ":lambda:path" in uri) or re.match(
         f"{ARN_PARTITION_REGEX}:lambda", uri
     ):
-        invocation_context.context = helpers.get_event_request_context(invocation_context)
+        invocation_context.context = get_event_request_context(invocation_context)
         if integration_type == "AWS_PROXY":
             return LambdaProxyIntegration().invoke(invocation_context)
         elif integration_type == "AWS":
