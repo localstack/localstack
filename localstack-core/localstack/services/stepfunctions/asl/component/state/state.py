@@ -81,7 +81,6 @@ class CommonStateField(EvalComponent, ABC):
         self.comment = None
         self.input_path = InputPath(InputPath.DEFAULT_PATH)
         self.output_path = OutputPath(OutputPath.DEFAULT_PATH)
-        self.output_path = OutputPath(OutputPath.DEFAULT_PATH)
         self.state_entered_event_type = state_entered_event_type
         self.state_exited_event_type = state_exited_event_type
 
