@@ -496,7 +496,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_256]": {
-    "recorded-date": "13-04-2023, 11:29:59",
+    "recorded-date": "07-10-2024, 14:04:46",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -539,7 +539,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_384]": {
-    "recorded-date": "13-04-2023, 11:30:02",
+    "recorded-date": "07-10-2024, 14:04:50",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -582,7 +582,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_512]": {
-    "recorded-date": "13-04-2023, 11:30:05",
+    "recorded-date": "07-10-2024, 14:04:56",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -625,7 +625,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
-    "recorded-date": "13-04-2023, 11:30:09",
+    "recorded-date": "07-10-2024, 14:04:59",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -668,7 +668,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
-    "recorded-date": "13-04-2023, 11:30:12",
+    "recorded-date": "07-10-2024, 14:05:03",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -711,7 +711,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P256-ECDSA_SHA_256]": {
-    "recorded-date": "13-04-2023, 11:30:15",
+    "recorded-date": "07-10-2024, 14:05:07",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -758,7 +758,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_SECG_P256K1-ECDSA_SHA_256]": {
-    "recorded-date": "13-04-2023, 11:30:22",
+    "recorded-date": "07-10-2024, 14:05:15",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -805,7 +805,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P384-ECDSA_SHA_384]": {
-    "recorded-date": "13-04-2023, 11:30:19",
+    "recorded-date": "07-10-2024, 14:05:11",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
