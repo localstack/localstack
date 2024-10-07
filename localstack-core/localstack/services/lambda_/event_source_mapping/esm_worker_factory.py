@@ -56,10 +56,7 @@ class EsmWorkerFactory:
         # Sender (always Lambda)
         function_arn = self.esm_config["FunctionArn"]
         lambda_client = get_internal_client(
-            arn=function_arn,
-            role_arn=self.function_role_arn,
-            service_principal=ServicePrincipal.lambda_,
-            source_arn=self.esm_config["FunctionArn"],
+            arn=function_arn,  # Only the function_arn is necessary since the Lambda should be able to invoke itself
         )
         sender = LambdaSender(
             target_arn=function_arn,
