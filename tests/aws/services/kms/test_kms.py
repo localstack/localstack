@@ -504,6 +504,7 @@ class TestKMS:
         bad_signature = aws_client.kms.sign(MessageType="RAW", Message="bad", **kwargs)["Signature"]
         bad_message = b"bad message 321"
 
+        # Ensure raw messages can be signed and verified
         signature = aws_client.kms.sign(MessageType="RAW", Message=plaintext, **kwargs)
         snapshot.match("signature", signature)
         verification = aws_client.kms.verify(
