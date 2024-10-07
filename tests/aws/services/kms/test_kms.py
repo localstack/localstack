@@ -504,22 +504,6 @@ class TestKMS:
         bad_signature = aws_client.kms.sign(MessageType="RAW", Message="bad", **kwargs)["Signature"]
         bad_message = b"bad message 321"
 
-        # Ensure raw messages can be signed and verified
-        # def _construct_rargs(message_type):
-        #     hasher, wrapped_hasher = construct_sign_verify_hasher(
-        #         SigningAlgorithmSpec(sign_algo), message_type
-        #     )
-        #     if sign_algo.startswith("ECDSA"):
-        #         kwargs["signature_algorithm"] = ec.ECDSA(algorithm=wrapped_hasher)
-        #         # return {"signature_algorithm": ec.ECDSA(algorithm=wrapped_hasher)}
-        #     else:
-        #         padding = construct_sign_verify_padding(SigningAlgorithmSpec(sign_algo), hasher)
-        #         kwargs["algorithm"] = wrapped_hasher
-        #         kwargs["padding"] = padding
-        #         # return {"algorithm": wrapped_hasher, "padding": padding}
-        #
-        # _construct_rargs(MessageType.RAW)
-
         signature = aws_client.kms.sign(MessageType="RAW", Message=plaintext, **kwargs)
         snapshot.match("signature", signature)
         verification = aws_client.kms.verify(
