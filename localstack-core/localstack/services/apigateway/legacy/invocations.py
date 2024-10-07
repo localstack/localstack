@@ -9,7 +9,6 @@ from werkzeug.exceptions import NotFound
 from localstack.aws.connect import connect_to
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ModelResolver,
@@ -17,7 +16,8 @@ from localstack.services.apigateway.helpers import (
     get_cors_response,
     make_error_response,
 )
-from localstack.services.apigateway.integration import (
+from localstack.services.apigateway.legacy.context import ApiInvocationContext
+from localstack.services.apigateway.legacy.integration import (
     ApiGatewayIntegrationError,
     DynamoDBIntegration,
     EventBridgeIntegration,

@@ -109,13 +109,13 @@ from localstack.services.apigateway.helpers import (
     multi_value_dict_for_list,
     resolve_references,
 )
-from localstack.services.apigateway.invocations import invoke_rest_api_from_request
+from localstack.services.apigateway.legacy.invocations import invoke_rest_api_from_request
+from localstack.services.apigateway.legacy.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
 from localstack.services.apigateway.next_gen.execute_api.router import (
     ApiGatewayRouter as ApiGatewayRouterNextGen,
 )
 from localstack.services.apigateway.patches import apply_patches
-from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
