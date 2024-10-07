@@ -15,6 +15,8 @@ from localstack.aws.api.apigateway import (
     Stage,
     StatusCode,
     String,
+    TestInvokeMethodRequest,
+    TestInvokeMethodResponse,
 )
 from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import (
@@ -238,6 +240,12 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             for response_type in DEFAULT_GATEWAY_RESPONSES
         ]
         return GatewayResponses(items=gateway_responses)
+
+    def test_invoke_method(
+        self, context: RequestContext, request: TestInvokeMethodRequest
+    ) -> TestInvokeMethodResponse:
+        # TODO: rewrite and migrate to NextGen
+        return super().test_invoke_method(context, request)
 
 
 def _get_gateway_response_or_default(

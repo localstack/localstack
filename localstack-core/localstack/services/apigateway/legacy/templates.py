@@ -10,8 +10,8 @@ import xmltodict
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, APPLICATION_XML
-from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import select_integration_response
+from localstack.services.apigateway.legacy.context import ApiInvocationContext
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe, try_json
 from localstack.utils.strings import to_str
