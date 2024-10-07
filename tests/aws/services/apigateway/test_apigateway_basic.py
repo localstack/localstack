@@ -18,11 +18,13 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.apigateway.helpers import (
-    get_resource_for_path,
-    get_rest_api_paths,
     host_based_url,
     localstack_path_based_url,
     path_based_url,
+)
+from localstack.services.apigateway.legacy.helpers import (
+    get_resource_for_path,
+    get_rest_api_paths,
 )
 from localstack.testing.aws.util import in_default_partition
 from localstack.testing.config import (
