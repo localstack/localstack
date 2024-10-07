@@ -103,12 +103,6 @@ class EsmWorker:
         )
         self._poller_thread.start()
 
-    def update(self):
-        with self._state_lock:
-            self.current_state = EsmState.UPDATING
-            self.state_transition_reason = self.user_state_reason
-        self.start()
-
     def stop(self):
         with self._state_lock:
             self.enabled = False

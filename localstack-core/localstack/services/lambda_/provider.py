@@ -2155,9 +2155,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )  # TODO: test?
 
-        if old_event_source_mapping["State"] == EsmState.UPDATING:
-            raise ResourceConflictException("Already updating", Type="User")
-
         # normalize values to overwrite
         event_source_mapping = old_event_source_mapping | request_data
 
@@ -2202,7 +2199,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # We should stop() the worker since the delete() will remove the ESM from the state mapping.
         esm_worker.stop()
-        updated_esm_worker.start()
+        # This will either create an EsmWorker in the CREATING state if enabled. Otherwise, the DISABLING state is set.
+        updated_esm_worker.create()
 
         return {**event_source_mapping, **temp_params}
 
