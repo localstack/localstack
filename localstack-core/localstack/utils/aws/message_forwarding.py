@@ -8,7 +8,7 @@ from typing import Dict, Optional
 from moto.events.models import events_backends
 
 from localstack.aws.connect import connect_to
-from localstack.services.apigateway.helpers import extract_query_string_params
+from localstack.services.apigateway.legacy.helpers import extract_query_string_params
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
