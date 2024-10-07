@@ -106,9 +106,9 @@ from localstack.services.apigateway.helpers import (
     is_greedy_path,
     is_variable_path,
     log_template,
-    multi_value_dict_for_list,
     resolve_references,
 )
+from localstack.services.apigateway.legacy.helpers import multi_value_dict_for_list
 from localstack.services.apigateway.legacy.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.legacy.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
