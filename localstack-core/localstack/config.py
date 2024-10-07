@@ -397,6 +397,9 @@ except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
     LOADED_PROFILES = None
 
+# loaded components name - default: all components are loaded and the first one is chosen
+RUNTIME_COMPONENTS = os.environ.get("RUNTIME_COMPONENTS", "").strip()
+
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
