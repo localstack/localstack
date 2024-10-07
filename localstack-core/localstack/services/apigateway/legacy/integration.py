@@ -21,7 +21,6 @@ from localstack.aws.connect import (
     dump_dto,
 )
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
-from localstack.services.apigateway import helpers
 from localstack.services.apigateway.legacy.context import ApiInvocationContext
 from localstack.services.apigateway.legacy.helpers import (
     ApiGatewayIntegrationError,
@@ -31,6 +30,7 @@ from localstack.services.apigateway.legacy.helpers import (
     extract_path_params,
     extract_query_string_params,
     get_event_request_context,
+    get_stage_variables,
     make_error_response,
     multi_value_dict_for_list,
 )
@@ -437,8 +437,7 @@ class LambdaProxyIntegration(BackendIntegration):
 
 class LambdaIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        # invocation_context.context = helpers.get_event_request_context(invocation_context)
-        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        invocation_context.stage_variables = get_stage_variables(invocation_context)
         headers = invocation_context.headers
 
         # resolve integration parameters
@@ -530,8 +529,8 @@ class KinesisIntegration(BackendIntegration):
             # want to refactor this into a model class.
             # I'd argue we should not make a decision on the event_request_context inside the integration because,
             # it's different between API types (REST, HTTP, WebSocket) and per event version
-            invocation_context.context = helpers.get_event_request_context(invocation_context)
-            invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+            invocation_context.context = get_event_request_context(invocation_context)
+            invocation_context.stage_variables = get_stage_variables(invocation_context)
 
             # integration type "AWS" is only supported for WebSocket APIs and REST
             # API (v1), but the template selection expression is only supported for
@@ -787,8 +786,8 @@ class HTTPIntegration(BackendIntegration):
                 uri = "http://%s/%s" % (instance["Id"], invocation_path.lstrip("/"))
 
         # apply custom request template
-        invocation_context.context = helpers.get_event_request_context(invocation_context)
-        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        invocation_context.context = get_event_request_context(invocation_context)
+        invocation_context.stage_variables = get_stage_variables(invocation_context)
         payload = self.request_templates.render(invocation_context)
 
         if isinstance(payload, dict):
@@ -875,7 +874,7 @@ class SNSIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext) -> Response:
         # TODO: check if the logic below is accurate - cover with snapshot tests!
         invocation_context.context = get_event_request_context(invocation_context)
-        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        invocation_context.stage_variables = get_stage_variables(invocation_context)
         integration = invocation_context.integration
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
