@@ -594,6 +594,11 @@ class Tier(StrEnum):
     Expedited = "Expedited"
 
 
+class TransitionDefaultMinimumObjectSize(StrEnum):
+    varies_by_storage_class = "varies_by_storage_class"
+    all_storage_classes_128K = "all_storage_classes_128K"
+
+
 class TransitionStorageClass(StrEnum):
     GLACIER = "GLACIER"
     STANDARD_IA = "STANDARD_IA"
@@ -1893,6 +1898,7 @@ class GetBucketInventoryConfigurationRequest(ServiceRequest):
 
 class GetBucketLifecycleConfigurationOutput(TypedDict, total=False):
     Rules: Optional[LifecycleRules]
+    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
 
 
 class GetBucketLifecycleConfigurationRequest(ServiceRequest):
@@ -2927,11 +2933,16 @@ class PutBucketInventoryConfigurationRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
+class PutBucketLifecycleConfigurationOutput(TypedDict, total=False):
+    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
+
+
 class PutBucketLifecycleConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
     LifecycleConfiguration: Optional[BucketLifecycleConfiguration]
     ExpectedBucketOwner: Optional[AccountId]
+    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
 
 
 class PutBucketLifecycleRequest(ServiceRequest):
@@ -4412,8 +4423,9 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: BucketLifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
+        transition_default_minimum_object_size: TransitionDefaultMinimumObjectSize = None,
         **kwargs,
-    ) -> None:
+    ) -> PutBucketLifecycleConfigurationOutput:
         raise NotImplementedError
 
     @handler("PutBucketLogging")
