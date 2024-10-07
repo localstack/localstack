@@ -164,10 +164,10 @@
 /tests/unit/test_kms.py @sannya-singal
 
 # lambda
-/localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl
-/localstack-core/localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl
-/tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl
-/tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl
+/localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/localstack-core/localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
 
 # logs
 /localstack-core/localstack/aws/api/logs/ @pinzon @steffyP
