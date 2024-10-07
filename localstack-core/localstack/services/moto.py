@@ -108,13 +108,12 @@ def dispatch_to_moto(context: RequestContext) -> Response:
     service = context.service
     request = context.request
 
+    raw_path = get_full_raw_path(request)
     # this is where we skip the HTTP roundtrip between the moto server and the boto client
-    dispatch = get_dispatcher(service.service_name, request.path)
+    dispatch = get_dispatcher(service.service_name, raw_path)
     try:
         # we use the full_raw_url as moto might do some path decoding (in S3 for example)
-        raw_url = get_raw_current_url(
-            request.scheme, request.host, request.root_path, get_full_raw_path(request)
-        )
+        raw_url = get_raw_current_url(request.scheme, request.host, request.root_path, raw_path)
         response = dispatch(request, raw_url, request.headers)
         if not response:
             # some operations are only partially implemented by moto
