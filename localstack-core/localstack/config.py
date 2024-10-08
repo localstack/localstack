@@ -1556,3 +1556,6 @@ def init_directories() -> Directories:
 # initialize directories
 dirs: Directories
 dirs = init_directories()
+
+# TODO hard code new version to force localstack-pro to use new version for CI runs
+os.environ["PROVIDER_OVERRIDE_EVENTS"] = "v2"
