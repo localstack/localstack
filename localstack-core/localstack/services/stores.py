@@ -34,12 +34,90 @@ from collections.abc import Callable
 from threading import RLock
 from typing import Any, Generic, Iterator, Type, TypeVar, Union
 
+import redis
+
 from localstack import config
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
 LOCAL_ATTR_PREFIX = "attr_"
 
 BaseStoreType = TypeVar("BaseStoreType")
+
+
+#
+# Hackathon
+#
+
+
+class SuperRedisDict(dict):
+    def __init__(
+        self,
+        account_id: str,
+        region_name: str,
+        hashmap_name: str,
+        arn_builder: Callable,
+        serializer: Callable,
+        deserializer: Callable,
+    ):
+        self.redis = redis.StrictRedis(host="localhost", port=6379, db=0)
+
+        self.account_id = account_id
+        self.region_name = region_name
+        self.hashmap_name = hashmap_name
+
+        self.arn_builder = arn_builder
+        self.serializer = serializer
+        self.deserializer = deserializer
+
+    def __getitem__(self, key) -> Any:
+        arn = self.arn_builder(key, self.account_id, self.region_name)
+        obj: bytes | None = self.redis.hget(self.hashmap_name, arn)
+        if obj is not None:
+            return self.deserializer(obj)
+
+    def __setitem__(self, key, value) -> Any:
+        ser: bytes = self.serializer(value)
+        arn = self.arn_builder(key, self.account_id, self.region_name)
+        self.redis.hset(self.hashmap_name, arn, ser)
+
+    def keys(self):
+        keylist = []
+        for arn in self.redis.hkeys(self.hashmap_name):
+            arn_data = parse_arn(arn)
+            name = arn_data["resource"].removeprefix(f"{self.hashmap_name}/")
+            keylist.append(name)
+
+        return keylist
+
+    def values(self):
+        valuelist = []
+        for ser in self.redis.hvals(self.hashmap_name):
+            obj = self.deserializer(ser)
+            valuelist.append(obj)
+
+        return valuelist
+
+
+class LocalRedisResource:
+    def __init__(
+        self, name: str, arn_builder: Callable, serializer: Callable, deserializer: Callable
+    ):
+        self.name = name
+        self.arn_builder = arn_builder
+
+        self.serializer = serializer
+        self.deserializer = deserializer
+
+    def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
+        return SuperRedisDict(
+            obj._account_id,
+            obj._region_name,
+            self.name,
+            self.arn_builder,
+            self.serializer,
+            self.deserializer,
+        )
 
 
 #
