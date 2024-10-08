@@ -249,7 +249,7 @@ class CorsResponseEnricher(Handler):
             return
 
         self.add_default_cors_headers(request_headers, response_headers=headers)
-        self.add_service_specific_cors_headers(context, request_headers, headers)
+        self.add_service_specific_cors_headers(context, headers)
 
     @staticmethod
     def add_default_cors_headers(request_headers: Headers, response_headers: Headers):
@@ -279,14 +279,9 @@ class CorsResponseEnricher(Handler):
         response_headers["Vary"] = "Origin"
 
     @staticmethod
-    def add_service_specific_cors_headers(
-        context: RequestContext, request_headers: Headers, response_headers: Headers
-    ):
+    def add_service_specific_cors_headers(context: RequestContext, response_headers: Headers):
         if not context.service:
             return
-
-        shape = None
-        expose_headers = []
 
         if context.service_exception:
             shape = context.service.shape_for_error_code(context.service_exception.code)
@@ -294,12 +289,14 @@ class CorsResponseEnricher(Handler):
         elif context.operation and context.operation.output_shape:
             shape = context.operation.output_shape
 
-        if not shape:
+        else:
             return
 
-        for member_name, member_shape in shape.members.items():
-            if member_shape.serialization.get("location") == "header":
-                expose_headers.append(member_shape.serialization.get("name", member_name))
+        expose_headers = [
+            member_shape.serialization.get("name", member_name)
+            for member_name, member_shape in shape.members.items()
+            if member_shape.serialization.get("location") == "header"
+        ]
 
         if existing_header := response_headers.get(ACL_EXPOSE_HEADERS):
             expose_headers.append(existing_header)
