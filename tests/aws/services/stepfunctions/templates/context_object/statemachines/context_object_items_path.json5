@@ -1,0 +1,21 @@
+{
+  "Comment": "CONTEXT_OBJECT_ITEMS_PATH",
+  "StartAt": "TestState",
+  "States": {
+    "TestState": {
+      "Type": "Map",
+      "ItemsPath": "%CONTEXT_OBJECT_LITERAL_PLACEHOLDER%",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true,
+    },
+  }
+}

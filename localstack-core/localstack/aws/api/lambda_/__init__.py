@@ -23,6 +23,7 @@ Endpoint = str
 EnvironmentVariableName = str
 EnvironmentVariableValue = str
 EphemeralStorageSize = int
+EventSourceMappingArn = str
 EventSourceToken = str
 FileSystemArn = str
 FilterCriteriaErrorCode = str
@@ -90,6 +91,7 @@ String = str
 SubnetId = str
 TagKey = str
 TagValue = str
+TaggableResource = str
 Timeout = int
 Timestamp = str
 Topic = str
@@ -744,10 +746,14 @@ class CreateAliasRequest(ServiceRequest):
     RoutingConfig: Optional[AliasRoutingConfiguration]
 
 
+Tags = Dict[TagKey, TagValue]
+
+
 class CreateCodeSigningConfigRequest(ServiceRequest):
     Description: Optional[Description]
     AllowedPublishers: AllowedPublishers
     CodeSigningPolicies: Optional[CodeSigningPolicies]
+    Tags: Optional[Tags]
 
 
 class CreateCodeSigningConfigResponse(TypedDict, total=False):
@@ -828,6 +834,7 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
     BisectBatchOnFunctionError: Optional[BisectBatchOnFunctionError]
     MaximumRetryAttempts: Optional[MaximumRetryAttemptsEventSourceMapping]
+    Tags: Optional[Tags]
     TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
     Topics: Optional[Topics]
     Queues: Optional[Queues]
@@ -872,7 +879,6 @@ class FileSystemConfig(TypedDict, total=False):
 
 FileSystemConfigList = List[FileSystemConfig]
 LayerList = List[LayerVersionArn]
-Tags = Dict[TagKey, TagValue]
 
 
 class TracingConfig(TypedDict, total=False):
@@ -1047,6 +1053,7 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
     KMSKeyArn: Optional[KMSKeyArn]
     FilterCriteriaError: Optional[FilterCriteriaError]
+    EventSourceMappingArn: Optional[EventSourceMappingArn]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -1547,7 +1554,7 @@ class ListProvisionedConcurrencyConfigsResponse(TypedDict, total=False):
 
 
 class ListTagsRequest(ServiceRequest):
-    Resource: FunctionArn
+    Resource: TaggableResource
 
 
 class ListTagsResponse(TypedDict, total=False):
@@ -1671,12 +1678,12 @@ TagKeyList = List[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
-    Resource: FunctionArn
+    Resource: TaggableResource
     Tags: Tags
 
 
 class UntagResourceRequest(ServiceRequest):
-    Resource: FunctionArn
+    Resource: TaggableResource
     TagKeys: TagKeyList
 
 
@@ -1839,6 +1846,7 @@ class LambdaApi:
         allowed_publishers: AllowedPublishers,
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
+        tags: Tags = None,
         **kwargs,
     ) -> CreateCodeSigningConfigResponse:
         raise NotImplementedError
@@ -1860,6 +1868,7 @@ class LambdaApi:
         maximum_record_age_in_seconds: MaximumRecordAgeInSeconds = None,
         bisect_batch_on_function_error: BisectBatchOnFunctionError = None,
         maximum_retry_attempts: MaximumRetryAttemptsEventSourceMapping = None,
+        tags: Tags = None,
         tumbling_window_in_seconds: TumblingWindowInSeconds = None,
         topics: Topics = None,
         queues: Queues = None,
@@ -2283,7 +2292,7 @@ class LambdaApi:
 
     @handler("ListTags")
     def list_tags(
-        self, context: RequestContext, resource: FunctionArn, **kwargs
+        self, context: RequestContext, resource: TaggableResource, **kwargs
     ) -> ListTagsResponse:
         raise NotImplementedError
 
@@ -2416,13 +2425,13 @@ class LambdaApi:
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource: FunctionArn, tags: Tags, **kwargs
+        self, context: RequestContext, resource: TaggableResource, tags: Tags, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource: FunctionArn, tag_keys: TagKeyList, **kwargs
+        self, context: RequestContext, resource: TaggableResource, tag_keys: TagKeyList, **kwargs
     ) -> None:
         raise NotImplementedError
 

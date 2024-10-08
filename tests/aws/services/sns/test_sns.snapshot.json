@@ -4181,5 +4181,619 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_topic_delivery_policy_crud": {
+    "recorded-date": "03-10-2024, 21:46:17",
+    "recorded-content": {
+      "get-topic-attrs": {
+        "Attributes": {
+          "ContentBasedDeduplication": "false",
+          "DeliveryPolicy": {
+            "http": {
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "application/json"
+              }
+            }
+          },
+          "DisplayName": "TestTopic",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "application/json"
+              }
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SignatureVersion": "2",
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-topic-attrs": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-topic-attrs-after-update": {
+        "Attributes": {
+          "ContentBasedDeduplication": "false",
+          "DeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 5,
+                "maxDelayTarget": 6,
+                "numRetries": 1
+              },
+              "disableSubscriptionOverrides": false
+            }
+          },
+          "DisplayName": "TestTopic",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 5,
+                "maxDelayTarget": 6,
+                "numRetries": 1,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SignatureVersion": "2",
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-topic-attrs-none": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-topic-attrs-after-none": {
+        "Attributes": {
+          "ContentBasedDeduplication": "false",
+          "DeliveryPolicy": {
+            "http": {
+              "disableSubscriptionOverrides": false
+            }
+          },
+          "DisplayName": "TestTopic",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SignatureVersion": "2",
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-topic-attrs-full-none": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-topic-attrs-after-delete": {
+        "Attributes": {
+          "ContentBasedDeduplication": "false",
+          "DisplayName": "TestTopic",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SignatureVersion": "2",
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint_content_type[True]": {
+    "recorded-date": "03-10-2024, 22:35:07",
+    "recorded-content": {
+      "topic-attrs": {
+        "Attributes": {
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "false",
+          "DeliveryPolicy": {
+            "healthyRetryPolicy": null,
+            "sicklyRetryPolicy": null,
+            "throttlePolicy": null,
+            "requestPolicy": {
+              "headerContentType": "text/csv"
+            },
+            "guaranteed": false
+          },
+          "EffectiveDeliveryPolicy": {
+            "healthyRetryPolicy": {
+              "minDelayTarget": 20,
+              "maxDelayTarget": 20,
+              "numRetries": 3,
+              "numMaxDelayRetries": 0,
+              "numNoDelayRetries": 0,
+              "numMinDelayRetries": 0,
+              "backoffFunction": "linear"
+            },
+            "sicklyRetryPolicy": null,
+            "throttlePolicy": null,
+            "requestPolicy": {
+              "headerContentType": "text/csv"
+            },
+            "guaranteed": false
+          },
+          "Endpoint": "http://<host:1>/sns-endpoint",
+          "Owner": "111111111111",
+          "PendingConfirmation": "true",
+          "Protocol": "http",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-confirmation": {
+        "Message": "You have chosen to subscribe to the topic arn:<partition>:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:<partition>:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
+        "Timestamp": "date",
+        "Token": "<token:1>",
+        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+        "Type": "SubscriptionConfirmation"
+      },
+      "http-confirm-sub-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:1>",
+        "X-Amz-Sns-Message-Type": "SubscriptionConfirmation",
+        "X-Amz-Sns-Topic-Arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+      },
+      "http-message-headers-raw": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/csv",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:2>",
+        "X-Amz-Sns-Message-Type": "Notification",
+        "X-Amz-Sns-Rawdelivery": "true",
+        "X-Amz-Sns-Subscription-Arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>",
+        "X-Amz-Sns-Topic-Arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint_content_type[False]": {
+    "recorded-date": "03-10-2024, 22:35:10",
+    "recorded-content": {
+      "topic-attrs": {
+        "Attributes": {
+          "DeliveryPolicy": {
+            "http": {
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "application/json"
+              }
+            }
+          },
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "application/json"
+              }
+            }
+          },
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "false",
+          "DeliveryPolicy": {
+            "healthyRetryPolicy": {
+              "minDelayTarget": 1,
+              "maxDelayTarget": 1,
+              "numRetries": 0,
+              "numMaxDelayRetries": 0,
+              "numNoDelayRetries": 0,
+              "numMinDelayRetries": 0,
+              "backoffFunction": "linear"
+            },
+            "sicklyRetryPolicy": null,
+            "throttlePolicy": {
+              "maxReceivesPerSecond": 1000
+            },
+            "requestPolicy": null,
+            "guaranteed": false
+          },
+          "EffectiveDeliveryPolicy": {
+            "healthyRetryPolicy": {
+              "minDelayTarget": 1,
+              "maxDelayTarget": 1,
+              "numRetries": 0,
+              "numMaxDelayRetries": 0,
+              "numNoDelayRetries": 0,
+              "numMinDelayRetries": 0,
+              "backoffFunction": "linear"
+            },
+            "sicklyRetryPolicy": null,
+            "throttlePolicy": {
+              "maxReceivesPerSecond": 1000
+            },
+            "requestPolicy": {
+              "headerContentType": "application/json"
+            },
+            "guaranteed": false
+          },
+          "Endpoint": "http://<host:1>/sns-endpoint",
+          "Owner": "111111111111",
+          "PendingConfirmation": "true",
+          "Protocol": "http",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-confirmation": {
+        "Message": "You have chosen to subscribe to the topic arn:<partition>:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:<partition>:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
+        "Timestamp": "date",
+        "Token": "<token:1>",
+        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+        "Type": "SubscriptionConfirmation"
+      },
+      "http-confirm-sub-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:1>",
+        "X-Amz-Sns-Message-Type": "SubscriptionConfirmation",
+        "X-Amz-Sns-Topic-Arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+      },
+      "http-message": {
+        "Message": "test_external_http_endpoint",
+        "MessageId": "<uuid:2>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+        "Timestamp": "date",
+        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+      },
+      "http-message-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "application/json",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:2>",
+        "X-Amz-Sns-Message-Type": "Notification",
+        "X-Amz-Sns-Subscription-Arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>",
+        "X-Amz-Sns-Topic-Arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+      }
+    }
   }
 }

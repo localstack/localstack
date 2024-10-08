@@ -16,7 +16,7 @@ from ..context import (
     InvocationResponse,
     RestApiInvocationContext,
 )
-from ..gateway_response import ApiConfigurationError
+from ..gateway_response import ApiConfigurationError, InternalServerError
 from ..parameters_mapping import ParametersMapper, ResponseDataMapping
 from ..template_mapping import (
     ApiGatewayVtlTemplate,
@@ -228,11 +228,18 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         return to_bytes(body), response_override
 
     @staticmethod
-    def parse_error_message_from_lambda(payload: str) -> str:
+    def parse_error_message_from_lambda(payload: bytes) -> str:
         try:
             lambda_response = json.loads(payload)
             if not isinstance(lambda_response, dict):
                 return ""
+
+            # very weird case, but AWS will not return the Error from Lambda in AWS integration, where it does for
+            # Kinesis and such. The AWS Lambda only behavior is concentrated in this method
+            if lambda_response.get("__type") == "AccessDeniedException":
+                raise InternalServerError("Internal server error")
+
             return lambda_response.get("errorMessage", "")
+
         except json.JSONDecodeError:
             return ""

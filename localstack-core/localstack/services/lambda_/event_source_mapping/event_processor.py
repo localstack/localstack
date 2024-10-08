@@ -46,7 +46,9 @@ class PartialBatchFailureError(EventProcessorError):
     def __init__(
         self,
         partial_failure_payload: PartialFailurePayload | None = None,
+        error=None,
     ) -> None:
+        self.error = error
         self.partial_failure_payload = partial_failure_payload
 
 

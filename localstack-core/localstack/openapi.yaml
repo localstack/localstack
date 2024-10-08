@@ -99,6 +99,31 @@ components:
       - completed
       - scripts
       type: object
+    InitScriptsStage:
+      additionalProperties: false
+      properties:
+        completed:
+          type: boolean
+        scripts:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              stage:
+                type: string
+              state:
+                type: string
+            required:
+              - stage
+              - name
+              - state
+            type: object
+          type: array
+      required:
+        - completed
+        - scripts
+      type: object
     SesSentEmail:
       additionalProperties: false
       properties:
@@ -186,72 +211,85 @@ components:
       - error
       - subscription_arn
       type: object
+    CloudWatchMetrics:
+      additionalProperties: false
+      properties:
+        metrics:
+          items:
+            additionalProperties: false
+            properties:
+              account:
+                description: Account ID
+                type: string
+              d:
+                description: Dimensions
+                items:
+                  additionalProperties: false
+                  properties:
+                    n:
+                      description: Dimension name
+                      type: string
+                    v:
+                      description: Dimension value
+                      oneOf:
+                        - type: string
+                        - type: integer
+                  required:
+                    - n
+                    - v
+                  type: object
+                type: array
+              n:
+                description: Metric name
+                type: string
+              ns:
+                description: Namespace
+                type: string
+              region:
+                description: Region name
+                type: string
+              t:
+                description: Timestamp
+                oneOf:
+                  - type: string
+                    format: date-time
+                  - type: number
+              v:
+                description: Metric value
+                oneOf:
+                  - type: string
+                  - type: integer
+            required:
+              - ns
+              - n
+              - v
+              - t
+              - d
+              - account
+              - region
+            type: object
+          type: array
+      required:
+        - metrics
+      type: object
 paths:
   /_aws/cloudwatch/metrics/raw:
     get:
       description: Retrieve CloudWatch metrics
+      operationId: get_cloudwatch_metrics
+      tags: [aws]
       responses:
         '200':
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  metrics:
-                    items:
-                      additionalProperties: false
-                      properties:
-                        account:
-                          description: Account ID
-                          type: string
-                        d:
-                          description: Dimensions
-                          items:
-                            additionalProperties: false
-                            properties:
-                              n:
-                                description: Dimension name
-                                type: string
-                              v:
-                                description: Dimension value
-                                type: string
-                            required:
-                            - n
-                            - v
-                            type: object
-                          type: array
-                        n:
-                          description: Metric name
-                          type: string
-                        ns:
-                          description: Namespace
-                          type: string
-                        region:
-                          description: Region name
-                          type: string
-                        t:
-                          description: Timestamp
-                          type: number
-                        v:
-                          description: Metric value
-                          type: string
-                      required:
-                      - ns
-                      - n
-                      - v
-                      - t
-                      - d
-                      - account
-                      - region
-                      type: object
-                    type: array
-                required:
-                - metrics
-                type: object
+                $ref: '#/components/schemas/CloudWatchMetrics'
           description: CloudWatch metrics
   /_aws/dynamodb/expired:
     delete:
       description: Delete expired items from TTL-enabled DynamoDB tables
+      operationId: delete_ddb_expired_items
+      tags: [aws]
       responses:
         '200':
           content:
@@ -269,6 +307,8 @@ paths:
   /_aws/events/rules/{rule_arn}/trigger:
     get:
       description: Trigger a scheduled EventBridge rule
+      operationId: trigger_event_bridge_rule
+      tags: [aws]
       parameters:
       - description: EventBridge rule ARN
         in: path
@@ -284,6 +324,8 @@ paths:
   /_aws/lambda/init:
     get:
       description: Retrieve Lambda runtime init binary
+      operationId: get_lambda_init
+      tags: [aws]
       responses:
         '200':
           content:
@@ -292,6 +334,8 @@ paths:
   /_aws/lambda/runtimes:
     get:
       description: List available Lambda runtimes
+      operationId: get_lambda_runtimes
+      tags: [aws]
       parameters:
       - in: query
         name: filter
@@ -321,6 +365,8 @@ paths:
   /_aws/ses:
     delete:
       description: Discard sent SES messages
+      operationId: discard_ses_messages
+      tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SesMessageId'
       responses:
@@ -328,6 +374,8 @@ paths:
           description: Message was successfully discarded
     get:
       description: Retrieve sent SES messages
+      operationId: get_ses_messages
+      tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SesMessageId'
       - description: Source of the message (`source` field of SES message)
@@ -354,6 +402,8 @@ paths:
   /_aws/sns/platform-endpoint-messages:
     delete:
       description: Discard SNS platform endpoint messages
+      operationId: discard_sns_messages
+      tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
       - $ref: '#/components/parameters/SnsRegion'
@@ -363,6 +413,8 @@ paths:
           description: Platform endpoint message was discarded
     get:
       description: Retrieve SNS platform endpoint messages
+      operationId: get_sns_messages
+      tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
       - $ref: '#/components/parameters/SnsRegion'
@@ -386,6 +438,8 @@ paths:
   /_aws/sns/sms-messages:
     delete:
       description: Discard SNS SMS messages
+      operationId: discard_sns_sms_messages
+      tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
       - $ref: '#/components/parameters/SnsRegion'
@@ -397,6 +451,8 @@ paths:
           description: SMS message was discarded
     get:
       description: Retrieve SNS SMS messages
+      operationId: get_sns_sms_messages
+      tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
       - $ref: '#/components/parameters/SnsRegion'
@@ -420,6 +476,8 @@ paths:
   /_aws/sns/subscription-tokens/{subscription_arn}:
     get:
       description: Retrieve SNS subscription token for confirmation
+      operationId: get_sns_subscription_token
+      tags: [aws]
       parameters:
       - description: '`subscriptionArn` resource of subscription token'
         in: path
@@ -458,6 +516,8 @@ paths:
   /_aws/sqs/messages:
     get:
       description: List SQS queue messages without side effects
+      operationId: list_all_sqs_messages
+      tags: [aws]
       parameters:
       - description: SQS queue URL
         in: query
@@ -481,6 +541,8 @@ paths:
   /_aws/sqs/messages/{region}/{account_id}/{queue_name}:
     get:
       description: List SQS messages without side effects
+      operationId: list_sqs_messages
+      tags: [aws]
       parameters:
       - description: SQS queue region
         in: path
@@ -516,6 +578,8 @@ paths:
   /_localstack/config:
     get:
       description: Get current LocalStack configuration
+      operationId: get_config
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -524,6 +588,9 @@ paths:
                 type: object
           description: Current LocalStack configuration
     post:
+      description: Configuration option to update with new value
+      operationId: update_config_option
+      tags: [localstack]
       requestBody:
         content:
           application/json:
@@ -541,7 +608,6 @@ paths:
               - variable
               - value
               type: object
-        description: Configuration option to update with new value
         required: true
       responses:
         '200':
@@ -568,6 +634,8 @@ paths:
   /_localstack/diagnose:
     get:
       description: Get diagnostics report
+      operationId: get_diagnostics
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -668,6 +736,8 @@ paths:
   /_localstack/health:
     get:
       description: Get available LocalStack features and AWS services
+      operationId: get_features_and_services
+      tags: [localstack]
       parameters:
       - allowEmptyValue: true
         in: query
@@ -697,12 +767,13 @@ paths:
                     type: string
                 required:
                 - edition
-                - features
                 - services
                 - version
                 type: object
           description: Available LocalStack features and AWS services
     head:
+      tags: [localstack]
+      operationId: health
       responses:
         '200':
           content:
@@ -710,6 +781,8 @@ paths:
           description: ''
     post:
       description: Restart or terminate LocalStack session
+      operationId: manage_session
+      tags: [localstack]
       requestBody:
         content:
           application/json:
@@ -737,6 +810,8 @@ paths:
           description: Bad request
     put:
       description: Store arbitrary data to in-memory state
+      operationId: store_data
+      tags: [localstack]
       requestBody:
         content:
           application/json:
@@ -759,6 +834,8 @@ paths:
   /_localstack/info:
     get:
       description: Get information about the current LocalStack session
+      operationId: get_session_info
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -769,6 +846,8 @@ paths:
   /_localstack/init:
     get:
       description: Get information about init scripts
+      operationId: get_init_script_info
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -779,6 +858,8 @@ paths:
   /_localstack/init/{stage}:
     get:
       description: Get information about init scripts in a specific stage
+      operationId: get_init_script_info_stage
+      tags: [localstack]
       parameters:
       - in: path
         name: stage
@@ -790,11 +871,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InitScripts'
+                $ref: '#/components/schemas/InitScriptsStage'
           description: Information about init scripts in a specific stage
   /_localstack/plugins:
     get:
       description: ''
+      operationId: get_plugins
+      tags: [localstack]
       responses:
         '200':
           content:
@@ -803,6 +886,8 @@ paths:
   /_localstack/usage:
     get:
       description: ''
+      operationId: get_usage
+      tags: [localstack]
       responses:
         '200':
           content:

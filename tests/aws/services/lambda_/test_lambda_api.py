@@ -54,6 +54,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
+from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
@@ -1372,6 +1373,89 @@ class TestLambdaFunction:
         # release hold on updates
         update_finish_event.set()
         aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+
+class TestLambdaRecursion:
+    @markers.aws.validated
+    def test_put_function_recursion_config_allow(
+        self, create_lambda_function, account_id, snapshot, aws_client
+    ):
+        """Tests Lambda recursion configuration with allowance."""
+        # Arrange: Create a Lambda function
+        function_name = f"recursion-test-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            Description="Lambda with recursion test",
+        )
+
+        # Act: Put recursion configuration to Allow
+        put_response = aws_client.lambda_.put_function_recursion_config(
+            FunctionName=function_name, RecursiveLoop="Allow"
+        )
+
+        # Assert: Validate the recursion config is set to Allow
+        snapshot.match("put_recursion_config_response", put_response)
+
+        get_response = aws_client.lambda_.get_function_recursion_config(
+            FunctionName=function_name,
+        )
+        snapshot.match("get_recursion_config_response", get_response)
+        assert get_response["RecursiveLoop"] == "Allow"
+
+    @markers.aws.validated
+    def test_put_function_recursion_config_default_terminate(
+        self, create_lambda_function, account_id, snapshot, aws_client
+    ):
+        """Tests Lambda recursion config with default termination behavior."""
+        # Arrange: Create a Lambda function
+        function_name = f"recursion-test-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            Description="Lambda with recursion test",
+        )
+
+        # Act: Get recursion configuration without setting it (default behavior)
+        get_response = aws_client.lambda_.get_function_recursion_config(
+            FunctionName=function_name,
+        )
+
+        # Assert: Default should be "Terminate"
+        snapshot.match("get_recursion_default_terminate_response", get_response)
+        assert get_response["RecursiveLoop"] == "Terminate"
+
+    @markers.aws.validated
+    def test_put_function_recursion_config_invalid_value(
+        self, create_lambda_function, account_id, snapshot, aws_client
+    ):
+        """Tests Lambda recursion configuration with invalid value."""
+        # Arrange: Create a Lambda function
+        function_name = f"recursion-test-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            Description="Lambda with recursion test",
+        )
+
+        # Act and Assert: Set an invalid RecursiveLoop value and expect ClientError
+        invalid_value = "InvalidValue"
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.put_function_recursion_config(
+                FunctionName=function_name, RecursiveLoop=invalid_value
+            )
+
+        # Match the error response for the invalid value
+        snapshot.match("put_recursion_invalid_value_error", e.value.response)
 
 
 class TestLambdaImages:
@@ -5174,6 +5258,7 @@ class TestLambdaEventSourceMappings:
         snapshot.match("error", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_v2_esm, reason="ESM v2 validation for Kafka poller only works with ext")
     def test_create_event_source_self_managed(
         self,
         create_lambda_function,

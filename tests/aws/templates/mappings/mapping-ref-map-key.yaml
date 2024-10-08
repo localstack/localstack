@@ -1,0 +1,37 @@
+Mappings:
+  MyMap:
+    A:
+      value: "true"
+    B:
+      value: "false"
+
+Conditions:
+  MyCondition: !Equals
+    - !FindInMap [ !Ref MapName, !Ref MapKey, value ]
+    - "true"
+
+Parameters:
+  MapName:
+    Type: String
+
+  MapKey:
+    Type: String
+
+  TopicName:
+    Type: String
+
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref TopicName
+    Condition: MyCondition
+
+  Dummy:
+    Type: AWS::SNS::Topic
+
+Outputs:
+  TopicArn:
+    Value: !Ref MyTopic
+    Condition: MyCondition
+

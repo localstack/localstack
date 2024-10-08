@@ -1,0 +1,11 @@
+{
+  "Comment": "CONTEXT_OBJECT_OUTPUT_PATH",
+  "StartAt": "TestState",
+  "States": {
+    "TestState": {
+      "Type": "Pass",
+      "OutputPath" : "%CONTEXT_OBJECT_LITERAL_PLACEHOLDER%",
+      "End": true
+    }
+  }
+}

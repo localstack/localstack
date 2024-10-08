@@ -52,6 +52,7 @@ from localstack.aws.api.lambda_ import (
     GetCodeSigningConfigResponse,
     GetFunctionCodeSigningConfigResponse,
     GetFunctionConcurrencyResponse,
+    GetFunctionRecursionConfigResponse,
     GetFunctionResponse,
     GetFunctionUrlConfigResponse,
     GetLayerVersionPolicyResponse,
@@ -109,8 +110,10 @@ from localstack.aws.api.lambda_ import (
     ProvisionedConcurrencyStatusEnum,
     PublishLayerVersionResponse,
     PutFunctionCodeSigningConfigResponse,
+    PutFunctionRecursionConfigResponse,
     PutProvisionedConcurrencyConfigResponse,
     Qualifier,
+    RecursiveLoop,
     ReservedConcurrentExecutions,
     ResourceConflictException,
     ResourceNotFoundException,
@@ -127,6 +130,7 @@ from localstack.aws.api.lambda_ import (
     TagKeyList,
     Tags,
     TracingMode,
+    UnqualifiedFunctionName,
     UpdateCodeSigningConfigResponse,
     UpdateEventSourceMappingRequest,
     UpdateFunctionCodeRequest,
@@ -326,9 +330,42 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                                 exc_info=True,
                             )
 
-                # Restore event source listeners
                 for esm in state.event_source_mappings.values():
-                    EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
+                    if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
+                        # Restores event source workers
+                        function_arn = esm.get("FunctionArn")
+
+                        # TODO: How do we know the event source is up?
+                        # A basic poll to see if the mapped Lambda function is active/failed
+                        if not poll_condition(
+                            lambda: get_function_version_from_arn(function_arn).config.state.state
+                            in [State.Active, State.Failed],
+                            timeout=10,
+                        ):
+                            LOG.warning(
+                                "Creating ESM for Lambda that is not in running state: %s",
+                                function_arn,
+                            )
+
+                        function_version = get_function_version_from_arn(function_arn)
+                        function_role = function_version.config.role
+
+                        is_esm_enabled = esm.get("State", EsmState.DISABLED) not in (
+                            EsmState.DISABLED,
+                            EsmState.DISABLING,
+                        )
+                        esm_worker = EsmWorkerFactory(
+                            esm, function_role, is_esm_enabled
+                        ).get_esm_worker()
+
+                        # Note: a worker is created in the DISABLED state if not enabled
+                        esm_worker.create()
+                        # TODO: assigning the esm_worker to the dict only works after .create(). Could it cause a race
+                        #  condition if we get a shutdown here and have a worker thread spawned but not accounted for?
+                        self.esm_workers[esm_worker.uuid] = esm_worker
+                    else:
+                        # Restore event source listeners
+                        EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
 
     def on_after_init(self):
         self.router.register_routes()
@@ -715,6 +752,39 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             layer_version = layer.layer_versions.get(layer_version)
             layers.append(layer_version)
         return layers
+
+    def get_function_recursion_config(
+        self,
+        context: RequestContext,
+        function_name: UnqualifiedFunctionName,
+        **kwargs,
+    ) -> GetFunctionRecursionConfigResponse:
+        account_id, region = api_utils.get_account_and_region(function_name, context)
+        function_name = api_utils.get_function_name(function_name, context)
+        fn = self._get_function(function_name=function_name, region=region, account_id=account_id)
+        return GetFunctionRecursionConfigResponse(RecursiveLoop=fn.recursive_loop)
+
+    def put_function_recursion_config(
+        self,
+        context: RequestContext,
+        function_name: UnqualifiedFunctionName,
+        recursive_loop: RecursiveLoop,
+        **kwargs,
+    ) -> PutFunctionRecursionConfigResponse:
+        account_id, region = api_utils.get_account_and_region(function_name, context)
+        function_name = api_utils.get_function_name(function_name, context)
+
+        fn = self._get_function(function_name=function_name, region=region, account_id=account_id)
+
+        allowed_values = list(RecursiveLoop.__members__.values())
+        if recursive_loop not in allowed_values:
+            raise ValidationException(
+                f"1 validation error detected: Value '{recursive_loop}' at 'recursiveLoop' failed to satisfy constraint: "
+                f"Member must satisfy enum value set: [Terminate, Allow]"
+            )
+
+        fn.recursive_loop = recursive_loop
+        return PutFunctionRecursionConfigResponse(RecursiveLoop=fn.recursive_loop)
 
     @handler(operation="CreateFunction", expand=False)
     def create_function(
@@ -1782,7 +1852,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         return event_source_configuration
 
     def create_event_source_mapping_v2(
-        self, context: RequestContext, request: CreateEventSourceMappingRequest
+        self,
+        context: RequestContext,
+        request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
         # Validations
         function_arn, function_name, state = self.validate_event_source_mapping(context, request)
@@ -2653,6 +2725,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         allowed_publishers: AllowedPublishers,
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
+        tags: Tags = None,
         **kwargs,
     ) -> CreateCodeSigningConfigResponse:
         account = context.account_id
