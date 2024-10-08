@@ -24,8 +24,8 @@ from localstack.services.apigateway.helpers import (
     get_moto_rest_api,
     get_rest_api_container,
 )
+from localstack.services.apigateway.legacy.provider import ApigatewayProvider
 from localstack.services.apigateway.patches import apply_patches
-from localstack.services.apigateway.provider import ApigatewayProvider
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 
