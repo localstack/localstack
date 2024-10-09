@@ -11,11 +11,22 @@ import re
 import threading
 from abc import ABC, abstractmethod
 from functools import lru_cache, partial
+from random import choice
+from socket import socket
 from typing import Any, Callable, Generic, Optional, TypedDict, TypeVar
 
+import dns.message
+import dns.query
 from boto3.session import Session
+from botocore.awsrequest import (
+    AWSHTTPConnection,
+    AWSHTTPConnectionPool,
+    AWSHTTPSConnection,
+    AWSHTTPSConnectionPool,
+)
 from botocore.client import BaseClient
 from botocore.config import Config
+from botocore.httpsession import URLLib3Session
 from botocore.waiter import Waiter
 
 from localstack import config as localstack_config
@@ -26,6 +37,7 @@ from localstack.constants import (
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
 )
+from localstack.dns.server import get_fallback_dns_server
 from localstack.utils.aws.aws_stack import get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.patch import patch
@@ -205,19 +217,24 @@ class ServiceLevelClientFactory(TypedServiceClientFactory):
     """
 
     def __init__(
-        self, *, factory: "ClientFactory", client_creation_params: dict[str, str | Config | None]
+        self,
+        *,
+        factory: "ClientFactory",
+        client_creation_params: dict[str, str | Config | None],
+        request_wrapper_clazz: type,
     ):
         self._factory = factory
         self._client_creation_params = client_creation_params
+        self._request_wrapper_clazz = request_wrapper_clazz
 
     def get_client(self, service: str):
-        return MetadataRequestInjector(
+        return self._request_wrapper_clazz(
             client=self._factory.get_client(service_name=service, **self._client_creation_params)
         )
 
     def __getattr__(self, service: str):
         service = attribute_name_to_service_name(service)
-        return MetadataRequestInjector(
+        return self._request_wrapper_clazz(
             client=self._factory.get_client(service_name=service, **self._client_creation_params)
         )
 
@@ -292,7 +309,11 @@ class ClientFactory(ABC):
             "endpoint_url": endpoint_url,
             "config": config,
         }
-        return ServiceLevelClientFactory(factory=self, client_creation_params=params)
+        return ServiceLevelClientFactory(
+            factory=self,
+            client_creation_params=params,
+            request_wrapper_clazz=MetadataRequestInjector,
+        )
 
     def with_assumed_role(
         self,
@@ -631,8 +652,87 @@ class ExternalAwsClientFactory(ClientFactory):
         )
 
 
+def resolve_dns_from_upstream(hostname: str) -> str:
+    upstream_dns = get_fallback_dns_server()
+    request = dns.message.make_query(hostname, "A")
+    response = dns.query.udp(request, upstream_dns, port=53, timeout=5)
+    if len(response.answer) == 0:
+        raise ValueError(f"No DNS response found for hostname '{hostname}'")
+
+    ip_addresses = list(response.answer[0].items.keys())
+    return choice(ip_addresses).address
+
+
+class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
+    """
+    Client factory that makes requests against AWS ensuring that DNS resolution is not affected by the LocalStack DNS
+    server.
+    """
+
+    def __init__(
+        self,
+        session: Session = None,
+        config: Config = None,
+    ):
+        super().__init__(use_ssl=True, verify=True, session=session, config=config)
+
+    def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
+        client = super()._get_client_post_hook(client)
+        client._endpoint.http_session = ExternalBypassDnsSession()
+        return client
+
+
+class ExternalBypassDnsHTTPConnection(AWSHTTPConnection):
+    """
+    Connection class that bypasses the LocalStack DNS server for HTTP connections
+    """
+
+    def _new_conn(self) -> socket:
+        orig_host = self._dns_host
+        try:
+            self._dns_host = resolve_dns_from_upstream(self._dns_host)
+            return super()._new_conn()
+        finally:
+            self._dns_host = orig_host
+
+
+class ExternalBypassDnsHTTPSConnection(AWSHTTPSConnection):
+    """
+    Connection class that bypasses the LocalStack DNS server for HTTPS connections
+    """
+
+    def _new_conn(self) -> socket:
+        orig_host = self._dns_host
+        try:
+            self._dns_host = resolve_dns_from_upstream(self._dns_host)
+            return super()._new_conn()
+        finally:
+            self._dns_host = orig_host
+
+
+class ExternalBypassDnsHTTPConnectionPool(AWSHTTPConnectionPool):
+    ConnectionCls = ExternalBypassDnsHTTPConnection
+
+
+class ExternalBypassDnsHTTPSConnectionPool(AWSHTTPSConnectionPool):
+    ConnectionCls = ExternalBypassDnsHTTPSConnection
+
+
+class ExternalBypassDnsSession(URLLib3Session):
+    """
+    urllib3 session wrapper that uses our custom connection pool.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._pool_classes_by_scheme["https"] = ExternalBypassDnsHTTPSConnectionPool
+        self._pool_classes_by_scheme["http"] = ExternalBypassDnsHTTPConnectionPool
+
+
 connect_to = InternalClientFactory(use_ssl=localstack_config.DISTRIBUTED_MODE)
 connect_externally_to = ExternalClientFactory()
+
 
 #
 # Handlers

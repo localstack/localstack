@@ -1,0 +1,21 @@
+{
+  "Comment": "CONTEXT_OBJECT_RESULT_SELECTOR",
+  "StartAt": "TestState",
+  "States": {
+    "TestState": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName.$": "$.FunctionName",
+        "Payload": {
+          "Input.$": "$",
+        }
+      },
+      "ResultSelector": {
+        "LambdaOutput.$": "$",
+        "ContextObjectValue.$": "%CONTEXT_OBJECT_LITERAL_PLACEHOLDER%"
+      },
+      "End": true,
+    }
+  }
+}

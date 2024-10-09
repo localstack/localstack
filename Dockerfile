@@ -1,7 +1,7 @@
 #
-# base: Stage which installs necessary runtime dependencies (OS packages, java,...)
+# base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.10-slim-bookworm@sha256:50ec89bdac0a845ec1751f91cb6187a3d8adb2b919d6e82d17acf48d1a9743fc AS base
+FROM python:3.11.10-slim-bookworm@sha256:5501a4fe605abe24de87c2f3d6cf9fd760354416a0cad0296cf284fddcdca9e2 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -10,7 +10,9 @@ RUN --mount=type=cache,target=/var/cache/apt \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2 xz-utils libatomic1 binutils
+            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2 xz-utils libatomic1 binutils && \
+        # patch for CVE-2024-45490, CVE-2024-45491, CVE-2024-45492
+        apt-get install --only-upgrade libexpat1
 
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
 # Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
@@ -89,7 +91,6 @@ ADD bin/hosts /etc/hosts
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers
 # set library path and default LocalStack hostname
-ENV LD_LIBRARY_PATH=$JAVA_HOME/lib:$JAVA_HOME/lib/server
 ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
 
@@ -155,17 +156,11 @@ RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSIO
 RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/var/lib/localstack/cache \
     source .venv/bin/activate && \
-    python -m localstack.cli.lpm install java --version 11 && \
     python -m localstack.cli.lpm install \
       lambda-runtime \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
-
-# Set up Java
-ENV JAVA_HOME /usr/lib/localstack/java/11
-RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
-ENV PATH="${PATH}:${JAVA_HOME}/bin"
 
 # link the python package installer virtual environments into the localstack venv
 RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \

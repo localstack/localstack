@@ -119,6 +119,7 @@ from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invoc
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.collections import (
     DelSafeDict,
     PaginatedList,
@@ -252,9 +253,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api = get_moto_rest_api(context, rest_api_id=result["id"])
         rest_api.version = request.get("version")
         response: RestApi = rest_api.to_dict()
-        # TODO: remove once this is fixed upstream
-        if "rootResourceId" not in response:
-            response["rootResourceId"] = get_moto_rest_api_root_resource(rest_api)
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(context=context)
         rest_api_container = RestApiContainer(rest_api=response)
@@ -290,10 +288,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def get_rest_api(self, context: RequestContext, rest_api_id: String, **kwargs) -> RestApi:
         rest_api: RestApi = call_moto(context)
         remove_empty_attributes_from_rest_api(rest_api)
-        # TODO: remove once this is fixed upstream
-        if "rootResourceId" not in rest_api:
-            moto_rest_api = get_moto_rest_api(context, rest_api_id=rest_api_id)
-            rest_api["rootResourceId"] = get_moto_rest_api_root_resource(moto_rest_api)
         return rest_api
 
     def update_rest_api(
@@ -371,8 +365,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             rest_api.minimum_compression_size = None
 
         response = rest_api.to_dict()
-        if "rootResourceId" not in response:
-            response["rootResourceId"] = get_moto_rest_api_root_resource(rest_api)
 
         remove_empty_attributes_from_rest_api(response, remove_tags=False)
         store = get_apigateway_store(context=context)
@@ -388,13 +380,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
         rest_api = import_api_from_openapi_spec(rest_api, openapi_spec, context=context)
+        rest_api.root_resource_id = get_moto_rest_api_root_resource(rest_api)
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(context=context)
         store.rest_apis[request["restApiId"]].rest_api = response
-        # TODO: remove once this is fixed upstream
-        if "rootResourceId" not in response:
-            response["rootResourceId"] = get_moto_rest_api_root_resource(rest_api)
         # TODO: verify this
         response = to_rest_api_response_json(response)
         response.setdefault("tags", {})
@@ -497,9 +487,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response: RestApis = call_moto(context)
         for rest_api in response["items"]:
             remove_empty_attributes_from_rest_api(rest_api)
-            if "rootResourceId" not in rest_api:
-                moto_rest_api = get_moto_rest_api(context, rest_api_id=rest_api["id"])
-                rest_api["rootResourceId"] = get_moto_rest_api_root_resource(moto_rest_api)
         return response
 
     # resources
@@ -2303,8 +2290,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
 
+        usage_plan_arn = f"arn:{get_partition(context.region)}:apigateway:{context.region}::/usageplans/{usage_plan_id}"
+        existing_tags = get_apigateway_store(context=context).TAGS.get(usage_plan_arn, {})
         if "tags" not in usage_plan:
-            usage_plan["tags"] = {}
+            usage_plan["tags"] = existing_tags
+        else:
+            usage_plan["tags"].update(existing_tags)
 
         fix_throttle_and_quota_from_usage_plan(usage_plan)
 
@@ -2317,8 +2308,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         fix_throttle_and_quota_from_usage_plan(usage_plan)
 
+        usage_plan_arn = f"arn:{get_partition(context.region)}:apigateway:{context.region}::/usageplans/{usage_plan_id}"
+        existing_tags = get_apigateway_store(context=context).TAGS.get(usage_plan_arn, {})
         if "tags" not in usage_plan:
-            usage_plan["tags"] = {}
+            usage_plan["tags"] = existing_tags
+        else:
+            usage_plan["tags"].update(existing_tags)
 
         return usage_plan
 

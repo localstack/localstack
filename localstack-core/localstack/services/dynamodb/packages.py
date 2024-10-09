@@ -4,6 +4,7 @@ from typing import List
 from localstack import config
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.packages.java import JavaInstallerMixin
 from localstack.utils.archives import (
     download_and_extract_with_retry,
     update_jar_manifest,
@@ -31,7 +32,7 @@ class DynamoDBLocalPackage(Package):
         return ["v2"]
 
 
-class DynamoDBLocalPackageInstaller(PackageInstaller):
+class DynamoDBLocalPackageInstaller(JavaInstallerMixin, PackageInstaller):
     def __init__(self):
         super().__init__("dynamodb-local", "v2")
 

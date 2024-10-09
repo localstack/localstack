@@ -2798,7 +2798,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_range": {
-    "recorded-date": "07-09-2023, 17:40:46",
+    "recorded-date": "18-09-2024, 13:05:07",
     "recorded-content": {
       "get-0-8": {
         "AcceptRanges": "bytes",
@@ -3026,6 +3026,14 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 416
+        }
+      },
+      "put-after-failed": {
+        "ETag": "\"be497c2168e374f414a351c49379c01a\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

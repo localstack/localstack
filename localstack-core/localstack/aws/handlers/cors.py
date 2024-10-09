@@ -54,6 +54,8 @@ CORS_ALLOWED_HEADERS = [
     # for AWS SDK v3
     "amz-sdk-invocation-id",
     "amz-sdk-request",
+    # for lambda
+    "x-amz-log-type",
 ]
 if EXTRA_CORS_ALLOWED_HEADERS:
     CORS_ALLOWED_HEADERS += EXTRA_CORS_ALLOWED_HEADERS.split(",")
@@ -63,6 +65,10 @@ CORS_ALLOWED_METHODS = ("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS", "PATC
 CORS_EXPOSE_HEADERS = (
     "etag",
     "x-amz-version-id",
+    # for lambda
+    "x-amz-log-result",
+    "x-amz-executed-version",
+    "x-amz-function-error",
 )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(","))
@@ -153,8 +159,10 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
     if not config.DISABLE_CUSTOM_CORS_APIGATEWAY:
         # we don't check for service_name == "apigw" here because ``.execute-api.`` can be either apigw v1 or v2
         path = context.request.path
-        is_user_request = ".execute-api." in context.request.host or (
-            path.startswith("/restapis/") and f"/{PATH_USER_REQUEST}" in context.request.path
+        is_user_request = (
+            ".execute-api." in context.request.host
+            or (path.startswith("/restapis/") and f"/{PATH_USER_REQUEST}" in context.request.path)
+            or (path.startswith("/_aws/execute-api"))
         )
         if is_user_request:
             return False

@@ -53,6 +53,14 @@ In host mode, additional dependencies (e.g., Java) are required for developing c
 The required dependencies vary depending on the service, [Configuration](https://docs.localstack.cloud/references/configuration/), operating system, and system architecture (i.e., x86 vs ARM).
 Refer to our official [Dockerfile](https://github.com/localstack/localstack/blob/master/Dockerfile) and our [package installer LPM](Concepts/index.md#packages-and-installers) for more details.
 
+#### Root Permissions
+
+LocalStack runs its own [DNS server](https://docs.localstack.cloud/user-guide/tools/dns-server/) which listens for requests on port 53. This requires root permission. When LocalStack starts in host mode it runs the DNS server as sudo, so a prompt is triggered asking for the sudo password. This is annoying during local development, so to disable this functionality, use `DNS_ADDRESS=0`.
+
+> [!NOTE]
+> We don't recommend disabling the DNS server in general (e.g. in Docker) because the [DNS server](https://docs.localstack.cloud/user-guide/tools/dns-server/) enables seamless connectivity to LocalStack from different environments via the domain name `localhost.localstack.cloud`.
+
+
 #### Python Dependencies
 
 * [JPype1](https://pypi.org/project/JPype1/) might require `g++` to fix a compile error on ARM Linux `gcc: fatal error: cannot execute ‘cc1plus’`

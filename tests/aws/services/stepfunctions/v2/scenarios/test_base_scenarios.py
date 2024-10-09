@@ -93,17 +93,19 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template",
+        [
+            ST.load_sfn_template(ST.PARALLEL_STATE),
+            ST.load_sfn_template(ST.PARALLEL_STATE_PARAMETERS),
+        ],
+        ids=["PARALLEL_STATE", "PARALLEL_STATE_PARAMETERS"],
+    )
     def test_parallel_state(
-        self,
-        aws_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        sfn_snapshot,
+        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, template
     ):
         sfn_snapshot.add_transformer(SfnNoneRecursiveParallelTransformer())
-        template = ST.load_sfn_template(ST.PARALLEL_STATE)
         definition = json.dumps(template)
-
         exec_input = json.dumps({})
         create_and_record_execution(
             aws_client.stepfunctions,
@@ -1103,6 +1105,49 @@ class TestBaseScenarios:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    def test_map_state_result_writer(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = "result-bucket"
+        s3_create_bucket(Bucket=bucket_name)
+
+        template = ST.load_sfn_template(ST.MAP_STATE_RESULT_WRITER)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(["Hello", "World"])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+        # Validate the manifest file
+        # TODO: consider a better way to get MapRunArn
+        map_run_arn = json.loads(
+            sfn_snapshot.observed_state["get_execution_history"]["events"][-1][
+                "executionSucceededEventDetails"
+            ]["output"]
+        )["MapRunArn"]
+        map_run_uuid = map_run_arn.split(":")[-1]
+        resp = aws_client.s3.get_object(
+            Bucket=bucket_name, Key=f"mapJobs/{map_run_uuid}/manifest.json"
+        )
+        manifest_data = json.loads(resp["Body"].read().decode("utf-8"))
+        assert manifest_data["DestinationBucket"] == bucket_name
+        assert manifest_data["MapRunArn"] == map_run_arn
+        assert manifest_data["ResultFiles"]["FAILED"] == []
+        assert manifest_data["ResultFiles"]["PENDING"] == []
+        assert manifest_data["ResultFiles"]["SUCCEEDED"] == []
 
     @markers.aws.validated
     @pytest.mark.parametrize(

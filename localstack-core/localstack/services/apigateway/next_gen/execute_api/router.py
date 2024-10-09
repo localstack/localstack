@@ -6,6 +6,7 @@ from rolo.routing.handler import Handler
 from werkzeug.routing import Rule
 
 from localstack.constants import APPLICATION_JSON, AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
+from localstack.deprecations import deprecated_endpoint
 from localstack.http import Response
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.services.edge import ROUTER
@@ -58,8 +59,7 @@ class ApiGatewayEndpoint:
             self.rest_gateway.process_with_context(context, response)
             return response
         else:
-            # TODO: return right response
-            return Response("Not authorized", status=403)
+            return self.create_not_found_response(api_id)
 
     def prepare_rest_api_invocation(
         self, request: Request, api_id: str, stage: str
@@ -100,10 +100,19 @@ class ApiGatewayEndpoint:
             response.headers.set("Connection", "keep-alive")
         return response
 
+    @staticmethod
+    def create_not_found_response(api_id: str) -> Response:
+        not_found = Response(status=404)
+        not_found.set_json(
+            {"message": f"The API id '{api_id}' does not correspond to a deployed API Gateway API"}
+        )
+        return not_found
+
 
 class ApiGatewayRouter:
     router: Router[Handler]
     handler: ApiGatewayEndpoint
+    EXECUTE_API_INTERNAL_PATH = "/_aws/execute-api"
 
     def __init__(self, router: Router[Handler] = None, handler: ApiGatewayEndpoint = None):
         self.router = router or ROUTER
@@ -113,6 +122,12 @@ class ApiGatewayRouter:
     def register_routes(self) -> None:
         LOG.debug("Registering API Gateway routes.")
         host_pattern = "<regex('[^-]+'):api_id><regex('(-vpce-[^.]+)?'):vpce_suffix>.execute-api.<regex('.*'):server>"
+        deprecated_route_endpoint = deprecated_endpoint(
+            endpoint=self.handler,
+            previous_path="/restapis/<api_id>/<stage>/_user_request_",
+            deprecation_version="3.8.0",
+            new_path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/<stage>",
+        )
         rules = [
             self.router.add(
                 path="/",
@@ -134,14 +149,32 @@ class ApiGatewayRouter:
                 endpoint=self.handler,
                 strict_slashes=True,
             ),
-            # add the localstack-specific _user_request_ routes
+            # add the deprecated localstack-specific _user_request_ routes
             self.router.add(
                 path="/restapis/<api_id>/<stage>/_user_request_",
-                endpoint=self.handler,
-                defaults={"path": ""},
+                endpoint=deprecated_route_endpoint,
+                defaults={"path": "", "random": "?"},
             ),
             self.router.add(
                 path="/restapis/<api_id>/<stage>/_user_request_/<greedy_path:path>",
+                endpoint=deprecated_route_endpoint,
+                strict_slashes=True,
+            ),
+            # add the localstack-specific so-called "path-style" routes when DNS resolving is not possible
+            self.router.add(
+                path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/",
+                endpoint=self.handler,
+                defaults={"path": "", "stage": None},
+                strict_slashes=True,
+            ),
+            self.router.add(
+                path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/<stage>/",
+                endpoint=self.handler,
+                defaults={"path": ""},
+                strict_slashes=False,
+            ),
+            self.router.add(
+                path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/<stage>/<greedy_path:path>",
                 endpoint=self.handler,
                 strict_slashes=True,
             ),

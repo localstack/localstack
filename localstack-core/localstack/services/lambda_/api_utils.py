@@ -637,7 +637,7 @@ def validate_and_set_batch_size(service: str, batch_size: Optional[int] = None) 
     BATCH_SIZE_RANGES = {
         "kafka": (100, 10_000),
         "kinesis": (100, 10_000),
-        "dynamodb": (100, 1_000),
+        "dynamodb": (100, 10_000),
         "sqs-fifo": (10, 10),
         "sqs": (10, 10_000),
         "mq": (100, 10_000),

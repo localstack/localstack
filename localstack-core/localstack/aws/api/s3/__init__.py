@@ -594,6 +594,11 @@ class Tier(StrEnum):
     Expedited = "Expedited"
 
 
+class TransitionDefaultMinimumObjectSize(StrEnum):
+    varies_by_storage_class = "varies_by_storage_class"
+    all_storage_classes_128K = "all_storage_classes_128K"
+
+
 class TransitionStorageClass(StrEnum):
     GLACIER = "GLACIER"
     STANDARD_IA = "STANDARD_IA"
@@ -1487,12 +1492,20 @@ class SessionCredentials(TypedDict, total=False):
 
 
 class CreateSessionOutput(TypedDict, total=False):
+    ServerSideEncryption: Optional[ServerSideEncryption]
+    SSEKMSKeyId: Optional[SSEKMSKeyId]
+    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
+    BucketKeyEnabled: Optional[BucketKeyEnabled]
     Credentials: SessionCredentials
 
 
 class CreateSessionRequest(ServiceRequest):
     SessionMode: Optional[SessionMode]
     Bucket: BucketName
+    ServerSideEncryption: Optional[ServerSideEncryption]
+    SSEKMSKeyId: Optional[SSEKMSKeyId]
+    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
+    BucketKeyEnabled: Optional[BucketKeyEnabled]
 
 
 class DefaultRetention(TypedDict, total=False):
@@ -1885,6 +1898,7 @@ class GetBucketInventoryConfigurationRequest(ServiceRequest):
 
 class GetBucketLifecycleConfigurationOutput(TypedDict, total=False):
     Rules: Optional[LifecycleRules]
+    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
 
 
 class GetBucketLifecycleConfigurationRequest(ServiceRequest):
@@ -2919,11 +2933,16 @@ class PutBucketInventoryConfigurationRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
+class PutBucketLifecycleConfigurationOutput(TypedDict, total=False):
+    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
+
+
 class PutBucketLifecycleConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
     LifecycleConfiguration: Optional[BucketLifecycleConfiguration]
     ExpectedBucketOwner: Optional[AccountId]
+    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
 
 
 class PutBucketLifecycleRequest(ServiceRequest):
@@ -3559,6 +3578,10 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         session_mode: SessionMode = None,
+        server_side_encryption: ServerSideEncryption = None,
+        ssekms_key_id: SSEKMSKeyId = None,
+        ssekms_encryption_context: SSEKMSEncryptionContext = None,
+        bucket_key_enabled: BucketKeyEnabled = None,
         **kwargs,
     ) -> CreateSessionOutput:
         raise NotImplementedError
@@ -4400,8 +4423,9 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: BucketLifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
+        transition_default_minimum_object_size: TransitionDefaultMinimumObjectSize = None,
         **kwargs,
-    ) -> None:
+    ) -> PutBucketLifecycleConfigurationOutput:
         raise NotImplementedError
 
     @handler("PutBucketLogging")

@@ -229,6 +229,82 @@ class TestSNSTopicCrud:
         topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
         snapshot.match("topic-1", topic1)
 
+    @markers.aws.validated
+    @pytest.mark.skip(reason="Not properly implemented in Moto, only mocked")
+    def test_topic_delivery_policy_crud(self, sns_create_topic, snapshot, aws_client):
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html
+        create_topic = sns_create_topic(
+            Name="topictest.fifo",
+            Attributes={
+                "DisplayName": "TestTopic",
+                "SignatureVersion": "2",
+                "FifoTopic": "true",
+                "DeliveryPolicy": json.dumps(
+                    {
+                        "http": {
+                            "defaultRequestPolicy": {"headerContentType": "application/json"},
+                        }
+                    }
+                ),
+            },
+        )
+        topic_arn = create_topic["TopicArn"]
+
+        get_attrs = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs", get_attrs)
+
+        set_attrs = aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="DeliveryPolicy",
+            AttributeValue=json.dumps(
+                {
+                    "http": {
+                        "defaultHealthyRetryPolicy": {
+                            "minDelayTarget": 5,
+                            "maxDelayTarget": 6,
+                            "numRetries": 1,
+                        }
+                    }
+                }
+            ),
+        )
+        snapshot.match("set-topic-attrs", set_attrs)
+
+        get_attrs_updated = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs-after-update", get_attrs_updated)
+
+        set_attrs_none = aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="DeliveryPolicy",
+            AttributeValue=json.dumps(
+                {
+                    "http": {"defaultHealthyRetryPolicy": None},
+                }
+            ),
+        )
+        snapshot.match("set-topic-attrs-none", set_attrs_none)
+
+        get_attrs_updated = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs-after-none", get_attrs_updated)
+
+        set_attrs_none_full = aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="DeliveryPolicy",
+            AttributeValue="",
+        )
+        snapshot.match("set-topic-attrs-full-none", set_attrs_none_full)
+
+        get_attrs_updated = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs-after-delete", get_attrs_updated)
+
 
 class TestSNSPublishCrud:
     """
@@ -3655,6 +3731,116 @@ class TestSNSSubscriptionHttp:
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=2)
         # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
         assert "Messages" not in response or response["Messages"] == []
+
+    @markers.aws.manual_setup_required
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.http-message-headers.Accept",  # requests adds the header but not SNS, not very important
+            "$.http-message-headers-raw.Accept",
+            "$.http-confirm-sub-headers.Accept",
+            # TODO: we need to fix this parity in Moto, in order to make the retrieval logic of those values easier
+            "$.sub-attrs.Attributes.ConfirmationWasAuthenticated",
+            "$.sub-attrs.Attributes.DeliveryPolicy",
+            "$.sub-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.topic-attrs.Attributes.DeliveryPolicy",
+            "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.topic-attrs.Attributes.Policy.Statement..Action",
+        ]
+    )
+    def test_subscribe_external_http_endpoint_content_type(
+        self,
+        sns_create_http_endpoint,
+        raw_message_delivery,
+        aws_client,
+        snapshot,
+    ):
+        def _clean_headers(response_headers: dict):
+            return {key: val for key, val in response_headers.items() if "Forwarded" not in key}
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("RequestId"),
+                snapshot.transform.key_value("Token"),
+                snapshot.transform.key_value("Host"),
+                snapshot.transform.key_value(
+                    "Content-Length", reference_replacement=False
+                ),  # might change depending on compression
+                snapshot.transform.key_value(
+                    "Connection", reference_replacement=False
+                ),  # casing might change
+                snapshot.transform.regex(
+                    r"(?i)(?<=SubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=ConfirmSubscription)",
+                    replacement="<subscribe-domain>",
+                ),
+            ]
+        )
+
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
+        topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint(
+            raw_message_delivery
+        )
+
+        # try both setting the Topic attribute or Subscription attribute
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html#creating-delivery-policy
+        if raw_message_delivery:
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="DeliveryPolicy",
+                AttributeValue=json.dumps(
+                    {
+                        "requestPolicy": {"headerContentType": "text/csv"},
+                    }
+                ),
+            )
+        else:
+            aws_client.sns.set_topic_attributes(
+                TopicArn=topic_arn,
+                AttributeName="DeliveryPolicy",
+                AttributeValue=json.dumps(
+                    {
+                        "http": {
+                            "defaultRequestPolicy": {"headerContentType": "application/json"},
+                        }
+                    }
+                ),
+            )
+
+        topic_attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("topic-attrs", topic_attrs)
+
+        sub_attrs = aws_client.sns.get_subscription_attributes(SubscriptionArn=subscription_arn)
+        snapshot.match("sub-attrs", sub_attrs)
+
+        assert poll_condition(
+            lambda: len(server.log) >= 1,
+            timeout=5,
+        )
+        sub_request, _ = server.log[0]
+        payload = sub_request.get_json(force=True)
+        snapshot.match("subscription-confirmation", payload)
+        snapshot.match("http-confirm-sub-headers", _clean_headers(sub_request.headers))
+
+        token = payload["Token"]
+        aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
+
+        message = "test_external_http_endpoint"
+        aws_client.sns.publish(TopicArn=topic_arn, Message=message)
+
+        assert poll_condition(
+            lambda: len(server.log) >= 2,
+            timeout=5,
+        )
+        notification_request, _ = server.log[1]
+        assert notification_request.headers["x-amz-sns-message-type"] == "Notification"
+        if raw_message_delivery:
+            payload = notification_request.data.decode()
+            assert payload == message
+            snapshot.match("http-message-headers-raw", _clean_headers(notification_request.headers))
+        else:
+            payload = notification_request.get_json(force=True)
+            snapshot.match("http-message", payload)
+            snapshot.match("http-message-headers", _clean_headers(notification_request.headers))
 
 
 class TestSNSSubscriptionFirehose:

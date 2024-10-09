@@ -167,6 +167,7 @@ from localstack.aws.api.s3 import (
     Prefix,
     PublicAccessBlockConfiguration,
     PutBucketAclRequest,
+    PutBucketLifecycleConfigurationOutput,
     PutObjectAclOutput,
     PutObjectAclRequest,
     PutObjectLegalHoldOutput,
@@ -192,6 +193,7 @@ from localstack.aws.api.s3 import (
     StorageClass,
     Tagging,
     Token,
+    TransitionDefaultMinimumObjectSize,
     UploadIdMarker,
     UploadPartCopyOutput,
     UploadPartCopyRequest,
@@ -842,8 +844,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
+        range_header = request.get("Range")
+        part_number = request.get("PartNumber")
+        if range_header and part_number:
+            raise InvalidRequest("Cannot specify both Range header and partNumber query parameter")
+        range_data = None
+        if range_header:
+            range_data = parse_range_header(range_header, s3_object.size)
+        elif part_number:
+            range_data = get_part_range(s3_object, part_number)
+
         # we deliberately do not call `.close()` on the s3_stored_object to keep the read lock acquired. When passing
         # the object to Werkzeug, the handler will call `.close()` after finishing iterating over `__iter__`.
+        # this can however lead to deadlocks if an exception happens between the call and returning the object.
+        # Be careful into adding validation between this call and `return` of `S3Provider.get_object`
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object, mode="r")
 
         # TODO: remove this with 3.3, this is for persistence reason
@@ -881,16 +895,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
-
-        range_header = request.get("Range")
-        part_number = request.get("PartNumber")
-        if range_header and part_number:
-            raise InvalidRequest("Cannot specify both Range header and partNumber query parameter")
-        range_data = None
-        if range_header:
-            range_data = parse_range_header(range_header, s3_object.size)
-        elif part_number:
-            range_data = get_part_range(s3_object, part_number)
 
         if range_data:
             s3_stored_object.seek(range_data.begin)
@@ -3013,8 +3017,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: BucketLifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
+        transition_default_minimum_object_size: TransitionDefaultMinimumObjectSize = None,
         **kwargs,
-    ) -> None:
+    ) -> PutBucketLifecycleConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         validate_lifecycle_configuration(lifecycle_configuration)
@@ -3023,6 +3028,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # for now, we keep a cache and get it everytime we fetch an object
         s3_bucket.lifecycle_rules = lifecycle_configuration["Rules"]
         self._expiration_cache[bucket].clear()
+        return PutBucketLifecycleConfigurationOutput(
+            TransitionDefaultMinimumObjectSize=transition_default_minimum_object_size
+        )
 
     def delete_bucket_lifecycle(
         self,

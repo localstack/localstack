@@ -58,7 +58,9 @@ class EsmEventProcessor(EventProcessor):
             # TODO: check whether partial batch item failures is enabled by default or need to be explicitly enabled
             #  using --function-response-types "ReportBatchItemFailures"
             #  https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html
-            raise PartialBatchFailureError from e
+            raise PartialBatchFailureError(
+                partial_failure_payload=e.partial_failure_payload, error=e.error
+            ) from e
         except SenderError as e:
             self.logger.log(
                 messageType="ExecutionFailed",

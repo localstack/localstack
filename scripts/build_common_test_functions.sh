@@ -17,7 +17,7 @@ for scenario in */ ; do
     echo -n "Making ${scenario}.${runtime} in ${BUILD_PATH}: "
     cd "$BUILD_PATH"
 
-    # skip if zip file exists, otherwise run makefile
+    # skip if the zip file exists, otherwise run the makefile
     [ -f "handler.zip" ] && echo "found handler.zip before building => skip building" && continue
     echo -n "building ..."
     # MAYBE: consider printing build logs only if the build fails (using CircleCI SSH seems easier for now)

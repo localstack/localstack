@@ -23,6 +23,7 @@ default_log_levels = {
     "urllib3": logging.WARNING,
     "werkzeug": logging.WARNING,
     "rolo": logging.WARNING,
+    "parse": logging.WARNING,
     "localstack.aws.accounts": logging.INFO,
     "localstack.aws.protocol.serializer": logging.INFO,
     "localstack.aws.serving.wsgi": logging.WARNING,

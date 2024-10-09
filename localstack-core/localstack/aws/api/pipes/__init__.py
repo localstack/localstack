@@ -33,6 +33,7 @@ Integer = int
 JsonPath = str
 KafkaTopicName = str
 KinesisPartitionKey = str
+KmsKeyIdentifier = str
 LimitMax10 = int
 LimitMax100 = int
 LimitMax10000 = int
@@ -777,6 +778,7 @@ class CreatePipeRequest(ServiceRequest):
     RoleArn: RoleArn
     Tags: Optional[TagMap]
     LogConfiguration: Optional[PipeLogConfigurationParameters]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
 
 
 class CreatePipeResponse(TypedDict, total=False):
@@ -842,6 +844,7 @@ class DescribePipeResponse(TypedDict, total=False):
     CreationTime: Optional[Timestamp]
     LastModifiedTime: Optional[Timestamp]
     LogConfiguration: Optional[PipeLogConfiguration]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
 
 
 class ListPipesRequest(ServiceRequest):
@@ -1003,6 +1006,7 @@ class UpdatePipeRequest(ServiceRequest):
     TargetParameters: Optional[PipeTargetParameters]
     RoleArn: RoleArn
     LogConfiguration: Optional[PipeLogConfigurationParameters]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
 
 
 class UpdatePipeResponse(TypedDict, total=False):
@@ -1034,6 +1038,7 @@ class PipesApi:
         target_parameters: PipeTargetParameters = None,
         tags: TagMap = None,
         log_configuration: PipeLogConfigurationParameters = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
         **kwargs,
     ) -> CreatePipeResponse:
         raise NotImplementedError
@@ -1103,6 +1108,7 @@ class PipesApi:
         target: Arn = None,
         target_parameters: PipeTargetParameters = None,
         log_configuration: PipeLogConfigurationParameters = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
         **kwargs,
     ) -> UpdatePipeResponse:
         raise NotImplementedError

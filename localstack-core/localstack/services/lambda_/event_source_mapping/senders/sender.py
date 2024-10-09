@@ -7,7 +7,7 @@ from localstack.services.lambda_.event_source_mapping.pipe_utils import get_inte
 
 class SenderError(Exception):
     def __init__(self, message=None, error=None) -> None:
-        self.message = message or "Error during during sending events"
+        self.message = message or "Error during sending events"
         self.error = error
 
 
