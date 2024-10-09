@@ -42,7 +42,10 @@ class StepFunctionsServer(Server):
         return t
 
     def generate_env_vars(self) -> Dict[str, Any]:
+        sfn_local_installer = stepfunctions_local_package.get_installer()
+
         return {
+            **sfn_local_installer.get_java_env_vars(),
             "EDGE_PORT": config.GATEWAY_LISTEN[0].port,
             "EDGE_PORT_HTTP": config.GATEWAY_LISTEN[0].port,
             "DATA_DIR": config.dirs.data,

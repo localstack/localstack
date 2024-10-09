@@ -150,9 +150,15 @@ class DynamodbServer(Server):
         return cmd + parameters
 
     def do_start_thread(self) -> FuncThread:
-        dynamodblocal_package.install()
+        dynamodblocal_installer = dynamodblocal_package.get_installer()
+        dynamodblocal_installer.install()
 
         cmd = self._create_shell_command()
+        env_vars = {
+            "DDB_LOCAL_TELEMETRY": "0",
+            **dynamodblocal_installer.get_java_env_vars(),
+        }
+
         LOG.debug("Starting DynamoDB Local: %s", cmd)
         t = ShellCommandThread(
             cmd,
@@ -160,7 +166,7 @@ class DynamodbServer(Server):
             log_listener=_log_listener,
             auto_restart=True,
             name="dynamodb-local",
-            env_vars={"DDB_LOCAL_TELEMETRY": "0"},
+            env_vars=env_vars,
         )
         TMP_THREADS.append(t)
         t.start()
