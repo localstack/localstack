@@ -4,7 +4,7 @@ from typing import List
 from localstack import config
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
-from localstack.packages.java import JavaInstallerMixin
+from localstack.packages.java import java_package
 from localstack.utils.archives import (
     download_and_extract_with_retry,
     update_jar_manifest,
@@ -23,27 +23,34 @@ DDBLOCAL_URL = "https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest
 
 class DynamoDBLocalPackage(Package):
     def __init__(self):
-        super().__init__(name="DynamoDBLocal", default_version="v2")
+        super().__init__(name="DynamoDBLocal", default_version="2")
 
     def _get_installer(self, _) -> PackageInstaller:
         return DynamoDBLocalPackageInstaller()
 
     def get_versions(self) -> List[str]:
-        return ["v2"]
+        return ["2"]
 
 
-class DynamoDBLocalPackageInstaller(JavaInstallerMixin, PackageInstaller):
+class DynamoDBLocalPackageInstaller(PackageInstaller):
     def __init__(self):
-        super().__init__("dynamodb-local", "v2")
+        super().__init__("dynamodb-local", "2")
 
         # DDBLocal v2 requires JRE 17+
         # See: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
         self.java_version = "21"
 
     def _prepare_installation(self, target: InstallTarget) -> None:
-        from localstack.packages.java import java_package
-
         java_package.get_installer(self.java_version).install(target)
+
+    def get_java_env_vars(self) -> dict[str, str]:
+        java_home = java_package.get_installer(self.java_version).get_java_home()
+        path = f"{java_home}/bin:{os.environ['PATH']}"
+
+        return {
+            "JAVA_HOME": java_home,
+            "PATH": path,
+        }
 
     def _install(self, target: InstallTarget):
         # download and extract archive
