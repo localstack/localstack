@@ -59,7 +59,16 @@ class LambdaSender(Sender):
             InvocationType=invocation_type,
             **optional_qualifier,
         )
-        payload = json.load(invoke_result["Payload"])
+
+        try:
+            payload = json.load(invoke_result["Payload"])
+        except json.JSONDecodeError:
+            payload = None
+            LOG.debug(
+                "Payload from Lambda invocation '%s' is invalid json. Setting this to 'None'",
+                invoke_result["Payload"],
+            )
+
         if function_error := invoke_result.get("FunctionError"):
             LOG.debug(
                 "Pipe target function %s failed with FunctionError %s. Payload: %s",
