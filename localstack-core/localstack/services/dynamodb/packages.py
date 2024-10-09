@@ -10,7 +10,7 @@ from localstack.utils.archives import (
     update_jar_manifest,
     upgrade_jar_file,
 )
-from localstack.utils.files import save_file
+from localstack.utils.files import rm_rf, save_file
 from localstack.utils.functions import run_safe
 from localstack.utils.http import download
 from localstack.utils.run import run
@@ -54,10 +54,11 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
 
     def _install(self, target: InstallTarget):
         # download and extract archive
-        tmp_archive = os.path.join(config.dirs.cache, f"DynamoDBLocal.{self.version}.zip")
+        tmp_archive = os.path.join(config.dirs.cache, f"DynamoDBLocal-{self.version}.zip")
         install_dir = self._get_install_dir(target)
 
         download_and_extract_with_retry(DDBLOCAL_URL, tmp_archive, install_dir)
+        rm_rf(tmp_archive)
 
         # Use custom log formatting
         log4j2_config = """<?xml version="1.0" encoding="UTF-8"?>
