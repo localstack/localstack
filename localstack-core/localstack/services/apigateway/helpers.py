@@ -10,7 +10,7 @@ from urllib import parse as urlparse
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
 from moto.apigateway import models as apigw_models
-from moto.apigateway.models import Integration, Resource
+from moto.apigateway.models import APIGatewayBackend, Integration, Resource
 from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.apigateway.utils import create_id as create_resource_id
 
@@ -102,6 +102,10 @@ def get_apigateway_store_for_invocation(context: ApiInvocationContext) -> ApiGat
     account_id = context.account_id or DEFAULT_AWS_ACCOUNT_ID
     region_name = context.region_name or AWS_REGION_US_EAST_1
     return apigateway_stores[account_id][region_name]
+
+
+def get_moto_backend(account_id: str, region: str) -> APIGatewayBackend:
+    return apigw_models.apigateway_backends[account_id][region]
 
 
 def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
