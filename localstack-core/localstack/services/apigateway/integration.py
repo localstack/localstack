@@ -698,6 +698,10 @@ class S3Integration(BackendIntegration):
         relative_path, query_string_params = extract_query_string_params(path=invocation_path)
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
+        uri = apply_integration_request_parameters(
+            uri, integration=integration, invocation_context=invocation_context
+        )
+
         s3 = connect_to().s3
         uri = apply_request_parameters(
             uri,
@@ -718,7 +722,11 @@ class S3Integration(BackendIntegration):
 
         action = None
         invoke_args = {"Bucket": bucket, "Key": object_key}
-        match invocation_context.method:
+
+        if not (integration_method := integration.get("httpMethod")) or integration_method == "ANY":
+            integration_method = invocation_context.method
+
+        match integration_method:
             case HTTPMethod.GET:
                 action = s3.get_object
             case HTTPMethod.PUT:
@@ -1118,3 +1126,19 @@ class EventBridgeIntegration(BackendIntegration):
         self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
+
+
+def apply_integration_request_parameters(
+    uri: str, integration: Dict[str, Any], invocation_context: ApiInvocationContext
+):
+    groups = re.findall(r"({[a-zA-Z]+})", uri)
+    request_parameters = integration.get("requestParameters", {})
+    for group in groups:
+        key = group.replace("{", "").replace("}", "")
+        request_param_key = f"integration.request.path.{key}"
+        associatedValueKey = request_parameters.get(request_param_key)
+        if associatedValueKey:
+            value = invocation_context.context.get(associatedValueKey.replace("context.", ""))
+            if value:
+                uri = uri.replace(group, value)
+    return uri
