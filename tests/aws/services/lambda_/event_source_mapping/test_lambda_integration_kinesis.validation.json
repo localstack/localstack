@@ -59,6 +59,9 @@
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_list_success]": {
     "last_validated_date": "2024-09-11T17:42:39+00:00"
   },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_string_success]": {
+    "last_validated_date": "2024-10-09T16:53:15+00:00"
+  },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[null_batch_item_failure_success]": {
     "last_validated_date": "2024-09-11T17:48:35+00:00"
   },
