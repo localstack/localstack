@@ -200,6 +200,12 @@ class TestApigatewayApiKeysCrud:
         api_keys_prefix = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[:8])
         snapshot.match("get-api-keys-prefix-name-query", api_keys_prefix)
 
+        # test prefix cased
+        api_keys_prefix_cased = aws_client.apigateway.get_api_keys(
+            nameQuery=api_key_name[:8].upper()
+        )
+        snapshot.match("get-api-keys-prefix-name-query-cased", api_keys_prefix_cased)
+
         # test postfix
         api_keys_postfix = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[2:])
         snapshot.match("get-api-keys-postfix-name-query", api_keys_postfix)
@@ -283,6 +289,11 @@ class TestApigatewayApiKeysCrud:
             usagePlanId=usage_plan_id, nameQuery="test-key"
         )
         snapshot.match("get-up-keys-name-query", get_up_keys_query)
+
+        get_up_keys_query_cased = aws_client.apigateway.get_usage_plan_keys(
+            usagePlanId=usage_plan_id, nameQuery="TEST-key"
+        )
+        snapshot.match("get-up-keys-name-query-cased", get_up_keys_query_cased)
 
         get_up_keys_query_name = aws_client.apigateway.get_usage_plan_keys(
             usagePlanId=usage_plan_id, nameQuery=api_key_name

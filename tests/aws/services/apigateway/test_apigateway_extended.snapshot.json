@@ -1632,7 +1632,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_get_api_keys": {
-    "recorded-date": "10-10-2024, 18:29:03",
+    "recorded-date": "10-10-2024, 18:53:36",
     "recorded-content": {
       "get-api-keys": {
         "items": [],
@@ -1688,6 +1688,13 @@
             "stageKeys": []
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-api-keys-prefix-name-query-cased": {
+        "items": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1820,7 +1827,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_get_usage_plan_api_keys": {
-    "recorded-date": "10-10-2024, 18:41:23",
+    "recorded-date": "10-10-2024, 18:54:42",
     "recorded-content": {
       "get-api-keys": {
         "items": [],
@@ -1950,6 +1957,13 @@
             "value": "<value:1>"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-up-keys-name-query-cased": {
+        "items": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
