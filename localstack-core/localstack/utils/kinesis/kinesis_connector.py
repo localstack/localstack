@@ -255,7 +255,6 @@ def _start_kcl_client_process(
         "AWS_SECRET_ACCESS_KEY": account_id,
         "JAVA_HOME": java_home,
         "PATH": f"{java_home}/bin:{os.getenv('PATH')}",
-        "LD_LIBRARY_PATH": f"{java_home}/lib:{java_home}/lib/server",
     }
 
     events_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.fifo")
