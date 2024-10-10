@@ -40,7 +40,7 @@ BIND_HOST = "0.0.0.0"
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
 # TODO rename to "ROOT_FOLDER"!
 LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(MODULE_MAIN_PATH, ".."))
-
+ 
 # virtualenv folder
 LOCALSTACK_VENV_FOLDER = os.environ.get("VIRTUAL_ENV")
 if not LOCALSTACK_VENV_FOLDER:
