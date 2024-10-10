@@ -220,7 +220,10 @@ from localstack.services.lambda_.runtimes import (
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
-from localstack.utils.aws.arns import extract_service_from_arn, get_partition
+from localstack.utils.aws.arns import (
+    extract_service_from_arn,
+    get_partition,
+)
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
@@ -1859,7 +1862,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # Validations
         function_arn, function_name, state = self.validate_event_source_mapping(context, request)
 
-        esm_config = EsmConfigFactory(request, function_arn).get_esm_config()
+        esm_config = EsmConfigFactory(request, context, function_arn).get_esm_config()
 
         # Copy esm_config to avoid a race condition with potential async update in the store
         state.event_source_mappings[esm_config["UUID"]] = esm_config.copy()

@@ -267,6 +267,11 @@ def lambda_code_signing_arn(code_signing_id: str, account_id: str, region_name: 
     return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)
 
 
+def lambda_event_source_mapping_arn(uuid: str, account_id: str, region_name: str) -> str:
+    pattern = "arn:%s:lambda:%s:%s:event-source-mapping:%s"
+    return _resource_arn(uuid, pattern, account_id=account_id, region_name=region_name)
+
+
 def lambda_function_or_layer_arn(
     type: str,
     entity_name: str,
