@@ -38,7 +38,7 @@ class BranchWorker:
             raise RuntimeError(f"Attempted to rerun BranchWorker for program ${self._program}.")
 
         self._worker_thread = threading.Thread(
-            target=self._thread_routine, name=f"BranchWorker_${self._program}"
+            target=self._thread_routine, name=f"BranchWorker_${self._program}", daemon=True
         )
         TMP_THREADS.append(self._worker_thread)
         self._worker_thread.start()

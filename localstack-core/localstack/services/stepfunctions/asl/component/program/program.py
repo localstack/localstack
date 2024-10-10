@@ -72,7 +72,7 @@ class Program(EvalComponent):
     def eval(self, env: Environment) -> None:
         timeout = self.timeout_seconds.timeout_seconds if self.timeout_seconds else None
         env.next_state_name = self.start_at.start_at_name
-        worker_thread = threading.Thread(target=super().eval, args=(env,))
+        worker_thread = threading.Thread(target=super().eval, args=(env,), daemon=True)
         TMP_THREADS.append(worker_thread)
         worker_thread.start()
         worker_thread.join(timeout=timeout)

@@ -30,6 +30,7 @@ from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.execution_worker_comm import (
     ExecutionWorkerCommunication,
 )
+from localstack.utils.common import TMP_THREADS
 
 
 class ExecutionWorker:
@@ -104,7 +105,9 @@ class ExecutionWorker:
         self._exec_comm.terminated()
 
     def start(self):
-        Thread(target=self._execution_logic).start()
+        execution_logic_thread = Thread(target=self._execution_logic, daemon=True)
+        TMP_THREADS.append(execution_logic_thread)
+        execution_logic_thread.start()
 
     def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
         self.env.set_stop(stop_date=stop_date, cause=cause, error=error)

@@ -77,7 +77,7 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
 
     def _launch_worker(self, env: Environment) -> IterationWorker:
         worker = self._create_worker(env=env)
-        worker_thread = threading.Thread(target=worker.eval)
+        worker_thread = threading.Thread(target=worker.eval, daemon=True)
         TMP_THREADS.append(worker_thread)
         worker_thread.start()
         return worker
