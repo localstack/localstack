@@ -1,4 +1,10 @@
 {
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_get_api_keys": {
+    "last_validated_date": "2024-10-10T18:29:03+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_get_usage_plan_api_keys": {
+    "last_validated_date": "2024-10-10T18:41:22+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
     "last_validated_date": "2024-04-15T21:45:02+00:00"
   },
