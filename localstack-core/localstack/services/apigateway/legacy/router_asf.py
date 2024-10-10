@@ -9,9 +9,9 @@ from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
 from localstack.http.request import restore_payload
-from localstack.services.apigateway.context import ApiInvocationContext
-from localstack.services.apigateway.helpers import get_api_account_id_and_region
-from localstack.services.apigateway.invocations import invoke_rest_api_from_request
+from localstack.services.apigateway.legacy.context import ApiInvocationContext
+from localstack.services.apigateway.legacy.helpers import get_api_account_id_and_region
+from localstack.services.apigateway.legacy.invocations import invoke_rest_api_from_request
 from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.strings import remove_leading_extra_slashes
 
