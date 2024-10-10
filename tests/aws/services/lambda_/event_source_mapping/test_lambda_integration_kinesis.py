@@ -71,6 +71,7 @@ def _snapshot_transformers(snapshot):
         "$..State",
         "$..Topics",
         "$..TumblingWindowInSeconds",
+        "$..EventSourceMappingArn",
     ],
 )
 class TestKinesisSource:
