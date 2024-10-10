@@ -1,4 +1,5 @@
 # TODO: find a more meaningful name for this file, further refactor tests into different functional areas
+import logging
 import os
 
 import pytest
@@ -8,9 +9,32 @@ from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
+LOG = logging.getLogger(__name__)
+
+
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "../../files/petstore-swagger.json")
 TEST_IMPORT_PETS = os.path.join(THIS_FOLDER, "../../files/pets.json")
+
+
+@pytest.fixture
+def apigw_create_api_key(aws_client):
+    api_keys = []
+
+    def _create(**kwargs):
+        response = aws_client.apigateway.create_api_key(**kwargs)
+        api_keys.append(response["id"])
+        return response
+
+    yield _create
+
+    for api_key_id in api_keys:
+        try:
+            aws_client.apigateway.delete_api_key(apiKey=api_key_id)
+        except aws_client.apigateway.exceptions.NotFoundException:
+            pass
+        except Exception as e:
+            LOG.warning("Error while cleaning up APIGW API Key %s: %s", api_key_id, e)
 
 
 @markers.aws.validated
@@ -145,62 +169,138 @@ def test_get_domain_name(aws_client):
     assert result["domainNameStatus"] == "AVAILABLE"
 
 
-@markers.aws.validated
-def test_get_api_keys(aws_client):
-    api_key_name = f"test-key-{short_uid()}"
-    api_key_name_2 = f"test-key-{short_uid()}"
-    list_response = aws_client.apigateway.get_api_keys()
-    api_keys_before = len(list_response["items"])
-    try:
-        creation_response = aws_client.apigateway.create_api_key(name=api_key_name)
-        api_key_id = creation_response["id"]
-        api_keys = aws_client.apigateway.get_api_keys()["items"]
-        assert len(api_keys) == api_keys_before + 1
-        assert api_key_id in [api_key["id"] for api_key in api_keys]
+class TestApigatewayApiKeysCrud:
+    @markers.aws.validated
+    def test_get_api_keys(self, aws_client, apigw_create_api_key, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("id"),
+                snapshot.transform.key_value("value"),
+                snapshot.transform.key_value("name"),
+                snapshot.transform.key_value("position"),
+            ]
+        )
+        api_key_name = f"test-key-{short_uid()}"
+        api_key_name_2 = f"test-key-{short_uid()}"
+
+        get_api_keys = aws_client.apigateway.get_api_keys()
+        snapshot.match("get-api-keys", get_api_keys)
+
+        create_api_key = apigw_create_api_key(name=api_key_name)
+        snapshot.match("create-api-key", create_api_key)
+
+        get_api_keys_after_create = aws_client.apigateway.get_api_keys()
+        snapshot.match("get-api-keys-after-create-1", get_api_keys_after_create)
+
         # test not created api key
-        api_keys_filtered = aws_client.apigateway.get_api_keys(nameQuery=api_key_name_2)["items"]
-        assert len(api_keys_filtered) == 0
+        api_keys_wrong_name = aws_client.apigateway.get_api_keys(nameQuery=api_key_name_2)
+        snapshot.match("get-api-keys-wrong-name-query", api_keys_wrong_name)
+
         # test prefix
-        api_keys_prefix_filtered = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[:8])[
-            "items"
-        ]
-        assert len(api_keys_prefix_filtered) == 1
-        assert api_key_id in [api_key["id"] for api_key in api_keys]
+        api_keys_prefix = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[:8])
+        snapshot.match("get-api-keys-prefix-name-query", api_keys_prefix)
+
         # test postfix
-        api_keys_prefix_filtered = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[2:])[
-            "items"
-        ]
-        assert len(api_keys_prefix_filtered) == 0
+        api_keys_postfix = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[2:])
+        snapshot.match("get-api-keys-postfix-name-query", api_keys_postfix)
+
         # test infix
-        api_keys_prefix_filtered = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[2:8])[
-            "items"
-        ]
-        assert len(api_keys_prefix_filtered) == 0
-        creation_response = aws_client.apigateway.create_api_key(name=api_key_name_2)
-        api_key_id_2 = creation_response["id"]
-        api_keys = aws_client.apigateway.get_api_keys()["items"]
-        assert len(api_keys) == api_keys_before + 2
-        assert api_key_id in [api_key["id"] for api_key in api_keys]
-        assert api_key_id_2 in [api_key["id"] for api_key in api_keys]
-        api_keys_filtered = aws_client.apigateway.get_api_keys(nameQuery=api_key_name_2)["items"]
-        assert len(api_keys_filtered) == 1
-        assert api_key_id_2 in [api_key["id"] for api_key in api_keys]
-        api_keys_filtered = aws_client.apigateway.get_api_keys(nameQuery=api_key_name)["items"]
-        assert len(api_keys_filtered) == 1
-        assert api_key_id in [api_key["id"] for api_key in api_keys]
-        # test prefix
-        api_keys_filtered = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[:8])["items"]
-        assert len(api_keys_filtered) == 2
-        assert api_key_id in [api_key["id"] for api_key in api_keys]
-        assert api_key_id_2 in [api_key["id"] for api_key in api_keys]
+        api_keys_infix = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[2:8])
+        snapshot.match("get-api-keys-infix-name-query", api_keys_infix)
+
+        create_api_key_2 = apigw_create_api_key(name=api_key_name_2)
+        snapshot.match("create-api-key-2", create_api_key_2)
+
+        get_api_keys_after_create_2 = aws_client.apigateway.get_api_keys()
+        snapshot.match("get-api-keys-after-create-2", get_api_keys_after_create_2)
+
+        api_keys_full_name_2 = aws_client.apigateway.get_api_keys(nameQuery=api_key_name_2)
+        snapshot.match("get-api-keys-name-query", api_keys_full_name_2)
+
+        # the 2 keys share the same prefix
+        api_keys_prefix = aws_client.apigateway.get_api_keys(nameQuery=api_key_name[:8])
+        snapshot.match("get-api-keys-prefix-name-query-2", api_keys_prefix)
+
         # some minor paging testing
         api_keys_page = aws_client.apigateway.get_api_keys(limit=1)
-        assert len(api_keys_page["items"]) == 1
+        snapshot.match("get-apis-keys-pagination", api_keys_page)
+
         api_keys_page_2 = aws_client.apigateway.get_api_keys(
             limit=1, position=api_keys_page["position"]
         )
-        assert len(api_keys_page_2["items"]) == 1
-        assert api_keys_page["items"][0]["id"] != api_keys_page_2["items"][0]["id"]
-    finally:
-        aws_client.apigateway.delete_api_key(apiKey=api_key_id)
-        aws_client.apigateway.delete_api_key(apiKey=api_key_id_2)
+        snapshot.match("get-apis-keys-pagination-2", api_keys_page_2)
+
+    @markers.aws.validated
+    def test_get_usage_plan_api_keys(self, aws_client, apigw_create_api_key, snapshot, cleanups):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("id"),
+                snapshot.transform.key_value("value"),
+                snapshot.transform.key_value("name"),
+            ]
+        )
+        api_key_name = f"test-key-{short_uid()}"
+        api_key_name_2 = f"test-key-{short_uid()}"
+
+        get_api_keys = aws_client.apigateway.get_api_keys()
+        snapshot.match("get-api-keys", get_api_keys)
+
+        create_api_key = apigw_create_api_key(name=api_key_name)
+        snapshot.match("create-api-key", create_api_key)
+
+        create_api_key_2 = apigw_create_api_key(name=api_key_name_2)
+        snapshot.match("create-api-key-2", create_api_key)
+
+        get_api_keys_after_create = aws_client.apigateway.get_api_keys()
+        snapshot.match("get-api-keys-after-create-1", get_api_keys_after_create)
+
+        create_usage_plan = aws_client.apigateway.create_usage_plan(
+            name=f"usage-plan-{short_uid()}"
+        )
+        usage_plan_id = create_usage_plan["id"]
+        cleanups.append(lambda: aws_client.apigateway.delete_usage_plan(usagePlanId=usage_plan_id))
+        snapshot.match("create-usage-plan", create_usage_plan)
+
+        get_up_keys_before_create = aws_client.apigateway.get_usage_plan_keys(
+            usagePlanId=usage_plan_id
+        )
+        snapshot.match("get-up-keys-before-create", get_up_keys_before_create)
+
+        create_up_key = aws_client.apigateway.create_usage_plan_key(
+            usagePlanId=usage_plan_id, keyId=create_api_key["id"], keyType="API_KEY"
+        )
+        snapshot.match("create-up-key", create_up_key)
+
+        create_up_key_2 = aws_client.apigateway.create_usage_plan_key(
+            usagePlanId=usage_plan_id, keyId=create_api_key_2["id"], keyType="API_KEY"
+        )
+        snapshot.match("create-up-key-2", create_up_key_2)
+
+        get_up_keys = aws_client.apigateway.get_usage_plan_keys(usagePlanId=usage_plan_id)
+        snapshot.match("get-up-keys", get_up_keys)
+
+        get_up_keys_query = aws_client.apigateway.get_usage_plan_keys(
+            usagePlanId=usage_plan_id, nameQuery="test-key"
+        )
+        snapshot.match("get-up-keys-name-query", get_up_keys_query)
+
+        get_up_keys_query_name = aws_client.apigateway.get_usage_plan_keys(
+            usagePlanId=usage_plan_id, nameQuery=api_key_name
+        )
+        snapshot.match("get-up-keys-name-query-key-name", get_up_keys_query_name)
+
+        get_up_keys_bad_query = aws_client.apigateway.get_usage_plan_keys(
+            usagePlanId=usage_plan_id, nameQuery="nothing"
+        )
+        snapshot.match("get-up-keys-bad-query", get_up_keys_bad_query)
+
+        aws_client.apigateway.delete_api_key(apiKey=create_api_key["id"])
+        aws_client.apigateway.delete_api_key(apiKey=create_api_key_2["id"])
+
+        get_up_keys_after_delete = aws_client.apigateway.get_usage_plan_keys(
+            usagePlanId=usage_plan_id
+        )
+        snapshot.match("get-up-keys-after-delete", get_up_keys_after_delete)
+
+        get_up_keys_bad_d = aws_client.apigateway.get_usage_plan_keys(usagePlanId="bad-id")
+        snapshot.match("get-up-keys-bad-usage-plan", get_up_keys_bad_d)
