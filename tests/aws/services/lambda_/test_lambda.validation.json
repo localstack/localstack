@@ -122,6 +122,18 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event_error": {
     "last_validated_date": "2023-09-04T20:49:02+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[nodejs-Event]": {
+    "last_validated_date": "2024-10-09T16:16:27+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[nodejs-RequestResponse]": {
+    "last_validated_date": "2024-10-09T16:16:13+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[python-Event]": {
+    "last_validated_date": "2024-10-09T16:16:05+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[python-RequestResponse]": {
+    "last_validated_date": "2024-10-09T16:15:57+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_request_response[nodejs16.x]": {
     "last_validated_date": "2024-04-08T16:57:47+00:00"
   },

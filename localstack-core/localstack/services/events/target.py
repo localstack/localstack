@@ -4,10 +4,13 @@ import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Set
+from typing import Any, Dict, Set
+from urllib.parse import urlencode
 
+import requests
 from botocore.client import BaseClient
 
+from localstack import config
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
@@ -22,6 +25,7 @@ from localstack.utils.aws.arns import (
     extract_region_from_arn,
     extract_service_from_arn,
     firehose_name,
+    parse_arn,
     sqs_queue_url_for_arn,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -140,12 +144,15 @@ class TargetSender(ABC):
 
     def process_event(self, event: FormattedEvent):
         """Processes the event and send it to the target."""
+        if input_ := self.target.get("Input"):
+            event = json.loads(input_)
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
-        if input_path := self.target.get("InputPath"):
-            event = transform_event_with_target_input_path(input_path, event)
-        if input_transformer := self.target.get("InputTransformer"):
-            event = self.transform_event_with_target_input_transformer(input_transformer, event)
+        if not input_:
+            if input_path := self.target.get("InputPath"):
+                event = transform_event_with_target_input_path(input_path, event)
+            if input_transformer := self.target.get("InputTransformer"):
+                event = self.transform_event_with_target_input_transformer(input_transformer, event)
         self.send_event(event)
 
     def transform_event_with_target_input_transformer(
@@ -229,13 +236,123 @@ TargetSenderDict = dict[Arn, TargetSender]
 
 
 class ApiGatewayTargetSender(TargetSender):
+    """
+    ApiGatewayTargetSender is a TargetSender that sends events to an API Gateway target.
+    """
+
+    PROHIBITED_HEADERS = [
+        "authorization",
+        "connection",
+        "content-encoding",
+        "content-length",
+        "host",
+        "max-forwards",
+        "te",
+        "transfer-encoding",
+        "trailer",
+        "upgrade",
+        "via",
+        "www-authenticate",
+        "x-forwarded-for",
+    ]  # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-gateway-target.html
+
+    ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+
     def send_event(self, event):
-        raise NotImplementedError("ApiGateway target is not yet implemented")
+        # Parse the ARN to extract api_id, stage_name, http_method, and resource path
+        # Example ARN: arn:aws:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
+        arn_parts = parse_arn(self.target["Arn"])
+        api_gateway_info = arn_parts["resource"]  # e.g., 'myapi/dev/POST/pets/*/*'
+        api_gateway_info_parts = api_gateway_info.split("/")
+
+        api_id = api_gateway_info_parts[0]
+        stage_name = api_gateway_info_parts[1]
+        http_method = api_gateway_info_parts[2].upper()
+        resource_path_parts = api_gateway_info_parts[3:]  # may contain wildcards
+
+        if http_method not in self.ALLOWED_HTTP_METHODS:
+            LOG.error("Unsupported HTTP method: %s", http_method)
+            return
+
+        # Replace wildcards in resource path with PathParameterValues
+        path_params_values = self.target.get("HttpParameters", {}).get("PathParameterValues", [])
+        resource_path_segments = []
+        path_param_index = 0
+        for part in resource_path_parts:
+            if part == "*":
+                if path_param_index < len(path_params_values):
+                    resource_path_segments.append(path_params_values[path_param_index])
+                    path_param_index += 1
+                else:
+                    # Use empty string if no path parameter is provided
+                    resource_path_segments.append("")
+            else:
+                resource_path_segments.append(part)
+        resource_path = "/".join(resource_path_segments)
+
+        # Ensure resource path starts and ends with '/'
+        resource_path = f"/{resource_path.strip('/')}/"
+
+        # Construct query string parameters
+        query_params = self.target.get("HttpParameters", {}).get("QueryStringParameters", {})
+        query_string = urlencode(query_params) if query_params else ""
+
+        # Construct headers
+        headers = self.target.get("HttpParameters", {}).get("HeaderParameters", {})
+        headers = {k: v for k, v in headers.items() if k.lower() not in self.PROHIBITED_HEADERS}
+        # Add Host header to ensure proper routing in LocalStack
+
+        host = f"{api_id}.execute-api.localhost.localstack.cloud"
+        headers["Host"] = host
+
+        # Ensure Content-Type is set
+        headers.setdefault("Content-Type", "application/json")
+
+        # Construct the full URL
+        resource_path = f"/{resource_path.strip('/')}/"
+
+        # Construct the full URL using urljoin
+        from urllib.parse import urljoin
+
+        base_url = config.internal_service_url()
+        base_path = f"/{stage_name}"
+        full_path = urljoin(base_path + "/", resource_path.lstrip("/"))
+        url = urljoin(base_url + "/", full_path.lstrip("/"))
+
+        if query_string:
+            url += f"?{query_string}"
+
+        # Serialize the event, converting datetime objects to strings
+        event_json = json.dumps(event, default=str)
+
+        # Send the HTTP request
+        response = requests.request(
+            method=http_method, url=url, headers=headers, data=event_json, timeout=5
+        )
+        if not response.ok:
+            LOG.warning(
+                "API Gateway target invocation failed with status code %s, response: %s",
+                response.status_code,
+                response.text,
+            )
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
         if not collections.get_safe(target, "$.RoleArn"):
             raise ValueError("RoleArn is required for ApiGateway target")
+
+    def _get_predefined_template_replacements(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        """Extracts predefined values from the event."""
+        predefined_template_replacements = {}
+        predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
+        predefined_template_replacements["aws.events.rule-name"] = self.rule_name
+        predefined_template_replacements["aws.events.event.ingestion-time"] = event.get("time", "")
+        predefined_template_replacements["aws.events.event"] = {
+            "detailType" if k == "detail-type" else k: v for k, v in event.items() if k != "detail"
+        }
+        predefined_template_replacements["aws.events.event.json"] = event
+
+        return predefined_template_replacements
 
 
 class AppSyncTargetSender(TargetSender):
@@ -450,6 +567,7 @@ class TargetSenderFactory:
         "sagemaker": SagemakerTargetSender,
         "ssm": SystemsManagerSender,
         "states": StatesTargetSender,
+        "execute-api": ApiGatewayTargetSender,
         # TODO custom endpoints via http target
     }
 

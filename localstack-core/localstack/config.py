@@ -397,6 +397,9 @@ except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
     LOADED_PROFILES = None
 
+# loaded components name - default: all components are loaded and the first one is chosen
+RUNTIME_COMPONENTS = os.environ.get("RUNTIME_COMPONENTS", "").strip()
+
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
@@ -896,8 +899,8 @@ LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 # Additional flags passed to Docker run|create commands.
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
-# PUBLIC: v1 (default), v2 (preview) Version of the Lambda Event Source Mapping implementation
-LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v1").strip()
+# PUBLIC: v2 (default), v1 (deprecated) Version of the Lambda Event Source Mapping implementation
+LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v2").strip()
 
 # PUBLIC: 0 (default)
 # Enable this flag to run cross-platform compatible lambda functions natively (i.e., Docker selects architecture) and
@@ -1177,6 +1180,7 @@ CONFIG_ENV_VARS = [
     "DNS_ADDRESS",
     "DNS_PORT",
     "DNS_LOCAL_NAME_PATTERNS",
+    "DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM",
     "DNS_RESOLVE_IP",
     "DNS_SERVER",
     "DNS_VERIFICATION_DOMAIN",

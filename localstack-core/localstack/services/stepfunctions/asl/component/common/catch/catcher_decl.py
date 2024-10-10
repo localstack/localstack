@@ -20,6 +20,13 @@ from localstack.services.stepfunctions.asl.component.eval_component import EvalC
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
+class CatcherOutput(dict):
+    def __init__(self, error: str, cause: str):
+        super().__init__()
+        self["Error"] = error
+        self["Cause"] = cause
+
+
 class CatcherDecl(EvalComponent):
     _DEFAULT_RESULT_PATH: Final[ResultPath] = ResultPath(result_path_src="$")
 
@@ -60,7 +67,7 @@ class CatcherDecl(EvalComponent):
         )
 
     @staticmethod
-    def _extract_error_cause(failure_event: FailureEvent) -> dict:
+    def _extract_catcher_output(failure_event: FailureEvent) -> CatcherOutput:
         # TODO: consider formalising all EventDetails to ensure FailureEvent can always reach the state below.
         #  As per AWS's Api specification, all failure event carry one
         #  details field, with at least fields 'cause and 'error'
@@ -77,11 +84,8 @@ class CatcherDecl(EvalComponent):
         # If no cause or error fields are given, AWS binds an empty string; otherwise it attaches the value.
         error = spec_event_details.get("error", "")
         cause = spec_event_details.get("cause", "")
-        # Stepfunctions renames these fields to capital in this scenario.
-        return {
-            "Error": error,
-            "Cause": cause,
-        }
+        catcher_output = CatcherOutput(error=error, cause=cause)
+        return catcher_output
 
     def _eval_body(self, env: Environment) -> None:
         failure_event: FailureEvent = env.stack.pop()
@@ -91,7 +95,7 @@ class CatcherDecl(EvalComponent):
 
         equals: bool = env.stack.pop()
         if equals:
-            error_cause: dict = self._extract_error_cause(failure_event)
+            error_cause: CatcherOutput = self._extract_catcher_output(failure_event)
             env.stack.append(error_cause)
 
             self.result_path.eval(env)

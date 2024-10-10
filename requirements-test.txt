@@ -14,7 +14,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.4.0
+anyio==4.6.0
     # via httpx
 apispec==6.6.1
     # via localstack-core
@@ -27,15 +27,15 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.202
+aws-cdk-asset-awscli-v1==2.2.206
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==36.0.24
+aws-cdk-cloud-assembly-schema==38.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.157.0
+aws-cdk-lib==2.161.1
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.91.0
     # via
@@ -43,17 +43,17 @@ aws-sam-translator==1.91.0
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.34.24
+awscli==1.35.0
     # via localstack-core
-awscrt==0.21.5
+awscrt==0.22.0
     # via localstack-core
-boto3==1.35.24
+boto3==1.35.34
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.35.24
+botocore==1.35.34
     # via
     #   aws-xray-sdk
     #   awscli
@@ -62,7 +62,7 @@ botocore==1.35.24
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-build==1.2.2
+build==1.2.2.post1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -83,7 +83,7 @@ certifi==2024.8.30
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.12.4
+cfn-lint==1.16.0
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -122,7 +122,7 @@ dnslib==0.9.25
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-dnspython==2.6.1
+dnspython==2.7.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -149,7 +149,7 @@ h2==4.1.0
     #   localstack-twisted
 hpack==4.0.0
     # via h2
-httpcore==1.0.5
+httpcore==1.0.6
     # via httpx
 httpx==0.27.2
     # via localstack-core (pyproject.toml)
@@ -159,7 +159,7 @@ hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-idna==3.8
+idna==3.10
     # via
     #   anyio
     #   httpx
@@ -172,7 +172,7 @@ incremental==24.7.2
     # via localstack-twisted
 iniconfig==2.0.0
     # via pytest
-isodate==0.6.1
+isodate==0.7.0
     # via openapi-core
 jinja2==3.1.4
     # via moto-ext
@@ -231,7 +231,7 @@ localstack-twisted==24.3.0
     # via localstack-core
 markdown-it-py==3.0.0
     # via rich
-markupsafe==2.1.5
+markupsafe==3.0.0
     # via
     #   jinja2
     #   werkzeug
@@ -239,11 +239,11 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.15.post2
+moto-ext==5.0.15.post4
     # via localstack-core
 mpmath==1.3.0
     # via sympy
-multipart==0.2.5
+multipart==1.1.0
     # via moto-ext
 networkx==3.3
     # via cfn-lint
@@ -303,17 +303,17 @@ publication==0.0.3
     #   jsii
 py-partiql-parser==0.5.6
     # via moto-ext
-pyasn1==0.6.0
+pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.9.1
+pydantic==2.9.2
     # via aws-sam-translator
-pydantic-core==2.23.3
+pydantic-core==2.23.4
     # via pydantic
 pygments==2.18.0
     # via rich
-pymongo==4.8.0
+pymongo==4.10.1
     # via localstack-core
 pyopenssl==24.2.1
     # via
@@ -321,7 +321,7 @@ pyopenssl==24.2.1
     #   localstack-twisted
 pyparsing==3.1.4
     # via moto-ext
-pyproject-hooks==1.1.0
+pyproject-hooks==1.2.0
     # via build
 pytest==8.3.3
     # via
@@ -364,7 +364,7 @@ referencing==0.35.1
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2024.7.24
+regex==2024.9.11
     # via cfn-lint
 requests==2.32.3
     # via
@@ -384,7 +384,7 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.8.1
+rich==13.9.2
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -407,7 +407,6 @@ semver==3.0.2
 six==1.16.0
     # via
     #   airspeed-ext
-    #   isodate
     #   jsonpath-rw
     #   python-dateutil
     #   rfc3339-validator
@@ -415,7 +414,7 @@ sniffio==1.3.1
     # via
     #   anyio
     #   httpx
-sympy==1.13.2
+sympy==1.13.3
     # via cfn-lint
 tailer==0.4.1
     # via
@@ -439,7 +438,7 @@ typing-extensions==4.12.2
     #   pydantic
     #   pydantic-core
     #   readerwriterlock
-urllib3==2.2.2
+urllib3==2.2.3
     # via
     #   botocore
     #   docker

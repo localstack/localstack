@@ -118,10 +118,10 @@
 /tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
 
 # cloudwatch
-/localstack-core/localstack/aws/api/cloudwatch/ @steffyP @pinzon
-/localstack-core/localstack/services/cloudwatch/ @steffyP @pinzon
-/tests/aws/services/cloudwatch/ @steffyP @pinzon
-/tests/unit/test_cloudwatch.py @steffyP @pinzon
+/localstack-core/localstack/aws/api/cloudwatch/ @pinzon @steffyP
+/localstack-core/localstack/services/cloudwatch/ @pinzon @steffyP
+/tests/aws/services/cloudwatch/ @pinzon @steffyP
+/tests/unit/test_cloudwatch.py @pinzon @steffyP
 
 # dynamodb
 /localstack-core/localstack/aws/api/dynamodb/ @viren-nadkarni @giograno
@@ -164,16 +164,16 @@
 /tests/unit/test_kms.py @sannya-singal
 
 # lambda
-/localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl
-/localstack-core/localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl
-/tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl
-/tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl
+/localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/localstack-core/localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
 
 # logs
-/localstack-core/localstack/aws/api/logs/ @steffyP
-/localstack-core/localstack/services/logs/ @steffyP
-/tests/aws/services/logs/ @steffyP
-/tests/unit/test_logs.py @steffyP
+/localstack-core/localstack/aws/api/logs/ @pinzon @steffyP
+/localstack-core/localstack/services/logs/ @pinzon @steffyP
+/tests/aws/services/logs/ @pinzon @steffyP
+/tests/unit/test_logs.py @pinzon @steffyP
 
 # opensearch
 /localstack-core/localstack/aws/api/opensearch/ @alexrashed @silv-io

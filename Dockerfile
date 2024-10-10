@@ -1,7 +1,7 @@
 #
-# base: Stage which installs necessary runtime dependencies (OS packages, java,...)
+# base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.10-slim-bookworm@sha256:669bbd08353610485a94d5d0c976b4b6498c55280fe42c00f7581f85ee9f3121 AS base
+FROM python:3.11.10-slim-bookworm@sha256:5501a4fe605abe24de87c2f3d6cf9fd760354416a0cad0296cf284fddcdca9e2 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -91,7 +91,6 @@ ADD bin/hosts /etc/hosts
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers
 # set library path and default LocalStack hostname
-ENV LD_LIBRARY_PATH=$JAVA_HOME/lib:$JAVA_HOME/lib/server
 ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
 
@@ -157,17 +156,11 @@ RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSIO
 RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/var/lib/localstack/cache \
     source .venv/bin/activate && \
-    python -m localstack.cli.lpm install java --version 11 && \
     python -m localstack.cli.lpm install \
       lambda-runtime \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
-
-# Set up Java
-ENV JAVA_HOME /usr/lib/localstack/java/11
-RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
-ENV PATH="${PATH}:${JAVA_HOME}/bin"
 
 # link the python package installer virtual environments into the localstack venv
 RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \

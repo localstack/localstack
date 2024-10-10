@@ -5,6 +5,9 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_changeset_with_stack_id": {
     "last_validated_date": "2023-11-28T06:48:23+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_delete_create": {
+    "last_validated_date": "2024-08-13T10:46:31+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_while_in_review": {
     "last_validated_date": "2023-11-22T07:49:15+00:00"
   },

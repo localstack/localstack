@@ -432,6 +432,50 @@ def test_delete_change_set_exception(snapshot, aws_client):
 
 
 @markers.aws.validated
+def test_create_delete_create(aws_client, cleanups, deploy_cfn_template):
+    """test the re-use of a changeset name with a re-used stack name"""
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"cs-{short_uid()}"
+
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
+    )
+    with open(template_path) as infile:
+        template = infile.read()
+
+    # custom cloudformation deploy process since our `deploy_cfn_template` is too smart and uses IDs, unlike the CDK
+    def deploy():
+        client = aws_client.cloudformation
+        client.create_change_set(
+            StackName=stack_name,
+            TemplateBody=template,
+            ChangeSetName=change_set_name,
+            ChangeSetType="CREATE",
+        )
+        client.get_waiter("change_set_create_complete").wait(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+
+        client.execute_change_set(StackName=stack_name, ChangeSetName=change_set_name)
+        client.get_waiter("stack_create_complete").wait(
+            StackName=stack_name,
+        )
+
+    def delete(suppress_exception: bool = False):
+        try:
+            aws_client.cloudformation.delete_stack(StackName=stack_name)
+            aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+        except Exception:
+            if not suppress_exception:
+                raise
+
+    deploy()
+    cleanups.append(lambda: delete(suppress_exception=True))
+    delete()
+    deploy()
+
+
+@markers.aws.validated
 def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
     # first deploy cfn with a CodeArtifact resource that is not actually supported
     template_path = os.path.join(

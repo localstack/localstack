@@ -1290,3 +1290,24 @@ class TestApigatewayRouting:
             "errorType": response.headers.get("x-amzn-ErrorType"),
         }
         snapshot.match("wrong-method", resp)
+
+    @markers.aws.only_localstack
+    def test_api_not_existing(self, aws_client, create_rest_apigw, snapshot):
+        """
+        This cannot be tested against AWS, as this is the format: `https://<api-id>.execute-api.<region>.amazonaws.com`
+        So if the API does not exist, the DNS subdomain is not created and is not reachable.
+        This test document the expected behavior for LocalStack.
+        """
+        aws_client.apigateway.get_rest_apis()
+        endpoint_url = api_invoke_url(api_id="404api", stage="dev", path="/test-path")
+
+        _response = requests.get(endpoint_url)
+
+        assert _response.status_code == 404
+        if not is_next_gen_api():
+            assert not _response.content
+
+        else:
+            assert _response.json() == {
+                "message": "The API id '404api' does not correspond to a deployed API Gateway API"
+            }

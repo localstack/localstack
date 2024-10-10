@@ -59,8 +59,7 @@ class ApiGatewayEndpoint:
             self.rest_gateway.process_with_context(context, response)
             return response
         else:
-            # TODO: return right response
-            return Response("Not authorized", status=403)
+            return self.create_not_found_response(api_id)
 
     def prepare_rest_api_invocation(
         self, request: Request, api_id: str, stage: str
@@ -100,6 +99,14 @@ class ApiGatewayEndpoint:
             # There appears to be in issue in Localstack, where setting "close" will result in "close, close"
             response.headers.set("Connection", "keep-alive")
         return response
+
+    @staticmethod
+    def create_not_found_response(api_id: str) -> Response:
+        not_found = Response(status=404)
+        not_found.set_json(
+            {"message": f"The API id '{api_id}' does not correspond to a deployed API Gateway API"}
+        )
+        return not_found
 
 
 class ApiGatewayRouter:
