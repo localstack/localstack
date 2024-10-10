@@ -221,6 +221,8 @@ def resolve_condition(
                             raise TemplateError(
                                 f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
                             )
+
+                        # TODO add validation, second level cannot contain symbols
                         second_level_key = (
                             (param.get("ResolvedValue") or param.get("ParameterValue"))
                             if isinstance(param, dict)

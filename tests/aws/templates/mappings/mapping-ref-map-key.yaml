@@ -1,13 +1,11 @@
 Mappings:
   MyMap:
-    A:
-      us-east-1: "true"
-    B:
-      us-east-1: "false"
-
+    us-east-1:
+      A: "true"
+      B: "false"
 Conditions:
   MyCondition: !Equals
-    - !FindInMap [ !Ref MapName, !Ref MapKey, !Ref AWS::Region ]
+    - !FindInMap [ !Ref MapName,  !Ref AWS::Region, !Ref MapKey]
     - "true"
 
 Parameters:
