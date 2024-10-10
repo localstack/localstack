@@ -89,6 +89,12 @@ from localstack.aws.api.stepfunctions import (
     UntagResourceOutput,
     UpdateMapRunOutput,
     UpdateStateMachineOutput,
+    ValidateStateMachineDefinitionDiagnostic,
+    ValidateStateMachineDefinitionDiagnosticList,
+    ValidateStateMachineDefinitionInput,
+    ValidateStateMachineDefinitionOutput,
+    ValidateStateMachineDefinitionResultCode,
+    ValidateStateMachineDefinitionSeverity,
     ValidationException,
     VersionDescription,
 )
@@ -1274,3 +1280,42 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             )
 
         return GetActivityTaskOutput(taskToken=None, input=None)
+
+    def validate_state_machine_definition(
+        self, context: RequestContext, request: ValidateStateMachineDefinitionInput, **kwargs
+    ) -> ValidateStateMachineDefinitionOutput:
+        # TODO: increase parity of static analysers, current implementation is an unblocker for this API action.
+        # TODO: add support for ValidateStateMachineDefinitionSeverity
+        # TODO: add support for ValidateStateMachineDefinitionMaxResult
+
+        state_machine_type: StateMachineType = request.get("type", StateMachineType.STANDARD)
+        definition: str = request["definition"]
+
+        static_analysers = list()
+        if state_machine_type == StateMachineType.STANDARD:
+            static_analysers.append(StaticAnalyser())
+        else:
+            static_analysers.append(ExpressStaticAnalyser())
+
+        diagnostics: ValidateStateMachineDefinitionDiagnosticList = list()
+        try:
+            StepFunctionsProvider._validate_definition(
+                definition=definition, static_analysers=static_analysers
+            )
+            validation_result = ValidateStateMachineDefinitionResultCode.OK
+        except InvalidDefinition as invalid_definition:
+            validation_result = ValidateStateMachineDefinitionResultCode.FAIL
+            diagnostics.append(
+                ValidateStateMachineDefinitionDiagnostic(
+                    severity=ValidateStateMachineDefinitionSeverity.ERROR,
+                    code="SCHEMA_VALIDATION_FAILED",
+                    message=invalid_definition.message,
+                )
+            )
+        except Exception as ex:
+            validation_result = ValidateStateMachineDefinitionResultCode.FAIL
+            LOG.error("Unknown error during validation %s", ex)
+
+        return ValidateStateMachineDefinitionOutput(
+            result=validation_result, diagnostics=diagnostics, truncated=False
+        )
