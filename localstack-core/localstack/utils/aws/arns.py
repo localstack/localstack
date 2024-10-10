@@ -504,6 +504,16 @@ def route53_resolver_query_log_config_arn(id: str, account_id: str, region_name:
 
 
 #
+# Transcribe
+#
+
+
+def transcribe_transcription_job_arn(id: str, account_id: str, region_name: str) -> str:
+    pattern = "arn:%s:transcribe:%s:%s:transcription-job/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
+
+
+#
 # Other ARN related helpers
 #
 
