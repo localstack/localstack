@@ -184,30 +184,48 @@ def resolve_condition(
                     map_name, top_level_key, second_level_key = v
                     if isinstance(map_name, dict) and "Ref" in map_name:
                         ref_name = map_name["Ref"]
-                        param = parameters.get(ref_name)
+                        param = parameters.get(ref_name) or resolve_pseudo_parameter(
+                            account_id, region_name, ref_name, stack_name
+                        )
                         if not param:
                             raise TemplateError(
                                 f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
                             )
-                        map_name = param.get("ResolvedValue") or param.get("ParameterValue")
+                        map_name = (
+                            (param.get("ResolvedValue") or param.get("ParameterValue"))
+                            if isinstance(param, dict)
+                            else param
+                        )
 
                     if isinstance(top_level_key, dict) and "Ref" in top_level_key:
                         ref_name = top_level_key["Ref"]
-                        param = parameters.get(ref_name)
+                        param = parameters.get(ref_name) or resolve_pseudo_parameter(
+                            account_id, region_name, ref_name, stack_name
+                        )
                         if not param:
                             raise TemplateError(
                                 f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
                             )
-                        top_level_key = param.get("ResolvedValue") or param.get("ParameterValue")
+                        top_level_key = (
+                            (param.get("ResolvedValue") or param.get("ParameterValue"))
+                            if isinstance(param, dict)
+                            else param
+                        )
 
                     if isinstance(second_level_key, dict) and "Ref" in second_level_key:
                         ref_name = second_level_key["Ref"]
-                        param = parameters.get(ref_name)
+                        param = parameters.get(ref_name) or resolve_pseudo_parameter(
+                            account_id, region_name, ref_name, stack_name
+                        )
                         if not param:
                             raise TemplateError(
                                 f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
                             )
-                        second_level_key = param.get("ResolvedValue") or param.get("ParameterValue")
+                        second_level_key = (
+                            (param.get("ResolvedValue") or param.get("ParameterValue"))
+                            if isinstance(param, dict)
+                            else param
+                        )
 
                     mapping = mappings.get(map_name)
                     if not mapping:
