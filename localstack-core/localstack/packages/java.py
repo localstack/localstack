@@ -56,6 +56,7 @@ class JavaInstallerMixin:
 
         return {
             "JAVA_HOME": java_home,
+            "LD_LIBRARY_PATH": f"{java_home}/lib:{java_home}/lib/server",
             "PATH": f"{java_bin}:{path}",
         }
 
