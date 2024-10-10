@@ -34,7 +34,7 @@ def send_request_to_connection(conn, url):
         data = res.read()
         return data
     else:
-        print(f"connection failed: {res.getcode}")
+        print(f"connection failed: {res.getcode()}")
         return None
 
 
