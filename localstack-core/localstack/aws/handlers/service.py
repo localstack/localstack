@@ -17,10 +17,13 @@ from ..chain import CompositeResponseHandler, ExceptionHandler, Handler, Handler
 from ..client import parse_response, parse_service_exception
 from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
-from ..protocol.service_router import determine_aws_service_model
+from ..protocol.service_router import get_service_catalog
 from ..skeleton import Skeleton, create_skeleton
 
 LOG = logging.getLogger(__name__)
+
+services = get_service_catalog()
+sqs_service = services.get("sqs")
 
 
 class ServiceNameParser(Handler):
@@ -34,13 +37,7 @@ class ServiceNameParser(Handler):
         # parsing the request will consume the data stream and prevent streaming.
         if context.service:
             return
-
-        service_model = determine_aws_service_model(context.request)
-
-        if not service_model:
-            return
-
-        context.service = service_model
+        context.service = sqs_service
 
 
 class ServiceRequestParser(Handler):

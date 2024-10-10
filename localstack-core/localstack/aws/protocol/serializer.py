@@ -74,7 +74,6 @@ be sent back to the calling client.
 import abc
 import base64
 import functools
-import json
 import logging
 import string
 from abc import ABC
@@ -85,6 +84,7 @@ from struct import pack
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
+import orjson as json
 import xmltodict
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601, ISO8601_MICRO
@@ -1275,6 +1275,10 @@ class JSONResponseSerializer(ResponseSerializer):
         mime_type: str,
         request_id: str,
     ) -> Optional[str]:
+        if mime_type in self.CBOR_TYPES:
+            return cbor2_dumps(params, datetime_as_timestamp=True)
+        else:
+            return json.dumps(params)
         body = {}
         if shape is not None:
             self._serialize(body, params, shape, None, mime_type)

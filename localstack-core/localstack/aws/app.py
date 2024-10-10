@@ -28,30 +28,30 @@ class LocalstackAwsGateway(Gateway):
         # the main request handler chain
         self.request_handlers.extend(
             [
-                handlers.add_internal_request_params,
-                handlers.handle_runtime_shutdown,
-                metric_collector.create_metric_handler_item,
-                load_service_for_data_plane,
-                handlers.preprocess_request,
-                handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
-                handlers.enforce_cors,
-                handlers.content_decoder,
-                handlers.validate_request_schema,  # validate request schema for public LS endpoints
-                handlers.serve_localstack_resources,  # try to serve endpoints in /_localstack
-                handlers.serve_edge_router_rules,
+                # handlers.add_internal_request_params,
+                # handlers.handle_runtime_shutdown,
+                # metric_collector.create_metric_handler_item,
+                # load_service_for_data_plane,
+                # handlers.preprocess_request,
+                # handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
+                # handlers.enforce_cors,
+                # handlers.content_decoder,
+                # handlers.validate_request_schema,  # validate request schema for public LS endpoints
+                # handlers.serve_localstack_resources,  # try to serve endpoints in /_localstack
+                # handlers.serve_edge_router_rules,
                 # start aws handler chain
-                handlers.parse_pre_signed_url_request,
-                handlers.inject_auth_header_if_missing,
-                handlers.add_region_from_header,
-                handlers.rewrite_region,
-                handlers.add_account_id,
-                handlers.parse_service_request,
-                metric_collector.record_parsed_request,
-                handlers.serve_custom_service_request_handlers,
-                load_service,  # once we have the service request we can make sure we load the service
-                self.service_request_router,  # once we know the service is loaded we can route the request
+                # handlers.parse_pre_signed_url_request,
+                # handlers.inject_auth_header_if_missing,
+                # handlers.add_region_from_header,
+                ##handlers.rewrite_region,
+                # handlers.add_account_id,
+                # handlers.parse_service_request,
+                ##metric_collector.record_parsed_request,
+                ##handlers.serve_custom_service_request_handlers,
+                # load_service,  # once we have the service request we can make sure we load the service
+                # self.service_request_router,  # once we know the service is loaded we can route the request
                 # if the chain is still running, set an empty response
-                EmptyResponseHandler(404, b'{"message": "Not Found"}'),
+                EmptyResponseHandler(200, b'{"message": "Found sth lul"}'),
             ]
         )
 
@@ -68,22 +68,22 @@ class LocalstackAwsGateway(Gateway):
         # response post-processing
         self.response_handlers.extend(
             [
-                handlers.validate_response_schema,  # validate response schema for public LS endpoints
-                handlers.modify_service_response,
-                handlers.parse_service_response,
-                handlers.run_custom_response_handlers,
-                handlers.add_cors_response_headers,
-                handlers.log_response,
-                handlers.count_service_request,
-                metric_collector.update_metric_collection,
+                # handlers.validate_response_schema,  # validate response schema for public LS endpoints
+                # handlers.modify_service_response,
+                # handlers.parse_service_response,
+                # handlers.run_custom_response_handlers,
+                # handlers.add_cors_response_headers,
+                # handlers.log_response,
+                # handlers.count_service_request,
+                # metric_collector.update_metric_collection,
             ]
         )
 
         # request chain finalization
         self.finalizers.extend(
             [
-                handlers.set_close_connection_header,
-                handlers.run_custom_finalizers,
+                # handlers.set_close_connection_header,
+                # handlers.run_custom_finalizers,
             ]
         )
 

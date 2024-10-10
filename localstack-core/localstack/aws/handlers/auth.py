@@ -42,6 +42,8 @@ class AccountIdEnricher(Handler):
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        context.account_id = "000000000000"
+        return
         # Obtain the access key ID
         access_key_id = (
             extract_access_key_id_from_auth_header(context.request.headers)

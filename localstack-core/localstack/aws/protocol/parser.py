@@ -73,6 +73,7 @@ from typing import IO, Any, Dict, List, Mapping, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 import dateutil.parser
+import orjson as json
 from botocore.model import (
     ListShape,
     MapShape,
@@ -949,7 +950,7 @@ class JSONRequestParser(BaseJSONRequestParser):
     ) -> Any:
         # The json.loads() gives us the primitive JSON types, but we need to traverse the parsed JSON data to convert
         # to richer types (blobs, timestamps, etc.)
-        parsed_json = self._parse_body_as_json(request)
+        return json.loads(request.data)
         return self._parse_shape(request, shape, parsed_json, uri_params)
 
 
