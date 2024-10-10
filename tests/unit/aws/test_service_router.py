@@ -55,6 +55,7 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "mailmanager",
                 "marketplace-catalog",
                 "marketplace-deployment",
+                "marketplace-reporting",
                 "personalize",
                 "personalize-events",
                 "personalize-runtime",

@@ -1,4 +1,4 @@
-# A simple module to track deprecations over time / versions, and some simple functions guiding affected users.
+# A simple module to track deprecations over time / versions, and some simple functions guiding the affected users.
 import logging
 import os
 from dataclasses import dataclass
@@ -297,7 +297,7 @@ def log_env_warning(deprecations: List[EnvVarDeprecation]) -> None:
     :param deprecations: list of affected deprecations to show a warning for
     """
     """
-    Logs a warning if a given environment variable is set (no matter the value).
+    Logs a warning if a given environment variable is set (no matter what the value is).
     :param env_var: to check
     :param deprecation_version: version with which the env variable has been deprecated
     """
@@ -322,12 +322,26 @@ def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = N
     affected_deprecations = collect_affected_deprecations(deprecations)
     log_env_warning(affected_deprecations)
 
+    feature_override_lambda_esm = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING")
+    if feature_override_lambda_esm and feature_override_lambda_esm in ["v1", "legacy"]:
+        env_var_value = f"PROVIDER_OVERRIDE_LAMBDA={feature_override_lambda_esm}"
+        deprecation_version = "3.8.0"
+        deprecation_path = (
+            f"Remove {env_var_value} to use the new Lambda Event Source Mapping implementation."
+        )
+        LOG.warning(
+            "%s is deprecated (since %s) and will be removed in upcoming releases of LocalStack! %s",
+            env_var_value,
+            deprecation_version,
+            deprecation_path,
+        )
+
 
 def deprecated_endpoint(
     endpoint: Callable, previous_path: str, deprecation_version: str, new_path: str
 ) -> Callable:
     """
-    Wrapper function which logs a warning (and a deprecation path) whenever a deprecated URL is invoked by a router.
+    Wrapper function which logs a warning (and a deprecation path) whenever a deprecated URL is invoked by the router.
 
     :param endpoint: to wrap (log a warning whenever it is invoked)
     :param previous_path: route path it is triggered by

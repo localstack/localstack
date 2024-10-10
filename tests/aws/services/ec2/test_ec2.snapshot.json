@@ -215,5 +215,110 @@
         "VpnGatewayId": "<vpn-gateway-id:1>"
       }
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3": {
+    "recorded-date": "24-09-2024, 23:19:46",
+    "recorded-content": {
+      "create-flow-logs-s3": {
+        "ClientToken": "<client-token:1>",
+        "FlowLogIds": [
+          "<flow-log-id:1>"
+        ],
+        "Unsuccessful": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-flow-logs": {
+        "FlowLogs": [
+          {
+            "CreationTime": "<datetime>",
+            "DeliverLogsStatus": "SUCCESS",
+            "DestinationOptions": {
+              "FileFormat": "plain-text",
+              "HiveCompatiblePartitions": false,
+              "PerHourPartition": false
+            },
+            "FlowLogId": "<flow-log-id:1>",
+            "FlowLogStatus": "ACTIVE",
+            "LogDestination": "arn:<partition>:s3:::<resource:1>",
+            "LogDestinationType": "s3",
+            "LogFormat": "${version} ${account-id} ${interface-id} ${srcaddr} ${dstaddr} ${srcport} ${dstport} ${protocol} ${packets} ${bytes} ${start} ${end} ${action} ${log-status}",
+            "MaxAggregationInterval": 600,
+            "ResourceId": "<resource-id:1>",
+            "Tags": [],
+            "TrafficType": "ALL"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-flow-logs-s3-subfolder": {
+        "ClientToken": "<client-token:1>",
+        "FlowLogIds": [
+          "<flow-log-id-sub:1>"
+        ],
+        "Unsuccessful": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2FlowLogs::test_ec2_flow_logs_s3_validation": {
+    "recorded-date": "24-09-2024, 23:26:43",
+    "recorded-content": {
+      "non-existent-bucket": {
+        "ClientToken": "<client-token:1>",
+        "FlowLogIds": [],
+        "Unsuccessful": [
+          {
+            "Error": {
+              "Code": "400",
+              "Message": "LogDestination: <bad-bucket-name> does not exist"
+            },
+            "ResourceId": "<resource-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "with-log-group-name": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Please only provide LogGroupName or only provide LogDestination."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "no-log-destination": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "LogDestination can't be empty if LogGroupName is not provided."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "log-group-name-s3-destination": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "LogDestination type must be cloud-watch-logs if LogGroupName is provided."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

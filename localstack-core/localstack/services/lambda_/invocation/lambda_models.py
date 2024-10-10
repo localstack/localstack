@@ -31,6 +31,7 @@ from localstack.aws.api.lambda_ import (
     LoggingConfig,
     PackageType,
     ProvisionedConcurrencyStatusEnum,
+    RecursiveLoop,
     Runtime,
     RuntimeVersionConfig,
     SnapStartResponse,
@@ -590,6 +591,7 @@ class Function:
         default_factory=dict
     )  # key is $LATEST(?), version or alias
     reserved_concurrent_executions: Optional[int] = None
+    recursive_loop: RecursiveLoop = RecursiveLoop.Terminate
     provisioned_concurrency_configs: dict[str, ProvisionedConcurrencyConfiguration] = (
         dataclasses.field(default_factory=dict)
     )

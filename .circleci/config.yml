@@ -581,7 +581,8 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-lambda-event-source-mapping-v2-feature:
+  # Regression testing for ESM v1 until scheduled removal for v4.0
+  itest-lambda-event-source-mapping-v1-feature:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     environment:
@@ -594,9 +595,9 @@ jobs:
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
-          name: Test Lambda Event Source Mapping v2 feature
+          name: Test Lambda Event Source Mapping v1 feature
           environment:
-            LAMBDA_EVENT_SOURCE_MAPPING: "v2"
+            LAMBDA_EVENT_SOURCE_MAPPING: "v1"
             TEST_PATH: "tests/aws/services/lambda_/event_source_mapping"
             COVERAGE_ARGS: "-p"
           command: |
@@ -988,7 +989,7 @@ workflows:
           requires:
             - preflight
             - test-selection
-      - itest-lambda-event-source-mapping-v2-feature:
+      - itest-lambda-event-source-mapping-v1-feature:
           requires:
             - preflight
             - test-selection
@@ -1055,7 +1056,7 @@ workflows:
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
-            - itest-lambda-event-source-mapping-v2-feature
+            - itest-lambda-event-source-mapping-v1-feature
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
@@ -1072,7 +1073,7 @@ workflows:
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
-            - itest-lambda-event-source-mapping-v2-feature
+            - itest-lambda-event-source-mapping-v1-feature
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64

@@ -1,4 +1,4 @@
-# Generated from ASLParser.g4 by ANTLR 4.13.1
+# Generated from ASLParser.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .ASLParser import ASLParser
@@ -79,8 +79,13 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#input_path_decl.
-    def visitInput_path_decl(self, ctx:ASLParser.Input_path_declContext):
+    # Visit a parse tree produced by ASLParser#input_path_decl_path_context_object.
+    def visitInput_path_decl_path_context_object(self, ctx:ASLParser.Input_path_decl_path_context_objectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#input_path_decl_path.
+    def visitInput_path_decl_path(self, ctx:ASLParser.Input_path_decl_pathContext):
         return self.visitChildren(ctx)
 
 
@@ -94,8 +99,13 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#output_path_decl.
-    def visitOutput_path_decl(self, ctx:ASLParser.Output_path_declContext):
+    # Visit a parse tree produced by ASLParser#output_path_decl_path_context_object.
+    def visitOutput_path_decl_path_context_object(self, ctx:ASLParser.Output_path_decl_path_context_objectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#output_path_decl_path.
+    def visitOutput_path_decl_path(self, ctx:ASLParser.Output_path_decl_pathContext):
         return self.visitChildren(ctx)
 
 
@@ -159,8 +169,13 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#items_path_decl.
-    def visitItems_path_decl(self, ctx:ASLParser.Items_path_declContext):
+    # Visit a parse tree produced by ASLParser#items_path_decl_path_context_object.
+    def visitItems_path_decl_path_context_object(self, ctx:ASLParser.Items_path_decl_path_context_objectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#items_path_decl_path.
+    def visitItems_path_decl_path(self, ctx:ASLParser.Items_path_decl_pathContext):
         return self.visitChildren(ctx)
 
 
@@ -304,8 +319,13 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#variable_decl.
-    def visitVariable_decl(self, ctx:ASLParser.Variable_declContext):
+    # Visit a parse tree produced by ASLParser#variable_decl_path.
+    def visitVariable_decl_path(self, ctx:ASLParser.Variable_decl_pathContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#variable_decl_path_context_object.
+    def visitVariable_decl_path_context_object(self, ctx:ASLParser.Variable_decl_path_context_objectContext):
         return self.visitChildren(ctx)
 
 
@@ -441,6 +461,16 @@ class ASLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLParser#label_decl.
     def visitLabel_decl(self, ctx:ASLParser.Label_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#result_writer_decl.
+    def visitResult_writer_decl(self, ctx:ASLParser.Result_writer_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#result_writer_field.
+    def visitResult_writer_field(self, ctx:ASLParser.Result_writer_fieldContext):
         return self.visitChildren(ctx)
 
 

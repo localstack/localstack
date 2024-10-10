@@ -350,6 +350,11 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                 kwargs["Timeout"] = int(kwargs["Timeout"])
             if "MemorySize" in kwargs:
                 kwargs["MemorySize"] = int(kwargs["MemorySize"])
+            if model_tags := model.get("Tags"):
+                tags = {}
+                for tag in model_tags:
+                    tags[tag["Key"]] = tag["Value"]
+                kwargs["Tags"] = tags
 
             # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
@@ -362,6 +367,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
             kwargs["Code"] = _get_lambda_code_param(model)
             create_response = lambda_client.create_function(**kwargs)
             model["Arn"] = create_response["FunctionArn"]
+
         get_fn_response = lambda_client.get_function(FunctionName=model["Arn"])
         match get_fn_response["Configuration"]["State"]:
             case "Pending":

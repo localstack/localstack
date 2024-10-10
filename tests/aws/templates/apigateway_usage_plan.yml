@@ -1,6 +1,8 @@
 Parameters:
   QuotaLimit:
     Type: Number
+  TagValue:
+    Type: String
   RestApiName:
     Type: String
 Resources:
@@ -27,6 +29,12 @@ Resources:
         Limit:
           Ref: QuotaLimit
         Period: MONTH
+      Tags:
+        - Key: test
+          Value:
+            Ref: TagValue
+        - Key: test2
+          Value: hardcoded
     DependsOn:
       - Stage
   MockMethod:

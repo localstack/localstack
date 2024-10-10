@@ -1,8 +1,9 @@
 import os
 
 import pytest
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, WaiterError
 
+from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -81,7 +82,6 @@ def test_nested_stack_output_refs(deploy_cfn_template, s3_create_bucket, aws_cli
     assert f"{nested_bucket_name}-suffix" == result.outputs["CustomOutput"]
 
 
-@pytest.mark.skip(reason="Nested stacks don't work properly")
 @markers.aws.validated
 def test_nested_with_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     bucket_name = s3_create_bucket()
@@ -291,3 +291,62 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
         StackName=stack.outputs["NestedStackArn"]
     )
     assert ":" not in nested_stack["Stacks"][0]["StackName"]
+
+
+@markers.aws.validated
+def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_name, snapshot):
+    """
+    This test confirms that after deleting a stack parent with a failed nested stack. The nested stack is also deleted
+    """
+
+    bucket_name = s3_create_bucket()
+    aws_client.s3.upload_file(
+        os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_failed_nested_stack_child.yml"
+        ),
+        Bucket=bucket_name,
+        Key="child.yml",
+    )
+
+    stack_name = f"stack-{short_uid()}"
+    child_template_url = (
+        f"https://{bucket_name}.s3.{config.LOCALSTACK_HOST.host_and_port()}/child.yml"
+    )
+    if is_aws_cloud():
+        child_template_url = f"https://{bucket_name}.s3.{region_name}.amazonaws.com/child.yml"
+
+    aws_client.cloudformation.create_stack(
+        StackName=stack_name,
+        TemplateBody=load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/cfn_failed_nested_stack_parent.yml"
+            ),
+        ),
+        Parameters=[
+            {"ParameterKey": "TemplateUri", "ParameterValue": child_template_url},
+        ],
+        OnFailure="DO_NOTHING",
+        Capabilities=["CAPABILITY_NAMED_IAM"],
+    )
+
+    with pytest.raises(WaiterError):
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+    stack_status = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0][
+        "StackStatus"
+    ]
+    assert stack_status == "CREATE_FAILED"
+
+    stacks = aws_client.cloudformation.describe_stacks()["Stacks"]
+    nested_stack_name = [
+        stack for stack in stacks if f"{stack_name}-ChildStack-" in stack["StackName"]
+    ][0]["StackName"]
+
+    aws_client.cloudformation.delete_stack(StackName=stack_name)
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+    with pytest.raises(ClientError) as ex:
+        aws_client.cloudformation.describe_stacks(StackName=nested_stack_name)
+
+    snapshot.match("error", ex.value.response)
+    snapshot.add_transformer(snapshot.transform.regex(nested_stack_name, "<nested-stack-name>"))

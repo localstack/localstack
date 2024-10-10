@@ -1,0 +1,23 @@
+{
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_input_path[$$.Execution.Input]": {
+    "last_validated_date": "2024-09-11T12:47:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_input_path[$$]": {
+    "last_validated_date": "2024-09-11T12:46:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_items_path": {
+    "last_validated_date": "2024-09-11T12:48:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_output_path[$$.Execution.Input]": {
+    "last_validated_date": "2024-09-11T12:47:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_output_path[$$]": {
+    "last_validated_date": "2024-09-11T12:47:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_result_selector": {
+    "last_validated_date": "2024-09-11T12:48:08+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/context_object/test_context_object.py::TestSnfBase::test_variable": {
+    "last_validated_date": "2024-09-11T12:48:23+00:00"
+  }
+}
