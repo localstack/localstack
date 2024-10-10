@@ -4409,5 +4409,59 @@
         "status_code": 403
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[python-RequestResponse]": {
+    "recorded-date": "09-10-2024, 16:15:57",
+    "recorded-content": {
+      "invoke-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": "null",
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[python-Event]": {
+    "recorded-date": "09-10-2024, 16:16:05",
+    "recorded-content": {
+      "invoke-result": {
+        "Payload": "",
+        "StatusCode": 202,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[nodejs-RequestResponse]": {
+    "recorded-date": "09-10-2024, 16:16:14",
+    "recorded-content": {
+      "invoke-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": "null",
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[nodejs-Event]": {
+    "recorded-date": "09-10-2024, 16:16:28",
+    "recorded-content": {
+      "invoke-result": {
+        "Payload": "",
+        "StatusCode": 202,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
   }
 }

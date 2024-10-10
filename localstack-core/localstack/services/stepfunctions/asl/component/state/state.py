@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import copy
 import datetime
 import json
 import logging
@@ -14,6 +15,7 @@ from localstack.aws.api.stepfunctions import (
     StateEnteredEventDetails,
     StateExitedEventDetails,
 )
+from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl import CatcherOutput
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
@@ -57,24 +59,30 @@ class CommonStateField(EvalComponent, ABC):
     # be used in a state. Some state types, such as Choice, don't support or use the End field.
     continue_with: ContinueWith
 
+    # Holds a human-readable description of the state.
+    comment: Optional[Comment]
+
+    # A path that selects a portion of the state's input to be passed to the state's state_task for processing.
+    # If omitted, it has the value $ which designates the entire input.
+    input_path: InputPath
+
+    # A path that selects a portion of the state's output to be passed to the next state.
+    # If omitted, it has the value $ which designates the entire output.
+    output_path: OutputPath
+
+    state_entered_event_type: Final[HistoryEventType]
+    state_exited_event_type: Final[Optional[HistoryEventType]]
+
     def __init__(
         self,
         state_entered_event_type: HistoryEventType,
         state_exited_event_type: Optional[HistoryEventType],
     ):
-        # Holds a human-readable description of the state.
-        self.comment: Optional[Comment] = None
-
-        # A path that selects a portion of the state's input to be passed to the state's state_task for processing.
-        # If omitted, it has the value $ which designates the entire input.
-        self.input_path: InputPath = InputPath(InputPath.DEFAULT_PATH)
-
-        # A path that selects a portion of the state's output to be passed to the next state.
-        # If omitted, it has the value $ which designates the entire output.
-        self.output_path: OutputPath = OutputPath(OutputPath.DEFAULT_PATH)
-
-        self.state_entered_event_type: Final[HistoryEventType] = state_entered_event_type
-        self.state_exited_event_type: Final[Optional[HistoryEventType]] = state_exited_event_type
+        self.comment = None
+        self.input_path = InputPath(InputPath.DEFAULT_PATH)
+        self.output_path = OutputPath(OutputPath.DEFAULT_PATH)
+        self.state_entered_event_type = state_entered_event_type
+        self.state_exited_event_type = state_exited_event_type
 
     def from_state_props(self, state_props: StateProps) -> None:
         self.name = state_props.name
@@ -165,13 +173,20 @@ class CommonStateField(EvalComponent, ABC):
         if not isinstance(env.program_state(), ProgramRunning):
             return
 
-        # Ensure the state's output is within state size quotas.
+        # Obtain a reference to the state output.
         output = env.stack[-1]
-        self._verify_size_quota(env=env, value=output)
 
-        # Filter the input onto the input.
-        if self.output_path:
-            self.output_path.eval(env)
+        # CatcherOutputs (i.e. outputs of Catch blocks) are never subjects of output normalisers,
+        # the entire value is instead passed by value as input to the next state, or program output.
+        if isinstance(output, CatcherOutput):
+            env.inp = copy.deepcopy(output)
+        else:
+            # Ensure the state's output is within state size quotas.
+            self._verify_size_quota(env=env, value=output)
+
+            # Filter the input onto the input.
+            if self.output_path:
+                self.output_path.eval(env)
 
         if self.state_exited_event_type is not None:
             env.event_manager.add_event(

@@ -157,14 +157,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # see the attributes we need: https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html
         # would need more work to have the proper format out of moto, maybe extract the model to our store
+        attributes = moto_response["Attributes"]
         for attr in vars(moto_topic_model):
             if "_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
-                moto_response["Attributes"][key] = getattr(moto_topic_model, attr)
+                attributes[key] = getattr(moto_topic_model, attr)
             elif attr == "signature_version":
-                moto_response["Attributes"]["SignatureVersion"] = moto_topic_model.signature_version
+                attributes["SignatureVersion"] = moto_topic_model.signature_version
             elif attr == "archive_policy":
-                moto_response["Attributes"]["ArchivePolicy"] = moto_topic_model.archive_policy
+                attributes["ArchivePolicy"] = moto_topic_model.archive_policy
+
         return moto_response
 
     def publish_batch(

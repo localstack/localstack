@@ -20,6 +20,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
+from localstack.utils.testutil import get_lambda_log_events
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
@@ -572,18 +573,21 @@ def handler(event, context):
             yield prov
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..AWSTraceHeader", "$..SenderId"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..AWSTraceHeader", "$..SenderId", "$..eventSourceARN"]
+    )
     def test_invoke_lambda_eventbridge(self, infrastructure, aws_client, snapshot):
         outputs = infrastructure.get_stack_outputs(self.EVENT_BRIDGE_STACK)
         input_fn_name = outputs.get(self.INPUT_FUNCTION_NAME)
         triggered_fn_name = outputs.get(self.TRIGGERED_FUNCTION_NAME)
         test_queue_name = outputs.get(self.TEST_QUEUE_NAME)
 
+        snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.key_value("messageId"))
         snapshot.add_transformer(snapshot.transform.key_value("receiptHandle"))
         snapshot.add_transformer(
             snapshot.transform.key_value("SenderId"), priority=2
-        )  # TODO currently on LS sender-id == account-id -> replaces part of the eventSourceARN without the priority
+        )  # TODO currently on LS sender-id == account-id -> replaces part of the eventSourceARN without the priority -> skips "$..eventSourceARN"
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "AWSTraceHeader", "trace-header", reference_replacement=False
@@ -603,13 +607,9 @@ def handler(event, context):
         wait_until_log_group_exists(triggered_fn_name, aws_client.logs)
 
         def _filter_message_triggered():
-            log_events = aws_client.logs.filter_log_events(
-                logGroupName=f"/aws/lambda/{triggered_fn_name}"
-            )["events"]
-            filtered_logs = [event for event in log_events if event["message"].startswith("{")]
-            assert len(filtered_logs) >= 1
-            filtered_logs.sort(key=lambda e: e["timestamp"], reverse=True)
-            return filtered_logs[0]
+            log_events = get_lambda_log_events(triggered_fn_name, logs_client=aws_client.logs)
+            assert len(log_events) >= 1
+            return log_events[0]
 
-        log = retry(_filter_message_triggered, retries=50 if is_aws_cloud() else 10)
-        snapshot.match("filtered_message_event_bus_sqs", log["message"])
+        logs = retry(_filter_message_triggered, retries=50 if is_aws_cloud() else 10)
+        snapshot.match("filtered_message_event_bus_sqs", logs)

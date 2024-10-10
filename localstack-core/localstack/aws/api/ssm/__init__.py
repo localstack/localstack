@@ -99,6 +99,7 @@ DryRun = bool
 Duration = int
 EffectiveInstanceAssociationMaxResults = int
 ErrorCount = int
+ExcludeAccount = str
 ExecutionRoleName = str
 GetInventorySchemaMaxResults = int
 GetOpsMetadataMaxResults = int
@@ -354,6 +355,7 @@ TagKey = str
 TagValue = str
 TargetCount = int
 TargetKey = str
+TargetLocationsURL = str
 TargetMapKey = str
 TargetMapValue = str
 TargetType = str
@@ -1985,6 +1987,7 @@ class Association(TypedDict, total=False):
     TargetMaps: Optional[TargetMaps]
 
 
+ExcludeAccounts = List[ExcludeAccount]
 Regions = List[Region]
 
 
@@ -1995,6 +1998,11 @@ class TargetLocation(TypedDict, total=False):
     TargetLocationMaxErrors: Optional[MaxErrors]
     ExecutionRoleName: Optional[ExecutionRoleName]
     TargetLocationAlarmConfiguration: Optional[AlarmConfiguration]
+    IncludeChildOrganizationUnits: Optional[Boolean]
+    ExcludeAccounts: Optional[ExcludeAccounts]
+    Targets: Optional[Targets]
+    TargetsMaxConcurrency: Optional[MaxConcurrency]
+    TargetsMaxErrors: Optional[MaxErrors]
 
 
 TargetLocations = List[TargetLocation]
@@ -2283,6 +2291,7 @@ class AutomationExecution(TypedDict, total=False):
     ProgressCounters: Optional[ProgressCounters]
     AlarmConfiguration: Optional[AlarmConfiguration]
     TriggeredAlarms: Optional[AlarmStateInformationList]
+    TargetLocationsURL: Optional[TargetLocationsURL]
     AutomationSubtype: Optional[AutomationSubtype]
     ScheduledTime: Optional[DateTime]
     Runbooks: Optional[Runbooks]
@@ -2328,6 +2337,7 @@ class AutomationExecutionMetadata(TypedDict, total=False):
     AutomationType: Optional[AutomationType]
     AlarmConfiguration: Optional[AlarmConfiguration]
     TriggeredAlarms: Optional[AlarmStateInformationList]
+    TargetLocationsURL: Optional[TargetLocationsURL]
     AutomationSubtype: Optional[AutomationSubtype]
     ScheduledTime: Optional[DateTime]
     Runbooks: Optional[Runbooks]
@@ -5316,6 +5326,7 @@ class StartAutomationExecutionRequest(ServiceRequest):
     TargetLocations: Optional[TargetLocations]
     Tags: Optional[TagList]
     AlarmConfiguration: Optional[AlarmConfiguration]
+    TargetLocationsURL: Optional[TargetLocationsURL]
 
 
 class StartAutomationExecutionResult(TypedDict, total=False):
@@ -6987,6 +6998,7 @@ class SsmApi:
         target_locations: TargetLocations = None,
         tags: TagList = None,
         alarm_configuration: AlarmConfiguration = None,
+        target_locations_url: TargetLocationsURL = None,
         **kwargs,
     ) -> StartAutomationExecutionResult:
         raise NotImplementedError

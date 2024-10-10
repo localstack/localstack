@@ -37,7 +37,7 @@ freeze:                   ## Run pip freeze -l in the virtual environment
 
 upgrade-pinned-dependencies: venv
 	$(VENV_RUN); $(PIP_CMD) install --upgrade pip-tools pre-commit
-	$(VENV_RUN); pip-compile --strip-extras --upgrade --strip-extras -o requirements-basic.txt pyproject.toml
+	$(VENV_RUN); pip-compile --strip-extras --upgrade -o requirements-basic.txt pyproject.toml
 	$(VENV_RUN); pip-compile --strip-extras --upgrade --extra runtime -o requirements-runtime.txt pyproject.toml
 	$(VENV_RUN); pip-compile --strip-extras --upgrade --extra test -o requirements-test.txt pyproject.toml
 	$(VENV_RUN); pip-compile --strip-extras --upgrade --extra dev -o requirements-dev.txt pyproject.toml

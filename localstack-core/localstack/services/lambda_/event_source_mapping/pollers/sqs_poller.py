@@ -44,7 +44,7 @@ class SqsPoller(Poller):
     @cached_property
     def is_fifo_queue(self) -> bool:
         # Alternative heuristic: self.queue_url.endswith(".fifo"), but we need the call to get_queue_attributes for IAM
-        return self.get_queue_attributes().get("FifoQueue") == "true"
+        return self.get_queue_attributes().get("FifoQueue", "false").lower() == "true"
 
     def get_queue_attributes(self) -> dict:
         """The API call to sqs:GetQueueAttributes is required for IAM policy streamsing."""

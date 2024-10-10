@@ -173,13 +173,19 @@ def create_from_environment() -> LocalstackRuntime:
     Creates a new runtime instance from the current environment. It uses a plugin manager to resolve the
     necessary components from the ``localstack.runtime.components`` plugin namespace to start the runtime.
 
-    TODO: perhaps we could control which components should be instantiated with a config variable/constant
-
     :return: a new LocalstackRuntime instance
     """
     hooks.on_runtime_create.run()
 
     plugin_manager = PluginManager(Components.namespace)
+    if config.RUNTIME_COMPONENTS:
+        try:
+            component = plugin_manager.load(config.RUNTIME_COMPONENTS)
+            return LocalstackRuntime(component)
+        except Exception as e:
+            raise ValueError(
+                f"Could not load runtime components from config RUNTIME_COMPONENTS={config.RUNTIME_COMPONENTS}: {e}."
+            ) from e
     components = plugin_manager.load_all()
 
     if not components:

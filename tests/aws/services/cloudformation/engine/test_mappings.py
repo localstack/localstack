@@ -153,3 +153,33 @@ class TestCloudFormationMappings:
                 ],
             )
         snapshot.match("mapping_minimum_level_exc", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "map_key,should_error",
+        [
+            ("A", False),
+            ("B", True),
+        ],
+        ids=["should-deploy", "should-not-deploy"],
+    )
+    def test_mapping_ref_map_key(self, deploy_cfn_template, aws_client, map_key, should_error):
+        topic_name = f"topic-{short_uid()}"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                THIS_DIR, "../../../templates/mappings/mapping-ref-map-key.yaml"
+            ),
+            parameters={
+                "MapName": "MyMap",
+                "MapKey": map_key,
+                "TopicName": topic_name,
+            },
+        )
+
+        topic_arn = stack.outputs.get("TopicArn")
+        if should_error:
+            assert topic_arn is None
+        else:
+            assert topic_arn is not None
+
+            aws_client.sns.get_topic_attributes(TopicArn=topic_arn)

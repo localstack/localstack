@@ -895,7 +895,7 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
     ).strip()
     if skip_local_resolution:
         for skip_pattern in re.split(r"[,;\s]+", skip_local_resolution):
-            dns_server.add_skip(skip_pattern)
+            dns_server.add_skip(skip_pattern.strip(" \"'"))
 
     dns_server.start()
     if not dns_server.wait_is_up(timeout=5):

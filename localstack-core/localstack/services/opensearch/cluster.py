@@ -466,6 +466,7 @@ class OpensearchCluster(Server):
 
     def _create_env_vars(self, directories: Directories) -> Dict:
         env_vars = {
+            "JAVA_HOME": os.path.join(directories.install, "jdk"),
             "OPENSEARCH_JAVA_OPTS": os.environ.get("OPENSEARCH_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "OPENSEARCH_TMPDIR": directories.tmp,
         }
@@ -689,6 +690,7 @@ class ElasticsearchCluster(OpensearchCluster):
 
     def _create_env_vars(self, directories: Directories) -> Dict:
         return {
+            "JAVA_HOME": os.path.join(directories.install, "jdk"),
             "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "ES_TMPDIR": directories.tmp,
         }

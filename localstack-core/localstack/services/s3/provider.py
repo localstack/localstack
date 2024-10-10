@@ -167,6 +167,7 @@ from localstack.aws.api.s3 import (
     Prefix,
     PublicAccessBlockConfiguration,
     PutBucketAclRequest,
+    PutBucketLifecycleConfigurationOutput,
     PutObjectAclOutput,
     PutObjectAclRequest,
     PutObjectLegalHoldOutput,
@@ -192,6 +193,7 @@ from localstack.aws.api.s3 import (
     StorageClass,
     Tagging,
     Token,
+    TransitionDefaultMinimumObjectSize,
     UploadIdMarker,
     UploadPartCopyOutput,
     UploadPartCopyRequest,
@@ -3015,8 +3017,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: BucketLifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
+        transition_default_minimum_object_size: TransitionDefaultMinimumObjectSize = None,
         **kwargs,
-    ) -> None:
+    ) -> PutBucketLifecycleConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         validate_lifecycle_configuration(lifecycle_configuration)
@@ -3025,6 +3028,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # for now, we keep a cache and get it everytime we fetch an object
         s3_bucket.lifecycle_rules = lifecycle_configuration["Rules"]
         self._expiration_cache[bucket].clear()
+        return PutBucketLifecycleConfigurationOutput(
+            TransitionDefaultMinimumObjectSize=transition_default_minimum_object_size
+        )
 
     def delete_bucket_lifecycle(
         self,

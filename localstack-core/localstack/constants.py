@@ -75,7 +75,7 @@ ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 # environment variable name to tag collect metrics during a test run
 ENV_INTERNAL_TEST_COLLECT_METRIC = "LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC"
 
-# environment variable that flags whether pro was activated. do not use for security purposes!
+# environment variable that flags whether pro was activated. do not use it for security purposes!
 ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 
 # content types / encodings
@@ -128,7 +128,7 @@ API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v
 # new analytics API endpoint
 ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack.cloud/v1"
 
-# environment variable to indicates this process should run the localstack infrastructure
+# environment variable to indicate this process should run the localstack infrastructure
 LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 
 # AWS region us-east-1
