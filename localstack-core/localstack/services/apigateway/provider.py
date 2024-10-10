@@ -5,6 +5,7 @@ import logging
 import re
 from copy import deepcopy
 from datetime import datetime
+from operator import itemgetter
 from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
@@ -99,6 +100,7 @@ from localstack.services.apigateway.helpers import (
     OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,
+    get_moto_backend,
     get_moto_rest_api,
     get_regional_domain_name,
     get_rest_api_container,
@@ -725,7 +727,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         **kwargs,
     ) -> Method:
         # TODO: add missing validation? check order of validation as well
-        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_backend = get_moto_backend(context.account_id, context.region)
         moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
         if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
             raise NotFoundException("Invalid Resource identifier specified")
@@ -792,7 +794,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> Method:
         # see https://www.linkedin.com/pulse/updating-aws-cli-patch-operations-rest-api-yitzchak-meirovich/
         # for path construction
-        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_backend = get_moto_backend(context.account_id, context.region)
         moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
         if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
             raise NotFoundException("Invalid Resource identifier specified")
@@ -907,7 +909,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         http_method: String,
         **kwargs,
     ) -> None:
-        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_backend = get_moto_backend(context.account_id, context.region)
         moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
         if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
             raise NotFoundException("Invalid Resource identifier specified")
@@ -929,7 +931,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         **kwargs,
     ) -> MethodResponse:
         # this could probably be easier in a patch?
-        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_backend = get_moto_backend(context.account_id, context.region)
         moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
         # TODO: snapshot test different possibilities
         if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
@@ -1002,7 +1004,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> Stage:
         call_moto(context)
 
-        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_backend = get_moto_backend(context.account_id, context.region)
         moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
         if not (moto_stage := moto_rest_api.stages.get(stage_name)):
             raise NotFoundException("Invalid Stage identifier specified")
@@ -2076,25 +2078,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         include_values: NullableBoolean = None,
         **kwargs,
     ) -> ApiKeys:
-        moto_response: ApiKeys = call_moto(context=context)
-        item_list = PaginatedList(moto_response["items"])
+        # TODO: migrate API keys in our store
+        moto_backend = get_moto_backend(context.account_id, context.region)
+        api_keys = [api_key.to_json() for api_key in moto_backend.keys.values()]
+        if not include_values:
+            for api_key in api_keys:
+                api_key.pop("value")
 
-        def token_generator(item):
-            return item["id"]
+        item_list = PaginatedList(api_keys)
 
         def filter_function(item):
             return item["name"].startswith(name_query)
 
         paginated_list, next_token = item_list.get_page(
-            token_generator=token_generator,
+            token_generator=itemgetter("id"),
             next_token=position,
             page_size=limit,
             filter_function=filter_function if name_query else None,
         )
 
-        return ApiKeys(
-            items=paginated_list, warnings=moto_response.get("warnings"), position=next_token
-        )
+        return ApiKeys(items=paginated_list, position=next_token)
 
     def update_api_key(
         self,
