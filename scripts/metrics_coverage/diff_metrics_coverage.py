@@ -216,7 +216,7 @@ def create_readable_report(
                 "<div>     Note: this is probalby wrong usage of the script. It includes operations that have been covered with the acceptance tests only"
             )
             fd.write(f"<p>{additional_test_details}</p></div>\n")
-        fd.write("</body></html")
+        fd.write("</body></html>")
 
 
 def main():
