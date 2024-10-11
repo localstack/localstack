@@ -367,11 +367,11 @@ class KmsKey:
 
     def derive_shared_secret(self, public_key: bytes) -> bytes:
         key_spec = self.metadata.get("KeySpec")
-        if key_spec in ["ECC_NIST_P256", "ECC_SECG_P256K1"]:
+        if key_spec in [KeySpec.ECC_NIST_P256, KeySpec.ECC_SECG_P256K1]:
             algorithm = hashes.SHA256()
-        elif key_spec == "ECC_NIST_P384":
+        elif key_spec == KeySpec.ECC_NIST_P384:
             algorithm = hashes.SHA384()
-        elif key_spec == "ECC_NIST_P521":
+        elif key_spec == KeySpec.ECC_NIST_P521:
             algorithm = hashes.SHA512()
         else:
             raise InvalidKeyUsageException(
