@@ -1,4 +1,5 @@
 import abc
+from enum import StrEnum
 from typing import TYPE_CHECKING, Union
 
 """
@@ -249,7 +250,7 @@ class TypedServiceClientFactory(abc.ABC):
     xray: Union["XRayClient", "MetadataRequestInjector[XRayClient]"]
 
 
-class ServicePrincipal(str):
+class ServicePrincipal(StrEnum):
     """
     Class containing defined service principals.
     To add to this list, please look up the correct service principal name for the service.
@@ -264,6 +265,7 @@ class ServicePrincipal(str):
     """
 
     apigateway = "apigateway"
+    dms = "dms"
     events = "events"
     firehose = "firehose"
     lambda_ = "lambda"
