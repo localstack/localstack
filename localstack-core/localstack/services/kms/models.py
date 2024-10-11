@@ -21,14 +21,18 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.padding import PSS, PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from localstack.aws.api.kms import (
     CreateAliasRequest,
     CreateGrantRequest,
     CreateKeyRequest,
     EncryptionContextType,
+    InvalidKeyUsageException,
     KeyMetadata,
+    KeySpec,
     KeyState,
+    KeyUsageType,
     KMSInvalidMacException,
     KMSInvalidSignatureException,
     MacAlgorithmSpec,
@@ -361,6 +365,28 @@ class KmsKey:
             # AWS itself raises this exception without any additional message.
             raise KMSInvalidSignatureException()
 
+    def derive_shared_secret(self, public_key: bytes) -> bytes:
+        key_spec = self.metadata.get("KeySpec")
+        match key_spec:
+            case KeySpec.ECC_NIST_P256 | KeySpec.ECC_SECG_P256K1:
+                algorithm = hashes.SHA256()
+            case KeySpec.ECC_NIST_P384:
+                algorithm = hashes.SHA384()
+            case KeySpec.ECC_NIST_P521:
+                algorithm = hashes.SHA512()
+            case _:
+                raise InvalidKeyUsageException(
+                    f"{self.metadata['Arn']} key usage is {self.metadata['KeyUsage']} which is not valid for DeriveSharedSecret."
+                )
+
+        return HKDF(
+            algorithm=algorithm,
+            salt=None,
+            info=b"",
+            length=algorithm.digest_size,
+            backend=default_backend(),
+        ).derive(public_key)
+
     # This method gets called when a key is replicated to another region. It's meant to populate the required metadata
     # fields in a new replica key.
     def replicate_metadata(
@@ -616,14 +642,27 @@ class KmsKey:
                 raise ValidationException(
                     "You must specify a KeyUsage value for all KMS keys except for symmetric encryption keys."
                 )
-            elif request_key_usage != "GENERATE_VERIFY_MAC":
+            elif request_key_usage != KeyUsageType.GENERATE_VERIFY_MAC:
                 raise ValidationException(
                     f"1 validation error detected: Value '{request_key_usage}' at 'keyUsage' "
                     f"failed to satisfy constraint: Member must satisfy enum value set: "
                     f"[ENCRYPT_DECRYPT, SIGN_VERIFY, GENERATE_VERIFY_MAC]"
                 )
             else:
-                return "GENERATE_VERIFY_MAC"
+                return KeyUsageType.GENERATE_VERIFY_MAC
+        elif request_key_usage == KeyUsageType.KEY_AGREEMENT:
+            if key_spec not in [
+                KeySpec.ECC_NIST_P256,
+                KeySpec.ECC_NIST_P384,
+                KeySpec.ECC_NIST_P521,
+                KeySpec.ECC_SECG_P256K1,
+                KeySpec.SM2,
+            ]:
+                raise ValidationException(
+                    f"KeyUsage {request_key_usage} is not compatible with KeySpec {key_spec}"
+                )
+            else:
+                return request_key_usage
         else:
             return request_key_usage or "ENCRYPT_DECRYPT"
 
