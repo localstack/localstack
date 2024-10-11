@@ -32,7 +32,7 @@ def allow_event_rule_to_sqs_queue(
     sqs_queue_arn: str,
     event_rule_arn: str,
 ):
-    """Creates an SQS Queue Policy that allows te given eventbus rule to write tho the given sqs queue."""
+    """Creates an SQS Queue Policy that allows to given eventbus rule to write the given sqs queue."""
     return aws_client.sqs.set_queue_attributes(
         QueueUrl=sqs_queue_url,
         Attributes={
