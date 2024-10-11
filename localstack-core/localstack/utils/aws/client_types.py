@@ -264,6 +264,7 @@ class ServicePrincipal(str):
     """
 
     apigateway = "apigateway"
+    dms = "dms"
     events = "events"
     firehose = "firehose"
     lambda_ = "lambda"
