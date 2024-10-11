@@ -1728,7 +1728,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_derive_shared_secret": {
-    "recorded-date": "11-10-2024, 06:11:26",
+    "recorded-date": "11-10-2024, 07:07:06",
     "recorded-content": {
       "response": {
         "KeyAgreementAlgorithm": "ECDH",
