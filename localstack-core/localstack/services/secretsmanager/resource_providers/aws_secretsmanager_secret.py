@@ -204,7 +204,7 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
         model = request.desired_state
         secrets_manager = request.aws_client_factory.secretsmanager
 
-        secrets_manager.delete_secret(SecretId=model["Name"], ForceDeleteWithoutRecovery=True)
+        secrets_manager.delete_secret(SecretId=model["Name"])
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
