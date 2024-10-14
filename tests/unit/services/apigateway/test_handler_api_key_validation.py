@@ -97,7 +97,7 @@ def create_usage_plan(moto_backend):
         backend = backend or moto_backend
         stage_config = {"name": short_uid()}
         if attach_stage:
-            stage_config = {"apiStages": [{"apiId": TEST_API_ID, "stage": TEST_API_STAGE}]}
+            stage_config["apiStages"] = [{"apiId": TEST_API_ID, "stage": TEST_API_STAGE}]
         usage_plan = backend.create_usage_plan(stage_config)
         if attach_key_id:
             backend.create_usage_plan_key(
