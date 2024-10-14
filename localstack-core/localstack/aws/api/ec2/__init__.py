@@ -11,6 +11,7 @@ from localstack.aws.api import (
     ServiceException as ServiceException,
 )
 
+AccountID = str
 AddressMaxResults = int
 AllocationId = str
 AllowedInstanceType = str
@@ -62,6 +63,7 @@ DefaultingDhcpOptionsId = str
 DescribeAddressTransfersMaxResults = int
 DescribeByoipCidrsMaxResults = int
 DescribeCapacityBlockOfferingsMaxResults = int
+DescribeCapacityReservationBillingRequestsRequestMaxResults = int
 DescribeCapacityReservationFleetsMaxResults = int
 DescribeCapacityReservationsMaxResults = int
 DescribeClassicLinkInstancesMaxResults = int
@@ -593,6 +595,11 @@ class ByoipCidrState(StrEnum):
     provisioned_not_publicly_advertisable = "provisioned-not-publicly-advertisable"
 
 
+class CallerRole(StrEnum):
+    odcr_owner = "odcr-owner"
+    unused_reservation_billing_owner = "unused-reservation-billing-owner"
+
+
 class CancelBatchErrorCode(StrEnum):
     fleetRequestIdDoesNotExist = "fleetRequestIdDoesNotExist"
     fleetRequestIdMalformed = "fleetRequestIdMalformed"
@@ -606,6 +613,15 @@ class CancelSpotInstanceRequestState(StrEnum):
     closed = "closed"
     cancelled = "cancelled"
     completed = "completed"
+
+
+class CapacityReservationBillingRequestStatus(StrEnum):
+    pending = "pending"
+    accepted = "accepted"
+    rejected = "rejected"
+    cancelled = "cancelled"
+    revoked = "revoked"
+    expired = "expired"
 
 
 class CapacityReservationFleetState(StrEnum):
@@ -3519,6 +3535,15 @@ class AcceptAddressTransferResult(TypedDict, total=False):
     AddressTransfer: Optional[AddressTransfer]
 
 
+class AcceptCapacityReservationBillingOwnershipRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    CapacityReservationId: CapacityReservationId
+
+
+class AcceptCapacityReservationBillingOwnershipResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
 class TargetConfigurationRequest(TypedDict, total=False):
     InstanceCount: Optional[Integer]
     OfferingId: ReservedInstancesOfferingId
@@ -4364,6 +4389,16 @@ class AssociateAddressRequest(ServiceRequest):
 
 class AssociateAddressResult(TypedDict, total=False):
     AssociationId: Optional[String]
+
+
+class AssociateCapacityReservationBillingOwnerRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    CapacityReservationId: CapacityReservationId
+    UnusedReservationBillingOwnerId: AccountID
+
+
+class AssociateCapacityReservationBillingOwnerResult(TypedDict, total=False):
+    Return: Optional[Boolean]
 
 
 class AssociateClientVpnTargetNetworkRequest(ServiceRequest):
@@ -5368,6 +5403,26 @@ class CapacityReservation(TypedDict, total=False):
     PlacementGroupArn: Optional[PlacementGroupArn]
     CapacityAllocations: Optional[CapacityAllocations]
     ReservationType: Optional[CapacityReservationType]
+    UnusedReservationBillingOwnerId: Optional[AccountID]
+
+
+class CapacityReservationInfo(TypedDict, total=False):
+    InstanceType: Optional[String]
+    AvailabilityZone: Optional[AvailabilityZoneName]
+    Tenancy: Optional[CapacityReservationTenancy]
+
+
+class CapacityReservationBillingRequest(TypedDict, total=False):
+    CapacityReservationId: Optional[String]
+    RequestedBy: Optional[String]
+    UnusedReservationBillingOwnerId: Optional[AccountID]
+    LastUpdateTime: Optional[MillisecondDateTime]
+    Status: Optional[CapacityReservationBillingRequestStatus]
+    StatusMessage: Optional[String]
+    CapacityReservationInfo: Optional[CapacityReservationInfo]
+
+
+CapacityReservationBillingRequestSet = List[CapacityReservationBillingRequest]
 
 
 class FleetCapacityReservation(TypedDict, total=False):
@@ -10275,6 +10330,20 @@ class DescribeCapacityBlockOfferingsResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+class DescribeCapacityReservationBillingRequestsRequest(ServiceRequest):
+    CapacityReservationIds: Optional[CapacityReservationIdSet]
+    Role: CallerRole
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeCapacityReservationBillingRequestsRequestMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+class DescribeCapacityReservationBillingRequestsResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    CapacityReservationBillingRequests: Optional[CapacityReservationBillingRequestSet]
+
+
 class DescribeCapacityReservationFleetsRequest(ServiceRequest):
     CapacityReservationFleetIds: Optional[CapacityReservationFleetIdSet]
     NextToken: Optional[String]
@@ -14735,6 +14804,16 @@ class DisassociateAddressRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+class DisassociateCapacityReservationBillingOwnerRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    CapacityReservationId: CapacityReservationId
+    UnusedReservationBillingOwnerId: AccountID
+
+
+class DisassociateCapacityReservationBillingOwnerResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
 class DisassociateClientVpnTargetNetworkRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     AssociationId: String
@@ -17807,6 +17886,15 @@ class RegisterTransitGatewayMulticastGroupSourcesResult(TypedDict, total=False):
     RegisteredMulticastGroupSources: Optional[TransitGatewayMulticastRegisteredGroupSources]
 
 
+class RejectCapacityReservationBillingOwnershipRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    CapacityReservationId: CapacityReservationId
+
+
+class RejectCapacityReservationBillingOwnershipResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
 class RejectTransitGatewayMulticastDomainAssociationsRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
@@ -18580,6 +18668,16 @@ class Ec2Api:
     ) -> AcceptAddressTransferResult:
         raise NotImplementedError
 
+    @handler("AcceptCapacityReservationBillingOwnership")
+    def accept_capacity_reservation_billing_ownership(
+        self,
+        context: RequestContext,
+        capacity_reservation_id: CapacityReservationId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> AcceptCapacityReservationBillingOwnershipResult:
+        raise NotImplementedError
+
     @handler("AcceptReservedInstancesExchangeQuote")
     def accept_reserved_instances_exchange_quote(
         self,
@@ -18772,6 +18870,17 @@ class Ec2Api:
         allow_reassociation: Boolean = None,
         **kwargs,
     ) -> AssociateAddressResult:
+        raise NotImplementedError
+
+    @handler("AssociateCapacityReservationBillingOwner")
+    def associate_capacity_reservation_billing_owner(
+        self,
+        context: RequestContext,
+        capacity_reservation_id: CapacityReservationId,
+        unused_reservation_billing_owner_id: AccountID,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> AssociateCapacityReservationBillingOwnerResult:
         raise NotImplementedError
 
     @handler("AssociateClientVpnTargetNetwork")
@@ -21384,6 +21493,20 @@ class Ec2Api:
     ) -> DescribeCapacityBlockOfferingsResult:
         raise NotImplementedError
 
+    @handler("DescribeCapacityReservationBillingRequests")
+    def describe_capacity_reservation_billing_requests(
+        self,
+        context: RequestContext,
+        role: CallerRole,
+        capacity_reservation_ids: CapacityReservationIdSet = None,
+        next_token: String = None,
+        max_results: DescribeCapacityReservationBillingRequestsRequestMaxResults = None,
+        filters: FilterList = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DescribeCapacityReservationBillingRequestsResult:
+        raise NotImplementedError
+
     @handler("DescribeCapacityReservationFleets")
     def describe_capacity_reservation_fleets(
         self,
@@ -23401,6 +23524,17 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DisassociateCapacityReservationBillingOwner")
+    def disassociate_capacity_reservation_billing_owner(
+        self,
+        context: RequestContext,
+        capacity_reservation_id: CapacityReservationId,
+        unused_reservation_billing_owner_id: AccountID,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DisassociateCapacityReservationBillingOwnerResult:
         raise NotImplementedError
 
     @handler("DisassociateClientVpnTargetNetwork")
@@ -25544,6 +25678,16 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> RegisterTransitGatewayMulticastGroupSourcesResult:
+        raise NotImplementedError
+
+    @handler("RejectCapacityReservationBillingOwnership")
+    def reject_capacity_reservation_billing_ownership(
+        self,
+        context: RequestContext,
+        capacity_reservation_id: CapacityReservationId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> RejectCapacityReservationBillingOwnershipResult:
         raise NotImplementedError
 
     @handler("RejectTransitGatewayMulticastDomainAssociations")
