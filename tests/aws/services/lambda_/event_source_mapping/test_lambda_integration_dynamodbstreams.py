@@ -65,6 +65,11 @@ def get_lambda_logs_event(aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    # Only match EventSourceMappingArn field if ESM v2 and above
+    paths=["$..EventSourceMappingArn"],
+)
+@markers.snapshot.skip_snapshot_verify(
     condition=is_v2_esm,
     paths=[
         # Lifecycle updates not yet implemented in ESM v2

@@ -54,7 +54,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
-from tests.aws.services.lambda_.event_source_mapping.utils import is_v2_esm
+from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm, is_v2_esm
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
@@ -5056,6 +5056,10 @@ class TestLambdaAccountSettings:
         )
 
 
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    paths=["$..EventSourceMappingArn", "$..UUID", "$..FunctionArn"],
+)
 class TestLambdaEventSourceMappings:
     @markers.aws.validated
     def test_event_source_mapping_exceptions(self, snapshot, aws_client):
