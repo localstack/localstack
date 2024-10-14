@@ -58,7 +58,10 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
-    ["$..EventSourceMappings..FunctionArn", "$..EventSourceMappings..LastProcessingResult"]
+    [
+        "$..EventSourceMappings..FunctionArn",
+        "$..EventSourceMappings..LastProcessingResult",
+    ]
 )
 @markers.aws.validated
 def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aws_client):

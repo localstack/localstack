@@ -893,6 +893,7 @@ class TestKinesisSource:
         "set_lambda_response",
         [
             # Successes
+            "",
             [],
             None,
             {},
@@ -901,6 +902,7 @@ class TestKinesisSource:
         ],
         ids=[
             # Successes
+            "empty_string_success",
             "empty_list_success",
             "null_success",
             "empty_dict_success",

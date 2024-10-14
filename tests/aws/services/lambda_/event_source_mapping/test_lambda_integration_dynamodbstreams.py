@@ -979,7 +979,6 @@ class TestDynamoDBEventSourceMapping:
     ):
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
-        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
 
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
