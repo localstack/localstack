@@ -2153,7 +2153,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )
         old_event_source_mapping = state.event_source_mappings.get(uuid)
-        if old_event_source_mapping is None:
+        esm_worker = self.esm_workers.get(uuid)
+        if old_event_source_mapping is None or esm_worker is None:
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )  # TODO: test?
@@ -2172,7 +2173,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if function_arn:
             event_source_mapping["FunctionArn"] = function_arn
 
-        esm_worker = self.esm_workers[uuid]
         # Only apply update if the desired state differs
         enabled = request.get("Enabled")
         if enabled is not None:
@@ -2219,8 +2219,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         esm = state.event_source_mappings[uuid]
         if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
             # TODO: add proper locking
-            esm_worker = self.esm_workers[uuid]
+            esm_worker = self.esm_workers.pop(uuid, None)
             # Asynchronous delete in v2
+            if not esm_worker:
+                raise ResourceNotFoundException(
+                    "The resource you requested does not exist.", Type="User"
+                )
             esm_worker.delete()
         else:
             # Synchronous delete in v1 (AWS parity issue)
@@ -2236,10 +2240,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )
-        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
-            esm_worker = self.esm_workers[uuid]
-            event_source_mapping["State"] = esm_worker.current_state
-            event_source_mapping["StateTransitionReason"] = esm_worker.state_transition_reason
+
+        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v1":
+            return event_source_mapping
+
+        esm_worker = self.esm_workers.get(uuid)
+        if not esm_worker:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+        event_source_mapping["State"] = esm_worker.current_state
+        event_source_mapping["StateTransitionReason"] = esm_worker.state_transition_reason
         return event_source_mapping
 
     def list_event_source_mappings(

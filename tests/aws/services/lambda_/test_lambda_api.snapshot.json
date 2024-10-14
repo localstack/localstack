@@ -17518,5 +17518,171 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle_delete_function": {
+    "recorded-date": "12-10-2024, 10:00:01",
+    "recorded-content": {
+      "update_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "datetime"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+          "LatestStreamLabel": "<resource:1>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_IMAGE"
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:2>",
+          "TableSizeBytes": 0,
+          "TableStatus": "UPDATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "get_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Enabled",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_function_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_response_post_delete": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Enabled",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Deleting",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
   }
 }
