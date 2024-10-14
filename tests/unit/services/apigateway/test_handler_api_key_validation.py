@@ -17,6 +17,7 @@ from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVarsIdentity,
 )
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.utils.strings import short_uid
 
 TEST_API_ID = "testapi"
 TEST_API_STAGE = "dev"
@@ -94,7 +95,7 @@ def api_key_validation_handler():
 def create_usage_plan(moto_backend):
     def _create_usage_plan(attach_stage: bool, attach_key_id: str = None, backend=None):
         backend = backend or moto_backend
-        stage_config = {}
+        stage_config = {"name": short_uid()}
         if attach_stage:
             stage_config = {"apiStages": [{"apiId": TEST_API_ID, "stage": TEST_API_STAGE}]}
         usage_plan = backend.create_usage_plan(stage_config)
