@@ -2,11 +2,21 @@ import pytest
 from localstack_snapshot.snapshots import SnapshotSession
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
     TransformerUtility,
 )
 from localstack.utils.aws.arns import get_partition
+from tests.aws.services.lambda_.event_source_mapping.utils import (
+    is_old_esm,
+)
+
+# Only match EventSourceMappingArn field if ESM v2+
+pytestmark = markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    paths=["$..EventSourceMappingArn"],
+)
 
 
 # Here, we overwrite the snapshot fixture to allow the event_source_mapping subdir
