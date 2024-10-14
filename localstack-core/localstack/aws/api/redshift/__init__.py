@@ -21,6 +21,7 @@ PartnerIntegrationDatabaseName = str
 PartnerIntegrationPartnerName = str
 PartnerIntegrationStatusMessage = str
 RedshiftIdcApplicationName = str
+S3KeyPrefixValue = str
 SensitiveString = str
 String = str
 
@@ -2598,7 +2599,7 @@ LogTypeList = List[String]
 class EnableLoggingMessage(ServiceRequest):
     ClusterIdentifier: String
     BucketName: Optional[String]
-    S3KeyPrefix: Optional[String]
+    S3KeyPrefix: Optional[S3KeyPrefixValue]
     LogDestinationType: Optional[LogDestinationType]
     LogExports: Optional[LogTypeList]
 
@@ -2885,7 +2886,7 @@ class ListRecommendationsResult(TypedDict, total=False):
 class LoggingStatus(TypedDict, total=False):
     LoggingEnabled: Optional[Boolean]
     BucketName: Optional[String]
-    S3KeyPrefix: Optional[String]
+    S3KeyPrefix: Optional[S3KeyPrefixValue]
     LastSuccessfulDeliveryTime: Optional[TStamp]
     LastFailureTime: Optional[TStamp]
     LastFailureMessage: Optional[String]
@@ -4441,7 +4442,7 @@ class RedshiftApi:
         context: RequestContext,
         cluster_identifier: String,
         bucket_name: String = None,
-        s3_key_prefix: String = None,
+        s3_key_prefix: S3KeyPrefixValue = None,
         log_destination_type: LogDestinationType = None,
         log_exports: LogTypeList = None,
         **kwargs,
