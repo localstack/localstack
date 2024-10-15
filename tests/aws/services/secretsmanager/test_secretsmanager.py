@@ -11,6 +11,7 @@ import pytest
 import requests
 from botocore.auth import SigV4Auth
 from botocore.exceptions import ClientError
+from moto.secretsmanager.utils import SecretsManagerSecretIdentifier
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
@@ -26,7 +27,6 @@ from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.id_generator import set_custom_id
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 from localstack.utils.time import today_no_time
@@ -2448,10 +2448,17 @@ class TestSecretsManager:
         sm_snapshot.match("secret_value_http_response", json_response)
 
     @markers.aws.only_localstack
-    def test_create_secret_with_custom_id(self, account_id, region_name, create_secret):
+    def test_create_secret_with_custom_id(
+        self, account_id, region_name, create_secret, set_resource_custom_id
+    ):
         secret_name = short_uid()
         custom_id = "TestID"
-        set_custom_id(account_id, region_name, "secretsmanager", "secret", secret_name, custom_id)
+        set_resource_custom_id(
+            SecretsManagerSecretIdentifier(
+                account_id=account_id, region=region_name, secret_id=secret_name
+            ),
+            custom_id,
+        )
 
         secret = create_secret(Name=secret_name, SecretBinary="test-secret")
 
