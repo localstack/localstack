@@ -434,7 +434,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 
 
 @patch(FakeSecret.__init__)
-def fake_secret__init__(fn, self: FakeSecret, *args, **kwargs):
+def fake_secret__init__(fn, self, *args, **kwargs):
     fn(self, *args, **kwargs)
 
     # Fix time not including millis.
