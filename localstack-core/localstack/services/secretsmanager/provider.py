@@ -66,8 +66,6 @@ from localstack.aws.api.secretsmanager import (
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import get_partition
-from localstack.utils.id_generator import generate_uid
 from localstack.utils.patch import patch
 from localstack.utils.time import today_no_time
 
@@ -435,18 +433,6 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         return call_moto(context, request)
 
 
-def generate_secret_arn(account_id, region, secret_id):
-    id_string = generate_uid(
-        account_id=account_id,
-        region=region,
-        service="secretsmanager",
-        resource="secret",
-        name=secret_id,
-        length=6,
-    )
-    return f"arn:{get_partition(region)}:secretsmanager:{region}:{account_id}:secret:{secret_id}-{id_string}"
-
-
 @patch(FakeSecret.__init__)
 def fake_secret__init__(fn, self: FakeSecret, *args, **kwargs):
     fn(self, *args, **kwargs)
@@ -466,9 +452,6 @@ def fake_secret__init__(fn, self: FakeSecret, *args, **kwargs):
     # in which case this field is non-null, but an integer.
     self.auto_rotate_after_days = None
     self.rotation_lambda_arn = None
-
-    # override the arn creation to allow for custom ids
-    self.arn = generate_secret_arn(self.account_id, self.region, self.secret_id)
 
 
 @patch(FakeSecret.update)
