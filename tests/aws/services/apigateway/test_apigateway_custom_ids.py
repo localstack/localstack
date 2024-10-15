@@ -17,7 +17,7 @@ API_KEY_ID = "ApiKeyId"
 # Custom ids can't be set on aws.
 @markers.aws.only_localstack
 def test_apigateway_custom_ids(
-    aws_client, set_resource_custom_id, create_rest_apigw, account_id, region_name
+    aws_client, set_resource_custom_id, create_rest_apigw, account_id, region_name, cleanups
 ):
     rest_api_name = f"apigw-{short_uid()}"
     api_key_value = long_uid()
@@ -51,6 +51,7 @@ def test_apigateway_custom_ids(
         restApiId=api_id, parentId=PET_1_RESOURCE_ID, pathPart="pet"
     )
     api_key = aws_client.apigateway.create_api_key(name="api-key", value=api_key_value)
+    cleanups.append(lambda: aws_client.apigateway.delete_api_key(apiKey=api_key["id"]))
 
     assert api_id == API_ID
     assert name == rest_api_name
