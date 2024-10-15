@@ -4,6 +4,7 @@ from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.cloudformation.engine.entities import StackIdentifier
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.utils.id_generator import (
+    ResourceIdentifier,
     generate_short_uid,
     generate_str_id,
     generate_uid,
@@ -39,7 +40,7 @@ def configure_custom_id(unset_configured_custom_id, default_resource_identifier)
 
 @pytest.fixture
 def unset_configured_custom_id(default_resource_identifier):
-    def _unset(resource_identifier=None):
+    def _unset(resource_identifier: ResourceIdentifier = None):
         localstack_id_manager.unset_custom_id(resource_identifier or default_resource_identifier)
 
     return _unset
@@ -103,5 +104,18 @@ def test_generate_with_custom_id_tag(
         default_resource_identifier, tags={TAG_KEY_CUSTOM_ID: tag_custom_id}
     )
     assert generated == tag_custom_id
+    generated = generate_str_id(default_resource_identifier)
+    assert generated == custom_id
+
+
+def test_generate_from_unique_identifier_string(
+    unset_configured_custom_id, default_resource_identifier, cleanups
+):
+    custom_id = "set_id"
+    unique_identifier_string = default_resource_identifier.unique_identifier
+
+    localstack_id_manager.set_custom_id_by_unique_identifier(unique_identifier_string, custom_id)
+    cleanups.append(lambda: unset_configured_custom_id(default_resource_identifier))
+
     generated = generate_str_id(default_resource_identifier)
     assert generated == custom_id
