@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_aws_refs_in_mappings": {
+    "last_validated_date": "2024-10-15T17:22:43+00:00"
+  },
   "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_maximum_nesting_depth": {
     "last_validated_date": "2023-06-12T14:47:24+00:00"
   },
@@ -6,10 +9,10 @@
     "last_validated_date": "2023-06-12T14:47:25+00:00"
   },
   "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_ref_map_key[should-deploy]": {
-    "last_validated_date": "2024-10-10T20:08:36+00:00"
+    "last_validated_date": "2024-10-15T15:33:20+00:00"
   },
   "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_ref_map_key[should-not-deploy]": {
-    "last_validated_date": "2024-10-10T20:09:34+00:00"
+    "last_validated_date": "2024-10-15T15:34:20+00:00"
   },
   "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_with_invalid_refs": {
     "last_validated_date": "2023-06-12T14:47:24+00:00"
