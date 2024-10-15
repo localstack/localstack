@@ -1741,7 +1741,13 @@ class TestDynamoDB:
         )["ShardIterator"]
 
         def _matches(iterator: str) -> bool:
-            return bool(re.match(rf"^{stream_arn}\|\d\|.+$", iterator))
+            if is_aws_cloud() or not config.DDB_STREAMS_PROVIDER_V2:
+                pattern = rf"^{stream_arn}\|\d\|.+$"
+            else:
+                # DynamoDB-Local has 3 digits instead of only one
+                pattern = rf"^{stream_arn}\|\d\+|.+$"
+
+            return bool(re.match(pattern, iterator))
 
         assert _matches(shard_iterator)
 
