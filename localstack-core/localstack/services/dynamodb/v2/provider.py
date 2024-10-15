@@ -124,7 +124,11 @@ from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import get_partition
+from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    get_partition,
+)
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 from localstack.utils.aws.request_context import (
     extract_account_id_from_headers,
@@ -1057,8 +1061,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> KinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
-        stream = self._event_forwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
-        if not stream:
+        if not kinesis_stream_exists(stream_arn=stream_arn):
             raise ValidationException("User does not have a permission to use kinesis stream")
 
         table_def = get_store(context.account_id, context.region).table_definitions.setdefault(
@@ -1102,9 +1105,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         **kwargs,
     ) -> KinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
-
-        stream = self._event_forwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
-        if not stream:
+        if not kinesis_stream_exists(stream_arn):
             raise ValidationException(
                 "User does not have a permission to use kinesis stream",
             )
@@ -1403,3 +1404,23 @@ def is_index_query_valid(account_id: str, region_name: str, query_data: dict) ->
     if index_query_type == "ALL_ATTRIBUTES" and index_projection_type != "ALL":
         return False
     return True
+
+
+def kinesis_stream_exists(stream_arn):
+    account_id = extract_account_id_from_arn(stream_arn)
+    region_name = extract_region_from_arn(stream_arn)
+
+    kinesis = connect_to(
+        aws_access_key_id=account_id,
+        aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+        region_name=region_name,
+    ).kinesis
+    stream_name_from_arn = stream_arn.split("/", 1)[1]
+    # check if the stream exists in kinesis for the user
+    filtered = list(
+        filter(
+            lambda stream_name: stream_name == stream_name_from_arn,
+            kinesis.list_streams()["StreamNames"],
+        )
+    )
+    return bool(filtered)
