@@ -170,6 +170,11 @@ def test_get_domain_name(aws_client):
 
 
 class TestApigatewayApiKeysCrud:
+    @pytest.fixture(scope="class", autouse=True)
+    def cleanup_api_keys(self, aws_client):
+        for api_key in aws_client.apigateway.get_api_keys()["items"]:
+            aws_client.apigateway.delete_api_key(apiKey=api_key["id"])
+
     @markers.aws.validated
     def test_get_api_keys(self, aws_client, apigw_create_api_key, snapshot):
         snapshot.add_transformers_list(
