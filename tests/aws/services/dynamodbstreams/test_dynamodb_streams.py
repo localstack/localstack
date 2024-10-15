@@ -4,6 +4,7 @@ import re
 import aws_cdk as cdk
 import pytest
 
+from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
@@ -95,7 +96,10 @@ class TestDynamoDBStreams:
         # assert stream has been deleted
         retry(_assert_stream_disabled, sleep=1, retries=20)
 
-    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Flaky")
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud() or config.DDB_STREAMS_PROVIDER_V2,
+        reason="Flaky, and not implemented yet on v2 implementation",
+    )
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..EncryptionType", "$..SizeBytes"])
     def test_enable_kinesis_streaming_destination(

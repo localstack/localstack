@@ -869,6 +869,10 @@ class TestDynamoDB:
         snapshot.match("get-records", {"Records": records})
 
     @markers.aws.only_localstack
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud() and config.DDB_STREAMS_PROVIDER_V2,
+        reason="Not yet implemented in DDB Streams V2",
+    )
     def test_dynamodb_with_kinesis_stream(self, aws_client):
         dynamodb = aws_client.dynamodb
         # Kinesis streams can only be in the same account and region as the table. See
