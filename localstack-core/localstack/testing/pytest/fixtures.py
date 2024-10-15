@@ -45,6 +45,7 @@ from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import call_safe, run_safe
 from localstack.utils.http import safe_requests as requests
+from localstack.utils.id_generator import ResourceIdentifier, localstack_id_manager
 from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
@@ -2291,3 +2292,19 @@ def clean_up(
 def openapi_validate(monkeypatch):
     monkeypatch.setattr(config, "OPENAPI_VALIDATE_RESPONSE", "true")
     monkeypatch.setattr(config, "OPENAPI_VALIDATE_REQUEST", "true")
+
+
+@pytest.fixture
+def set_resource_custom_id():
+    set_ids = []
+
+    def _set_custom_id(resource_identifier: ResourceIdentifier, custom_id):
+        localstack_id_manager.set_custom_id(
+            resource_identifier=resource_identifier, custom_id=custom_id
+        )
+        set_ids.append(resource_identifier)
+
+    yield _set_custom_id
+
+    for resource_identifier in set_ids:
+        localstack_id_manager.unset_custom_id(resource_identifier)

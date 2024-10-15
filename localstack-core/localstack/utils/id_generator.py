@@ -1,46 +1,53 @@
 import random
 import string
 
+from moto.utilities import id_generator as moto_id_generator
+from moto.utilities.id_generator import MotoIdManager, moto_id
+from moto.utilities.id_generator import ResourceIdentifier as MotoResourceIdentifier
+
 from localstack.utils.strings import long_uid, short_uid
 
-USER_PROVIDED_IDS = {}
+ExistingIds = list[str] | None
+Tags = dict[str, str] | None
 
 
-def get_custom_id(account_id, region, service, resource, name) -> str | None:
-    # retrieves a custom_id for a resource. Returns None
-    return USER_PROVIDED_IDS.get(".".join([account_id, region, service, resource, name]))
+class LocalstackIdManager(MotoIdManager):
+    def set_custom_id_by_unique_identifier(self, unique_identifier: str, custom_id: str):
+        with self._lock:
+            self._custom_ids[unique_identifier] = custom_id
 
 
-def set_custom_id(account_id, region, service, resource, name, custom_id):
-    # sets a custom_id for a resource
-    USER_PROVIDED_IDS[".".join([account_id, region, service, resource, name])] = custom_id
+localstack_id_manager = LocalstackIdManager()
+moto_id_generator.moto_id_manager = localstack_id_manager
+localstack_id = moto_id
 
-
-def unset_custom_id(account_id, region, service, resource, name):
-    # removes a set custom_id for a resource
-    USER_PROVIDED_IDS.pop(".".join([account_id, region, service, resource, name]), None)
-
-
-def localstack_id(fn):
-    # Decorator for helping in creation of static ids within localstack.
-    def _wrapper(account_id, region, service, resource, name, **kwargs):
-        if found_id := get_custom_id(account_id, region, service, resource, name):
-            return found_id
-        return fn(account_id, region, service, resource, name, **kwargs)
-
-    return _wrapper
+ResourceIdentifier = MotoResourceIdentifier
 
 
 @localstack_id
-def generate_uid(account_id, region, service, resource, name, length=16):
+def generate_uid(
+    resource_identifier: ResourceIdentifier,
+    existing_ids: ExistingIds = None,
+    tags: Tags = None,
+    length=36,
+) -> str:
     return long_uid()[:length]
 
 
 @localstack_id
-def generate_short_uid(account_id, region, service, resource, name):
+def generate_short_uid(
+    resource_identifier: ResourceIdentifier,
+    existing_ids: ExistingIds = None,
+    tags: Tags = None,
+) -> str:
     return short_uid()
 
 
 @localstack_id
-def generate_str_id(account_id, region, service, resource, name, length=8):
+def generate_str_id(
+    resource_identifier: ResourceIdentifier,
+    existing_ids: ExistingIds = None,
+    tags: Tags = None,
+    length=8,
+) -> str:
     return "".join(random.choice(string.ascii_letters) for _ in range(length))
