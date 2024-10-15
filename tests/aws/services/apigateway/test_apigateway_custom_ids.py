@@ -7,7 +7,7 @@ from moto.apigateway.utils import (
 from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid, short_uid
 
-API_ID = "ApiId"
+API_ID = "apiid"
 ROOT_RESOURCE_ID = "RootId"
 PET_1_RESOURCE_ID = "Pet1Id"
 PET_2_RESOURCE_ID = "Pet2Id"
@@ -58,3 +58,33 @@ def test_apigateway_custom_ids(
     assert pet_resource_1["id"] == PET_1_RESOURCE_ID
     assert pet_resource_2["id"] == PET_2_RESOURCE_ID
     assert api_key["id"] == API_KEY_ID
+
+
+@markers.aws.only_localstack
+def test_create_api_with_uppercase_id(
+    create_rest_apigw, set_resource_custom_id, account_id, region_name
+):
+    rest_api_name = f"apigw-{short_uid()}"
+    id_with_uppercase = "ApigwId"
+    set_resource_custom_id(
+        ApigwRestApiIdentifier(account_id=account_id, region=region_name, name=rest_api_name),
+        id_with_uppercase,
+    )
+
+    api_id, _, _ = create_rest_apigw(name=rest_api_name)
+    assert api_id != id_with_uppercase
+
+
+@markers.aws.only_localstack
+def test_create_api_with_hyphens(
+    create_rest_apigw, set_resource_custom_id, account_id, region_name
+):
+    rest_api_name = f"apigw-{short_uid()}"
+    id_with_hyphens = "apigw-id"
+    set_resource_custom_id(
+        ApigwRestApiIdentifier(account_id=account_id, region=region_name, name=rest_api_name),
+        id_with_hyphens,
+    )
+
+    api_id, _, _ = create_rest_apigw(name=rest_api_name)
+    assert api_id != id_with_hyphens

@@ -9,6 +9,7 @@ from moto.apigateway.exceptions import (
     StageStillActive,
 )
 from moto.apigateway.responses import APIGatewayResponse
+from moto.apigateway.utils import ApigwRestApiIdentifier
 from moto.core.utils import camelcase_to_underscores
 
 from localstack.constants import TAG_KEY_CUSTOM_ID
@@ -181,3 +182,11 @@ def apply_patches():
             raise StageStillActive()
 
         return self.deployments.pop(deployment_id)
+
+    def rest_api_id_validator(custom_id: str):
+        if "-" in custom_id or custom_id != custom_id.lower():
+            return False
+
+        return True
+
+    ApigwRestApiIdentifier.validator = staticmethod(rest_api_id_validator)
