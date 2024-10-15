@@ -12,7 +12,6 @@ from localstack.aws.api.dynamodbstreams import (
     GetShardIteratorOutput,
     ListStreamsInput,
     ListStreamsOutput,
-    StreamStatus,
 )
 from localstack.services.dynamodb.server import DynamodbServer
 from localstack.services.dynamodb.utils import modify_ddblocal_arns
@@ -21,13 +20,6 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import parse_arn
 
 LOG = logging.getLogger(__name__)
-
-STREAM_STATUS_MAP = {
-    "ACTIVE": StreamStatus.ENABLED,
-    "CREATING": StreamStatus.ENABLING,
-    "DELETING": StreamStatus.DISABLING,
-    "UPDATING": StreamStatus.ENABLING,
-}
 
 
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
