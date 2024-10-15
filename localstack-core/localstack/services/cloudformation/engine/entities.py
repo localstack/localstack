@@ -107,7 +107,7 @@ class Stack:
             self.stack_name,
             stack_id=StackIdentifier(
                 account_id=account_id, region=region_name, stack_name=metadata.get("StackName")
-            ).generate(metadata.get("tags")),
+            ).generate(tags=metadata.get("tags")),
             account_id=account_id,
             region_name=region_name,
         )

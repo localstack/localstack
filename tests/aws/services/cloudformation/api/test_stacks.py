@@ -10,11 +10,11 @@ from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.cloudformation import Capability
+from localstack.services.cloudformation.engine.entities import StackIdentifier
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
-from localstack.utils.id_generator import set_custom_id
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 
@@ -402,17 +402,14 @@ class TestStacksApi:
         assert len(updated_resources) == length_expected
 
     @markers.aws.only_localstack
-    def test_create_stack_with_custom_id(self, aws_client, cleanups, account_id, region_name):
+    def test_create_stack_with_custom_id(
+        self, aws_client, cleanups, account_id, region_name, set_resource_custom_id
+    ):
         stack_name = f"stack-{short_uid()}"
         custom_id = short_uid()
 
-        set_custom_id(
-            account_id=account_id,
-            region=region_name,
-            service="cloudformation",
-            resource="stack",
-            name=stack_name,
-            custom_id=custom_id,
+        set_resource_custom_id(
+            StackIdentifier(account_id, region_name, stack_name), custom_id=custom_id
         )
         template = open(
             os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"),
