@@ -33,7 +33,7 @@ LOG = logging.getLogger(__name__)
 SCHEMA_CACHE = TTLCache(maxsize=50, ttl=20)
 
 _ddb_local_arn_pattern = re.compile(
-    r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:[a-z-]+:dynamodb:ddblocal:000000000000:([^"]+)"'
+    r'("TableArn"|"LatestStreamArn"|"StreamArn"|"ShardIterator")\s*:\s*"arn:[a-z-]+:dynamodb:ddblocal:000000000000:([^"]+)"'
 )
 _ddb_local_region_pattern = re.compile(r'"awsRegion"\s*:\s*"([^"]+)"')
 
