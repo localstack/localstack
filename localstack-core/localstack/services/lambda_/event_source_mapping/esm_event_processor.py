@@ -8,6 +8,7 @@ from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
     PartialBatchFailureError,
 )
+from localstack.services.lambda_.event_source_mapping.message import Message
 from localstack.services.lambda_.event_source_mapping.pipe_loggers.pipe_logger import PipeLogger
 from localstack.services.lambda_.event_source_mapping.pipe_utils import to_json_str
 from localstack.services.lambda_.event_source_mapping.senders.sender import (
@@ -27,7 +28,7 @@ class EsmEventProcessor(EventProcessor):
         self.sender = sender
         self.logger = logger
 
-    def process_events_batch(self, input_events: list[dict]) -> None:
+    def process_events_batch(self, input_events: list[Message]) -> None:
         execution_id = uuid.uuid4()
         # Create a copy of the original input events
         events = input_events.copy()

@@ -13,6 +13,7 @@ from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
     PartialBatchFailureError,
 )
+from localstack.services.lambda_.event_source_mapping.message import Message
 from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     Poller,
     parse_batch_item_failures,
@@ -22,6 +23,10 @@ from localstack.utils.aws.arns import parse_arn
 LOG = logging.getLogger(__name__)
 
 DEFAULT_MAX_RECEIVE_COUNT = 10
+
+
+class Event(dict):
+    trace_id: str
 
 
 class SqsPoller(Poller):
@@ -90,22 +95,22 @@ class SqsPoller(Poller):
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
-    def handle_messages(self, messages):
-        polled_events = transform_into_events(messages)
+    def handle_messages(self, sqs_messages: list[Message]):
+        messages = transform_into_messages(sqs_messages)
         # Filtering: matching vs. discarded (i.e., not matching filter criteria)
         # TODO: implement format detection behavior (e.g., for JSON body):
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html#pipes-filter-sqs
         #  Check whether we need poller-specific filter-preprocessing here without modifying the actual event!
         # convert to json for filtering (HACK for fixing parity with v1 and getting regression tests passing)
-        for event in polled_events:
+        for message in messages:
             try:
-                event["body"] = json.loads(event["body"])
+                message.data["body"] = json.loads(message.data["body"])
             except json.JSONDecodeError:
                 LOG.debug(
                     "Unable to convert event body '%s' to json... Event might be dropped.",
-                    event["body"],
+                    message["body"],
                 )
-        matching_events = self.filter_events(polled_events)
+        matching_events = self.filter_events([message for message in messages])
         # convert them back (HACK for fixing parity with v1 and getting regression tests passing)
         for event in matching_events:
             event["body"] = (
@@ -181,29 +186,31 @@ def split_by_message_group_id(messages) -> defaultdict[str, list[dict]]:
     return fifo_groups
 
 
-def transform_into_events(messages: list[dict]) -> list[dict]:
-    events = []
-    for message in messages:
+def transform_into_messages(sqs_messages: list[dict]) -> list[Event]:
+    messages: list[Message] = []
+    for sqs_message in sqs_messages:
         # TODO: consolidate with SQS event source listener:
         #  localstack.services.lambda_.event_source_listeners.sqs_event_source_listener.SQSEventSourceListener._send_event_to_lambda
-        message_attrs = message_attributes_to_lower(message.get("MessageAttributes"))
+        message_attrs = message_attributes_to_lower(sqs_message.get("MessageAttributes"))
         event = {
             # Original SQS message attributes
-            "messageId": message["MessageId"],
-            "receiptHandle": message["ReceiptHandle"],
+            "messageId": sqs_message["MessageId"],
+            "receiptHandle": sqs_message["ReceiptHandle"],
             # TODO: test with empty body
             # TODO: implement heuristic based on content type: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html#pipes-filter-sqs
-            "body": message.get("Body", "MessageBody"),
-            "attributes": message.get("Attributes", {}),
+            "body": sqs_message.get("Body", "MessageBody"),
+            "attributes": sqs_message.get("Attributes", {}),
             "messageAttributes": message_attrs,
             # TODO: test with empty body
-            "md5OfBody": message.get("MD5OfBody") or message.get("MD5OfMessageBody"),
+            "md5OfBody": sqs_message.get("MD5OfBody") or sqs_message.get("MD5OfMessageBody"),
         }
         # TODO: test Pipe with message attributes (only covered by Lambda ESM SQS test so far)
-        if md5_of_message_attributes := message.get("MD5OfMessageAttributes"):
-            event["md5OfMessageAttributes"] = md5_of_message_attributes
-        events.append(event)
-    return events
+        if md5_of_message_attributes := sqs_message.get("MD5OfMessageAttributes"):
+            sqs_message["md5OfMessageAttributes"] = md5_of_message_attributes
+        messages.append(
+            Message(data=event, metadata={"trace-id": "my-trace-id"})
+        )  # TODO: extract actual traceID from SQS message
+    return messages
 
 
 def get_queue_url(queue_arn: str) -> str:
