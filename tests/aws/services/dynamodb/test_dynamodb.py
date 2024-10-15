@@ -268,7 +268,7 @@ class TestDynamoDB:
         assert len(rs["Tags"]) == len(TEST_DDB_TAGS) + 1
 
         tags = {tag["Key"]: tag["Value"] for tag in rs["Tags"]}
-        assert "NewKey" in tags.keys()
+        assert "NewKey" in tags
         assert tags["NewKey"] == "TestValue"
 
         aws_client.dynamodb.untag_resource(ResourceArn=table_arn, TagKeys=["Name", "NewKey"])
