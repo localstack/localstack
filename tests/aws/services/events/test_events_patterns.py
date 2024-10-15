@@ -363,13 +363,13 @@ class TestRuleWithPattern:
     @markers.aws.validated
     def test_put_event_with_content_base_rule_in_pattern(
         self,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         snapshot,
         aws_client,
     ):
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         # Create event bus
         event_bus_name = f"event-bus-{short_uid()}"
