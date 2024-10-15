@@ -394,7 +394,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def on_after_state_reset(self):
         self.server.start_dynamodb()
 
-    def _new_dynamodb_server(self) -> DynamodbServer:
+    @staticmethod
+    def _new_dynamodb_server() -> DynamodbServer:
         return DynamodbServer.get()
 
     def on_after_state_load(self):
