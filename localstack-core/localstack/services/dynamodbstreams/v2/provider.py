@@ -14,9 +14,9 @@ from localstack.aws.api.dynamodbstreams import (
     ListStreamsOutput,
     StreamStatus,
 )
-from localstack.services.dynamodb.provider import DynamoDBProvider
 from localstack.services.dynamodb.server import DynamodbServer
 from localstack.services.dynamodb.utils import modify_ddblocal_arns
+from localstack.services.dynamodb.v2.provider import DynamoDBProvider
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import parse_arn
 
