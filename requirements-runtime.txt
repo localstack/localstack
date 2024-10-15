@@ -78,7 +78,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.8
+cryptography==43.0.1
     # via
     #   joserfc
     #   localstack-core
