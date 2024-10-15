@@ -948,7 +948,7 @@ class TestAPIGateway:
 
     @markers.aws.needs_fixing
     # Doesn't use a fixture that cleans up after itself, and most likely missing roles. Should be moved to common
-    def test_multiple_api_keys_validate(self, aws_client, create_iam_role_with_policy):
+    def test_multiple_api_keys_validate(self, aws_client, create_iam_role_with_policy, cleanups):
         request_templates = {
             "application/json": json.dumps(
                 {
@@ -1004,6 +1004,7 @@ class TestAPIGateway:
             }
             aws_client.apigateway.create_usage_plan_key(**payload)
             api_keys.append(api_key["value"])
+            cleanups.append(lambda: aws_client.apigateway.delete_api_key(apiKey=api_key["id"]))
 
         response = requests.put(
             url,

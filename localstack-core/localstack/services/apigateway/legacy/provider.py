@@ -5,7 +5,6 @@ import logging
 import re
 from copy import deepcopy
 from datetime import datetime
-from operator import itemgetter
 from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
@@ -86,6 +85,7 @@ from localstack.aws.api.apigateway import (
     TestInvokeMethodResponse,
     ThrottleSettings,
     UsagePlan,
+    UsagePlanKeys,
     UsagePlans,
     VpcLink,
     VpcLinks,
@@ -129,7 +129,7 @@ from localstack.utils.collections import (
     select_from_typed_dict,
 )
 from localstack.utils.json import parse_json_or_yaml
-from localstack.utils.strings import short_uid, str_to_bool, to_bytes, to_str
+from localstack.utils.strings import md5, short_uid, str_to_bool, to_bytes, to_str
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, now_utc, timestamp
 
 LOG = logging.getLogger(__name__)
@@ -2080,18 +2080,21 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> ApiKeys:
         # TODO: migrate API keys in our store
         moto_backend = get_moto_backend(context.account_id, context.region)
-        api_keys = [api_key.to_json() for api_key in moto_backend.keys.values()]
+        api_keys = [api_key.to_json() for api_key in reversed(moto_backend.keys.values())]
         if not include_values:
             for api_key in api_keys:
                 api_key.pop("value")
 
         item_list = PaginatedList(api_keys)
 
+        def token_generator(item):
+            return md5(item["id"])
+
         def filter_function(item):
             return item["name"].startswith(name_query)
 
         paginated_list, next_token = item_list.get_page(
-            token_generator=itemgetter("id"),
+            token_generator=token_generator,
             next_token=position,
             page_size=limit,
             filter_function=filter_function if name_query else None,
@@ -2344,6 +2347,44 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 up.pop("tags", None)
 
         return usage_plans
+
+    def get_usage_plan_keys(
+        self,
+        context: RequestContext,
+        usage_plan_id: String,
+        position: String = None,
+        limit: NullableInteger = None,
+        name_query: String = None,
+        **kwargs,
+    ) -> UsagePlanKeys:
+        # TODO: migrate Usage Plan and UsagePlan Keys to our store
+        moto_backend = get_moto_backend(context.account_id, context.region)
+
+        if not (usage_plan_keys := moto_backend.usage_plan_keys.get(usage_plan_id)):
+            return UsagePlanKeys(items=[])
+
+        usage_plan_keys = [
+            usage_plan_key.to_json()
+            for usage_plan_key in reversed(usage_plan_keys.values())
+            if usage_plan_key.id in moto_backend.keys
+        ]
+
+        item_list = PaginatedList(usage_plan_keys)
+
+        def token_generator(item):
+            return md5(item["id"])
+
+        def filter_function(item):
+            return item["name"].startswith(name_query)
+
+        paginated_list, next_token = item_list.get_page(
+            token_generator=token_generator,
+            next_token=position,
+            page_size=limit,
+            filter_function=filter_function if name_query else None,
+        )
+
+        return UsagePlanKeys(items=paginated_list, position=next_token)
 
     def put_gateway_response(
         self,
