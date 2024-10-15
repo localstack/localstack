@@ -57,6 +57,9 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
+        payload["ShardIterator"] = self.modify_stream_arn_for_ddb_local(
+            payload.get("ShardIterator", "")
+        )
         return self.forward_request(context, payload)
 
     @handler("GetShardIterator", expand=False)
