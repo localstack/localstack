@@ -35,6 +35,7 @@ SCHEMA_CACHE = TTLCache(maxsize=50, ttl=20)
 _ddb_local_arn_pattern = re.compile(
     r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:[a-z-]+:dynamodb:ddblocal:000000000000:([^"]+)"'
 )
+_ddb_local_region_pattern = re.compile(r'"awsRegion"\s*:\s*"([^"]+)"')
 
 
 def get_ddb_access_key(account_id: str, region_name: str) -> str:
@@ -329,6 +330,11 @@ def modify_ddblocal_arns(chain, context: RequestContext, response: Response):
             _convert_arn,
             response_content,
         )
+        if context.service.service_name == "dynamodbstreams":
+            content_replaced = _ddb_local_region_pattern.sub(
+                f'"awsRegion": "{context.region}"', content_replaced
+            )
+
         if content_replaced != response_content:
             response.data = content_replaced
             # make sure the service response is parsed again later
