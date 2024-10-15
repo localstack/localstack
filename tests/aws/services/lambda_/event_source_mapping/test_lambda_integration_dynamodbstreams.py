@@ -93,7 +93,7 @@ def get_lambda_logs_event(aws_client):
 @markers.snapshot.skip_snapshot_verify(
     # DynamoDB-Local returns an UUID for the event ID even though AWS returns something
     # like 'ab0ed3713569f4655f353e5ef61a88c4'
-    condition=config.DDB_STREAMS_PROVIDER_V2,
+    condition=lambda: config.DDB_STREAMS_PROVIDER_V2,
     paths=[
         "$..eventID",
     ],
