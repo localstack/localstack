@@ -34,7 +34,6 @@ def test_cfn_secretsmanager_gen_secret(deploy_cfn_template, aws_client, snapshot
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..Tags", "$..VersionIdsToStages"])
-@pytest.mark.skip(reason="Fails with moto due to not deleting the secret")
 def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client, snapshot):
     secret_name = f"secret-{short_uid()}"
     stack = deploy_cfn_template(

@@ -37,7 +37,6 @@ from localstack.constants import (
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
 )
-from localstack.dns.server import get_fallback_dns_server
 from localstack.utils.aws.aws_stack import get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.patch import patch
@@ -653,6 +652,8 @@ class ExternalAwsClientFactory(ClientFactory):
 
 
 def resolve_dns_from_upstream(hostname: str) -> str:
+    from localstack.dns.server import get_fallback_dns_server
+
     upstream_dns = get_fallback_dns_server()
     request = dns.message.make_query(hostname, "A")
     response = dns.query.udp(request, upstream_dns, port=53, timeout=5)

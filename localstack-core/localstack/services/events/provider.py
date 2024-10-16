@@ -214,7 +214,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region = context.region
         account_id = context.account_id
         store = self.get_store(region, account_id)
-        if name in store.event_buses.keys():
+        if name in store.event_buses:
             raise ResourceAlreadyExistsException(f"Event bus {name} already exists.")
         event_bus_service = self.create_event_bus_service(
             name, region, account_id, event_source_name, tags
@@ -591,7 +591,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region = context.region
         account_id = context.account_id
         store = self.get_store(region, account_id)
-        if archive_name in store.archives.keys():
+        if archive_name in store.archives:
             raise ResourceAlreadyExistsException(f"Archive {archive_name} already exists.")
         self._check_event_bus_exists(event_source_arn, store)
         archive_service = self.create_archive_service(
@@ -821,7 +821,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region = context.region
         account_id = context.account_id
         store = self.get_store(region, account_id)
-        if replay_name in store.replays.keys():
+        if replay_name in store.replays:
             raise ResourceAlreadyExistsException(f"Replay {replay_name} already exists.")
         self._validate_replay_time(event_start_time, event_end_time)
         if event_source_arn not in self._archive_service_store:
@@ -912,7 +912,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = events_store[account_id][region]
         # create default event bus for account region on first call
         default_event_bus_name = "default"
-        if default_event_bus_name not in store.event_buses.keys():
+        if default_event_bus_name not in store.event_buses:
             event_bus_service = self.create_event_bus_service(
                 default_event_bus_name, region, account_id, None, None
             )
@@ -1159,7 +1159,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         archive_service = self._archive_service_store[event_source_arn]
         if destination_arn := destination.get("Arn"):
             if destination_arn != archive_service.archive.event_source_arn:
-                if destination_arn in self._event_bus_services_store.keys():
+                if destination_arn in self._event_bus_services_store:
                     raise ValidationException(
                         "Parameter Destination.Arn is not valid. Reason: Cross event bus replay is not permitted."
                     )
