@@ -3,10 +3,31 @@ Mappings:
     us-east-1:
       A: "true"
       B: "false"
+    us-east-2:
+      A: "true"
+      B: "false"
+    us-west-1:
+      A: "true"
+      B: "false"
+    us-west-2:
+      A: "true"
+      B: "false"
+    ap-southeast-2:
+      A: "true"
+      B: "false"
+    ap-northeast-1:
+      A: "true"
+      B: "false"
+    eu-central-1:
+      A: "true"
+      B: "false"
+    eu-west-1:
+      A: "true"
+      B: "false"
 
 Conditions:
   MyCondition: !Equals
-    - !FindInMap [ !Ref MapName,  !Ref Region, !Ref MapKey]
+    - !FindInMap [ !Ref MapName,  !Ref AWS::Region, !Ref MapKey]
     - "true"
 
 Parameters:
@@ -17,9 +38,6 @@ Parameters:
     Type: String
 
   TopicName:
-    Type: String
-
-  Region:
     Type: String
 
 Resources:
