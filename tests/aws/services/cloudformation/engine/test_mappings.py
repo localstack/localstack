@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -173,6 +174,7 @@ class TestCloudFormationMappings:
                 "MapName": "MyMap",
                 "MapKey": map_key,
                 "TopicName": topic_name,
+                "Region": AWS_REGION_US_EAST_1,
             },
         )
 

@@ -3,9 +3,10 @@ Mappings:
     us-east-1:
       A: "true"
       B: "false"
+
 Conditions:
   MyCondition: !Equals
-    - !FindInMap [ !Ref MapName,  !Ref AWS::Region, !Ref MapKey]
+    - !FindInMap [ !Ref MapName,  !Ref Region, !Ref MapKey]
     - "true"
 
 Parameters:
@@ -16,6 +17,9 @@ Parameters:
     Type: String
 
   TopicName:
+    Type: String
+
+  Region:
     Type: String
 
 Resources:
@@ -32,4 +36,3 @@ Outputs:
   TopicArn:
     Value: !Ref MyTopic
     Condition: MyCondition
-
