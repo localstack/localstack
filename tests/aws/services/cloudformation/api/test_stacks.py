@@ -425,11 +425,8 @@ class TestStacksApi:
         assert stack["StackId"].split("/")[-1] == custom_id
 
         # We need to wait until the stack is created otherwise we can end up in a scenario
-        # where we delete the stack before creating it
-        def _assert_stack_process_finished():
-            return stack_process_is_finished(aws_client.cloudformation, stack_name)
-
-        assert wait_until(_assert_stack_process_finished)
+        # where we try to delete the stack before creating its resources, failing the test
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
 
 def stack_process_is_finished(cfn_client, stack_name):
