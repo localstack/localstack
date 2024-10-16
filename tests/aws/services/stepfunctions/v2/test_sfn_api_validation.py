@@ -14,7 +14,6 @@ from tests.aws.services.stepfunctions.templates.validation.validation_templates 
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..diagnostics",  # TODO: add support for diagnostics
     ]
 )
