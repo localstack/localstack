@@ -823,7 +823,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
                         match key:
                             case "Create":
-                                if target_region in replicas.keys():
+                                if target_region in replicas:
                                     raise ValidationException(
                                         f"Failed to create a the new replica of table with name: '{table_name}' because one or more replicas already existed as tables."
                                     )

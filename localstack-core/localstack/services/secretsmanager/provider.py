@@ -488,7 +488,7 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
     if secret is not None and secret.deleted_date is not None:
         raise InvalidRequestException(AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION)
 
-    if name in self.secrets.keys():
+    if name in self.secrets:
         raise ResourceExistsException(
             f"The operation failed because the secret {name} already exists."
         )
