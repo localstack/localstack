@@ -41,6 +41,9 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
     "last_validated_date": "2024-10-14T12:36:54+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle_delete_function": {
+    "last_validated_date": "2024-10-12T09:59:58+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_function_name_variations": {
     "last_validated_date": "2024-10-14T12:46:32+00:00"
   },
