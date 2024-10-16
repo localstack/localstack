@@ -2446,6 +2446,32 @@ class TestSecretsManager:
         )
         sm_snapshot.match("secret_value_http_response", json_response)
 
+    @markers.aws.validated
+    def test_force_delete_deleted_secret(self, sm_snapshot, secret_name, aws_client):
+        """Test if a deleted secret can be force deleted afterwards."""
+        create_secret_response = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString=f"secretstr-{short_uid()}"
+        )
+        sm_snapshot.match("create_secret_response", create_secret_response)
+        secret_id = create_secret_response["ARN"]
+
+        sm_snapshot.add_transformer(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_response, 0)
+        )
+
+        delete_secret_response = aws_client.secretsmanager.delete_secret(SecretId=secret_id)
+        sm_snapshot.match("delete_secret_response", delete_secret_response)
+
+        describe_secret_response = aws_client.secretsmanager.describe_secret(SecretId=secret_id)
+        sm_snapshot.match("describe_secret_response", describe_secret_response)
+
+        force_delete_secret_response = aws_client.secretsmanager.delete_secret(
+            SecretId=secret_id, ForceDeleteWithoutRecovery=True
+        )
+        sm_snapshot.match("force_delete_secret_response", force_delete_secret_response)
+
+        self._wait_force_deletion_completed(aws_client.secretsmanager, secret_id)
+
 
 class TestSecretsManagerMultiAccounts:
     @markers.aws.validated
