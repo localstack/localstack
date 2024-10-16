@@ -10,6 +10,7 @@ from localstack.deprecations import deprecated_endpoint
 from localstack.http import Response
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.services.edge import ROUTER
+from localstack.services.stores import AccountRegionBundle
 
 from .context import RestApiInvocationContext
 from .gateway import RestApiGateway
@@ -38,12 +39,14 @@ class ApiGatewayEndpoint:
     Gateway to be processed by the handler chain.
     """
 
-    def __init__(self, rest_gateway: RestApiGateway = None, store: ApiGatewayStore = None):
+    def __init__(self, rest_gateway: RestApiGateway = None, store: AccountRegionBundle = None):
         self.rest_gateway = rest_gateway or RestApiGateway()
         # we only access CrossAccount attributes in the handler, so we use a global store in default account and region
-        self._global_store = (
-            store or apigateway_stores[DEFAULT_AWS_ACCOUNT_ID][AWS_REGION_US_EAST_1]
-        )
+        self._store = store or apigateway_stores
+
+    @property
+    def _global_store(self) -> ApiGatewayStore:
+        return self._store[DEFAULT_AWS_ACCOUNT_ID][AWS_REGION_US_EAST_1]
 
     def __call__(self, request: Request, **kwargs: Unpack[RouteHostPathParameters]) -> Response:
         """
