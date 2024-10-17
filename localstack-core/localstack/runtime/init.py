@@ -11,7 +11,6 @@ from typing import Dict, List, Optional
 
 from plux import Plugin, PluginManager
 
-from localstack import constants
 from localstack.runtime import hooks
 from localstack.utils.objects import singleton_factory
 
@@ -156,13 +155,6 @@ class InitScriptManager:
             for script in scripts:
                 LOG.debug("Running %s script %s", script.stage, script.path)
 
-                # Deprecated: To be removed in v4.0 major release.
-                # Explicit AWS credentials and region will need to be set in the script.
-                env_original = os.environ.copy()
-                os.environ["AWS_ACCESS_KEY_ID"] = constants.DEFAULT_AWS_ACCOUNT_ID
-                os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
-                os.environ["AWS_REGION"] = constants.AWS_REGION_US_EAST_1
-
                 try:
                     script.state = State.RUNNING
                     runner = self.get_script_runner(script.path)
@@ -175,13 +167,6 @@ class InitScriptManager:
                         LOG.error("Error while running script %s: %s", script, e)
                 else:
                     script.state = State.SUCCESSFUL
-                finally:
-                    # Restore original state of Boto credentials.
-                    for env_var in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"):
-                        if env_var in env_original:
-                            os.environ[env_var] = env_original[env_var]
-                        else:
-                            os.environ.pop(env_var, None)
 
         finally:
             self.stage_completed[stage] = True
