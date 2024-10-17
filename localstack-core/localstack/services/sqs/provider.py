@@ -624,7 +624,7 @@ class SqsDeveloperEndpoints:
         self.service = load_service("sqs-query")
         self.serializer = create_serializer(self.service)
 
-    @route("/_aws/sqs/messages")
+    @route("/_aws/sqs/messages", methods=["GET", "POST"])
     @aws_response_serializer("sqs-query", "ReceiveMessage")
     def list_messages(self, request: Request) -> ReceiveMessageResult:
         """
