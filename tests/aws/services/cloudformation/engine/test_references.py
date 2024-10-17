@@ -57,6 +57,22 @@ class TestFnSub:
 
         snapshot.match("outputs", deployment.outputs)
 
+    @markers.aws.validated
+    def test_non_string_parameter_in_sub(self, deploy_cfn_template, aws_client, snapshot):
+        ssm_parameter_name = f"test-param-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(ssm_parameter_name, "<ssm-parameter-name>")
+        )
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/cfn_number_in_sub.yml"
+            ),
+            parameters={"ParameterName": ssm_parameter_name},
+        )
+
+        get_param_res = aws_client.ssm.get_parameter(Name=ssm_parameter_name)["Parameter"]
+        snapshot.match("get-parameter-result", get_param_res)
+
 
 @markers.aws.validated
 def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
