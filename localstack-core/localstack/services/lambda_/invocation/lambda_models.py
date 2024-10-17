@@ -60,11 +60,12 @@ class VersionState:
 class Invocation:
     payload: bytes
     invoked_arn: str
-    client_context: Optional[str]
+    client_context: str | None
     invocation_type: InvocationType
     invoke_time: datetime
     # = invocation_id
     request_id: str
+    trace_context: dict
 
 
 InitializationType = Literal["on-demand", "provisioned-concurrency"]
