@@ -87,6 +87,27 @@ def dynamodb():
     )
 
 
+@aws_provider(api="dynamodbstreams", name="v2")
+def dynamodbstreams_v2():
+    from localstack.services.dynamodbstreams.v2.provider import DynamoDBStreamsProvider
+
+    provider = DynamoDBStreamsProvider()
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="dynamodb", name="v2")
+def dynamodb_v2():
+    from localstack.services.dynamodb.v2.provider import DynamoDBProvider
+
+    provider = DynamoDBProvider()
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
+    )
+
+
 @aws_provider()
 def dynamodbstreams():
     from localstack.services.dynamodbstreams.provider import DynamoDBStreamsProvider
