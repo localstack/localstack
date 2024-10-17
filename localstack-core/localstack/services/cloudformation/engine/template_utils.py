@@ -143,6 +143,24 @@ def resolve_pseudo_parameter(
             return AWS_URL_SUFFIX
 
 
+def resolve_conditional_mapping_ref(
+    ref_name, account_id: str, region_name: str, stack_name: str, parameters
+):
+    if ref_name.startswith("AWS::"):
+        ref_value = resolve_pseudo_parameter(account_id, region_name, ref_name, stack_name)
+        if ref_value is None:
+            raise TemplateError(f"Invalid pseudo parameter '{ref_name}'")
+    else:
+        param = parameters.get(ref_name)
+        if not param:
+            raise TemplateError(
+                f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
+            )
+        ref_value = param.get("ResolvedValue") or param.get("ParameterValue")
+
+    return ref_value
+
+
 def resolve_condition(
     account_id: str, region_name: str, condition, conditions, parameters, mappings, stack_name
 ):
@@ -184,49 +202,20 @@ def resolve_condition(
                     map_name, top_level_key, second_level_key = v
                     if isinstance(map_name, dict) and "Ref" in map_name:
                         ref_name = map_name["Ref"]
-                        param = parameters.get(ref_name) or resolve_pseudo_parameter(
-                            account_id, region_name, ref_name, stack_name
-                        )
-                        if not param:
-                            raise TemplateError(
-                                f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
-                            )
-                        map_name = (
-                            (param.get("ResolvedValue") or param.get("ParameterValue"))
-                            if isinstance(param, dict)
-                            else param
+                        map_name = resolve_conditional_mapping_ref(
+                            ref_name, account_id, region_name, stack_name, parameters
                         )
 
                     if isinstance(top_level_key, dict) and "Ref" in top_level_key:
                         ref_name = top_level_key["Ref"]
-                        param = parameters.get(ref_name) or resolve_pseudo_parameter(
-                            account_id, region_name, ref_name, stack_name
-                        )
-                        if not param:
-                            raise TemplateError(
-                                f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
-                            )
-                        top_level_key = (
-                            (param.get("ResolvedValue") or param.get("ParameterValue"))
-                            if isinstance(param, dict)
-                            else param
+                        top_level_key = resolve_conditional_mapping_ref(
+                            ref_name, account_id, region_name, stack_name, parameters
                         )
 
                     if isinstance(second_level_key, dict) and "Ref" in second_level_key:
                         ref_name = second_level_key["Ref"]
-                        param = parameters.get(ref_name) or resolve_pseudo_parameter(
-                            account_id, region_name, ref_name, stack_name
-                        )
-                        if not param:
-                            raise TemplateError(
-                                f"Invalid reference: '{ref_name}' does not exist in parameters: '{parameters}'"
-                            )
-
-                        # TODO add validation, second level cannot contain symbols
-                        second_level_key = (
-                            (param.get("ResolvedValue") or param.get("ParameterValue"))
-                            if isinstance(param, dict)
-                            else param
+                        second_level_key = resolve_conditional_mapping_ref(
+                            ref_name, account_id, region_name, stack_name, parameters
                         )
 
                     mapping = mappings.get(map_name)
