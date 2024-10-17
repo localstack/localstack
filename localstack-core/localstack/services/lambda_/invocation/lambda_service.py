@@ -223,6 +223,7 @@ class LambdaService:
         invocation_type: InvocationType | None,
         client_context: Optional[str],
         request_id: str,
+        trace_context: dict | None,
         payload: bytes | None,
     ) -> InvocationResult | None:
         """
@@ -235,6 +236,7 @@ class LambdaService:
         :param account_id: Account id of the function
         :param invocation_type: Invocation Type
         :param client_context: Client Context, if applicable
+        :param trace_context: optional tracing information such as X-Ray header
         :param payload: Invocation payload
         :return: The invocation result
         """
@@ -323,6 +325,7 @@ class LambdaService:
                     invocation_type=invocation_type,
                     invoke_time=datetime.now(),
                     request_id=request_id,
+                    trace_context=trace_context,
                 )
             )
 
@@ -334,6 +337,7 @@ class LambdaService:
                 invocation_type=invocation_type,
                 invoke_time=datetime.now(),
                 request_id=request_id,
+                trace_context=trace_context,
             )
         )
 

@@ -347,7 +347,9 @@ class ExecutionEnvironment:
             "invoke-id": invocation.request_id,  # TODO: rename to request-id (requires change in lambda-init)
             "invoked-function-arn": invocation.invoked_arn,
             "payload": to_str(invocation.payload),
-            "trace-id": self._generate_trace_header(),
+            # TODO: handle None values
+            "trace-id": invocation.trace_context["aws_trace_header"].to_header_str()
+            or self._generate_trace_header(),
         }
         return self.runtime_executor.invoke(payload=invoke_payload)
 
