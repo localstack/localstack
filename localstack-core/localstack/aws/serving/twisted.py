@@ -168,6 +168,6 @@ def serve_gateway(
         endpoint.listen(protocol_factory)
 
     if asynchronous:
-        return start_worker_thread(reactor.run)
+        return start_worker_thread(reactor.run), _shutdown_reactor
     else:
         return reactor.run()
