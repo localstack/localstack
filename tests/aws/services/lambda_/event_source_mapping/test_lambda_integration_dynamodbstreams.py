@@ -65,6 +65,11 @@ def get_lambda_logs_event(aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    # Only match EventSourceMappingArn field if ESM v2 and above
+    paths=["$..EventSourceMappingArn"],
+)
+@markers.snapshot.skip_snapshot_verify(
     condition=is_v2_esm,
     paths=[
         # Lifecycle updates not yet implemented in ESM v2
@@ -979,7 +984,6 @@ class TestDynamoDBEventSourceMapping:
     ):
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
-        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
 
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"

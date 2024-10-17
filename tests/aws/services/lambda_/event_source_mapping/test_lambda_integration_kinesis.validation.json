@@ -3,19 +3,19 @@
     "last_validated_date": "2023-02-27T16:01:08+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisEventFiltering::test_kinesis_event_filtering_json_pattern": {
-    "last_validated_date": "2024-09-03T13:36:58+00:00"
+    "last_validated_date": "2024-10-12T13:31:49+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping": {
-    "last_validated_date": "2024-07-31T13:52:23+00:00"
+    "last_validated_date": "2024-10-12T11:47:14+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_lambdas_single_kinesis_event_stream": {
-    "last_validated_date": "2024-02-02T10:58:36+00:00"
+    "last_validated_date": "2024-10-12T13:58:15+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_disable_kinesis_event_source_mapping": {
-    "last_validated_date": "2023-02-27T15:59:49+00:00"
+    "last_validated_date": "2024-10-12T11:54:19+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_duplicate_event_source_mappings": {
-    "last_validated_date": "2024-01-04T23:37:20+00:00"
+    "last_validated_date": "2024-10-12T11:48:44+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_empty_provided": {
     "last_validated_date": "2024-10-11T11:04:52+00:00"
@@ -24,51 +24,54 @@
     "last_validated_date": "2023-02-27T15:55:08+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_on_failure_destination_config": {
-    "last_validated_date": "2024-09-03T15:41:37+00:00"
+    "last_validated_date": "2024-10-12T12:27:07+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_sns_on_failure_destination_config": {
-    "last_validated_date": "2024-09-16T16:07:56+00:00"
+    "last_validated_date": "2024-10-12T13:17:51+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_trim_horizon": {
-    "last_validated_date": "2023-02-27T15:56:17+00:00"
+    "last_validated_date": "2024-10-12T11:50:50+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[empty_string_item_identifier_failure]": {
-    "last_validated_date": "2024-09-11T19:12:32+00:00"
+    "last_validated_date": "2024-10-12T13:08:07+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[invalid_key_foo_failure]": {
-    "last_validated_date": "2024-09-11T19:19:37+00:00"
+    "last_validated_date": "2024-10-12T13:13:16+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[invalid_key_foo_null_value_failure]": {
-    "last_validated_date": "2024-09-11T19:22:48+00:00"
+    "last_validated_date": "2024-10-12T13:14:10+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[item_identifier_not_present_failure]": {
-    "last_validated_date": "2024-10-01T17:20:13+00:00"
+    "last_validated_date": "2024-10-12T13:06:11+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[null_item_identifier_failure]": {
-    "last_validated_date": "2024-09-11T19:15:38+00:00"
+    "last_validated_date": "2024-10-12T13:10:18+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[unhandled_exception_in_function]": {
-    "last_validated_date": "2024-09-11T19:25:06+00:00"
+    "last_validated_date": "2024-10-14T18:10:14+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failures": {
-    "last_validated_date": "2024-09-11T18:00:23+00:00"
+    "last_validated_date": "2024-10-12T14:17:03+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_batch_item_failure_success]": {
-    "last_validated_date": "2024-09-11T17:47:31+00:00"
+    "last_validated_date": "2024-10-12T13:27:09+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_dict_success]": {
-    "last_validated_date": "2024-09-11T17:45:41+00:00"
+    "last_validated_date": "2024-10-12T13:25:11+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_list_success]": {
-    "last_validated_date": "2024-09-11T17:42:39+00:00"
+    "last_validated_date": "2024-10-12T13:21:23+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_string_success]": {
+    "last_validated_date": "2024-10-12T13:19:35+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_string_success]": {
     "last_validated_date": "2024-10-11T12:38:13+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[null_batch_item_failure_success]": {
-    "last_validated_date": "2024-09-11T17:48:35+00:00"
+    "last_validated_date": "2024-10-12T13:28:03+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[null_success]": {
-    "last_validated_date": "2024-09-11T17:44:29+00:00"
+    "last_validated_date": "2024-10-12T13:23:12+00:00"
   }
 }

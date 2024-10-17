@@ -39,10 +39,10 @@
     "last_validated_date": "2024-04-10T09:19:37+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "last_validated_date": "2024-04-10T09:19:50+00:00"
+    "last_validated_date": "2024-10-14T12:36:54+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_function_name_variations": {
-    "last_validated_date": "2024-04-10T09:21:43+00:00"
+    "last_validated_date": "2024-10-14T12:46:32+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_advance_logging_configuration_format_switch": {
     "last_validated_date": "2024-04-10T08:58:47+00:00"

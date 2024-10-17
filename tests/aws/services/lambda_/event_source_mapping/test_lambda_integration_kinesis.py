@@ -74,6 +74,11 @@ def _snapshot_transformers(snapshot):
         "$..TumblingWindowInSeconds",
     ],
 )
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    # Only match EventSourceMappingArn field if ESM v2 and above
+    paths=["$..EventSourceMappingArn"],
+)
 class TestKinesisSource:
     @markers.aws.validated
     def test_create_kinesis_event_source_mapping(
@@ -1049,6 +1054,11 @@ class TestKinesisEventFiltering:
             # Lifecycle updates not yet implemented in ESM v2
             "$..LastProcessingResult",
         ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_esm,
+        # Only match EventSourceMappingArn field if ESM v2 and above
+        paths=["$..EventSourceMappingArn"],
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
