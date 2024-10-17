@@ -4,7 +4,7 @@ import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Set
+from typing import Any, Dict, Set, Type
 from urllib.parse import urlencode
 
 import requests
@@ -371,9 +371,9 @@ class BatchTargetSender(TargetSender):
             raise ValueError("BatchParameters.JobName is required for Batch target")
 
 
-class ContainerTargetSender(TargetSender):
+class ECSTargetSender(TargetSender):
     def send_event(self, event):
-        raise NotImplementedError("ECS target is not yet implemented")
+        raise NotImplementedError("ECS target is a pro feature, please use LocalStack Pro")
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
@@ -555,7 +555,7 @@ class TargetSenderFactory:
         "apigateway": ApiGatewayTargetSender,
         "appsync": AppSyncTargetSender,
         "batch": BatchTargetSender,
-        "ecs": ContainerTargetSender,
+        "ecs": ECSTargetSender,
         "events": EventsTargetSender,
         "firehose": FirehoseTargetSender,
         "kinesis": KinesisTargetSender,
@@ -579,6 +579,10 @@ class TargetSenderFactory:
         self.rule_name = rule_name
         self.region = region
         self.account_id = account_id
+
+    @classmethod
+    def register_target_sender(cls, service_name: str, sender_class: Type[TargetSender]):
+        cls.target_map[service_name] = sender_class
 
     def get_target_sender(self) -> TargetSender:
         service = extract_service_from_arn(self.target["Arn"])
