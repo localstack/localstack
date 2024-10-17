@@ -376,9 +376,9 @@ class BatchTargetSender(TargetSender):
         pass
 
 
-class ContainerTargetSender(TargetSender):
+class ECSTargetSender(TargetSender):
     def send_event(self, event):
-        raise NotImplementedError("ECS target is not yet implemented")
+        raise NotImplementedError("ECS target is a pro feature, please use LocalStack Pro")
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
@@ -572,7 +572,7 @@ class TargetSenderFactory:
         "apigateway": ApiGatewayTargetSender,
         "appsync": AppSyncTargetSender,
         "batch": BatchTargetSender,
-        "ecs": ContainerTargetSender,
+        "ecs": ECSTargetSender,
         "events": EventsTargetSender,
         "firehose": FirehoseTargetSender,
         "kinesis": KinesisTargetSender,
