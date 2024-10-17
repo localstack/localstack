@@ -11,6 +11,7 @@ import pytest
 import requests
 from botocore.auth import SigV4Auth
 from botocore.exceptions import ClientError
+from moto.secretsmanager.utils import SecretsManagerSecretIdentifier
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
@@ -2445,6 +2446,23 @@ class TestSecretsManager:
             TransformerUtility.jsonpath("$..CreatedDate", "datetime", reference_replacement=False)
         )
         sm_snapshot.match("secret_value_http_response", json_response)
+
+    @markers.aws.only_localstack
+    def test_create_secret_with_custom_id(
+        self, account_id, region_name, create_secret, set_resource_custom_id
+    ):
+        secret_name = short_uid()
+        custom_id = "TestID"
+        set_resource_custom_id(
+            SecretsManagerSecretIdentifier(
+                account_id=account_id, region=region_name, secret_id=secret_name
+            ),
+            custom_id,
+        )
+
+        secret = create_secret(Name=secret_name, SecretBinary="test-secret")
+
+        assert secret["ARN"].split(":")[-1] == "-".join((secret_name, custom_id))
 
     @markers.aws.validated
     def test_force_delete_deleted_secret(self, sm_snapshot, secret_name, aws_client):
