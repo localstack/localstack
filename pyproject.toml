@@ -57,7 +57,7 @@ base-runtime = [
     # pinned / updated by ASF update action
     "botocore==1.35.39",
     "awscrt>=0.13.14",
-    "cbor2>=5.2.0",
+    "cbor2>=5.5.0",
     "dnspython>=1.16.0",
     "docker>=6.1.1",
     "jsonpatch>=1.24",
