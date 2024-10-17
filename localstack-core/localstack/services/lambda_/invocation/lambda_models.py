@@ -65,7 +65,7 @@ class Invocation:
     invoke_time: datetime
     # = invocation_id
     request_id: str
-    trace_context: dict | None
+    trace_context: dict
 
 
 InitializationType = Literal["on-demand", "provisioned-concurrency"]

@@ -221,9 +221,9 @@ class LambdaService:
         region: str,
         account_id: str,
         invocation_type: InvocationType | None,
-        client_context: Optional[str],
+        client_context: str | None,
         request_id: str,
-        trace_context: dict | None,
+        trace_context: dict,
         payload: bytes | None,
     ) -> InvocationResult | None:
         """
@@ -236,7 +236,7 @@ class LambdaService:
         :param account_id: Account id of the function
         :param invocation_type: Invocation Type
         :param client_context: Client Context, if applicable
-        :param trace_context: optional tracing information such as X-Ray header
+        :param trace_context: tracing information such as X-Ray header
         :param payload: Invocation payload
         :return: The invocation result
         """
