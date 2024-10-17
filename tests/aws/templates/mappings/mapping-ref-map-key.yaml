@@ -1,12 +1,9 @@
 Mappings:
   MyMap:
-<<<<<<< HEAD
-=======
     A:
       value: "true"
     B:
       value: "false"
->>>>>>> 742e9fc4b (refactor ref inside mapping and test)
 
 Conditions:
   MyCondition: !Equals
