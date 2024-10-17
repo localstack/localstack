@@ -2,6 +2,7 @@ import inspect
 import logging
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
+import rpyc
 from botocore import xform_name
 from botocore.model import ServiceModel
 
@@ -124,6 +125,7 @@ class Skeleton:
 
     def __init__(self, service: ServiceModel, implementation: Union[Any, DispatchTable]):
         self.service = service
+        self._conn = rpyc.connect("localhost", 12000, config={"allow_public_attrs": True})
 
         if isinstance(implementation, dict):
             self.dispatch_table = implementation
@@ -162,10 +164,11 @@ class Skeleton:
     ) -> Response:
         operation = context.operation
 
-        handler = self.dispatch_table[operation.name]
-
-        # Call the appropriate handler
-        result = handler(context, instance) or {}
+        # handler = self.dispatch_table[operation.name]
+        #
+        # # Call the appropriate handler
+        # result = handler(context, instance) or {}
+        result = self._conn.root.invoke(context, instance)
 
         # if the service handler returned an HTTP request, forego serialization and return immediately
         if isinstance(result, Response):
