@@ -1,6 +1,4 @@
-import binascii
 import logging
-import os
 import random
 import string
 import time
@@ -28,6 +26,7 @@ from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
     is_lambda_debug_timeout_enabled_for,
 )
 from localstack.utils.strings import to_str
+from localstack.utils.xray.trace_header import TraceHeader
 
 STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
@@ -343,13 +342,17 @@ class ExecutionEnvironment:
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
         assert self.status == RuntimeStatus.RUNNING
+        aws_trace_header = invocation.trace_context.get("aws_trace_header") or TraceHeader()
+        # TODO: test and implement passive tracing and sampling decisions. Using a simple heuristic for now:
+        #  If TracingMode is "Active", we always sample the request.
+        if self.function_version.config.tracing_config_mode == TracingMode.Active:
+            aws_trace_header.sampled = 1
+        # TODO: implement Lambda lineage: https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
         invoke_payload = {
             "invoke-id": invocation.request_id,  # TODO: rename to request-id (requires change in lambda-init)
             "invoked-function-arn": invocation.invoked_arn,
             "payload": to_str(invocation.payload),
-            # TODO: handle None values
-            "trace-id": invocation.trace_context["aws_trace_header"].to_header_str()
-            or self._generate_trace_header(),
+            "trace-id": aws_trace_header.to_header_str(),
         }
         return self.runtime_executor.invoke(payload=invoke_payload)
 
@@ -368,39 +371,6 @@ class ExecutionEnvironment:
             RoleSessionName=role_session_name,
             DurationSeconds=43200,
         )["Credentials"]
-
-    def _generate_trace_id(self):
-        """https://docs.aws.amazon.com/xray/latest/devguide/xray-api-sendingdata.html#xray-api-traceids"""
-        # TODO: add test for start time
-        original_request_epoch = int(time.time())
-        timestamp_hex = hex(original_request_epoch)[2:]
-        version_number = "1"
-        unique_id = binascii.hexlify(os.urandom(12)).decode("utf-8")
-        return f"{version_number}-{timestamp_hex}-{unique_id}"
-
-    def _generate_trace_header(self):
-        """
-        https://docs.aws.amazon.com/lambda/latest/dg/services-xray.html
-
-        "The sampling rate is 1 request per second and 5 percent of additional requests."
-
-        Currently we implement a simpler, more predictable strategy.
-        If TracingMode is "Active", we always sample the request. (Sampled=1)
-
-        TODO: implement passive tracing
-        TODO: use xray sdk here
-        """
-        if self.function_version.config.tracing_config_mode == TracingMode.Active:
-            sampled = "1"
-        else:
-            sampled = "0"
-
-        root_trace_id = self._generate_trace_id()
-
-        parent = binascii.b2a_hex(os.urandom(8)).decode(
-            "utf-8"
-        )  # TODO: segment doesn't actually exist at the moment
-        return f"Root={root_trace_id};Parent={parent};Sampled={sampled}"
 
     def _get_execution_timeout_seconds(self) -> int:
         # Returns the timeout value in seconds to be enforced during the execution of the
