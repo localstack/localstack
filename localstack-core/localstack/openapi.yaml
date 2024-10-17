@@ -8,7 +8,7 @@ info:
     checks, plugins, initialisation hooks, service introspection, and more.
   termsOfService: https://www.localstack.cloud/legal/tos
   title: LocalStack REST API for Community
-  version: 3.6.1.dev
+  version: latest
 externalDocs:
   description: LocalStack Documentation
   url: https://docs.localstack.cloud
