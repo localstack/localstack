@@ -11,7 +11,11 @@ import requests
 from requests import Response
 
 from localstack import config
-from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
+from localstack.aws.api.stepfunctions import (
+    ExecutionFailedEventDetails,
+    HistoryEventType,
+    TaskFailedEventDetails,
+)
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_CONTENT_TYPE,
@@ -22,6 +26,13 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
@@ -313,3 +324,23 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
 
         invoke_output = self._invoke_output_of(response)
         env.stack.append(invoke_output)
+
+    def _run_pre_eval_checks(self, env: Environment) -> None:
+        headers = env.inp.get("Headers", dict())
+        if headers:
+            for key in headers.keys():
+                if not isinstance(headers.get(key), list):
+                    raise FailureEventException(
+                        failure_event=FailureEvent(
+                            env=env,
+                            error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+                            event_type=HistoryEventType.ExecutionFailed,
+                            event_details=EventDetails(
+                                executionFailedEventDetails=ExecutionFailedEventDetails(
+                                    error=StatesErrorNameType.StatesRuntime.to_name(),
+                                    cause="The value of the field 'Headers' has an invalid format",
+                                )
+                            ),
+                        )
+                    )
+        return super()._run_pre_eval_checks(env)
