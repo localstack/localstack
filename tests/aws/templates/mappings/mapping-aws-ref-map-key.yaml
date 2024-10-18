@@ -1,0 +1,35 @@
+Mappings:
+  {{StackName}}:
+    us-east-1:
+      {{StackName}}: "true"
+    us-east-2:
+      {{StackName}}: "true"
+    us-west-1:
+      {{StackName}}: "true"
+    us-west-2:
+      {{StackName}}: "true"
+    ap-southeast-2:
+      {{StackName}}: "true"
+    ap-northeast-1:
+      {{StackName}}: "true"
+    eu-central-1:
+      {{StackName}}: "true"
+    eu-west-1:
+      {{StackName}}: "true"
+
+
+Conditions:
+  MyCondition: !Equals
+    - !FindInMap [ !Ref AWS::StackName, !Ref AWS::Region, !Ref AWS::StackName ]
+    - "true"
+
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Condition: MyCondition
+
+
+Outputs:
+  TopicArn:
+    Value: !Ref MyTopic
+
