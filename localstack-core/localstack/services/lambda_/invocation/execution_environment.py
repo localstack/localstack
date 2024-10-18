@@ -25,6 +25,7 @@ from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
     is_lambda_debug_timeout_enabled_for,
 )
 from localstack.utils.strings import to_str
+from localstack.utils.xray.trace_header import TraceHeader
 
 STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
@@ -340,7 +341,10 @@ class ExecutionEnvironment:
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
         assert self.status == RuntimeStatus.RUNNING
-        aws_trace_header = invocation.trace_context.get("aws_trace_header")
+        # Async/event invokes might miss an aws_trace_header, then we need to create a new root trace id.
+        aws_trace_header = (
+            invocation.trace_context.get("aws_trace_header") or TraceHeader().ensure_root_exists()
+        )
         # TODO: test and implement Active and PassThrough tracing and sampling decisions.
         # TODO: implement Lambda lineage: https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
         invoke_payload = {
