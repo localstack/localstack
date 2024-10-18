@@ -1,6 +1,6 @@
 # LocalStack project configuration
 [build-system]
-requires = ['setuptools>=64', 'wheel', 'plux>=1.10', "setuptools_scm>=8"]
+requires = ['setuptools>=64,<=75.1.0', 'wheel', 'plux>=1.10', "setuptools_scm>=8.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
