@@ -61,10 +61,14 @@ class EvalComponent(Component, abc.ABC):
         component_repr = repr(self)
         LOG.error("%s at '%s'", error_log, component_repr)
 
+    def _run_pre_eval_checks(self, env: Environment) -> None:
+        return
+
     def eval(self, env: Environment) -> None:
         if env.is_running():
             self._log_evaluation_step("Computing")
             try:
+                self._run_pre_eval_checks(env=env)
                 self._eval_body(env)
             except FailureEventException as failure_event_exception:
                 self._log_failure_event_exception(failure_event_exception=failure_event_exception)
