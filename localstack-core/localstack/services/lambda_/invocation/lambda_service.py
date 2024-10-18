@@ -223,8 +223,8 @@ class LambdaService:
         invocation_type: InvocationType | None,
         client_context: str | None,
         request_id: str,
-        trace_context: dict,
         payload: bytes | None,
+        trace_context: dict | None = None,
     ) -> InvocationResult | None:
         """
         Invokes a specific version of a lambda
@@ -240,6 +240,8 @@ class LambdaService:
         :param payload: Invocation payload
         :return: The invocation result
         """
+        # NOTE: consider making the trace_context mandatory once we update all usages (should be easier after v4.0)
+        trace_context = trace_context or {}
         # Invoked arn (for lambda context) does not have qualifier if not supplied
         invoked_arn = lambda_arn(
             function_name=function_name,
