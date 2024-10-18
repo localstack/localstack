@@ -25,6 +25,7 @@ from localstack.aws.api.kms import (
     DateType,
     DecryptResponse,
     DeleteAliasRequest,
+    DeriveSharedSecretResponse,
     DescribeKeyRequest,
     DescribeKeyResponse,
     DisabledException,
@@ -59,9 +60,11 @@ from localstack.aws.api.kms import (
     InvalidCiphertextException,
     InvalidGrantIdException,
     InvalidKeyUsageException,
+    KeyAgreementAlgorithmSpec,
     KeyIdType,
     KeySpec,
     KeyState,
+    KeyUsageType,
     KmsApi,
     KMSInvalidStateException,
     LimitType,
@@ -79,8 +82,10 @@ from localstack.aws.api.kms import (
     MultiRegionKey,
     NotFoundException,
     NullableBooleanType,
+    OriginType,
     PlaintextType,
     PrincipalIdType,
+    PublicKeyType,
     PutKeyPolicyRequest,
     RecipientInfo,
     ReEncryptResponse,
@@ -1345,6 +1350,50 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         for tag_key in request.get("TagKeys"):
             # AWS doesn't seem to mind removal of a non-existent tag, so we do not raise any exception.
             key.tags.pop(tag_key, None)
+
+    def derive_shared_secret(
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        key_agreement_algorithm: KeyAgreementAlgorithmSpec,
+        public_key: PublicKeyType,
+        grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
+        recipient: RecipientInfo = None,
+        **kwargs,
+    ) -> DeriveSharedSecretResponse:
+        key = self._get_kms_key(
+            context.account_id,
+            context.region,
+            key_id,
+            enabled_key_allowed=True,
+            disabled_key_allowed=True,
+        )
+        key_usage = key.metadata.get("KeyUsage")
+        key_origin = key.metadata.get("Origin")
+
+        if key_usage != KeyUsageType.KEY_AGREEMENT:
+            raise InvalidKeyUsageException(
+                f"{key.metadata['Arn']} key usage is {key_usage} which is not valid for {context.operation.name}."
+            )
+
+        if key_agreement_algorithm != KeyAgreementAlgorithmSpec.ECDH:
+            raise ValidationException(
+                f"1 validation error detected: Value '{key_agreement_algorithm}' at 'keyAgreementAlgorithm' "
+                f"failed to satisfy constraint: Member must satisfy enum value set: [ECDH]"
+            )
+
+        # TODO: Verify the actual error raised
+        if key_origin not in [OriginType.AWS_KMS, OriginType.EXTERNAL]:
+            raise ValueError(f"Key origin: {key_origin} is not valid for {context.operation.name}.")
+
+        shared_secret = key.derive_shared_secret(public_key)
+        return DeriveSharedSecretResponse(
+            KeyId=key_id,
+            SharedSecret=shared_secret,
+            KeyAgreementAlgorithm=key_agreement_algorithm,
+            KeyOrigin=key_origin,
+        )
 
     def _validate_key_state_not_pending_import(self, key: KmsKey):
         if key.metadata["KeyState"] == KeyState.PendingImport:

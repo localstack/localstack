@@ -14,7 +14,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.6.0
+anyio==4.6.2.post1
     # via httpx
 apispec==6.6.1
     # via localstack-core
@@ -27,15 +27,15 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.206
+aws-cdk-asset-awscli-v1==2.2.207
     # via aws-cdk-lib
-aws-cdk-asset-kubectl-v20==2.1.2
+aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==38.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.161.1
+aws-cdk-lib==2.162.1
     # via localstack-core
 aws-sam-translator==1.91.0
     # via
@@ -43,19 +43,19 @@ aws-sam-translator==1.91.0
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.35.0
+awscli==1.35.5
     # via localstack-core
 awscrt==0.22.0
     # via localstack-core
-boto3==1.35.34
+boto3==1.35.39
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.35.35
+boto3-stubs==1.35.40
     # via localstack-core (pyproject.toml)
-botocore==1.35.34
+botocore==1.35.39
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +64,7 @@ botocore==1.35.34
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.35.35
+botocore-stubs==1.35.40
     # via boto3-stubs
 build==1.2.2.post1
     # via
@@ -75,9 +75,9 @@ cachetools==5.5.0
     #   airspeed-ext
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cattrs==23.2.3
+cattrs==24.1.2
     # via jsii
-cbor2==5.6.4
+cbor2==5.6.5
     # via localstack-core
 certifi==2024.8.30
     # via
@@ -89,9 +89,9 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.16.0
+cfn-lint==1.16.1
     # via moto-ext
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via requests
 click==8.1.7
     # via
@@ -101,9 +101,9 @@ colorama==0.4.6
     # via awscli
 constantly==23.10.4
     # via localstack-twisted
-constructs==10.3.0
+constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.6.1
+coverage==7.6.3
     # via
     #   coveralls
     #   localstack-core
@@ -130,7 +130,7 @@ dill==0.3.6
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-distlib==0.3.8
+distlib==0.3.9
     # via virtualenv
 dnslib==0.9.25
     # via
@@ -153,7 +153,7 @@ events==0.5
     # via opensearch-py
 filelock==3.16.1
     # via virtualenv
-graphql-core==3.2.4
+graphql-core==3.2.5
     # via moto-ext
 h11==0.14.0
     # via
@@ -192,7 +192,7 @@ incremental==24.7.2
     # via localstack-twisted
 iniconfig==2.0.0
     # via pytest
-isodate==0.7.0
+isodate==0.7.2
     # via openapi-core
 jinja2==3.1.4
     # via moto-ext
@@ -204,7 +204,7 @@ joserfc==1.0.0
     # via moto-ext
 jpype1==1.5.0
     # via localstack-core
-jsii==1.103.1
+jsii==1.104.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -220,7 +220,7 @@ jsonpatch==1.33
     # via
     #   cfn-lint
     #   localstack-core
-jsonpath-ng==1.6.1
+jsonpath-ng==1.7.0
     # via
     #   localstack-core
     #   localstack-snapshot
@@ -232,6 +232,7 @@ jsonpointer==3.0.0
 jsonschema==4.23.0
     # via
     #   aws-sam-translator
+    #   moto-ext
     #   openapi-core
     #   openapi-schema-validator
     #   openapi-spec-validator
@@ -251,7 +252,7 @@ localstack-twisted==24.3.0
     # via localstack-core
 markdown-it-py==3.0.0
     # via rich
-markupsafe==3.0.0
+markupsafe==3.0.1
     # via
     #   jinja2
     #   werkzeug
@@ -259,7 +260,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.15.post4
+moto-ext==5.0.17.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -267,7 +268,7 @@ multipart==1.1.0
     # via moto-ext
 mypy-boto3-acm==1.35.0
     # via boto3-stubs
-mypy-boto3-acm-pca==1.35.0
+mypy-boto3-acm-pca==1.35.38
     # via boto3-stubs
 mypy-boto3-amplify==1.35.19
     # via boto3-stubs
@@ -309,7 +310,7 @@ mypy-boto3-cognito-identity==1.35.16
     # via boto3-stubs
 mypy-boto3-cognito-idp==1.35.18
     # via boto3-stubs
-mypy-boto3-dms==1.35.0
+mypy-boto3-dms==1.35.38
     # via boto3-stubs
 mypy-boto3-docdb==1.35.0
     # via boto3-stubs
@@ -317,23 +318,23 @@ mypy-boto3-dynamodb==1.35.24
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.35.0
     # via boto3-stubs
-mypy-boto3-ec2==1.35.34
+mypy-boto3-ec2==1.35.38
     # via boto3-stubs
 mypy-boto3-ecr==1.35.21
     # via boto3-stubs
-mypy-boto3-ecs==1.35.21
+mypy-boto3-ecs==1.35.38
     # via boto3-stubs
 mypy-boto3-efs==1.35.0
     # via boto3-stubs
 mypy-boto3-eks==1.35.0
     # via boto3-stubs
-mypy-boto3-elasticache==1.35.0
+mypy-boto3-elasticache==1.35.36
     # via boto3-stubs
 mypy-boto3-elasticbeanstalk==1.35.0
     # via boto3-stubs
-mypy-boto3-elbv2==1.35.18
+mypy-boto3-elbv2==1.35.39
     # via boto3-stubs
-mypy-boto3-emr==1.35.18
+mypy-boto3-emr==1.35.39
     # via boto3-stubs
 mypy-boto3-emr-serverless==1.35.25
     # via boto3-stubs
@@ -417,7 +418,7 @@ mypy-boto3-resourcegroupstaggingapi==1.35.0
     # via boto3-stubs
 mypy-boto3-route53==1.35.4
     # via boto3-stubs
-mypy-boto3-route53resolver==1.35.0
+mypy-boto3-route53resolver==1.35.38
     # via boto3-stubs
 mypy-boto3-s3==1.35.32
     # via boto3-stubs
@@ -459,7 +460,7 @@ mypy-boto3-wafv2==1.35.9
     # via boto3-stubs
 mypy-boto3-xray==1.35.0
     # via boto3-stubs
-networkx==3.3
+networkx==3.4.1
     # via
     #   cfn-lint
     #   localstack-core
@@ -510,7 +511,7 @@ ply==3.11
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==4.0.0
+pre-commit==4.0.1
     # via localstack-core
 priority==1.3.0
     # via
@@ -549,7 +550,7 @@ pyopenssl==24.2.1
     #   localstack-twisted
 pypandoc==1.14
     # via localstack-core
-pyparsing==3.1.4
+pyparsing==3.2.0
     # via moto-ext
 pyproject-hooks==1.2.0
     # via build
@@ -632,7 +633,7 @@ rstr==3.2.2
     # via localstack-core
 ruff==0.6.9
     # via localstack-core
-s3transfer==0.10.2
+s3transfer==0.10.3
     # via
     #   awscli
     #   boto3
@@ -667,7 +668,7 @@ typeguard==2.13.3
     #   jsii
 types-awscrt==0.22.0
     # via botocore-stubs
-types-s3transfer==0.10.2
+types-s3transfer==0.10.3
     # via boto3-stubs
 typing-extensions==4.12.2
     # via
@@ -799,11 +800,11 @@ wrapt==1.16.0
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn
-xmltodict==0.13.0
+xmltodict==0.14.1
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==7.0.3
+zope-interface==7.1.0
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

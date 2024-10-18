@@ -845,7 +845,11 @@ class NotificationDispatcher:
             for config in configurations:
                 if notifier.should_notify(ctx, config):  # we check before sending it to the thread
                     LOG.debug("Submitting task to the executor for notifier %s", notifier)
-                    self.executor.submit(notifier.notify, ctx, config)
+                    self._submit_notification(notifier, ctx, config)
+
+    def _submit_notification(self, notifier, ctx, config):
+        "Required for patching submit with local thread context for EventStudio"
+        self.executor.submit(notifier.notify, ctx, config)
 
     def verify_configuration(
         self,

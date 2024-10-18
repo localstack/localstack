@@ -41,6 +41,7 @@ ResolverQueryLogConfigPolicy = str
 ResolverRulePolicy = str
 ResourceId = str
 Rfc3339TimeString = str
+ServerNameIndication = str
 ServicePrinciple = str
 SortByKey = str
 StatusMessage = str
@@ -636,6 +637,7 @@ class TargetAddress(TypedDict, total=False):
     Port: Optional[Port]
     Ipv6: Optional[Ipv6]
     Protocol: Optional[Protocol]
+    ServerNameIndication: Optional[ServerNameIndication]
 
 
 TargetList = List[TargetAddress]

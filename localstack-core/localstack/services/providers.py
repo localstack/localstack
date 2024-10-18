@@ -16,7 +16,7 @@ def acm():
 
 @aws_provider(api="apigateway")
 def apigateway():
-    from localstack.services.apigateway.provider import ApigatewayProvider
+    from localstack.services.apigateway.legacy.provider import ApigatewayProvider
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = ApigatewayProvider()

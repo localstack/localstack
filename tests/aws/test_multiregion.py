@@ -5,7 +5,7 @@ import requests
 
 from localstack import config
 from localstack.constants import PATH_USER_REQUEST
-from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs
+from localstack.services.apigateway.legacy.helpers import connect_api_gateway_to_sqs
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, queries
 from localstack.utils.common import short_uid, to_str

@@ -71,6 +71,11 @@ def _snapshot_transformers(snapshot):
         "$..StateTransitionReason",
     ]
 )
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    # Only match EventSourceMappingArn field if ESM v2 and above
+    paths=["$..EventSourceMappingArn"],
+)
 @markers.aws.validated
 def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function,
@@ -436,6 +441,11 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
         "$..create_event_source_mapping.State",
         "$..create_event_source_mapping.ResponseMetadata",
     ]
+)
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    # Only match EventSourceMappingArn field if ESM v2 and above
+    paths=["$..EventSourceMappingArn"],
 )
 @markers.aws.validated
 def test_report_batch_item_failures(
@@ -861,6 +871,8 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
         "$..LastProcessingResult",
         # async update not implemented in old ESM
         "$..State",
+        # Only match EventSourceMappingArn field if ESM v2 and above
+        "$..EventSourceMappingArn",
     ],
 )
 @markers.aws.validated
@@ -950,6 +962,10 @@ def test_fifo_message_group_parallelism(
         # events attribute
         "$..Records..md5OfMessageAttributes",
     ],
+)
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    paths=["$..EventSourceMappingArn"],
 )
 class TestSQSEventSourceMapping:
     @markers.aws.validated

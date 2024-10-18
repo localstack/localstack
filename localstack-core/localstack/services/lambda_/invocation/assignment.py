@@ -15,7 +15,10 @@ from localstack.services.lambda_.invocation.lambda_models import (
     InitializationType,
     OtherServiceEndpoint,
 )
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import is_lambda_debug_timeout_enabled_for
+from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
+    is_lambda_debug_enabled_for,
+    is_lambda_debug_timeout_enabled_for,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -138,6 +141,21 @@ class AssignmentService(OtherServiceEndpoint):
         function_version: FunctionVersion,
         target_provisioned_environments: int,
     ) -> list[Future[None]]:
+        # Enforce a single environment per lambda version if this is a target
+        # of an active Lambda Debug Mode.
+        qualified_lambda_version_arn = function_version.qualified_arn
+        if (
+            is_lambda_debug_enabled_for(qualified_lambda_version_arn)
+            and target_provisioned_environments > 0
+        ):
+            LOG.warning(
+                "Environments for '%s' enforced to '1' by Lambda Debug Mode, "
+                "configurations will continue to report the set value '%s'",
+                qualified_lambda_version_arn,
+                target_provisioned_environments,
+            )
+            target_provisioned_environments = 1
+
         current_provisioned_environments = [
             e
             for e in self.environments[version_manager_id].values()

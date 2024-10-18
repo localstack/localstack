@@ -18,11 +18,13 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.apigateway.helpers import (
-    get_resource_for_path,
-    get_rest_api_paths,
     host_based_url,
     localstack_path_based_url,
     path_based_url,
+)
+from localstack.services.apigateway.legacy.helpers import (
+    get_resource_for_path,
+    get_rest_api_paths,
 )
 from localstack.testing.aws.util import in_default_partition
 from localstack.testing.config import (
@@ -946,7 +948,7 @@ class TestAPIGateway:
 
     @markers.aws.needs_fixing
     # Doesn't use a fixture that cleans up after itself, and most likely missing roles. Should be moved to common
-    def test_multiple_api_keys_validate(self, aws_client, create_iam_role_with_policy):
+    def test_multiple_api_keys_validate(self, aws_client, create_iam_role_with_policy, cleanups):
         request_templates = {
             "application/json": json.dumps(
                 {
@@ -1002,6 +1004,7 @@ class TestAPIGateway:
             }
             aws_client.apigateway.create_usage_plan_key(**payload)
             api_keys.append(api_key["value"])
+            cleanups.append(lambda: aws_client.apigateway.delete_api_key(apiKey=api_key["id"]))
 
         response = requests.put(
             url,

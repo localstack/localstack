@@ -293,7 +293,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         if integration_type in {IntegrationType.AWS, IntegrationType.AWS_PROXY}:
             to_validate = ILLEGAL_INTEGRATION_REQUESTS_AWS
 
-        for header in headers.keys():
+        for header in headers:
             if header.lower() in to_validate:
                 LOG.debug(
                     "Execution failed due to configuration error: %s header already present", header
