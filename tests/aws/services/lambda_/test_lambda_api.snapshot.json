@@ -5856,7 +5856,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "recorded-date": "10-04-2024, 09:19:52",
+    "recorded-date": "14-10-2024, 12:36:57",
     "recorded-content": {
       "update_table_response": {
         "TableDescription": {
@@ -5910,7 +5910,8 @@
           }
         },
         "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -5922,7 +5923,7 @@
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>",
+        "UUID": "<resource:4>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
@@ -5937,7 +5938,8 @@
           }
         },
         "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -5949,7 +5951,7 @@
         "State": "Enabled",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>",
+        "UUID": "<resource:4>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -5964,7 +5966,8 @@
           }
         },
         "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -5976,7 +5979,7 @@
         "State": "Deleting",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>",
+        "UUID": "<resource:4>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
@@ -14206,18 +14209,19 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_function_name_variations": {
-    "recorded-date": "10-04-2024, 09:21:48",
+    "recorded-date": "14-10-2024, 12:46:37",
     "recorded-content": {
       "name_only_create_esm": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:1>",
+        "UUID": "<resource:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
@@ -14226,13 +14230,14 @@
       "partial_arn_latest_create_esm": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>:$LATEST",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>:$LATEST",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:2>",
+        "UUID": "<resource:4>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
@@ -14241,13 +14246,14 @@
       "partial_arn_version_create_esm": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>:1",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:5>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>:1",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:3>",
+        "UUID": "<resource:5>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
@@ -14256,13 +14262,14 @@
       "partial_arn_alias_create_esm": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>:myalias",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:7>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>:myalias",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:4>",
+        "UUID": "<resource:7>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
@@ -14271,13 +14278,14 @@
       "full_arn_latest_create_esm": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:9>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:5>",
+        "UUID": "<resource:9>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
@@ -14286,13 +14294,14 @@
       "full_arn_version_create_esm": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>:1",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:10>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>:1",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:6>",
+        "UUID": "<resource:10>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
@@ -14301,13 +14310,14 @@
       "full_arn_alias_create_esm": {
         "BatchSize": 10,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>:myalias",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:11>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>:myalias",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:7>",
+        "UUID": "<resource:11>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202

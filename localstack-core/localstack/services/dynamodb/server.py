@@ -11,6 +11,7 @@ from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed
+from localstack.utils.objects import singleton_factory
 from localstack.utils.run import FuncThread, run
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry, synchronized
@@ -71,6 +72,11 @@ class DynamodbServer(Server):
         self.cors = os.getenv("DYNAMODB_CORS", None)
         self.proxy = AwsRequestProxy(self.url)
 
+    @staticmethod
+    @singleton_factory
+    def get() -> "DynamodbServer":
+        return DynamodbServer(config.DYNAMODB_LOCAL_PORT)
+
     def start_dynamodb(self) -> bool:
         """Start the DynamoDB server."""
 
@@ -79,7 +85,7 @@ class DynamodbServer(Server):
         # - pod load with some assets already lying in the asset folder
         # - ...
         # The cleaning is now done via the reset endpoint
-
+        self._stopped.clear()
         started = self.start()
         self.wait_for_dynamodb()
         return started
@@ -150,9 +156,15 @@ class DynamodbServer(Server):
         return cmd + parameters
 
     def do_start_thread(self) -> FuncThread:
-        dynamodblocal_package.install()
+        dynamodblocal_installer = dynamodblocal_package.get_installer()
+        dynamodblocal_installer.install()
 
         cmd = self._create_shell_command()
+        env_vars = {
+            "DDB_LOCAL_TELEMETRY": "0",
+            **dynamodblocal_installer.get_java_env_vars(),
+        }
+
         LOG.debug("Starting DynamoDB Local: %s", cmd)
         t = ShellCommandThread(
             cmd,
@@ -160,7 +172,7 @@ class DynamodbServer(Server):
             log_listener=_log_listener,
             auto_restart=True,
             name="dynamodb-local",
-            env_vars={"DDB_LOCAL_TELEMETRY": "0"},
+            env_vars=env_vars,
         )
         TMP_THREADS.append(t)
         t.start()

@@ -25,6 +25,50 @@ JAVA_VERSIONS = {
 }
 
 
+class JavaInstallerMixin:
+    """
+    Mixin class for packages that depend on Java. It introduces methods that install Java and help build environment.
+    """
+
+    def _prepare_installation(self, target: InstallTarget) -> None:
+        java_package.install(target=target)
+
+    def get_java_home(self) -> str | None:
+        """
+        Returns path to JRE installation.
+        """
+        return java_package.get_installer().get_java_home()
+
+    def get_java_env_vars(self, path: str = None, ld_library_path: str = None) -> dict[str, str]:
+        """
+        Returns environment variables pointing to the Java installation. This is useful to build the environment where
+        the application will run.
+
+        :param path: If not specified, the value of PATH will be obtained from the environment
+        :param ld_library_path: If not specified, the value of LD_LIBRARY_PATH will be obtained from the environment
+        :return: dict consisting of two items:
+            - JAVA_HOME: path to JRE installation
+            - PATH: the env path variable updated with JRE bin path
+        """
+        java_home = self.get_java_home()
+        java_bin = f"{java_home}/bin"
+
+        path = path or os.environ["PATH"]
+
+        ld_library_path = ld_library_path or os.environ.get("LD_LIBRARY_PATH")
+        # null paths (e.g. `:/foo`) have a special meaning according to the manpages
+        if ld_library_path is None:
+            ld_library_path = f"{java_home}/lib:{java_home}/lib/server"
+        else:
+            ld_library_path = f"{java_home}/lib:{java_home}/lib/server:{ld_library_path}"
+
+        return {
+            "JAVA_HOME": java_home,
+            "LD_LIBRARY_PATH": ld_library_path,
+            "PATH": f"{java_bin}:{path}",
+        }
+
+
 class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def __init__(self, version: str):
         super().__init__("java", version, extract_single_directory=True)
@@ -81,7 +125,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         rm_rf(target_directory)
         os.rename(minimal_jre_path, target_directory)
 
-    def get_java_home(self) -> str:
+    def get_java_home(self) -> str | None:
         """
         Get JAVA_HOME for this installation of Java.
         """

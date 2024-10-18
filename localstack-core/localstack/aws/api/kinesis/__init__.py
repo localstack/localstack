@@ -240,6 +240,7 @@ class CreateStreamInput(ServiceRequest):
     StreamName: StreamName
     ShardCount: Optional[PositiveIntegerObject]
     StreamModeDetails: Optional[StreamModeDetails]
+    Tags: Optional[TagMap]
 
 
 Data = bytes
@@ -687,6 +688,7 @@ class KinesisApi:
         stream_name: StreamName,
         shard_count: PositiveIntegerObject = None,
         stream_mode_details: StreamModeDetails = None,
+        tags: TagMap = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

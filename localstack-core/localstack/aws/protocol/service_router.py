@@ -14,7 +14,7 @@ from localstack.aws.spec import (
     build_service_index_cache,
     load_service_index_cache,
 )
-from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST, VERSION
+from localstack.constants import VERSION
 from localstack.http import Request
 from localstack.services.s3.utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
@@ -81,6 +81,10 @@ signing_name_path_prefix_rules = {
     },
     "appconfig": {
         "/configuration": ServiceModelIdentifier("appconfigdata"),
+    },
+    "bedrock": {
+        "/guardrail/": ServiceModelIdentifier("bedrock-runtime"),
+        "/model/": ServiceModelIdentifier("bedrock-runtime"),
     },
     "execute-api": {
         "/@connections": ServiceModelIdentifier("apigatewaymanagementapi"),
@@ -178,13 +182,6 @@ def legacy_rules(request: Request) -> Optional[ServiceModelIdentifier]:
     path = request.path
     method = request.method
     host = hostname_from_url(request.host)
-
-    # API Gateway invocation URLs
-    # TODO: deprecated with #6040, where API GW user routes are served through the gateway directly
-    if ("/%s/" % PATH_USER_REQUEST) in request.path or (
-        host.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host
-    ):
-        return ServiceModelIdentifier("apigateway")
 
     if ".lambda-url." in host:
         return ServiceModelIdentifier("lambda")

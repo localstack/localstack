@@ -400,6 +400,9 @@ except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
     LOADED_PROFILES = None
 
+# loaded components name - default: all components are loaded and the first one is chosen
+RUNTIME_COMPONENTS = os.environ.get("RUNTIME_COMPONENTS", "").strip()
+
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
@@ -961,8 +964,8 @@ LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 # Additional flags passed to Docker run|create commands.
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
-# PUBLIC: v1 (default), v2 (preview) Version of the Lambda Event Source Mapping implementation
-LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v1").strip()
+# PUBLIC: v2 (default), v1 (deprecated) Version of the Lambda Event Source Mapping implementation
+LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v2").strip()
 
 # PUBLIC: 0 (default)
 # Enable this flag to run cross-platform compatible lambda functions natively (i.e., Docker selects architecture) and
@@ -1139,6 +1142,18 @@ if APIGW_NEXT_GEN_PROVIDER:
     if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"):
         os.environ["PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"] = "next_gen"
 
+# Whether the DynamoDBStreams native provider is enabled
+DDB_STREAMS_PROVIDER_V2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODBSTREAMS", "") == "v2"
+_override_dynamodb_v2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODB", "")
+if DDB_STREAMS_PROVIDER_V2:
+    # in order to not have conflicts between the 2 implementations, as they are tightly coupled, we need to set DDB
+    # to be v2 as well
+    if not _override_dynamodb_v2:
+        os.environ["PROVIDER_OVERRIDE_DYNAMODB"] = "v2"
+elif _override_dynamodb_v2 == "v2":
+    os.environ["PROVIDER_OVERRIDE_DYNAMODBSTREAMS"] = "v2"
+    DDB_STREAMS_PROVIDER_V2 = True
+
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
@@ -1242,6 +1257,7 @@ CONFIG_ENV_VARS = [
     "DNS_ADDRESS",
     "DNS_PORT",
     "DNS_LOCAL_NAME_PATTERNS",
+    "DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM",
     "DNS_RESOLVE_IP",
     "DNS_SERVER",
     "DNS_VERIFICATION_DOMAIN",

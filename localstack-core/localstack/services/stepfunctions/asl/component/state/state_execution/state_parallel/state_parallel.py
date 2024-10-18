@@ -65,7 +65,7 @@ class StateParallel(ExecutionState):
         input_value = copy.deepcopy(env.stack.pop())
 
         # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
-        while True:
+        while env.is_running():
             try:
                 env.stack.append(input_value)
                 self._evaluate_with_timeout(env)

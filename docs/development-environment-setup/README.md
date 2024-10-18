@@ -8,7 +8,9 @@ Once LocalStack runs in your Docker environment and you’ve played around with 
 
 You will need the following tools for the local development of LocalStack.
 
-* [Python 3.11+](https://www.python.org/downloads/) and `pip`
+* [Python](https://www.python.org/downloads/) and `pip`
+    * We recommend to use a Python version management tool like [`pyenv`](https://github.com/pyenv/pyenv/).
+    This way you will always use the correct Python version as defined in `.python-version`.
 * [Node.js & npm](https://nodejs.org/en/download/)
 * [Docker](https://docs.docker.com/desktop/)
 

@@ -8,7 +8,7 @@ info:
     checks, plugins, initialisation hooks, service introspection, and more.
   termsOfService: https://www.localstack.cloud/legal/tos
   title: LocalStack REST API for Community
-  version: 3.6.1.dev
+  version: latest
 externalDocs:
   description: LocalStack Documentation
   url: https://docs.localstack.cloud
@@ -99,6 +99,31 @@ components:
       - completed
       - scripts
       type: object
+    InitScriptsStage:
+      additionalProperties: false
+      properties:
+        completed:
+          type: boolean
+        scripts:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              stage:
+                type: string
+              state:
+                type: string
+            required:
+              - stage
+              - name
+              - state
+            type: object
+          type: array
+      required:
+        - completed
+        - scripts
+      type: object
     SesSentEmail:
       additionalProperties: false
       properties:
@@ -186,6 +211,119 @@ components:
       - error
       - subscription_arn
       type: object
+    ReceiveMessageRequest:
+      type: object
+      description: https://github.com/boto/botocore/blob/develop/botocore/data/sqs/2012-11-05/service-2.json
+      required:
+        - QueueUrl
+      properties:
+        QueueUrl:
+          type: string
+          format: uri
+        AttributeNames:
+          type: array
+          items:
+            type: string
+        MessageSystemAttributeNames:
+          type: array
+          items:
+            type: string
+        MessageAttributeNames:
+          type: array
+          items:
+            type: string
+        MaxNumberOfMessages:
+          type: integer
+        VisibilityTimeout:
+          type: integer
+        WaitTimeSeconds:
+          type: integer
+        ReceiveRequestAttemptId:
+          type: string
+    ReceiveMessageResult:
+      type: object
+      description: https://github.com/boto/botocore/blob/develop/botocore/data/sqs/2012-11-05/service-2.json
+      properties:
+        Messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Message:
+      type: object
+      properties:
+        MessageId:
+          type: [string, 'null']
+        ReceiptHandle:
+          type: [string, 'null']
+        MD5OfBody:
+          type: [string, 'null']
+        Body:
+          type: [string, 'null']
+        Attributes:
+          type: object
+        MessageAttributes:
+          type: object
+    CloudWatchMetrics:
+      additionalProperties: false
+      properties:
+        metrics:
+          items:
+            additionalProperties: false
+            properties:
+              account:
+                description: Account ID
+                type: string
+              d:
+                description: Dimensions
+                items:
+                  additionalProperties: false
+                  properties:
+                    n:
+                      description: Dimension name
+                      type: string
+                    v:
+                      description: Dimension value
+                      oneOf:
+                        - type: string
+                        - type: integer
+                  required:
+                    - n
+                    - v
+                  type: object
+                type: array
+              n:
+                description: Metric name
+                type: string
+              ns:
+                description: Namespace
+                type: string
+              region:
+                description: Region name
+                type: string
+              t:
+                description: Timestamp
+                oneOf:
+                  - type: string
+                    format: date-time
+                  - type: number
+              v:
+                description: Metric value
+                oneOf:
+                  - type: string
+                  - type: integer
+            required:
+              - ns
+              - n
+              - v
+              - t
+              - d
+              - account
+              - region
+            type: object
+          type: array
+      required:
+        - metrics
+      type: object
 paths:
   /_aws/cloudwatch/metrics/raw:
     get:
@@ -197,59 +335,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  metrics:
-                    items:
-                      additionalProperties: false
-                      properties:
-                        account:
-                          description: Account ID
-                          type: string
-                        d:
-                          description: Dimensions
-                          items:
-                            additionalProperties: false
-                            properties:
-                              n:
-                                description: Dimension name
-                                type: string
-                              v:
-                                description: Dimension value
-                                type: string
-                            required:
-                            - n
-                            - v
-                            type: object
-                          type: array
-                        n:
-                          description: Metric name
-                          type: string
-                        ns:
-                          description: Namespace
-                          type: string
-                        region:
-                          description: Region name
-                          type: string
-                        t:
-                          description: Timestamp
-                          type: number
-                        v:
-                          description: Metric value
-                          type: string
-                      required:
-                      - ns
-                      - n
-                      - v
-                      - t
-                      - d
-                      - account
-                      - region
-                      type: object
-                    type: array
-                required:
-                - metrics
-                type: object
+                $ref: '#/components/schemas/CloudWatchMetrics'
           description: CloudWatch metrics
   /_aws/dynamodb/expired:
     delete:
@@ -495,14 +581,52 @@ paths:
         '200':
           content:
             text/xml: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
           description: SQS queue messages
         '400':
           content:
             text/xml: {}
+            application/json: {}
           description: Bad request
         '404':
           content:
             text/xml: {}
+            application/json: {}
+          description: Not found
+    post:
+      summary: Retrieves one or more messages from the specified queue.
+      description: |
+        This API receives messages from an SQS queue.
+        https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_ResponseSyntax
+      operationId: receive_message
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+               $ref: '#/components/schemas/ReceiveMessageRequest'
+          application/json:
+            schema:
+               $ref: '#/components/schemas/ReceiveMessageRequest'
+      responses:
+        '200':
+          content:
+            text/xml: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
+          description: SQS queue messages
+        '400':
+          content:
+            text/xml: {}
+            application/json: {}
+          description: Bad request
+        '404':
+          content:
+            text/xml: {}
+            application/json: {}
           description: Not found
   /_aws/sqs/messages/{region}/{account_id}/{queue_name}:
     get:
@@ -532,14 +656,19 @@ paths:
         '200':
           content:
             text/xml: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
           description: SQS queue messages
         '400':
           content:
             text/xml: {}
+            application/json: {}
           description: Bad request
         '404':
           content:
             text/xml: {}
+            application/json: {}
           description: Not found
   /_localstack/config:
     get:
@@ -733,7 +862,6 @@ paths:
                     type: string
                 required:
                 - edition
-                - features
                 - services
                 - version
                 type: object
@@ -838,7 +966,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InitScripts'
+                $ref: '#/components/schemas/InitScriptsStage'
           description: Information about init scripts in a specific stage
   /_localstack/plugins:
     get:

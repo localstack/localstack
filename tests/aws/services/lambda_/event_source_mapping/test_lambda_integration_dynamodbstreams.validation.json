@@ -1,53 +1,89 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_deletion_event_source_mapping_with_dynamodb": {
-    "last_validated_date": "2024-09-03T14:54:58+00:00"
+    "last_validated_date": "2024-10-12T10:57:32+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_disabled_dynamodb_event_source_mapping": {
-    "last_validated_date": "2024-09-03T15:51:30+00:00"
+    "last_validated_date": "2024-10-12T10:57:15+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_duplicate_event_source_mappings": {
-    "last_validated_date": "2024-09-03T14:53:04+00:00"
+    "last_validated_date": "2024-10-12T10:55:43+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_filter_type]": {
-    "last_validated_date": "2024-09-03T15:05:30+00:00"
+    "last_validated_date": "2024-10-12T11:08:10+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_multiple_filters]": {
-    "last_validated_date": "2024-09-03T15:03:28+00:00"
+    "last_validated_date": "2024-10-12T11:07:06+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_or_filter]": {
-    "last_validated_date": "2024-09-03T15:01:38+00:00"
+    "last_validated_date": "2024-10-12T11:05:31+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[date_time_conversion]": {
-    "last_validated_date": "2024-09-03T15:10:01+00:00"
+    "last_validated_date": "2024-10-12T11:19:06+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_false_filter]": {
     "last_validated_date": "2024-04-11T20:56:30+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter_type]": {
-    "last_validated_date": "2024-09-03T15:06:44+00:00"
+    "last_validated_date": "2024-10-12T11:10:04+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[insert_same_entry_twice]": {
-    "last_validated_date": "2024-09-03T14:59:49+00:00"
+    "last_validated_date": "2024-10-12T11:03:06+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[numeric_filter]": {
     "last_validated_date": "2024-04-11T20:57:38+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[prefix_filter]": {
-    "last_validated_date": "2024-09-03T15:08:34+00:00"
+    "last_validated_date": "2024-10-12T11:11:04+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
-    "last_validated_date": "2024-09-03T14:52:46+00:00"
+    "last_validated_date": "2024-10-12T10:55:26+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
-    "last_validated_date": "2024-09-03T14:58:05+00:00"
+    "last_validated_date": "2024-10-12T11:01:14+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_sns_on_failure_destination_config": {
-    "last_validated_date": "2024-09-16T15:49:08+00:00"
+    "last_validated_date": "2024-10-12T10:59:07+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
-    "last_validated_date": "2024-09-03T15:10:35+00:00"
+    "last_validated_date": "2024-10-12T11:21:39+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
-    "last_validated_date": "2024-09-03T15:10:17+00:00"
+    "last_validated_date": "2024-10-12T11:21:23+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[empty_string_item_identifier_failure]": {
+    "last_validated_date": "2024-10-12T11:30:32+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[invalid_key_foo_failure]": {
+    "last_validated_date": "2024-10-12T11:35:06+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[invalid_key_foo_null_value_failure]": {
+    "last_validated_date": "2024-10-14T21:33:15+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[item_identifier_not_present_failure]": {
+    "last_validated_date": "2024-10-12T11:27:26+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[null_item_identifier_failure]": {
+    "last_validated_date": "2024-10-12T11:33:17+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[unhandled_exception_in_function]": {
+    "last_validated_date": "2024-10-12T11:39:10+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failures": {
+    "last_validated_date": "2024-10-12T11:25:21+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_batch_item_failure_success]": {
+    "last_validated_date": "2024-10-12T11:44:04+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_dict_success]": {
+    "last_validated_date": "2024-10-12T11:43:04+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_list_success]": {
+    "last_validated_date": "2024-10-12T11:40:54+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[null_batch_item_failure_success]": {
+    "last_validated_date": "2024-10-12T11:45:49+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[null_success]": {
+    "last_validated_date": "2024-10-12T11:42:04+00:00"
   }
 }

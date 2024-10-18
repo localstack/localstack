@@ -26,6 +26,7 @@ def _parse_attribute_map(json_message: dict) -> dict[str, str]:
     return {attr["Name"]: attr["Value"] for attr in json_message["Attribute"]}
 
 
+@pytest.mark.usefixtures("openapi_validate")
 class TestSqsDeveloperEndpoints:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])

@@ -13,6 +13,7 @@ from amazon_kclpy.v2 import processor
 
 from localstack import config
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
+from localstack.packages.java import java_package
 from localstack.utils.aws import arns
 from localstack.utils.files import TMP_FILES, chmod_r, save_file
 from localstack.utils.kinesis import kclipy_helper
@@ -240,12 +241,20 @@ def _start_kcl_client_process(
 ):
     # make sure to convert stream ARN to stream name
     stream_name = arns.kinesis_stream_name(stream_name)
+
+    # install Java
+    java_installer = java_package.get_installer()
+    java_installer.install()
+    java_home = java_installer.get_java_home()
+
     # disable CBOR protocol, enforce use of plain JSON
     # TODO evaluate why?
     env_vars = {
         "AWS_CBOR_DISABLE": "true",
         "AWS_ACCESS_KEY_ID": account_id,
         "AWS_SECRET_ACCESS_KEY": account_id,
+        "JAVA_HOME": java_home,
+        "PATH": f"{java_home}/bin:{os.getenv('PATH')}",
     }
 
     events_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.fifo")

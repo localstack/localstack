@@ -36,6 +36,10 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_all.json5"
     )
 
+    AWS_SERVICE_LAMBDA_INVOKE_CATCH_ALL_OUTPUT_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_all_output_path.json5"
+    )
+
     AWS_SERVICE_LAMBDA_INVOKE_CATCH_DATA_LIMIT_EXCEEDED: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_data_limit_exceeded.json5"
     )
