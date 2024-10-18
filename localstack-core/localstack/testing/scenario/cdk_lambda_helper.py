@@ -68,7 +68,7 @@ def load_nodejs_lambda_to_s3(
     bucket_name: str,
     key_name: str,
     code_path: str,
-    additional_nodjs_packages: list[str] = None,
+    additional_nodejs_packages: list[str] = None,
     additional_resources: list[str] = None,
 ):
     """
@@ -80,7 +80,7 @@ def load_nodejs_lambda_to_s3(
     :param bucket_name: bucket name (bucket will be created)
     :param key_name: key name for the uploaded zip file
     :param code_path: the path to the source code that should be included
-    :param additional_nodjs_packages: a list of strings with nodeJS packages that are required to run the lambda
+    :param additional_nodejs_packages: a list of strings with nodeJS packages that are required to run the lambda
     :param additional_resources: list of path-strings to resources or internal libs that should be packaged into the lambda
     :return: None
     """
@@ -89,31 +89,27 @@ def load_nodejs_lambda_to_s3(
     try:
         temp_dir = tempfile.mkdtemp()
         tmp_zip_path = os.path.join(tempfile.gettempdir(), "helper.zip")
-        # install python packages
-        if additional_nodjs_packages:
+
+        # Install NodeJS packages
+        if additional_nodejs_packages:
             try:
                 os.mkdir(os.path.join(temp_dir, "node_modules"))
-                run(f"cd {temp_dir} && npm install {' '.join(additional_nodjs_packages)} ")
+                run(f"cd {temp_dir} && npm install {' '.join(additional_nodejs_packages)} ")
             except Exception as e:
                 LOG.error(
-                    "Could not install additional packages %s: %s", additional_nodjs_packages, e
+                    "Could not install additional packages %s: %s", additional_nodejs_packages, e
                 )
 
         for r in additional_resources:
             try:
-                path = Path(os.path.join(r))
+                path = Path(r)
                 if path.is_dir():
                     dir_name = os.path.basename(path)
-                    os.mkdir(os.path.join(temp_dir, dir_name))
-                    for filename in os.listdir(path):
-                        f = os.path.join(path, filename)
-                        # checking if it is a file
-                        if os.path.isfile(f):
-                            new_resource_temp_path = os.path.join(temp_dir, dir_name, filename)
-                            shutil.copy2(f, new_resource_temp_path)
+                    dest_dir = os.path.join(temp_dir, dir_name)
+                    shutil.copytree(path, dest_dir)
                 elif path.is_file():
                     new_resource_temp_path = os.path.join(temp_dir, os.path.basename(path))
-                    shutil.copy2(os.path.join(r), new_resource_temp_path)
+                    shutil.copy2(path, new_resource_temp_path)
             except Exception as e:
                 LOG.error("Could not copy additional resources %s: %s", r, e)
 
