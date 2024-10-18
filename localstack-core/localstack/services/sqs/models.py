@@ -474,31 +474,31 @@ class SqsQueue:
                 self._put_message(standard_message)
 
     def remove(self, receipt_handle: str):
-        with self.mutex:
-            self.validate_receipt_handle(receipt_handle)
+        # with self.mutex:
+        self.validate_receipt_handle(receipt_handle)
 
-            if receipt_handle not in self.receipts:
-                LOG.debug(
-                    "no in-flight message found for receipt handle %s in queue %s",
-                    receipt_handle,
-                    self.arn,
-                )
-                return
-
-            standard_message = self.receipts[receipt_handle]
-            standard_message.deleted = True
+        if receipt_handle not in self.receipts:
             LOG.debug(
-                "deleting message %s from queue %s",
-                standard_message.message["MessageId"],
+                "no in-flight message found for receipt handle %s in queue %s",
+                receipt_handle,
                 self.arn,
             )
+            return
 
-            # remove all handles associated with this message
-            for handle in standard_message.receipt_handles:
-                del self.receipts[handle]
-            standard_message.receipt_handles.clear()
+        standard_message = self.receipts[receipt_handle]
+        standard_message.deleted = True
+        LOG.debug(
+            "deleting message %s from queue %s",
+            standard_message.message["MessageId"],
+            self.arn,
+        )
 
-            self._on_remove_message(standard_message)
+        # remove all handles associated with this message
+        for handle in standard_message.receipt_handles:
+            del self.receipts[handle]
+        standard_message.receipt_handles.clear()
+
+        self._on_remove_message(standard_message)
 
     def _on_remove_message(self, message: SqsMessage):
         """Hook for queue-specific logic executed when a message is removed."""
@@ -989,7 +989,8 @@ class FifoQueue(SqsQueue):
         self.validate_receipt_handle(receipt_handle)
         decode_receipt_handle(receipt_handle)
 
-        super().remove(receipt_handle)
+        with self.mutex:
+            super().remove(receipt_handle)
 
     def put(
         self,
