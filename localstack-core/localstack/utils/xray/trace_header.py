@@ -2,9 +2,13 @@
 # It is adapted from aws-xray-sdk-python licensed under the Apache License 2.0.
 # You may obtain a copy of the Apache License 2.0 at http://www.apache.org/licenses/LICENSE-2.0
 # Original source: https://github.com/aws/aws-xray-sdk-python/blob/master/aws_xray_sdk/core/models/trace_header.py
-# Modifications: Add optional lineage field for https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
+# Modifications:
+# * Add optional lineage field for https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
+# * Add ensure_root_exists() to generate root trace id
 
 import logging
+
+from localstack.utils.xray.traceid import TraceId
 
 log = logging.getLogger(__name__)
 
@@ -102,6 +106,15 @@ class TraceHeader:
                 h_parts.append(key + "=" + self.data[key])
 
         return HEADER_DELIMITER.join(h_parts)
+
+    def ensure_root_exists(self):
+        """
+        Ensures that a root trace id exists by generating one if None.
+        Return self to allow for chaining.
+        """
+        if self._root is None:
+            self._root = TraceId().to_id()
+        return self
 
     @property
     def root(self):

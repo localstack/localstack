@@ -59,7 +59,7 @@ class SQSInvocation:
 
     def encode(self) -> str:
         # Encode TraceHeader as string
-        aws_trace_header = self.invocation.trace_context.get("aws_trace_header") or TraceHeader()
+        aws_trace_header = self.invocation.trace_context.get("aws_trace_header")
         aws_trace_header_str = aws_trace_header.to_header_str()
         self.invocation.trace_context["aws_trace_header"] = aws_trace_header_str
         return json.dumps(

@@ -8,7 +8,6 @@ from threading import RLock, Timer
 from typing import Callable, Dict, Optional
 
 from localstack import config
-from localstack.aws.api.lambda_ import TracingMode
 from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.lambda_models import (
     Credentials,
@@ -26,7 +25,6 @@ from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
     is_lambda_debug_timeout_enabled_for,
 )
 from localstack.utils.strings import to_str
-from localstack.utils.xray.trace_header import TraceHeader
 
 STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
@@ -342,11 +340,8 @@ class ExecutionEnvironment:
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
         assert self.status == RuntimeStatus.RUNNING
-        aws_trace_header = invocation.trace_context.get("aws_trace_header") or TraceHeader()
-        # TODO: test and implement passive tracing and sampling decisions. Using a simple heuristic for now:
-        #  If TracingMode is "Active", we always sample the request.
-        if self.function_version.config.tracing_config_mode == TracingMode.Active:
-            aws_trace_header.sampled = 1
+        aws_trace_header = invocation.trace_context.get("aws_trace_header")
+        # TODO: test and implement Active and PassThrough tracing and sampling decisions.
         # TODO: implement Lambda lineage: https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
         invoke_payload = {
             "invoke-id": invocation.request_id,  # TODO: rename to request-id (requires change in lambda-init)
