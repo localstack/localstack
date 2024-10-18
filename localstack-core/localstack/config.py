@@ -1079,12 +1079,15 @@ if APIGW_NEXT_GEN_PROVIDER:
 
 # Whether the DynamoDBStreams native provider is enabled
 DDB_STREAMS_PROVIDER_V2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODBSTREAMS", "") == "v2"
+_override_dynamodb_v2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODB", "")
 if DDB_STREAMS_PROVIDER_V2:
     # in order to not have conflicts between the 2 implementations, as they are tightly coupled, we need to set DDB
     # to be v2 as well
-    # TODO: to be decided if we make DDB Streams the "v2" or DDB, but the biggest change is in the streams themselves
-    if not os.environ.get("PROVIDER_OVERRIDE_DYNAMODB"):
+    if not _override_dynamodb_v2:
         os.environ["PROVIDER_OVERRIDE_DYNAMODB"] = "v2"
+elif _override_dynamodb_v2 == "v2":
+    os.environ["PROVIDER_OVERRIDE_DYNAMODBSTREAMS"] = "v2"
+    DDB_STREAMS_PROVIDER_V2 = True
 
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version

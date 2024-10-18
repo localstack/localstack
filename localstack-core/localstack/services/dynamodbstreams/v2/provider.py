@@ -52,23 +52,27 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         context: RequestContext,
         payload: DescribeStreamInput,
     ) -> DescribeStreamOutput:
-        payload["StreamArn"] = self.modify_stream_arn_for_ddb_local(payload.get("StreamArn", ""))
-        return self.forward_request(context, payload)
+        request = payload.copy()
+        request["StreamArn"] = self.modify_stream_arn_for_ddb_local(request.get("StreamArn", ""))
+        return self.forward_request(context, request)
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        payload["ShardIterator"] = self.modify_stream_arn_for_ddb_local(
-            payload.get("ShardIterator", "")
+        request = payload.copy()
+        request["ShardIterator"] = self.modify_stream_arn_for_ddb_local(
+            request.get("ShardIterator", "")
         )
-        return self.forward_request(context, payload)
+        return self.forward_request(context, request)
 
     @handler("GetShardIterator", expand=False)
     def get_shard_iterator(
         self, context: RequestContext, payload: GetShardIteratorInput
     ) -> GetShardIteratorOutput:
-        payload["StreamArn"] = self.modify_stream_arn_for_ddb_local(payload.get("StreamArn", ""))
-        return self.forward_request(context, payload)
+        request = payload.copy()
+        request["StreamArn"] = self.modify_stream_arn_for_ddb_local(request.get("StreamArn", ""))
+        return self.forward_request(context, request)
 
     @handler("ListStreams", expand=False)
     def list_streams(self, context: RequestContext, payload: ListStreamsInput) -> ListStreamsOutput:
+        # TODO: look into `ExclusiveStartStreamArn` param
         return self.forward_request(context, payload)
