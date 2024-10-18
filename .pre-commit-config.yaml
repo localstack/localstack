@@ -26,3 +26,4 @@ repos:
     hooks:
       - id: openapi-spec-validator
         files: .*openapi.*\.(json|yaml|yml)
+        exclude: ^(tests/|.github/workflows/)
