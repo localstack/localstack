@@ -42,11 +42,6 @@ TEST_EVENT_PATTERN_NO_DETAIL = {
     "source": ["core.update-account-command"],
     "detail-type": ["core.update-account-command"],
 }
-TEST_EVENT_PATTERN_DETAIL_TOO_BIG = {
-    "source": ["core.update-account-command"],
-    "detail-type": ["core.update-account-command"],
-    "detail": {"payload": ["p" * (256 * 1024 - 17)]},
-}
 
 TEST_EVENT_PATTERN_NO_SOURCE = {
     "detail-type": ["core.update-account-command"],
@@ -129,13 +124,15 @@ class TestEvents:
     def test_put_event_with_too_big_detail(self, snapshot, aws_client):
         entries = [
             {
-                "Source": TEST_EVENT_PATTERN_DETAIL_TOO_BIG["source"][0],
-                "DetailType": TEST_EVENT_PATTERN_DETAIL_TOO_BIG["detail-type"][0],
-                "Detail": TEST_EVENT_PATTERN_DETAIL_TOO_BIG["detail"][0],
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"payload": ["p" * (256 * 1024 - 17)]}),
             },
         ]
-        response = aws_client.events.put_events(Entries=entries)
-        snapshot.match("put-events", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events-too-big-detail-error", e.value.response)
 
     @markers.aws.validated
     def test_put_events_time(self, put_events_with_filter_to_sqs, snapshot):
