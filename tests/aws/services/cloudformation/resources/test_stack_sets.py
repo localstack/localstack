@@ -24,9 +24,15 @@ def wait_stack_set_operation(aws_client):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..Parameters..NoEcho",
+        "$..Parameters..ParameterConstraints",
+        "$..Parameters..DefaultValue",
+    ],
+)
 def test_create_stack_set_with_stack_instances(
     account_id,
-    region_name,
     aws_client,
     snapshot,
     wait_stack_set_operation,
@@ -36,20 +42,29 @@ def test_create_stack_set_with_stack_instances(
     stack_set_name = f"StackSet-{short_uid()}"
 
     template_body = load_file(
-        os.path.join(os.path.dirname(__file__), "../../../templates/s3_cors_bucket.yaml")
+        os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_parameter.yml")
     )
 
+    topic_name = f"topic-{short_uid()}"
     result = aws_client.cloudformation.create_stack_set(
         StackSetName=stack_set_name,
         TemplateBody=template_body,
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": topic_name}],
     )
 
     snapshot.match("create_stack_set", result)
 
+    template_summary = aws_client.cloudformation.get_template_summary(
+        StackSetName=stack_set_name,
+    )
+    snapshot.match("template-summary", template_summary)
+
+    regions = ["us-west-2", "eu-north-1"]
+
     create_instances_result = aws_client.cloudformation.create_stack_instances(
         StackSetName=stack_set_name,
         Accounts=[account_id],
-        Regions=[region_name],
+        Regions=regions,
     )
 
     snapshot.match("create_stack_instances", create_instances_result)
@@ -58,20 +73,20 @@ def test_create_stack_set_with_stack_instances(
 
     # make sure additional calls do not result in errors
     # even the stack already exists, but returns operation id instead
-    create_instances_result = aws_client.cloudformation.create_stack_instances(
+    recreate_instances_result = aws_client.cloudformation.create_stack_instances(
         StackSetName=stack_set_name,
         Accounts=[account_id],
-        Regions=[region_name],
+        Regions=regions,
     )
 
-    assert "OperationId" in create_instances_result
+    snapshot.match("recreate_stack_instances", recreate_instances_result)
 
-    wait_stack_set_operation(stack_set_name, create_instances_result["OperationId"])
+    wait_stack_set_operation(stack_set_name, recreate_instances_result["OperationId"])
 
     delete_instances_result = aws_client.cloudformation.delete_stack_instances(
         StackSetName=stack_set_name,
         Accounts=[account_id],
-        Regions=[region_name],
+        Regions=regions,
         RetainStacks=False,
     )
     wait_stack_set_operation(stack_set_name, delete_instances_result["OperationId"])
