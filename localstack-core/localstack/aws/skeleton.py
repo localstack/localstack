@@ -1,7 +1,12 @@
+import asyncio
+import dataclasses
 import inspect
+import json
 import logging
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
+import nats
+import orjson
 from botocore import xform_name
 from botocore.model import ServiceModel
 
@@ -21,6 +26,50 @@ from localstack.utils.coverage_docs import get_coverage_link_for_service
 LOG = logging.getLogger(__name__)
 
 DispatchTable = Dict[str, ServiceRequestHandler]
+
+
+@dataclasses.dataclass
+class FakeOperation:
+    name: str
+
+
+@dataclasses.dataclass
+class FakeService:
+    protocol: str
+
+
+@dataclasses.dataclass
+class JsonContext:
+    account_id: str
+    region: str
+    request_id: str
+    partition: str
+    operation: FakeOperation
+    service: FakeService
+
+
+def _copy_context(ctx: RequestContext) -> RequestContext:
+    ctx_cpy = RequestContext(ctx.request)
+    for attr in ("account_id", "region", "request_id", "request", "partition"):
+        setattr(ctx_cpy, attr, getattr(ctx, attr))
+
+    ctx_cpy.operation = FakeOperation(ctx.operation.name)
+    ctx_cpy.service = FakeService(ctx.service.protocol)
+
+    return ctx_cpy
+
+
+def _copy_context_json(ctx: RequestContext) -> JsonContext:
+    ctx_cpy = JsonContext(
+        account_id=ctx.account_id,
+        region=ctx.region,
+        request_id=ctx.request_id,
+        partition=ctx.partition,
+        operation=FakeOperation(ctx.operation.name),
+        service=FakeService(ctx.service.protocol),
+    )
+
+    return ctx_cpy
 
 
 def create_skeleton(service: Union[str, ServiceModel], delegate: Any):
@@ -124,11 +173,19 @@ class Skeleton:
 
     def __init__(self, service: ServiceModel, implementation: Union[Any, DispatchTable]):
         self.service = service
+        self._nats_conn = None
 
         if isinstance(implementation, dict):
             self.dispatch_table = implementation
         else:
             self.dispatch_table = create_dispatch_table(implementation)
+
+    def _get_client(self, loop):
+        async def coro():
+            return await nats.connect("nats://localhost:4222")
+
+        self._nats_conn = asyncio.run_coroutine_threadsafe(coro(), loop).result(timeout=3)
+        return self._nats_conn
 
     def invoke(self, context: RequestContext) -> Response:
         serializer = create_serializer(context.service)
@@ -160,12 +217,33 @@ class Skeleton:
     def dispatch_request(
         self, serializer: ResponseSerializer, context: RequestContext, instance: ServiceRequest
     ) -> Response:
+        loop = context._loop
+
+        if not self._nats_conn:
+            self._get_client(loop)
+
         operation = context.operation
+        # req = dill.dumps({
+        #     # selectively copy only parts
+        #     "context": _copy_context(context),
+        #     "instance": instance
+        # })
+        req = orjson.dumps(
+            {
+                "context": _copy_context_json(context),
+                "instance": instance,
+            }
+        )
+        # req = json.dumps({"op_name": operation.name, "payload": instance}).encode("utf-8")
+        # coro = self._nats_conn.request("services.sqs", b"", timeout=0.5)
+        coro = self._nats_conn.request("services.sqs", req, timeout=0.5)
+        response = asyncio.run_coroutine_threadsafe(coro, loop).result()
+        result = json.loads(response.data)
 
-        handler = self.dispatch_table[operation.name]
-
-        # Call the appropriate handler
-        result = handler(context, instance) or {}
+        # handler = self.dispatch_table[operation.name]
+        #
+        # # Call the appropriate handler
+        # result = handler(context, instance) or {}
 
         # if the service handler returned an HTTP request, forego serialization and return immediately
         if isinstance(result, Response):
