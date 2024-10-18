@@ -11,9 +11,7 @@ class TraceContextParser(Handler):
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-        # TODO: handle case-insensitive headers because HTTP headers are case-insensitive:
-        #  https://stackoverflow.com/a/5259004
-        # TODO: write test case for case-insensitive xray header (verified manually)
+        # The Werkzeug headers data structure handles case-insensitive HTTP header matching (verified manually)
         trace_header_str = context.request.headers.get("X-Amzn-Trace-Id")
         # Naming aws_trace_header inspired by AWSTraceHeader convention for SQS:
         # https://docs.aws.amazon.com/xray/latest/devguide/xray-services-sqs.html

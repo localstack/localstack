@@ -1,7 +1,8 @@
-# Source: https://github.com/aws/aws-xray-sdk-python/blob/master/aws_xray_sdk/core/models/trace_header.py
-# Licensed under Apache-2.0
-# LocalStack-specific changes:
-# * Add optional lineage field for https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
+# This file is part of LocalStack.
+# It is adapted from aws-xray-sdk-python licensed under the Apache License 2.0.
+# You may obtain a copy of the Apache License 2.0 at http://www.apache.org/licenses/LICENSE-2.0
+# Original source: https://github.com/aws/aws-xray-sdk-python/blob/master/aws_xray_sdk/core/models/trace_header.py
+# Modifications: Add optional lineage field for https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
 
 import logging
 
