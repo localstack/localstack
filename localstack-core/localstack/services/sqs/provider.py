@@ -857,15 +857,14 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :raises QueueDoesNotExist: if the queue does not exist
         """
         store = SqsProvider.get_store(account_id, region_name)
-        with _STORE_LOCK:
-            if name not in store.queues:
-                if is_query:
-                    message = "The specified queue does not exist for this wsdl version."
-                else:
-                    message = "The specified queue does not exist."
-                raise QueueDoesNotExist(message)
+        if name not in store.queues:
+            if is_query:
+                message = "The specified queue does not exist for this wsdl version."
+            else:
+                message = "The specified queue does not exist."
+            raise QueueDoesNotExist(message)
 
-            return store.queues[name]
+        return store.queues[name]
 
     def _require_queue_by_arn(self, context: RequestContext, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
@@ -1093,6 +1092,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         return GetQueueAttributesResult(Attributes=(result if result else None))
 
+    # @log_duration(min_ms=0)
     def send_message(
         self,
         context: RequestContext,
@@ -1238,6 +1238,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             delay_seconds=int(delay_seconds) if delay_seconds is not None else None,
         )
 
+    # @log_duration(min_ms=0)
     def receive_message(
         self,
         context: RequestContext,
@@ -1342,6 +1343,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     urls.append(queue.url(context))
         return ListDeadLetterSourceQueuesResult(queueUrls=urls)
 
+    # @log_duration(min_ms=0)
     def delete_message(
         self, context: RequestContext, queue_url: String, receipt_handle: String, **kwargs
     ) -> None:

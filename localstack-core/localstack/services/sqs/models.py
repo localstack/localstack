@@ -1024,7 +1024,8 @@ class FifoQueue(SqsQueue):
     def remove(self, receipt_handle: str):
         self.validate_receipt_handle(receipt_handle)
 
-        super().remove(receipt_handle)
+        with self.mutex:
+            super().remove(receipt_handle)
 
     def put(
         self,
