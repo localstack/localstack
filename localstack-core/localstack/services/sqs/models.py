@@ -748,7 +748,7 @@ class StandardQueue(SqsQueue):
                 f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The "
                 f"request includes a parameter that is not valid for this queue type."
             )
-        if message_group_id:
+        if if isinstance(message_group_id, str):
             raise InvalidParameterValueException(
                 f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request includes a "
                 f"parameter that is not valid for this queue type."
