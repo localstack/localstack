@@ -750,7 +750,7 @@ class StandardQueue(SqsQueue):
             )
         if isinstance(message_group_id, str):
             raise InvalidParameterValueException(
-                f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request includes a "
+                f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request include "
                 f"parameter that is not valid for this queue type."
             )
 
