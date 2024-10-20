@@ -175,8 +175,9 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
                     if key.startswith(forbidden_prefix):
                         raise ValueError(f"The 'Headers' field contains unsupported values: {key}")
 
-                if isinstance(headers.get(key), list):
-                    headers[key] = str(headers.get(key))
+                value = headers.get(key)
+                if isinstance(value, list):
+                    headers[key] = f"[{','.join(value)}]"
 
             if "RequestBody" in parameters:
                 headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
