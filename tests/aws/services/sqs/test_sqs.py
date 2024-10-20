@@ -437,7 +437,9 @@ class TestSqsProvider:
         snapshot.match("send_oversized_message_batch", response)
 
     @markers.aws.unknown
-    def test_send_message_to_standard_queue_with_empty_message_group_id(self, sqs_create_queue, aws_client, snapshot):
+    def test_send_message_to_standard_queue_with_empty_message_group_id(
+        self, sqs_create_queue, aws_client, snapshot
+    ):
         queue = sqs_create_queue()
 
         with pytest.raises(ClientError) as e:
