@@ -436,6 +436,15 @@ class TestSqsProvider:
 
         snapshot.match("send_oversized_message_batch", response)
 
+    @markers.aws.unknown
+    def test_send_message_to_standard_queue_with_empty_message_group_id(self, sqs_create_queue, aws_client, snapshot):
+        queue = sqs_create_queue()
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.send_message(QueueUrl=queue, MessageBody="message", MessageGroupId="")
+
+        snapshot.match("error", e.value.response)
+
     @markers.aws.validated
     def test_tag_untag_queue(self, sqs_create_queue, aws_sqs_client, snapshot):
         queue_url = sqs_create_queue()
