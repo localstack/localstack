@@ -243,9 +243,8 @@ class InfraProvisioner:
                 ]
 
                 for s3_bucket in s3_buckets:
-                    bucket_to_delete = s3_bucket  # Capture current value
                     self.custom_cleanup_steps.append(
-                        lambda bucket=bucket_to_delete: cleanup_s3_bucket(
+                        lambda bucket=s3_bucket: cleanup_s3_bucket(
                             self.aws_client.s3, bucket, delete_bucket=False
                         )
                     )
