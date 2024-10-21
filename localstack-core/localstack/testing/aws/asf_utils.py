@@ -6,6 +6,8 @@ import re
 from types import FunctionType, ModuleType
 from typing import Optional, Pattern
 
+from localstack.feature_catalog.service_feature import ServiceFeature
+
 
 def _import_submodules(
     package_name: str, module_regex: Optional[Pattern] = None, recursive: bool = True
@@ -102,6 +104,10 @@ def check_provider_signature(sub_class: type, base_class: type, method_name: str
         raise AttributeError(
             f"Given method name ('{method_name}') is not a method of the sub class ('{sub_class.__name__}')."
         )
+    while isinstance(sub_function, ServiceFeature) and (
+        wrapped := getattr(sub_function, "__wrapped__", False)
+    ):
+        sub_function = wrapped
 
     if not isinstance(sub_function, FunctionType):
         raise AttributeError(
