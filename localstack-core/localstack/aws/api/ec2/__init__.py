@@ -18089,7 +18089,7 @@ class RequestSpotLaunchSpecification(TypedDict, total=False):
     ImageId: Optional[ImageId]
     InstanceType: Optional[InstanceType]
     KernelId: Optional[KernelId]
-    KeyName: Optional[KeyPairName]
+    KeyName: Optional[KeyPairNameWithResolver]
     Monitoring: Optional[RunInstancesMonitoringEnabled]
     NetworkInterfaces: Optional[InstanceNetworkInterfaceSpecificationList]
     Placement: Optional[SpotPlacement]
