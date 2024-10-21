@@ -16,7 +16,7 @@ antlr4-python3-runtime==4.13.2
     #   moto-ext
 anyio==4.6.2.post1
     # via httpx
-apispec==6.6.1
+apispec==6.7.0
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
@@ -83,7 +83,7 @@ certifi==2024.8.30
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.16.1
+cfn-lint==1.17.2
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
@@ -97,7 +97,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.6.3
+coverage==7.6.4
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -232,7 +232,7 @@ localstack-twisted==24.3.0
     # via localstack-core
 markdown-it-py==3.0.0
     # via rich
-markupsafe==3.0.1
+markupsafe==3.0.2
     # via
     #   jinja2
     #   werkzeug
@@ -289,7 +289,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.0.0
+psutil==6.1.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -334,7 +334,7 @@ pytest-httpserver==1.1.0
     # via localstack-core (pyproject.toml)
 pytest-rerunfailures==14.0
     # via localstack-core (pyproject.toml)
-pytest-split==0.9.0
+pytest-split==0.10.0
     # via localstack-core (pyproject.toml)
 pytest-tinybird==0.3.0
     # via localstack-core (pyproject.toml)
@@ -389,7 +389,7 @@ rich==13.9.2
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.1
+rolo==0.7.2
     # via localstack-core
 rpds-py==0.20.0
     # via
@@ -460,7 +460,7 @@ wrapt==1.16.0
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn
-xmltodict==0.14.1
+xmltodict==0.14.2
     # via
     #   localstack-core
     #   moto-ext
