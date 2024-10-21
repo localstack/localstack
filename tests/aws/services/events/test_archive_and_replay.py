@@ -369,7 +369,7 @@ class TestReplay:
         event_bus_type,
         events_create_default_or_custom_event_bus,
         events_put_rule,
-        create_sqs_events_target,
+        sqs_as_events_target,
         put_event_to_archive,
         aws_client,
         snapshot,
@@ -390,7 +390,7 @@ class TestReplay:
         rule_arn = response["RuleArn"]
 
         # setup sqs target
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
         target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name,
