@@ -169,7 +169,7 @@ class TestSSM:
 
     @markers.aws.needs_fixing
     # TODO: remove parameters, set correct parameter prefix name, use events_create_event_bus and events_put_rule fixture,
-    # remove clean_up, use create_sqs_events_target fixture, use snapshot
+    # remove clean_up, use sqs_as_events_target fixture, use snapshot
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_trigger_event_on_systems_manager_change(
         self, monkeypatch, aws_client, clean_up, strategy
