@@ -15,7 +15,10 @@ from localstack.services.lambda_.invocation.lambda_models import (
     InitializationType,
     OtherServiceEndpoint,
 )
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import is_lambda_debug_enabled_for
+from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
+    is_lambda_debug_enabled_for,
+    is_lambda_debug_timeout_enabled_for,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -76,7 +79,10 @@ class AssignmentService(OtherServiceEndpoint):
 
         try:
             yield execution_environment
-            execution_environment.release()
+            if is_lambda_debug_timeout_enabled_for(lambda_arn=function_version.qualified_arn):
+                self.stop_environment(execution_environment)
+            else:
+                execution_environment.release()
         except InvalidStatusException as invalid_e:
             LOG.error("InvalidStatusException: %s", invalid_e)
         except Exception as e:
