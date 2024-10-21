@@ -181,6 +181,7 @@ def download(
     timeout: float = None,
     request_headers: Optional[dict] = None,
     quiet: bool = False,
+    proxies: Optional[Dict[str, str]] = None,
 ) -> None:
     """Downloads file at url to the given path. Raises TimeoutError if the optional timeout (in secs) is reached.
 
@@ -189,9 +190,12 @@ def download(
 
     # make sure we're creating a new session here to enable parallel file downloads
     s = requests.Session()
-    proxies = get_proxies()
     if proxies:
+        # Proxy defined by caller
         s.proxies.update(proxies)
+    if outbound_proxies := get_proxies():
+        # Proxy defined by the user
+        s.proxies.update(outbound_proxies)
 
     # Use REQUESTS_CA_BUNDLE path. If it doesn't exist, use the method provided settings.
     # Note that a value that is not False, will result to True and will get the bundle file.
