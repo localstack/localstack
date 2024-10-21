@@ -93,8 +93,8 @@ class Matcher:
     def passthrough(self):
         return lambda t: [t] if self.matching_func(t) else []
 
-    def directory(self):
-        return lambda t: [get_directory(t)] if self.matching_func(t) else []
+    def directory(self, paths: list[str] = None):
+        return lambda t: (paths or [get_directory(t)]) if self.matching_func(t) else []
 
 
 class Matchers:
