@@ -221,9 +221,10 @@ class LambdaService:
         region: str,
         account_id: str,
         invocation_type: InvocationType | None,
-        client_context: Optional[str],
+        client_context: str | None,
         request_id: str,
         payload: bytes | None,
+        trace_context: dict | None = None,
     ) -> InvocationResult | None:
         """
         Invokes a specific version of a lambda
@@ -235,9 +236,12 @@ class LambdaService:
         :param account_id: Account id of the function
         :param invocation_type: Invocation Type
         :param client_context: Client Context, if applicable
+        :param trace_context: tracing information such as X-Ray header
         :param payload: Invocation payload
         :return: The invocation result
         """
+        # NOTE: consider making the trace_context mandatory once we update all usages (should be easier after v4.0)
+        trace_context = trace_context or {}
         # Invoked arn (for lambda context) does not have qualifier if not supplied
         invoked_arn = lambda_arn(
             function_name=function_name,
@@ -323,6 +327,7 @@ class LambdaService:
                     invocation_type=invocation_type,
                     invoke_time=datetime.now(),
                     request_id=request_id,
+                    trace_context=trace_context,
                 )
             )
 
@@ -334,6 +339,7 @@ class LambdaService:
                 invocation_type=invocation_type,
                 invoke_time=datetime.now(),
                 request_id=request_id,
+                trace_context=trace_context,
             )
         )
 
