@@ -244,8 +244,8 @@ class InfraProvisioner:
 
                 for s3_bucket in s3_buckets:
                     self.custom_cleanup_steps.append(
-                        lambda: cleanup_s3_bucket(
-                            self.aws_client.s3, s3_bucket, delete_bucket=False
+                        lambda bucket=s3_bucket: cleanup_s3_bucket(
+                            self.aws_client.s3, bucket, delete_bucket=False
                         )
                     )
 
