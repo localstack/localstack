@@ -6,6 +6,7 @@ import multiprocessing as mp
 import os
 import socket
 import sys
+import textwrap
 import time
 
 import nats
@@ -13,14 +14,19 @@ from orjson import orjson
 from rolo.gateway.asgi import _ThreadPool
 from twisted.internet.tcp import Port
 
-from localstack.aws.api import RequestContext, ServiceException
+from localstack.aws.api import RequestContext
 from localstack.aws.app import LocalstackAwsGateway
 from localstack.aws.skeleton import create_dispatch_table
 from localstack.config import HostAndPort
 from localstack.services.sqs.provider import SqsProvider
+from localstack.utils.files import new_tmp_file
+from localstack.utils.net import wait_for_port_open
 from localstack.utils.patch import patch
+from localstack.utils.run import ShellCommandThread
 
 from .twisted import serve_gateway
+
+MIXCTL_PATH = "/Users/benjaminsimon/Projects/localstack-utils/mixctl/mixctl"
 
 
 @dataclasses.dataclass
@@ -120,26 +126,33 @@ def run_sqs_service_in_process(stop_event: mp.Event):
         context.service = FakeService(**context.service)
         context.operation = FakeOperation(**context.operation)
 
-        instance = req["instance"]
-        handler = _dispatch_table[context.operation.name]
-        try:
-            response = handler(context, instance)
-        except ServiceException:
-            # we could serialize something somewhat here?
-            response = {"Error": "exception"}
+        # instance = req["instance"]
+        # handler = _dispatch_table[context.operation.name]
+        # try:
+        #     response = handler(context, instance)
+        # except ServiceException:
+        #     # we could serialize something somewhat here?
+        #     response = {"Error": "exception"}
+        response = {
+            "MessageId": "cfcd8be4-7d9e-42c4-965f-ada0d77c3779",
+            "MD5OfMessageBody": "99914b932bd37a50b983c5e7c90ae93b",
+            "MD5OfMessageAttributes": None,
+            "SequenceNumber": None,
+            "MD5OfMessageSystemAttributes": None,
+        }
         return json.dumps(response).encode("utf-8")
 
     async def main():
         nc = await nats.connect("nats://localhost:4222")
 
         async def invoke(msg):
-            response = await loop.run_in_executor(executor, _invoke_orjson, msg.data)
+            # response = await loop.run_in_executor(executor, _invoke_orjson, msg.data)
             # response = _invoke_dill(msg.data)
-            # response = _invoke_orjson(msg.data)
+            response = _invoke_orjson(msg.data)
 
             await msg.respond(response)
 
-        sub = await nc.subscribe("services.sqs", cb=invoke)
+        sub = await nc.subscribe("services.sqs", queue="sqs.workers", cb=invoke)
         print(f"Subbed! {sub=}")
 
         while not stop_event.is_set():
@@ -153,22 +166,82 @@ def run_sqs_service_in_process(stop_event: mp.Event):
     executor.shutdown(wait=False, cancel_futures=True)
 
 
+def create_nats_server() -> ShellCommandThread:
+    nats_thread = ShellCommandThread(
+        ["nats-server"],
+        strip_color=True,
+        auto_restart=True,
+        name="nats",
+    )
+    return nats_thread
+
+
+def create_mixctl_load_balancer(_start_port: int, num_ports: int) -> ShellCommandThread:
+    # /Users/benjaminsimon/Projects/localstack-utils/mixctl/mixctl
+
+    # create config files with ports
+    base_mixctl_cfg = textwrap.dedent("""
+    version: 0.1
+    rules:
+    - name: localstack
+      from: 127.0.0.1:4566
+      to:
+    """)
+    mixctl_cfg = base_mixctl_cfg + "".join(
+        [f"    - 127.0.0.1:{_port}\n" for _port in range(_start_port, _start_port + num_ports)]
+    )
+    tmp_path = new_tmp_file(suffix="mixctl-cfg")
+    with open(tmp_path, "w") as fp:
+        fp.write(mixctl_cfg)
+
+    mixctl_thread = ShellCommandThread(
+        [MIXCTL_PATH, "-f", tmp_path],
+        strip_color=True,
+        auto_restart=True,
+        name="mixctl",
+    )
+    return mixctl_thread
+
+
 if __name__ == "__main__":
     is_macos = sys.platform == "darwin"
     processes = []
+    threads = []
     ev = mp.Event()
+    proc_amount = 8
     if is_macos:
         start_port = 4567
     else:
         start_port = 4566
 
-    for i in range(10):
+    nats = create_nats_server()
+    threads.append(nats)
+    nats.start()
+    try:
+        wait_for_port_open(4222)
+    except Exception:
+        nats.stop()
+        exit()
+
+    for i in range(proc_amount):
         proc_port = start_port + i if is_macos else start_port
         p = mp.Process(target=run_twisted_in_process, args=(ev, proc_port))
         processes.append(p)
 
-    service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
-    processes.append(service_p)
+    for _ in range(3):
+        service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
+        processes.append(service_p)
+
+    if is_macos:
+        mixctl = create_mixctl_load_balancer(start_port, proc_amount)
+        threads.append(mixctl)
+        mixctl.start()
+        try:
+            wait_for_port_open(4566)
+        except Exception:
+            nats.stop()
+            mixctl.stop()
+            exit()
 
     try:
         for p in processes:
@@ -178,5 +251,9 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         ev.set()
+        for t in threads:
+            t.stop()
+            t.join()
+
         for p in processes:
             p.join()

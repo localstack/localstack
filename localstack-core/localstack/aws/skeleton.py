@@ -234,6 +234,7 @@ class Skeleton:
                 "instance": instance,
             }
         )
+        # result = {'MessageId': 'cfcd8be4-7d9e-42c4-965f-ada0d77c3779', 'MD5OfMessageBody': '99914b932bd37a50b983c5e7c90ae93b', 'MD5OfMessageAttributes': None, 'SequenceNumber': None, 'MD5OfMessageSystemAttributes': None}
         # req = json.dumps({"op_name": operation.name, "payload": instance}).encode("utf-8")
         # coro = self._nats_conn.request("services.sqs", b"", timeout=0.5)
         coro = self._nats_conn.request("services.sqs", req, timeout=0.5)
@@ -241,7 +242,6 @@ class Skeleton:
         result = json.loads(response.data)
 
         # handler = self.dispatch_table[operation.name]
-        #
         # # Call the appropriate handler
         # result = handler(context, instance) or {}
 
