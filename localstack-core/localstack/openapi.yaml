@@ -8,7 +8,7 @@ info:
     checks, plugins, initialisation hooks, service introspection, and more.
   termsOfService: https://www.localstack.cloud/legal/tos
   title: LocalStack REST API for Community
-  version: 3.6.1.dev
+  version: latest
 externalDocs:
   description: LocalStack Documentation
   url: https://docs.localstack.cloud
@@ -211,6 +211,58 @@ components:
       - error
       - subscription_arn
       type: object
+    ReceiveMessageRequest:
+      type: object
+      description: https://github.com/boto/botocore/blob/develop/botocore/data/sqs/2012-11-05/service-2.json
+      required:
+        - QueueUrl
+      properties:
+        QueueUrl:
+          type: string
+          format: uri
+        AttributeNames:
+          type: array
+          items:
+            type: string
+        MessageSystemAttributeNames:
+          type: array
+          items:
+            type: string
+        MessageAttributeNames:
+          type: array
+          items:
+            type: string
+        MaxNumberOfMessages:
+          type: integer
+        VisibilityTimeout:
+          type: integer
+        WaitTimeSeconds:
+          type: integer
+        ReceiveRequestAttemptId:
+          type: string
+    ReceiveMessageResult:
+      type: object
+      description: https://github.com/boto/botocore/blob/develop/botocore/data/sqs/2012-11-05/service-2.json
+      properties:
+        Messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Message:
+      type: object
+      properties:
+        MessageId:
+          type: [string, 'null']
+        ReceiptHandle:
+          type: [string, 'null']
+        MD5OfBody:
+          type: [string, 'null']
+        Body:
+          type: [string, 'null']
+        Attributes:
+          type: object
+        MessageAttributes:
+          type: object
     CloudWatchMetrics:
       additionalProperties: false
       properties:
@@ -529,14 +581,52 @@ paths:
         '200':
           content:
             text/xml: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
           description: SQS queue messages
         '400':
           content:
             text/xml: {}
+            application/json: {}
           description: Bad request
         '404':
           content:
             text/xml: {}
+            application/json: {}
+          description: Not found
+    post:
+      summary: Retrieves one or more messages from the specified queue.
+      description: |
+        This API receives messages from an SQS queue.
+        https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_ResponseSyntax
+      operationId: receive_message
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+               $ref: '#/components/schemas/ReceiveMessageRequest'
+          application/json:
+            schema:
+               $ref: '#/components/schemas/ReceiveMessageRequest'
+      responses:
+        '200':
+          content:
+            text/xml: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
+          description: SQS queue messages
+        '400':
+          content:
+            text/xml: {}
+            application/json: {}
+          description: Bad request
+        '404':
+          content:
+            text/xml: {}
+            application/json: {}
           description: Not found
   /_aws/sqs/messages/{region}/{account_id}/{queue_name}:
     get:
@@ -566,14 +656,19 @@ paths:
         '200':
           content:
             text/xml: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
           description: SQS queue messages
         '400':
           content:
             text/xml: {}
+            application/json: {}
           description: Bad request
         '404':
           content:
             text/xml: {}
+            application/json: {}
           description: Not found
   /_localstack/config:
     get:

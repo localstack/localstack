@@ -298,7 +298,7 @@ def add_target_http_parameters(http_parameters: Dict, endpoint: str, headers: Di
     endpoint = add_query_params_to_url(endpoint, query_params)
 
     target_headers = http_parameters.get("HeaderParameters", {})
-    for target_header in target_headers.keys():
+    for target_header in target_headers:
         if target_header not in headers:
             headers.update({target_header: target_headers.get(target_header)})
 

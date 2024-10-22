@@ -10,9 +10,9 @@ from urllib import parse as urlparse
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
 from moto.apigateway import models as apigw_models
-from moto.apigateway.models import Integration, Resource
+from moto.apigateway.models import APIGatewayBackend, Integration, Resource
 from moto.apigateway.models import RestAPI as MotoRestAPI
-from moto.apigateway.utils import create_id as create_resource_id
+from moto.apigateway.utils import ApigwAuthorizerIdentifier, ApigwResourceIdentifier
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -102,6 +102,10 @@ def get_apigateway_store_for_invocation(context: ApiInvocationContext) -> ApiGat
     account_id = context.account_id or DEFAULT_AWS_ACCOUNT_ID
     region_name = context.region_name or AWS_REGION_US_EAST_1
     return apigateway_stores[account_id][region_name]
+
+
+def get_moto_backend(account_id: str, region: str) -> APIGatewayBackend:
+    return apigw_models.apigateway_backends[account_id][region]
 
 
 def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
@@ -468,6 +472,8 @@ def import_api_from_openapi_spec(
 
     query_params: dict = context.request.values.to_dict()
     resolved_schema = resolve_references(copy.deepcopy(body), rest_api_id=rest_api.id)
+    account_id = context.account_id
+    region_name = context.region
 
     # TODO:
     # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
@@ -521,7 +527,9 @@ def import_api_from_openapi_spec(
             authorizer_type = aws_apigateway_authorizer.get("type", "").upper()
             # TODO: do we need validation of resources here?
             authorizer = Authorizer(
-                id=create_resource_id(),
+                id=ApigwAuthorizerIdentifier(
+                    account_id, region_name, security_scheme_name
+                ).generate(),
                 name=security_scheme_name,
                 type=authorizer_type,
                 authorizerResultTtlInSeconds=aws_apigateway_authorizer.get(
@@ -580,8 +588,8 @@ def import_api_from_openapi_spec(
         return add_path_methods(rel_path, parts, parent_id=parent_id)
 
     def add_path_methods(rel_path: str, parts: List[str], parent_id=""):
-        child_id = create_resource_id()
         rel_path = rel_path or "/"
+        child_id = ApigwResourceIdentifier(account_id, region_name, parent_id, rel_path).generate()
 
         # Create a `Resource` for the passed `rel_path`
         resource = Resource(

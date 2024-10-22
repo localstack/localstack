@@ -29,6 +29,7 @@ from localstack.aws.api.s3 import (
     BucketLoggingStatus,
     BucketName,
     BucketNotEmpty,
+    BucketRegion,
     BucketVersioningStatus,
     BypassGovernanceRetention,
     ChecksumAlgorithm,
@@ -549,9 +550,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         max_buckets: MaxBuckets = None,
         continuation_token: Token = None,
+        prefix: Prefix = None,
+        bucket_region: BucketRegion = None,
         **kwargs,
     ) -> ListBucketsOutput:
-        # TODO add support for max_buckets and continuation_token
+        # TODO add support for max_buckets, continuation_token, prefix, and bucket_region
         owner = get_owner_for_account_id(context.account_id)
         store = self.get_store(context.account_id, context.region)
         buckets = [

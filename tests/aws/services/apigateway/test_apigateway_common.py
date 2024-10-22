@@ -553,6 +553,7 @@ class TestUsagePlans:
         snapshot,
         create_rest_apigw,
         apigw_redeploy_api,
+        cleanups,
     ):
         snapshot.add_transformer(snapshot.transform.apigateway_api())
         snapshot.add_transformers_list(
@@ -625,6 +626,7 @@ class TestUsagePlans:
         )
         snapshot.match("create-api-key", api_key_response)
         api_key_id = api_key_response["id"]
+        cleanups.append(lambda: aws_client.apigateway.delete_api_key(apiKey=api_key_id))
 
         create_usage_plan_key_resp = aws_client.apigateway.create_usage_plan_key(
             usagePlanId=usage_plan_id,
