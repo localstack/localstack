@@ -6,7 +6,7 @@ import logging
 from os import environ
 from urllib.parse import urlparse
 
-from localstack.config import OUTBOUND_HTTP_PROXY, OUTBOUND_HTTPS_PROXY
+from localstack import config
 from localstack.utils.files import new_tmp_file, rm_rf
 from localstack.utils.run import run
 
@@ -27,11 +27,11 @@ def java_system_properties_proxy() -> dict[str, str]:
     props = {}
 
     for scheme, var in [
-        ("http", OUTBOUND_HTTP_PROXY),
-        ("https", OUTBOUND_HTTPS_PROXY),
+        ("http", config.OUTBOUND_HTTP_PROXY),
+        ("https", config.OUTBOUND_HTTPS_PROXY),
     ]:
         if var:
-            netloc = urlparse(OUTBOUND_HTTP_PROXY).netloc
+            netloc = urlparse(var).netloc
             url = netloc.split(":")
             if len(url) == 2:
                 hostname, port = url
