@@ -314,21 +314,22 @@ class Skeleton:
         )
         # req = json.dumps({"op_name": operation.name, "payload": instance}).encode("utf-8")
         # coro = self._nats_conn.request("services.sqs", b"", timeout=0.5)
-        assure_service_started(context.service.service_name)
-        socket_address = f"/tmp/localstack/{context.service.service_name}.sock"
-        session = requests.Session()
-        session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
-        response = session.post("http+unix://localhost/", data=req)
-        result = json.loads(response.content)
-        if error := result.get("error"):
-            raise ServiceException(
-                code=error.get("code"),
-                status_code=error.get("status_code"),
-                message=error.get("message"),
-                sender_fault=error.get("sender_fault"),
-            )
+        # assure_service_started(context.service.service_name)
+        # socket_address = f"/tmp/localstack/{context.service.service_name}.sock"
+        # session = requests.Session()
+        # session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
+        # response = session.post("http+unix://localhost/", data=req)
+        # result = json.loads(response.content)
+        # if error := result.get("error"):
+        #     raise ServiceException(
+        #         code=error.get("code"),
+        #         status_code=error.get("status_code"),
+        #         message=error.get("message"),
+        #         sender_fault=error.get("sender_fault"),
+        #     )
 
-        result = result.get("response")
+        # result = result.get("response")
+        result = {}
 
         # handler = self.dispatch_table[operation.name]
         #
