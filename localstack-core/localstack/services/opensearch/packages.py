@@ -21,6 +21,7 @@ from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.services.opensearch import versions
 from localstack.utils.archives import download_and_extract_with_retry
 from localstack.utils.files import chmod_r, load_file, mkdir, rm_rf, save_file
+from localstack.utils.java import java_proxy_cli_args
 from localstack.utils.run import run
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 from localstack.utils.sync import SynchronizedDefaultDict, retry
@@ -92,7 +93,14 @@ class OpensearchPackageInstaller(PackageInstaller):
                             LOG.info("Installing OpenSearch plugin %s", plugin)
 
                             def try_install():
-                                output = run([plugin_binary, "install", "-b", plugin])
+                                opts = java_proxy_cli_args() + [
+                                    "-Djavax.net.ssl.trustStore=/home/viren/mitmproxycacert.jks",
+                                    "-Djavax.net.ssl.keyStorePassword=localstack",
+                                ]
+                                output = run(
+                                    [plugin_binary, "install", "-b", plugin],
+                                    env_vars={"CLI_JAVA_OPTS": " ".join(opts)},
+                                )
                                 LOG.debug("Plugin installation output: %s", output)
 
                             # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
@@ -249,7 +257,14 @@ class ElasticsearchPackageInstaller(PackageInstaller):
                     LOG.info("Installing Elasticsearch plugin %s", plugin)
 
                     def try_install():
-                        output = run([plugin_binary, "install", "-b", plugin])
+                        opts = java_proxy_cli_args() + [
+                            "-Djavax.net.ssl.trustStore=/home/viren/mitmproxycacert.jks",
+                            "-Djavax.net.ssl.keyStorePassword=localstack",
+                        ]
+                        output = run(
+                            [plugin_binary, "install", "-b", plugin],
+                            env_vars={"CLI_JAVA_OPTS": " ".join(opts)},
+                        )
                         LOG.debug("Plugin installation output: %s", output)
 
                     # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
