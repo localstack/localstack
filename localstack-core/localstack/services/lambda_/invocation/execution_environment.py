@@ -345,6 +345,11 @@ class ExecutionEnvironment:
         aws_trace_header = (
             invocation.trace_context.get("aws_trace_header") or TraceHeader().ensure_root_exists()
         )
+        # The Lambda RIE requires a full tracing header including Root, Parent, and Samples. Otherwise, tracing fails
+        # with the warning "Subsegment ## handler discarded due to Lambda worker still initializing"
+        aws_trace_header.ensure_sampled_exists()
+        # TODO: replace this random parent id with actual parent segment created within the Lambda provider using X-Ray
+        aws_trace_header.ensure_parent_exists()
         # TODO: test and implement Active and PassThrough tracing and sampling decisions.
         # TODO: implement Lambda lineage: https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
         invoke_payload = {

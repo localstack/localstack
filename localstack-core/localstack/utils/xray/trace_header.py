@@ -4,9 +4,12 @@
 # Original source: https://github.com/aws/aws-xray-sdk-python/blob/master/aws_xray_sdk/core/models/trace_header.py
 # Modifications:
 # * Add optional lineage field for https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
-# * Add ensure_root_exists() to generate root trace id
+# * Add ensure_root_exists(), ensure_parent_exists(), and ensure_sampled_exists()
+# * Add generate_random_id() from https://github.com/aws/aws-xray-sdk-python/blob/d3a202719e659968fe6dcc04fe14c7f3045b53e8/aws_xray_sdk/core/models/entity.py#L308
 
+import binascii
 import logging
+import os
 
 from localstack.utils.xray.traceid import TraceId
 
@@ -19,6 +22,14 @@ SELF = "Self"
 LINEAGE = "Lineage"
 
 HEADER_DELIMITER = ";"
+
+
+def generate_random_id():
+    """
+    Generate a random 16-digit hex str.
+    This is used for generating segment/subsegment id.
+    """
+    return binascii.b2a_hex(os.urandom(8)).decode("utf-8")
 
 
 class TraceHeader:
@@ -114,6 +125,34 @@ class TraceHeader:
         """
         if self._root is None:
             self._root = TraceId().to_id()
+        return self
+
+    # TODO: remove this hack once LocalStack supports X-Ray integration.
+    #  This hack is only needed because we do not create segment ids in many places, but then expect downstream
+    #  segments to have a valid parent link (e.g., Lambda invocations).
+    def ensure_parent_exists(self):
+        """
+        Ensures that a parent segment link exists by generating a random one.
+        Return self to allow for chaining.
+        """
+        if self._parent is None:
+            self._parent = generate_random_id()
+        return self
+
+    def ensure_sampled_exists(self, sampled=None):
+        """
+        Ensures that the sampled flag is set.
+        Return self to allow for chaining.
+        """
+        if sampled is None:
+            self._sampled = 1
+        else:
+            if sampled == "?":
+                self._sampled = sampled
+            if sampled is True or sampled == "1" or sampled == 1:
+                self._sampled = 1
+            if sampled is False or sampled == "0" or sampled == 0:
+                self._sampled = 0
         return self
 
     @property
