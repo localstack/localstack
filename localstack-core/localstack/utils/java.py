@@ -26,9 +26,9 @@ def java_system_properties_proxy() -> dict[str, str]:
     """
     props = {}
 
-    for scheme, var in [
-        ("http", config.OUTBOUND_HTTP_PROXY),
-        ("https", config.OUTBOUND_HTTPS_PROXY),
+    for scheme, default_port, var in [
+        ("http", "80", config.OUTBOUND_HTTP_PROXY),
+        ("https", "443", config.OUTBOUND_HTTPS_PROXY),
     ]:
         if var:
             netloc = urlparse(var).netloc
@@ -36,7 +36,7 @@ def java_system_properties_proxy() -> dict[str, str]:
             if len(url) == 2:
                 hostname, port = url
             else:
-                hostname, port = url, 80
+                hostname, port = url[0], default_port
 
             props[f"{scheme}.proxyHost"] = hostname
             props[f"{scheme}.proxyPort"] = port
