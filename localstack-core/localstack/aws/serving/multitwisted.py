@@ -14,7 +14,7 @@ from orjson import orjson
 from rolo.gateway.asgi import _ThreadPool
 from twisted.internet.tcp import Port
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import RequestContext, ServiceException
 from localstack.aws.app import LocalstackAwsGateway
 from localstack.aws.skeleton import create_dispatch_table
 from localstack.config import HostAndPort
@@ -96,10 +96,11 @@ def _twisted_create_internet_socket(fn, *args, **kwargs):
     return s
 
 
-def run_sqs_service_in_process(stop_event: mp.Event):
+def run_sqs_service_in_process(stop_event: mp.Event, **kwargs):
     provider = SqsProvider()
     _dispatch_table = create_dispatch_table(provider)
     executor = _ThreadPool(5000, thread_name_prefix="sqs_srv")
+    account_id = kwargs.get("account_id")
 
     # def _invoke_json(payload: bytes):
     #     req = json.loads(payload)
@@ -126,20 +127,20 @@ def run_sqs_service_in_process(stop_event: mp.Event):
         context.service = FakeService(**context.service)
         context.operation = FakeOperation(**context.operation)
 
-        # instance = req["instance"]
-        # handler = _dispatch_table[context.operation.name]
-        # try:
-        #     response = handler(context, instance)
-        # except ServiceException:
-        #     # we could serialize something somewhat here?
-        #     response = {"Error": "exception"}
-        response = {
-            "MessageId": "cfcd8be4-7d9e-42c4-965f-ada0d77c3779",
-            "MD5OfMessageBody": "99914b932bd37a50b983c5e7c90ae93b",
-            "MD5OfMessageAttributes": None,
-            "SequenceNumber": None,
-            "MD5OfMessageSystemAttributes": None,
-        }
+        instance = req["instance"]
+        handler = _dispatch_table[context.operation.name]
+        try:
+            response = handler(context, instance)
+        except ServiceException:
+            # we could serialize something somewhat here?
+            response = {"Error": "exception"}
+        # response = {
+        #     "MessageId": "cfcd8be4-7d9e-42c4-965f-ada0d77c3779",
+        #     "MD5OfMessageBody": "99914b932bd37a50b983c5e7c90ae93b",
+        #     "MD5OfMessageAttributes": None,
+        #     "SequenceNumber": None,
+        #     "MD5OfMessageSystemAttributes": None,
+        # }
         return json.dumps(response).encode("utf-8")
 
     async def main():
@@ -152,8 +153,10 @@ def run_sqs_service_in_process(stop_event: mp.Event):
 
             await msg.respond(response)
 
-        sub = await nc.subscribe("services.sqs", queue="sqs.workers", cb=invoke)
-        print(f"Subbed! {sub=}")
+        subject = f"services.sqs.{account_id}" if account_id else "services.sqs.>"
+        _queue = None if account_id else "sqs.workers"
+        sub = await nc.subscribe(subject, queue=_queue, cb=invoke)
+        print(f"Subbed! {sub.subject=} / {sub.queue=}")
 
         while not stop_event.is_set():
             await asyncio.sleep(1)
@@ -209,6 +212,11 @@ if __name__ == "__main__":
     threads = []
     ev = mp.Event()
     proc_amount = 8
+    account_ids = [
+        "000000000000",
+        "000000000001",
+        "000000000002",
+    ]
     if is_macos:
         start_port = 4567
     else:
@@ -228,8 +236,14 @@ if __name__ == "__main__":
         p = mp.Process(target=run_twisted_in_process, args=(ev, proc_port))
         processes.append(p)
 
-    for _ in range(3):
-        service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
+    # for _ in range(3):
+    #     service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
+    #     processes.append(service_p)
+    # Account Id sharding per process
+    for acc_id in account_ids:
+        service_p = mp.Process(
+            target=run_sqs_service_in_process, args=(ev,), kwargs={"account_id": acc_id}
+        )
         processes.append(service_p)
 
     if is_macos:
