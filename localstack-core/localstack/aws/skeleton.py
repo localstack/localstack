@@ -34,7 +34,7 @@ LOG = logging.getLogger(__name__)
 
 DispatchTable = Dict[str, ServiceRequestHandler]
 
-STARTED_PROVIDERS = {"sqs"}
+STARTED_PROVIDERS = {}
 
 
 @dataclasses.dataclass
@@ -220,13 +220,15 @@ class UnixSocketAdapter(HTTPAdapter):
         return UnixSocketHTTPConnectionPool(request.url, self.socket_path, self.timeout)
 
 
-def assure_service_started(service_name: str):
+def assure_service_started(service_name: str) -> requests.Session:
     if service_name in STARTED_PROVIDERS:
-        return
+        return STARTED_PROVIDERS[service_name]
     socket_address = f"/tmp/localstack/{service_name}.sock"
     if os.path.exists(socket_address):
-        STARTED_PROVIDERS.add(service_name)
-        return
+        session = requests.Session()
+        session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
+        STARTED_PROVIDERS[service_name] = session
+        return STARTED_PROVIDERS[service_name]
 
     f = None
     try:
@@ -236,8 +238,10 @@ def assure_service_started(service_name: str):
             LOG.warning("Lock already taken, waiting for socket to spawn...")
             for i in range(10):
                 if os.path.exists(f"/tmp/localstack/{service_name}.sock"):
-                    STARTED_PROVIDERS.add(service_name)
-                    return
+                    session = requests.Session()
+                    session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
+                    STARTED_PROVIDERS[service_name] = session
+                    return STARTED_PROVIDERS[service_name]
                 time.sleep(1)
             raise Exception(
                 f"Waiting for other process to start service {service_name}, but it did not happen after 10s."
@@ -255,7 +259,10 @@ def assure_service_started(service_name: str):
             ]
         )
         f.write(str(process.pid))
-        STARTED_PROVIDERS.add(service_name)
+        session = requests.Session()
+        session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
+        STARTED_PROVIDERS[service_name] = session
+        return STARTED_PROVIDERS[service_name]
     finally:
         if f:
             f.close()
@@ -317,11 +324,7 @@ class Skeleton:
         )
         # req = json.dumps({"op_name": operation.name, "payload": instance}).encode("utf-8")
         # coro = self._nats_conn.request("services.sqs", b"", timeout=0.5)
-        assure_service_started(context.service.service_name)
-        socket_address = f"/tmp/localstack/{context.service.service_name}.sock"
-
-        session = requests.Session()
-        session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
+        session = assure_service_started(context.service.service_name)
         response = session.post("http+unix://localhost/", data=req)
         result = json.loads(response.content)
         if error := result.get("error"):

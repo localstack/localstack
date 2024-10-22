@@ -1,11 +1,22 @@
 import dataclasses
 import json
+import multiprocessing as mp
+import os
+import socket
+import sys
+import time
 
 from orjson import orjson
+from twisted.internet.tcp import Port
 
 from localstack.aws.api import ServiceException
+from localstack.aws.app import LocalstackAwsGateway
 from localstack.aws.skeleton import create_dispatch_table
+from localstack.config import HostAndPort
 from localstack.services.sqs.provider import SqsProvider
+from localstack.utils.patch import patch
+
+from .twisted import serve_gateway
 
 
 @dataclasses.dataclass
@@ -72,3 +83,48 @@ def wsgi_app():
     # provider.on_after_init()
     # provider.on_before_start()
     return ServiceWsgiApp(provider)
+
+
+@patch(target=Port.createInternetSocket)
+def _twisted_create_internet_socket(fn, *args, **kwargs):
+    s = fn(*args, **kwargs)
+    # this is good, but doesn't work on macOS/BSD: only the last process gets the requests... :(
+    if sys.platform != "darwin":
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    return s
+
+
+def run_twisted_in_process(stop_event: mp.Event, port: int):
+    gateway = LocalstackAwsGateway()
+    listen = HostAndPort("0.0.0.0", port)
+    srv, shutdown = serve_gateway(gateway, [listen], use_ssl=False, asynchronous=True)
+    print(f"Process {os.getpid()} listens on {listen.port}")
+    stop_event.wait()
+
+    shutdown()
+    srv.stop()
+
+
+if __name__ == "__main__":
+    is_macos = sys.platform == "darwin"
+    processes = []
+    ev = mp.Event()
+    if is_macos:
+        start_port = 4567
+    else:
+        start_port = 4566
+
+    for i in range(10):
+        proc_port = start_port + i if is_macos else start_port
+        p = mp.Process(target=run_twisted_in_process, args=(ev, proc_port))
+        processes.append(p)
+
+    try:
+        for p in processes:
+            p.start()
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        ev.set()
+        for p in processes:
+            p.join()
