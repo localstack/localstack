@@ -68,6 +68,7 @@ def load_nodejs_lambda_to_s3(
     bucket_name: str,
     key_name: str,
     code_path: str,
+    additional_nodjs_packages: list[str] = None,
     additional_nodejs_packages: list[str] = None,
     additional_resources: list[str] = None,
 ):
@@ -80,11 +81,16 @@ def load_nodejs_lambda_to_s3(
     :param bucket_name: bucket name (bucket will be created)
     :param key_name: key name for the uploaded zip file
     :param code_path: the path to the source code that should be included
+    :param additional_nodjs_packages: a list of strings with nodeJS packages that are required to run the lambda
     :param additional_nodejs_packages: a list of strings with nodeJS packages that are required to run the lambda
     :param additional_resources: list of path-strings to resources or internal libs that should be packaged into the lambda
     :return: None
     """
     additional_resources = additional_resources or []
+
+    if additional_nodjs_packages:
+        additional_nodejs_packages = additional_nodejs_packages or []
+        additional_nodejs_packages.extend(additional_nodjs_packages)
 
     try:
         temp_dir = tempfile.mkdtemp()
