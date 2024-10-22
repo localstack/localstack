@@ -1,26 +1,11 @@
-import asyncio
 import dataclasses
-import itertools
 import json
-import multiprocessing as mp
-import os
-import socket
-import sys
-import time
 
-import nats
 from orjson import orjson
-from rolo.gateway.asgi import _ThreadPool
-from twisted.internet.tcp import Port
 
-from localstack.aws.api import RequestContext, ServiceException
-from localstack.aws.app import LocalstackAwsGateway
+from localstack.aws.api import ServiceException
 from localstack.aws.skeleton import create_dispatch_table
-from localstack.config import HostAndPort
 from localstack.services.sqs.provider import SqsProvider
-from localstack.utils.patch import patch
-
-from .twisted import serve_gateway
 
 
 @dataclasses.dataclass
@@ -52,131 +37,38 @@ class JsonContext:
     request: FakeRequest
 
 
-def run_twisted_in_process(stop_event: mp.Event, port: int):
-    counter = itertools.count()
+class ServiceWsgiApp:
+    def __init__(self, provider):
+        self.provider = provider
+        self._dispatch_table = create_dispatch_table(provider)
 
-    def call_count():
-        return next(counter)
-
-    loop = asyncio.new_event_loop()
-    gateway = LocalstackAwsGateway()
-
-    def _add_loop_context(_, context: RequestContext, __):
-        context._loop = loop
-        call_count()
-
-    gateway.request_handlers.insert(0, _add_loop_context)
-    listen = HostAndPort("0.0.0.0", port)
-    srv, shutdown = serve_gateway(gateway, [listen], use_ssl=False, asynchronous=True)
-    print(f"Process {os.getpid()} listens on {listen.port}")
-
-    async def _run():
-        while not stop_event.is_set():
-            # print(os.getpid(), port, call_count())
-            await asyncio.sleep(1)
-
-    loop.run_until_complete(_run())
-
-    shutdown()
-    srv.stop()
-
-
-@patch(target=Port.createInternetSocket)
-def _twisted_create_internet_socket(fn, *args, **kwargs):
-    s = fn(*args, **kwargs)
-    # this is good, but doesn't work on macOS/BSD: only the last process gets the requests... :(
-    if sys.platform != "darwin":
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-    return s
-
-
-def run_sqs_service_in_process(stop_event: mp.Event):
-    provider = SqsProvider()
-    _dispatch_table = create_dispatch_table(provider)
-    executor = _ThreadPool(5000, thread_name_prefix="sqs_srv")
-
-    # def _invoke_json(payload: bytes):
-    #     req = json.loads(payload)
-    #     handler = _dispatch_table[req["op_name"]]
-    #     response = handler(RequestContext(), req["payload"])
-    #     return json.dumps(response).encode("utf-8")
-
-    # @log_duration(min_ms=0)
-    # def _invoke_dill(payload: bytes):
-    # req = dill.loads(payload)
-    # context = req["context"]
-    # instance = req["instance"]
-    # handler = _dispatch_table[context.operation.name]
-    # try:
-    #     response = handler(context, instance)
-    # except ServiceException:
-    #     response = {"Error": "exception"}
-    # return json.dumps({}).encode("utf-8")
-
-    # @log_duration(min_ms=0)
-    def _invoke_orjson(payload: bytes):
+    def _invoke_orjson(self, payload: bytes):
         req = orjson.loads(payload)
         context = JsonContext(**req["context"], request=fake_req)
         context.service = FakeService(**context.service)
         context.operation = FakeOperation(**context.operation)
 
         instance = req["instance"]
-        handler = _dispatch_table[context.operation.name]
+        handler = self._dispatch_table[context.operation.name]
         try:
-            response = handler(context, instance)
-        except ServiceException:
+            response = {"response": handler(context, instance)}
+        except ServiceException as e:
             # we could serialize something somewhat here?
-            response = {"Error": "exception"}
+            response = {"error": e.to_dict()}
         return json.dumps(response).encode("utf-8")
 
-    async def main():
-        nc = await nats.connect("nats://localhost:4222")
-
-        async def invoke(msg):
-            response = await loop.run_in_executor(executor, _invoke_orjson, msg.data)
-            # response = _invoke_dill(msg.data)
-            # response = _invoke_orjson(msg.data)
-
-            await msg.respond(response)
-
-        sub = await nc.subscribe("services.sqs", cb=invoke)
-        print(f"Subbed! {sub=}")
-
-        while not stop_event.is_set():
-            await asyncio.sleep(1)
-
-        await sub.unsubscribe()
-
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(main())
-
-    executor.shutdown(wait=False, cancel_futures=True)
+    def __call__(self, environ, start_response):
+        content_length = int(environ["CONTENT_LENGTH"])
+        input = environ["wsgi.input"].read(content_length)
+        _invoke_result = self._invoke_orjson(input)
+        status = "200 OK"
+        response_headers = [("Content-type", "application/json")]
+        start_response(status, response_headers)
+        return [_invoke_result]
 
 
-if __name__ == "__main__":
-    is_macos = sys.platform == "darwin"
-    processes = []
-    ev = mp.Event()
-    if is_macos:
-        start_port = 4567
-    else:
-        start_port = 4566
-
-    for i in range(10):
-        proc_port = start_port + i if is_macos else start_port
-        p = mp.Process(target=run_twisted_in_process, args=(ev, proc_port))
-        processes.append(p)
-
-    service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
-    processes.append(service_p)
-
-    try:
-        for p in processes:
-            p.start()
-        while True:
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        ev.set()
-        for p in processes:
-            p.join()
+def wsgi_app():
+    provider = SqsProvider()
+    # provider.on_after_init()
+    # provider.on_before_start()
+    return ServiceWsgiApp(provider)

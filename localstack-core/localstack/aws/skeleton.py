@@ -1,14 +1,21 @@
-import asyncio
 import dataclasses
 import inspect
 import json
 import logging
+import os
+import socket
+import subprocess
+import sys
+import time
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
-import nats
 import orjson
+import requests
 from botocore import xform_name
 from botocore.model import ServiceModel
+from requests.adapters import HTTPAdapter
+from urllib3 import HTTPConnectionPool
+from urllib3.connection import HTTPConnection
 
 from localstack.aws.api import (
     CommonServiceException,
@@ -26,6 +33,8 @@ from localstack.utils.coverage_docs import get_coverage_link_for_service
 LOG = logging.getLogger(__name__)
 
 DispatchTable = Dict[str, ServiceRequestHandler]
+
+STARTED_PROVIDERS = {"sqs"}
 
 
 @dataclasses.dataclass
@@ -167,25 +176,102 @@ class ServiceRequestDispatcher:
         return self.fn(*args, **kwargs)
 
 
+class UnixSocketConnection(HTTPConnection):
+    def __init__(self, base_url, unix_socket, timeout=60):
+        super().__init__("localhost", timeout=timeout)
+        self.base_url = base_url
+        self.unix_socket = unix_socket
+        self.timeout = timeout
+
+    def connect(self):
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(self.timeout)
+        sock.connect(self.unix_socket)
+        self.sock = sock
+
+    def close(self):
+        if self.sock:
+            self.sock.close()
+
+
+class UnixSocketHTTPConnectionPool(HTTPConnectionPool):
+    def __init__(self, base_url, socket_path, timeout=60, maxsize=10):
+        super().__init__("localhost", timeout=timeout, maxsize=maxsize)
+        self.base_url = base_url
+        self.socket_path = socket_path
+        self.timeout = timeout
+
+    def _new_conn(self):
+        return UnixSocketConnection(self.base_url, self.socket_path, self.timeout)
+
+
+class UnixSocketAdapter(HTTPAdapter):
+    __attrs__ = HTTPAdapter.__attrs__ + ["socket_path", "timeout"]
+
+    def __init__(self, socket_url, timeout=60):
+        socket_path = socket_url.replace("http+unix://", "")
+        if not socket_path.startswith("/"):
+            socket_path = f"/{socket_path}"
+        self.socket_path = socket_path
+        self.timeout = timeout
+        super().__init__()
+
+    def get_connection_with_tls_context(self, request, verify, proxies=None, cert=None):
+        return UnixSocketHTTPConnectionPool(request.url, self.socket_path, self.timeout)
+
+
+def assure_service_started(service_name: str):
+    if service_name in STARTED_PROVIDERS:
+        return
+    socket_address = f"/tmp/localstack/{service_name}.sock"
+    if os.path.exists(socket_address):
+        STARTED_PROVIDERS.add(service_name)
+        return
+
+    f = None
+    try:
+        try:
+            f = open(f"/tmp/localstack/{service_name}.lock", mode="x")
+        except OSError:
+            LOG.warning("Lock already taken, waiting for socket to spawn...")
+            for i in range(10):
+                if os.path.exists(f"/tmp/localstack/{service_name}.sock"):
+                    STARTED_PROVIDERS.add(service_name)
+                    return
+                time.sleep(1)
+            raise Exception(
+                f"Waiting for other process to start service {service_name}, but it did not happen after 10s."
+            )
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "gunicorn",
+                "--bind",
+                f"unix:{socket_address}",
+                "-w",
+                "1",
+                "localstack.aws.serving.multitwisted:wsgi_app()",
+            ]
+        )
+        f.write(str(process.pid))
+        STARTED_PROVIDERS.add(service_name)
+    finally:
+        if f:
+            f.close()
+
+
 class Skeleton:
     service: ServiceModel
     dispatch_table: DispatchTable
 
     def __init__(self, service: ServiceModel, implementation: Union[Any, DispatchTable]):
         self.service = service
-        self._nats_conn = None
 
         if isinstance(implementation, dict):
             self.dispatch_table = implementation
         else:
             self.dispatch_table = create_dispatch_table(implementation)
-
-    def _get_client(self, loop):
-        async def coro():
-            return await nats.connect("nats://localhost:4222")
-
-        self._nats_conn = asyncio.run_coroutine_threadsafe(coro(), loop).result(timeout=3)
-        return self._nats_conn
 
     def invoke(self, context: RequestContext) -> Response:
         serializer = create_serializer(context.service)
@@ -217,11 +303,6 @@ class Skeleton:
     def dispatch_request(
         self, serializer: ResponseSerializer, context: RequestContext, instance: ServiceRequest
     ) -> Response:
-        loop = context._loop
-
-        if not self._nats_conn:
-            self._get_client(loop)
-
         operation = context.operation
         # req = dill.dumps({
         #     # selectively copy only parts
@@ -236,9 +317,22 @@ class Skeleton:
         )
         # req = json.dumps({"op_name": operation.name, "payload": instance}).encode("utf-8")
         # coro = self._nats_conn.request("services.sqs", b"", timeout=0.5)
-        coro = self._nats_conn.request("services.sqs", req, timeout=0.5)
-        response = asyncio.run_coroutine_threadsafe(coro, loop).result()
-        result = json.loads(response.data)
+        assure_service_started(context.service.service_name)
+        socket_address = f"/tmp/localstack/{context.service.service_name}.sock"
+
+        session = requests.Session()
+        session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
+        response = session.post("http+unix://localhost/", data=req)
+        result = json.loads(response.content)
+        if error := result.get("error"):
+            raise ServiceException(
+                code=error.get("code"),
+                status_code=error.get("status_code"),
+                message=error.get("message"),
+                sender_fault=error.get("sender_fault"),
+            )
+
+        result = result.get("response")
 
         # handler = self.dispatch_table[operation.name]
         #
@@ -246,8 +340,8 @@ class Skeleton:
         # result = handler(context, instance) or {}
 
         # if the service handler returned an HTTP request, forego serialization and return immediately
-        if isinstance(result, Response):
-            return result
+        # if isinstance(result, Response):
+        #     return result
 
         context.service_response = result
 

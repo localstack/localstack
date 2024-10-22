@@ -38,6 +38,14 @@ class ServiceException(Exception):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def to_dict(self):
+        return {
+            "code": self.code,
+            "status_code": self.status_code,
+            "sender_fault": self.sender_fault,
+            "message": self.message,
+        }
+
 
 class CommonServiceException(ServiceException):
     """
