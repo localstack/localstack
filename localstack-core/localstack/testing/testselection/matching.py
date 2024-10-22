@@ -94,6 +94,10 @@ class Matcher:
         return lambda t: [t] if self.matching_func(t) else []
 
     def directory(self, paths: list[str] = None):
+        """Enables executing tests on a full directory if the file is matched.
+        By default, it will return the directory of the modified file.
+        If the argument `paths` is provided, it will instead return the provided list.
+        """
         return lambda t: (paths or [get_directory(t)]) if self.matching_func(t) else []
 
 
