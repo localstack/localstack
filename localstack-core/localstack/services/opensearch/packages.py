@@ -21,7 +21,11 @@ from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.services.opensearch import versions
 from localstack.utils.archives import download_and_extract_with_retry
 from localstack.utils.files import chmod_r, load_file, mkdir, rm_rf, save_file
-from localstack.utils.java import java_proxy_cli_args
+from localstack.utils.java import (
+    java_system_properties_proxy,
+    java_system_properties_ssl,
+    system_properties_to_cli_args,
+)
 from localstack.utils.run import run
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 from localstack.utils.sync import SynchronizedDefaultDict, retry
@@ -66,7 +70,6 @@ class OpensearchPackageInstaller(PackageInstaller):
                 tmp_archive = os.path.join(
                     config.dirs.cache, f"localstack.{os.path.basename(opensearch_url)}"
                 )
-                print(f"DEBUG: installing opensearch to path {install_dir_parent}")
                 download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
                 opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
                 if not opensearch_dir:
@@ -86,6 +89,16 @@ class OpensearchPackageInstaller(PackageInstaller):
                 # install other default plugins for opensearch 1.1+
                 # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
                 if parsed_version >= "1.1.0":
+                    # Determine network configuration to use for plugin downloads
+                    sys_props = {
+                        **java_system_properties_proxy(),
+                        **java_system_properties_ssl(
+                            os.path.join(install_dir, "jdk", "bin", "keytool"),
+                            {"JAVA_HOME": os.path.join(install_dir, "jdk")},
+                        ),
+                    }
+                    java_opts = system_properties_to_cli_args(sys_props)
+
                     for plugin in OPENSEARCH_PLUGIN_LIST:
                         plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
                         plugin_dir = os.path.join(install_dir, "plugins", plugin)
@@ -93,13 +106,9 @@ class OpensearchPackageInstaller(PackageInstaller):
                             LOG.info("Installing OpenSearch plugin %s", plugin)
 
                             def try_install():
-                                opts = java_proxy_cli_args() + [
-                                    "-Djavax.net.ssl.trustStore=/home/viren/mitmproxycacert.jks",
-                                    "-Djavax.net.ssl.keyStorePassword=localstack",
-                                ]
                                 output = run(
                                     [plugin_binary, "install", "-b", plugin],
-                                    env_vars={"CLI_JAVA_OPTS": " ".join(opts)},
+                                    env_vars={"OPENSEARCH_JAVA_OPTS": " ".join(java_opts)},
                                 )
                                 LOG.debug("Plugin installation output: %s", output)
 
@@ -249,6 +258,16 @@ class ElasticsearchPackageInstaller(PackageInstaller):
                 mkdir(dir_path)
                 chmod_r(dir_path, 0o777)
 
+            # Determine network configuration to use for plugin downloads
+            sys_props = {
+                **java_system_properties_proxy(),
+                **java_system_properties_ssl(
+                    os.path.join(install_dir, "jdk", "bin", "keytool"),
+                    {"JAVA_HOME": os.path.join(install_dir, "jdk")},
+                ),
+            }
+            java_opts = system_properties_to_cli_args(sys_props)
+
             # install default plugins
             for plugin in ELASTICSEARCH_PLUGIN_LIST:
                 plugin_binary = os.path.join(install_dir, "bin", "elasticsearch-plugin")
@@ -257,13 +276,9 @@ class ElasticsearchPackageInstaller(PackageInstaller):
                     LOG.info("Installing Elasticsearch plugin %s", plugin)
 
                     def try_install():
-                        opts = java_proxy_cli_args() + [
-                            "-Djavax.net.ssl.trustStore=/home/viren/mitmproxycacert.jks",
-                            "-Djavax.net.ssl.keyStorePassword=localstack",
-                        ]
                         output = run(
                             [plugin_binary, "install", "-b", plugin],
-                            env_vars={"CLI_JAVA_OPTS": " ".join(opts)},
+                            env_vars={"ES_JAVA_OPTS": " ".join(java_opts)},
                         )
                         LOG.debug("Plugin installation output: %s", output)
 
