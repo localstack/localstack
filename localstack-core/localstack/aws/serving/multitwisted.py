@@ -55,14 +55,14 @@ class ServiceWsgiApp:
 
     def _invoke_orjson(self, payload: bytes):
         req = orjson.loads(payload)
-        context = JsonContext(**req["context"], request=fake_req)
-        context.service = FakeService(**context.service)
-        context.operation = FakeOperation(**context.operation)
+        # context = JsonContext(**req["context"], request=fake_req)
+        # context.service = FakeService(**context.service)
+        # context.operation = FakeOperation(**context.operation)
 
-        instance = req["instance"]
-        handler = self._dispatch_table[context.operation.name]
+        # instance = req["instance"]
+        # handler = self._dispatch_table[context.operation.name]
         try:
-            response = {"response": handler(context, instance)}
+            response = {"response": {}}
         except ServiceException as e:
             # we could serialize something somewhat here?
             response = {"error": e.to_dict()}
