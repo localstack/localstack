@@ -1,12 +1,10 @@
 import asyncio
 import dataclasses
 import inspect
-import json
 import logging
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
 import nats
-import orjson
 from botocore import xform_name
 from botocore.model import ServiceModel
 
@@ -219,8 +217,8 @@ class Skeleton:
     ) -> Response:
         loop = context._loop
 
-        if not self._nats_conn:
-            self._get_client(loop)
+        # if not self._nats_conn:
+        #     self._get_client(loop)
 
         operation = context.operation
         # req = dill.dumps({
@@ -228,20 +226,26 @@ class Skeleton:
         #     "context": _copy_context(context),
         #     "instance": instance
         # })
-        req = orjson.dumps(
-            {
-                "context": _copy_context_json(context),
-                "instance": instance,
-            }
-        )
-        # result = {'MessageId': 'cfcd8be4-7d9e-42c4-965f-ada0d77c3779', 'MD5OfMessageBody': '99914b932bd37a50b983c5e7c90ae93b', 'MD5OfMessageAttributes': None, 'SequenceNumber': None, 'MD5OfMessageSystemAttributes': None}
+        # req = orjson.dumps(
+        #     {
+        #         "context": _copy_context_json(context),
+        #         "instance": instance,
+        #     }
+        # )
+        result = {
+            "MessageId": "cfcd8be4-7d9e-42c4-965f-ada0d77c3779",
+            "MD5OfMessageBody": "99914b932bd37a50b983c5e7c90ae93b",
+            "MD5OfMessageAttributes": None,
+            "SequenceNumber": None,
+            "MD5OfMessageSystemAttributes": None,
+        }
         # req = json.dumps({"op_name": operation.name, "payload": instance}).encode("utf-8")
         # coro = self._nats_conn.request("services.sqs", b"", timeout=0.5)
-        subject = f"services.sqs.{context.account_id}"
+        # subject = f"services.sqs.{context.account_id}"
         # print(f"{subject=}")
-        coro = self._nats_conn.request(subject, req, timeout=0.5)
-        response = asyncio.run_coroutine_threadsafe(coro, loop).result()
-        result = json.loads(response.data)
+        # coro = self._nats_conn.request(subject, req, timeout=0.5)
+        # response = asyncio.run_coroutine_threadsafe(coro, loop).result()
+        # result = json.loads(response.data)
 
         # handler = self.dispatch_table[operation.name]
         # # Call the appropriate handler

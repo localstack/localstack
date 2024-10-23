@@ -147,9 +147,9 @@ def run_sqs_service_in_process(stop_event: mp.Event, **kwargs):
         nc = await nats.connect("nats://localhost:4222")
 
         async def invoke(msg):
-            # response = await loop.run_in_executor(executor, _invoke_orjson, msg.data)
+            response = await loop.run_in_executor(executor, _invoke_orjson, msg.data)
             # response = _invoke_dill(msg.data)
-            response = _invoke_orjson(msg.data)
+            # response = _invoke_orjson(msg.data)
 
             await msg.respond(response)
 
@@ -193,6 +193,7 @@ def create_mixctl_load_balancer(_start_port: int, num_ports: int) -> ShellComman
     mixctl_cfg = base_mixctl_cfg + "".join(
         [f"    - 127.0.0.1:{_port}\n" for _port in range(_start_port, _start_port + num_ports)]
     )
+    print(mixctl_cfg)
     tmp_path = new_tmp_file(suffix="mixctl-cfg")
     with open(tmp_path, "w") as fp:
         fp.write(mixctl_cfg)
@@ -211,12 +212,13 @@ if __name__ == "__main__":
     processes = []
     threads = []
     ev = mp.Event()
-    proc_amount = 8
+    proc_amount = 15
     account_ids = [
         "000000000000",
         "000000000001",
         "000000000002",
     ]
+
     if is_macos:
         start_port = 4567
     else:
@@ -231,31 +233,31 @@ if __name__ == "__main__":
         nats.stop()
         exit()
 
-    for i in range(proc_amount):
-        proc_port = start_port + i if is_macos else start_port
-        p = mp.Process(target=run_twisted_in_process, args=(ev, proc_port))
-        processes.append(p)
+    # for i in range(proc_amount):
+    #     proc_port = start_port + i if is_macos else start_port
+    #     p = mp.Process(target=run_twisted_in_process, args=(ev, proc_port))
+    #     processes.append(p)
 
     # for _ in range(3):
-    #     service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
-    #     processes.append(service_p)
+    service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
+    processes.append(service_p)
     # Account Id sharding per process
-    for acc_id in account_ids:
-        service_p = mp.Process(
-            target=run_sqs_service_in_process, args=(ev,), kwargs={"account_id": acc_id}
-        )
-        processes.append(service_p)
+    # for acc_id in account_ids:
+    #     service_p = mp.Process(
+    #         target=run_sqs_service_in_process, args=(ev,), kwargs={"account_id": acc_id}
+    #     )
+    #     processes.append(service_p)
 
-    if is_macos:
-        mixctl = create_mixctl_load_balancer(start_port, proc_amount)
-        threads.append(mixctl)
-        mixctl.start()
-        try:
-            wait_for_port_open(4566)
-        except Exception:
-            nats.stop()
-            mixctl.stop()
-            exit()
+    # if is_macos:
+    #     mixctl = create_mixctl_load_balancer(start_port, proc_amount)
+    #     threads.append(mixctl)
+    #     mixctl.start()
+    #     try:
+    #         wait_for_port_open(4566)
+    #     except Exception:
+    #         nats.stop()
+    #         mixctl.stop()
+    #         exit()
 
     try:
         for p in processes:
