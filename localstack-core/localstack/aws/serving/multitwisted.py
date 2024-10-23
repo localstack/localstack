@@ -212,17 +212,8 @@ if __name__ == "__main__":
     processes = []
     threads = []
     ev = mp.Event()
-    proc_amount = 15
-    account_ids = [
-        "000000000000",
-        "000000000001",
-        "000000000002",
-    ]
-
-    if is_macos:
-        start_port = 4567
-    else:
-        start_port = 4566
+    proc_amount = 5
+    service_amount = 1
 
     nats = create_nats_server()
     threads.append(nats)
@@ -233,31 +224,43 @@ if __name__ == "__main__":
         nats.stop()
         exit()
 
+    if is_macos:
+        start_port = 4567
+    else:
+        start_port = 4566
+
+    # start Twisted Processes
     # for i in range(proc_amount):
     #     proc_port = start_port + i if is_macos else start_port
     #     p = mp.Process(target=run_twisted_in_process, args=(ev, proc_port))
     #     processes.append(p)
 
-    # for _ in range(3):
-    service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
-    processes.append(service_p)
+    for _ in range(service_amount):
+        service_p = mp.Process(target=run_sqs_service_in_process, args=(ev,))
+        processes.append(service_p)
+
     # Account Id sharding per process
+    # account_ids = [
+    #     "000000000000",
+    #     "000000000001",
+    #     "000000000002",
+    # ]
     # for acc_id in account_ids:
     #     service_p = mp.Process(
     #         target=run_sqs_service_in_process, args=(ev,), kwargs={"account_id": acc_id}
     #     )
     #     processes.append(service_p)
 
-    # if is_macos:
-    #     mixctl = create_mixctl_load_balancer(start_port, proc_amount)
-    #     threads.append(mixctl)
-    #     mixctl.start()
-    #     try:
-    #         wait_for_port_open(4566)
-    #     except Exception:
-    #         nats.stop()
-    #         mixctl.stop()
-    #         exit()
+    if is_macos:
+        mixctl = create_mixctl_load_balancer(start_port, proc_amount)
+        threads.append(mixctl)
+        mixctl.start()
+        try:
+            wait_for_port_open(4566)
+        except Exception:
+            nats.stop()
+            mixctl.stop()
+            exit()
 
     try:
         for p in processes:
