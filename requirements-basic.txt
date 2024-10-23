@@ -32,7 +32,7 @@ mdurl==0.1.2
     # via markdown-it-py
 packaging==24.1
     # via build
-plux==1.11.2
+plux==1.12.0
     # via localstack-core (pyproject.toml)
 psutil==6.1.0
     # via localstack-core (pyproject.toml)
@@ -48,7 +48,7 @@ pyyaml==6.0.2
     # via localstack-core (pyproject.toml)
 requests==2.32.3
     # via localstack-core (pyproject.toml)
-rich==13.9.2
+rich==13.9.3
     # via localstack-core (pyproject.toml)
 semver==3.0.2
     # via localstack-core (pyproject.toml)
@@ -56,6 +56,3 @@ tailer==0.4.1
     # via localstack-core (pyproject.toml)
 urllib3==2.2.3
     # via requests
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools

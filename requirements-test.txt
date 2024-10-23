@@ -35,7 +35,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==38.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.163.0
+aws-cdk-lib==2.163.1
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.91.0
     # via
@@ -277,7 +277,7 @@ pluggy==1.5.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest
-plux==1.11.2
+plux==1.12.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -385,11 +385,11 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.9.2
+rich==13.9.3
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.2
+rolo==0.7.3
     # via localstack-core
 rpds-py==0.20.0
     # via
