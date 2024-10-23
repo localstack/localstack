@@ -27,18 +27,12 @@ def java_system_properties_proxy() -> dict[str, str]:
     props = {}
 
     for scheme, default_port, proxy_url in [
-        ("http", "80", config.OUTBOUND_HTTP_PROXY),
-        ("https", "443", config.OUTBOUND_HTTPS_PROXY),
+        ("http", 80, config.OUTBOUND_HTTP_PROXY),
+        ("https", 443, config.OUTBOUND_HTTPS_PROXY),
     ]:
         if proxy_url:
             parsed_url = urlparse(proxy_url)
-
-            port: int | None = parsed_url.port
-            if port is None:
-                if scheme == "https":
-                    port = 443
-                else:
-                    port = 80
+            port = parsed_url.port or default_port
 
             props[f"{scheme}.proxyHost"] = parsed_url.hostname
             props[f"{scheme}.proxyPort"] = str(port)
