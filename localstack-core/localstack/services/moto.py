@@ -108,12 +108,17 @@ def dispatch_to_moto(context: RequestContext) -> Response:
     service = context.service
     request = context.request
 
+    # Werkzeug might have an issue (to be determined where the responsibility lies) with proxied requests where the
+    # HTTP location is a full URI and not only a path.
+    # We need to use the full_raw_url as moto does some path decoding (in S3 for example)
+    full_raw_path = get_full_raw_path(request)
+    # remove the query string from the full path to do the matching of the request
+    raw_path_only = full_raw_path.split("?")[0]
     # this is where we skip the HTTP roundtrip between the moto server and the boto client
-    dispatch = get_dispatcher(service.service_name, request.path)
+    dispatch = get_dispatcher(service.service_name, raw_path_only)
     try:
-        # we use the full_raw_url as moto might do some path decoding (in S3 for example)
         raw_url = get_raw_current_url(
-            request.scheme, request.host, request.root_path, get_full_raw_path(request)
+            request.scheme, request.host, request.root_path, full_raw_path
         )
         response = dispatch(request, raw_url, request.headers)
         if not response:

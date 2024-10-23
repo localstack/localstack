@@ -825,7 +825,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
-    "recorded-date": "09-04-2024, 07:34:20",
+    "recorded-date": "12-10-2024, 10:46:17",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -846,7 +846,7 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "fnDynamoDBEventSourceLambdaDynamodbSourceStacktable153BBA79064FDF1D",
-            "PhysicalResourceId": "<uuid:1>",
+            "PhysicalResourceId": "<resource:6>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::EventSourceMapping",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
@@ -882,7 +882,7 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "table8235A42E",
-            "PhysicalResourceId": "<resource:6>",
+            "PhysicalResourceId": "<resource:7>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::DynamoDB::Table",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
@@ -912,7 +912,7 @@
                     "dynamodb:GetShardIterator"
                   ],
                   "Effect": "Allow",
-                  "Resource": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>"
+                  "Resource": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:7>/stream/<resource:2>"
                 }
               ],
               "Version": "2012-10-17"
@@ -949,7 +949,7 @@
           },
           "MemorySize": 128,
           "PackageType": "Zip",
-          "RevisionId": "<uuid:2>",
+          "RevisionId": "<uuid:1>",
           "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
           "RuntimeVersionConfig": {
@@ -982,7 +982,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:7>/stream/<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:6>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
@@ -995,7 +996,7 @@
         "State": "Enabled",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:1>",
+        "UUID": "<resource:6>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1018,7 +1019,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:7>/stream/<resource:2>",
           "LatestStreamLabel": "<resource:2>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -1029,9 +1030,9 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>",
-          "TableId": "<uuid:3>",
-          "TableName": "<resource:6>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:7>",
+          "TableId": "<uuid:2>",
+          "TableName": "<resource:7>",
           "TableSizeBytes": 0,
           "TableStatus": "ACTIVE"
         },
@@ -1057,11 +1058,11 @@
               "ShardId": "shard-id"
             }
           ],
-          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:7>/stream/<resource:2>",
           "StreamLabel": "<resource:2>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
-          "TableName": "<resource:6>"
+          "TableName": "<resource:7>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1122,7 +1123,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
-    "recorded-date": "09-04-2024, 07:37:55",
+    "recorded-date": "12-10-2024, 10:52:28",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -1143,7 +1144,7 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "fnKinesisEventSourceLambdaKinesisSourceStackstream996A3395ED86A30E",
-            "PhysicalResourceId": "<uuid:1>",
+            "PhysicalResourceId": "<resource:6>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::EventSourceMapping",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
@@ -1250,7 +1251,7 @@
           },
           "MemorySize": 128,
           "PackageType": "Zip",
-          "RevisionId": "<uuid:2>",
+          "RevisionId": "<uuid:1>",
           "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
           "RuntimeVersionConfig": {
@@ -1284,6 +1285,7 @@
           "OnFailure": {}
         },
         "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:6>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
@@ -1296,7 +1298,7 @@
         "State": "Enabled",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:1>",
+        "UUID": "<resource:6>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1446,7 +1448,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter_update": {
-    "recorded-date": "11-04-2024, 18:29:12",
+    "recorded-date": "12-10-2024, 10:42:00",
     "recorded-content": {
       "source_mappings": {
         "EventSourceMappings": [
@@ -1457,6 +1459,7 @@
               "OnFailure": {}
             },
             "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
+            "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:2>",
             "FilterCriteria": {
               "Filters": [
                 {
@@ -1468,7 +1471,7 @@
                 }
               ]
             },
-            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
             "FunctionResponseTypes": [],
             "LastModified": "datetime",
             "LastProcessingResult": "No records processed",
@@ -1480,7 +1483,7 @@
             "State": "Enabled",
             "StateTransitionReason": "User action",
             "TumblingWindowInSeconds": 0,
-            "UUID": "<uuid:1>"
+            "UUID": "<resource:2>"
           }
         ],
         "ResponseMetadata": {
@@ -1497,6 +1500,7 @@
               "OnFailure": {}
             },
             "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
+            "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:2>",
             "FilterCriteria": {
               "Filters": [
                 {
@@ -1508,7 +1512,7 @@
                 }
               ]
             },
-            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
             "FunctionResponseTypes": [],
             "LastModified": "datetime",
             "LastProcessingResult": "No records processed",
@@ -1520,7 +1524,7 @@
             "State": "Enabled",
             "StateTransitionReason": "User action",
             "TumblingWindowInSeconds": 0,
-            "UUID": "<uuid:1>"
+            "UUID": "<resource:2>"
           }
         ],
         "ResponseMetadata": {

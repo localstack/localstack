@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -9,18 +9,23 @@ Boolean = bool
 BooleanOptional = bool
 CustomDomainCertificateArnString = str
 CustomDomainNameString = str
+Description = str
 Double = float
 DoubleOptional = float
 IdcDisplayNameString = str
 IdentityNamespaceString = str
 Integer = int
 IntegerOptional = int
+IntegrationArn = str
+IntegrationDescription = str
+IntegrationName = str
 PartnerIntegrationAccountId = str
 PartnerIntegrationClusterIdentifier = str
 PartnerIntegrationDatabaseName = str
 PartnerIntegrationPartnerName = str
 PartnerIntegrationStatusMessage = str
 RedshiftIdcApplicationName = str
+S3KeyPrefixValue = str
 SensitiveString = str
 String = str
 
@@ -68,6 +73,13 @@ class DataShareStatusForProducer(StrEnum):
     PENDING_AUTHORIZATION = "PENDING_AUTHORIZATION"
     DEAUTHORIZED = "DEAUTHORIZED"
     REJECTED = "REJECTED"
+
+
+class DescribeIntegrationsFilterName(StrEnum):
+    integration_arn = "integration-arn"
+    source_arn = "source-arn"
+    source_types = "source-types"
+    status = "status"
 
 
 class ImpactRankingType(StrEnum):
@@ -544,8 +556,44 @@ class InsufficientS3BucketPolicyFault(ServiceException):
     status_code: int = 400
 
 
+class IntegrationAlreadyExistsFault(ServiceException):
+    code: str = "IntegrationAlreadyExistsFault"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class IntegrationConflictOperationFault(ServiceException):
+    code: str = "IntegrationConflictOperationFault"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class IntegrationConflictStateFault(ServiceException):
+    code: str = "IntegrationConflictStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
 class IntegrationNotFoundFault(ServiceException):
     code: str = "IntegrationNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 404
+
+
+class IntegrationQuotaExceededFault(ServiceException):
+    code: str = "IntegrationQuotaExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class IntegrationSourceNotFoundFault(ServiceException):
+    code: str = "IntegrationSourceNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 404
+
+
+class IntegrationTargetNotFoundFault(ServiceException):
+    code: str = "IntegrationTargetNotFoundFault"
     sender_fault: bool = True
     status_code: int = 404
 
@@ -1909,6 +1957,19 @@ class CreateHsmConfigurationResult(TypedDict, total=False):
     HsmConfiguration: Optional[HsmConfiguration]
 
 
+EncryptionContextMap = Dict[String, String]
+
+
+class CreateIntegrationMessage(ServiceRequest):
+    SourceArn: String
+    TargetArn: String
+    IntegrationName: IntegrationName
+    KMSKeyId: Optional[String]
+    TagList: Optional[TagList]
+    AdditionalEncryptionContext: Optional[EncryptionContextMap]
+    Description: Optional[IntegrationDescription]
+
+
 class LakeFormationQuery(TypedDict, total=False):
     Authorization: ServiceAuthorization
 
@@ -2132,6 +2193,10 @@ class DeleteHsmClientCertificateMessage(ServiceRequest):
 
 class DeleteHsmConfigurationMessage(ServiceRequest):
     HsmConfigurationIdentifier: String
+
+
+class DeleteIntegrationMessage(ServiceRequest):
+    IntegrationArn: IntegrationArn
 
 
 class DeleteRedshiftIdcApplicationMessage(ServiceRequest):
@@ -2377,6 +2442,24 @@ class DescribeInboundIntegrationsMessage(ServiceRequest):
     Marker: Optional[String]
 
 
+DescribeIntegrationsFilterValueList = List[String]
+
+
+class DescribeIntegrationsFilter(TypedDict, total=False):
+    Name: DescribeIntegrationsFilterName
+    Values: DescribeIntegrationsFilterValueList
+
+
+DescribeIntegrationsFilterList = List[DescribeIntegrationsFilter]
+
+
+class DescribeIntegrationsMessage(ServiceRequest):
+    IntegrationArn: Optional[IntegrationArn]
+    MaxRecords: Optional[IntegerOptional]
+    Marker: Optional[String]
+    Filters: Optional[DescribeIntegrationsFilterList]
+
+
 class DescribeLoggingStatusMessage(ServiceRequest):
     ClusterIdentifier: String
 
@@ -2598,7 +2681,7 @@ LogTypeList = List[String]
 class EnableLoggingMessage(ServiceRequest):
     ClusterIdentifier: String
     BucketName: Optional[String]
-    S3KeyPrefix: Optional[String]
+    S3KeyPrefix: Optional[S3KeyPrefixValue]
     LogDestinationType: Optional[LogDestinationType]
     LogExports: Optional[LogTypeList]
 
@@ -2834,6 +2917,28 @@ class InboundIntegrationsMessage(TypedDict, total=False):
     InboundIntegrations: Optional[InboundIntegrationList]
 
 
+class Integration(TypedDict, total=False):
+    IntegrationArn: Optional[String]
+    IntegrationName: Optional[IntegrationName]
+    SourceArn: Optional[String]
+    TargetArn: Optional[String]
+    Status: Optional[ZeroETLIntegrationStatus]
+    Errors: Optional[IntegrationErrorList]
+    CreateTime: Optional[TStamp]
+    Description: Optional[Description]
+    KMSKeyId: Optional[String]
+    AdditionalEncryptionContext: Optional[EncryptionContextMap]
+    Tags: Optional[TagList]
+
+
+IntegrationList = List[Integration]
+
+
+class IntegrationsMessage(TypedDict, total=False):
+    Marker: Optional[String]
+    Integrations: Optional[IntegrationList]
+
+
 class ListRecommendationsMessage(ServiceRequest):
     ClusterIdentifier: Optional[String]
     NamespaceArn: Optional[String]
@@ -2885,7 +2990,7 @@ class ListRecommendationsResult(TypedDict, total=False):
 class LoggingStatus(TypedDict, total=False):
     LoggingEnabled: Optional[Boolean]
     BucketName: Optional[String]
-    S3KeyPrefix: Optional[String]
+    S3KeyPrefix: Optional[S3KeyPrefixValue]
     LastSuccessfulDeliveryTime: Optional[TStamp]
     LastFailureTime: Optional[TStamp]
     LastFailureMessage: Optional[String]
@@ -3048,6 +3153,12 @@ class ModifyEventSubscriptionMessage(ServiceRequest):
 
 class ModifyEventSubscriptionResult(TypedDict, total=False):
     EventSubscription: Optional[EventSubscription]
+
+
+class ModifyIntegrationMessage(ServiceRequest):
+    IntegrationArn: IntegrationArn
+    Description: Optional[IntegrationDescription]
+    IntegrationName: Optional[IntegrationName]
 
 
 class ModifyRedshiftIdcApplicationMessage(ServiceRequest):
@@ -3717,6 +3828,21 @@ class RedshiftApi:
     ) -> CreateHsmConfigurationResult:
         raise NotImplementedError
 
+    @handler("CreateIntegration")
+    def create_integration(
+        self,
+        context: RequestContext,
+        source_arn: String,
+        target_arn: String,
+        integration_name: IntegrationName,
+        kms_key_id: String = None,
+        tag_list: TagList = None,
+        additional_encryption_context: EncryptionContextMap = None,
+        description: IntegrationDescription = None,
+        **kwargs,
+    ) -> Integration:
+        raise NotImplementedError
+
     @handler("CreateRedshiftIdcApplication")
     def create_redshift_idc_application(
         self,
@@ -3881,6 +4007,12 @@ class RedshiftApi:
     def delete_hsm_configuration(
         self, context: RequestContext, hsm_configuration_identifier: String, **kwargs
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteIntegration")
+    def delete_integration(
+        self, context: RequestContext, integration_arn: IntegrationArn, **kwargs
+    ) -> Integration:
         raise NotImplementedError
 
     @handler("DeletePartner")
@@ -4226,6 +4358,18 @@ class RedshiftApi:
     ) -> InboundIntegrationsMessage:
         raise NotImplementedError
 
+    @handler("DescribeIntegrations")
+    def describe_integrations(
+        self,
+        context: RequestContext,
+        integration_arn: IntegrationArn = None,
+        max_records: IntegerOptional = None,
+        marker: String = None,
+        filters: DescribeIntegrationsFilterList = None,
+        **kwargs,
+    ) -> IntegrationsMessage:
+        raise NotImplementedError
+
     @handler("DescribeLoggingStatus")
     def describe_logging_status(
         self, context: RequestContext, cluster_identifier: String, **kwargs
@@ -4441,7 +4585,7 @@ class RedshiftApi:
         context: RequestContext,
         cluster_identifier: String,
         bucket_name: String = None,
-        s3_key_prefix: String = None,
+        s3_key_prefix: S3KeyPrefixValue = None,
         log_destination_type: LogDestinationType = None,
         log_exports: LogTypeList = None,
         **kwargs,
@@ -4702,6 +4846,17 @@ class RedshiftApi:
         enabled: BooleanOptional = None,
         **kwargs,
     ) -> ModifyEventSubscriptionResult:
+        raise NotImplementedError
+
+    @handler("ModifyIntegration")
+    def modify_integration(
+        self,
+        context: RequestContext,
+        integration_arn: IntegrationArn,
+        description: IntegrationDescription = None,
+        integration_name: IntegrationName = None,
+        **kwargs,
+    ) -> Integration:
         raise NotImplementedError
 
     @handler("ModifyRedshiftIdcApplication")

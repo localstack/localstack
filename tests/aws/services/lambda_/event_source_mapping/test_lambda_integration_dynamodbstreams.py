@@ -6,6 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
+from localstack import config
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
@@ -65,6 +66,11 @@ def get_lambda_logs_event(aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    # Only match EventSourceMappingArn field if ESM v2 and above
+    paths=["$..EventSourceMappingArn"],
+)
+@markers.snapshot.skip_snapshot_verify(
     condition=is_v2_esm,
     paths=[
         # Lifecycle updates not yet implemented in ESM v2
@@ -82,6 +88,14 @@ def get_lambda_logs_event(aws_client):
         "$..TableDescription.TableStatus",
         "$..Records..dynamodb.SizeBytes",
         "$..Records..eventVersion",
+    ],
+)
+@markers.snapshot.skip_snapshot_verify(
+    # DynamoDB-Local returns an UUID for the event ID even though AWS returns something
+    # like 'ab0ed3713569f4655f353e5ef61a88c4'
+    condition=lambda: config.DDB_STREAMS_PROVIDER_V2,
+    paths=[
+        "$..eventID",
     ],
 )
 class TestDynamoDBEventSourceMapping:
@@ -979,7 +993,6 @@ class TestDynamoDBEventSourceMapping:
     ):
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
-        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
 
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"

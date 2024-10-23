@@ -1,0 +1,155 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[EMPTY_STRING]": {
+    "recorded-date": "09-10-2024, 08:51:57",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [
+          {
+            "code": "SCHEMA_VALIDATION_FAILED",
+            "message": "Definition must be a valid JSON object",
+            "severity": "ERROR"
+          }
+        ],
+        "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[NOT_A_DEF]": {
+    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [
+          {
+            "code": "INVALID_JSON_DESCRIPTION",
+            "location": "[Source: (String)\"not a definition\"; line: 1, column: 4]",
+            "message": "Unrecognized token 'not': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (String)\"not a definition\"; line: 1, column: 4]",
+            "severity": "ERROR"
+          }
+        ],
+        "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[EMPTY_DICT]": {
+    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [
+          {
+            "code": "SCHEMA_VALIDATION_FAILED",
+            "location": "/",
+            "message": "These fields are required: [States, StartAt]",
+            "severity": "ERROR"
+          }
+        ],
+        "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[VALID_BASE_PASS]": {
+    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [],
+        "result": "OK",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[INVALID_BASE_NO_STARTAT]": {
+    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [
+          {
+            "code": "SCHEMA_VALIDATION_FAILED",
+            "location": "/",
+            "message": "These fields are required: [StartAt]",
+            "severity": "ERROR"
+          }
+        ],
+        "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[VALID_BASE_PASS]": {
+    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [],
+        "result": "OK",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[INVALID_BASE_NO_STARTAT]": {
+    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [
+          {
+            "code": "SCHEMA_VALIDATION_FAILED",
+            "location": "/",
+            "message": "These fields are required: [StartAt]",
+            "severity": "ERROR"
+          }
+        ],
+        "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[ILLEGAL_WFTT]": {
+    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [
+          {
+            "code": "SCHEMA_VALIDATION_FAILED",
+            "location": "/States/SendMessageWithWait/Resource",
+            "message": "Express state machine does not support '.waitForTaskToken' service integration ",
+            "severity": "ERROR"
+          }
+        ],
+        "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -86,20 +86,24 @@ class PackageInstaller(abc.ABC):
             with self.install_lock:
                 # Skip the installation if it's already installed
                 if not self.is_installed():
-                    LOG.debug("Starting installation of %s...", self.name)
+                    LOG.debug("Starting installation of %s %s...", self.name, self.version)
                     self._prepare_installation(target)
                     self._install(target)
                     self._post_process(target)
-                    LOG.debug("Installation of %s finished.", self.name)
+                    LOG.debug("Installation of %s %s finished.", self.name, self.version)
                 else:
-                    LOG.debug("Installation of %s skipped (already installed).", self.name)
+                    LOG.debug(
+                        "Installation of %s %s skipped (already installed).",
+                        self.name,
+                        self.version,
+                    )
                     if not self._setup_for_target[target]:
                         LOG.debug("Performing runtime setup for already installed package.")
                         self._setup_existing_installation(target)
         except PackageException as e:
             raise e
         except Exception as e:
-            raise PackageException(f"Installation of {self.name} failed.") from e
+            raise PackageException(f"Installation of {self.name} {self.version} failed.") from e
 
     def is_installed(self) -> bool:
         """

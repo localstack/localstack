@@ -224,7 +224,7 @@ def _apply_substitutions(definition: str, substitutions: dict[str, str]) -> str:
     result = definition
     for token in tokens:
         raw_token = token[2:-1]  # strip ${ and }
-        if raw_token not in substitutions.keys():
+        if raw_token not in substitutions:
             raise
         result = result.replace(token, substitutions[raw_token])
 

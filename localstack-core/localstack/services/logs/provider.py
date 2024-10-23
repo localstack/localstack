@@ -81,9 +81,10 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
                         value = float(value) if is_number(value) else 1
                         data = [{"MetricName": tf["metricName"], "Value": value}]
                         try:
-                            self.cw_client.put_metric_data(
-                                Namespace=tf["metricNamespace"], MetricData=data
-                            )
+                            client = connect_to(
+                                aws_access_key_id=context.account_id, region_name=context.region
+                            ).cloudwatch
+                            client.put_metric_data(Namespace=tf["metricNamespace"], MetricData=data)
                         except Exception as e:
                             LOG.info(
                                 "Unable to put metric data for matching CloudWatch log events", e

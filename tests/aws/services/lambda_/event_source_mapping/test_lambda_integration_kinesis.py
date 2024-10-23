@@ -35,6 +35,7 @@ TEST_LAMBDA_KINESIS_LOG = FUNCTIONS_PATH / "kinesis_log.py"
 TEST_LAMBDA_KINESIS_BATCH_ITEM_FAILURE = (
     FUNCTIONS_PATH / "lambda_report_batch_item_failures_kinesis.py"
 )
+TEST_LAMBDA_PROVIDED_BOOTSTRAP_EMPTY = FUNCTIONS_PATH / "provided_bootstrap_empty"
 
 
 @pytest.fixture(autouse=True)
@@ -64,6 +65,7 @@ def _snapshot_transformers(snapshot):
         "$..BisectBatchOnFunctionError",
         "$..DestinationConfig",
         "$..LastProcessingResult",
+        "$..EventSourceMappingArn",
         "$..MaximumBatchingWindowInSeconds",
         "$..MaximumRecordAgeInSeconds",
         "$..ResponseMetadata.HTTPStatusCode",
@@ -71,6 +73,11 @@ def _snapshot_transformers(snapshot):
         "$..Topics",
         "$..TumblingWindowInSeconds",
     ],
+)
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_old_esm,
+    # Only match EventSourceMappingArn field if ESM v2 and above
+    paths=["$..EventSourceMappingArn"],
 )
 class TestKinesisSource:
     @markers.aws.validated
@@ -893,6 +900,7 @@ class TestKinesisSource:
         "set_lambda_response",
         [
             # Successes
+            "",
             [],
             None,
             {},
@@ -901,6 +909,7 @@ class TestKinesisSource:
         ],
         ids=[
             # Successes
+            "empty_string_success",
             "empty_list_success",
             "null_success",
             "empty_dict_success",
@@ -970,6 +979,71 @@ class TestKinesisSource:
         invocation_events = retry(_verify_messages_received, retries=30, sleep=5)
         snapshot.match("kinesis_events", invocation_events)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.KinesisBatchInfo.shardId",
+        ],
+    )
+    def test_kinesis_empty_provided(
+        self,
+        create_lambda_function,
+        kinesis_create_stream,
+        lambda_su_role,
+        wait_for_stream_ready,
+        cleanups,
+        snapshot,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-foobar-{short_uid()}"
+        record_data = "hello"
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PROVIDED_BOOTSTRAP_EMPTY,
+            func_name=function_name,
+            runtime=Runtime.provided_al2023,
+            role=lambda_su_role,
+        )
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name=stream_name)
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            BatchSize=1,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=2,
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        aws_client.kinesis.put_record(
+            Data=record_data,
+            PartitionKey="test",
+            StreamName=stream_name,
+        )
+
+        def _verify_invoke():
+            log_events = aws_client.logs.filter_log_events(
+                logGroupName=f"/aws/lambda/{function_name}",
+            )["events"]
+            assert len([e["message"] for e in log_events if e["message"].startswith("REPORT")]) == 1
+
+        retry(_verify_invoke, retries=30, sleep=5)
+
+        get_esm_result = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
+        snapshot.match("get_esm_result", get_esm_result)
+
 
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
@@ -982,9 +1056,15 @@ class TestKinesisEventFiltering:
         ],
     )
     @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_esm,
+        # Only match EventSourceMappingArn field if ESM v2 and above
+        paths=["$..EventSourceMappingArn"],
+    )
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.shardId",
             "$..Messages..Body.KinesisBatchInfo.streamArn",
+            "$..EventSourceMappingArn",
         ],
     )
     @markers.aws.validated

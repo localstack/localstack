@@ -94,7 +94,7 @@ class CrossRegionAttribute:
     def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
         self._check_region_store_association(obj)
 
-        if self.name not in obj._global.keys():
+        if self.name not in obj._global:
             if isinstance(self.default, Callable):
                 obj._global[self.name] = self.default()
             else:
@@ -135,7 +135,7 @@ class CrossAccountAttribute:
     def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
         self._check_account_store_association(obj)
 
-        if self.name not in obj._universal.keys():
+        if self.name not in obj._universal:
             if isinstance(self.default, Callable):
                 obj._universal[self.name] = self.default()
             else:

@@ -1322,6 +1322,52 @@ class TestKMS:
             )
         snapshot.match("response-error", e.value.response)
 
+    @markers.aws.validated
+    def test_derive_shared_secret(self, kms_create_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("SharedSecret", reference_replacement=False)
+        )
+
+        # Create two keys and derive the shared secret
+        key1 = kms_create_key(KeySpec="ECC_NIST_P256", KeyUsage="KEY_AGREEMENT")
+
+        key2 = kms_create_key(KeySpec="ECC_NIST_P256", KeyUsage="KEY_AGREEMENT")
+        pub_key2 = aws_client.kms.get_public_key(KeyId=key2["KeyId"])["PublicKey"]
+
+        secret = aws_client.kms.derive_shared_secret(
+            KeyId=key1["KeyId"], KeyAgreementAlgorithm="ECDH", PublicKey=pub_key2
+        )
+
+        snapshot.match("response", secret)
+
+        # Create a key with invalid key usage
+        key3 = kms_create_key(KeySpec="ECC_NIST_P256", KeyUsage="SIGN_VERIFY")
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.derive_shared_secret(
+                KeyId=key3["KeyId"], KeyAgreementAlgorithm="ECDH", PublicKey=pub_key2
+            )
+        snapshot.match("response-invalid-key-usage", e.value.response)
+
+        # Create a key with invalid key spec
+        with pytest.raises(ClientError) as e:
+            kms_create_key(KeySpec="RSA_2048", KeyUsage="KEY_AGREEMENT")
+        snapshot.match("response-invalid-key-spec", e.value.response)
+
+        # Create a key with invalid key agreement algorithm
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.derive_shared_secret(
+                KeyId=key1["KeyId"], KeyAgreementAlgorithm="INVALID", PublicKey=pub_key2
+            )
+        snapshot.match("response-invalid-key-agreement-algo", e.value.response)
+
+        # Create a symmetric and try to derive the shared secret
+        key4 = kms_create_key()
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.derive_shared_secret(
+                KeyId=key4["KeyId"], KeyAgreementAlgorithm="ECDH", PublicKey=pub_key2
+            )
+        snapshot.match("response-invalid-key", e.value.response)
+
 
 class TestKMSMultiAccounts:
     @markers.aws.needs_fixing

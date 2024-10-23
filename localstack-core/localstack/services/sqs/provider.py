@@ -624,7 +624,7 @@ class SqsDeveloperEndpoints:
         self.service = load_service("sqs-query")
         self.serializer = create_serializer(self.service)
 
-    @route("/_aws/sqs/messages")
+    @route("/_aws/sqs/messages", methods=["GET", "POST"])
     @aws_response_serializer("sqs-query", "ReceiveMessage")
     def list_messages(self, request: Request) -> ReceiveMessageResult:
         """
@@ -802,7 +802,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         """
         store = SqsProvider.get_store(account_id, region_name)
         with _STORE_LOCK:
-            if name not in store.queues.keys():
+            if name not in store.queues:
                 if is_query:
                     message = "The specified queue does not exist for this wsdl version."
                 else:
