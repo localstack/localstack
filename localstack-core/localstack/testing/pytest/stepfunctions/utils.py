@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from typing import Callable, Final, Optional
 
 from botocore.exceptions import ClientError
@@ -27,7 +26,6 @@ from localstack.aws.api.stepfunctions import (
 from localstack.services.stepfunctions.asl.eval.event.logging import is_logging_enabled_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.asl.utils.json_path import extract_json
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
@@ -37,14 +35,6 @@ LOG = logging.getLogger(__name__)
 # For EXPRESS state machines, the deletion will happen eventually (usually less than a minute).
 # Running executions may emit logs after DeleteStateMachine API is called.
 _DELETION_TIMEOUT_SECS: Final[int] = 120
-
-
-def is_legacy_provider():
-    return not is_aws_cloud() and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") == "legacy"
-
-
-def is_not_legacy_provider():
-    return not is_legacy_provider()
 
 
 def await_no_state_machines_listed(stepfunctions_client):
