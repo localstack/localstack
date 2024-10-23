@@ -437,7 +437,6 @@ class TestSqsProvider:
         snapshot.match("send_oversized_message_batch", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_message_to_standard_queue_with_empty_message_group_id(
         self, sqs_create_queue, aws_client, snapshot
     ):
