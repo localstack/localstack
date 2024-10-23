@@ -35,7 +35,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==38.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.163.0
+aws-cdk-lib==2.163.1
     # via localstack-core
 aws-sam-translator==1.91.0
     # via
@@ -53,7 +53,7 @@ boto3==1.35.44
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.35.45
+boto3-stubs==1.35.46
     # via localstack-core (pyproject.toml)
 botocore==1.35.44
     # via
@@ -64,7 +64,7 @@ botocore==1.35.44
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.35.45
+botocore-stubs==1.35.46
     # via boto3-stubs
 build==1.2.2.post1
     # via
@@ -404,7 +404,7 @@ mypy-boto3-qldb==1.35.0
     # via boto3-stubs
 mypy-boto3-qldb-session==1.35.0
     # via boto3-stubs
-mypy-boto3-rds==1.35.43
+mypy-boto3-rds==1.35.46
     # via boto3-stubs
 mypy-boto3-rds-data==1.35.28
     # via boto3-stubs
@@ -420,7 +420,7 @@ mypy-boto3-route53==1.35.4
     # via boto3-stubs
 mypy-boto3-route53resolver==1.35.38
     # via boto3-stubs
-mypy-boto3-s3==1.35.45
+mypy-boto3-s3==1.35.46
     # via boto3-stubs
 mypy-boto3-s3control==1.35.12
     # via boto3-stubs
@@ -450,7 +450,7 @@ mypy-boto3-stepfunctions==1.35.9
     # via boto3-stubs
 mypy-boto3-sts==1.35.0
     # via boto3-stubs
-mypy-boto3-timestream-query==1.35.0
+mypy-boto3-timestream-query==1.35.46
     # via boto3-stubs
 mypy-boto3-timestream-write==1.35.0
     # via boto3-stubs
@@ -502,7 +502,7 @@ pluggy==1.5.0
     #   pytest
 plumbum==1.9.0
     # via pandoc
-plux==1.11.2
+plux==1.12.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -617,11 +617,11 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.9.2
+rich==13.9.3
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.2
+rolo==0.7.3
     # via localstack-core
 rpds-py==0.20.0
     # via
