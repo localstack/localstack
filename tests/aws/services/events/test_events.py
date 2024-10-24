@@ -117,6 +117,24 @@ class TestEvents:
         snapshot.match("put-events", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_put_event_with_too_big_detail(self, snapshot, aws_client):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"payload": ["p" * (256 * 1024 - 17)]}),
+            },
+        ]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events-too-big-detail-error", e.value.response)
+
+    @markers.aws.validated
     def test_put_events_time(self, put_events_with_filter_to_sqs, snapshot):
         entries1 = [
             {
