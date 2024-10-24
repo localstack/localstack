@@ -18,10 +18,10 @@ DEFAULT_JAVA_VERSION = "11"
 
 # Supported Java LTS versions mapped with Eclipse Temurin build semvers
 JAVA_VERSIONS = {
-    "8": "8u422-b05",
-    "11": "11.0.24+8",
-    "17": "17.0.12+7",
-    "21": "21.0.4+7",
+    "8": "8u432-b06",
+    "11": "11.0.25+9",
+    "17": "17.0.13+11",
+    "21": "21.0.5+11",
 }
 
 
