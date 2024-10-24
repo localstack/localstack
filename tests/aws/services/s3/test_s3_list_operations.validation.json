@@ -2,9 +2,6 @@
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multipart_uploads_marker_common_prefixes": {
     "last_validated_date": "2023-11-12T01:24:32+00:00"
   },
-  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multipart_uploads_parameters": {
-    "last_validated_date": "2023-11-12T00:55:20+00:00"
-  },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multiparts_next_marker": {
     "last_validated_date": "2023-11-12T00:54:14+00:00"
   },
