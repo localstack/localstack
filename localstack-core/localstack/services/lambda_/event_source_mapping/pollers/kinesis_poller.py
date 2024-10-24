@@ -10,9 +10,6 @@ from localstack.aws.api.kinesis import StreamStatus
 from localstack.aws.api.pipes import (
     KinesisStreamStartPosition,
 )
-from localstack.services.lambda_.event_source_listeners.utils import (
-    has_data_filter_criteria_parsed,
-)
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
 )
@@ -200,3 +197,10 @@ class KinesisPoller(StreamPoller):
 
     def encode_data(self, parsed_data: dict) -> str:
         return base64.b64encode(json.dumps(parsed_data).encode()).decode()
+
+
+def has_data_filter_criteria_parsed(parsed_filters: list[dict]) -> bool:
+    for filter in parsed_filters:
+        if "data" in filter:
+            return True
+    return False
