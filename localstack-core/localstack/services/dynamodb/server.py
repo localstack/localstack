@@ -161,8 +161,8 @@ class DynamodbServer(Server):
 
         cmd = self._create_shell_command()
         env_vars = {
-            "DDB_LOCAL_TELEMETRY": "0",
             **dynamodblocal_installer.get_java_env_vars(),
+            "DDB_LOCAL_TELEMETRY": "0",
         }
 
         LOG.debug("Starting DynamoDB Local: %s", cmd)
