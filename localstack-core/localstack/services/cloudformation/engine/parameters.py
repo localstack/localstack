@@ -31,7 +31,7 @@ LOG = logging.getLogger(__name__)
 
 def extract_stack_parameter_declarations(template: dict) -> dict[str, ParameterDeclaration]:
     """
-    Extract and build a dict of stack parameter declarations from a CloudFormation stack templatef
+    Extract and build a dict of stack parameter declarations from a CloudFormation stack template
 
     :param template: the parsed CloudFormation stack template
     :return: a dictionary of declared parameters, mapping logical IDs to the corresponding parameter declaration
