@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import dataclasses
 import json
@@ -110,11 +111,17 @@ def create_nats_server() -> ShellCommandThread:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-w", "--worker", required=False, default=1, type=int)
+    parser.add_argument("-n", "--nats", action=argparse.BooleanOptionalAction)
+    args = parser.parse_args()
+
+    start_nats = args.nats
+    service_amount = args.worker
+
     processes = []
     threads = []
     ev = mp.Event()
-    service_amount = 1
-    start_nats = False
     if start_nats:
         nats = create_nats_server()
         threads.append(nats)
@@ -158,4 +165,4 @@ if __name__ == "__main__":
         for p in processes:
             p.join()
 
-# DISABLE_EVENTS=1 LS_LOG=warning SQS_DISABLE_CLOUDWATCH_METRICS=1 SERVICES=sqs python -m localstack.aws.serving.sqs_service
+# DISABLE_EVENTS=1 LS_LOG=warning SQS_DISABLE_CLOUDWATCH_METRICS=1 SERVICES=sqs python -m localstack.aws.serving.sqs_service -w 1
