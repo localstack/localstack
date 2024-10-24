@@ -115,8 +115,8 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             "jdk.httpserver,jdk.management,jdk.management.agent,"
             # Required by Spark and Hadoop
             "java.security.jgss,jdk.security.auth,"
-            # OpenSearch requires Thai locale for segmentation support
-            "jdk.localedata --include-locales en,th "
+            # Include required locales
+            "jdk.localedata --include-locales en "
             # Supplementary args
             "--compress 2 --strip-debug --no-header-files --no-man-pages "
             # Output directory
