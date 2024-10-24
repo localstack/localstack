@@ -1,6 +1,4 @@
-import binascii
 import logging
-import os
 import random
 import string
 import time
@@ -10,7 +8,6 @@ from threading import RLock, Timer
 from typing import Callable, Dict, Optional
 
 from localstack import config
-from localstack.aws.api.lambda_ import TracingMode
 from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.lambda_models import (
     Credentials,
@@ -28,6 +25,7 @@ from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
     is_lambda_debug_timeout_enabled_for,
 )
 from localstack.utils.strings import to_str
+from localstack.utils.xray.trace_header import TraceHeader
 
 STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
@@ -343,11 +341,22 @@ class ExecutionEnvironment:
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
         assert self.status == RuntimeStatus.RUNNING
+        # Async/event invokes might miss an aws_trace_header, then we need to create a new root trace id.
+        aws_trace_header = (
+            invocation.trace_context.get("aws_trace_header") or TraceHeader().ensure_root_exists()
+        )
+        # The Lambda RIE requires a full tracing header including Root, Parent, and Samples. Otherwise, tracing fails
+        # with the warning "Subsegment ## handler discarded due to Lambda worker still initializing"
+        aws_trace_header.ensure_sampled_exists()
+        # TODO: replace this random parent id with actual parent segment created within the Lambda provider using X-Ray
+        aws_trace_header.ensure_parent_exists()
+        # TODO: test and implement Active and PassThrough tracing and sampling decisions.
+        # TODO: implement Lambda lineage: https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
         invoke_payload = {
             "invoke-id": invocation.request_id,  # TODO: rename to request-id (requires change in lambda-init)
             "invoked-function-arn": invocation.invoked_arn,
             "payload": to_str(invocation.payload),
-            "trace-id": self._generate_trace_header(),
+            "trace-id": aws_trace_header.to_header_str(),
         }
         return self.runtime_executor.invoke(payload=invoke_payload)
 
@@ -366,39 +375,6 @@ class ExecutionEnvironment:
             RoleSessionName=role_session_name,
             DurationSeconds=43200,
         )["Credentials"]
-
-    def _generate_trace_id(self):
-        """https://docs.aws.amazon.com/xray/latest/devguide/xray-api-sendingdata.html#xray-api-traceids"""
-        # TODO: add test for start time
-        original_request_epoch = int(time.time())
-        timestamp_hex = hex(original_request_epoch)[2:]
-        version_number = "1"
-        unique_id = binascii.hexlify(os.urandom(12)).decode("utf-8")
-        return f"{version_number}-{timestamp_hex}-{unique_id}"
-
-    def _generate_trace_header(self):
-        """
-        https://docs.aws.amazon.com/lambda/latest/dg/services-xray.html
-
-        "The sampling rate is 1 request per second and 5 percent of additional requests."
-
-        Currently we implement a simpler, more predictable strategy.
-        If TracingMode is "Active", we always sample the request. (Sampled=1)
-
-        TODO: implement passive tracing
-        TODO: use xray sdk here
-        """
-        if self.function_version.config.tracing_config_mode == TracingMode.Active:
-            sampled = "1"
-        else:
-            sampled = "0"
-
-        root_trace_id = self._generate_trace_id()
-
-        parent = binascii.b2a_hex(os.urandom(8)).decode(
-            "utf-8"
-        )  # TODO: segment doesn't actually exist at the moment
-        return f"Root={root_trace_id};Parent={parent};Sampled={sampled}"
 
     def _get_execution_timeout_seconds(self) -> int:
         # Returns the timeout value in seconds to be enforced during the execution of the
