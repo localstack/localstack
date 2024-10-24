@@ -132,10 +132,14 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         return self.get_installed_dir()
 
     @property
-    def arch(self) -> str:
+    def arch(self) -> str | None:
         return (
             "x64" if get_arch() == Arch.amd64 else "aarch64" if get_arch() == Arch.arm64 else None
         )
+
+    @property
+    def os_name(self) -> str | None:
+        return "linux" if is_linux() else "mac" if is_mac_os() else None
 
     def _download_url_latest_release(self) -> str:
         """
@@ -143,7 +147,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         """
         endpoint = (
             f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?"
-            f"os=linux&architecture={self.arch}&image_type=jdk"
+            f"os={self.os_name}&architecture={self.arch}&image_type=jdk"
         )
         # Override user-agent because Adoptium API denies service to `requests` library
         response = requests.get(endpoint, headers={"user-agent": USER_AGENT_STRING}).json()
@@ -153,8 +157,6 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         """
         Return the download URL for pinned JDK build.
         """
-        os = "linux" if is_linux() else "mac" if is_mac_os() else None
-
         semver = JAVA_VERSIONS[self.version]
         tag_slug = f"jdk-{semver}"
         semver_safe = semver.replace("+", "_")
@@ -166,7 +168,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
         return (
             f"https://github.com/adoptium/temurin{self.version}-binaries/releases/download/{tag_slug}/"
-            f"OpenJDK{self.version}U-jdk_{self.arch}_{os}_hotspot_{semver_safe}.tar.gz"
+            f"OpenJDK{self.version}U-jdk_{self.arch}_{self.os_name}_hotspot_{semver_safe}.tar.gz"
         )
 
 
