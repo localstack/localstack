@@ -542,26 +542,41 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java21]": {
     "last_validated_date": "2024-04-10T09:30:28+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_create_tag_on_esm_create": {
+    "last_validated_date": "2024-10-24T14:16:05+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_create_tag_on_fn_create": {
     "last_validated_date": "2024-04-10T09:13:04+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_exceptions[event_source_mapping]": {
+    "last_validated_date": "2024-10-24T12:42:57+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_exceptions[lambda_function]": {
+    "last_validated_date": "2024-10-24T12:42:56+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle": {
     "last_validated_date": "2024-04-10T09:13:09+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle[event_source_mapping]": {
+    "last_validated_date": "2024-10-23T10:51:25+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle[lambda_function]": {
+    "last_validated_date": "2024-10-23T10:51:14+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_nonexisting_resource": {
     "last_validated_date": "2024-04-10T09:13:13+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "last_validated_date": "2024-04-10T09:22:06+00:00"
+    "last_validated_date": "2024-10-24T15:22:27+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
-    "last_validated_date": "2024-04-10T09:22:19+00:00"
+    "last_validated_date": "2024-10-24T15:22:47+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
-    "last_validated_date": "2024-04-10T09:22:10+00:00"
+    "last_validated_date": "2024-10-24T15:22:33+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_versions": {
-    "last_validated_date": "2024-04-10T09:22:13+00:00"
+    "last_validated_date": "2024-10-24T15:22:38+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
     "last_validated_date": "2024-04-10T09:16:49+00:00"
