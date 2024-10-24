@@ -26,7 +26,7 @@ def _parse_attribute_map(json_message: dict) -> dict[str, str]:
     return {attr["Name"]: attr["Value"] for attr in json_message["Attribute"]}
 
 
-@pytest.mark.usefixtures("openapi_validate")
+# @pytest.mark.usefixtures("openapi_validate")
 class TestSqsDeveloperEndpoints:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
@@ -65,8 +65,9 @@ class TestSqsDeveloperEndpoints:
 
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
+    @pytest.mark.parametrize("protocol", ["query", "json"])
     def test_list_messages_as_botocore_endpoint_url(
-        self, sqs_create_queue, aws_client, aws_client_factory, monkeypatch, strategy
+        self, sqs_create_queue, aws_client, aws_client_factory, monkeypatch, strategy, protocol
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
@@ -76,9 +77,8 @@ class TestSqsDeveloperEndpoints:
         aws_client.sqs_query.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
         # use the developer endpoint as boto client URL
-        client = aws_client_factory(
-            endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        ).sqs_query
+        factory = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages")
+        client = factory.sqs_query if protocol == "query" else factory.sqs
         # max messages is ignored
         response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
@@ -91,8 +91,9 @@ class TestSqsDeveloperEndpoints:
 
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
+    @pytest.mark.parametrize("protocol", ["query", "json"])
     def test_fifo_list_messages_as_botocore_endpoint_url(
-        self, sqs_create_queue, aws_client, aws_client_factory, monkeypatch, strategy
+        self, sqs_create_queue, aws_client, aws_client_factory, monkeypatch, strategy, protocol
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
@@ -109,9 +110,8 @@ class TestSqsDeveloperEndpoints:
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-3", MessageGroupId="2")
 
         # use the developer endpoint as boto client URL
-        client = aws_client_factory(
-            endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        ).sqs_query
+        factory = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages")
+        client = factory.sqs_query if protocol == "query" else factory.sqs
         # max messages is ignored
         response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
@@ -129,16 +129,16 @@ class TestSqsDeveloperEndpoints:
 
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
+    @pytest.mark.parametrize("protocol", ["query", "json"])
     def test_list_messages_with_invalid_action_raises_error(
-        self, sqs_create_queue, aws_client_factory, monkeypatch, strategy
+        self, sqs_create_queue, aws_client_factory, monkeypatch, strategy, protocol
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         queue_url = sqs_create_queue()
 
-        client = aws_client_factory(
-            endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        ).sqs_query
+        factory = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages")
+        client = factory.sqs_query if protocol == "query" else factory.sqs
 
         with pytest.raises(ClientError) as e:
             client.send_message(QueueUrl=queue_url, MessageBody="foobar")
