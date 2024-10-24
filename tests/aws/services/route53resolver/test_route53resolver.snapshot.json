@@ -613,5 +613,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_rules_for_missing_rule_group": {
+    "recorded-date": "24-10-2024, 08:34:55",
+    "recorded-content": {
+      "missing-firewall-rule-group-id": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "[RSLVR-02025] Can\u2019t find the resource with ID \"<firewall-rule-group-id>\". Trace Id: \"<trace-id>\""
+        },
+        "Message": "[RSLVR-02025] Can\u2019t find the resource with ID \"<firewall-rule-group-id>\". Trace Id: \"<trace-id>\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

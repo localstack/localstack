@@ -35,6 +35,9 @@
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_domain_lists": {
     "last_validated_date": "2023-09-01T08:05:46+00:00"
   },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_rules_for_missing_rule_group": {
+    "last_validated_date": "2024-10-24T08:34:55+00:00"
+  },
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_multipe_create_resolver_rule": {
     "last_validated_date": "2023-09-08T08:10:19+00:00"
   },

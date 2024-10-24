@@ -721,3 +721,28 @@ class TestRoute53Resolver:
 
         tag_result = aws_client.route53resolver.list_tags_for_resource(ResourceArn=arn)
         snapshot.match("list-tags-for-resource", tag_result)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Message"])
+    def test_list_firewall_rules_for_missing_rule_group(self, cleanups, snapshot, aws_client):
+        """Test listing firewall rules for a non-existing rule-group."""
+        missing_firewall_rule_group_id = f"missing-{short_uid()}"
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(missing_firewall_rule_group_id, "<firewall-rule-group-id>")]
+        )
+
+        with pytest.raises(
+            aws_client.route53resolver.exceptions.ResourceNotFoundException
+        ) as resource_not_found:
+            aws_client.route53resolver.list_firewall_rules(
+                FirewallRuleGroupId=missing_firewall_rule_group_id
+            )
+
+        error_msg = resource_not_found.value.response["Error"]["Message"]
+        match = re.search("Trace Id: [\"'](.+)[\"']", error_msg)
+        if match:
+            trace_id = match.groups()[0]
+            snapshot.add_transformer(snapshot.transform.regex(trace_id, "<trace-id>"))
+
+        snapshot.match("missing-firewall-rule-group-id", resource_not_found.value.response)
