@@ -749,6 +749,28 @@ class TestRoute53Resolver:
         snapshot.match("missing-firewall-rule-group-id", resource_not_found.value.response)
 
     @markers.aws.validated
+    def test_list_firewall_rules_for_empty_rule_group(self, cleanups, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.route53resolver_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+
+        rule_group_response = aws_client.route53resolver.create_firewall_rule_group(
+            Name=f"empty-{short_uid()}"
+        )
+        snapshot.match("create-firewall-rule-group", rule_group_response)
+
+        response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"]
+        )
+        assert len(response["FirewallRules"]) == 0, "Expecting 0 firewall rules"
+        snapshot.match("empty-firewall-rule-group", response)
+
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_rule_group(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"]
+            )
+        )
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..ManagedOwnerName"])
     @markers.snapshot.skip_snapshot_verify(paths=["$..FirewallDomainRedirectionAction"])
     def test_list_firewall_rules(self, cleanups, snapshot, aws_client):

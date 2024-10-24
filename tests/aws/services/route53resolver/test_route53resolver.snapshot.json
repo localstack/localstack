@@ -916,5 +916,36 @@
         }
       }
     }
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_rules_for_empty_rule_group": {
+    "recorded-date": "24-10-2024, 10:48:51",
+    "recorded-content": {
+      "create-firewall-rule-group": {
+        "FirewallRuleGroup": {
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:firewall-rule-group/<id:1>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:1>",
+          "Id": "<id:1>",
+          "ModificationTime": "date",
+          "Name": "<name:1>",
+          "OwnerId": "111111111111",
+          "RuleCount": 0,
+          "ShareStatus": "NOT_SHARED",
+          "Status": "COMPLETE",
+          "StatusMessage": "status-message"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "empty-firewall-rule-group": {
+        "FirewallRules": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
