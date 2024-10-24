@@ -303,46 +303,55 @@ class IamProvider(IamApi):
         for tag in tag_keys:
             profile.tags.pop(tag, None)
 
-    def create_service_linked_role(
-        self,
-        context: RequestContext,
-        aws_service_name: groupNameType,
-        description: roleDescriptionType = None,
-        custom_suffix: customSuffixType = None,
-        **kwargs,
-    ) -> CreateServiceLinkedRoleResponse:
-        # TODO: test
-        # TODO: how to support "CustomSuffix" API request parameter?
-        policy_doc = json.dumps(
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Principal": {"Service": aws_service_name},
-                        "Action": "sts:AssumeRole",
-                    }
-                ],
-            }
-        )
-        path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}"
-        role_name = f"r-{short_uid()}"
-        backend = get_iam_backend(context)
-        role = backend.create_role(
-            role_name=role_name,
-            assume_role_policy_document=policy_doc,
-            path=path,
-            permissions_boundary="",
-            description=description,
-            tags={},
-            max_session_duration=3600,
-        )
-        role.service_linked_role_arn = "arn:{0}:iam::{1}:role/aws-service-role/{2}/{3}".format(
-            context.partition, context.account_id, aws_service_name, role.name
-        )
+def create_service_linked_role(
+    self,
+    context: RequestContext,
+    aws_service_name: groupNameType,
+    description: roleDescriptionType = None,
+    custom_suffix: customSuffixType = None,
+    **kwargs,
+) -> CreateServiceLinkedRoleResponse:
+    policy_doc = json.dumps(
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": aws_service_name},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+    )
+    path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}"
+    role_name = f"AWSServiceRoleFor{aws_service_name.split('.')[0].capitalize()}"
 
-        res_role = self.moto_role_to_role_type(role)
-        return CreateServiceLinkedRoleResponse(Role=res_role)
+    # Check if the role already exists
+    backend = get_iam_backend(context)
+    existing_roles = backend.roles.values()
+    for role in existing_roles:
+        if role.name == role_name:
+            raise CommonServiceException(
+                code="EntityAlreadyExists",
+                message=f"Role with name {role_name} already exists",
+                status_code=409,
+            )
+
+    role = backend.create_role(
+        role_name=role_name,
+        assume_role_policy_document=policy_doc,
+        path=path,
+        permissions_boundary="",
+        description=description,
+        tags={},
+        max_session_duration=3600,
+    )
+    role.service_linked_role_arn = "arn:{0}:iam::{1}:role/aws-service-role/{2}/{3}".format(
+        context.partition, context.account_id, aws_service_name, role.name
+    )
+
+    res_role = self.moto_role_to_role_type(role)
+    return CreateServiceLinkedRoleResponse(Role=res_role)
 
     def delete_service_linked_role(
         self, context: RequestContext, role_name: roleNameType, **kwargs
