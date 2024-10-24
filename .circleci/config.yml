@@ -461,36 +461,6 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-s3-v2-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test S3 v2 legacy provider
-          environment:
-            PROVIDER_OVERRIDE_S3: "legacy_v2"
-            TEST_PATH: "tests/aws/services/s3/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-cloudwatch-v1-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -973,10 +943,6 @@ workflows:
           requires:
             - preflight
             - test-selection
-      - itest-s3-v2-legacy-provider:
-          requires:
-            - preflight
-            - test-selection
       - itest-cloudwatch-v1-provider:
           requires:
             - preflight
@@ -1052,7 +1018,6 @@ workflows:
       - report:
           requires:
             - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
@@ -1069,7 +1034,6 @@ workflows:
               only: master
           requires:
             - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
