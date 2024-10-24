@@ -275,6 +275,12 @@ DEPRECATIONS = [
         "This option was confusingly named. Please use DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM "
         "instead.",
     ),
+    EnvVarDeprecation(
+        "PROVIDER_OVERRIDE_STEPFUNCTIONS",
+        "4.0.0",
+        "This option is ignored because the legacy StepFunctions provider (v1) has been removed since 4.0.0."
+        " Please remove PROVIDER_OVERRIDE_STEPFUNCTIONS.",
+    ),
 ]
 
 
