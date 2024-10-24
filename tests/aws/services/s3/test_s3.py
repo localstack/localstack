@@ -4166,7 +4166,7 @@ class TestS3:
         snapshot.match("request-path-url-content", path_xml_response)
 
     @markers.aws.validated
-    def test_s3_put_more_than_100f0_items(self, s3_bucket, snapshot, aws_client):
+    def test_s3_put_more_than_1000_items(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         for i in range(0, 1010, 1):
             body = "test-" + str(i)
