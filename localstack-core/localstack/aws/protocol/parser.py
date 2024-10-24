@@ -88,7 +88,6 @@ from cbor2._decoder import loads as cbor2_loads
 from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
-from localstack.config import LEGACY_V2_S3_PROVIDER
 from localstack.http import Request
 
 
@@ -1074,11 +1073,8 @@ class S3RequestParser(RestXMLRequestParser):
 
     @_handle_exceptions
     def parse(self, request: Request) -> Tuple[OperationModel, Any]:
-        if not LEGACY_V2_S3_PROVIDER:
-            """Handle virtual-host-addressing for S3."""
-            with self.VirtualHostRewriter(request):
-                return super().parse(request)
-        else:
+        """Handle virtual-host-addressing for S3."""
+        with self.VirtualHostRewriter(request):
             return super().parse(request)
 
     def _parse_shape(

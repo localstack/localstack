@@ -14,7 +14,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from tests.aws.services.s3.conftest import TEST_S3_IMAGE, is_v2_provider
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -1048,10 +1048,6 @@ class TestS3NotificationsToSQS:
         snapshot.match("receive_messages", {"messages": events})
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=is_v2_provider(),
-        reason="Not implemented in Legacy provider",
-    )
     def test_object_created_put_versioned(
         self, s3_bucket, sqs_create_queue, s3_create_sqs_bucket_notification, snapshot, aws_client
     ):

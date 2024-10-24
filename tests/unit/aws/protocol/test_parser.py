@@ -6,7 +6,6 @@ import pytest
 from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
-from localstack import config
 from localstack.aws.protocol.parser import (
     OperationNotFoundParserError,
     ProtocolParserError,
@@ -1234,9 +1233,6 @@ def test_restxml_header_date_parsing():
     )
 
 
-@pytest.mark.skipif(
-    config.LEGACY_V2_S3_PROVIDER, reason="v2 provider does not rely on virtual host parser"
-)
 def test_s3_virtual_host_addressing():
     """Test the parsing of an S3 bucket request using the bucket encoded in the domain."""
     request = HttpRequest(method="PUT", headers={"host": "test-bucket.s3.example.com"})
