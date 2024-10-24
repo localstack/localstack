@@ -629,5 +629,292 @@
         }
       }
     }
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_rules": {
+    "recorded-date": "24-10-2024, 10:05:33",
+    "recorded-content": {
+      "create-firewall-rule-group": {
+        "FirewallRuleGroup": {
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:firewall-rule-group/<id:1>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:1>",
+          "Id": "<id:1>",
+          "ModificationTime": "date",
+          "Name": "<name:1>",
+          "OwnerId": "111111111111",
+          "RuleCount": 0,
+          "ShareStatus": "NOT_SHARED",
+          "Status": "COMPLETE",
+          "StatusMessage": "status-message"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-firewall-domain-list-1": {
+        "FirewallDomainList": {
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:firewall-domain-list/<id:2>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:2>",
+          "DomainCount": 0,
+          "Id": "<id:2>",
+          "ModificationTime": "date",
+          "Name": "<name:2>",
+          "Status": "COMPLETE",
+          "StatusMessage": "status-message"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-firewall-domain-list-2": {
+        "FirewallDomainList": {
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:firewall-domain-list/<id:3>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:3>",
+          "DomainCount": 0,
+          "Id": "<id:3>",
+          "ModificationTime": "date",
+          "Name": "<name:3>",
+          "Status": "COMPLETE",
+          "StatusMessage": "status-message"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-firewall-domain-list-3": {
+        "FirewallDomainList": {
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:firewall-domain-list/<id:4>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:4>",
+          "DomainCount": 0,
+          "Id": "<id:4>",
+          "ModificationTime": "date",
+          "Name": "<name:4>",
+          "Status": "COMPLETE",
+          "StatusMessage": "status-message"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-firewall-domain-list-4": {
+        "FirewallDomainList": {
+          "Arn": "arn:<partition>:route53resolver:<region>:111111111111:firewall-domain-list/<id:5>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:5>",
+          "DomainCount": 0,
+          "Id": "<id:5>",
+          "ModificationTime": "date",
+          "Name": "<name:5>",
+          "Status": "COMPLETE",
+          "StatusMessage": "status-message"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-firewall-rule-1": {
+        "FirewallRule": {
+          "Action": "ALLOW",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:6>",
+          "FirewallDomainListId": "<id:2>",
+          "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+          "FirewallRuleGroupId": "<id:1>",
+          "ModificationTime": "date",
+          "Name": "<name:6>",
+          "Priority": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-firewall-rule-2": {
+        "FirewallRule": {
+          "Action": "ALERT",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:7>",
+          "FirewallDomainListId": "<id:3>",
+          "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+          "FirewallRuleGroupId": "<id:1>",
+          "ModificationTime": "date",
+          "Name": "<name:7>",
+          "Priority": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-firewall-rule-3": {
+        "FirewallRule": {
+          "Action": "ALERT",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:8>",
+          "FirewallDomainListId": "<id:4>",
+          "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+          "FirewallRuleGroupId": "<id:1>",
+          "ModificationTime": "date",
+          "Name": "<name:8>",
+          "Priority": 3
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-firewall-rule-4": {
+        "FirewallRule": {
+          "Action": "ALLOW",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:9>",
+          "FirewallDomainListId": "<id:5>",
+          "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+          "FirewallRuleGroupId": "<id:1>",
+          "ModificationTime": "date",
+          "Name": "<name:9>",
+          "Priority": 4
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "firewall-rules-list-all": {
+        "FirewallRules": [
+          {
+            "Action": "ALLOW",
+            "CreationTime": "date",
+            "CreatorRequestId": "<creator-request-id:6>",
+            "FirewallDomainListId": "<id:2>",
+            "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+            "FirewallRuleGroupId": "<id:1>",
+            "ModificationTime": "date",
+            "Name": "<name:6>",
+            "Priority": 1
+          },
+          {
+            "Action": "ALERT",
+            "CreationTime": "date",
+            "CreatorRequestId": "<creator-request-id:7>",
+            "FirewallDomainListId": "<id:3>",
+            "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+            "FirewallRuleGroupId": "<id:1>",
+            "ModificationTime": "date",
+            "Name": "<name:7>",
+            "Priority": 2
+          },
+          {
+            "Action": "ALERT",
+            "CreationTime": "date",
+            "CreatorRequestId": "<creator-request-id:8>",
+            "FirewallDomainListId": "<id:4>",
+            "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+            "FirewallRuleGroupId": "<id:1>",
+            "ModificationTime": "date",
+            "Name": "<name:8>",
+            "Priority": 3
+          },
+          {
+            "Action": "ALLOW",
+            "CreationTime": "date",
+            "CreatorRequestId": "<creator-request-id:9>",
+            "FirewallDomainListId": "<id:5>",
+            "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+            "FirewallRuleGroupId": "<id:1>",
+            "ModificationTime": "date",
+            "Name": "<name:9>",
+            "Priority": 4
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "firewall-rules-list-by-priority": {
+        "FirewallRules": [
+          {
+            "Action": "ALLOW",
+            "CreationTime": "date",
+            "CreatorRequestId": "<creator-request-id:6>",
+            "FirewallDomainListId": "<id:2>",
+            "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+            "FirewallRuleGroupId": "<id:1>",
+            "ModificationTime": "date",
+            "Name": "<name:6>",
+            "Priority": 1
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "firewall-rules-list-by-action": {
+        "FirewallRules": [
+          {
+            "Action": "ALLOW",
+            "CreationTime": "date",
+            "CreatorRequestId": "<creator-request-id:6>",
+            "FirewallDomainListId": "<id:2>",
+            "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+            "FirewallRuleGroupId": "<id:1>",
+            "ModificationTime": "date",
+            "Name": "<name:6>",
+            "Priority": 1
+          },
+          {
+            "Action": "ALLOW",
+            "CreationTime": "date",
+            "CreatorRequestId": "<creator-request-id:9>",
+            "FirewallDomainListId": "<id:5>",
+            "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+            "FirewallRuleGroupId": "<id:1>",
+            "ModificationTime": "date",
+            "Name": "<name:9>",
+            "Priority": 4
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "firewall-rules-list-by-action-and-priority": {
+        "FirewallRules": [
+          {
+            "Action": "ALLOW",
+            "CreationTime": "date",
+            "CreatorRequestId": "<creator-request-id:9>",
+            "FirewallDomainListId": "<id:5>",
+            "FirewallDomainRedirectionAction": "INSPECT_REDIRECTION_DOMAIN",
+            "FirewallRuleGroupId": "<id:1>",
+            "ModificationTime": "date",
+            "Name": "<name:9>",
+            "Priority": 4
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "firewall-rules-list-no-match": {
+        "FirewallRules": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

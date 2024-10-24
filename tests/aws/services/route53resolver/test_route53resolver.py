@@ -4,6 +4,7 @@ import re
 import pytest
 
 from localstack.aws.api.route53resolver import (
+    Action,
     ListResolverEndpointsResponse,
     ListResolverQueryLogConfigsResponse,
     ListResolverRuleAssociationsResponse,
@@ -746,3 +747,174 @@ class TestRoute53Resolver:
             snapshot.add_transformer(snapshot.transform.regex(trace_id, "<trace-id>"))
 
         snapshot.match("missing-firewall-rule-group-id", resource_not_found.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ManagedOwnerName"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..FirewallDomainRedirectionAction"])
+    def test_list_firewall_rules(self, cleanups, snapshot, aws_client):
+        """Test listing firewall rules.
+
+        Setup of this testcase consists in creating:
+         - 1 firewall-rule-group
+         - 4 firewall-domain-lists
+         - 4 firewall-rules
+
+         We test listing:
+         - all rules in the rule-group
+         - rules filtered by priority
+         - rules filtered by action
+         - rules filtered by priority and action
+        """
+        firewall_rule_group_name = f"fw-rule-group-{short_uid()}"
+
+        snapshot.add_transformer(snapshot.transform.route53resolver_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("FirewallDomainListId", "fw-domain-list")
+        )
+
+        rule_group_response = aws_client.route53resolver.create_firewall_rule_group(
+            Name=firewall_rule_group_name
+        )
+        snapshot.match("create-firewall-rule-group", rule_group_response)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_rule_group(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"]
+            )
+        )
+
+        # Add 4 domain lists
+        domain_list_response_1 = aws_client.route53resolver.create_firewall_domain_list(
+            Name=f"fw-domain-list-{short_uid()}"
+        )
+        snapshot.match("create-firewall-domain-list-1", domain_list_response_1)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_domain_list(
+                FirewallDomainListId=domain_list_response_1["FirewallDomainList"]["Id"]
+            )
+        )
+
+        domain_list_response_2 = aws_client.route53resolver.create_firewall_domain_list(
+            Name=f"fw-domain-list-{short_uid()}"
+        )
+        snapshot.match("create-firewall-domain-list-2", domain_list_response_2)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_domain_list(
+                FirewallDomainListId=domain_list_response_2["FirewallDomainList"]["Id"]
+            )
+        )
+        domain_list_response_3 = aws_client.route53resolver.create_firewall_domain_list(
+            Name=f"fw-domain-list-{short_uid()}"
+        )
+        snapshot.match("create-firewall-domain-list-3", domain_list_response_3)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_domain_list(
+                FirewallDomainListId=domain_list_response_3["FirewallDomainList"]["Id"]
+            )
+        )
+        domain_list_response_4 = aws_client.route53resolver.create_firewall_domain_list(
+            Name=f"fw-domain-list-{short_uid()}"
+        )
+        snapshot.match("create-firewall-domain-list-4", domain_list_response_4)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_domain_list(
+                FirewallDomainListId=domain_list_response_4["FirewallDomainList"]["Id"]
+            )
+        )
+
+        # Add 4 FW rules
+        rule_response_1 = aws_client.route53resolver.create_firewall_rule(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+            FirewallDomainListId=domain_list_response_1["FirewallDomainList"]["Id"],
+            Priority=1,
+            Action=Action.ALLOW,
+            Name=f"rule-name-{short_uid()}",
+        )
+        snapshot.match("create-firewall-rule-1", rule_response_1)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_rule(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+                FirewallDomainListId=domain_list_response_1["FirewallDomainList"]["Id"],
+            )
+        )
+
+        rule_response_2 = aws_client.route53resolver.create_firewall_rule(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+            FirewallDomainListId=domain_list_response_2["FirewallDomainList"]["Id"],
+            Priority=2,
+            Action=Action.ALERT,
+            Name=f"rule-name-{short_uid()}",
+        )
+        snapshot.match("create-firewall-rule-2", rule_response_2)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_rule(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+                FirewallDomainListId=domain_list_response_2["FirewallDomainList"]["Id"],
+            )
+        )
+
+        rule_response_3 = aws_client.route53resolver.create_firewall_rule(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+            FirewallDomainListId=domain_list_response_3["FirewallDomainList"]["Id"],
+            Priority=3,
+            Action=Action.ALERT,
+            Name=f"rule-name-{short_uid()}",
+        )
+        snapshot.match("create-firewall-rule-3", rule_response_3)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_rule(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+                FirewallDomainListId=domain_list_response_3["FirewallDomainList"]["Id"],
+            )
+        )
+
+        rule_response_4 = aws_client.route53resolver.create_firewall_rule(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+            FirewallDomainListId=domain_list_response_4["FirewallDomainList"]["Id"],
+            Priority=4,
+            Action=Action.ALLOW,
+            Name=f"rule-name-{short_uid()}",
+        )
+        snapshot.match("create-firewall-rule-4", rule_response_4)
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_rule(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+                FirewallDomainListId=domain_list_response_4["FirewallDomainList"]["Id"],
+            )
+        )
+
+        # Check list filtering
+        list_all_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"]
+        )
+
+        assert len(list_all_response["FirewallRules"]) == 4, "Expecting 4 firewall rules"
+        snapshot.match("firewall-rules-list-all", list_all_response)
+
+        filter_by_priority_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"], Priority=1
+        )
+        assert len(filter_by_priority_response["FirewallRules"]) == 1, "Expecting 1 firewall rule"
+        snapshot.match("firewall-rules-list-by-priority", filter_by_priority_response)
+
+        filter_by_action_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"], Action=Action.ALLOW
+        )
+        assert len(filter_by_action_response["FirewallRules"]) == 2, "Expecting 2 firewall rule"
+        snapshot.match("firewall-rules-list-by-action", filter_by_action_response)
+
+        action_and_priority_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+            Action=Action.ALLOW,
+            Priority=4,
+        )
+        assert len(action_and_priority_response["FirewallRules"]) == 1, "Expecting 1 firewall rule"
+        snapshot.match("firewall-rules-list-by-action-and-priority", action_and_priority_response)
+
+        filter_empty_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+            Action=Action.ALLOW,
+            Priority=0,  # 0 catches cases when integers pose as booleans
+        )
+        assert len(filter_empty_response["FirewallRules"]) == 0, "Expecting 0 firewall rule"
+        snapshot.match("firewall-rules-list-no-match", filter_empty_response)
