@@ -77,6 +77,8 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         return os.path.join(install_dir, "bin", "java")
 
     def _get_download_url(self) -> str:
+        # Note: Eclipse Temurin does not provide Mac aarch64 Java 8 builds.
+        # See https://adoptium.net/en-GB/supported-platforms/
         try:
             LOG.debug("Determining the latest Java build version")
             return self._download_url_latest_release()
