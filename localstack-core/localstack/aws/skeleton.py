@@ -242,7 +242,8 @@ class Skeleton:
         # empty payload
         # coro = self._nats_conn.request("services.sqs", b"", timeout=0.5)
 
-        subject = f"services.sqs.{context.account_id}"
+        # subject = f"services.sqs.{context.account_id}"
+        subject = f"services.sqs.{context.operation.name}"
         coro = self._nats_conn.request(subject, req, timeout=0.5)
         response = asyncio.run_coroutine_threadsafe(coro, loop).result()
         result = orjson.loads(response.data)
