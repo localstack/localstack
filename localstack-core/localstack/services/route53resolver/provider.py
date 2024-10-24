@@ -119,10 +119,12 @@ class Route53ResolverProvider(Route53ResolverApi):
     ) -> CreateFirewallRuleGroupResponse:
         """Create a Firewall Rule Group."""
         store = self.get_store(context.account_id, context.region)
-        id = get_route53_resolver_firewall_rule_group_id()
-        arn = arns.route53_resolver_firewall_rule_group_arn(id, context.account_id, context.region)
+        fw_rg_id = get_route53_resolver_firewall_rule_group_id()
+        arn = arns.route53_resolver_firewall_rule_group_arn(
+            fw_rg_id, context.account_id, context.region
+        )
         firewall_rule_group = FirewallRuleGroup(
-            Id=id,
+            Id=fw_rg_id,
             Arn=arn,
             Name=name,
             RuleCount=0,
@@ -134,7 +136,8 @@ class Route53ResolverProvider(Route53ResolverApi):
             CreationTime=datetime.now(timezone.utc).isoformat(),
             ModificationTime=datetime.now(timezone.utc).isoformat(),
         )
-        store.firewall_rule_groups[id] = firewall_rule_group
+        store.firewall_rule_groups[fw_rg_id] = firewall_rule_group
+        store.firewall_rules[fw_rg_id] = {}
         route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
             arn, tags or []
         )
@@ -337,11 +340,9 @@ class Route53ResolverProvider(Route53ResolverApi):
             FirewallDomainRedirectionAction=firewall_domain_redirection_action,
             Qtype=qtype,
         )
-        if store.firewall_rules.get(firewall_rule_group_id):
+        if firewall_rule_group_id in store.firewall_rules:
             store.firewall_rules[firewall_rule_group_id][firewall_domain_list_id] = firewall_rule
-        else:
-            store.firewall_rules[firewall_rule_group_id] = {}
-            store.firewall_rules[firewall_rule_group_id][firewall_domain_list_id] = firewall_rule
+        # TODO: handle missing firewall-rule-group-id
         return CreateFirewallRuleResponse(FirewallRule=firewall_rule)
 
     def delete_firewall_rule(
@@ -371,19 +372,31 @@ class Route53ResolverProvider(Route53ResolverApi):
         next_token: NextToken = None,
         **kwargs,
     ) -> ListFirewallRulesResponse:
-        """List all the firewall rules in a firewall rule group."""
-        # TODO: implement priority and action filtering
+        """List firewall rules in a firewall rule group.
+
+        Rules will be filtered by priority and action if values for these params are provided.
+
+        Raises:
+            ResourceNotFound: If a firewall group by the provided id does not exist.
+        """
+        # TODO: implement max_results filtering and next_token handling
         store = self.get_store(context.account_id, context.region)
-        firewall_rules = []
-        for firewall_rule in store.firewall_rules.get(firewall_rule_group_id, {}).values():
-            firewall_rules.append(FirewallRule(firewall_rule))
-        if len(firewall_rules) == 0:
+        firewall_rule_group = store.firewall_rules.get(firewall_rule_group_id, None)
+        if firewall_rule_group is None:
             raise ResourceNotFoundException(
                 f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
-        return ListFirewallRulesResponse(
-            FirewallRules=firewall_rules,
-        )
+
+        firewall_rules = []
+        for firewall_rule in firewall_rule_group.values():
+            if action is not None and action != firewall_rule["Action"]:
+                continue
+            if priority is not None and priority != firewall_rule["Priority"]:
+                continue
+
+            firewall_rules.append(FirewallRule(firewall_rule))
+
+        return ListFirewallRulesResponse(FirewallRules=firewall_rules)
 
     def update_firewall_rule(
         self,
