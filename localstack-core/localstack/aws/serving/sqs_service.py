@@ -9,7 +9,6 @@ import nats
 from orjson import orjson
 from rolo.gateway.asgi import _ThreadPool
 
-from localstack.aws.api import ServiceException
 from localstack.aws.skeleton import create_dispatch_table
 from localstack.services.sqs.provider import SqsProvider
 from localstack.utils.net import wait_for_port_open
@@ -53,17 +52,17 @@ def run_sqs_service_in_process(stop_event: mp.Event, **kwargs):
 
     def _invoke_orjson(payload: bytes):
         req = orjson.loads(payload)
-        context = JsonContext(**req["context"], request=fake_req)
-        context.service = FakeService(**context.service)
-        context.operation = FakeOperation(**context.operation)
+        # context = JsonContext(**req["context"], request=fake_req)
+        # context.service = FakeService(**context.service)
+        # context.operation = FakeOperation(**context.operation)
 
-        instance = req["instance"]
-        handler = _dispatch_table[context.operation.name]
-        try:
-            response = handler(context, instance)
-        except ServiceException:
-            # we could serialize something somewhat here?
-            response = {"Error": "exception"}
+        # instance = req["instance"]
+        # handler = _dispatch_table[context.operation.name]
+        # try:
+        #     response = handler(context, instance)
+        # except ServiceException:
+        #     # we could serialize something somewhat here?
+        #     response = {"Error": "exception"}
 
         # response = {
         #     "MessageId": "cfcd8be4-7d9e-42c4-965f-ada0d77c3779",
@@ -72,6 +71,7 @@ def run_sqs_service_in_process(stop_event: mp.Event, **kwargs):
         #     "SequenceNumber": None,
         #     "MD5OfMessageSystemAttributes": None,
         # }
+        response = {}
         return json.dumps(response).encode("utf-8")
 
     async def main():
