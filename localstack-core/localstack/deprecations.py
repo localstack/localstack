@@ -324,7 +324,7 @@ def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = N
 
     feature_override_lambda_esm = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING")
     if feature_override_lambda_esm and feature_override_lambda_esm in ["v1", "legacy"]:
-        env_var_value = f"PROVIDER_OVERRIDE_LAMBDA={feature_override_lambda_esm}"
+        env_var_value = f"LAMBDA_EVENT_SOURCE_MAPPING={feature_override_lambda_esm}"
         deprecation_version = "3.8.0"
         deprecation_path = (
             f"Remove {env_var_value} to use the new Lambda Event Source Mapping implementation."
