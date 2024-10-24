@@ -9,6 +9,8 @@ from localstack import constants
 from localstack.utils.files import load_file
 from localstack.utils.json import parse_json_or_yaml
 
+from localstack.services.cloudformation.engine.template_preparer import template_to_json
+
 LOG = logging.getLogger(__name__)
 
 
@@ -33,8 +35,8 @@ class CloudFormationUi:
             try:
                 LOG.debug("Attempting to download CloudFormation template URL: %s", download_url)
                 template_body = requests.get(download_url).text
-                template_body = parse_json_or_yaml(template_body)
-                params["templateBody"] = json.dumps(template_body)
+                template_body = template_to_json(template_body)
+                params["templateBody"] = template_body
             except Exception as e:
                 msg = f"Unable to download CloudFormation template URL: {e}"
                 LOG.info(msg)
