@@ -582,6 +582,35 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-ddb-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test DynamoDB(Streams) v2 provider
+          environment:
+            PROVIDER_OVERRIDE_DYNAMODB: "v2"
+            TEST_PATH: "tests/aws/services/dynamodb/ tests/aws/services/dynamodbstreams/ tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.dynamodb_v2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/dynamodb_v2.xml -o junit_suite_name='dynamodb_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
 
   #########################
   ## Parity Metrics Jobs ##
@@ -959,6 +988,10 @@ workflows:
           requires:
             - preflight
             - test-selection
+      - itest-ddb-v2-provider:
+          requires:
+            - preflight
+            - test-selection
       - unit-tests:
           requires:
             - preflight
@@ -1021,6 +1054,7 @@ workflows:
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
+            - itest-ddb-v2-provider
             - itest-lambda-event-source-mapping-v1-feature
             - acceptance-tests-amd64
             - acceptance-tests-arm64
@@ -1037,6 +1071,7 @@ workflows:
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
+            - itest-ddb-v2-provider
             - itest-lambda-event-source-mapping-v1-feature
             - acceptance-tests-amd64
             - acceptance-tests-arm64
