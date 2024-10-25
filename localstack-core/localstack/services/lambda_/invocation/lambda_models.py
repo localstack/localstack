@@ -595,7 +595,9 @@ class Function:
     provisioned_concurrency_configs: dict[str, ProvisionedConcurrencyConfiguration] = (
         dataclasses.field(default_factory=dict)
     )
-    tags: dict[str, str] | None = None
+    tags: dict[str, str] | None = (
+        None  # TODO: This should be removed in favour of the TaggingService
+    )
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1

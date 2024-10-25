@@ -1003,11 +1003,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 ),
             )
             fn.versions["$LATEST"] = version
-            if request.get("Tags"):
-                self._store_tags(arn.unqualified_arn(), request["Tags"])
-                # TODO: should validation failures here "fail" the function creation like it is now?
+            # TODO: should validation failures here "fail" the function creation like it is now?
             state.functions[function_name] = fn
         self.lambda_service.create_function_version(version)
+
+        if tags := request.get("Tags"):
+            # This will check whether the function exists.
+            self._store_tags(arn.unqualified_arn(), tags)
+            # TODO: This should be removed in favour of using the TaggingService
+            fn.tags = tags
 
         if request.get("Publish"):
             version = self._publish_version_with_changes(
@@ -2363,6 +2367,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
 
         custom_id: str | None = None
+        # TODO: References to Function.tags should be replaced with calls to the TaggingService
         if fn.tags is not None and TAG_KEY_CUSTOM_URL in fn.tags:
             # Note: I really wanted to add verification here that the
             # url_id is unique, so we could surface that to the user ASAP.
@@ -4157,6 +4162,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state.TAGS.tag_resource(resource, tag_svc_adapted_tags)
 
     def fetch_lambda_store_for_tagging(self, resource: TaggableResource) -> LambdaStore:
+        """
+        Takes a resource ARN for a TaggableResource (Lambda Function, Event Source Mapping, or Code Signing Config) and returns a corresponding
+        LambdaStore for its region and account.
+
+        In addition, this function validates that the ARN is a valid TaggableResource type, and that the TaggableResource exists.
+
+        Raises:
+            ValidationException: If the resource ARN is not a full ARN for a TaggableResource.
+            ResourceNotFoundException: If the specified resource does not exist.
+            InvalidParameterValueException: If the resource ARN is a qualified Lambda Function.
+        """
+
         def _raise_validation_exception():
             raise ValidationException(
                 f"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: {api_utils.TAGGABLE_RESOURCE_ARN_PATTERN}"
