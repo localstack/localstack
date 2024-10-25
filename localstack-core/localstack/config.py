@@ -1128,21 +1128,8 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
-# TODO: remove this, replace this by setting the provider as default
-# force enable the use of the new invocation logic for APIGW v1 in community
-if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY"):
-    os.environ["PROVIDER_OVERRIDE_APIGATEWAY"] = "next_gen"
-
-# Whether the Next Gen APIGW invocation logic is enabled (handler chain)
-APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") == "next_gen"
-if APIGW_NEXT_GEN_PROVIDER:
-    # in order to not have conflicts with different implementation registering their own router, we need to have all of
-    # them use the same new implementation
-    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYV2"):
-        os.environ["PROVIDER_OVERRIDE_APIGATEWAYV2"] = "next_gen"
-
-    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"):
-        os.environ["PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"] = "next_gen"
+# Whether the Next Gen APIGW invocation logic is enabled (on by default)
+APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") in ("next_gen", "")
 
 # Whether the DynamoDBStreams native provider is enabled
 DDB_STREAMS_PROVIDER_V2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODBSTREAMS", "") == "v2"
@@ -1155,7 +1142,6 @@ if DDB_STREAMS_PROVIDER_V2:
 elif _override_dynamodb_v2 == "v2":
     os.environ["PROVIDER_OVERRIDE_DYNAMODBSTREAMS"] = "v2"
     DDB_STREAMS_PROVIDER_V2 = True
-
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
