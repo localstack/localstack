@@ -190,7 +190,7 @@ urllib3==2.2.3
     #   docker
     #   localstack-core (pyproject.toml)
     #   requests
-werkzeug==3.0.4
+werkzeug==3.0.6
     # via
     #   localstack-core (pyproject.toml)
     #   openapi-core

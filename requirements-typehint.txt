@@ -789,7 +789,7 @@ virtualenv==20.27.0
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
-werkzeug==3.0.4
+werkzeug==3.0.6
     # via
     #   localstack-core
     #   moto-ext
