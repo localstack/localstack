@@ -5520,7 +5520,7 @@ class TestLambdaTags:
         assert "b_key" in aws_client.lambda_.list_tags(Resource=function_arn)["Tags"]
 
     @markers.aws.validated
-    def test_tag_limits(self, create_lambda_function, snapshot, aws_client):
+    def test_tag_limits(self, create_lambda_function, snapshot, aws_client, lambda_su_role):
         """test the limit of 50 tags per resource"""
         function_name = f"fn-tag-{short_uid()}"
         create_lambda_function(
@@ -5555,6 +5555,21 @@ class TestLambdaTags:
         with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
             aws_client.lambda_.tag_resource(Resource=function_arn, Tags={"a_key": "a_value"})
         snapshot.match("tag_lambda_too_many_tags_additional", e.value.response)
+
+        # add too many tags on a CreateFunction
+        function_name = f"fn-tag-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+                Tags={f"{k}_key": f"{k}_value" for k in range(51)},
+            )
+        snapshot.match("create_function_invalid_tags", e.value.response)
 
     @markers.aws.validated
     def test_tag_versions(self, create_lambda_function, snapshot, aws_client):

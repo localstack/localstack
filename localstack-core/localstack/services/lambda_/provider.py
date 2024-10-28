@@ -1003,15 +1003,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 ),
             )
             fn.versions["$LATEST"] = version
-            # TODO: should validation failures here "fail" the function creation like it is now?
             state.functions[function_name] = fn
         self.lambda_service.create_function_version(version)
 
         if tags := request.get("Tags"):
             # This will check whether the function exists.
             self._store_tags(arn.unqualified_arn(), tags)
-            # TODO: This should be removed in favour of using the TaggingService
-            fn.tags = tags
 
         if request.get("Publish"):
             version = self._publish_version_with_changes(
@@ -2367,8 +2364,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
 
         custom_id: str | None = None
-        # TODO: References to Function.tags should be replaced with calls to the TaggingService
-        if fn.tags is not None and TAG_KEY_CUSTOM_URL in fn.tags:
+
+        tags = self._get_tags(api_utils.unqualified_lambda_arn(function_name, account_id, region))
+        if TAG_KEY_CUSTOM_URL in tags:
             # Note: I really wanted to add verification here that the
             # url_id is unique, so we could surface that to the user ASAP.
             # However, it seems like that information isn't available yet,
@@ -2378,9 +2376,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # just for this particular lambda function, but for the entire
             # lambda provider. Therefore... that idea proved non-trivial!
             custom_id_tag_value = (
-                f"{fn.tags[TAG_KEY_CUSTOM_URL]}-{qualifier}"
-                if qualifier
-                else fn.tags[TAG_KEY_CUSTOM_URL]
+                f"{tags[TAG_KEY_CUSTOM_URL]}-{qualifier}" if qualifier else tags[TAG_KEY_CUSTOM_URL]
             )
             if TAG_KEY_CUSTOM_URL_VALIDATOR.match(custom_id_tag_value):
                 custom_id = custom_id_tag_value
@@ -4237,7 +4233,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             name, _, account, region = function_locators_from_arn(resource)
             function = self._get_function(name, account, region)
             with function.lock:
-                function.tags = tags
                 # dirty hack for changed revision id, should reevaluate model to prevent this:
                 latest_version = function.versions["$LATEST"]
                 function.versions["$LATEST"] = dataclasses.replace(
@@ -4266,11 +4261,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         ):
             name, _, account, region = function_locators_from_arn(resource)
             function = self._get_function(name, account, region)
+            # TODO: Potential race condition
             with function.lock:
-                function.tags = {
-                    tag["Key"]: tag["Value"]
-                    for tag in state.TAGS.list_tags_for_resource(resource).get("Tags")
-                }
                 # dirty hack for changed revision id, should reevaluate model to prevent this:
                 latest_version = function.versions["$LATEST"]
                 function.versions["$LATEST"] = dataclasses.replace(
