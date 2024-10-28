@@ -240,7 +240,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.17.post2
+moto-ext==5.0.18.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
