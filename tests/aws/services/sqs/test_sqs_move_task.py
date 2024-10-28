@@ -10,7 +10,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.sync import retry
 
-from .utils import sqs_collect_messages, sqs_wait_queue_size
+from .utils import sqs_wait_queue_size
 
 QueueUrl = str
 
@@ -125,6 +125,7 @@ def test_basic_move_task_workflow(
     sqs_create_queue,
     sqs_create_dlq_pipe,
     sqs_get_queue_arn,
+    sqs_collect_messages,
     aws_client,
     snapshot,
 ):
@@ -161,7 +162,7 @@ def test_basic_move_task_workflow(
     assert decoded_source_arn == source_arn
 
     # check that messages arrived in destination queue correctly
-    messages = sqs_collect_messages(sqs, destination_queue, expected=2, timeout=10)
+    messages = sqs_collect_messages(destination_queue, expected=2, timeout=10)
     assert {message["Body"] for message in messages} == {"message-1", "message-2"}
 
     # check move task completion (in AWS, approximate number of messages may take a while to update)
@@ -184,6 +185,7 @@ def test_move_task_workflow_with_default_destination(
     sqs_create_queue,
     sqs_create_dlq_pipe,
     sqs_get_queue_arn,
+    sqs_collect_messages,
     aws_client,
     snapshot,
 ):
@@ -221,7 +223,7 @@ def test_move_task_workflow_with_default_destination(
     assert decoded_source_arn == source_arn
 
     # check that messages arrived in destination queue correctly
-    messages = sqs_collect_messages(sqs, queue_url, expected=2, timeout=10)
+    messages = sqs_collect_messages(queue_url, expected=2, timeout=10)
     assert {message["Body"] for message in messages} == {"message-1", "message-2"}
 
     # check move task completion (in AWS, approximate number of messages may take a while to update)
@@ -244,6 +246,7 @@ def test_move_task_workflow_with_multiple_sources_as_default_destination(
     sqs_create_queue,
     sqs_create_dlq_pipe,
     sqs_get_queue_arn,
+    sqs_collect_messages,
     aws_client,
     snapshot,
 ):
@@ -295,10 +298,10 @@ def test_move_task_workflow_with_multiple_sources_as_default_destination(
     snapshot.match("start-message-move-task-response", response)
 
     # check that messages arrived in destination queue correctly
-    messages = sqs_collect_messages(sqs, queue1_url, expected=2, timeout=10)
+    messages = sqs_collect_messages(queue1_url, expected=2, timeout=10)
     assert {message["Body"] for message in messages} == {"message-1-1", "message-1-2"}
 
-    messages = sqs_collect_messages(sqs, queue2_url, expected=2, timeout=10)
+    messages = sqs_collect_messages(queue2_url, expected=2, timeout=10)
     assert {message["Body"] for message in messages} == {"message-2-1", "message-2-2"}
 
     # check move task completion (in AWS, approximate number of messages may take a while to update)
@@ -321,6 +324,7 @@ def test_move_task_with_throughput_limit(
     sqs_create_queue,
     sqs_create_dlq_pipe,
     sqs_get_queue_arn,
+    sqs_collect_messages,
     aws_client,
     snapshot,
 ):
@@ -353,7 +357,7 @@ def test_move_task_with_throughput_limit(
     )
     snapshot.match("start-message-move-task-response", response)
     started = time.time()
-    messages = sqs_collect_messages(sqs, destination_queue, n, 60)
+    messages = sqs_collect_messages(destination_queue, n, 60)
     assert {message["Body"] for message in messages} == {
         "message-0",
         "message-1",
@@ -378,6 +382,7 @@ def test_move_task_cancel(
     sqs_create_queue,
     sqs_create_dlq_pipe,
     sqs_get_queue_arn,
+    sqs_collect_messages,
     aws_client,
     snapshot,
 ):
@@ -411,7 +416,7 @@ def test_move_task_cancel(
     task_handle = response["TaskHandle"]
 
     # wait for two messages to arrive, then cancel the task
-    messages = sqs_collect_messages(sqs, destination_queue, 2, 60)
+    messages = sqs_collect_messages(destination_queue, 2, 60)
     assert len(messages) == 2
 
     response = sqs.list_message_move_tasks(SourceArn=source_arn)
