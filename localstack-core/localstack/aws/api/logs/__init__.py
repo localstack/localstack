@@ -52,6 +52,7 @@ FilterName = str
 FilterPattern = str
 ForceUpdate = bool
 IncludeLinkedAccounts = bool
+InferredTokenName = str
 Integer = int
 Interleaved = bool
 IsSampled = bool
@@ -417,6 +418,7 @@ class PatternToken(TypedDict, total=False):
     isDynamic: Optional[Boolean]
     tokenString: Optional[TokenString]
     enumerations: Optional[Enumerations]
+    inferredTokenName: Optional[InferredTokenName]
 
 
 PatternTokens = List[PatternToken]
