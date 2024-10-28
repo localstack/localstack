@@ -121,12 +121,12 @@ class Route53ResolverProvider(Route53ResolverApi):
     ) -> CreateFirewallRuleGroupResponse:
         """Create a Firewall Rule Group."""
         store = self.get_store(context.account_id, context.region)
-        fw_rg_id = get_route53_resolver_firewall_rule_group_id()
+        firewall_rule_group_id = get_route53_resolver_firewall_rule_group_id()
         arn = arns.route53_resolver_firewall_rule_group_arn(
-            fw_rg_id, context.account_id, context.region
+            firewall_rule_group_id, context.account_id, context.region
         )
         firewall_rule_group = FirewallRuleGroup(
-            Id=fw_rg_id,
+            Id=firewall_rule_group_id,
             Arn=arn,
             Name=name,
             RuleCount=0,
@@ -138,8 +138,8 @@ class Route53ResolverProvider(Route53ResolverApi):
             CreationTime=datetime.now(timezone.utc).isoformat(),
             ModificationTime=datetime.now(timezone.utc).isoformat(),
         )
-        store.firewall_rule_groups[fw_rg_id] = firewall_rule_group
-        store.firewall_rules[fw_rg_id] = {}
+        store.firewall_rule_groups[firewall_rule_group_id] = firewall_rule_group
+        store.firewall_rules[firewall_rule_group_id] = {}
         route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
             arn, tags or []
         )
@@ -385,23 +385,21 @@ class Route53ResolverProvider(Route53ResolverApi):
         Raises:
             ResourceNotFound: If a firewall group by the provided id does not exist.
         """
-        # TODO: implement max_results filtering and next_token handling
         store = self.get_store(context.account_id, context.region)
-        firewall_rule_group = store.firewall_rules.get(firewall_rule_group_id, None)
+        firewall_rule_group = store.firewall_rules.get(firewall_rule_group_id)
         if firewall_rule_group is None:
             raise ResourceNotFoundException(
                 f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
 
-        firewall_rules = []
-        for firewall_rule in firewall_rule_group.values():
-            if action is not None and action != firewall_rule["Action"]:
-                continue
-            if priority is not None and priority != firewall_rule["Priority"]:
-                continue
+        firewall_rules = [
+            FirewallRule(rule)
+            for rule in firewall_rule_group.values()
+            if (action is None or action == rule["Action"])
+            and (priority is None or priority == rule["Priority"])
+        ]
 
-            firewall_rules.append(FirewallRule(firewall_rule))
-
+        # TODO: implement max_results filtering and next_token handling
         return ListFirewallRulesResponse(FirewallRules=firewall_rules)
 
     def update_firewall_rule(
