@@ -1202,5 +1202,84 @@
         "x-cache": "Miss from cloudfront"
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator_with_ref_models": {
+    "recorded-date": "28-10-2024, 17:37:06",
+    "recorded-content": {
+      "get-models-with-ref": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "description": "This is a default empty schema model",
+            "id": "<id:1>",
+            "name": "Empty",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "Empty Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "This is a default error schema model",
+            "id": "<id:2>",
+            "name": "Error",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "Error Schema",
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<id:3>",
+            "name": "testSchema",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "testSchema",
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "number"
+                },
+                "b": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<id:4>",
+            "name": "testSchemaList",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "https://apigateway.amazonaws.com/restapis/<api-id>/models/testSchema"
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "successful": {
+        "data": "ok"
+      },
+      "failed-validation": {
+        "message": "Invalid request body"
+      }
+    }
   }
 }
