@@ -92,6 +92,8 @@ SubnetId = str
 TagKey = str
 TagValue = str
 TaggableResource = str
+TagsErrorCode = str
+TagsErrorMessage = str
 Timeout = int
 Timestamp = str
 Topic = str
@@ -1243,10 +1245,16 @@ class GetFunctionRequest(ServiceRequest):
     Qualifier: Optional[Qualifier]
 
 
+class TagsError(TypedDict, total=False):
+    ErrorCode: TagsErrorCode
+    Message: TagsErrorMessage
+
+
 class GetFunctionResponse(TypedDict, total=False):
     Configuration: Optional[FunctionConfiguration]
     Code: Optional[FunctionCodeLocation]
     Tags: Optional[Tags]
+    TagsError: Optional[TagsError]
     Concurrency: Optional[Concurrency]
 
 
