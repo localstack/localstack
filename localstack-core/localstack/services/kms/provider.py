@@ -6,7 +6,7 @@ import os
 from typing import Dict, Tuple
 
 from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, keywrap
 from cryptography.hazmat.primitives.asymmetric import padding
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -1078,6 +1078,49 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             ParametersValidTo=expiry_date,
         )
 
+    def _decrypt_padded_key_material(
+        import_state: KeyImportState,
+        encrypted_key_material: CiphertextType,
+    ) -> bytes:
+        if import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
+            decrypt_padding = padding.PKCS1v15()
+        elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_1:
+            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
+        elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_256:
+            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
+        else:
+            raise KMSInvalidStateException(
+                f"Unexpected padding algorithm: '{import_state.wrapping_algo}'"
+            )
+
+        key_material = import_state.key.crypto_key.key.decrypt(
+            encrypted_key_material, decrypt_padding
+        )
+        return key_material
+
+    def _decrypt_wrapped_key_material(
+        import_state: KeyImportState,
+        encrypted_key_material: CiphertextType,
+    ) -> bytes:
+        if import_state.wrapping_algo == AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_1:
+            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
+        elif import_state.wrapping_algo == AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_256:
+            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
+        else:
+            raise KMSInvalidStateException(
+                f"Unexpected wrapping algorithm: '{import_state.wrapping_algo}'"
+            )
+
+        # Split apart the encrypted material for the ephemeral AES-256 key and the inner
+        # private key to import; the former is always transmitted as an RSA-OEAP envelope,
+        # whose length is constant.
+        WRAPPED_AES_KEY_SIZE = 512
+        wrapped_aes_key = encrypted_key_material[:WRAPPED_AES_KEY_SIZE]
+        encrypted_privkey = encrypted_key_material[WRAPPED_AES_KEY_SIZE:]
+        aes_key = import_state.key.crypto_key.key.decrypt(wrapped_aes_key, decrypt_padding)
+        key_material = keywrap.aes_key_unwrap_with_padding(aes_key, encrypted_privkey)
+        return key_material
+
     def import_key_material(
         self,
         context: RequestContext,
@@ -1093,6 +1136,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         import_state = store.imports.get(import_token)
         if not import_state:
             raise NotFoundException(f"Unable to find key import token '{import_token}'")
+        # TODO check if there was already a key imported for this kms key
+        # if so, it has to be identical. We cannot change keys by reimporting after deletion/expiry
         key_to_import_material_to = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1101,22 +1146,26 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             disabled_key_allowed=True,
         )
 
-        if import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
-            decrypt_padding = padding.PKCS1v15()
-        elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_1:
-            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
-        elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_256:
-            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
+        if (
+            import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5
+            or import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_1
+            or import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_256
+        ):
+            key_material = KmsProvider._decrypt_padded_key_material(
+                import_state, encrypted_key_material
+            )
+        elif (
+            import_state.wrapping_algo == AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_1
+            or import_state.wrapping_algo == AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_256
+        ):
+            key_material = KmsProvider._decrypt_wrapped_key_material(
+                import_state, encrypted_key_material
+            )
         else:
             raise KMSInvalidStateException(
-                f"Unsupported padding, requested wrapping algorithm:'{import_state.wrapping_algo}'"
+                f"Unsupported import operation, requested wrapping algorithm: '{import_state.wrapping_algo}'"
             )
 
-        # TODO check if there was already a key imported for this kms key
-        # if so, it has to be identical. We cannot change keys by reimporting after deletion/expiry
-        key_material = import_state.key.crypto_key.key.decrypt(
-            encrypted_key_material, decrypt_padding
-        )
         if expiration_model:
             key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
         else:
