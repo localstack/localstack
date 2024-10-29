@@ -1210,7 +1210,7 @@ class PublishDispatcher:
                     subscriber["Protocol"],
                     subscriber["SubscriptionArn"],
                 )
-                self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
+                self._submit_notification(notifier, ctx, subscriber)
 
     def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
@@ -1257,9 +1257,7 @@ class PublishDispatcher:
                     subscriber["Protocol"],
                     subscriber["SubscriptionArn"],
                 )
-                self.executor.submit(
-                    notifier.publish, context=subscriber_ctx, subscriber=subscriber
-                )
+                self._submit_notification(notifier, subscriber_ctx, subscriber)
             else:
                 # if no batch support, fall back to sending them sequentially
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
@@ -1278,9 +1276,10 @@ class PublishDispatcher:
                             subscriber["Protocol"],
                             subscriber["SubscriptionArn"],
                         )
-                        self.executor.submit(
-                            notifier.publish, context=individual_ctx, subscriber=subscriber
-                        )
+                        self._submit_notification(notifier, individual_ctx, subscriber)
+
+    def _submit_notification(self, notifier, ctx: SnsPublishContext, subscriber: SnsSubscription):
+        self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_to_phone_number(self, ctx: SnsPublishContext, phone_number: str) -> None:
         LOG.debug(
