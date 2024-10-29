@@ -33,8 +33,6 @@ from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
-from .utils import sqs_collect_messages
-
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
 
@@ -2936,6 +2934,7 @@ class TestSqsProvider:
         sqs_create_queue,
         sqs_get_queue_arn,
         snapshot,
+        sqs_collect_messages,
     ):
         sqs = aws_client.sqs
 
@@ -2990,7 +2989,6 @@ class TestSqsProvider:
         snapshot.match("rec-pre-dlq", messages)
 
         messages = sqs_collect_messages(
-            sqs,
             dl_queue_url,
             expected=2,
             timeout=10,
