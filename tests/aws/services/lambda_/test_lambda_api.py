@@ -47,7 +47,11 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import get_partition
+from localstack.utils.aws.arns import (
+    get_partition,
+    lambda_event_source_mapping_arn,
+    lambda_function_arn,
+)
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
@@ -2587,7 +2591,7 @@ class TestLambdaRevisions:
 class TestLambdaTag:
     @pytest.fixture(scope="function")
     def fn_arn(self, create_lambda_function, aws_client):
-        """simple reusable setup to test tagging operations against"""
+        """simple reusable setup to test tagging operations against Lambda function resources"""
         function_name = f"fn-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -2598,6 +2602,22 @@ class TestLambdaTag:
         yield aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
             "FunctionArn"
         ]
+
+    @pytest.fixture(scope="function")
+    def esm_arn(self, fn_arn, create_event_source_mapping, sqs_create_queue, sqs_get_queue_arn):
+        """simple reusable setup to test tagging operations against ESM resources"""
+
+        # Create an SQS queue and pass it as an event source for the mapping
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        create_response = create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=fn_arn,
+            BatchSize=1,
+        )
+
+        yield create_response["EventSourceMappingArn"]
 
     @markers.aws.validated
     def test_create_tag_on_fn_create(self, create_lambda_function, snapshot, aws_client):
@@ -2618,68 +2638,162 @@ class TestLambdaTag:
         snapshot.match("list_tags_result", list_tags_result)
 
     @markers.aws.validated
-    def test_tag_lifecycle(self, create_lambda_function, snapshot, fn_arn, aws_client):
+    def test_create_tag_on_esm_create(
+        self,
+        create_lambda_function,
+        create_event_source_mapping,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        snapshot,
+        aws_client,
+    ):
+        function_name = f"fn-{short_uid()}"
+        custom_tag = f"tag-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(custom_tag, "<custom-tag>"))
+
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+
+        create_response = create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name,
+            BatchSize=1,
+            Tags={"testtag": custom_tag},
+        )
+
+        uuid = create_response["UUID"]
+
+        # the stream might not be active immediately(!)
+        def check_esm_active():
+            return aws_client.lambda_.get_event_source_mapping(UUID=uuid)["State"] != "Creating"
+
+        get_response = wait_until(check_esm_active)
+        snapshot.match("get_event_source_mapping_with_tag", get_response)
+
+        esm_arn = create_response["EventSourceMappingArn"]
+        list_tags_result = aws_client.lambda_.list_tags(Resource=esm_arn)
+        snapshot.match("list_tags_result", list_tags_result)
+
+    @pytest.mark.parametrize(
+        "resource_arn_fixture",
+        ["fn_arn", "esm_arn"],
+        ids=["lambda_function", "event_source_mapping"],
+    )
+    @markers.aws.validated
+    def test_tag_lifecycle(self, snapshot, aws_client, resource_arn_fixture, request):
+        # Lazily get
+        resource_arn = request.getfixturevalue(resource_arn_fixture)
         # 1. add tag
-        tag_single_response = aws_client.lambda_.tag_resource(Resource=fn_arn, Tags={"A": "tag-a"})
+        tag_single_response = aws_client.lambda_.tag_resource(
+            Resource=resource_arn, Tags={"A": "tag-a"}
+        )
         snapshot.match("tag_single_response", tag_single_response)
         snapshot.match(
-            "tag_single_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "tag_single_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 2. add multiple tags
         tag_multiple_response = aws_client.lambda_.tag_resource(
-            Resource=fn_arn, Tags={"B": "tag-b", "C": "tag-c"}
+            Resource=resource_arn, Tags={"B": "tag-b", "C": "tag-c"}
         )
         snapshot.match("tag_multiple_response", tag_multiple_response)
         snapshot.match(
-            "tag_multiple_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "tag_multiple_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 3. add overlapping tags
         tag_overlap_response = aws_client.lambda_.tag_resource(
-            Resource=fn_arn, Tags={"C": "tag-c-newsuffix", "D": "tag-d"}
+            Resource=resource_arn, Tags={"C": "tag-c-newsuffix", "D": "tag-d"}
         )
         snapshot.match("tag_overlap_response", tag_overlap_response)
         snapshot.match(
-            "tag_overlap_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "tag_overlap_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 3. remove tag
-        untag_single_response = aws_client.lambda_.untag_resource(Resource=fn_arn, TagKeys=["A"])
+        untag_single_response = aws_client.lambda_.untag_resource(
+            Resource=resource_arn, TagKeys=["A"]
+        )
         snapshot.match("untag_single_response", untag_single_response)
         snapshot.match(
-            "untag_single_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "untag_single_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 4. remove multiple tags
         untag_multiple_response = aws_client.lambda_.untag_resource(
-            Resource=fn_arn, TagKeys=["B", "C"]
+            Resource=resource_arn, TagKeys=["B", "C"]
         )
         snapshot.match("untag_multiple_response", untag_multiple_response)
         snapshot.match(
-            "untag_multiple_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "untag_multiple_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 5. try to remove only tags that don't exist
         untag_nonexisting_response = aws_client.lambda_.untag_resource(
-            Resource=fn_arn, TagKeys=["F"]
+            Resource=resource_arn, TagKeys=["F"]
         )
         snapshot.match("untag_nonexisting_response", untag_nonexisting_response)
         snapshot.match(
-            "untag_nonexisting_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "untag_nonexisting_response_listtags",
+            aws_client.lambda_.list_tags(Resource=resource_arn),
         )
 
         # 6. remove a mix of tags that exist & don't exist
         untag_existing_and_nonexisting_response = aws_client.lambda_.untag_resource(
-            Resource=fn_arn, TagKeys=["D", "F"]
+            Resource=resource_arn, TagKeys=["D", "F"]
         )
         snapshot.match(
             "untag_existing_and_nonexisting_response", untag_existing_and_nonexisting_response
         )
         snapshot.match(
             "untag_existing_and_nonexisting_response_listtags",
-            aws_client.lambda_.list_tags(Resource=fn_arn),
+            aws_client.lambda_.list_tags(Resource=resource_arn),
         )
+
+    @pytest.mark.parametrize(
+        "create_resource_arn",
+        [lambda_function_arn, lambda_event_source_mapping_arn],
+        ids=["lambda_function", "event_source_mapping"],
+    )
+    @markers.aws.validated
+    def test_tag_exceptions(
+        self, snapshot, aws_client, create_resource_arn, region_name, account_id
+    ):
+        resource_name = long_uid()
+        snapshot.add_transformer(snapshot.transform.regex(resource_name, "<resource-name>"))
+
+        resource_arn = create_resource_arn(resource_name, account_id, region_name)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.tag_resource(Resource=resource_arn, Tags={"A": "B"})
+        snapshot.match("not_found_exception_tag", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.untag_resource(Resource=resource_arn, TagKeys=["A"])
+        snapshot.match("not_found_exception_untag", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.list_tags(Resource=resource_arn)
+        snapshot.match("not_found_exception_list", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
+            aws_client.lambda_.list_tags(Resource=f"{resource_arn}:alias")
+        snapshot.match("aliased_arn_exception", e.value.response)
+
+        # change the resource name to an invalid one
+        parts = resource_arn.rsplit(":", 2)
+        parts[1] = "foobar"
+        invalid_resource_arn = ":".join(parts)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
+            aws_client.lambda_.list_tags(Resource=f"{invalid_resource_arn}")
+        snapshot.match("invalid_arn_exception", e.value.response)
 
     @markers.aws.validated
     def test_tag_nonexisting_resource(self, snapshot, fn_arn, aws_client):
@@ -5406,7 +5520,7 @@ class TestLambdaTags:
         assert "b_key" in aws_client.lambda_.list_tags(Resource=function_arn)["Tags"]
 
     @markers.aws.validated
-    def test_tag_limits(self, create_lambda_function, snapshot, aws_client):
+    def test_tag_limits(self, create_lambda_function, snapshot, aws_client, lambda_su_role):
         """test the limit of 50 tags per resource"""
         function_name = f"fn-tag-{short_uid()}"
         create_lambda_function(
@@ -5441,6 +5555,21 @@ class TestLambdaTags:
         with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
             aws_client.lambda_.tag_resource(Resource=function_arn, Tags={"a_key": "a_value"})
         snapshot.match("tag_lambda_too_many_tags_additional", e.value.response)
+
+        # add too many tags on a CreateFunction
+        function_name = f"fn-tag-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+                Tags={f"{k}_key": f"{k}_value" for k in range(51)},
+            )
+        snapshot.match("create_function_invalid_tags", e.value.response)
 
     @markers.aws.validated
     def test_tag_versions(self, create_lambda_function, snapshot, aws_client):

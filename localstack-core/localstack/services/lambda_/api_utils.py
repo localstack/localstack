@@ -108,6 +108,9 @@ ARCHITECTURES = [Architecture.arm64, Architecture.x86_64]
 # pattern therefore we can sub this value in when appropriate.
 ARN_NAME_PATTERN_VALIDATION_TEMPLATE = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{{2}}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{{1}}:)?(\\d{{12}}:)?(function:)?([a-zA-Z0-9-_{0}]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
 
+# AWS response when invalid ARNs are used in Tag operations.
+TAGGABLE_RESOURCE_ARN_PATTERN = "arn:(aws[a-zA-Z-]*):lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:([a-zA-Z0-9-_]+)|code-signing-config:csc-[a-z0-9]{17}|event-source-mapping:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+
 
 def validate_function_name(function_name_or_arn: str, operation_type: str):
     function_name, *_ = function_locators_from_arn(function_name_or_arn)
