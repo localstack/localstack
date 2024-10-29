@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=runtime --output-file=requirements-runtime.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-airspeed-ext==0.6.5
+airspeed-ext==0.6.6
     # via localstack-core (pyproject.toml)
 amazon-kclpy==2.1.5
     # via localstack-core (pyproject.toml)
@@ -31,7 +31,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.35.15
     # via localstack-core (pyproject.toml)
-awscrt==0.22.4
+awscrt==0.23.0
     # via localstack-core
 boto3==1.35.49
     # via
@@ -64,7 +64,7 @@ certifi==2024.8.30
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.18.1
+cfn-lint==1.18.2
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
@@ -219,7 +219,7 @@ parse==1.20.2
     # via openapi-core
 pathable==0.4.3
     # via jsonschema-path
-plux==1.12.0
+plux==1.12.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -351,7 +351,7 @@ urllib3==2.2.3
     #   opensearch-py
     #   requests
     #   responses
-werkzeug==3.0.4
+werkzeug==3.0.6
     # via
     #   localstack-core
     #   moto-ext
@@ -365,7 +365,7 @@ xmltodict==0.14.2
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==7.1.0
+zope-interface==7.1.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
