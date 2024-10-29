@@ -1,0 +1,19 @@
+{
+  "Comment": "API_GATEWAY_INVOKE_WITH_HEADERS",
+  "StartAt": "ApiGatewayInvoke",
+  "States": {
+    "ApiGatewayInvoke": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::apigateway:invoke",
+      "Parameters": {
+        "ApiEndpoint.$": "$.ApiEndpoint",
+        "Method.$": "$.Method",
+        "Path.$": "$.Path",
+        "Stage.$": "$.Stage",
+        "RequestBody.$": "$.RequestBody",
+        "Headers.$": "$.Headers",
+      },
+      "End": true
+    }
+  }
+}
