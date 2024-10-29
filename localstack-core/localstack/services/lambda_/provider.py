@@ -1565,6 +1565,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 invocation_type=invocation_type,
                 client_context=client_context,
                 request_id=context.request_id,
+                trace_context=context.trace_context,
                 payload=payload.read() if payload else None,
             )
         except ServiceException:
