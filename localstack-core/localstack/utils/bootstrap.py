@@ -455,7 +455,7 @@ def get_docker_image_to_start():
     image_name = os.environ.get("IMAGE_NAME")
     if not image_name:
         image_name = constants.DOCKER_IMAGE_NAME
-        if is_api_key_configured():
+        if is_auth_token_configured():
             image_name = constants.DOCKER_IMAGE_NAME_PRO
     return image_name
 
@@ -1358,10 +1358,11 @@ def in_ci():
     return False
 
 
-def is_api_key_configured() -> bool:
+def is_auth_token_configured() -> bool:
     """Whether an API key is set in the environment."""
     return (
         True
-        if os.environ.get("LOCALSTACK_API_KEY") and os.environ.get("LOCALSTACK_API_KEY").strip()
+        if os.environ.get("LOCALSTACK_AUTH_TOKEN")
+        and os.environ.get("LOCALSTACK_AUTH_TOKEN").strip()
         else False
     )
