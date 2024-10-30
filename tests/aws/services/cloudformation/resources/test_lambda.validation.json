@@ -9,7 +9,7 @@
     "last_validated_date": "2024-04-09T07:26:03+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
-    "last_validated_date": "2024-04-09T07:29:12+00:00"
+    "last_validated_date": "2024-10-30T14:48:16+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_lambda_dynamodb_event_filter": {
     "last_validated_date": "2024-04-09T07:31:17+00:00"
