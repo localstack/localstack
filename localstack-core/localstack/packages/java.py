@@ -18,10 +18,10 @@ DEFAULT_JAVA_VERSION = "11"
 
 # Supported Java LTS versions mapped with Eclipse Temurin build semvers
 JAVA_VERSIONS = {
-    "8": "8u422-b05",
-    "11": "11.0.24+8",
-    "17": "17.0.12+7",
-    "21": "21.0.4+7",
+    "8": "8u432-b06",
+    "11": "11.0.25+9",
+    "17": "17.0.13+11",
+    "21": "21.0.5+11",
 }
 
 
@@ -77,6 +77,8 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         return os.path.join(install_dir, "bin", "java")
 
     def _get_download_url(self) -> str:
+        # Note: Eclipse Temurin does not provide Mac aarch64 Java 8 builds.
+        # See https://adoptium.net/en-GB/supported-platforms/
         try:
             LOG.debug("Determining the latest Java build version")
             return self._download_url_latest_release()
@@ -113,8 +115,8 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             "jdk.httpserver,jdk.management,jdk.management.agent,"
             # Required by Spark and Hadoop
             "java.security.jgss,jdk.security.auth,"
-            # OpenSearch requires Thai locale for segmentation support
-            "jdk.localedata --include-locales en,th "
+            # Include required locales
+            "jdk.localedata --include-locales en "
             # Supplementary args
             "--compress 2 --strip-debug --no-header-files --no-man-pages "
             # Output directory
@@ -132,10 +134,14 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         return self.get_installed_dir()
 
     @property
-    def arch(self) -> str:
+    def arch(self) -> str | None:
         return (
             "x64" if get_arch() == Arch.amd64 else "aarch64" if get_arch() == Arch.arm64 else None
         )
+
+    @property
+    def os_name(self) -> str | None:
+        return "linux" if is_linux() else "mac" if is_mac_os() else None
 
     def _download_url_latest_release(self) -> str:
         """
@@ -143,7 +149,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         """
         endpoint = (
             f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?"
-            f"os=linux&architecture={self.arch}&image_type=jdk"
+            f"os={self.os_name}&architecture={self.arch}&image_type=jdk"
         )
         # Override user-agent because Adoptium API denies service to `requests` library
         response = requests.get(endpoint, headers={"user-agent": USER_AGENT_STRING}).json()
@@ -153,8 +159,6 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         """
         Return the download URL for pinned JDK build.
         """
-        os = "linux" if is_linux() else "mac" if is_mac_os() else None
-
         semver = JAVA_VERSIONS[self.version]
         tag_slug = f"jdk-{semver}"
         semver_safe = semver.replace("+", "_")
@@ -166,7 +170,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
         return (
             f"https://github.com/adoptium/temurin{self.version}-binaries/releases/download/{tag_slug}/"
-            f"OpenJDK{self.version}U-jdk_{self.arch}_{os}_hotspot_{semver_safe}.tar.gz"
+            f"OpenJDK{self.version}U-jdk_{self.arch}_{self.os_name}_hotspot_{semver_safe}.tar.gz"
         )
 
 

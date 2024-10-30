@@ -261,6 +261,10 @@ class ModelResolver:
 
                 elif isinstance(value, dict):
                     _look_for_ref(value)
+                elif isinstance(value, list):
+                    for val in value:
+                        if isinstance(val, dict):
+                            _look_for_ref(val)
 
         if isinstance(resolved_model, dict):
             _look_for_ref(resolved_model)

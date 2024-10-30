@@ -82,6 +82,7 @@ DescribeFpgaImagesMaxResults = int
 DescribeHostReservationsMaxResults = int
 DescribeIamInstanceProfileAssociationsMaxResults = int
 DescribeInstanceCreditSpecificationsMaxResults = int
+DescribeInstanceImageMetadataMaxResults = int
 DescribeInstanceTopologyMaxResults = int
 DescribeInternetGatewaysMaxResults = int
 DescribeIpamByoasnMaxResults = int
@@ -2106,6 +2107,42 @@ class InstanceType(StrEnum):
     g6e_16xlarge = "g6e.16xlarge"
     g6e_24xlarge = "g6e.24xlarge"
     g6e_48xlarge = "g6e.48xlarge"
+    c8g_medium = "c8g.medium"
+    c8g_large = "c8g.large"
+    c8g_xlarge = "c8g.xlarge"
+    c8g_2xlarge = "c8g.2xlarge"
+    c8g_4xlarge = "c8g.4xlarge"
+    c8g_8xlarge = "c8g.8xlarge"
+    c8g_12xlarge = "c8g.12xlarge"
+    c8g_16xlarge = "c8g.16xlarge"
+    c8g_24xlarge = "c8g.24xlarge"
+    c8g_48xlarge = "c8g.48xlarge"
+    c8g_metal_24xl = "c8g.metal-24xl"
+    c8g_metal_48xl = "c8g.metal-48xl"
+    m8g_medium = "m8g.medium"
+    m8g_large = "m8g.large"
+    m8g_xlarge = "m8g.xlarge"
+    m8g_2xlarge = "m8g.2xlarge"
+    m8g_4xlarge = "m8g.4xlarge"
+    m8g_8xlarge = "m8g.8xlarge"
+    m8g_12xlarge = "m8g.12xlarge"
+    m8g_16xlarge = "m8g.16xlarge"
+    m8g_24xlarge = "m8g.24xlarge"
+    m8g_48xlarge = "m8g.48xlarge"
+    m8g_metal_24xl = "m8g.metal-24xl"
+    m8g_metal_48xl = "m8g.metal-48xl"
+    x8g_medium = "x8g.medium"
+    x8g_large = "x8g.large"
+    x8g_xlarge = "x8g.xlarge"
+    x8g_2xlarge = "x8g.2xlarge"
+    x8g_4xlarge = "x8g.4xlarge"
+    x8g_8xlarge = "x8g.8xlarge"
+    x8g_12xlarge = "x8g.12xlarge"
+    x8g_16xlarge = "x8g.16xlarge"
+    x8g_24xlarge = "x8g.24xlarge"
+    x8g_48xlarge = "x8g.48xlarge"
+    x8g_metal_24xl = "x8g.metal-24xl"
+    x8g_metal_48xl = "x8g.metal-48xl"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -2544,6 +2581,7 @@ class NetworkInterfaceAttribute(StrEnum):
 
 class NetworkInterfaceCreationType(StrEnum):
     efa = "efa"
+    efa_only = "efa-only"
     branch = "branch"
     trunk = "trunk"
 
@@ -2567,6 +2605,7 @@ class NetworkInterfaceType(StrEnum):
     interface = "interface"
     natGateway = "natGateway"
     efa = "efa"
+    efa_only = "efa-only"
     trunk = "trunk"
     load_balancer = "load_balancer"
     network_load_balancer = "network_load_balancer"
@@ -11390,6 +11429,50 @@ class DescribeInstanceEventWindowsResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+class DescribeInstanceImageMetadataRequest(ServiceRequest):
+    Filters: Optional[FilterList]
+    InstanceIds: Optional[InstanceIdStringList]
+    MaxResults: Optional[DescribeInstanceImageMetadataMaxResults]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+
+
+class ImageMetadata(TypedDict, total=False):
+    ImageId: Optional[ImageId]
+    Name: Optional[String]
+    OwnerId: Optional[String]
+    State: Optional[ImageState]
+    ImageOwnerAlias: Optional[String]
+    CreationDate: Optional[String]
+    DeprecationTime: Optional[String]
+    IsPublic: Optional[Boolean]
+
+
+class InstanceState(TypedDict, total=False):
+    Code: Optional[Integer]
+    Name: Optional[InstanceStateName]
+
+
+class InstanceImageMetadata(TypedDict, total=False):
+    InstanceId: Optional[InstanceId]
+    InstanceType: Optional[InstanceType]
+    LaunchTime: Optional[MillisecondDateTime]
+    AvailabilityZone: Optional[String]
+    ZoneId: Optional[String]
+    State: Optional[InstanceState]
+    OwnerId: Optional[String]
+    Tags: Optional[TagList]
+    ImageMetadata: Optional[ImageMetadata]
+
+
+InstanceImageMetadataList = List[InstanceImageMetadata]
+
+
+class DescribeInstanceImageMetadataResult(TypedDict, total=False):
+    InstanceImageMetadata: Optional[InstanceImageMetadataList]
+    NextToken: Optional[String]
+
+
 class DescribeInstanceStatusRequest(ServiceRequest):
     InstanceIds: Optional[InstanceIdStringList]
     MaxResults: Optional[Integer]
@@ -11425,11 +11508,6 @@ InstanceStatusDetailsList = List[InstanceStatusDetails]
 class InstanceStatusSummary(TypedDict, total=False):
     Details: Optional[InstanceStatusDetailsList]
     Status: Optional[SummaryStatus]
-
-
-class InstanceState(TypedDict, total=False):
-    Code: Optional[Integer]
-    Name: Optional[InstanceStateName]
 
 
 class InstanceStatusEvent(TypedDict, total=False):
@@ -21994,6 +22072,19 @@ class Ec2Api:
         next_token: String = None,
         **kwargs,
     ) -> DescribeInstanceEventWindowsResult:
+        raise NotImplementedError
+
+    @handler("DescribeInstanceImageMetadata")
+    def describe_instance_image_metadata(
+        self,
+        context: RequestContext,
+        filters: FilterList = None,
+        instance_ids: InstanceIdStringList = None,
+        max_results: DescribeInstanceImageMetadataMaxResults = None,
+        next_token: String = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DescribeInstanceImageMetadataResult:
         raise NotImplementedError
 
     @handler("DescribeInstanceStatus")

@@ -6,7 +6,7 @@ import os
 import re
 import textwrap
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import botocore.auth
 import botocore.config
@@ -60,6 +60,11 @@ WAITER_CHANGE_SET_CREATE_COMPLETE = "change_set_create_complete"
 WAITER_STACK_CREATE_COMPLETE = "stack_create_complete"
 WAITER_STACK_UPDATE_COMPLETE = "stack_update_complete"
 WAITER_STACK_DELETE_COMPLETE = "stack_delete_complete"
+
+
+if TYPE_CHECKING:
+    from mypy_boto3_sqs import SQSClient
+    from mypy_boto3_sqs.type_defs import MessageTypeDef
 
 
 @pytest.fixture(scope="class")
@@ -363,6 +368,65 @@ def sqs_receive_num_messages(sqs_receive_messages_delete):
         raise AssertionError(f"max iterations reached with {len(all_messages)} messages received")
 
     return factory
+
+
+@pytest.fixture
+def sqs_collect_messages(aws_client):
+    """Collects SQS messages from a given queue_url and deletes them by default.
+    Example usage:
+    messages = sqs_collect_messages(
+         my_queue_url,
+         expected=2,
+         timeout=10,
+         attribute_names=["All"],
+         message_attribute_names=["All"],
+    )
+    """
+
+    def factory(
+        queue_url: str,
+        expected: int,
+        timeout: int,
+        delete: bool = True,
+        attribute_names: list[str] = None,
+        message_attribute_names: list[str] = None,
+        max_number_of_messages: int = 1,
+        wait_time_seconds: int = 5,
+        sqs_client: "SQSClient | None" = None,
+    ) -> list["MessageTypeDef"]:
+        sqs_client = sqs_client or aws_client.sqs
+        collected = []
+
+        def _receive():
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url,
+                # Maximum is 20 seconds. Performs long polling.
+                WaitTimeSeconds=wait_time_seconds,
+                # Maximum 10 messages
+                MaxNumberOfMessages=max_number_of_messages,
+                AttributeNames=attribute_names or [],
+                MessageAttributeNames=message_attribute_names or [],
+            )
+
+            if messages := response.get("Messages"):
+                collected.extend(messages)
+
+                if delete:
+                    for m in messages:
+                        sqs_client.delete_message(
+                            QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"]
+                        )
+
+            return len(collected) >= expected
+
+        if not poll_condition(_receive, timeout=timeout):
+            raise TimeoutError(
+                f"gave up waiting for messages (expected={expected}, actual={len(collected)}"
+            )
+
+        return collected
+
+    yield factory
 
 
 @pytest.fixture

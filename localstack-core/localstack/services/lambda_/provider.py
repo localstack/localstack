@@ -41,7 +41,6 @@ from localstack.aws.api.lambda_ import (
     Description,
     DestinationConfig,
     EventSourceMappingConfiguration,
-    FunctionArn,
     FunctionCodeLocation,
     FunctionConfiguration,
     FunctionEventInvokeConfig,
@@ -127,6 +126,7 @@ from localstack.aws.api.lambda_ import (
     StatementId,
     StateReasonCode,
     String,
+    TaggableResource,
     TagKeyList,
     Tags,
     TracingMode,
@@ -221,8 +221,12 @@ from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
+    ArnData,
+    extract_resource_from_arn,
     extract_service_from_arn,
     get_partition,
+    lambda_event_source_mapping_arn,
+    parse_arn,
 )
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
@@ -393,6 +397,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
         return function
+
+    @staticmethod
+    def _get_esm(uuid: str, account_id: str, region: str) -> EventSourceMappingConfiguration:
+        state = lambda_stores[account_id][region]
+        esm = state.event_source_mappings.get(uuid)
+        if not esm:
+            arn = lambda_event_source_mapping_arn(uuid, account_id, region)
+            raise ResourceNotFoundException(
+                f"Event source mapping not found: {arn}",
+                Type="User",
+            )
+        return esm
 
     @staticmethod
     def _validate_qualifier_expression(qualifier: str) -> None:
@@ -987,11 +1003,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 ),
             )
             fn.versions["$LATEST"] = version
-            if request.get("Tags"):
-                self._store_tags(fn, request["Tags"])
-                # TODO: should validation failures here "fail" the function creation like it is now?
             state.functions[function_name] = fn
         self.lambda_service.create_function_version(version)
+
+        if tags := request.get("Tags"):
+            # This will check whether the function exists.
+            self._store_tags(arn.unqualified_arn(), tags)
 
         if request.get("Publish"):
             version = self._publish_version_with_changes(
@@ -1453,7 +1470,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=account_id,
             region=region,
         )
-        tags = self._get_tags(fn)
+        tags = self._get_tags(api_utils.unqualified_lambda_arn(function_name, account_id, region))
         additional_fields = {}
         if tags:
             additional_fields["Tags"] = tags
@@ -1548,6 +1565,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 invocation_type=invocation_type,
                 client_context=client_context,
                 request_id=context.request_id,
+                trace_context=context.trace_context,
                 payload=payload.read() if payload else None,
             )
         except ServiceException:
@@ -1873,6 +1891,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         esm_worker = EsmWorkerFactory(esm_config, function_role, enabled).get_esm_worker()
         self.esm_workers[esm_worker.uuid] = esm_worker
         # TODO: check StateTransitionReason, LastModified, LastProcessingResult (concurrent updates requires locking!)
+        if tags := request.get("Tags"):
+            self._store_tags(esm_config.get("EventSourceMappingArn"), tags)
         esm_worker.create()
         return esm_config
 
@@ -2356,7 +2376,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
 
         custom_id: str | None = None
-        if fn.tags is not None and TAG_KEY_CUSTOM_URL in fn.tags:
+
+        tags = self._get_tags(api_utils.unqualified_lambda_arn(function_name, account_id, region))
+        if TAG_KEY_CUSTOM_URL in tags:
             # Note: I really wanted to add verification here that the
             # url_id is unique, so we could surface that to the user ASAP.
             # However, it seems like that information isn't available yet,
@@ -2366,9 +2388,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # just for this particular lambda function, but for the entire
             # lambda provider. Therefore... that idea proved non-trivial!
             custom_id_tag_value = (
-                f"{fn.tags[TAG_KEY_CUSTOM_URL]}-{qualifier}"
-                if qualifier
-                else fn.tags[TAG_KEY_CUSTOM_URL]
+                f"{tags[TAG_KEY_CUSTOM_URL]}-{qualifier}" if qualifier else tags[TAG_KEY_CUSTOM_URL]
             )
             if TAG_KEY_CUSTOM_URL_VALIDATOR.match(custom_id_tag_value):
                 custom_id = custom_id_tag_value
@@ -4129,87 +4149,137 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # ===============  TAGS   ===============
     # =======================================
-    # only function ARNs are available for tagging
+    # only Function, Event Source Mapping, and Code Signing Config (not currently supported by LocalStack) ARNs an are available for tagging in AWS
 
-    def _get_tags(self, function: Function) -> dict[str, str]:
-        return function.tags or {}
+    def _get_tags(self, resource: TaggableResource) -> dict[str, str]:
+        state = self.fetch_lambda_store_for_tagging(resource)
+        lambda_adapted_tags = {
+            tag["Key"]: tag["Value"]
+            for tag in state.TAGS.list_tags_for_resource(resource).get("Tags")
+        }
+        return lambda_adapted_tags
 
-    def _store_tags(self, function: Function, tags: dict[str, str]):
-        if len(tags) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
+    def _store_tags(self, resource: TaggableResource, tags: dict[str, str]):
+        state = self.fetch_lambda_store_for_tagging(resource)
+        if len(state.TAGS.tags.get(resource, {}) | tags) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
             raise InvalidParameterValueException(
                 "Number of tags exceeds resource tag limit.", Type="User"
             )
-        with function.lock:
-            function.tags = tags
-            # dirty hack for changed revision id, should reevaluate model to prevent this:
-            latest_version = function.versions["$LATEST"]
-            function.versions["$LATEST"] = dataclasses.replace(
-                latest_version, config=dataclasses.replace(latest_version.config)
+
+        tag_svc_adapted_tags = [{"Key": key, "Value": value} for key, value in tags.items()]
+        state.TAGS.tag_resource(resource, tag_svc_adapted_tags)
+
+    def fetch_lambda_store_for_tagging(self, resource: TaggableResource) -> LambdaStore:
+        """
+        Takes a resource ARN for a TaggableResource (Lambda Function, Event Source Mapping, or Code Signing Config) and returns a corresponding
+        LambdaStore for its region and account.
+
+        In addition, this function validates that the ARN is a valid TaggableResource type, and that the TaggableResource exists.
+
+        Raises:
+            ValidationException: If the resource ARN is not a full ARN for a TaggableResource.
+            ResourceNotFoundException: If the specified resource does not exist.
+            InvalidParameterValueException: If the resource ARN is a qualified Lambda Function.
+        """
+
+        def _raise_validation_exception():
+            raise ValidationException(
+                f"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: {api_utils.TAGGABLE_RESOURCE_ARN_PATTERN}"
             )
 
-    def _update_tags(self, function: Function, tags: dict[str, str]):
-        with function.lock:
-            stored_tags = function.tags or {}
-            stored_tags |= tags
-            self._store_tags(function=function, tags=stored_tags)
+        # Check whether the ARN we have been passed is correctly formatted
+        parsed_resource_arn: ArnData = None
+        try:
+            parsed_resource_arn = parse_arn(resource)
+        except Exception:
+            _raise_validation_exception()
+
+        # TODO: Should we be checking whether this is a full ARN?
+        region, account_id, resource_type = map(
+            parsed_resource_arn.get, ("region", "account", "resource")
+        )
+
+        if not all((region, account_id, resource_type)):
+            _raise_validation_exception()
+
+        if not (parts := resource_type.split(":")):
+            _raise_validation_exception()
+
+        resource_type, resource_identifier, *qualifier = parts
+        if resource_type not in {"event-source-mapping", "code-signing-config", "function"}:
+            _raise_validation_exception()
+
+        if qualifier:
+            if resource_type == "function":
+                raise InvalidParameterValueException(
+                    "Tags on function aliases and versions are not supported. Please specify a function ARN.",
+                    Type="User",
+                )
+            _raise_validation_exception()
+
+        match resource_type:
+            case "event-source-mapping":
+                self._get_esm(resource_identifier, account_id, region)
+            case "code-signing-config":
+                raise NotImplementedError("Resource tagging on CSC not yet implemented.")
+            case "function":
+                self._get_function(
+                    function_name=resource_identifier, account_id=account_id, region=region
+                )
+
+        # If no exceptions are raised, assume ARN and referenced resource is valid for tag operations
+        return lambda_stores[account_id][region]
 
     def tag_resource(
-        self, context: RequestContext, resource: FunctionArn, tags: Tags, **kwargs
+        self, context: RequestContext, resource: TaggableResource, tags: Tags, **kwargs
     ) -> None:
         if not tags:
             raise InvalidParameterValueException(
                 "An error occurred and the request cannot be processed.", Type="User"
             )
+        self._store_tags(resource, tags)
 
-        # TODO: test layer (added in snapshot update 2023-11)
-        pattern_match = api_utils.FULL_FN_ARN_PATTERN.search(resource)
-        if not pattern_match:
-            raise ValidationException(
-                rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{{2}}((-gov)|(-iso(b?)))?-[a-z]+-\d{{1}}:\d{{12}}:(function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?|layer:[a-zA-Z0-9-_]+)"
-            )
-
-        groups = pattern_match.groupdict()
-        fn_name = groups.get("function_name")
-
-        if groups.get("qualifier"):
-            raise InvalidParameterValueException(
-                "Tags on function aliases and versions are not supported. Please specify a function ARN.",
-                Type="User",
-            )
-
-        account_id, region = api_utils.get_account_and_region(resource, context)
-        fn = self._get_function(function_name=fn_name, account_id=account_id, region=region)
-
-        self._update_tags(fn, tags)
+        if (resource_id := extract_resource_from_arn(resource)) and resource_id.startswith(
+            "function"
+        ):
+            name, _, account, region = function_locators_from_arn(resource)
+            function = self._get_function(name, account, region)
+            with function.lock:
+                # dirty hack for changed revision id, should reevaluate model to prevent this:
+                latest_version = function.versions["$LATEST"]
+                function.versions["$LATEST"] = dataclasses.replace(
+                    latest_version, config=dataclasses.replace(latest_version.config)
+                )
 
     def list_tags(
-        self, context: RequestContext, resource: FunctionArn, **kwargs
+        self, context: RequestContext, resource: TaggableResource, **kwargs
     ) -> ListTagsResponse:
-        account_id, region = api_utils.get_account_and_region(resource, context)
-        function_name = api_utils.get_function_name(resource, context)
-        fn = self._get_function(function_name=function_name, account_id=account_id, region=region)
-
-        return ListTagsResponse(Tags=self._get_tags(fn))
+        tags = self._get_tags(resource)
+        return ListTagsResponse(Tags=tags)
 
     def untag_resource(
-        self, context: RequestContext, resource: FunctionArn, tag_keys: TagKeyList, **kwargs
+        self, context: RequestContext, resource: TaggableResource, tag_keys: TagKeyList, **kwargs
     ) -> None:
         if not tag_keys:
             raise ValidationException(
                 "1 validation error detected: Value null at 'tagKeys' failed to satisfy constraint: Member must not be null"
             )  # should probably be generalized a bit
 
-        account_id, region = api_utils.get_account_and_region(resource, context)
-        function_name = api_utils.get_function_name(resource, context)
-        fn = self._get_function(function_name=function_name, account_id=account_id, region=region)
+        state = self.fetch_lambda_store_for_tagging(resource)
+        state.TAGS.untag_resource(resource, tag_keys)
 
-        # copy first, then set explicitly in store tags
-        tags = dict(fn.tags or {})
-        if tags:
-            for key in tag_keys:
-                if key in tags:
-                    tags.pop(key)
-        self._store_tags(function=fn, tags=tags)
+        if (resource_id := extract_resource_from_arn(resource)) and resource_id.startswith(
+            "function"
+        ):
+            name, _, account, region = function_locators_from_arn(resource)
+            function = self._get_function(name, account, region)
+            # TODO: Potential race condition
+            with function.lock:
+                # dirty hack for changed revision id, should reevaluate model to prevent this:
+                latest_version = function.versions["$LATEST"]
+                function.versions["$LATEST"] = dataclasses.replace(
+                    latest_version, config=dataclasses.replace(latest_version.config)
+                )
 
     # =======================================
     # =======  LEGACY / DEPRECATED   ========
