@@ -454,9 +454,6 @@ WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 # whether to assume http or https for `get_protocol`
 USE_SSL = is_env_true("USE_SSL")
 
-# whether the S3 legacy V2/ASF provider is enabled
-LEGACY_V2_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v2", "legacy_v2", "asf")
-
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
