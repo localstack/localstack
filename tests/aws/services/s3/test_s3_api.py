@@ -1572,15 +1572,23 @@ class TestS3ObjectLock:
         reason="Moto implementation does not raise exceptions",
     )
     def test_disable_versioning_on_locked_bucket(self, s3_create_bucket, aws_client, snapshot):
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_versioning(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 VersioningConfiguration={
                     "Status": "Suspended",
                 },
             )
         snapshot.match("disable-versioning-on-locked-bucket", e.value.response)
+
+        put_bucket_versioning_again = aws_client.s3.put_bucket_versioning(
+            Bucket=bucket_name,
+            VersioningConfiguration={
+                "Status": "Enabled",
+            },
+        )
+        snapshot.match("enable-versioning-again-on-locked-bucket", put_bucket_versioning_again)
 
     @markers.aws.validated
     def test_delete_object_with_no_locking(self, s3_bucket, aws_client, snapshot):
