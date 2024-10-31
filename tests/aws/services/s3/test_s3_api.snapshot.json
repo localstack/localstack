@@ -2407,7 +2407,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_disable_versioning_on_locked_bucket": {
-    "recorded-date": "09-08-2023, 03:49:49",
+    "recorded-date": "31-10-2024, 12:29:03",
     "recorded-content": {
       "disable-versioning-on-locked-bucket": {
         "Error": {
@@ -2417,6 +2417,12 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
+        }
+      },
+      "enable-versioning-again-on-locked-bucket": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

@@ -2680,13 +2680,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 message="The Versioning element must be specified",
             )
 
-        if s3_bucket.object_lock_enabled:
+        if versioning_status not in ("Enabled", "Suspended"):
+            raise MalformedXML()
+
+        if s3_bucket.object_lock_enabled and versioning_status == "Suspended":
             raise InvalidBucketState(
                 "An Object Lock configuration is present on this bucket, so the versioning state cannot be changed."
             )
-
-        if versioning_status not in ("Enabled", "Suspended"):
-            raise MalformedXML()
 
         if not s3_bucket.versioning_status:
             s3_bucket.objects = VersionedKeyStore.from_key_store(s3_bucket.objects)
