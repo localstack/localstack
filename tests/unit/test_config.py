@@ -203,6 +203,26 @@ class TestUniquePortList:
             HostAndPort("0.0.0.0", 42),
         ]
 
+    def test_add_all_interfaces_value_ipv6(self):
+        ports = config.UniqueHostAndPortList()
+        ports.append(HostAndPort("::", 42))
+        ports.append(HostAndPort("::1", 42))
+
+        assert ports == [
+            HostAndPort("::", 42),
+        ]
+
+    def test_add_all_interfaces_value_mixed_ipv6_wins(self):
+        ports = config.UniqueHostAndPortList()
+        ports.append(HostAndPort("0.0.0.0", 42))
+        ports.append(HostAndPort("::", 42))
+        ports.append(HostAndPort("127.0.0.1", 42))
+        ports.append(HostAndPort("::1", 42))
+
+        assert ports == [
+            HostAndPort("::", 42),
+        ]
+
     def test_add_all_interfaces_value_after(self):
         ports = config.UniqueHostAndPortList()
         ports.append(HostAndPort("127.0.0.1", 42))
@@ -211,6 +231,24 @@ class TestUniquePortList:
         assert ports == [
             HostAndPort("0.0.0.0", 42),
         ]
+
+    def test_add_all_interfaces_value_after_ipv6(self):
+        ports = config.UniqueHostAndPortList()
+        ports.append(HostAndPort("::1", 42))
+        ports.append(HostAndPort("::", 42))
+
+        assert ports == [
+            HostAndPort("::", 42),
+        ]
+
+    def test_add_all_interfaces_value_after_mixed_ipv6_wins(self):
+        ports = config.UniqueHostAndPortList()
+        ports.append(HostAndPort("::1", 42))
+        ports.append(HostAndPort("127.0.0.1", 42))
+        ports.append(HostAndPort("::", 42))
+        ports.append(HostAndPort("0.0.0.0", 42))
+
+        assert ports == [HostAndPort("::", 42)]
 
     def test_index_access(self):
         ports = config.UniqueHostAndPortList(
@@ -259,6 +297,26 @@ class TestHostAndPort:
             config.HostAndPort.parse("0.0.0.0:not-a-port", default_host="127.0.0.1", default_port=0)
 
         assert "specified port not-a-port not a number" in str(exc_info)
+
+    def test_parsing_ipv6_with_port(self):
+        h = config.HostAndPort.parse(
+            "[5601:f95d:0:10:4978::2]:1000", default_host="", default_port=9876
+        )
+        assert h == HostAndPort(host="5601:f95d:0:10:4978::2", port=1000)
+
+    def test_parsing_ipv6_with_default_port(self):
+        h = config.HostAndPort.parse("[5601:f95d:0:10:4978::2]", default_host="", default_port=9876)
+        assert h == HostAndPort(host="5601:f95d:0:10:4978::2", port=9876)
+
+    def test_parsing_ipv6_all_interfaces_with_default_port(self):
+        h = config.HostAndPort.parse("[::]", default_host="", default_port=9876)
+        assert h == HostAndPort(host="::", port=9876)
+
+    def test_parsing_ipv6_with_invalid_address(self):
+        with pytest.raises(ValueError) as exc_info:
+            config.HostAndPort.parse("[i-am-invalid]", default_host="", default_port=9876)
+
+        assert "input looks like an IPv6 address" in str(exc_info)
 
     @pytest.mark.parametrize("port", [-1000, -1, 2**16, 100_000])
     def test_port_out_of_range(self, port):

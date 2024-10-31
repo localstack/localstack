@@ -32,7 +32,7 @@ mdurl==0.1.2
     # via markdown-it-py
 packaging==24.1
     # via build
-plux==1.12.0
+plux==1.12.1
     # via localstack-core (pyproject.toml)
 psutil==6.1.0
     # via localstack-core (pyproject.toml)

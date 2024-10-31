@@ -9,7 +9,7 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.22.4
+awscrt==0.23.0
     # via localstack-core (pyproject.toml)
 boto3==1.35.49
     # via localstack-core (pyproject.toml)
@@ -118,7 +118,7 @@ parse==1.20.2
     # via openapi-core
 pathable==0.4.3
     # via jsonschema-path
-plux==1.12.0
+plux==1.12.1
     # via localstack-core (pyproject.toml)
 priority==1.3.0
     # via
@@ -190,7 +190,7 @@ urllib3==2.2.3
     #   docker
     #   localstack-core (pyproject.toml)
     #   requests
-werkzeug==3.0.4
+werkzeug==3.0.6
     # via
     #   localstack-core (pyproject.toml)
     #   openapi-core
@@ -199,7 +199,7 @@ wsproto==1.2.0
     # via hypercorn
 xmltodict==0.14.2
     # via localstack-core (pyproject.toml)
-zope-interface==7.1.0
+zope-interface==7.1.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

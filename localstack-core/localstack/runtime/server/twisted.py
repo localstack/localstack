@@ -33,8 +33,13 @@ class TwistedRuntimeServer(RuntimeServer):
 
         # add endpoint for each host/port combination
         for host_and_port in listen:
-            # TODO: interface = host?
-            endpoint = endpoints.TCP4ServerEndpoint(reactor, host_and_port.port)
+            if config.is_ipv6_address(host_and_port.host):
+                endpoint = endpoints.TCP6ServerEndpoint(
+                    reactor, host_and_port.port, interface=host_and_port.host
+                )
+            else:
+                # TODO: interface = host?
+                endpoint = endpoints.TCP4ServerEndpoint(reactor, host_and_port.port)
             endpoint.listen(protocol_factory)
 
     def run(self):

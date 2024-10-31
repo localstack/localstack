@@ -44,6 +44,9 @@ class ServicesTemplates(TemplateLoader):
     API_GATEWAY_INVOKE_WITH_BODY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/api_gateway_invoke_with_body.json5"
     )
+    API_GATEWAY_INVOKE_WITH_HEADERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/api_gateway_invoke_with_headers.json5"
+    )
     API_GATEWAY_INVOKE_WITH_QUERY_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/api_gateway_invoke_with_query_parameters.json5"
     )
