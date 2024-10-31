@@ -1362,7 +1362,7 @@ def is_auth_token_configured() -> bool:
     """Whether an API key is set in the environment."""
     return (
         True
-        if os.environ.get("LOCALSTACK_AUTH_TOKEN")
-        and os.environ.get("LOCALSTACK_AUTH_TOKEN").strip()
+        if os.environ.get("LOCALSTACK_AUTH_TOKEN", "").strip()
+        or os.environ.get("LOCALSTACK_API_KEY", "").strip()
         else False
     )
