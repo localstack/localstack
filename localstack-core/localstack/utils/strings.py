@@ -218,4 +218,4 @@ def key_value_pairs_to_dict(pairs: str, delimiter: str = ",", separator: str = "
         dict: A dictionary containing the parsed key-value pairs.
     """
     splits = [split_pair.partition(separator) for split_pair in pairs.split(delimiter)]
-    return {key: value for key, _, value in splits}
+    return {key.strip(): value.strip() for key, _, value in splits}
