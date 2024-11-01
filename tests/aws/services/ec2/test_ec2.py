@@ -11,6 +11,7 @@ from moto.ec2.utils import (
 )
 
 from localstack.constants import TAG_KEY_CUSTOM_ID
+from localstack.services.ec2.patches import VpcIdentifier
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -817,3 +818,16 @@ def test_pickle_ec2_backend(pickle_backends, aws_client):
     _ = aws_client.ec2.describe_account_attributes()
     pickle_backends(ec2_backends)
     assert pickle_backends(ec2_backends)
+
+
+@markers.aws.only_localstack
+def test_create_specific_vpc_id(account_id, region_name, create_vpc, set_resource_custom_id):
+    cidr_block = "10.0.0.0/16"
+    custom_id = "my-custom-id"
+    set_resource_custom_id(
+        VpcIdentifier(account_id=account_id, region=region_name, cidr_block=cidr_block),
+        f"vpc-{custom_id}",
+    )
+
+    vpc = create_vpc(cidr_block=cidr_block)
+    assert vpc["Vpc"]["VpcId"] == f"vpc-{custom_id}"

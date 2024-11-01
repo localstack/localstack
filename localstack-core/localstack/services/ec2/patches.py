@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 from typing import Optional
 
 from moto.ec2 import models as ec2_models
@@ -9,9 +11,41 @@ from localstack.services.ec2.exceptions import (
     InvalidSubnetDuplicateCustomIdError,
     InvalidVpcDuplicateCustomIdError,
 )
+from localstack.utils.id_generator import (
+    ExistingIds,
+    ResourceIdentifier,
+    Tags,
+    localstack_id,
+    localstack_id_manager,
+)
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
+
+
+@localstack_id
+def generate_vpc_id(
+    resource_identifier: ResourceIdentifier,
+    existing_ids: ExistingIds = None,
+    tags: Tags = None,
+) -> str:
+    suffix = "".join(random.choice(string.ascii_letters) for _ in range(17))
+    return f"vpc-{suffix}"
+
+
+class VpcIdentifier(ResourceIdentifier):
+    service = "ec2"
+    resource = "vpc"
+
+    def __init__(self, account_id: str, region: str, cidr_block: str):
+        super().__init__(account_id, region, name=cidr_block)
+
+    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
+        return generate_vpc_id(
+            resource_identifier=self,
+            existing_ids=existing_ids,
+            tags=tags,
+        )
 
 
 def apply_patches():
@@ -82,6 +116,7 @@ def apply_patches():
     def ec2_create_vpc(
         fn: ec2_models.vpcs.VPCBackend.create_vpc,
         self: ec2_models.vpcs.VPCBackend,
+        cidr_block: str,
         *args,
         tags: Optional[list[dict[str, str]]] = None,
         is_default: bool = False,
@@ -92,12 +127,21 @@ def apply_patches():
         custom_ids = [tag["Value"] for tag in tags if tag["Key"] == TAG_KEY_CUSTOM_ID]
         custom_id = custom_ids[0] if len(custom_ids) > 0 else None
 
+        # try to generate a custom id from the id store
+        if not custom_id:
+            resource_identifier = VpcIdentifier(self.account_id, self.region_name, cidr_block)
+            id = localstack_id_manager.get_custom_id(resource_identifier)
+            if id:
+                custom_id = id
+
         # Check if custom id is unique
         if custom_id and custom_id in self.vpcs:
             raise InvalidVpcDuplicateCustomIdError(custom_id)
 
         # Generate VPC with moto library
-        result: ec2_models.vpcs.VPC = fn(self, *args, tags=tags, is_default=is_default, **kwargs)
+        result: ec2_models.vpcs.VPC = fn(
+            self, cidr_block, *args, tags=tags, is_default=is_default, **kwargs
+        )
         vpc_id = result.id
 
         if custom_id:
