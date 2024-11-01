@@ -119,3 +119,13 @@ def test_generate_from_unique_identifier_string(
 
     generated = generate_str_id(default_resource_identifier)
     assert generated == custom_id
+
+
+def test_custom_id_context_manager(default_resource_identifier):
+    custom_id = "set_id"
+    with localstack_id_manager.custom_id(default_resource_identifier, custom_id):
+        # Within context, the custom id is used
+        assert default_resource_identifier.generate() == custom_id
+
+    # Outside the context the id is no longer present and a random id is generated
+    assert default_resource_identifier.generate() != custom_id
