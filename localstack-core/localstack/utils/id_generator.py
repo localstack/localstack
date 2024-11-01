@@ -1,8 +1,9 @@
 import random
 import string
+from contextlib import contextmanager
 
 from moto.utilities import id_generator as moto_id_generator
-from moto.utilities.id_generator import MotoIdManager, moto_id
+from moto.utilities.id_generator import MotoIdManager, ResourceIdentifier, moto_id
 from moto.utilities.id_generator import ResourceIdentifier as MotoResourceIdentifier
 
 from localstack.utils.strings import long_uid, short_uid
@@ -15,6 +16,12 @@ class LocalstackIdManager(MotoIdManager):
     def set_custom_id_by_unique_identifier(self, unique_identifier: str, custom_id: str):
         with self._lock:
             self._custom_ids[unique_identifier] = custom_id
+
+    @contextmanager
+    def custom_id(self, resource_identifier: ResourceIdentifier, custom_id: str) -> None:
+        yield self.set_custom_id(resource_identifier, custom_id)
+
+        self.unset_custom_id(resource_identifier)
 
 
 localstack_id_manager = LocalstackIdManager()
