@@ -48,8 +48,9 @@ def create_vpc(aws_client):
 
     def _create_vpc(
         cidr_block: str,
-        tag_specifications: list[dict],
+        tag_specifications: list[dict] | None = None,
     ):
+        tag_specifications = tag_specifications or []
         vpc = aws_client.ec2.create_vpc(CidrBlock=cidr_block, TagSpecifications=tag_specifications)
         vpcs.append(vpc["Vpc"]["VpcId"])
         return vpc
