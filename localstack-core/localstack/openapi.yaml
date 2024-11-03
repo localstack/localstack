@@ -21,10 +21,17 @@ servers:
         default: 'localhost.localstack.cloud'
 components:
   parameters:
-    SesMessageId:
-      description: ID of the message (`id` field of SES message)
+    SesIdFilter:
+      description: Filter for the `id` field in SES message
       in: query
       name: id
+      required: false
+      schema:
+        type: string
+    SesEmailFilter:
+      description: Filter for the `source` field in SES message
+      in: query
+      name: email
       required: false
       schema:
         type: string
@@ -139,7 +146,7 @@ components:
           - text_part
           type: object
         Destination:
-          type: string
+          type: object
         Id:
           type: string
         RawData:
@@ -160,13 +167,7 @@ components:
       - Id
       - Region
       - Timestamp
-      - Destination
-      - RawData
       - Source
-      - Subject
-      - Template
-      - TemplateData
-      - Body
       type: object
     SessionInfo:
       additionalProperties: false
@@ -420,7 +421,7 @@ paths:
       operationId: discard_ses_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SesMessageId'
+      - $ref: '#/components/parameters/SesIdFilter'
       responses:
         '204':
           description: Message was successfully discarded
@@ -429,13 +430,8 @@ paths:
       operationId: get_ses_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SesMessageId'
-      - description: Source of the message (`source` field of SES message)
-        in: query
-        name: email
-        required: false
-        schema:
-          type: string
+      - $ref: '#/components/parameters/SesIdFilter'
+      - $ref: '#/components/parameters/SesEmailFilter'
       responses:
         '200':
           content:
@@ -580,7 +576,9 @@ paths:
       responses:
         '200':
           content:
-            text/xml: {}
+            text/xml:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
             application/json:
               schema:
                 $ref: '#/components/schemas/ReceiveMessageResult'
