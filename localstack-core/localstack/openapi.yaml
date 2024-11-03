@@ -131,6 +131,26 @@ components:
         - completed
         - scripts
       type: object
+    SESDestination:
+      type: object
+      description: Possible destination of a SES message
+      properties:
+        ToAddresses:
+          type: array
+          items:
+            type: string
+            format: email
+        CcAddresses:
+          type: array
+          items:
+            type: string
+            format: email
+        BccAddresses:
+          type: array
+          items:
+            type: string
+            format: email
+      additionalProperties: false
     SesSentEmail:
       additionalProperties: false
       properties:
@@ -146,7 +166,7 @@ components:
           - text_part
           type: object
         Destination:
-          type: object
+          $ref: '#/components/schemas/SESDestination'
         Id:
           type: string
         RawData:
