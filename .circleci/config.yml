@@ -491,36 +491,6 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-apigw-ng-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test ApiGateway Next Gen provider
-          environment:
-            PROVIDER_OVERRIDE_APIGATEWAY: "next_gen"
-            TEST_PATH: "tests/aws/services/apigateway/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.apigwNG.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/apigw_ng.xml -o junit_suite_name='apigw_ng'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-ddb-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -915,10 +885,6 @@ workflows:
           requires:
             - preflight
             - test-selection
-      - itest-apigw-ng-provider:
-          requires:
-            - preflight
-            - test-selection
       - itest-ddb-v2-provider:
           requires:
             - preflight
@@ -983,7 +949,6 @@ workflows:
           requires:
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
-            - itest-apigw-ng-provider
             - itest-ddb-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
@@ -998,7 +963,6 @@ workflows:
           requires:
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
-            - itest-apigw-ng-provider
             - itest-ddb-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
