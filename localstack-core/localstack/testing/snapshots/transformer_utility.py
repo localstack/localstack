@@ -345,6 +345,7 @@ class TransformerUtility:
             TransformerUtility.key_value("RoleName"),
             TransformerUtility.key_value("PolicyName"),
             TransformerUtility.key_value("PolicyId"),
+            TransformerUtility.key_value("GroupName"),
         ]
 
     @staticmethod
