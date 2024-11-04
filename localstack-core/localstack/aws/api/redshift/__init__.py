@@ -14,6 +14,7 @@ Double = float
 DoubleOptional = float
 IdcDisplayNameString = str
 IdentityNamespaceString = str
+InboundIntegrationArn = str
 Integer = int
 IntegerOptional = int
 IntegrationArn = str
@@ -27,7 +28,9 @@ PartnerIntegrationStatusMessage = str
 RedshiftIdcApplicationName = str
 S3KeyPrefixValue = str
 SensitiveString = str
+SourceArn = str
 String = str
+TargetArn = str
 
 
 class ActionType(StrEnum):
@@ -1961,8 +1964,8 @@ EncryptionContextMap = Dict[String, String]
 
 
 class CreateIntegrationMessage(ServiceRequest):
-    SourceArn: String
-    TargetArn: String
+    SourceArn: SourceArn
+    TargetArn: TargetArn
     IntegrationName: IntegrationName
     KMSKeyId: Optional[String]
     TagList: Optional[TagList]
@@ -2436,8 +2439,8 @@ class DescribeHsmConfigurationsMessage(ServiceRequest):
 
 
 class DescribeInboundIntegrationsMessage(ServiceRequest):
-    IntegrationArn: Optional[String]
-    TargetArn: Optional[String]
+    IntegrationArn: Optional[InboundIntegrationArn]
+    TargetArn: Optional[TargetArn]
     MaxRecords: Optional[IntegerOptional]
     Marker: Optional[String]
 
@@ -2901,9 +2904,9 @@ IntegrationErrorList = List[IntegrationError]
 
 
 class InboundIntegration(TypedDict, total=False):
-    IntegrationArn: Optional[String]
+    IntegrationArn: Optional[InboundIntegrationArn]
     SourceArn: Optional[String]
-    TargetArn: Optional[String]
+    TargetArn: Optional[TargetArn]
     Status: Optional[ZeroETLIntegrationStatus]
     Errors: Optional[IntegrationErrorList]
     CreateTime: Optional[TStamp]
@@ -2918,10 +2921,10 @@ class InboundIntegrationsMessage(TypedDict, total=False):
 
 
 class Integration(TypedDict, total=False):
-    IntegrationArn: Optional[String]
+    IntegrationArn: Optional[IntegrationArn]
     IntegrationName: Optional[IntegrationName]
-    SourceArn: Optional[String]
-    TargetArn: Optional[String]
+    SourceArn: Optional[SourceArn]
+    TargetArn: Optional[TargetArn]
     Status: Optional[ZeroETLIntegrationStatus]
     Errors: Optional[IntegrationErrorList]
     CreateTime: Optional[TStamp]
@@ -3832,8 +3835,8 @@ class RedshiftApi:
     def create_integration(
         self,
         context: RequestContext,
-        source_arn: String,
-        target_arn: String,
+        source_arn: SourceArn,
+        target_arn: TargetArn,
         integration_name: IntegrationName,
         kms_key_id: String = None,
         tag_list: TagList = None,
@@ -4350,8 +4353,8 @@ class RedshiftApi:
     def describe_inbound_integrations(
         self,
         context: RequestContext,
-        integration_arn: String = None,
-        target_arn: String = None,
+        integration_arn: InboundIntegrationArn = None,
+        target_arn: TargetArn = None,
         max_records: IntegerOptional = None,
         marker: String = None,
         **kwargs,
