@@ -99,6 +99,7 @@ DescribeReplaceRootVolumeTasksMaxResults = int
 DescribeRouteTablesMaxResults = int
 DescribeScheduledInstanceAvailabilityMaxResults = int
 DescribeSecurityGroupRulesMaxResults = int
+DescribeSecurityGroupVpcAssociationsMaxResults = int
 DescribeSecurityGroupsMaxResults = int
 DescribeSnapshotTierStatusMaxResults = int
 DescribeSpotFleetInstancesMaxResults = int
@@ -118,6 +119,7 @@ DescribeVpcClassicLinkDnsSupportNextToken = str
 DescribeVpcPeeringConnectionsMaxResults = int
 DescribeVpcsMaxResults = int
 DhcpOptionsId = str
+DisassociateSecurityGroupVpcSecurityGroupId = str
 DiskCount = int
 Double = float
 DoubleWithConstraints = float
@@ -2950,6 +2952,15 @@ class SecurityGroupReferencingSupportValue(StrEnum):
     disable = "disable"
 
 
+class SecurityGroupVpcAssociationState(StrEnum):
+    associating = "associating"
+    associated = "associated"
+    association_failed = "association-failed"
+    disassociating = "disassociating"
+    disassociated = "disassociated"
+    disassociation_failed = "disassociation-failed"
+
+
 class SelfServicePortal(StrEnum):
     enabled = "enabled"
     disabled = "disabled"
@@ -4613,6 +4624,16 @@ class AssociateRouteTableResult(TypedDict, total=False):
     AssociationState: Optional[RouteTableAssociationState]
 
 
+class AssociateSecurityGroupVpcRequest(ServiceRequest):
+    GroupId: SecurityGroupId
+    VpcId: VpcId
+    DryRun: Optional[Boolean]
+
+
+class AssociateSecurityGroupVpcResult(TypedDict, total=False):
+    State: Optional[SecurityGroupVpcAssociationState]
+
+
 class AssociateSubnetCidrBlockRequest(ServiceRequest):
     Ipv6IpamPoolId: Optional[IpamPoolId]
     Ipv6NetmaskLength: Optional[NetmaskLength]
@@ -5045,6 +5066,7 @@ class SecurityGroupRule(TypedDict, total=False):
     ReferencedGroupInfo: Optional[ReferencedSecurityGroup]
     Description: Optional[String]
     Tags: Optional[TagList]
+    SecurityGroupRuleArn: Optional[String]
 
 
 SecurityGroupRuleList = List[SecurityGroupRule]
@@ -8099,6 +8121,7 @@ class CreateSecurityGroupRequest(ServiceRequest):
 class CreateSecurityGroupResult(TypedDict, total=False):
     GroupId: Optional[String]
     Tags: Optional[TagList]
+    SecurityGroupArn: Optional[String]
 
 
 class CreateSnapshotRequest(ServiceRequest):
@@ -13247,6 +13270,29 @@ class DescribeSecurityGroupRulesResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+class DescribeSecurityGroupVpcAssociationsRequest(ServiceRequest):
+    Filters: Optional[FilterList]
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeSecurityGroupVpcAssociationsMaxResults]
+    DryRun: Optional[Boolean]
+
+
+class SecurityGroupVpcAssociation(TypedDict, total=False):
+    GroupId: Optional[SecurityGroupId]
+    VpcId: Optional[VpcId]
+    VpcOwnerId: Optional[String]
+    State: Optional[SecurityGroupVpcAssociationState]
+    StateReason: Optional[String]
+
+
+SecurityGroupVpcAssociationList = List[SecurityGroupVpcAssociation]
+
+
+class DescribeSecurityGroupVpcAssociationsResult(TypedDict, total=False):
+    SecurityGroupVpcAssociations: Optional[SecurityGroupVpcAssociationList]
+    NextToken: Optional[String]
+
+
 GroupNameStringList = List[SecurityGroupName]
 
 
@@ -13264,6 +13310,7 @@ class SecurityGroup(TypedDict, total=False):
     IpPermissionsEgress: Optional[IpPermissionList]
     Tags: Optional[TagList]
     VpcId: Optional[String]
+    SecurityGroupArn: Optional[String]
     OwnerId: Optional[String]
     GroupName: Optional[String]
     Description: Optional[String]
@@ -14974,6 +15021,16 @@ class DisassociateNatGatewayAddressResult(TypedDict, total=False):
 class DisassociateRouteTableRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     AssociationId: RouteTableAssociationId
+
+
+class DisassociateSecurityGroupVpcRequest(ServiceRequest):
+    GroupId: DisassociateSecurityGroupVpcSecurityGroupId
+    VpcId: String
+    DryRun: Optional[Boolean]
+
+
+class DisassociateSecurityGroupVpcResult(TypedDict, total=False):
+    State: Optional[SecurityGroupVpcAssociationState]
 
 
 class DisassociateSubnetCidrBlockRequest(ServiceRequest):
@@ -18336,9 +18393,27 @@ class RevokeSecurityGroupEgressRequest(ServiceRequest):
     IpPermissions: Optional[IpPermissionList]
 
 
+class RevokedSecurityGroupRule(TypedDict, total=False):
+    SecurityGroupRuleId: Optional[SecurityGroupRuleId]
+    GroupId: Optional[SecurityGroupId]
+    IsEgress: Optional[Boolean]
+    IpProtocol: Optional[String]
+    FromPort: Optional[Integer]
+    ToPort: Optional[Integer]
+    CidrIpv4: Optional[String]
+    CidrIpv6: Optional[String]
+    PrefixListId: Optional[PrefixListResourceId]
+    ReferencedGroupId: Optional[SecurityGroupId]
+    Description: Optional[String]
+
+
+RevokedSecurityGroupRuleList = List[RevokedSecurityGroupRule]
+
+
 class RevokeSecurityGroupEgressResult(TypedDict, total=False):
     Return: Optional[Boolean]
     UnknownIpPermissions: Optional[IpPermissionList]
+    RevokedSecurityGroupRules: Optional[RevokedSecurityGroupRuleList]
 
 
 class RevokeSecurityGroupIngressRequest(ServiceRequest):
@@ -18358,6 +18433,7 @@ class RevokeSecurityGroupIngressRequest(ServiceRequest):
 class RevokeSecurityGroupIngressResult(TypedDict, total=False):
     Return: Optional[Boolean]
     UnknownIpPermissions: Optional[IpPermissionList]
+    RevokedSecurityGroupRules: Optional[RevokedSecurityGroupRuleList]
 
 
 class RunInstancesRequest(ServiceRequest):
@@ -19057,6 +19133,17 @@ class Ec2Api:
         subnet_id: SubnetId = None,
         **kwargs,
     ) -> AssociateRouteTableResult:
+        raise NotImplementedError
+
+    @handler("AssociateSecurityGroupVpc")
+    def associate_security_group_vpc(
+        self,
+        context: RequestContext,
+        group_id: SecurityGroupId,
+        vpc_id: VpcId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> AssociateSecurityGroupVpcResult:
         raise NotImplementedError
 
     @handler("AssociateSubnetCidrBlock")
@@ -22757,6 +22844,18 @@ class Ec2Api:
     ) -> DescribeSecurityGroupRulesResult:
         raise NotImplementedError
 
+    @handler("DescribeSecurityGroupVpcAssociations")
+    def describe_security_group_vpc_associations(
+        self,
+        context: RequestContext,
+        filters: FilterList = None,
+        next_token: String = None,
+        max_results: DescribeSecurityGroupVpcAssociationsMaxResults = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DescribeSecurityGroupVpcAssociationsResult:
+        raise NotImplementedError
+
     @handler("DescribeSecurityGroups")
     def describe_security_groups(
         self,
@@ -23703,6 +23802,17 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DisassociateSecurityGroupVpc")
+    def disassociate_security_group_vpc(
+        self,
+        context: RequestContext,
+        group_id: DisassociateSecurityGroupVpcSecurityGroupId,
+        vpc_id: String,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DisassociateSecurityGroupVpcResult:
         raise NotImplementedError
 
     @handler("DisassociateSubnetCidrBlock")
