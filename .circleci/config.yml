@@ -431,36 +431,6 @@ jobs:
   ######################
   ## Custom Test Jobs ##
   ######################
-  itest-sfn-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test SFN Legacy provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
-            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-cloudwatch-v1-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -937,10 +907,6 @@ workflows:
       - test-selection:
           requires:
             - install
-      - itest-sfn-legacy-provider:
-          requires:
-            - preflight
-            - test-selection
       - itest-cloudwatch-v1-provider:
           requires:
             - preflight
@@ -1015,7 +981,6 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-sfn-legacy-provider
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
@@ -1031,7 +996,6 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-sfn-legacy-provider
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
