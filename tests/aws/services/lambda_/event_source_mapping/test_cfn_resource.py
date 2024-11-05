@@ -1,8 +1,6 @@
 import json
 import os
 
-import pytest
-
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -16,7 +14,6 @@ from localstack.utils.sync import retry
         "$..Tags.'aws:cloudformation:stack-name'",
     ]
 )
-@pytest.mark.skip(reason="WIP")
 def test_adding_tags(deploy_cfn_template, aws_client, snapshot):
     template_path = os.path.join(
         os.path.join(os.path.dirname(__file__), "../../../templates/event_source_mapping_tags.yml")
