@@ -275,6 +275,12 @@ DEPRECATIONS = [
         "This option was confusingly named. Please use DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM "
         "instead.",
     ),
+    EnvVarDeprecation(
+        "LAMBDA_EVENTS_INTERNAL_SQS",
+        "4.0.0",
+        "This option is ignored because the LocalStack SQS dependency for event invokes has been removed since 4.0.0"
+        " in favor of a lightweight Lambda-internal SQS implementation.",
+    ),
 ]
 
 

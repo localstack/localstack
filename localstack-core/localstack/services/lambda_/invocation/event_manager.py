@@ -12,7 +12,6 @@ from botocore.config import Config
 
 from localstack import config
 from localstack.aws.api.lambda_ import TooManyRequestsException
-from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.internal_sqs_queue import get_fake_sqs_client
 from localstack.services.lambda_.invocation.lambda_models import (
     EventInvokeConfig,
@@ -32,15 +31,7 @@ LOG = logging.getLogger(__name__)
 
 
 def get_sqs_client(function_version: FunctionVersion, client_config=None):
-    if config.LAMBDA_EVENTS_INTERNAL_SQS:
-        return get_fake_sqs_client()
-    else:
-        region_name = function_version.id.region
-        return connect_to(
-            aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
-            region_name=region_name,
-            config=client_config,
-        ).sqs
+    return get_fake_sqs_client()
 
 
 # TODO: remove once DLQ handling is refactored following the removal of the legacy lambda provider
