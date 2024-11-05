@@ -1,0 +1,19 @@
+{
+  "tests/aws/services/lambda_/event_source_mapping/test_cfn_resource.py::test_adding_tags": {
+    "recorded-date": "05-11-2024, 19:51:08",
+    "recorded-content": {
+      "event-source-mapping-tags": {
+        "Tags": {
+          "aws:cloudformation:logical-id": "FunctionSqsEventSourceHubspot17769792702StackQueue12392946EE93DB22",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-6974af6d/28039440-9baf-11ef-af1a-02c60716e235",
+          "aws:cloudformation:stack-name": "stack-6974af6d",
+          "my": "tag"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
