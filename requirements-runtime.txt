@@ -14,7 +14,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
-apispec==6.7.0
+apispec==6.7.1
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via amazon-kclpy
@@ -64,7 +64,7 @@ certifi==2024.8.30
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.18.2
+cfn-lint==1.18.4
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
@@ -303,13 +303,13 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.9.3
+rich==13.9.4
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
 rolo==0.7.3
     # via localstack-core
-rpds-py==0.20.0
+rpds-py==0.20.1
     # via
     #   jsonschema
     #   referencing
@@ -351,7 +351,7 @@ urllib3==2.2.3
     #   opensearch-py
     #   requests
     #   responses
-werkzeug==3.0.6
+werkzeug==3.1.2
     # via
     #   localstack-core
     #   moto-ext
