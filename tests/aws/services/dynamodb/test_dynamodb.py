@@ -778,7 +778,6 @@ class TestDynamoDB:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..SizeBytes",
-            "$..DeletionProtectionEnabled",
             "$..ProvisionedThroughput.NumberOfDecreasesToday",
             "$..StreamDescription.CreationRequestDateTime",
         ]
@@ -1338,7 +1337,6 @@ class TestDynamoDB:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..SizeBytes",
-            "$..DeletionProtectionEnabled",
             "$..ProvisionedThroughput.NumberOfDecreasesToday",
             "$..StreamDescription.CreationRequestDateTime",
         ]
@@ -2078,7 +2076,6 @@ class TestDynamoDB:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..SizeBytes",
-            "$..DeletionProtectionEnabled",
             "$..ProvisionedThroughput.NumberOfDecreasesToday",
             "$..StreamDescription.CreationRequestDateTime",
         ]
@@ -2212,7 +2209,6 @@ class TestDynamoDB:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..SizeBytes",
-            "$..DeletionProtectionEnabled",
             "$..ProvisionedThroughput.NumberOfDecreasesToday",
             "$..StreamDescription.CreationRequestDateTime",
         ]
