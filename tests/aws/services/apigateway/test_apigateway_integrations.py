@@ -409,8 +409,6 @@ def test_put_integration_response_with_response_template(
     snapshot.match("get-integration-response", response)
 
 
-# TODO: Aws does not return the uri when creating a MOCK integration
-@markers.snapshot.skip_snapshot_verify(paths=["$..not-required-integration-method-MOCK.uri"])
 @markers.aws.validated
 def test_put_integration_validation(
     aws_client, account_id, region_name, create_rest_apigw, snapshot, partition
@@ -545,6 +543,75 @@ def test_put_integration_validation(
             integrationHttpMethod="POST",
         )
     snapshot.match("invalid-uri-invalid-arn", ex.value.response)
+
+
+@markers.aws.validated
+@pytest.mark.skipif(
+    condition=not is_next_gen_api(),
+    reason="Behavior is properly implemented in Legacy, it returns the MOCK response",
+)
+def test_integration_mock_with_path_param(create_rest_apigw, aws_client):
+    api_id, _, root = create_rest_apigw(
+        name=f"test-api-{short_uid()}",
+        description="this is my api",
+    )
+
+    rest_resource = aws_client.apigateway.create_resource(
+        restApiId=api_id,
+        parentId=root,
+        pathPart="{testPath}",
+    )
+    resource_id = rest_resource["id"]
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        authorizationType="none",
+        requestParameters={
+            "method.request.path.testPath": True,
+        },
+    )
+
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id, resourceId=resource_id, httpMethod="GET", statusCode="200"
+    )
+
+    # you don't have to pass URI for Mock integration as it's not used anyway
+    # when exporting an API in AWS, apparently you can get integration path parameters even if not used
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        integrationHttpMethod="POST",
+        type="MOCK",
+        requestParameters={
+            "integration.request.path.integrationPath": "method.request.path.testPath",
+        },
+        requestTemplates={"application/json": '{"statusCode": 200}'},
+    )
+
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="200",
+        selectionPattern="2\\d{2}",
+        responseTemplates={},
+    )
+    stage_name = "dev"
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+    invocation_url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test-path")
+
+    def invoke_api(url) -> requests.Response:
+        _response = requests.get(url, verify=False)
+        assert _response.ok
+        return _response
+
+    response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+    assert response_data.content == b""
+    assert response_data.status_code == 200
 
 
 @pytest.fixture
