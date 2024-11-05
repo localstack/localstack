@@ -1,5 +1,5 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_cfn_resource.py::test_adding_tags": {
-    "last_validated_date": "2024-11-05T19:51:08+00:00"
+    "last_validated_date": "2024-11-05T21:35:12+00:00"
   }
 }

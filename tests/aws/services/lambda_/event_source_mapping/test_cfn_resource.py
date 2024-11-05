@@ -25,6 +25,8 @@ def test_adding_tags(deploy_cfn_template, aws_client, snapshot):
         template_path=template_path,
         parameters={"OutputKey": output_key},
     )
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
 
     event_source_mapping_arn = stack.outputs["EventSourceMappingArn"]
     tags_response = aws_client.lambda_.list_tags(Resource=event_source_mapping_arn)
