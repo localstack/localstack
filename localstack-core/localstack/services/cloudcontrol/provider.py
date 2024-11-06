@@ -1,8 +1,8 @@
 import json
 import logging
 import re
+from json import JSONDecodeError
 
-from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.cloudcontrol import (
     CloudcontrolApi,
@@ -23,17 +23,16 @@ from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.resource_provider import (
     NoResourceProvider,
-    ResourceProvider,
     ResourceProviderExecutor,
     ResourceRequest,
     get_resource_type,
-    plugin_manager,
     resolve_json_pointer,
 )
 
 LOG = logging.getLogger(__name__)
 
 UNSUPPORTED_RESOURCES = {
+    "get": {},
     "list": {
         "AWS::IAM::Policy",
     },
@@ -71,26 +70,6 @@ def extract_physical_resource_id_from_model_with_schema(
     return physical_resource_id
 
 
-def load_resource_provider(resource_type: str) -> ResourceProvider:
-    # TODO: unify namespace of plugins
-    # 2. try to load community resource provider
-    try:
-        plugin = plugin_manager.load(resource_type)
-        return plugin.factory()
-    except ValueError:
-        # could not find a plugin for that name
-        pass
-    except Exception:
-        if config.CFN_VERBOSE_ERRORS:
-            LOG.warning(
-                "Failed to load community resource type %s as a ResourceProvider.",
-                resource_type,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
-
-    raise NoResourceProvider
-
-
 class CloudControlProvider(CloudcontrolApi):
     def get_resource(
         self,
@@ -101,9 +80,56 @@ class CloudControlProvider(CloudcontrolApi):
         role_arn: RoleArn = None,
         **kwargs,
     ) -> GetResourceOutput:
+        if type_name in UNSUPPORTED_RESOURCES["get"]:
+            LOG.warning(
+                "Listing '%s' resources via CloudControl is not supported on AWS", type_name
+            )
+
+        try:
+            resource_model = json.loads(identifier)
+        except JSONDecodeError:
+            raise ValueError("TODO")
+
+        try:
+            executor = ResourceProviderExecutor(stack_name="", stack_id="")
+            provider = executor.try_load_resource_provider(get_resource_type({"Type": type_name}))
+        except NoResourceProvider:
+            raise TypeNotFoundException(f"The type '{type_name}' cannot be found.")
+
+        client_factory = connect_to(
+            region_name=context.region,
+            aws_access_key_id=context.account_id,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+            aws_session_token="",
+        )
+        # state handling is still a bit unclear
+        event = provider.read(
+            ResourceRequest(
+                aws_client_factory=client_factory,
+                resource_type=type_name,
+                account_id="",
+                desired_state=resource_model or {},
+                previous_state={},
+                region_name="",
+                action="",
+                logical_resource_id="",
+                custom_context={},
+                stack_name="",
+                stack_id="",
+                _original_payload={},
+                request_token="",
+                logger=LOG,
+            )
+        )
+        props = event.resource_model
         return GetResourceOutput(
             TypeName=type_name,
-            ResourceDescription=ResourceDescription(Identifier=identifier, Properties=""),
+            ResourceDescription=ResourceDescription(
+                Identifier=extract_physical_resource_id_from_model_with_schema(
+                    props, type_name, provider.SCHEMA
+                ),
+                Properties=json.dumps(props),
+            ),
         )
 
     def list_resources(
