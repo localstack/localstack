@@ -1039,14 +1039,14 @@ class TestCloudwatch:
             )
             cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
 
-        alarm_1_name = "simple-alarm-1"
-        alarm_2_name = "simple-alarm-2"
+        alarm_1_name = f"simple-alarm-1-{short_uid()}"
+        alarm_2_name = f"simple-alarm-2-{short_uid()}"
 
         _put_metric_alarm(alarm_1_name)
         _put_metric_alarm(alarm_2_name)
 
         # put composite alarm that is triggered when either of metric alarms is triggered.
-        composite_alarm_name="composite-alarm"
+        composite_alarm_name=f"composite-alarm-{short_uid()}"
         composite_alarm_description="composite alarm description"
 
         aws_client.cloudwatch.put_composite_alarm(
