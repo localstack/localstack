@@ -181,26 +181,24 @@ class TargetSender(ABC):
             self._validate_input_transformer(input_transformer)
 
     def _initialize_client(self) -> BaseClient:
-        """Initializes internal boto client.
-        If a role from a target is provided, the client will be initialized with the assumed role.
-        If no role is provided, the client will be initialized with the account ID and region.
-        In both cases event bridge is requested as service principal"""
+        """Initializes internal boto client."""
         service_principal = ServicePrincipal.events
         role_arn = self.target.get("RoleArn")
-        if role_arn:  # required for cross account
-            # assumed role sessions expire after 6 hours in AWS, currently no expiration in LocalStack
+        if role_arn:
             client_factory = connect_to.with_assumed_role(
                 role_arn=role_arn,
                 service_principal=service_principal,
                 region_name=self.region,
             )
+            client = client_factory.get_client(self.service)
+            client.request_metadata(
+                service_principal=service_principal, source_arn=self.rule_arn
+            )
         else:
-            client_factory = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
-        client = client_factory.get_client(self.service)
-        client = client.request_metadata(
-            service_principal=service_principal, source_arn=self.rule_arn
-        )
+            # Use connect_to to get the client
+            client = connect_to(region_name=self.region).get_client(self.service)
         return client
+
 
     def _validate_input_transformer(self, input_transformer: InputTransformer):
         if "InputTemplate" not in input_transformer:
@@ -465,6 +463,11 @@ class LogsTargetSender(TargetSender):
     def send_event(self, event):
         log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
+
+        LOG.warn(f"log_group_name: {log_group_name}")
+        LOG.warn(f"log_stream_name: {log_stream_name}")
+        LOG.warn(f"event: {event}")
+
         self.client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         self.client.put_log_events(
             logGroupName=log_group_name,

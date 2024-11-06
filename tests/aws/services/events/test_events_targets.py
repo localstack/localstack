@@ -37,6 +37,130 @@ from tests.aws.services.lambda_.test_lambda import (
 #   - Container (pro)
 #   - Redshift (pro)
 #   - Sagemaker (pro)
+class TestEventsTargetCloudWatchLogs:
+    @markers.aws.validated
+    def test_put_events_with_target_cloudwatch_logs(
+        self,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+        account_id,
+        region_name,
+    ):
+        # TODO: add transformers
+        # snapshot.add_transformers_list(
+        #     [
+        #         # snapshot.transform.key_value("EventId", reference_replacement=False),
+        #         # snapshot.transform.key_value("id", value_replacement="<event-id>"),
+        #         # # Handle timestamps
+        #         # snapshot.transform.key_value("timestamp", value_replacement="<timestamp>"),
+        #         # snapshot.transform.key_value("ingestionTime", value_replacement="<timestamp>"),
+        #         # snapshot.transform.key_value("time", value_replacement="<timestamp>")
+        #     ]
+        # )
+
+        # Step 1: Create an EventBridge event bus
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_response = events_create_event_bus(Name=event_bus_name)
+        snapshot.match("event_bus_response", event_bus_response)
+
+        # Step 2: Create a CloudWatch Logs log group
+        log_group_name = f"/aws/events/test-log-group-{short_uid()}"
+        aws_client.logs.create_log_group(logGroupName=log_group_name)
+        log_group_arn = (
+            f"arn:aws:logs:{region_name}:{account_id}:log-group:{log_group_name}"
+        )
+
+        # Step 3: Attach a resource policy to the log group to allow EventBridge to write to it
+        resource_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "EventBridgePutLogEvents",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "events.amazonaws.com"
+                    },
+                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                    "Resource": f"{log_group_arn}:*"
+                }
+            ]
+        }
+        policy_name = f"EventBridgePolicy-{short_uid()}"
+        aws_client.logs.put_resource_policy(
+            policyName=policy_name,
+            policyDocument=json.dumps(resource_policy)
+        )
+
+        # Wait for the resource policy to take effect (only needed in AWS)
+        if is_aws_cloud():
+            time.sleep(10)
+
+        # Step 4: Create a rule on the event bus
+        rule_name = f"test-rule-{short_uid()}"
+        event_pattern = {"source": ["test.source"], "detail-type": ["test.detail.type"]}
+        rule_response = events_put_rule(
+            Name=rule_name,
+            EventBusName=event_bus_name,
+            EventPattern=json.dumps(event_pattern),
+        )
+        snapshot.match("rule_response", rule_response)
+
+        # Step 5: Add the CloudWatch Logs log group as a target without RoleArn and without InputTransformer
+        target_id = f"target-{short_uid()}"
+        put_targets_response = aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": log_group_arn,
+                }
+            ],
+        )
+        snapshot.match("put_targets_response", put_targets_response)
+        assert put_targets_response["FailedEntryCount"] == 0
+
+        # Step 6: Send an event to the event bus
+        event_entry = {
+            "EventBusName": event_bus_name,
+            "Source": "test.source",
+            "DetailType": "test.detail.type",
+            "Detail": json.dumps({"message": "Hello from EventBridge"}),
+        }
+        put_events_response = aws_client.events.put_events(Entries=[event_entry])
+        snapshot.match("put_events_response", put_events_response)
+        assert put_events_response["FailedEntryCount"] == 0
+
+        # Step 7: Verify that the event was logged to the log group
+        def get_log_events():
+            response = aws_client.logs.describe_log_streams(
+                logGroupName=log_group_name
+            )
+            log_streams = response.get("logStreams", [])
+            if not log_streams:
+                raise Exception("No log streams found")
+            log_stream_name = log_streams[0]["logStreamName"]
+            events_response = aws_client.logs.get_log_events(
+                logGroupName=log_group_name,
+                logStreamName=log_stream_name,
+            )
+            events = events_response.get("events", [])
+            if not events:
+                raise Exception("No log events found")
+            return events
+
+        # Increase retries and sleep time to account for potential delays
+        events = retry(get_log_events, retries=20, sleep=5)
+        snapshot.match("log_events", events)
+
+        # Cleanup: delete the log group
+        aws_client.logs.delete_log_group(logGroupName=log_group_name)
+        aws_client.logs.delete_resource_policy(policyName=policy_name)
+
+
+
 class TestEventsTargetApiGateway:
     @markers.aws.validated
     @pytest.mark.skipif(

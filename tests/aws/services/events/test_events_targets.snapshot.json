@@ -837,5 +837,63 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetCloudWatchLogs::test_put_events_with_target_cloudwatch_logs": {
+    "recorded-date": "05-11-2024, 21:20:12",
+    "recorded-content": {
+      "event_bus_response": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/test-bus-e47f5fd3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rule_response": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/test-bus-e47f5fd3/test-rule-e533ccd4",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_targets_response": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_events_response": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "log_events": [
+        {
+          "timestamp": "timestamp",
+          "message": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "test.detail.type",
+            "source": "test.source",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "Hello from EventBridge"
+            }
+          },
+          "ingestionTime": "timestamp"
+        }
+      ]
+    }
   }
 }
