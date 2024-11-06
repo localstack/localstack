@@ -4,6 +4,7 @@ import os
 import pytest
 
 from localstack.testing.pytest import markers
+from localstack.testing.scenario.provisioning import cleanup_s3_bucket
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm
@@ -18,7 +19,7 @@ from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm
         "$..Tags.'aws:cloudformation:stack-name'",
     ]
 )
-def test_adding_tags(deploy_cfn_template, aws_client, snapshot):
+def test_adding_tags(deploy_cfn_template, aws_client, snapshot, cleanups):
     template_path = os.path.join(
         os.path.join(os.path.dirname(__file__), "../../../templates/event_source_mapping_tags.yml")
     )
@@ -29,6 +30,9 @@ def test_adding_tags(deploy_cfn_template, aws_client, snapshot):
         template_path=template_path,
         parameters={"OutputKey": output_key},
     )
+    # ensure the S3 bucket is empty so we can delete it
+    cleanups.append(lambda: cleanup_s3_bucket(aws_client.s3, stack.outputs["OutputBucketName"]))
+
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
 

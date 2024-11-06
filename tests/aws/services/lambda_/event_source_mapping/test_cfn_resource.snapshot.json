@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_cfn_resource.py::test_adding_tags": {
-    "recorded-date": "05-11-2024, 21:35:12",
+    "recorded-date": "06-11-2024, 11:55:29",
     "recorded-content": {
       "event-source-mapping-tags": {
         "Tags": {
