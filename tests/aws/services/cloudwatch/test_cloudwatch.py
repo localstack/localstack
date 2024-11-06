@@ -1072,7 +1072,7 @@ class TestCloudwatch:
             sqs_client=aws_client.sqs,
             expected_queue_url=queue_url_alarm,
             expected_topic_arn=topic_arn_alarm,
-            expected_new="ALARM"
+            expected_new="ALARM",
             expected_reason=state_reason, #TODO define state reason for composite alarm
             alarm_name=composite_alarm_name,
             alarm_description=composite_alarm_description,
