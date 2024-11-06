@@ -191,14 +191,11 @@ class TargetSender(ABC):
                 region_name=self.region,
             )
             client = client_factory.get_client(self.service)
-            client.request_metadata(
-                service_principal=service_principal, source_arn=self.rule_arn
-            )
+            client.request_metadata(service_principal=service_principal, source_arn=self.rule_arn)
         else:
             # Use connect_to to get the client
             client = connect_to(region_name=self.region).get_client(self.service)
         return client
-
 
     def _validate_input_transformer(self, input_transformer: InputTransformer):
         if "InputTemplate" not in input_transformer:
@@ -462,11 +459,7 @@ class LambdaTargetSender(TargetSender):
 class LogsTargetSender(TargetSender):
     def send_event(self, event):
         log_group_name = self.target["Arn"].split(":")[6]
-        log_stream_name = str(uuid.uuid4())  # Unique log stream name
-
-        LOG.warn(f"log_group_name: {log_group_name}")
-        LOG.warn(f"log_stream_name: {log_stream_name}")
-        LOG.warn(f"event: {event}")
+        log_stream_name = str(uuid.uuid4())
 
         self.client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         self.client.put_log_events(

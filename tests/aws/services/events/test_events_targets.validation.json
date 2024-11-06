@@ -3,7 +3,7 @@
     "last_validated_date": "2024-10-03T20:10:39+00:00"
   },
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetCloudWatchLogs::test_put_events_with_target_cloudwatch_logs": {
-    "last_validated_date": "2024-11-05T21:20:12+00:00"
+    "last_validated_date": "2024-11-06T14:37:32+00:00"
   },
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetEvents::test_put_events_with_target_events[bus_combination0]": {
     "last_validated_date": "2024-07-11T08:59:28+00:00"
