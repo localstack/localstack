@@ -171,6 +171,14 @@ def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
         return ServiceModelIdentifier("lambda")
 
 
+well_known_path_prefixes = (
+    "/_aws",
+    "/_localstack",
+    "/_pods",
+    "/_extension",
+)
+
+
 def legacy_rules(request: Request) -> Optional[ServiceModelIdentifier]:
     """
     *Legacy* rules which migrate routing logic which will become obsolete with the ASF Gateway.
@@ -192,8 +200,9 @@ def legacy_rules(request: Request) -> Optional[ServiceModelIdentifier]:
 
     # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
     # necessary for correct handling of cors for internal endpoints
-    if path.startswith("/_localstack") or path.startswith("/_pods") or path.startswith("/_aws"):
-        return None
+    for prefix in well_known_path_prefixes:
+        if path.startswith(prefix):
+            return None
 
     # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
     #      Some are similar to other rules and not that greedy, others are nearly general fallbacks.
