@@ -1,10 +1,12 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
+from localstack.aws.api.cloudcontrol import InvalidRequestException
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
@@ -93,6 +95,30 @@ class ApiGatewayResourceProvider(ResourceProvider[ApiGatewayResourceProperties])
           - apigateway:GET
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[ApiGatewayResourceProperties],
+    ) -> ProgressEvent[ApiGatewayResourceProperties]:
+        input_payload = json.loads(request.desired_state)
+        if "RestApiId" not in input_payload:
+            # TODO: parity
+            raise InvalidRequestException(
+                f"Missing or invalid ResourceModel property in {self.TYPE} list handler request input: 'RestApiId'"
+            )
+
+        rest_api_id = input_payload["RestApiId"]
+        resources = request.aws_client_factory.apigateway.get_resources(restApiId=rest_api_id)[
+            "items"
+        ]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                ApiGatewayResourceProperties(RestApiId=rest_api_id, ResourceId=resource["id"])
+                for resource in resources
+            ],
+        )
 
     def delete(
         self,
