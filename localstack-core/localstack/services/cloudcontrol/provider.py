@@ -15,6 +15,7 @@ from localstack.aws.api.cloudcontrol import (
     ResourceDescription,
     RoleArn,
     TypeName,
+    TypeNotFoundException,
     TypeVersionId,
 )
 from localstack.aws.connect import connect_to
@@ -108,7 +109,11 @@ class CloudControlProvider(CloudcontrolApi):
         resource_model: Properties = None,
         **kwargs,
     ) -> ListResourcesOutput:
-        provider = load_resource_provider(type_name)
+        try:
+            provider = load_resource_provider(type_name)
+        except NoResourceProvider:
+            raise TypeNotFoundException(f"The type '{type_name}' cannot be found.")
+
         client_factory = connect_to(
             region_name=context.region,
             aws_access_key_id=context.account_id,
