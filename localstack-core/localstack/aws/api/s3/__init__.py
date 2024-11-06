@@ -974,6 +974,14 @@ class ConditionalRequestConflict(ServiceException):
     Key: Optional[ObjectKey]
 
 
+class BadDigest(ServiceException):
+    code: str = "BadDigest"
+    sender_fault: bool = False
+    status_code: int = 400
+    ExpectedDigest: Optional[ContentMD5]
+    CalculatedDigest: Optional[ContentMD5]
+
+
 AbortDate = datetime
 
 

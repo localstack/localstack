@@ -3968,13 +3968,14 @@ class TestS3:
         bad_digest_md5 = base64.b64encode(
             hashlib.md5(f"{content}1".encode("utf-8")).digest()
         ).decode("utf-8")
+
         hashes = [
             "__invalid__",
             "000",
             "not base64 encoded checksum",
             "MTIz",
-            bad_digest_md5,
         ]
+
         for index, md5hash in enumerate(hashes):
             with pytest.raises(ClientError) as e:
                 aws_client.s3.put_object(
@@ -3984,6 +3985,15 @@ class TestS3:
                     ContentMD5=md5hash,
                 )
             snapshot.match(f"md5-error-{index}", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key="test-key",
+                Body=content,
+                ContentMD5=bad_digest_md5,
+            )
+        snapshot.match("md5-error-bad-digest", e.value.response)
 
         response = aws_client.s3.put_object(
             Bucket=s3_bucket,
@@ -4008,6 +4018,17 @@ class TestS3:
                     ContentMD5=md5hash,
                 )
             snapshot.match(f"upload-part-md5-error-{index}", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key="multi-key",
+                Body=content,
+                UploadId=upload_id,
+                PartNumber=1,
+                ContentMD5=bad_digest_md5,
+            )
+        snapshot.match("upload-part-md5-bad-digest", e.value.response)
 
         response = aws_client.s3.upload_part(
             Bucket=s3_bucket,
