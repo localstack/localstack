@@ -129,7 +129,7 @@ class CloudControlProvider(CloudcontrolApi):
                 aws_client_factory=client_factory,
                 resource_type=type_name,
                 account_id="",
-                desired_state={},
+                desired_state=resource_model or {},
                 previous_state={},
                 region_name="",
                 action="",
