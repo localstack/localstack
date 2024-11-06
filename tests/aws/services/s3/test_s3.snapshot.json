@@ -1581,7 +1581,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_invalid_content_md5": {
-    "recorded-date": "05-09-2023, 02:58:55",
+    "recorded-date": "06-11-2024, 13:59:55",
     "recorded-content": {
       "md5-error-0": {
         "Error": {
@@ -1627,7 +1627,83 @@
           "HTTPStatusCode": 400
         }
       },
+      "md5-error-4": {
+        "Error": {
+          "CalculatedDigest": "Q3uTDbhLgHnC3YBKcZNrXw==",
+          "Code": "BadDigest",
+          "ExpectedDigest": "09891eb590524e35fc73372cddc5d596",
+          "Message": "The Content-MD5 you specified did not match what we received."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "success-put-object-md5": {
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-md5-error-0": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "__invalid__",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-md5-error-1": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "000",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-md5-error-2": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "not base64 encoded checksum",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-md5-error-3": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "MTIz",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-md5-error-4": {
+        "Error": {
+          "CalculatedDigest": "Q3uTDbhLgHnC3YBKcZNrXw==",
+          "Code": "BadDigest",
+          "ExpectedDigest": "CYketZBSTjX8czcs3cXVlg==",
+          "Message": "The Content-MD5 you specified did not match what we received."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "success-upload-part-md5": {
         "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
