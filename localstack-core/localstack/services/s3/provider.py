@@ -299,7 +299,7 @@ from localstack.services.s3.validation import (
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import s3_bucket_name
-from localstack.utils.strings import is_base64, short_uid, to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -2129,7 +2129,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if content_md5 := request.get("ContentMD5"):
             # assert that the received ContentMD5 is a properly b64 encoded value that fits a MD5 hash length
-            if not is_base64(content_md5) or len(base64.b64decode(content_md5)) != 16:
+            if not base_64_content_md5_to_etag(content_md5):
                 raise InvalidDigest(
                     "The Content-MD5 you specified was invalid.",
                     Content_MD5=content_md5,
