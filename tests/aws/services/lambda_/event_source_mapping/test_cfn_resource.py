@@ -1,12 +1,16 @@
 import json
 import os
 
+import pytest
+
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm
 
 
 @markers.aws.validated
+@pytest.mark.skipif(condition=is_old_esm(), reason="Not implemented in v1 provider")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Tags.'aws:cloudformation:logical-id'",
