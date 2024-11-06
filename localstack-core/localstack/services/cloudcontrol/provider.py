@@ -33,6 +33,12 @@ from localstack.services.cloudformation.resource_provider import (
 
 LOG = logging.getLogger(__name__)
 
+UNSUPPORTED_RESOURCES = {
+    "list": {
+        "AWS::IAM::Policy",
+    },
+}
+
 
 def extract_physical_resource_id_from_model_with_schema(
     resource_model: Properties, resource_type: str, resource_type_schema: dict
@@ -111,6 +117,11 @@ class CloudControlProvider(CloudcontrolApi):
         resource_model: Properties = None,
         **kwargs,
     ) -> ListResourcesOutput:
+        if type_name in UNSUPPORTED_RESOURCES["list"]:
+            LOG.warning(
+                "Listing '%s' resources via CloudControl is not supported on AWS", type_name
+            )
+
         try:
             executor = ResourceProviderExecutor(stack_name="", stack_id="")
             provider = executor.try_load_resource_provider(get_resource_type({"Type": type_name}))
