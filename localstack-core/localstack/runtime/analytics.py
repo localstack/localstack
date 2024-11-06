@@ -8,6 +8,7 @@ from localstack.utils.analytics import log
 LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
+    "CONTAINER_RUNTIME",
     "DEBUG",
     "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DISABLE_CORS_CHECK",
@@ -17,6 +18,7 @@ TRACKED_ENV_VAR = [
     "DNS_ADDRESS",
     "DYNAMODB_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
+    "ECS_TASK_EXECUTOR",
     "EDGE_PORT",
     "ENFORCE_IAM",
     "IAM_SOFT_MODE",

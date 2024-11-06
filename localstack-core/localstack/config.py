@@ -870,6 +870,9 @@ EXTERNAL_SERVICE_PORTS_END = int(
     or (EXTERNAL_SERVICE_PORTS_START + 50)
 )
 
+# The default container runtime to use
+CONTAINER_RUNTIME = os.environ.get("CONTAINER_RUNTIME", "").strip() or "docker"
+
 # PUBLIC v1: -Xmx512M (example) Currently not supported in new provider but possible via custom entrypoint.
 # Allow passing custom JVM options to Java Lambdas executed in Docker.
 LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
@@ -979,7 +982,7 @@ LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 
 # PUBLIC: docker (default), kubernetes (pro)
 # Where Lambdas will be executed.
-LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
+LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", CONTAINER_RUNTIME).strip()
 
 # PUBLIC: 20 (default)
 # How many seconds Lambda will wait for the runtime environment to start up.
@@ -1239,6 +1242,7 @@ CONFIG_ENV_VARS = [
     "CFN_STRING_REPLACEMENT_DENY_LIST",
     "CFN_VERBOSE_ERRORS",
     "CI",
+    "CONTAINER_RUNTIME",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
