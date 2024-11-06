@@ -1,0 +1,173 @@
+{
+  "typeName": "AWS::SES::EmailIdentity",
+  "description": "Resource Type definition for AWS::SES::EmailIdentity",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-ses.git",
+  "additionalProperties": false,
+  "properties": {
+    "EmailIdentity": {
+      "type": "string",
+      "description": "The email address or domain to verify."
+    },
+    "ConfigurationSetAttributes": {
+      "$ref": "#/definitions/ConfigurationSetAttributes"
+    },
+    "DkimSigningAttributes": {
+      "$ref": "#/definitions/DkimSigningAttributes"
+    },
+    "DkimAttributes": {
+      "$ref": "#/definitions/DkimAttributes"
+    },
+    "MailFromAttributes": {
+      "$ref": "#/definitions/MailFromAttributes"
+    },
+    "FeedbackAttributes": {
+      "$ref": "#/definitions/FeedbackAttributes"
+    },
+    "DkimDNSTokenName1": {
+      "type": "string"
+    },
+    "DkimDNSTokenName2": {
+      "type": "string"
+    },
+    "DkimDNSTokenName3": {
+      "type": "string"
+    },
+    "DkimDNSTokenValue1": {
+      "type": "string"
+    },
+    "DkimDNSTokenValue2": {
+      "type": "string"
+    },
+    "DkimDNSTokenValue3": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "DkimSigningAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "If your request includes this object, Amazon SES configures the identity to use Bring Your Own DKIM (BYODKIM) for DKIM authentication purposes, or, configures the key length to be used for Easy DKIM.",
+      "properties": {
+        "DomainSigningSelector": {
+          "type": "string",
+          "description": "[Bring Your Own DKIM] A string that's used to identify a public key in the DNS configuration for a domain."
+        },
+        "DomainSigningPrivateKey": {
+          "type": "string",
+          "description": "[Bring Your Own DKIM] A private key that's used to generate a DKIM signature. The private key must use 1024 or 2048-bit RSA encryption, and must be encoded using base64 encoding."
+        },
+        "NextSigningKeyLength": {
+          "type": "string",
+          "description": "[Easy DKIM] The key length of the future DKIM key pair to be generated. This can be changed at most once per day.",
+          "pattern": "RSA_1024_BIT|RSA_2048_BIT"
+        }
+      }
+    },
+    "ConfigurationSetAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Used to associate a configuration set with an email identity.",
+      "properties": {
+        "ConfigurationSetName": {
+          "type": "string",
+          "description": "The configuration set to use by default when sending from this identity. Note that any configuration set defined in the email sending request takes precedence."
+        }
+      }
+    },
+    "DkimAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Used to enable or disable DKIM authentication for an email identity.",
+      "properties": {
+        "SigningEnabled": {
+          "type": "boolean",
+          "description": "Sets the DKIM signing configuration for the identity. When you set this value true, then the messages that are sent from the identity are signed using DKIM. If you set this value to false, your messages are sent without DKIM signing."
+        }
+      }
+    },
+    "MailFromAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Used to enable or disable the custom Mail-From domain configuration for an email identity.",
+      "properties": {
+        "MailFromDomain": {
+          "type": "string",
+          "description": "The custom MAIL FROM domain that you want the verified identity to use"
+        },
+        "BehaviorOnMxFailure": {
+          "type": "string",
+          "description": "The action to take if the required MX record isn't found when you send an email. When you set this value to UseDefaultValue , the mail is sent using amazonses.com as the MAIL FROM domain. When you set this value to RejectMessage , the Amazon SES API v2 returns a MailFromDomainNotVerified error, and doesn't attempt to deliver the email.",
+          "pattern": "USE_DEFAULT_VALUE|REJECT_MESSAGE"
+        }
+      }
+    },
+    "FeedbackAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Used to enable or disable feedback forwarding for an identity.",
+      "properties": {
+        "EmailForwardingEnabled": {
+          "type": "boolean",
+          "description": "If the value is true, you receive email notifications when bounce or complaint events occur"
+        }
+      }
+    }
+  },
+  "required": [
+    "EmailIdentity"
+  ],
+  "readOnlyProperties": [
+    "/properties/DkimDNSTokenName1",
+    "/properties/DkimDNSTokenName2",
+    "/properties/DkimDNSTokenName3",
+    "/properties/DkimDNSTokenValue1",
+    "/properties/DkimDNSTokenValue2",
+    "/properties/DkimDNSTokenValue3"
+  ],
+  "createOnlyProperties": [
+    "/properties/EmailIdentity"
+  ],
+  "primaryIdentifier": [
+    "/properties/EmailIdentity"
+  ],
+  "writeOnlyProperties": [
+    "/properties/DkimSigningAttributes/DomainSigningSelector",
+    "/properties/DkimSigningAttributes/DomainSigningPrivateKey"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ses:CreateEmailIdentity",
+        "ses:PutEmailIdentityMailFromAttributes",
+        "ses:PutEmailIdentityFeedbackAttributes",
+        "ses:PutEmailIdentityDkimAttributes",
+        "ses:GetEmailIdentity"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ses:GetEmailIdentity"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ses:PutEmailIdentityMailFromAttributes",
+        "ses:PutEmailIdentityFeedbackAttributes",
+        "ses:PutEmailIdentityConfigurationSetAttributes",
+        "ses:PutEmailIdentityDkimSigningAttributes",
+        "ses:PutEmailIdentityDkimAttributes",
+        "ses:GetEmailIdentity"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ses:DeleteEmailIdentity"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ses:ListEmailIdentities"
+      ]
+    }
+  }
+}
