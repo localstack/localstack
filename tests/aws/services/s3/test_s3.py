@@ -3974,6 +3974,7 @@ class TestS3:
             "000",
             "not base64 encoded checksum",
             "MTIz",
+            base64.b64encode(b"test-string").decode("utf-8"),
         ]
 
         for index, md5hash in enumerate(hashes):

@@ -1581,7 +1581,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_invalid_content_md5": {
-    "recorded-date": "06-11-2024, 18:11:07",
+    "recorded-date": "06-11-2024, 18:40:12",
     "recorded-content": {
       "md5-error-0": {
         "Error": {
@@ -1620,6 +1620,17 @@
         "Error": {
           "Code": "InvalidDigest",
           "Content-MD5": "MTIz",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "md5-error-4": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "dGVzdC1zdHJpbmc=",
           "Message": "The Content-MD5 you specified was invalid."
         },
         "ResponseMetadata": {
@@ -1684,6 +1695,17 @@
         "Error": {
           "Code": "InvalidDigest",
           "Content-MD5": "MTIz",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-md5-error-4": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "dGVzdC1zdHJpbmc=",
           "Message": "The Content-MD5 you specified was invalid."
         },
         "ResponseMetadata": {
