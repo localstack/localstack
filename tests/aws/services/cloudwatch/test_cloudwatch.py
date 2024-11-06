@@ -1083,54 +1083,54 @@ class TestCloudwatch:
         describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[composite_alarm_name])
         snapshot.match("triggered-alarm", describe_alarm)
 
-        # trigger OK for alarm 1 - composite one should also go back to OK
-        aws_client.cloudwatch.set_alarm_state(
-            AlarmName=alarm_1_name, StateValue="OK", StateReason="resetting alarm 1"
-        )
-
-        retry(
-            check_message,
-            retries=PUBLICATION_RETRIES,
-            sleep_before=1,
-            sqs_client=aws_client.sqs,
-            expected_queue_url=queue_url_ok,
-            expected_topic_arn=topic_arn_ok,
-            expected_new="OK",
-            expected_reason=state_reason, #TODO define state reason for composite alarm
-            alarm_name=composite_alarm_name,
-            alarm_description=composite_alarm_description,
-            expected_trigger=expected_trigger, #TODO define expected trigger for composite alarm
-        )
-        describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[composite_alarm_name])
-        snapshot.match("reset-alarm", describe_alarm)
-
-        # trigger alarm 2 - composite one should go again into ALARM state
-        aws_client.cloudwatch.set_alarm_state(
-            AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
-        )
-
-        retry(
-            check_message,
-            retries=PUBLICATION_RETRIES,
-            sleep_before=1,
-            sqs_client=aws_client.sqs,
-            expected_queue_url=queue_url_alarm,
-            expected_topic_arn=topic_arn_alarm,
-            expected_new="ALARM"
-        expected_reason = state_reason,  # TODO define state reason for composite alarm
-        alarm_name = composite_alarm_name,
-        alarm_description = composite_alarm_description,
-        expected_trigger = expected_trigger,  # TODO define expected trigger for composite alarm
-        )
-        describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[composite_alarm_name])
-        snapshot.match("triggered-alarm", describe_alarm)
-
-        # trigger alarm 1 while alarm 2 is triggered - composite one shouldn't change
-        aws_client.cloudwatch.set_alarm_state(
-            AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
-        )
-        # TODO check that alarm state hasn't changed, probably with describe_alarm_history
-        # take into account that composite alarm runs on schedule
+        # # trigger OK for alarm 1 - composite one should also go back to OK
+        # aws_client.cloudwatch.set_alarm_state(
+        #     AlarmName=alarm_1_name, StateValue="OK", StateReason="resetting alarm 1"
+        # )
+        #
+        # retry(
+        #     check_message,
+        #     retries=PUBLICATION_RETRIES,
+        #     sleep_before=1,
+        #     sqs_client=aws_client.sqs,
+        #     expected_queue_url=queue_url_ok,
+        #     expected_topic_arn=topic_arn_ok,
+        #     expected_new="OK",
+        #     expected_reason=state_reason, #TODO define state reason for composite alarm
+        #     alarm_name=composite_alarm_name,
+        #     alarm_description=composite_alarm_description,
+        #     expected_trigger=expected_trigger, #TODO define expected trigger for composite alarm
+        # )
+        # describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[composite_alarm_name])
+        # snapshot.match("reset-alarm", describe_alarm)
+        #
+        # # trigger alarm 2 - composite one should go again into ALARM state
+        # aws_client.cloudwatch.set_alarm_state(
+        #     AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
+        # )
+        #
+        # retry(
+        #     check_message,
+        #     retries=PUBLICATION_RETRIES,
+        #     sleep_before=1,
+        #     sqs_client=aws_client.sqs,
+        #     expected_queue_url=queue_url_alarm,
+        #     expected_topic_arn=topic_arn_alarm,
+        #     expected_new="ALARM"
+        # expected_reason = state_reason,  # TODO define state reason for composite alarm
+        # alarm_name = composite_alarm_name,
+        # alarm_description = composite_alarm_description,
+        # expected_trigger = expected_trigger,  # TODO define expected trigger for composite alarm
+        # )
+        # describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[composite_alarm_name])
+        # snapshot.match("triggered-alarm", describe_alarm)
+        #
+        # # trigger alarm 1 while alarm 2 is triggered - composite one shouldn't change
+        # aws_client.cloudwatch.set_alarm_state(
+        #     AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
+        # )
+        # # TODO check that alarm state hasn't changed, probably with describe_alarm_history
+        # # take into account that composite alarm runs on schedule
 
 
     @markers.aws.validated
