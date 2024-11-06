@@ -1027,12 +1027,10 @@ class TestCloudwatch:
         snapshot.add_transformer(TransformerUtility.key_value("MetricName"))
 
         def _put_metric_alarm(alarm_name: str):
-            metric_name = "CPUUtilization"
-            namespace = "AWS/EC2"
             aws_client.cloudwatch.put_metric_alarm(
                 AlarmName=alarm_name,
-                MetricName=metric_name,
-                Namespace=namespace,
+                MetricName="CPUUtilization",
+                Namespace="AWS/EC2",
                 EvaluationPeriods=1,
                 Period=10,
                 Statistic="Sum",
