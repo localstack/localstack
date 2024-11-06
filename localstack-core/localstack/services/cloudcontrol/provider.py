@@ -24,7 +24,9 @@ from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_I
 from localstack.services.cloudformation.resource_provider import (
     NoResourceProvider,
     ResourceProvider,
+    ResourceProviderExecutor,
     ResourceRequest,
+    get_resource_type,
     plugin_manager,
     resolve_json_pointer,
 )
@@ -110,7 +112,8 @@ class CloudControlProvider(CloudcontrolApi):
         **kwargs,
     ) -> ListResourcesOutput:
         try:
-            provider = load_resource_provider(type_name)
+            executor = ResourceProviderExecutor(stack_name="", stack_id="")
+            provider = executor.try_load_resource_provider(get_resource_type({"Type": type_name}))
         except NoResourceProvider:
             raise TypeNotFoundException(f"The type '{type_name}' cannot be found.")
 
