@@ -36,17 +36,14 @@ def start_jvm() -> None:
 def get_jpype_lib_paths() -> Tuple[Path, Path]:
     """
     Downloads Event Ruler, its dependencies and returns a tuple of:
-    - Path to libjvm.so to be used by JPype as jvmpath. JPype requires this to start the JVM.
+    - Path to libjvm.{so/dylib} to be used by JPype as jvmpath. JPype requires this to start the JVM.
         See https://jpype.readthedocs.io/en/latest/userguide.html#path-to-the-jvm
     - Path to Event Ruler libraries to be used by JPype as classpath
     """
     installer = event_ruler_package.get_installer()
     installer.install()
 
-    java_home = installer.get_java_home()
-    jvm_lib = Path(java_home) / "lib" / "server" / "libjvm.so"
-
-    return jvm_lib, Path(installer.get_installed_dir())
+    return installer.get_java_lib_path(), Path(installer.get_installed_dir())
 
 
 def matches_rule(event: str, rule: str) -> bool:

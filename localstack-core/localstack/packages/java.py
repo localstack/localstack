@@ -39,6 +39,17 @@ class JavaInstallerMixin:
         """
         return java_package.get_installer().get_java_home()
 
+    def get_java_lib_path(self) -> str | None:
+        """
+        Returns the path to the Java shared library.
+        """
+        if java_home := self.get_java_home():
+            if is_linux():
+                return os.path.join(java_home, "lib", "server", "libjvm.so")
+            if is_mac_os():
+                return os.path.join(java_home, "lib", "server", "libjvm.dylib")
+        return None
+
     def get_java_env_vars(self, path: str = None, ld_library_path: str = None) -> dict[str, str]:
         """
         Returns environment variables pointing to the Java installation. This is useful to build the environment where
