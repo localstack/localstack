@@ -19,9 +19,10 @@ class LocalstackIdManager(MotoIdManager):
 
     @contextmanager
     def custom_id(self, resource_identifier: ResourceIdentifier, custom_id: str) -> None:
-        yield self.set_custom_id(resource_identifier, custom_id)
-
-        self.unset_custom_id(resource_identifier)
+        try:
+            yield self.set_custom_id(resource_identifier, custom_id)
+        finally:
+            self.unset_custom_id(resource_identifier)
 
 
 localstack_id_manager = LocalstackIdManager()

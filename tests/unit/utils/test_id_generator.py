@@ -129,3 +129,14 @@ def test_custom_id_context_manager(default_resource_identifier):
 
     # Outside the context the id is no longer present and a random id is generated
     assert default_resource_identifier.generate() != custom_id
+
+
+def test_custom_id_context_manager_exception_handling(default_resource_identifier):
+    custom_id = "set_id"
+
+    with pytest.raises(Exception):
+        with localstack_id_manager.custom_id(default_resource_identifier, custom_id):
+            assert default_resource_identifier.generate() == custom_id
+            raise Exception()
+
+    assert default_resource_identifier.generate() != custom_id
