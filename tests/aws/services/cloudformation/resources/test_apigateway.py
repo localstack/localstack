@@ -440,6 +440,47 @@ def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
     assert usage_plan["quota"]["limit"] == 7000
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..createdDate", "$..description", "$..lastUpdatedDate", "$..tags"]
+)
+@markers.aws.validated
+def test_update_apigateway_stage(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("deploymentId"),
+            snapshot.transform.key_value("aws:cloudformation:stack-name"),
+            snapshot.transform.resource_name(),
+        ]
+    )
+
+    api_name = f"api-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/apigateway_update_stage.yml"
+        ),
+        parameters={"RestApiName": api_name},
+    )
+    api_id = stack.outputs["RestApiId"]
+    stage = aws_client.apigateway.get_stage(stageName="dev", restApiId=api_id)
+    snapshot.match("created-stage", stage)
+
+    deploy_cfn_template(
+        is_update=True,
+        stack_name=stack.stack_name,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/apigateway_update_stage.yml"
+        ),
+        parameters={
+            "Description": "updated-description",
+            "Method": "POST",
+            "RestApiName": api_name,
+        },
+    )
+    # Changes to the stage or one of the methods it depends on does not trigger a redeployment
+    stage = aws_client.apigateway.get_stage(stageName="dev", restApiId=api_id)
+    snapshot.match("updated-stage", stage)
+
+
 @markers.aws.validated
 def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_client):
     template = """
