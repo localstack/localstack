@@ -79,10 +79,6 @@ RUN chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm
 
-# install basic (global) tools to final image
-RUN --mount=type=cache,target=/root/.cache \
-    pip install --no-cache-dir --upgrade virtualenv
-
 # install the entrypoint script
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 # add the shipped hosts file to prevent performance degredation in windows container mode on windows
@@ -115,7 +111,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
-    (virtualenv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
+    (python -m venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
 
 # add files necessary to install runtime dependencies
 ADD Makefile pyproject.toml requirements-runtime.txt ./
