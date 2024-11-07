@@ -150,7 +150,10 @@ def _zip_lambda_resources(
 
 
 def generate_ecr_image_from_dockerfile(
-    ecr_client: "ECRClient", repository_name: str, file_path: str
+    ecr_client: "ECRClient",
+    repository_name: str,
+    file_path: str,
+    build_in_place: bool = False,
 ):
     """
     Helper function to generate an ECR image from a dockerfile.
@@ -158,6 +161,8 @@ def generate_ecr_image_from_dockerfile(
     :param ecr_client: client for ECR
     :param repository_name: name for the repository to be created
     :param file_path: path of the file to be used
+    :param build_in_place: build the container image in place rather than copying to a temporary location.
+                           This is useful if the build context has other files.
     :return: None
     """
     repository_uri = ecr_client.create_repository(
@@ -170,9 +175,12 @@ def generate_ecr_image_from_dockerfile(
     registry = auth_response["authorizationData"][0]["proxyEndpoint"]
     DOCKER_CLIENT.login(username, password, registry=registry)
 
-    temp_dir = tempfile.mkdtemp()
-    destination_file = os.path.join(temp_dir, "Dockerfile")
-    shutil.copy2(file_path, destination_file)
+    if build_in_place:
+        destination_file = file_path
+    else:
+        temp_dir = tempfile.mkdtemp()
+        destination_file = os.path.join(temp_dir, "Dockerfile")
+        shutil.copy2(file_path, destination_file)
     DOCKER_CLIENT.build_image(dockerfile_path=destination_file, image_name=repository_uri)
     DOCKER_CLIENT.push_image(repository_uri)
 
