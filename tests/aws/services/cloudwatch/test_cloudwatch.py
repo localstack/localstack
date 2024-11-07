@@ -1039,8 +1039,6 @@ class TestCloudwatch:
         )
 
         # put metric alarms that would be parts of a composite one
-        snapshot.add_transformer(TransformerUtility.key_value("MetricName"))
-
         def _put_metric_alarm(alarm_name: str):
             aws_client.cloudwatch.put_metric_alarm(
                 AlarmName=alarm_name,
@@ -1067,7 +1065,7 @@ class TestCloudwatch:
         composite_alarm_name = f"composite-alarm-{short_uid()}"
         composite_alarm_description = "composite alarm description"
 
-        composite_alarm_rule = f'ALARM("{alarm_1_name}") OR ALARM("{alarm_2_name}")'
+        composite_alarm_rule = f'ALARM("{alarm_1_arn}") OR ALARM("{alarm_2_arn}")'
 
         aws_client.cloudwatch.put_composite_alarm(
             AlarmName=composite_alarm_name,
@@ -1105,6 +1103,10 @@ class TestCloudwatch:
             expected_triggering_child_arn=alarm_1_arn,
             expected_triggering_child_state="ALARM",
         )
+
+        # state reason is a text with dates, for now stubbing it out because
+        # composite alarm reason can be checked via TriggeringChildren property
+        snapshot.add_transformer(snapshot.transform.key_value("StateReason"))
 
         composite_alarms_list = aws_client.cloudwatch.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
