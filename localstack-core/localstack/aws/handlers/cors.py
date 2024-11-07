@@ -143,6 +143,15 @@ DYNAMIC_INTERNAL_ORIGINS = (
 )
 
 
+def is_execute_api_call(context: RequestContext) -> bool:
+    path = context.request.path
+    return (
+        ".execute-api." in context.request.host
+        or (path.startswith("/restapis/") and f"/{PATH_USER_REQUEST}" in context.request.path)
+        or (path.startswith("/_aws/execute-api"))
+    )
+
+
 def should_enforce_self_managed_service(context: RequestContext) -> bool:
     """
     Some services are handling their CORS checks on their own (depending on config vars).
@@ -151,20 +160,13 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
                     the targeting service
     :return: True if the CORS rules should be enforced in here.
     """
-    # allow only certain api calls without checking origin
+    # allow only certain api calls without checking origin as those services self-manage CORS
     if not config.DISABLE_CUSTOM_CORS_S3:
         if context.service and context.service.service_name == "s3":
             return False
 
     if not config.DISABLE_CUSTOM_CORS_APIGATEWAY:
-        # we don't check for service_name == "apigw" here because ``.execute-api.`` can be either apigw v1 or v2
-        path = context.request.path
-        is_user_request = (
-            ".execute-api." in context.request.host
-            or (path.startswith("/restapis/") and f"/{PATH_USER_REQUEST}" in context.request.path)
-            or (path.startswith("/_aws/execute-api"))
-        )
-        if is_user_request:
+        if is_execute_api_call(context):
             return False
 
     return True
