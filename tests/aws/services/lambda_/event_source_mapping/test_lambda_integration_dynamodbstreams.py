@@ -22,8 +22,6 @@ from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 from tests.aws.services.lambda_.event_source_mapping.utils import (
     create_lambda_with_response,
-    is_old_esm,
-    is_v2_esm,
 )
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH
 from tests.aws.services.lambda_.test_lambda import (
@@ -66,12 +64,6 @@ def get_lambda_logs_event(aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_old_esm,
-    # Only match EventSourceMappingArn field if ESM v2 and above
-    paths=["$..EventSourceMappingArn"],
-)
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_v2_esm,
     paths=[
         # Lifecycle updates not yet implemented in ESM v2
         "$..LastProcessingResult",
@@ -359,15 +351,6 @@ class TestDynamoDBEventSourceMapping:
             "$..TableDescription.TableId",
         ],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        paths=[
-            "$..Message.DDBStreamBatchInfo.approximateArrivalOfFirstRecord",  # Incorrect timestamp formatting
-            "$..Message.DDBStreamBatchInfo.approximateArrivalOfLastRecord",
-            "$..Message.requestContext.approximateInvokeCount",
-            "$..Message.responseContext.statusCode",
-        ],
-    )
     @markers.aws.validated
     def test_dynamodb_event_source_mapping_with_sns_on_failure_destination_config(
         self,
@@ -481,15 +464,6 @@ class TestDynamoDBEventSourceMapping:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TableDescription.TableId",
-        ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        paths=[
-            "$..Messages..Body.DDBStreamBatchInfo.approximateArrivalOfFirstRecord",  # Incorrect timestamp formatting
-            "$..Messages..Body.DDBStreamBatchInfo.approximateArrivalOfLastRecord",
-            "$..Messages..Body.requestContext.approximateInvokeCount",
-            "$..Messages..Body.responseContext.statusCode",
         ],
     )
     @markers.aws.validated
@@ -698,7 +672,7 @@ class TestDynamoDBEventSourceMapping:
         Test assumption: The first item MUST always match the filter and the second item CAN match the filter.
         => This enables two-step testing (i.e., snapshots between inserts) but is unreliable and should be revised.
         """
-        if is_v2_esm() and filter == {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]}:
+        if filter == {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]}:
             pytest.skip(reason="content_multiple_filters failing for ESM v2 (needs investigation)")
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
@@ -782,9 +756,7 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("lambda-multiple-log-events", events)
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        is_v2_esm(), reason="Invalid filter detection not yet implemented in ESM v2"
-    )
+    @pytest.mark.skip(reason="Invalid filter detection not yet implemented in ESM v2")
     @pytest.mark.parametrize(
         "filter",
         [
@@ -837,10 +809,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("exception_event_source_creation", expected.value.response)
         expected.match(InvalidParameterValueException.code)
 
-    @pytest.mark.skipif(
-        is_old_esm(),
-        reason="ReportBatchItemFailures: Partial batch failure handling not implemented in ESM v1",
-    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TableDescription.TableId",
@@ -951,9 +919,6 @@ class TestDynamoDBEventSourceMapping:
 
         snapshot.match("dynamodb_records", {"Records": sorted_records})
 
-    @pytest.mark.skipif(
-        is_old_esm(), reason="ReportBatchItemFailures: Total batch fails not implemented in ESM v1"
-    )
     @pytest.mark.parametrize(
         "set_lambda_response",
         [

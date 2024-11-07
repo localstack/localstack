@@ -150,10 +150,6 @@ from localstack.services.lambda_.api_utils import (
     STATEMENT_ID_REGEX,
     function_locators_from_arn,
 )
-from localstack.services.lambda_.event_source_listeners.event_source_listener import (
-    EventSourceListener,
-)
-from localstack.services.lambda_.event_source_listeners.utils import validate_filters
 from localstack.services.lambda_.event_source_mapping.esm_config_factory import (
     EsmConfigFactory,
 )
@@ -231,7 +227,7 @@ from localstack.utils.aws.arns import (
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
-from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
+from localstack.utils.strings import get_random_hex, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
 from localstack.utils.urls import localstack_host
 
@@ -338,41 +334,37 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                             )
 
                 for esm in state.event_source_mappings.values():
-                    if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
-                        # Restores event source workers
-                        function_arn = esm.get("FunctionArn")
+                    # Restores event source workers
+                    function_arn = esm.get("FunctionArn")
 
-                        # TODO: How do we know the event source is up?
-                        # A basic poll to see if the mapped Lambda function is active/failed
-                        if not poll_condition(
-                            lambda: get_function_version_from_arn(function_arn).config.state.state
-                            in [State.Active, State.Failed],
-                            timeout=10,
-                        ):
-                            LOG.warning(
-                                "Creating ESM for Lambda that is not in running state: %s",
-                                function_arn,
-                            )
-
-                        function_version = get_function_version_from_arn(function_arn)
-                        function_role = function_version.config.role
-
-                        is_esm_enabled = esm.get("State", EsmState.DISABLED) not in (
-                            EsmState.DISABLED,
-                            EsmState.DISABLING,
+                    # TODO: How do we know the event source is up?
+                    # A basic poll to see if the mapped Lambda function is active/failed
+                    if not poll_condition(
+                        lambda: get_function_version_from_arn(function_arn).config.state.state
+                        in [State.Active, State.Failed],
+                        timeout=10,
+                    ):
+                        LOG.warning(
+                            "Creating ESM for Lambda that is not in running state: %s",
+                            function_arn,
                         )
-                        esm_worker = EsmWorkerFactory(
-                            esm, function_role, is_esm_enabled
-                        ).get_esm_worker()
 
-                        # Note: a worker is created in the DISABLED state if not enabled
-                        esm_worker.create()
-                        # TODO: assigning the esm_worker to the dict only works after .create(). Could it cause a race
-                        #  condition if we get a shutdown here and have a worker thread spawned but not accounted for?
-                        self.esm_workers[esm_worker.uuid] = esm_worker
-                    else:
-                        # Restore event source listeners
-                        EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
+                    function_version = get_function_version_from_arn(function_arn)
+                    function_role = function_version.config.role
+
+                    is_esm_enabled = esm.get("State", EsmState.DISABLED) not in (
+                        EsmState.DISABLED,
+                        EsmState.DISABLING,
+                    )
+                    esm_worker = EsmWorkerFactory(
+                        esm, function_role, is_esm_enabled
+                    ).get_esm_worker()
+
+                    # Note: a worker is created in the DISABLED state if not enabled
+                    esm_worker.create()
+                    # TODO: assigning the esm_worker to the dict only works after .create(). Could it cause a race
+                    #  condition if we get a shutdown here and have a worker thread spawned but not accounted for?
+                    self.esm_workers[esm_worker.uuid] = esm_worker
 
     def on_after_init(self):
         self.router.register_routes()
@@ -1865,12 +1857,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
-            event_source_configuration = self.create_event_source_mapping_v2(context, request)
-        else:
-            event_source_configuration = self.create_event_source_mapping_v1(context, request)
-
-        return event_source_configuration
+        return self.create_event_source_mapping_v2(context, request)
 
     def create_event_source_mapping_v2(
         self,
@@ -1895,82 +1882,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             self._store_tags(esm_config.get("EventSourceMappingArn"), tags)
         esm_worker.create()
         return esm_config
-
-    def create_event_source_mapping_v1(
-        self, context: RequestContext, request: CreateEventSourceMappingRequest
-    ) -> EventSourceMappingConfiguration:
-        fn_arn, function_name, state = self.validate_event_source_mapping(context, request)
-        # create new event source mappings
-        new_uuid = long_uid()
-        # defaults etc. vary depending on type of event source
-        # TODO: find a better abstraction to create these
-        params = request.copy()
-        params.pop("FunctionName")
-        if not (service_type := self.get_source_type_from_request(request)):
-            raise InvalidParameterValueException("Unrecognized event source.")
-
-        batch_size = api_utils.validate_and_set_batch_size(service_type, request.get("BatchSize"))
-        params["FunctionArn"] = fn_arn
-        params["BatchSize"] = batch_size
-        params["UUID"] = new_uuid
-        params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
-        params["LastModified"] = api_utils.generate_lambda_date()
-        params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
-        params["State"] = "Enabled"
-        if "sqs" in service_type:
-            # can be "sqs" or "sqs-fifo"
-            params["StateTransitionReason"] = "USER_INITIATED"
-            if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
-                raise InvalidParameterValueException(
-                    "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
-                    Type="User",
-                )
-        elif service_type == "kafka":
-            params["StartingPosition"] = request.get("StartingPosition", "TRIM_HORIZON")
-            params["StateTransitionReason"] = "USER_INITIATED"
-            params["LastProcessingResult"] = "No records processed"
-            consumer_group = {"ConsumerGroupId": new_uuid}
-            if request.get("SelfManagedEventSource"):
-                params["SelfManagedKafkaEventSourceConfig"] = request.get(
-                    "SelfManagedKafkaEventSourceConfig", consumer_group
-                )
-            else:
-                params["AmazonManagedKafkaEventSourceConfig"] = request.get(
-                    "AmazonManagedKafkaEventSourceConfig", consumer_group
-                )
-
-            params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds")
-            # Not available for kafka
-            del params["FunctionResponseTypes"]
-        else:
-            # afaik every other one currently is a stream
-            params["StateTransitionReason"] = "User action"
-            params["MaximumRetryAttempts"] = request.get("MaximumRetryAttempts", -1)
-            params["ParallelizationFactor"] = request.get("ParallelizationFactor", 1)
-            params["BisectBatchOnFunctionError"] = request.get("BisectBatchOnFunctionError", False)
-            params["LastProcessingResult"] = "No records processed"
-            params["MaximumRecordAgeInSeconds"] = request.get("MaximumRecordAgeInSeconds", -1)
-            params["TumblingWindowInSeconds"] = request.get("TumblingWindowInSeconds", 0)
-            destination_config = request.get("DestinationConfig", {"OnFailure": {}})
-            self._validate_destination_config(state, function_name, destination_config)
-            params["DestinationConfig"] = destination_config
-        # TODO: create domain models and map accordingly
-        esm_config = EventSourceMappingConfiguration(**params)
-        filter_criteria = esm_config.get("FilterCriteria")
-        if filter_criteria:
-            # validate for valid json
-            if not validate_filters(filter_criteria):
-                raise InvalidParameterValueException(
-                    "Invalid filter pattern definition.", Type="User"
-                )  # TODO: verify
-        state.event_source_mappings[new_uuid] = esm_config
-        # TODO: evaluate after temp migration
-        EventSourceListener.start_listeners_for_asf(request, self.lambda_service)
-        event_source_configuration = {
-            **esm_config,
-            "State": "Creating",
-        }  # TODO: should be set asynchronously
-        return event_source_configuration
 
     def validate_event_source_mapping(self, context, request):
         # TODO: test whether stream ARNs are valid sources for Pipes or ESM or whether only DynamoDB table ARNs work
@@ -2086,75 +1997,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: UpdateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
-            return self.update_event_source_mapping_v2(context, request)
-        else:
-            return self.update_event_source_mapping_v1(context, request)
-
-    def update_event_source_mapping_v1(
-        self,
-        context: RequestContext,
-        request: UpdateEventSourceMappingRequest,
-    ) -> EventSourceMappingConfiguration:
-        state = lambda_stores[context.account_id][context.region]
-        request_data = {**request}
-        uuid = request_data.pop("UUID", None)
-        if not uuid:
-            raise ResourceNotFoundException(
-                "The resource you requested does not exist.", Type="User"
-            )
-        old_event_source_mapping = state.event_source_mappings.get(uuid)
-        if old_event_source_mapping is None:
-            raise ResourceNotFoundException(
-                "The resource you requested does not exist.", Type="User"
-            )  # TODO: test?
-
-        # remove the FunctionName field
-        function_name_or_arn = request_data.pop("FunctionName", None)
-
-        # normalize values to overwrite
-        event_source_mapping = old_event_source_mapping | request_data
-
-        if not (service_type := self.get_source_type_from_request(event_source_mapping)):
-            # TODO validate this error
-            raise InvalidParameterValueException("Unrecognized event source.")
-
-        if function_name_or_arn:
-            # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
-            account_id, region = api_utils.get_account_and_region(function_name_or_arn, context)
-            function_name, qualifier = api_utils.get_name_and_qualifier(
-                function_name_or_arn, None, context
-            )
-            event_source_mapping["FunctionArn"] = api_utils.qualified_lambda_arn(
-                function_name, qualifier, account_id, region
-            )
-
-        temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
-
-        if request.get("Enabled") is not None:
-            if request["Enabled"]:
-                esm_state = "Enabled"
-            else:
-                esm_state = "Disabled"
-                temp_params["State"] = "Disabling"  # TODO: make this properly async
-            event_source_mapping["State"] = esm_state
-
-        if request.get("BatchSize"):
-            batch_size = api_utils.validate_and_set_batch_size(service_type, request["BatchSize"])
-            if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
-                raise InvalidParameterValueException(
-                    "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
-                    Type="User",
-                )
-        if request.get("DestinationConfig"):
-            destination_config = request["DestinationConfig"]
-            self._validate_destination_config(
-                state, event_source_mapping["FunctionName"], destination_config
-            )
-            event_source_mapping["DestinationConfig"] = destination_config
-        event_source_mapping["LastProcessingResult"] = "OK"
-        state.event_source_mappings[uuid] = event_source_mapping
-        return {**event_source_mapping, **temp_params}
+        return self.update_event_source_mapping_v2(context, request)
 
     def update_event_source_mapping_v2(
         self,
@@ -2237,18 +2080,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )
         esm = state.event_source_mappings[uuid]
-        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
-            # TODO: add proper locking
-            esm_worker = self.esm_workers.pop(uuid, None)
-            # Asynchronous delete in v2
-            if not esm_worker:
-                raise ResourceNotFoundException(
-                    "The resource you requested does not exist.", Type="User"
-                )
-            esm_worker.delete()
-        else:
-            # Synchronous delete in v1 (AWS parity issue)
-            del state.event_source_mappings[uuid]
+        # TODO: add proper locking
+        esm_worker = self.esm_workers.pop(uuid, None)
+        # Asynchronous delete in v2
+        if not esm_worker:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+        esm_worker.delete()
         return {**esm, "State": EsmState.DELETING}
 
     def get_event_source_mapping(
@@ -2260,10 +2099,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )
-
-        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v1":
-            return event_source_mapping
-
         esm_worker = self.esm_workers.get(uuid)
         if not esm_worker:
             raise ResourceNotFoundException(
