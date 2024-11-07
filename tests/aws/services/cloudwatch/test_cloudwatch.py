@@ -1060,9 +1060,12 @@ class TestCloudwatch:
         _put_metric_alarm(alarm_1_name)
         _put_metric_alarm(alarm_2_name)
 
+        alarm_1_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_1_name])["MetricAlarms"][0]["AlarmArn"]
+        alarm_2_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_2_name])["MetricAlarms"][0]["AlarmArn"]
+
         # put composite alarm that is triggered when either of metric alarms is triggered.
-        composite_alarm_name=f"composite-alarm-{short_uid()}"
-        composite_alarm_description="composite alarm description"
+        composite_alarm_name = f"composite-alarm-{short_uid()}"
+        composite_alarm_description = "composite alarm description"
 
         composite_alarm_rule = f'ALARM("{alarm_1_name}") OR ALARM("{alarm_2_name}")'
 
@@ -1090,20 +1093,18 @@ class TestCloudwatch:
         )
 
         retry(
-            check_message,
+            check_composite_alarm_message,
             retries=PUBLICATION_RETRIES,
             sleep_before=1,
             sqs_client=aws_client.sqs,
-            expected_queue_url=queue_url_alarm,
+            queue_url=queue_url_alarm,
             expected_topic_arn=topic_arn_alarm,
-            expected_new="ALARM",
-            expected_reason=state_reason, #TODO define state reason for composite alarm
             alarm_name=composite_alarm_name,
             alarm_description=composite_alarm_description,
-            expected_trigger=expected_trigger, #TODO define expected trigger for composite alarm
+            expected_state="ALARM",
+            expected_triggering_child_arn=alarm_1_arn,
+            expected_triggering_child_state="ALARM",
         )
-        describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[composite_alarm_name])
-        snapshot.match("triggered-alarm", describe_alarm)
 
         # # trigger OK for alarm 1 - composite one should also go back to OK
         # aws_client.cloudwatch.set_alarm_state(
@@ -2878,6 +2879,35 @@ def _sqs_messages_snapshot(expected_state, sqs_client, sqs_queue, snapshot, iden
     assert found_msg, f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
     sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
     snapshot.match(f"{identifier}-sqs-msg", found_msg)
+
+
+def check_composite_alarm_message(
+        sqs_client,
+        queue_url,
+        expected_topic_arn,
+        alarm_name,
+        alarm_description,
+        expected_state,
+        expected_triggering_child_arn,
+        expected_triggering_child_state,
+):
+    receive_result = sqs_client.receive_message(QueueUrl=queue_url)
+    LOG.info(f"receive SQS message: {receive_result}")
+    message = None
+    for msg in receive_result["Messages"]:
+        body = json.loads(msg["Body"])
+        if body["TopicArn"] == expected_topic_arn:
+            message = json.loads(body["Message"])
+            receipt_handle = msg["ReceiptHandle"]
+            sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+            break
+    assert message["NewStateValue"] == expected_state
+    assert message["AlarmName"] == alarm_name
+    assert message["AlarmDescription"] == alarm_description
+    triggering_child_alarm = message["TriggeringChildren"][0]
+    assert triggering_child_alarm["Arn"] == expected_triggering_child_arn
+    assert triggering_child_alarm["State"]["Value"] == expected_triggering_child_state
+    return message
 
 
 def check_message(
