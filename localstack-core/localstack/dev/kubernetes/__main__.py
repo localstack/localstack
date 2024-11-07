@@ -122,7 +122,7 @@ def generate_k8s_cluster_overrides(
     if pro:
         extra_env_vars.append(
             {
-                "name": "LOCALSTACK_API_KEY",
+                "name": "LOCALSTACK_AUTH_TOKEN",
                 "value": "test",
             }
         )

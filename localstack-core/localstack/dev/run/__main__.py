@@ -139,7 +139,7 @@ def run(
 
     \b
         python -m localstack.dev.run
-        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_API_KEY=test
+        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_AUTH_TOKEN=test
         python -m localstack.dev.run -- bash -c 'echo "hello"'
 
     Explanations and more examples:
@@ -151,7 +151,7 @@ def run(
 
     If you start localstack-pro, you might also want to add the API KEY as environment variable::
 
-        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_API_KEY=test
+        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_AUTH_TOKEN=test
 
     If your local changes are making modifications to plux plugins (e.g., adding new providers or hooks),
     then you also want to mount the newly generated entry_point.txt files into the container::

@@ -168,7 +168,7 @@ services:
       - SERVICES=${SERVICES- }
       - DEBUG=${DEBUG- }
       - DATA_DIR=${DATA_DIR- }
-      - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY- }
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN- }
       - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:

@@ -309,7 +309,7 @@ jobs:
         env:
           DEBUG: 1
           DNS_ADDRESS: 0
-          LOCALSTACK_API_KEY: "test"
+          LOCALSTACK_AUTH_TOKEN: "test"
         working-directory: localstack-ext
         run: |
           source .venv/bin/activate
@@ -338,7 +338,7 @@ jobs:
           DISABLE_BOTO_RETRIES: 1
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "local"
-          LOCALSTACK_API_KEY: "test"
+          LOCALSTACK_AUTH_TOKEN: "test"
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
