@@ -994,8 +994,8 @@ class TestCloudwatch:
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
 
         # create topics for state 'ALARM' and 'OK' of the composite alarm
-        topic_name_alarm = f"topic-{short_uid()}"
-        topic_name_ok = f"topic-{short_uid()}"
+        topic_name_alarm = f"topic-alarm-{short_uid()}"
+        topic_name_ok = f"topic-ok-{short_uid()}"
 
         sns_topic_alarm = sns_create_topic(Name=topic_name_alarm)
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
@@ -1005,9 +1005,8 @@ class TestCloudwatch:
         snapshot.add_transformer(snapshot.transform.regex(topic_arn_ok, "<topic_ok>"))
 
         # create queues for 'ALARM' and 'OK' of the composite alarm (will receive sns messages)
-        uid = short_uid()
-        queue_url_alarm = sqs_create_queue(QueueName=f"AlarmQueue-{uid}")
-        queue_url_ok = sqs_create_queue(QueueName=f"OKQueue-{uid}")
+        queue_url_alarm = sqs_create_queue(QueueName=f"AlarmQueue-{short_uid()}")
+        queue_url_ok = sqs_create_queue(QueueName=f"OKQueue-{short_uid()}")
 
         arn_queue_alarm = aws_client.sqs.get_queue_attributes(
             QueueUrl=queue_url_alarm, AttributeNames=["QueueArn"]
