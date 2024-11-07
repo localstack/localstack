@@ -13,10 +13,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.aws.services.lambda_.event_source_mapping.utils import (
-    is_old_esm,
-    is_v2_esm,
-)
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON,
@@ -70,11 +66,6 @@ def _snapshot_transformers(snapshot):
         "$..StartingPosition",
         "$..StateTransitionReason",
     ]
-)
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_old_esm,
-    # Only match EventSourceMappingArn field if ESM v2 and above
-    paths=["$..EventSourceMappingArn"],
 )
 @markers.aws.validated
 def test_failing_lambda_retries_after_visibility_timeout(
@@ -441,11 +432,6 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
         "$..create_event_source_mapping.State",
         "$..create_event_source_mapping.ResponseMetadata",
     ]
-)
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_old_esm,
-    # Only match EventSourceMappingArn field if ESM v2 and above
-    paths=["$..EventSourceMappingArn"],
 )
 @markers.aws.validated
 def test_report_batch_item_failures(
@@ -864,17 +850,6 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     assert "Messages" not in dlq_response or dlq_response["Messages"] == []
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_old_esm,
-    paths=[
-        # hardcoded extra field in old ESM
-        "$..LastProcessingResult",
-        # async update not implemented in old ESM
-        "$..State",
-        # Only match EventSourceMappingArn field if ESM v2 and above
-        "$..EventSourceMappingArn",
-    ],
-)
 @markers.aws.validated
 def test_fifo_message_group_parallelism(
     aws_client,
@@ -962,10 +937,6 @@ def test_fifo_message_group_parallelism(
         # events attribute
         "$..Records..md5OfMessageAttributes",
     ],
-)
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_old_esm,
-    paths=["$..EventSourceMappingArn"],
 )
 class TestSQSEventSourceMapping:
     @markers.aws.validated
@@ -1139,7 +1110,7 @@ class TestSQSEventSourceMapping:
         aws_client,
         monkeypatch,
     ):
-        if is_v2_esm() and item_not_matching == "this is a test string":
+        if item_not_matching == "this is a test string":
             # String comparison is broken in the Python rule engine for this specific case in ESM v2, using java engine.
             monkeypatch.setattr(config, "EVENT_RULE_ENGINE", "java")
         function_name = f"lambda_func-{short_uid()}"
@@ -1205,9 +1176,7 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages", []) == []
 
-    @pytest.mark.skipif(
-        is_v2_esm(), reason="Invalid filter detection not yet implemented in ESM v2"
-    )
+    @pytest.mark.skip(reason="Invalid filter detection not yet implemented in ESM v2")
     @markers.aws.validated
     @pytest.mark.parametrize(
         "invalid_filter", [None, "simple string", {"eventSource": "aws:sqs"}, {"eventSource": []}]

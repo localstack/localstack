@@ -961,9 +961,6 @@ LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 # Additional flags passed to Docker run|create commands.
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
-# PUBLIC: v2 (default), v1 (deprecated) Version of the Lambda Event Source Mapping implementation
-LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v2").strip()
-
 # PUBLIC: 0 (default)
 # Enable this flag to run cross-platform compatible lambda functions natively (i.e., Docker selects architecture) and
 # ignore the AWS architectures (i.e., x86_64, arm64) configured for the lambda function.
@@ -1037,10 +1034,6 @@ LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES = int(
     os.environ.get(
         "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", 6 * 1024 * 1024 + 100
     )  # the 100 comes from the init defaults
-)
-
-LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
-    os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
 )
 
 # DEV: 0 (default unless in host mode on macOS) For LS developers only. Only applies to Docker mode.
