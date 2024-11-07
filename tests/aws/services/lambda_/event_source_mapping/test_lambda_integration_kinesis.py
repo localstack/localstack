@@ -21,8 +21,6 @@ from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from tests.aws.services.lambda_.event_source_mapping.utils import (
     create_lambda_with_response,
-    is_old_esm,
-    is_v2_esm,
 )
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
@@ -73,11 +71,6 @@ def _snapshot_transformers(snapshot):
         "$..Topics",
         "$..TumblingWindowInSeconds",
     ],
-)
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_old_esm,
-    # Only match EventSourceMappingArn field if ESM v2 and above
-    paths=["$..EventSourceMappingArn"],
 )
 class TestKinesisSource:
     @markers.aws.validated
@@ -469,15 +462,6 @@ class TestKinesisSource:
             "$..Messages..Body.KinesisBatchInfo.streamArn",
         ],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
-            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfLastRecord",
-            "$..Messages..Body.requestContext.approximateInvokeCount",
-            "$..Messages..Body.responseContext.statusCode",
-        ],
-    )
     @markers.aws.validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
@@ -558,10 +542,6 @@ class TestKinesisSource:
         sqs_payload = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
 
-    @pytest.mark.skipif(
-        is_old_esm(),
-        reason="ReportBatchItemFailures: Partial batch failure handling not implemented in ESM v1",
-    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # FIXME Conflict between shardId and AWS account number when transforming
@@ -663,9 +643,6 @@ class TestKinesisSource:
         snapshot.match("kinesis_records", {"Records": sorted_records})
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_esm(), reason="ReportBatchItemFailures: Total batch fails not implemented in ESM v1"
-    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.shardId",
@@ -773,15 +750,6 @@ class TestKinesisSource:
         paths=[
             "$..Message.KinesisBatchInfo.shardId",
             "$..Message.KinesisBatchInfo.streamArn",
-        ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        paths=[
-            "$..Message.KinesisBatchInfo.approximateArrivalOfFirstRecord",
-            "$..Message.KinesisBatchInfo.approximateArrivalOfLastRecord",
-            "$..Message.requestContext.approximateInvokeCount",
-            "$..Message.responseContext.statusCode",
         ],
     )
     @markers.aws.validated
@@ -1049,16 +1017,10 @@ class TestKinesisSource:
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_esm,
         paths=[
             # Lifecycle updates not yet implemented in ESM v2
             "$..LastProcessingResult",
         ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        # Only match EventSourceMappingArn field if ESM v2 and above
-        paths=["$..EventSourceMappingArn"],
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
