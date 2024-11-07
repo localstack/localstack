@@ -2921,9 +2921,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         try:
             s3_object = s3_bucket.get_object(key=key, version_id=version_id)
         except NoSuchKey as e:
-            # TODO: remove the hack under and update the S3Bucket model before the next major version, as it might break
-            #  persistence: we need to remove the `raise_for_delete_marker` parameter and replace it with the error type
-            #  to raise (MethodNotAllowed or NoSuchKey)
+            # it seems GetObjectTagging does not work like all other operations, so we need to raise a different
+            # exception. As we already need to catch it because of the format of the Key, it is not worth to modify the
+            # `S3Bucket.get_object` signature for one operation.
             if s3_bucket.versioning_status and (
                 s3_object_version := s3_bucket.objects.get(key, version_id)
             ):
