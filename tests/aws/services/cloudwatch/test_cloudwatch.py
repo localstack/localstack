@@ -1083,9 +1083,9 @@ class TestCloudwatch:
         composite_alarms_list = aws_client.cloudwatch.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
-        alarm = composite_alarms_list["CompositeAlarms"][0]
-        assert alarm["AlarmName"] == composite_alarm_name
-        assert alarm["AlarmRule"] == composite_alarm_rule
+        composite_alarm = composite_alarms_list["CompositeAlarms"][0]
+        assert composite_alarm["AlarmName"] == composite_alarm_name
+        assert composite_alarm["AlarmRule"] == composite_alarm_rule
 
         # trigger alarm 1 - composite one should also go into ALARM state
         aws_client.cloudwatch.set_alarm_state(
@@ -1105,6 +1105,12 @@ class TestCloudwatch:
             expected_triggering_child_arn=alarm_1_arn,
             expected_triggering_child_state="ALARM",
         )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_in_alarm_caused_by_alarm_1 = composite_alarms_list["CompositeAlarms"][0]
+        snapshot.match("composite-alarm-in-alarm-when-alarm-1-is-in-alarm", composite_alarm_in_alarm_caused_by_alarm_1)
 
         # # trigger OK for alarm 1 - composite one should also go back to OK
         # aws_client.cloudwatch.set_alarm_state(

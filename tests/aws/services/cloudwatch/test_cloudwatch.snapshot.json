@@ -2103,5 +2103,40 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm": {
+    "recorded-date": "07-11-2024, 11:29:50",
+    "recorded-content": {
+      "composite-alarm-in-alarm-when-alarm-1-is-in-alarm": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<alarm-name:1>",
+        "AlarmRule": "ALARM(\"<SubscriptionArn:2>\") OR ALARM(\"simple-alarm-2-7a20e452\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "<topic_ok>"
+        ],
+        "StateReason": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<SubscriptionArn:2> transitioned to ALARM at Thursday 07 November, 2024 11:29:<SubscriptionArn:1>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<SubscriptionArn:2>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      }
+    }
   }
 }
