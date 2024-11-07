@@ -463,7 +463,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
         # TODO: handle defaults properly
         old_name = request.previous_state["FunctionName"]
         new_name = request.desired_state.get("FunctionName")
-        if old_name != new_name:
+        if new_name and old_name != new_name:
             # replacement (!) => shouldn't be handled here but in the engine
             self.delete(request)
             return self.create(request)
