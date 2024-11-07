@@ -62,13 +62,13 @@ def test_create_with_plugins(runner):
     localstack_cli = create_with_plugins()
     result = runner.invoke(localstack_cli.group, ["--version"])
     assert result.exit_code == 0
-    assert result.output.strip() == VERSION
+    assert result.output.strip() == f"LocalStack CLI {VERSION}"
 
 
 def test_version(runner):
     result = runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert result.output.strip() == VERSION
+    assert result.output.strip() == f"LocalStack CLI {VERSION}"
 
 
 def test_status_services_error(runner):
