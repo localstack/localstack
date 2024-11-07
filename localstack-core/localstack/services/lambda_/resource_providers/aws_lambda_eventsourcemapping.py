@@ -136,7 +136,8 @@ class LambdaEventSourceMappingProvider(ResourceProvider[LambdaEventSourceMapping
 
         response = lambda_client.create_event_source_mapping(**params)
         model["Id"] = response["UUID"]
-        model["EventSourceArn"] = model["EventSourceMappingArn"] = response["EventSourceMappingArn"]
+        model["EventSourceArn"] = response["EventSourceArn"]
+        model["EventSourceMappingArn"] = response["EventSourceMappingArn"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
