@@ -1064,16 +1064,25 @@ class TestCloudwatch:
         composite_alarm_name=f"composite-alarm-{short_uid()}"
         composite_alarm_description="composite alarm description"
 
+        composite_alarm_rule = f'ALARM("{alarm_1_name}") OR ALARM("{alarm_2_name}")'
+
         aws_client.cloudwatch.put_composite_alarm(
             AlarmName=composite_alarm_name,
             AlarmDescription=composite_alarm_description,
-            AlarmRule=f'ALARM("{alarm_1_name}") OR ALARM("{alarm_2_name}")',
+            AlarmRule=composite_alarm_rule,
             OKActions=[topic_arn_ok],
             AlarmActions=[topic_arn_alarm],
         )
         cleanups.append(
             lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[composite_alarm_name])
         )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        alarm = composite_alarms_list["CompositeAlarms"][0]
+        assert alarm["AlarmName"] == composite_alarm_name
+        assert alarm["AlarmRule"] == composite_alarm_rule
 
         # trigger alarm 1 - composite one should also go into ALARM state
         aws_client.cloudwatch.set_alarm_state(
