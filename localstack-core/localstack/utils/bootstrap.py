@@ -1210,6 +1210,9 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     ensure_container_image(console, container)
 
     configure_container(container)
+
+    _warn_non_prefixed_env_vars(container.config.env_vars)
+
     container.configure(ContainerConfigurators.cli_params(cli_params or {}))
 
     status = console.status("Starting LocalStack container")
@@ -1293,6 +1296,9 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     container = Container(container_config)
     ensure_container_image(console, container)
     configure_container(container)
+
+    _warn_non_prefixed_env_vars(container.config.env_vars)
+
     container.configure(ContainerConfigurators.cli_params(cli_params or {}))
 
     container_config.detach = True
@@ -1303,6 +1309,22 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     server.start()
     server.wait_is_container_running()
     console.log("detaching")
+
+
+def _warn_non_prefixed_env_vars(env_vars: Dict[str, Any]) -> None:
+    """
+    Prints a warning log if the given env_vars contains a key which is not prefixed with "LOCALSTACK_".
+
+    :param env_vars: env var dict to check
+    :return: None
+    """
+    if not env_vars:
+        return
+    for env_key in env_vars.keys():
+        if not env_key.startswith("LOCALSTACK_"):
+            LOG.warning(
+                "%s is forwarded to the LocalStack container even though it is not prefixed."
+            )
 
 
 def wait_container_is_ready(timeout: Optional[float] = None):
