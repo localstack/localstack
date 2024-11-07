@@ -1022,6 +1022,22 @@ class TestCloudwatch:
             QueueUrl=queue_url_ok, Attributes={"Policy": get_sqs_policy(arn_queue_ok, topic_arn_ok)}
         )
 
+        # subscribe to SQS
+        subscription_alarm = aws_client.sns.subscribe(
+            TopicArn=topic_arn_alarm, Protocol="sqs", Endpoint=arn_queue_alarm
+        )
+        cleanups.append(
+            lambda: aws_client.sns.unsubscribe(
+                SubscriptionArn=subscription_alarm["SubscriptionArn"]
+            )
+        )
+        subscription_ok = aws_client.sns.subscribe(
+            TopicArn=topic_arn_ok, Protocol="sqs", Endpoint=arn_queue_ok
+        )
+        cleanups.append(
+            lambda: aws_client.sns.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
+        )
+
         # put metric alarms that would be parts of a composite one
         snapshot.add_transformer(TransformerUtility.key_value("MetricName"))
 
