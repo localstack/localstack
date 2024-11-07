@@ -23,6 +23,7 @@ TRACKED_ENV_VAR = [
     "ECS_TASK_EXECUTOR",
     "EDGE_PORT",
     "ENFORCE_IAM",
+    "EVENT_RULE_ENGINE",
     "IAM_SOFT_MODE",
     "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "KINESIS_ERROR_PROBABILITY",
