@@ -90,11 +90,10 @@ class TestEventsTargetCloudWatchLogs:
 
         # Step 4: Create a rule on the event bus
         rule_name = f"test-rule-{short_uid()}"
-        event_pattern = {"source": ["test.source"], "detail-type": ["test.detail.type"]}
         rule_response = events_put_rule(
             Name=rule_name,
             EventBusName=event_bus_name,
-            EventPattern=json.dumps(event_pattern),
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
         snapshot.match("rule_response", rule_response)
 
@@ -116,9 +115,9 @@ class TestEventsTargetCloudWatchLogs:
         # Step 6: Send an event to the event bus
         event_entry = {
             "EventBusName": event_bus_name,
-            "Source": "test.source",
-            "DetailType": "test.detail.type",
-            "Detail": json.dumps({"message": "Hello from EventBridge"}),
+            "Source": TEST_EVENT_PATTERN["source"][0],
+            "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+            "Detail": json.dumps(EVENT_DETAIL),
         }
         put_events_response = aws_client.events.put_events(Entries=[event_entry])
         snapshot.match("put_events_response", put_events_response)
