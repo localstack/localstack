@@ -13,7 +13,13 @@ from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
-from localstack.config import HostAndPort, default_ip, is_env_not_false, is_env_true
+from localstack.config import (
+    HostAndPort,
+    default_ip,
+    is_env_not_false,
+    is_env_true,
+    load_environment,
+)
 from localstack.constants import VERSION
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
@@ -502,9 +508,23 @@ class ContainerConfigurators:
     @staticmethod
     def config_env_vars(cfg: ContainerConfiguration):
         """Sets all env vars from config.CONFIG_ENV_VARS."""
+
+        profile_env = {}
+        if config.LOADED_PROFILES:
+            load_environment(profiles=",".join(config.LOADED_PROFILES), env=profile_env)
+
         for env_var in config.CONFIG_ENV_VARS:
             value = os.environ.get(env_var, None)
             if value is not None:
+                if not env_var.startswith("LOCALSTACK_") and env_var not in profile_env:
+                    # Show a warning here in case we are directly forwarding an environment variable from
+                    # the system env to the container which has not been prefixed with LOCALSTACK_.
+                    # Suppress the warning if the env var was set from the profile.
+                    LOG.warning(
+                        "Non-prefixed environment variable %(env_var)s is forwarded to the LocalStack container! "
+                        "Please use `LOCALSTACK_%(env_var)s` instead of %(env_var)s to explicitly mark this environment variable to be forwarded form the CLI to the LocalStack Runtime.",
+                        {"env_var": env_var},
+                    )
                 cfg.env_vars[env_var] = value
 
     @staticmethod
@@ -1210,9 +1230,6 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     ensure_container_image(console, container)
 
     configure_container(container)
-
-    _warn_non_prefixed_env_vars(container.config.env_vars)
-
     container.configure(ContainerConfigurators.cli_params(cli_params or {}))
 
     status = console.status("Starting LocalStack container")
@@ -1296,9 +1313,6 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     container = Container(container_config)
     ensure_container_image(console, container)
     configure_container(container)
-
-    _warn_non_prefixed_env_vars(container.config.env_vars)
-
     container.configure(ContainerConfigurators.cli_params(cli_params or {}))
 
     container_config.detach = True
@@ -1309,22 +1323,6 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     server.start()
     server.wait_is_container_running()
     console.log("detaching")
-
-
-def _warn_non_prefixed_env_vars(env_vars: Dict[str, Any]) -> None:
-    """
-    Prints a warning log if the given env_vars contains a key which is not prefixed with "LOCALSTACK_".
-
-    :param env_vars: env var dict to check
-    :return: None
-    """
-    if not env_vars:
-        return
-    for env_key in env_vars.keys():
-        if not env_key.startswith("LOCALSTACK_"):
-            LOG.warning(
-                "%s is forwarded to the LocalStack container even though it is not prefixed."
-            )
 
 
 def wait_container_is_ready(timeout: Optional[float] = None):
