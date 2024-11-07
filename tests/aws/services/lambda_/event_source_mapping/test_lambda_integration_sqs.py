@@ -5,7 +5,6 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
-from localstack import config
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.aws.util import is_aws_cloud
@@ -1070,7 +1069,7 @@ class TestSQSEventSourceMapping:
                 {"test2": "7411"},
                 {"test5": "74545"},
             ),
-            # numeric (bigger)
+            # numeric (bigger)  TODO: fix this test case for the python-native event rule engine
             (
                 {"body": {"test2": [{"numeric": [">", 100]}]}},
                 {"test2": 105},
@@ -1108,11 +1107,7 @@ class TestSQSEventSourceMapping:
         snapshot,
         cleanups,
         aws_client,
-        monkeypatch,
     ):
-        if item_not_matching == "this is a test string":
-            # String comparison is broken in the Python rule engine for this specific case in ESM v2, using java engine.
-            monkeypatch.setattr(config, "EVENT_RULE_ENGINE", "java")
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         mapping_uuid = None

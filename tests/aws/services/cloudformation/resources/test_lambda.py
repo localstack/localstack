@@ -744,14 +744,11 @@ class TestCfnLambdaIntegrations:
 
     # TODO: consider moving into the dedicated DynamoDB => Lambda tests
     #  tests.aws.services.lambda_.test_lambda_integration_dynamodbstreams.TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
+    # TODO: Filtering is broken with the Python rule engine for this specific case (exists:false)
     @markers.aws.validated
     def test_lambda_dynamodb_event_filter(
         self, dynamodb_wait_for_table_active, deploy_cfn_template, aws_client, monkeypatch
     ):
-        # TODO: Filtering is broken with the Python rule engine for this specific case (exists:false) in ESM v2
-        #  -> using java engine as workaround for now.
-        monkeypatch.setattr(config, "EVENT_RULE_ENGINE", "java")
-
         function_name = f"test-fn-{short_uid()}"
         table_name = f"ddb-tbl-{short_uid()}"
 

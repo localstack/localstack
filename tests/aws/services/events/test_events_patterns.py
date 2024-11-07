@@ -7,6 +7,7 @@ from typing import List, Tuple
 import json5
 import pytest
 
+from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
@@ -22,7 +23,7 @@ COMPLEX_MULTI_KEY_EVENT_PATTERN = os.path.join(
 COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_event.json")
 
 SKIP_LABELS = [
-    # Failing exception tests:
+    # TODO: fix failing exception tests (not yet implemented)
     "arrays_empty_EXC",
     "content_numeric_EXC",
     "content_numeric_operatorcasing_EXC",
@@ -31,7 +32,10 @@ SKIP_LABELS = [
     "int_nolist_EXC",
     "operator_case_sensitive_EXC",
     "string_nolist_EXC",
-    # Failing tests:
+]
+
+PYTHON_SKIP_LABELS = [
+    # Failing tests for our Python-native implementation:
     "complex_or",
     "content_anything_but_ignorecase",
     "content_anything_but_ignorecase_list",
@@ -85,20 +89,28 @@ class TestEventPattern:
     # TODO: extend these test cases based on the open source docs + tests: https://github.com/aws/event-ruler
     #  For example, "JSON Array Matching", "And and Or Relationship among fields with Ruler", rule validation,
     #  and exception handling.
+    @pytest.mark.parametrize("event_rule_engine", ["java", "python"])
     @pytest.mark.parametrize(
         "request_template,label",
         request_template_tuples,
         ids=[t[1] for t in request_template_tuples],
     )
     @markers.aws.validated
-    def test_event_pattern(self, aws_client, snapshot, request_template, label):
+    def test_event_pattern(
+        self, aws_client, snapshot, request_template, label, event_rule_engine, monkeypatch
+    ):
         """This parametrized test handles three outcomes:
         a) MATCH (default): The EventPattern matches the Event yielding true as result.
         b) NO MATCH (_NEG suffix): The EventPattern does NOT match the Event yielding false as result.
         c) EXCEPTION (_EXC suffix): The EventPattern is invalid and raises an exception.
         """
+        monkeypatch.setattr(config, "EVENT_RULE_ENGINE", "event_rule_engine")
+
         if label in SKIP_LABELS and not is_aws_cloud():
             pytest.skip("Not yet implemented")
+
+        if label in PYTHON_SKIP_LABELS and not is_aws_cloud():
+            pytest.skip("Not implemented for python event rule engine")
 
         event = request_template["Event"]
         event_pattern = request_template["EventPattern"]
