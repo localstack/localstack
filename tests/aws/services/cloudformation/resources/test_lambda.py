@@ -101,9 +101,6 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
     snapshot.match("updated_source_mappings", source_mappings)
 
 
-@pytest.mark.skip(
-    reason="fails/times out. Provider not able to update lambda function environment variables"
-)
 @markers.aws.validated
 def test_update_lambda_function(s3_create_bucket, deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
