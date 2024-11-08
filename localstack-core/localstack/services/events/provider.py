@@ -92,7 +92,7 @@ from localstack.aws.api.events import Replay as ApiTypeReplay
 from localstack.aws.api.events import Rule as ApiTypeRule
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
-from localstack.services.events.event_ruler import matches_rule
+from localstack.utils.event_matcher import matches_event as matches_rule
 from localstack.services.events.models import (
     Archive,
     ArchiveDict,

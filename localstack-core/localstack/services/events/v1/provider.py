@@ -40,7 +40,8 @@ from localstack.aws.api.events import (
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.http import route
 from localstack.services.edge import ROUTER
-from localstack.services.events.event_ruler import matches_rule
+from localstack.utils.event_matcher import matches_event as matches_rule
+
 from localstack.services.events.models import (
     InvalidEventPatternException as InternalInvalidEventPatternException,
 )

@@ -7,10 +7,8 @@ from botocore.client import BaseClient
 
 from localstack import config
 from localstack.aws.api.pipes import PipeStateReason
-from localstack.services.events.event_ruler import matches_rule
+from localstack.utils.event_matcher import matches_event as utils_matches_event
 
-# TODO remove when we switch to Java rule engine
-from localstack.services.events.v1.utils import matches_event
 from localstack.services.lambda_.event_source_mapping.event_processor import EventProcessor
 from localstack.services.lambda_.event_source_mapping.noops_event_processor import (
     NoOpsEventProcessor,
@@ -112,12 +110,7 @@ class Poller(ABC):
 
 
 def _matches_event(event_pattern: dict, event: dict) -> bool:
-    if config.EVENT_RULE_ENGINE == "java":
-        event_str = json.dumps(event)
-        event_pattern_str = json.dumps(event_pattern)
-        return matches_rule(event_str, event_pattern_str)
-    else:
-        return matches_event(event_pattern, event)
+    return utils_matches_event(event_pattern, event)
 
 
 def has_batch_item_failures(
