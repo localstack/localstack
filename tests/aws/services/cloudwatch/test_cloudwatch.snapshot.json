@@ -2105,27 +2105,27 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm": {
-    "recorded-date": "07-11-2024, 15:07:28",
+    "recorded-date": "08-11-2024, 15:18:19",
     "recorded-content": {
       "composite-alarm-in-alarm-when-alarm-1-is-in-alarm": {
         "ActionsEnabled": true,
         "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
         ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
         "AlarmConfigurationUpdatedTimestamp": "timestamp",
         "AlarmDescription": "composite alarm description",
-        "AlarmName": "<alarm-name:1>",
-        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<SubscriptionArn:2>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:simple-alarm-2-cc82e41a\")",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
         "InsufficientDataActions": [],
         "OKActions": [
-          "<topic_ok>"
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
         ],
-        "StateReason": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<SubscriptionArn:2> transitioned to ALARM at Thursday 07 November, 2024 15:07:<SubscriptionArn:1>",
+        "StateReason": "<state-reason:1>",
         "StateReasonData": {
           "triggeringAlarms": [
             {
-              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<SubscriptionArn:2>",
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
               "state": {
                 "value": "ALARM",
                 "timestamp": "date"

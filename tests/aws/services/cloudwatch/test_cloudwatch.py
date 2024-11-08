@@ -991,7 +991,6 @@ class TestCloudwatch:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
     def test_trigger_composite_alarm(self, sns_create_topic, sqs_create_queue, aws_client, cleanups, snapshot):
-        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
 
         # create topics for state 'ALARM' and 'OK' of the composite alarm
         topic_name_alarm = f"topic-alarm-{short_uid()}"
@@ -1001,8 +1000,6 @@ class TestCloudwatch:
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
         sns_topic_ok = sns_create_topic(Name=topic_name_ok)
         topic_arn_ok = sns_topic_ok["TopicArn"]
-        snapshot.add_transformer(snapshot.transform.regex(topic_name_alarm, "<topic_alarm>"))
-        snapshot.add_transformer(snapshot.transform.regex(topic_arn_ok, "<topic_ok>"))
 
         # create queues for 'ALARM' and 'OK' of the composite alarm (will receive sns messages)
         queue_url_alarm = sqs_create_queue(QueueName=f"AlarmQueue-{short_uid()}")
@@ -1104,9 +1101,17 @@ class TestCloudwatch:
             expected_triggering_child_state="ALARM",
         )
 
-        # state reason is a text with dates, for now stubbing it out because
-        # composite alarm reason can be checked via TriggeringChildren property
+        # add necessary transformers for the snapshot
+
+        # StateReason is a text with formatted dates inside it. For now stubbing it out fully because
+        # composite alarm reason can be checked via StateReasonData property which is simpler to check
+        # as its properties reference ARN and state of individual alarms without putting them all into a piece of text.
         snapshot.add_transformer(snapshot.transform.key_value("StateReason"))
+        snapshot.add_transformer(snapshot.transform.regex(composite_alarm_name, "<composite-alarm-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(alarm_1_name, "<simple-alarm-1-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(alarm_2_name, "<simple-alarm-2-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(topic_name_alarm, "<alarm-topic-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(topic_name_ok, "<ok-topic-name>"))
 
         composite_alarms_list = aws_client.cloudwatch.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
