@@ -2,8 +2,6 @@ import json
 import logging
 import os
 
-import aws_cdk as cdk
-
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
@@ -216,37 +214,17 @@ def test_rule_properties(deploy_cfn_template, aws_client, snapshot):
 
 
 @markers.aws.validated
-def test_rule_pattern_transformation(aws_client, infrastructure_setup, snapshot):
+def test_rule_pattern_transformation(aws_client, deploy_cfn_template, snapshot):
     """
     The CFn provider for a rule applies a transformation to some properties. Extend this test as more properties or
     situations arise.
     """
-
-    infra = infrastructure_setup(namespace="RuleEventPattern")
-    stack_name = f"RuleStack{short_uid()}"
-    stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
-
-    log_group = cdk.aws_logs.LogGroup(stack, "TestLogGroup")
-
-    # Create an EventBridge rule
-    rule = cdk.aws_events.Rule(
-        stack,
-        "TestRule",
-        event_pattern={
-            "source": ["aws.s3"],
-            "detail-type": ["Object Created"],
-            "detail": {
-                "bucket": {"name": ["test-s3-bucket"]},
-                "object": {"key": [{"suffix": "/test.json"}]},
-            },
-        },
-        targets=[cdk.aws_events_targets.CloudWatchLogGroup(log_group)],
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/events_rule_pattern.yml"
+        ),
     )
 
-    cdk.CfnOutput(stack, "RuleName", value=rule.rule_name)
-
-    with infra.provisioner() as prov:
-        outputs = prov.get_stack_outputs(stack_name=stack_name)
-        rule = aws_client.events.describe_rule(Name=outputs["RuleName"])
-        snapshot.match("rule", rule)
-        snapshot.add_transformer(snapshot.transform())
+    rule = aws_client.events.describe_rule(Name=stack.outputs["RuleName"])
+    snapshot.match("rule", rule)
+    snapshot.add_transformer(snapshot.transform.key_value("Name"))
