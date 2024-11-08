@@ -81,6 +81,7 @@ from localstack.services.cloudwatch.models import (
     LocalStackAlarm,
     LocalStackDashboard,
     LocalStackMetricAlarm,
+    LocalStackCompositeAlarm,
     cloudwatch_stores,
 )
 from localstack.services.edge import ROUTER
@@ -454,21 +455,12 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     @handler("PutCompositeAlarm", expand=False)
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
-        composite_to_metric_alarm = {
-            "AlarmName": request.get("AlarmName"),
-            "AlarmDescription": request.get("AlarmDescription"),
-            "AlarmActions": request.get("AlarmActions", []),
-            "OKActions": request.get("OKActions", []),
-            "InsufficientDataActions": request.get("InsufficientDataActions", []),
-            "ActionsEnabled": request.get("ActionsEnabled", True),
-            "AlarmRule": request.get("AlarmRule"),
-            "Tags": request.get("Tags", []),
-        }
-        self.put_metric_alarm(context=context, request=composite_to_metric_alarm)
-
-        LOG.warning(
-            "Composite Alarms configuration is not yet supported, alarm state will not be evaluated"
-        )
+        with _STORE_LOCK:
+            store = self.get_store(context.account_id, context.region)
+            composite_alarm = LocalStackCompositeAlarm(context.account_id, context.region, {**request})
+            alarm_arn = composite_alarm.alarm["AlarmArn"]
+            store.alarms[alarm_arn] = composite_alarm
+            self.alarm_scheduler.schedule_composite_alarm(alarm_arn)
 
     def describe_alarms(
         self,

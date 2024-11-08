@@ -81,6 +81,9 @@ class AlarmScheduler:
 
         self.scheduled_alarms[alarm_arn] = task
 
+    def schedule_composite_alarm(self, alarm_arn: str) -> None:
+        pass
+
     def delete_scheduler_for_alarm(self, alarm_arn: str) -> None:
         """
         Deletes the recurring scheduler for an alarm
