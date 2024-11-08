@@ -5314,7 +5314,6 @@ class TestLambdaEventSourceMappings:
         cleanups,
         lambda_su_role,
         dynamodb_create_table,
-        monkeypatch,
         aws_client,
     ):
         function_name = f"lambda_func-{short_uid()}"
@@ -5356,10 +5355,7 @@ class TestLambdaEventSourceMappings:
         snapshot.match("create_response", create_response)
 
         # the stream might not be active immediately(!)
-        def check_esm_active():
-            return aws_client.lambda_.get_event_source_mapping(UUID=uuid)["State"] != "Creating"
-
-        assert wait_until(check_esm_active)
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
         get_response = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
         snapshot.match("get_response", get_response)
@@ -5367,21 +5363,12 @@ class TestLambdaEventSourceMappings:
         delete_function_response = aws_client.lambda_.delete_function(FunctionName=function_name)
         snapshot.match("delete_function_response", delete_function_response)
 
-        # LocalStack: Due to ESM deletions being asynchronous, we need to test that the ESM tears
-        # down correctly when the target Lambda has been deleted.
-        if not is_aws_cloud() and is_v2_esm():
-            from localstack.services.lambda_.event_source_mapping.esm_worker import EsmWorker
+        def _assert_function_deleted():
+            with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+                aws_client.lambda_.get_function(FunctionName=function_name)
+            return True
 
-            def _assert_function_deleted():
-                with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
-                    aws_client.lambda_.get_function(FunctionName=function_name)
-                return True
-
-            def _delete_esm_in_store_with_delay(self):
-                wait_until(_assert_function_deleted)
-                self.delete_esm_in_store()
-
-            monkeypatch.setattr(EsmWorker, "delete_esm_in_store", _delete_esm_in_store_with_delay)
+        wait_until(_assert_function_deleted)
 
         get_response_post_delete = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
         snapshot.match("get_response_post_delete", get_response_post_delete)
