@@ -84,8 +84,11 @@ class CloudWatchStore(BaseStore):
     # maps resource ARN to tags
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
-    # maps resource ARN to alarms
+    # maps resource ARN to metric alarms
     alarms: Dict[str, LocalStackAlarm] = LocalAttribute(default=dict)
+
+    # maps resource ARN to composite alarms
+    composite_alarms: Dict[str, LocalStackAlarm] = LocalAttribute(default=dict)
 
     # Contains all the Alarm Histories. Per documentation, an alarm history is retained even if the alarm is deleted,
     # making it necessary to save this at store level
