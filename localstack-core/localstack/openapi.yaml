@@ -232,6 +232,89 @@ components:
       - error
       - subscription_arn
       type: object
+    SNSPlatformEndpointMessage:
+      type: object
+      description: Message sent to a platform endpoint via SNS
+      additionalProperties: false
+      properties:
+        TargetArn:
+          type: string
+        TopicArn:
+          type: string
+        Message:
+          type: string
+        MessageAttributes:
+          type: object
+        MessageStructure:
+          type: string
+        Subject:
+          type: [string, 'null']
+        MessageId:
+          type: string
+    SNSMessage:
+      type: object
+      description: Message sent via SNS
+      properties:
+        PhoneNumber:
+          type: string
+        TopicArn:
+          type: [string, 'null']
+        SubscriptionArn:
+          type: [string, 'null']
+        MessageId:
+          type: string
+        Message:
+          type: string
+        MessageAttributes:
+          type: object
+        MessageStructure:
+          type: [string, 'null']
+        Subject:
+          type: [string, 'null']
+    SNSPlatformEndpointMessages:
+      type: object
+      description: |
+        Messages sent to the platform endpoint retrieved via the retrospective endpoint.
+        The endpoint ARN is the key with a list of messages as value.
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/components/schemas/SNSPlatformEndpointMessage'
+    SMSMessages:
+      type: object
+      description: |
+        SMS messages retrieved via the retrospective endpoint.
+        The phone number is the key with a list of messages as value.
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/components/schemas/SNSMessage'
+    SNSPlatformEndpointResponse:
+      type: object
+      additionalProperties: false
+      description: Response payload for the /_aws/sns/platform-endpoint-messages endpoint
+      properties:
+        region:
+          type: string
+          description: "The AWS region, e.g., us-east-1"
+        platform_endpoint_messages:
+          $ref: '#/components/schemas/SNSPlatformEndpointMessages'
+      required:
+        - region
+        - platform_endpoint_messages
+    SNSSMSMessagesResponse:
+      type: object
+      additionalProperties: false
+      description: Response payload for the /_aws/sns/sms-messages endpoint
+      properties:
+        region:
+          type: string
+          description: "The AWS region, e.g., us-east-1"
+        sms_messages:
+          $ref: '#/components/schemas/SMSMessages'
+      required:
+        - region
+        - sms_messages
     ReceiveMessageRequest:
       type: object
       description: https://github.com/boto/botocore/blob/develop/botocore/data/sqs/2012-11-05/service-2.json
@@ -469,8 +552,8 @@ paths:
           description: List of sent messages
   /_aws/sns/platform-endpoint-messages:
     delete:
-      description: Discard SNS platform endpoint messages
-      operationId: discard_sns_messages
+      description: Discard the messages published to a platform endpoint via SNS
+      operationId: discard_sns_endpoint_messages
       tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
@@ -480,8 +563,8 @@ paths:
         '204':
           description: Platform endpoint message was discarded
     get:
-      description: Retrieve SNS platform endpoint messages
-      operationId: get_sns_messages
+      description: Retrieve the messages sent to a platform endpoint via SNS
+      operationId: get_sns_endpoint_messages
       tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
@@ -492,17 +575,8 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  platform_endpoint_messages:
-                    type: object
-                  region:
-                    type: string
-                required:
-                - platform_endpoint_messages
-                - region
-                type: object
-          description: Platform endpoint messages
+                $ref: "#/components/schemas/SNSPlatformEndpointResponse"
+          description: SNS messages via retrospective access
   /_aws/sns/sms-messages:
     delete:
       description: Discard SNS SMS messages
@@ -514,8 +588,6 @@ paths:
       - $ref: '#/components/parameters/SnsPhoneNumber'
       responses:
         '204':
-          content:
-            text/plain: {}
           description: SMS message was discarded
     get:
       description: Retrieve SNS SMS messages
@@ -530,17 +602,8 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  region:
-                    type: string
-                  sms_messages:
-                    type: object
-                required:
-                - sms_messages
-                - region
-                type: object
-          description: SNS SMS messages
+                $ref: "#/components/schemas/SNSSMSMessagesResponse"
+          description: SNS messages via retrospective access
   /_aws/sns/subscription-tokens/{subscription_arn}:
     get:
       description: Retrieve SNS subscription token for confirmation
