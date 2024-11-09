@@ -7,7 +7,7 @@ from botocore.client import BaseClient
 
 from localstack import config
 from localstack.aws.api.pipes import PipeStateReason
-from localstack.utils.event_matcher import matches_event as utils_matches_event
+from localstack.utils.event_matcher import matches_event
 
 from localstack.services.lambda_.event_source_mapping.event_processor import EventProcessor
 from localstack.services.lambda_.event_source_mapping.noops_event_processor import (
@@ -87,7 +87,7 @@ class Poller(ABC):
         filtered_events = []
         for event in events:
             # TODO: add try/catch with default discard and error log for extra resilience
-            if any(_matches_event(pattern, event) for pattern in self.filter_patterns):
+            if any(matches_event(pattern, event) for pattern in self.filter_patterns):
                 filtered_events.append(event)
         return filtered_events
 
@@ -107,10 +107,6 @@ class Poller(ABC):
     def extra_metadata(self) -> dict:
         """Default implementation that subclasses can override to customize"""
         return {}
-
-
-def _matches_event(event_pattern: dict, event: dict) -> bool:
-    return utils_matches_event(event_pattern, event)
 
 
 def has_batch_item_failures(
