@@ -4,6 +4,7 @@ import logging
 import re
 import threading
 import uuid
+from datetime import timezone
 from typing import List
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -340,7 +341,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if old_state == state_value:
                 return
 
-            alarm.alarm["StateTransitionedTimestamp"] = datetime.datetime.now()
+            alarm.alarm["StateTransitionedTimestamp"] = datetime.datetime.now(timezone.utc)
             # update startDate (=last ALARM date) - should only update when a new alarm is triggered
             # the date is only updated if we have a reason-data, which is set by an alarm
             if state_reason_data:
@@ -859,14 +860,21 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if old_state_value == new_state_value:
                 return
 
-            state_reason = "<state-reason:1>" #TODO format the reason
+            triggering_alarm_arn = triggering_alarm.alarm.get("AlarmArn")
+            triggering_alarm_state = triggering_alarm.alarm.get("StateValue")
+            triggering_alarm_state_change_timestamp = triggering_alarm.alarm.get("StateTransitionedTimestamp")
+            state_reason_formatted_timestamp = triggering_alarm_state_change_timestamp.strftime(
+                "%A %d %B, %Y %H:%M:%S %Z")
+            state_reason = (f"{triggering_alarm_arn} "
+                            f"transitioned to {triggering_alarm_state} "
+                            f"at {state_reason_formatted_timestamp}")
             state_reason_data = {
                 "triggeringAlarms": [
                     {
-                        "arn": triggering_alarm.alarm.get("AlarmArn"),
+                        "arn": triggering_alarm_arn,
                         "state": {
-                            "value": triggering_alarm.alarm.get("StateValue"),
-                            "timestamp": timestamp_millis(triggering_alarm.alarm.get("StateTransitionedTimestamp")),
+                            "value": triggering_alarm_state,
+                            "timestamp": timestamp_millis(triggering_alarm_state_change_timestamp),
                         }
                     }
                 ]
