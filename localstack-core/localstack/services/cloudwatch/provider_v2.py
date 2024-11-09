@@ -462,7 +462,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             composite_alarm = LocalStackCompositeAlarm(context.account_id, context.region, {**request})
             alarm_arn = composite_alarm.alarm["AlarmArn"]
             store.alarms[alarm_arn] = composite_alarm
-            self.alarm_scheduler.schedule_composite_alarm(alarm_arn)
 
     def describe_alarms(
         self,
