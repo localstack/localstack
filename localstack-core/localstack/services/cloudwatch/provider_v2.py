@@ -354,6 +354,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 state_reason_data,
             )
 
+            self._evaluate_composite_alarms(context)
+
             if not alarm.alarm["ActionsEnabled"]:
                 return
             if state_value == "OK":
@@ -835,6 +837,30 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         if end_date:
             history = [h for h in history if (date := _get_timestamp(h)) and date <= end_date]
         return DescribeAlarmHistoryOutput(AlarmHistoryItems=history)
+
+    def _evaluate_composite_alarms(self, context: RequestContext):
+        store = self.get_store(context.account_id, context.region)
+        alarms = list(store.alarms.values())
+        composite_alarms = [a for a in alarms if isinstance(a, LocalStackCompositeAlarm)]
+        for composite_alarm in composite_alarms:
+            new_state_value = StateValue.OK
+            alarm_rule = composite_alarm.alarm["AlarmRule"]
+            # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied
+            metric_alarm_arns = re.findall(r'\("([^"]*)"\)', alarm_rule) # regexp for everything within (" ")
+            for metric_alarm_arn in metric_alarm_arns:
+                metric_alarm = store.alarms.get(metric_alarm_arn)
+                if metric_alarm.alarm["StateValue"] == StateValue.ALARM:
+                    new_state_value = StateValue.ALARM
+                    break
+
+            old_state_value = composite_alarm.alarm["StateValue"]
+
+            if old_state_value == new_state_value:
+                return
+
+            state_reason = "<state-reason:1>" #TODO format the reason
+            state_reason_data = {} #TODO fill in reason data
+            self._update_state(context,composite_alarm, new_state_value, state_reason, state_reason_data)
 
 
 def create_metric_data_query_from_alarm(alarm: LocalStackMetricAlarm):
