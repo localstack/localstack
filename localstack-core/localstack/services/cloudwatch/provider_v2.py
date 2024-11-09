@@ -862,6 +862,32 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             state_reason_data = {} #TODO fill in reason data
             self._update_state(context,composite_alarm, new_state_value, state_reason, state_reason_data)
 
+            if not composite_alarm.alarm["ActionsEnabled"]:
+                return
+            if new_state_value == "OK":
+                actions = composite_alarm.alarm["OKActions"]
+            elif new_state_value == "ALARM":
+                actions = composite_alarm.alarm["AlarmActions"]
+            else:
+                actions = composite_alarm.alarm["InsufficientDataActions"]
+            for action in actions:
+                data = arns.parse_arn(action)
+                if data["service"] == "sns":
+                    service = connect_to(
+                        region_name=data["region"], aws_access_key_id=data["account"]
+                    ).sns
+                    # TODO verify message for composite alarm
+                    subject = f"""{new_state_value}: "{composite_alarm.alarm["AlarmName"]}" in {context.region}"""
+                    message = create_message_response_update_state_sns(composite_alarm, old_state_value)
+                    service.publish(TopicArn=action, Subject=subject, Message=message)
+                else:
+                    # TODO: support other actions
+                    LOG.warning(
+                        "Action for service %s not implemented, action '%s' will not be triggered.",
+                        data["service"],
+                        action,
+                    )
+
 
 def create_metric_data_query_from_alarm(alarm: LocalStackMetricAlarm):
     # TODO may need to be adapted for other use cases
