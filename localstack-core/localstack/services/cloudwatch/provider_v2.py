@@ -843,6 +843,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         alarms = list(store.alarms.values())
         composite_alarms = [a for a in alarms if isinstance(a, LocalStackCompositeAlarm)]
         for composite_alarm in composite_alarms:
+            triggering_alarm = None
             new_state_value = StateValue.OK
             alarm_rule = composite_alarm.alarm["AlarmRule"]
             # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied
@@ -850,6 +851,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             for metric_alarm_arn in metric_alarm_arns:
                 metric_alarm = store.alarms.get(metric_alarm_arn)
                 if metric_alarm.alarm["StateValue"] == StateValue.ALARM:
+                    triggering_alarm = metric_alarm
                     new_state_value = StateValue.ALARM
                     break
 
@@ -878,7 +880,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                     ).sns
                     # TODO verify message for composite alarm
                     subject = f"""{new_state_value}: "{composite_alarm.alarm["AlarmName"]}" in {context.region}"""
-                    message = create_message_response_update_state_sns(composite_alarm, old_state_value)
+                    message = create_message_response_update_composite_alarm_state_sns(composite_alarm, triggering_alarm, old_state_value)
                     service.publish(TopicArn=action, Subject=subject, Message=message)
                 else:
                     # TODO: support other actions
@@ -942,7 +944,7 @@ def create_message_response_update_state_lambda(
     return json.dumps(response, cls=JSONEncoder)
 
 
-def create_message_response_update_state_sns(alarm, old_state):
+def create_message_response_update_state_sns(alarm: LocalStackMetricAlarm, old_state):
     _alarm = alarm.alarm
     response = {
         "AWSAccountId": alarm.account_id,
@@ -994,5 +996,41 @@ def create_message_response_update_state_sns(alarm, old_state):
         details["ExtendedStatistic"] = alarm_extended_statistic
 
     response["Trigger"] = details
+
+    return json.dumps(response, cls=JSONEncoder)
+
+def create_message_response_update_composite_alarm_state_sns(
+        composite_alarm: LocalStackCompositeAlarm,
+        triggering_alarm: LocalStackMetricAlarm,
+        old_state,
+):
+    _alarm = composite_alarm.alarm
+    response = {
+        "AWSAccountId": composite_alarm.account_id,
+        "AlarmName": _alarm["AlarmName"],
+        "AlarmDescription": _alarm.get("AlarmDescription"),
+        "AlarmRule": _alarm.get("AlarmRule"),
+        "OldStateValue": old_state,
+        "NewStateValue": _alarm["StateValue"],
+        "NewStateReason": _alarm["StateReason"],
+        "StateChangeTime": _alarm["StateUpdatedTimestamp"],
+        # the long-name for 'region' should be used - as we don't have it, we use the short name
+        # which needs to be slightly changed to make snapshot tests work
+        "Region": composite_alarm.region.replace("-", " ").capitalize(),
+        "AlarmArn": _alarm["AlarmArn"],
+        "OKActions": _alarm.get("OKActions", []),
+        "AlarmActions": _alarm.get("AlarmActions", []),
+        "InsufficientDataActions": _alarm.get("InsufficientDataActions", []),
+    }
+
+    triggering_children = [{
+        "Arn": triggering_alarm.alarm.get("AlarmArn"),
+        "State": {
+            "Value": triggering_alarm.alarm["StateValue"],
+            "Timestamp": triggering_alarm.alarm["StateUpdatedTimestamp"],
+        }
+    }]
+
+    response["TriggeringChildren"] = triggering_children
 
     return json.dumps(response, cls=JSONEncoder)
