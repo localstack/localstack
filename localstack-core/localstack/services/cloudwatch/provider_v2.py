@@ -760,7 +760,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         old_state_reason = alarm.alarm["StateReason"]
         store = self.get_store(context.account_id, context.region)
         current_time = datetime.datetime.now()
-        if state_reason_data:
+        if state_reason_data and isinstance(alarm, LocalStackMetricAlarm):
             state_reason_data["version"] = HISTORY_VERSION
         history_data = {
             "version": HISTORY_VERSION,
@@ -861,7 +861,17 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 return
 
             state_reason = "<state-reason:1>" #TODO format the reason
-            state_reason_data = {} #TODO fill in reason data
+            state_reason_data = {
+                "triggeringAlarms": [
+                    {
+                        "arn": triggering_alarm.alarm.get("AlarmArn"),
+                        "state": {
+                            "value": triggering_alarm.alarm.get("StateValue"),
+                            "timestamp": timestamp_millis(triggering_alarm.alarm.get("StateTransitionedTimestamp")),
+                        }
+                    }
+                ]
+            }
             self._update_state(context,composite_alarm, new_state_value, state_reason, state_reason_data)
 
             if not composite_alarm.alarm["ActionsEnabled"]:
