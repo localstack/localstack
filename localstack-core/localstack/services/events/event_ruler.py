@@ -36,7 +36,7 @@ def start_jvm() -> None:
 def get_jpype_lib_paths() -> Tuple[str, str]:
     """
     Downloads Event Ruler, its dependencies and returns a tuple of:
-    - Path to libjvm.{so/dylib} to be used by JPype as jvmpath. JPype requires this to start the JVM.
+    - Path to libjvm.so/libjli.dylib to be used by JPype as jvmpath. JPype requires this to start the JVM.
         See https://jpype.readthedocs.io/en/latest/userguide.html#path-to-the-jvm
     - Path to Event Ruler libraries to be used by JPype as classpath
     """
