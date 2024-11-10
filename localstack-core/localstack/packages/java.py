@@ -44,11 +44,9 @@ class JavaInstallerMixin:
         Returns the path to the Java shared library.
         """
         if java_home := self.get_java_home():
-            if is_linux():
-                return os.path.join(java_home, "lib", "server", "libjvm.so")
             if is_mac_os():
-                return os.path.join(java_home, "lib", "server", "libjvm.dylib")
-        return None
+                return os.path.join(java_home, "Contents", "Home", "lib", "jli", "libjli.dylib")
+            return os.path.join(java_home, "lib", "server", "libjvm.so")
 
     def get_java_env_vars(self, path: str = None, ld_library_path: str = None) -> dict[str, str]:
         """
@@ -85,6 +83,8 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         super().__init__("java", version, extract_single_directory=True)
 
     def _get_install_marker_path(self, install_dir: str) -> str:
+        if self.os_name == "mac":
+            return os.path.join(install_dir, "Contents", "Home", "bin", "java")
         return os.path.join(install_dir, "bin", "java")
 
     def _get_download_url(self) -> str:

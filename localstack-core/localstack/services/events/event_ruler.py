@@ -27,13 +27,13 @@ def start_jvm() -> None:
 
     if not jpype.isJVMStarted():
         jvm_lib, event_ruler_libs_path = get_jpype_lib_paths()
-        event_ruler_libs_pattern = event_ruler_libs_path.joinpath("*")
+        event_ruler_libs_pattern = Path(event_ruler_libs_path).joinpath("*")
 
-        jpype.startJVM(str(jvm_lib), classpath=[event_ruler_libs_pattern])
+        jpype.startJVM(jvm_lib, classpath=[event_ruler_libs_pattern])
 
 
 @cache
-def get_jpype_lib_paths() -> Tuple[Path, Path]:
+def get_jpype_lib_paths() -> Tuple[str, str]:
     """
     Downloads Event Ruler, its dependencies and returns a tuple of:
     - Path to libjvm.{so/dylib} to be used by JPype as jvmpath. JPype requires this to start the JVM.
@@ -43,7 +43,7 @@ def get_jpype_lib_paths() -> Tuple[Path, Path]:
     installer = event_ruler_package.get_installer()
     installer.install()
 
-    return installer.get_java_lib_path(), Path(installer.get_installed_dir())
+    return installer.get_java_lib_path(), installer.get_installed_dir()
 
 
 def matches_rule(event: str, rule: str) -> bool:
