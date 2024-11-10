@@ -83,7 +83,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         super().__init__("java", version, extract_single_directory=True)
 
     def _get_install_marker_path(self, install_dir: str) -> str:
-        if self.os_name == "mac":
+        if is_mac_os():
             return os.path.join(install_dir, "Contents", "Home", "bin", "java")
         return os.path.join(install_dir, "bin", "java")
 
