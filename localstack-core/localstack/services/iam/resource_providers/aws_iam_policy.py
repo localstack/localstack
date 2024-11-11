@@ -92,15 +92,6 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
         """
         raise NotImplementedError
 
-    def list(
-        self,
-        request: ResourceRequest[IAMPolicyProperties],
-    ) -> ProgressEvent[IAMPolicyProperties]:
-        policies = request.aws_client_factory.iam.list_policies()["Policies"]
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_models=[IAMPolicyProperties(Id=policy["PolicyId"]) for policy in policies],
-        )
 
     def delete(
         self,
