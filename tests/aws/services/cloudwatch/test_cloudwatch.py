@@ -1145,26 +1145,31 @@ class TestCloudwatch:
         composite_alarm_in_ok_when_alarm_1_back_to_ok = composite_alarms_list["CompositeAlarms"][0]
         snapshot.match("composite-alarm-in-ok-when-alarm-1-is-back-to-ok", composite_alarm_in_ok_when_alarm_1_back_to_ok)
 
-        # # trigger alarm 2 - composite one should go again into ALARM state
-        # aws_client.cloudwatch.set_alarm_state(
-        #     AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
-        # )
-        #
-        # retry(
-        #     check_message,
-        #     retries=PUBLICATION_RETRIES,
-        #     sleep_before=1,
-        #     sqs_client=aws_client.sqs,
-        #     expected_queue_url=queue_url_alarm,
-        #     expected_topic_arn=topic_arn_alarm,
-        #     expected_new="ALARM"
-        # expected_reason = state_reason,  # TODO define state reason for composite alarm
-        # alarm_name = composite_alarm_name,
-        # alarm_description = composite_alarm_description,
-        # expected_trigger = expected_trigger,  # TODO define expected trigger for composite alarm
-        # )
-        # describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[composite_alarm_name])
-        # snapshot.match("triggered-alarm", describe_alarm)
+        # trigger alarm 2 - composite one should go again into ALARM state
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
+        )
+
+        retry(
+            check_composite_alarm_message,
+            retries=PUBLICATION_RETRIES,
+            sleep_before=1,
+            sqs_client=aws_client.sqs,
+            queue_url=queue_url_alarm,
+            expected_topic_arn=topic_arn_alarm,
+            alarm_name=composite_alarm_name,
+            alarm_description=composite_alarm_description,
+            expected_state="ALARM",
+            expected_triggering_child_arn=alarm_2_arn,
+            expected_triggering_child_state="ALARM",
+        )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_in_alarm_when_alarm_2_in_alarm = composite_alarms_list["CompositeAlarms"][0]
+        snapshot.match("composite-alarm-in-alarm-when-alarm-2-is-in-alarm",
+                       composite_alarm_in_alarm_when_alarm_2_in_alarm)
         #
         # # trigger alarm 1 while alarm 2 is triggered - composite one shouldn't change
         # aws_client.cloudwatch.set_alarm_state(

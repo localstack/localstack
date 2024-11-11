@@ -2105,7 +2105,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm": {
-    "recorded-date": "11-11-2024, 10:26:28",
+    "recorded-date": "11-11-2024, 10:37:42",
     "recorded-content": {
       "composite-alarm-in-alarm-when-alarm-1-is-in-alarm": {
         "ActionsEnabled": true,
@@ -2166,6 +2166,36 @@
         "StateTransitionedTimestamp": "timestamp",
         "StateUpdatedTimestamp": "timestamp",
         "StateValue": "OK"
+      },
+      "composite-alarm-in-alarm-when-alarm-2-is-in-alarm": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:3>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
       }
     }
   }
