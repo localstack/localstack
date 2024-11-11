@@ -355,7 +355,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 state_reason_data,
             )
 
-            self._evaluate_composite_alarms(context)
+            self._evaluate_composite_alarms(context, alarm)
 
             if not alarm.alarm["ActionsEnabled"]:
                 return
@@ -838,12 +838,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             history = [h for h in history if (date := _get_timestamp(h)) and date <= end_date]
         return DescribeAlarmHistoryOutput(AlarmHistoryItems=history)
 
-    def _evaluate_composite_alarms(self, context: RequestContext):
+    def _evaluate_composite_alarms(self, context: RequestContext, triggering_alarm):
         store = self.get_store(context.account_id, context.region)
         alarms = list(store.alarms.values())
         composite_alarms = [a for a in alarms if isinstance(a, LocalStackCompositeAlarm)]
         for composite_alarm in composite_alarms:
-            triggering_alarm = None
             new_state_value = StateValue.OK
             alarm_rule = composite_alarm.alarm["AlarmRule"]
             # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied

@@ -69,6 +69,6 @@
     "last_validated_date": "2024-09-02T14:03:31+00:00"
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm": {
-    "last_validated_date": "2024-11-08T15:18:19+00:00"
+    "last_validated_date": "2024-11-11T10:26:28+00:00"
   }
 }
