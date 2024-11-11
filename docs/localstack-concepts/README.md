@@ -52,8 +52,8 @@ A service provider is an implementation of an AWS service API. Service providers
 
 A server-side protocol implementation requires a marshaller (a parser for incoming requests, and a serializer for outgoing responses).
 
-- Our [protocol parser](https://github.com/localstack/localstack/blob/master/localstack/aws/protocol/parser.py) translates AWS HTTP requests into objects that can be used to call the respective function of the service provider.
-- Our [protocol serializer](https://github.com/localstack/localstack/blob/master/localstack/aws/protocol/serializer.py) translates response objects coming from service provider functions into HTTP responses.
+- Our [protocol parser](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/aws/protocol/parser.py) translates AWS HTTP requests into objects that can be used to call the respective function of the service provider.
+- Our [protocol serializer](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/aws/protocol/serializer.py) translates response objects coming from service provider functions into HTTP responses.
 
 ## Service
 
@@ -85,11 +85,11 @@ Sometimes we also use `moto` code directly, for example importing and accessing 
 
 ## `@patch`
 
-[The patch utility](https://github.com/localstack/localstack/blob/master/localstack/utils/patch.py) enables easy [monkey patching](https://en.wikipedia.org/wiki/Monkey_patch) of external functionality. We often use this to modify internal moto functionality. Sometimes it is easier to patch internals than to wrap the entire API method with the custom functionality.
+[The patch utility](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/utils/patch.py) enables easy [monkey patching](https://en.wikipedia.org/wiki/Monkey_patch) of external functionality. We often use this to modify internal moto functionality. Sometimes it is easier to patch internals than to wrap the entire API method with the custom functionality.
 
 ### Server
 
-[Server](<https://github.com/localstack/localstack/blob/master/localstack/utils/serving.py>) is an abstract class that provides a basis for serving other backends that run in a separate process. For example, our Kinesis implementation uses [kinesis-mock](https://github.com/etspaceman/kinesis-mock/) as a backend that implements the Kinesis AWS API and also emulates its behavior. 
+[Server](<https://github.com/localstack/localstack/blob/master/localstack-core/localstack/utils/serving.py>) is an abstract class that provides a basis for serving other backends that run in a separate process. For example, our Kinesis implementation uses [kinesis-mock](https://github.com/etspaceman/kinesis-mock/) as a backend that implements the Kinesis AWS API and also emulates its behavior. 
 
 The provider [starts the kinesis-mock binary in a `Server`](https://github.com/localstack/localstack/blob/2e1e8b4e3e98965a7e99cd58ccdeaa6350a2a414/localstack/services/kinesis/kinesis_mock_server.py), and then forwards all incoming requests to it using `forward_request`. This is a similar construct to `call_moto`, only generalized to arbitrary HTTP AWS backends. 
 
@@ -237,7 +237,7 @@ For help with the specific commands, use `python -m localstack.cli.lpm <command>
 
 The codebase contains a wealth of utility functions for various common tasks like handling strings, JSON/XML, threads/processes, collections, date/time conversions, and much more.
 
-The utilities are grouped into multiple util modules inside the [localstack.utils](<https://github.com/localstack/localstack/tree/master/localstack/utils>) package. Some of the most commonly used utils modules include:
+The utilities are grouped into multiple util modules inside the [localstack.utils](<https://github.com/localstack/localstack/tree/master/localstack-core/localstack/utils>) package. Some of the most commonly used utils modules include:
 
 -   `.files` - file handling utilities (e.g., `load_file`, `save_file`, or `mkdir`)
 -   `.json` - handle JSON content (e.g., `json_safe`, or `canonical_json`)
