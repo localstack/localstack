@@ -181,16 +181,20 @@ class ResourcesResource:
 
 class AccountsRegionUsageResource:
     """
-    Resource that is exposed to /_localstack/account-region-usage to get a list of unique account/region combinations that have been used in this session
+    Resource that is exposed to /_localstack/account-region-usage to get a list of for each account used, all regions used in that account
     """
 
     def on_get(self, request):
         from localstack.aws.handlers.custom import AccountRegionTracker
+        output_dict = {}
 
-        return [
-            {"account_id": entry[0], "region_name": entry[1]}
-            for entry in AccountRegionTracker.tracked
-        ]
+            # Iterate over the set and populate the dictionary
+        for x, y in AccountRegionTracker.tracked:
+            if x not in output_dict:
+                output_dict[x] = []  
+            output_dict[x].append(y) 
+            
+        return output_dict
 
 
 class UsageResource:
