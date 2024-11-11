@@ -1170,13 +1170,22 @@ class TestCloudwatch:
         composite_alarm_in_alarm_when_alarm_2_in_alarm = composite_alarms_list["CompositeAlarms"][0]
         snapshot.match("composite-alarm-in-alarm-when-alarm-2-is-in-alarm",
                        composite_alarm_in_alarm_when_alarm_2_in_alarm)
-        #
-        # # trigger alarm 1 while alarm 2 is triggered - composite one shouldn't change
-        # aws_client.cloudwatch.set_alarm_state(
-        #     AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
-        # )
-        # # TODO check that alarm state hasn't changed, probably with describe_alarm_history
-        # # take into account that composite alarm runs on schedule
+
+        # trigger alarm 1 while alarm 2 is triggered - composite one shouldn't change
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
+        )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_not_changed_by_second_trigger = composite_alarms_list["CompositeAlarms"][0]
+        # It is not possible to reuse the snapshot within the same test,
+        # therefore checking that alarm reason hasn't changed instead of recording new snapshot
+        state_reason_data = json.loads(composite_alarm_not_changed_by_second_trigger["StateReasonData"])
+        triggering_alarms = state_reason_data["triggeringAlarms"]
+        assert len(triggering_alarms) == 1
+        assert triggering_alarms[0]["arn"] == alarm_2_arn
 
 
     @markers.aws.validated
