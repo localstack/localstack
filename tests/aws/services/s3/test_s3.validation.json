@@ -44,6 +44,12 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_no_such_bucket": {
     "last_validated_date": "2023-08-03T02:13:50+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_policy": {
+    "last_validated_date": "2024-11-10T19:21:53+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_policy_expected_bucket_owner": {
+    "last_validated_date": "2024-11-10T19:23:47+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_with_content": {
     "last_validated_date": "2023-08-03T02:13:20+00:00"
   },
@@ -76,6 +82,9 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_bucket_notification_configuration_no_such_bucket": {
     "last_validated_date": "2023-08-03T02:13:50+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_get_bucket_policy": {
+    "last_validated_date": "2024-11-10T19:20:17+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_bucket_versioning_order": {
     "last_validated_date": "2023-08-03T02:23:26+00:00"
@@ -160,6 +169,15 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_inventory_config_order": {
     "last_validated_date": "2023-08-03T02:26:27+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy": {
+    "last_validated_date": "2024-11-10T19:20:47+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_expected_bucket_owner": {
+    "last_validated_date": "2024-11-10T19:32:05+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_with_expected_bucket_owner": {
+    "last_validated_date": "2024-11-10T19:06:26+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[a/%F0%9F%98%80/]": {
     "last_validated_date": "2023-12-12T12:46:44+00:00"

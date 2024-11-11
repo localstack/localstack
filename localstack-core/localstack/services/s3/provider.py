@@ -412,7 +412,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             return expiration_header
 
     def _get_cross_account_bucket(
-        self, context: RequestContext, bucket_name: BucketName
+        self,
+        context: RequestContext,
+        bucket_name: BucketName,
+        *,
+        expected_bucket_owner: AccountId = None,
     ) -> tuple[S3Store, S3Bucket]:
         store = self.get_store(context.account_id, context.region)
         if not (s3_bucket := store.buckets.get(bucket_name)):
@@ -422,6 +426,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             store = self.get_store(account_id, context.region)
             if not (s3_bucket := store.buckets.get(bucket_name)):
                 raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
+
+        if expected_bucket_owner and s3_bucket.bucket_account_id != expected_bucket_owner:
+            raise AccessDenied("Access Denied")
 
         return store, s3_bucket
 
@@ -3646,7 +3653,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         **kwargs,
     ) -> GetBucketPolicyOutput:
-        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
         if not s3_bucket.policy:
             raise NoSuchBucketPolicy(
                 "The bucket policy does not exist",
@@ -3665,7 +3674,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         **kwargs,
     ) -> None:
-        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
 
         if not policy or policy[0] != "{":
             raise MalformedPolicy("Policies must be valid JSON and the first byte must be '{'")
@@ -3686,7 +3697,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         **kwargs,
     ) -> None:
-        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
 
         s3_bucket.policy = None
 

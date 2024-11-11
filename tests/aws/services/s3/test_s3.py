@@ -267,6 +267,20 @@ def _filter_header(param: dict) -> dict:
     return {k: v for k, v in param.items() if k.startswith("x-amz") or k in ["content-type"]}
 
 
+def _simple_bucket_policy(s3_bucket: str) -> dict:
+    return {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "s3:GetObject",
+                "Effect": "Allow",
+                "Resource": f"arn:aws:s3:::{s3_bucket}/*",
+                "Principal": {"AWS": "*"},
+            }
+        ],
+    }
+
+
 class TestS3:
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
@@ -964,30 +978,96 @@ class TestS3:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
     @markers.aws.validated
-    def test_put_and_get_bucket_policy(self, s3_bucket, snapshot, aws_client, allow_bucket_acl):
-        # just for the joke: Response syntax HTTP/1.1 200
-        # sample response: HTTP/1.1 204 No Content
-        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketPolicy.html
+    def test_get_bucket_policy(self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id):
         snapshot.add_transformer(snapshot.transform.key_value("Resource"))
-        # put bucket policy
-        policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Action": "s3:GetObject",
-                    "Effect": "Allow",
-                    "Resource": f"arn:aws:s3:::{s3_bucket}/*",
-                    "Principal": {"AWS": "*"},
-                }
-            ],
-        }
-        response = aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
-        snapshot.match("put-bucket-policy", response)
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy-no-such-bucket-policy", e.value.response)
+
+        policy = _simple_bucket_policy(s3_bucket)
+        aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
 
         # retrieve and check policy config
         response = aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
         snapshot.match("get-bucket-policy", response)
         assert policy == json.loads(response["Policy"])
+
+        response = aws_client.s3.get_bucket_policy(Bucket=s3_bucket, ExpectedBucketOwner=account_id)
+        snapshot.match("get-bucket-policy-with-expected-bucket-owner", response)
+        assert policy == json.loads(response["Policy"])
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_policy(Bucket=s3_bucket, ExpectedBucketOwner="000000000002")
+        snapshot.match("get-bucket-policy-with-expected-bucket-owner-error", e.value.response)
+
+    @markers.aws.validated
+    def test_put_bucket_policy(self, s3_bucket, snapshot, aws_client, allow_bucket_acl):
+        # just for the joke: Response syntax HTTP/1.1 200
+        # sample response: HTTP/1.1 204 No Content
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketPolicy.html
+        snapshot.add_transformer(snapshot.transform.key_value("Resource"))
+        # put bucket policy
+        policy = _simple_bucket_policy(s3_bucket)
+        response = aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
+        snapshot.match("put-bucket-policy", response)
+
+        response = aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy", response)
+        assert policy == json.loads(response["Policy"])
+
+    @markers.aws.validated
+    def test_put_bucket_policy_expected_bucket_owner(
+        self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("Resource"))
+        policy = _simple_bucket_policy(s3_bucket)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_policy(
+                Bucket=s3_bucket, Policy=json.dumps(policy), ExpectedBucketOwner="000000000002"
+            )
+        snapshot.match("put-bucket-policy-with-expected-bucket-owner-error", e.value.response)
+
+        response = aws_client.s3.put_bucket_policy(
+            Bucket=s3_bucket, Policy=json.dumps(policy), ExpectedBucketOwner=account_id
+        )
+        snapshot.match("put-bucket-policy-with-expected-bucket-owner", response)
+
+    @markers.aws.validated
+    def test_delete_bucket_policy(self, s3_bucket, snapshot, aws_client, allow_bucket_acl):
+        snapshot.add_transformer(snapshot.transform.key_value("Resource"))
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+
+        policy = _simple_bucket_policy(s3_bucket)
+        aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
+
+        response = aws_client.s3.delete_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-policy", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy-no-such-bucket-policy", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_bucket_policy_expected_bucket_owner(
+        self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("Resource"))
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+
+        policy = self._simple_bucket_policy(s3_bucket)
+        aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_bucket_policy(Bucket=s3_bucket, ExpectedBucketOwner="000000000002")
+        snapshot.match("delete-bucket-policy-with-expected-bucket-owner-error", e.value.response)
+
+        response = aws_client.s3.delete_bucket_policy(
+            Bucket=s3_bucket, ExpectedBucketOwner=account_id
+        )
+        snapshot.match("delete-bucket-policy-with-expected-bucket-owner", response)
 
     @markers.aws.validated
     def test_put_object_tagging_empty_list(self, s3_bucket, snapshot, aws_client):
