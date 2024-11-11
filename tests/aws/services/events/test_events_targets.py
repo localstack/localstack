@@ -43,10 +43,10 @@ class TestEventsTargetCloudWatchLogs:
         self,
         events_create_event_bus,
         events_put_rule,
+        events_log_group,
         aws_client,
         snapshot,
-        account_id,
-        region_name,
+        cleanups,
     ):
         snapshot.add_transformers_list(
             [
@@ -56,17 +56,14 @@ class TestEventsTargetCloudWatchLogs:
             ]
         )
 
-        # Step 1: Create an EventBridge event bus
         event_bus_name = f"test-bus-{short_uid()}"
         event_bus_response = events_create_event_bus(Name=event_bus_name)
         snapshot.match("event_bus_response", event_bus_response)
 
-        # Step 2: Create a CloudWatch Logs log group
-        log_group_name = f"/aws/events/test-log-group-{short_uid()}"
-        aws_client.logs.create_log_group(logGroupName=log_group_name)
-        log_group_arn = f"arn:aws:logs:{region_name}:{account_id}:log-group:{log_group_name}"
+        log_group = events_log_group()
+        log_group_name = log_group["log_group_name"]
+        log_group_arn = log_group["log_group_arn"]
 
-        # Step 3: Attach a resource policy to the log group to allow EventBridge to write to it
         resource_policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -84,11 +81,12 @@ class TestEventsTargetCloudWatchLogs:
             policyName=policy_name, policyDocument=json.dumps(resource_policy)
         )
 
-        # Wait for the resource policy to take effect (only needed in AWS)
+        cleanups.append(lambda: aws_client.logs.delete_log_group(logGroupName=log_group_name))
+        cleanups.append(lambda: aws_client.logs.delete_resource_policy(policyName=policy_name))
+
         if is_aws_cloud():
             time.sleep(10)
 
-        # Step 4: Create a rule on the event bus
         rule_name = f"test-rule-{short_uid()}"
         rule_response = events_put_rule(
             Name=rule_name,
@@ -97,7 +95,6 @@ class TestEventsTargetCloudWatchLogs:
         )
         snapshot.match("rule_response", rule_response)
 
-        # Step 5: Add the CloudWatch Logs log group as a target
         target_id = f"target-{short_uid()}"
         put_targets_response = aws_client.events.put_targets(
             Rule=rule_name,
@@ -112,7 +109,6 @@ class TestEventsTargetCloudWatchLogs:
         snapshot.match("put_targets_response", put_targets_response)
         assert put_targets_response["FailedEntryCount"] == 0
 
-        # Step 6: Send an event to the event bus
         event_entry = {
             "EventBusName": event_bus_name,
             "Source": TEST_EVENT_PATTERN["source"][0],
@@ -123,28 +119,22 @@ class TestEventsTargetCloudWatchLogs:
         snapshot.match("put_events_response", put_events_response)
         assert put_events_response["FailedEntryCount"] == 0
 
-        # Step 7: Verify that the event was logged to the log group
         def get_log_events():
             response = aws_client.logs.describe_log_streams(logGroupName=log_group_name)
             log_streams = response.get("logStreams", [])
-            if not log_streams:
-                raise Exception("No log streams found")
+            assert log_streams, "No log streams found"
+
             log_stream_name = log_streams[0]["logStreamName"]
             events_response = aws_client.logs.get_log_events(
                 logGroupName=log_group_name,
                 logStreamName=log_stream_name,
             )
             events = events_response.get("events", [])
-            if not events:
-                raise Exception("No log events found")
+            assert events, "No log events found"
             return events
 
         events = retry(get_log_events, retries=5, sleep=5)
         snapshot.match("log_events", events)
-
-        # Cleanup: delete the log group
-        aws_client.logs.delete_log_group(logGroupName=log_group_name)
-        aws_client.logs.delete_resource_policy(policyName=policy_name)
 
 
 class TestEventsTargetApiGateway:
