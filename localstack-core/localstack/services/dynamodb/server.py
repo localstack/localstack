@@ -76,8 +76,13 @@ class DynamodbServer(Server):
     def get() -> "DynamodbServer":
         return DynamodbServer(config.DYNAMODB_LOCAL_PORT)
 
+    @synchronized(lock=RESTART_LOCK)
     def start_dynamodb(self) -> bool:
         """Start the DynamoDB server."""
+
+        # We want this method to be idempotent.
+        if self.is_running() and self.is_up():
+            return True
 
         # For the v2 provider, the DynamodbServer has been made a singleton. Yet, the Server abstraction is modelled
         # after threading.Thread, where Start -> Stop -> Start is not allowed. This flow happens during state resets.
