@@ -92,7 +92,6 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
         """
         raise NotImplementedError
 
-
     def delete(
         self,
         request: ResourceRequest[IAMPolicyProperties],

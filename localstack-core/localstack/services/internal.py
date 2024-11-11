@@ -186,14 +186,15 @@ class AccountsRegionUsageResource:
 
     def on_get(self, request):
         from localstack.aws.handlers.custom import AccountRegionTracker
+
         output_dict = {}
 
-            # Iterate over the set and populate the dictionary
+        # Iterate over the set and populate the dictionary
         for x, y in AccountRegionTracker.tracked:
             if x not in output_dict:
-                output_dict[x] = []  
-            output_dict[x].append(y) 
-            
+                output_dict[x] = []
+            output_dict[x].append(y)
+
         return output_dict
 
 

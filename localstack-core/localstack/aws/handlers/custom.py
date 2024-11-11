@@ -1,7 +1,7 @@
 import logging
 
-from localstack.http import Response
 from localstack import config
+from localstack.http import Response
 
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
@@ -23,11 +23,14 @@ class AccountRegionCollector(Handler):
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-
         if context.account_id == config.INTERNAL_RESOURCE_ACCOUNT:
             return
-        
-        if context.service and context.service.service_name == 'cloudwatch' and context.operation is None:
-           return
-        
+
+        if (
+            context.service
+            and context.service.service_name == "cloudwatch"
+            and context.operation is None
+        ):
+            return
+
         AccountRegionTracker.track(context.account_id, context.region)

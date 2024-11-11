@@ -28,6 +28,7 @@ from localstack.services.cloudformation.resource_provider import (
     get_resource_type,
     resolve_json_pointer,
 )
+from localstack.utils.json import CustomEncoder
 
 LOG = logging.getLogger(__name__)
 
@@ -187,7 +188,7 @@ class CloudControlProvider(CloudcontrolApi):
                     Identifier=extract_physical_resource_id_from_model_with_schema(
                         props, type_name, provider.SCHEMA
                     ),
-                    Properties=json.dumps(props),
+                    Properties=json.dumps(props, cls=CustomEncoder),
                 )
                 for props in event.resource_models
             ],
