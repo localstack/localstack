@@ -1082,6 +1082,19 @@ class TestCloudwatch:
         assert composite_alarm["AlarmName"] == composite_alarm_name
         assert composite_alarm["AlarmRule"] == composite_alarm_rule
 
+
+        # add necessary transformers for the snapshot
+
+        # StateReason is a text with formatted dates inside it. For now stubbing it out fully because
+        # composite alarm reason can be checked via StateReasonData property which is simpler to check
+        # as its properties reference ARN and state of individual alarms without putting them all into a piece of text.
+        snapshot.add_transformer(snapshot.transform.key_value("StateReason"))
+        snapshot.add_transformer(snapshot.transform.regex(composite_alarm_name, "<composite-alarm-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(alarm_1_name, "<simple-alarm-1-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(alarm_2_name, "<simple-alarm-2-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(topic_name_alarm, "<alarm-topic-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(topic_name_ok, "<ok-topic-name>"))
+
         # trigger alarm 1 - composite one should also go into ALARM state
         aws_client.cloudwatch.set_alarm_state(
             AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
