@@ -18,10 +18,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
 # Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
 #  `apt-get`, to avoid installing `python3.9` into the image (which otherwise comes as a dependency of nodejs).
 # See https://github.com/nodejs/docker-node/blob/main/18/bullseye/Dockerfile
-RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
+RUN NODE_ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && case "${dpkgArch##*-}" in \
-    amd64) ARCH='x64';; \
-    arm64) ARCH='arm64';; \
+    amd64) NODE_ARCH='x64';; \
+    arm64) NODE_ARCH='arm64';; \
     *) echo "unsupported architecture"; exit 1 ;; \
   esac \
   # gpg keys listed at https://github.com/nodejs/node#release-keys
@@ -44,7 +44,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
       gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key" ; \
   done \
   && curl -LO https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt \
-  && LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-$ARCH" | sort | uniq) \
+  && LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-${NODE_ARCH}" | sort | uniq) \
   && rm SHASUMS256.txt \
   && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/$LATEST_VERSION_FILENAME.tar.xz" \
   && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt.asc" \
