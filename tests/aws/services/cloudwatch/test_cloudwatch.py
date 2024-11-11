@@ -990,8 +990,9 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
-    def test_trigger_composite_alarm(self, sns_create_topic, sqs_create_queue, aws_client, cleanups, snapshot):
-
+    def test_trigger_composite_alarm(
+        self, sns_create_topic, sqs_create_queue, aws_client, cleanups, snapshot
+    ):
         # create topics for state 'ALARM' and 'OK' of the composite alarm
         topic_name_alarm = f"topic-alarm-{short_uid()}"
         topic_name_ok = f"topic-ok-{short_uid()}"
@@ -1055,8 +1056,12 @@ class TestCloudwatch:
         _put_metric_alarm(alarm_1_name)
         _put_metric_alarm(alarm_2_name)
 
-        alarm_1_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_1_name])["MetricAlarms"][0]["AlarmArn"]
-        alarm_2_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_2_name])["MetricAlarms"][0]["AlarmArn"]
+        alarm_1_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_1_name])[
+            "MetricAlarms"
+        ][0]["AlarmArn"]
+        alarm_2_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_2_name])[
+            "MetricAlarms"
+        ][0]["AlarmArn"]
 
         # put composite alarm that is triggered when either of metric alarms is triggered.
         composite_alarm_name = f"composite-alarm-{short_uid()}"
@@ -1082,14 +1087,15 @@ class TestCloudwatch:
         assert composite_alarm["AlarmName"] == composite_alarm_name
         assert composite_alarm["AlarmRule"] == composite_alarm_rule
 
-
         # add necessary transformers for the snapshot
 
         # StateReason is a text with formatted dates inside it. For now stubbing it out fully because
         # composite alarm reason can be checked via StateReasonData property which is simpler to check
         # as its properties reference ARN and state of individual alarms without putting them all into a piece of text.
         snapshot.add_transformer(snapshot.transform.key_value("StateReason"))
-        snapshot.add_transformer(snapshot.transform.regex(composite_alarm_name, "<composite-alarm-name>"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(composite_alarm_name, "<composite-alarm-name>")
+        )
         snapshot.add_transformer(snapshot.transform.regex(alarm_1_name, "<simple-alarm-1-name>"))
         snapshot.add_transformer(snapshot.transform.regex(alarm_2_name, "<simple-alarm-2-name>"))
         snapshot.add_transformer(snapshot.transform.regex(topic_name_alarm, "<alarm-topic-name>"))
@@ -1118,7 +1124,10 @@ class TestCloudwatch:
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm_in_alarm_when_alarm_1_in_alarm = composite_alarms_list["CompositeAlarms"][0]
-        snapshot.match("composite-alarm-in-alarm-when-alarm-1-is-in-alarm", composite_alarm_in_alarm_when_alarm_1_in_alarm)
+        snapshot.match(
+            "composite-alarm-in-alarm-when-alarm-1-is-in-alarm",
+            composite_alarm_in_alarm_when_alarm_1_in_alarm,
+        )
 
         # trigger OK for alarm 1 - composite one should also go back to OK
         aws_client.cloudwatch.set_alarm_state(
@@ -1143,7 +1152,10 @@ class TestCloudwatch:
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm_in_ok_when_alarm_1_back_to_ok = composite_alarms_list["CompositeAlarms"][0]
-        snapshot.match("composite-alarm-in-ok-when-alarm-1-is-back-to-ok", composite_alarm_in_ok_when_alarm_1_back_to_ok)
+        snapshot.match(
+            "composite-alarm-in-ok-when-alarm-1-is-back-to-ok",
+            composite_alarm_in_ok_when_alarm_1_back_to_ok,
+        )
 
         # trigger alarm 2 - composite one should go again into ALARM state
         aws_client.cloudwatch.set_alarm_state(
@@ -1168,8 +1180,10 @@ class TestCloudwatch:
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm_in_alarm_when_alarm_2_in_alarm = composite_alarms_list["CompositeAlarms"][0]
-        snapshot.match("composite-alarm-in-alarm-when-alarm-2-is-in-alarm",
-                       composite_alarm_in_alarm_when_alarm_2_in_alarm)
+        snapshot.match(
+            "composite-alarm-in-alarm-when-alarm-2-is-in-alarm",
+            composite_alarm_in_alarm_when_alarm_2_in_alarm,
+        )
 
         # trigger alarm 1 while alarm 2 is triggered - composite one shouldn't change
         aws_client.cloudwatch.set_alarm_state(
@@ -1182,11 +1196,12 @@ class TestCloudwatch:
         composite_alarm_not_changed_by_second_trigger = composite_alarms_list["CompositeAlarms"][0]
         # It is not possible to reuse the snapshot within the same test,
         # therefore checking that alarm reason hasn't changed instead of recording new snapshot
-        state_reason_data = json.loads(composite_alarm_not_changed_by_second_trigger["StateReasonData"])
+        state_reason_data = json.loads(
+            composite_alarm_not_changed_by_second_trigger["StateReasonData"]
+        )
         triggering_alarms = state_reason_data["triggeringAlarms"]
         assert len(triggering_alarms) == 1
         assert triggering_alarms[0]["arn"] == alarm_2_arn
-
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -2914,14 +2929,14 @@ def _sqs_messages_snapshot(expected_state, sqs_client, sqs_queue, snapshot, iden
 
 
 def check_composite_alarm_message(
-        sqs_client,
-        queue_url,
-        expected_topic_arn,
-        alarm_name,
-        alarm_description,
-        expected_state,
-        expected_triggering_child_arn,
-        expected_triggering_child_state,
+    sqs_client,
+    queue_url,
+    expected_topic_arn,
+    alarm_name,
+    alarm_description,
+    expected_state,
+    expected_triggering_child_arn,
+    expected_triggering_child_state,
 ):
     receive_result = sqs_client.receive_message(QueueUrl=queue_url)
     message = None

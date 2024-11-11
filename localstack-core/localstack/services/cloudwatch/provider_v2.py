@@ -80,9 +80,9 @@ from localstack.services.cloudwatch.cloudwatch_database_helper import Cloudwatch
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
     LocalStackAlarm,
+    LocalStackCompositeAlarm,
     LocalStackDashboard,
     LocalStackMetricAlarm,
-    LocalStackCompositeAlarm,
     cloudwatch_stores,
 )
 from localstack.services.edge import ROUTER
@@ -460,7 +460,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
         with _STORE_LOCK:
             store = self.get_store(context.account_id, context.region)
-            composite_alarm = LocalStackCompositeAlarm(context.account_id, context.region, {**request})
+            composite_alarm = LocalStackCompositeAlarm(
+                context.account_id, context.region, {**request}
+            )
             alarm_arn = composite_alarm.alarm["AlarmArn"]
             store.alarms[alarm_arn] = composite_alarm
 
@@ -846,7 +848,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             new_state_value = StateValue.OK
             alarm_rule = composite_alarm.alarm["AlarmRule"]
             # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied
-            metric_alarm_arns = re.findall(r'\("([^"]*)"\)', alarm_rule) # regexp for everything within (" ")
+            metric_alarm_arns = re.findall(
+                r'\("([^"]*)"\)', alarm_rule
+            )  # regexp for everything within (" ")
             for metric_alarm_arn in metric_alarm_arns:
                 metric_alarm = store.alarms.get(metric_alarm_arn)
                 if metric_alarm.alarm["StateValue"] == StateValue.ALARM:
@@ -861,12 +865,17 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
             triggering_alarm_arn = triggering_alarm.alarm.get("AlarmArn")
             triggering_alarm_state = triggering_alarm.alarm.get("StateValue")
-            triggering_alarm_state_change_timestamp = triggering_alarm.alarm.get("StateTransitionedTimestamp")
+            triggering_alarm_state_change_timestamp = triggering_alarm.alarm.get(
+                "StateTransitionedTimestamp"
+            )
             state_reason_formatted_timestamp = triggering_alarm_state_change_timestamp.strftime(
-                "%A %d %B, %Y %H:%M:%S %Z")
-            state_reason = (f"{triggering_alarm_arn} "
-                            f"transitioned to {triggering_alarm_state} "
-                            f"at {state_reason_formatted_timestamp}")
+                "%A %d %B, %Y %H:%M:%S %Z"
+            )
+            state_reason = (
+                f"{triggering_alarm_arn} "
+                f"transitioned to {triggering_alarm_state} "
+                f"at {state_reason_formatted_timestamp}"
+            )
             state_reason_data = {
                 "triggeringAlarms": [
                     {
@@ -874,11 +883,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                         "state": {
                             "value": triggering_alarm_state,
                             "timestamp": timestamp_millis(triggering_alarm_state_change_timestamp),
-                        }
+                        },
                     }
                 ]
             }
-            self._update_state(context,composite_alarm, new_state_value, state_reason, state_reason_data)
+            self._update_state(
+                context, composite_alarm, new_state_value, state_reason, state_reason_data
+            )
 
             if not composite_alarm.alarm["ActionsEnabled"]:
                 return
@@ -896,7 +907,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                     ).sns
                     # TODO verify message for composite alarm
                     subject = f"""{new_state_value}: "{composite_alarm.alarm["AlarmName"]}" in {context.region}"""
-                    message = create_message_response_update_composite_alarm_state_sns(composite_alarm, triggering_alarm, old_state_value)
+                    message = create_message_response_update_composite_alarm_state_sns(
+                        composite_alarm, triggering_alarm, old_state_value
+                    )
                     service.publish(TopicArn=action, Subject=subject, Message=message)
                 else:
                     # TODO: support other actions
@@ -1015,10 +1028,11 @@ def create_message_response_update_state_sns(alarm: LocalStackMetricAlarm, old_s
 
     return json.dumps(response, cls=JSONEncoder)
 
+
 def create_message_response_update_composite_alarm_state_sns(
-        composite_alarm: LocalStackCompositeAlarm,
-        triggering_alarm: LocalStackMetricAlarm,
-        old_state,
+    composite_alarm: LocalStackCompositeAlarm,
+    triggering_alarm: LocalStackMetricAlarm,
+    old_state,
 ):
     _alarm = composite_alarm.alarm
     response = {
@@ -1039,13 +1053,15 @@ def create_message_response_update_composite_alarm_state_sns(
         "InsufficientDataActions": _alarm.get("InsufficientDataActions", []),
     }
 
-    triggering_children = [{
-        "Arn": triggering_alarm.alarm.get("AlarmArn"),
-        "State": {
-            "Value": triggering_alarm.alarm["StateValue"],
-            "Timestamp": triggering_alarm.alarm["StateUpdatedTimestamp"],
+    triggering_children = [
+        {
+            "Arn": triggering_alarm.alarm.get("AlarmArn"),
+            "State": {
+                "Value": triggering_alarm.alarm["StateValue"],
+                "Timestamp": triggering_alarm.alarm["StateUpdatedTimestamp"],
+            },
         }
-    }]
+    ]
 
     response["TriggeringChildren"] = triggering_children
 

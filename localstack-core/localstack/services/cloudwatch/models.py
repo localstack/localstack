@@ -68,7 +68,6 @@ class LocalStackCompositeAlarm:
         self.alarm["StateTransitionedTimestamp"] = current_time
 
 
-
 class LocalStackDashboard:
     region: str
     account_id: str
