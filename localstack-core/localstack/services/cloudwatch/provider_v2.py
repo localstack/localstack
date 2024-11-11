@@ -905,7 +905,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                     service = connect_to(
                         region_name=data["region"], aws_access_key_id=data["account"]
                     ).sns
-                    # TODO verify message for composite alarm
                     subject = f"""{new_state_value}: "{composite_alarm.alarm["AlarmName"]}" in {context.region}"""
                     message = create_message_response_update_composite_alarm_state_sns(
                         composite_alarm, triggering_alarm, old_state_value
