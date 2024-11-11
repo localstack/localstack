@@ -76,6 +76,7 @@ class DynamodbServer(Server):
     def get() -> "DynamodbServer":
         return DynamodbServer(config.DYNAMODB_LOCAL_PORT)
 
+    @synchronized(lock=RESTART_LOCK)
     def start_dynamodb(self) -> bool:
         """Start the DynamoDB server."""
 
