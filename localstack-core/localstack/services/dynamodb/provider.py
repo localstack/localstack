@@ -208,14 +208,25 @@ class EventForwarder:
         self, account_id: str, region_name: str, records_map: RecordsMap, background: bool = True
     ) -> None:
         if background:
-            self.executor.submit(
-                self._forward,
+            self._submit_records(
+                forwarder=self._forward,
                 account_id=account_id,
                 region_name=region_name,
                 records_map=records_map,
             )
         else:
             self._forward(account_id, region_name, records_map)
+
+    def _submit_records(
+        self, forwarder, account_id: str, region_name: str, records_map: RecordsMap
+    ):
+        "Required for patching submit with local thread context for EventStudio"
+        self.executor.submit(
+            forwarder,
+            account_id,
+            region_name,
+            records_map,
+        )
 
     def _forward(self, account_id: str, region_name: str, records_map: RecordsMap) -> None:
         try:
