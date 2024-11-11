@@ -2924,7 +2924,6 @@ def check_composite_alarm_message(
         expected_triggering_child_state,
 ):
     receive_result = sqs_client.receive_message(QueueUrl=queue_url)
-    LOG.info(f"receive SQS message: {receive_result}")
     message = None
     for msg in receive_result["Messages"]:
         body = json.loads(msg["Body"])
