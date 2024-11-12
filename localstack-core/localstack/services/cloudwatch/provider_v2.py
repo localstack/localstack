@@ -463,6 +463,15 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             composite_alarm = LocalStackCompositeAlarm(
                 context.account_id, context.region, {**request}
             )
+            missing_alarms = []
+            for metric_alarm_arn in self._get_alarm_arns(composite_alarm.alarm["AlarmRule"]):
+                if metric_alarm_arn not in store.alarms:
+                    missing_alarms.append(metric_alarm_arn)
+            if missing_alarms:
+                raise ValidationError(
+                    f"Could not save the composite alarm as alarms [{', '.join(missing_alarms)}] "
+                    f"in the alarm rule do not exist"
+                )
             alarm_arn = composite_alarm.alarm["AlarmArn"]
             store.alarms[alarm_arn] = composite_alarm
 
@@ -850,12 +859,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def _evaluate_composite_alarm(self, context, composite_alarm, triggering_alarm):
         store = self.get_store(context.account_id, context.region)
         new_state_value = StateValue.OK
-        alarm_rule = composite_alarm.alarm["AlarmRule"]
         # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied
-        metric_alarm_arns = re.findall(
-            r'\("([^"]*)"\)', alarm_rule
-        )  # regexp for everything within (" ")
-        for metric_alarm_arn in metric_alarm_arns:
+        for metric_alarm_arn in self._get_alarm_arns(composite_alarm.alarm["AlarmRule"]):
             metric_alarm = store.alarms.get(metric_alarm_arn)
             if metric_alarm.alarm["StateValue"] == StateValue.ALARM:
                 triggering_alarm = metric_alarm
@@ -895,6 +900,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             self._run_composite_alarm_actions(
                 context, composite_alarm, old_state_value, triggering_alarm
             )
+
+    def _get_alarm_arns(self, composite_alarm_rule):
+        # regexp for everything within (" ")
+        return re.findall(r'\("([^"]*)"\)', composite_alarm_rule)
 
     def _run_composite_alarm_actions(
         self, context, composite_alarm, old_state_value, triggering_alarm

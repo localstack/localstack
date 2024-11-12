@@ -599,6 +599,21 @@ class TestCloudwatch:
         assert isinstance(alarm["StateUpdatedTimestamp"], datetime)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    def test_put_composite_alarm_validation(self, aws_client):
+        with pytest.raises(Exception) as ex:
+            aws_client.cloudwatch.put_composite_alarm(
+                AlarmName="alarm_name",
+                AlarmRule='ALARM("metric-alarm-arn")',
+            )
+        err = ex.value.response["Error"]
+        assert err["Code"] == "ValidationError"
+        assert (
+            err["Message"]
+            == "Could not save the composite alarm as alarms [metric-alarm-arn] in the alarm rule do not exist"
+        )
+
+    @markers.aws.validated
     def test_put_composite_alarm_describe_alarms(self, aws_client, cleanups):
         composite_alarm_name = f"composite-a-{short_uid()}"
         alarm_name = f"a-{short_uid()}"
