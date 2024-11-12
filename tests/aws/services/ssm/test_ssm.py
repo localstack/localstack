@@ -160,6 +160,20 @@ class TestSSM:
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
 
     @markers.aws.validated
+    def test_get_parameter_history(self, create_parameter, aws_client):
+        param_name = f"param-{short_uid()}"
+        create_parameter(Name=param_name, Value="test", Type="String")
+        create_parameter(Name=param_name, Value="test2", Type="String", Overwrite=True)
+        create_parameter(Name=param_name, Value="test3", Type="String", Overwrite=True)
+
+        response = aws_client.ssm.get_parameter_history(Name=param_name)
+        assert len(response["Parameters"]) == 3
+        assert response["Parameters"][0]["Value"] == "test"
+        assert response["Parameters"][0]["Version"] == 1
+        assert response["Parameters"][2]["Value"] == "test3"
+        assert response["Parameters"][2]["Version"] == 3
+
+    @markers.aws.validated
     def test_get_inexistent_maintenance_window(self, aws_client):
         invalid_name = "mw-00000000000000000"
         with pytest.raises(aws_client.ssm.exceptions.DoesNotExistException) as exc:

@@ -1665,7 +1665,10 @@ def create_parameter(aws_client):
     yield _create_parameter
 
     for param in params:
-        aws_client.ssm.delete_parameter(Name=param)
+        try:
+            aws_client.ssm.delete_parameter(Name=param)
+        except Exception as e:
+            LOG.debug("error cleaning up parameter %s: %s", param, e)
 
 
 @pytest.fixture
