@@ -892,9 +892,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             context, composite_alarm, new_state_value, state_reason, state_reason_data
         )
         if composite_alarm.alarm["ActionsEnabled"]:
-            self._run_composite_alarm_actions(context, composite_alarm, old_state_value, triggering_alarm)
+            self._run_composite_alarm_actions(
+                context, composite_alarm, old_state_value, triggering_alarm
+            )
 
-    def _run_composite_alarm_actions(self, context, composite_alarm, old_state_value, triggering_alarm):
+    def _run_composite_alarm_actions(
+        self, context, composite_alarm, old_state_value, triggering_alarm
+    ):
         new_state_value = composite_alarm.alarm["StateValue"]
         if new_state_value == StateValue.OK:
             actions = composite_alarm.alarm["OKActions"]
