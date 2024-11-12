@@ -845,78 +845,78 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         alarms = list(store.alarms.values())
         composite_alarms = [a for a in alarms if isinstance(a, LocalStackCompositeAlarm)]
         for composite_alarm in composite_alarms:
-            new_state_value = StateValue.OK
-            alarm_rule = composite_alarm.alarm["AlarmRule"]
-            # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied
-            metric_alarm_arns = re.findall(
-                r'\("([^"]*)"\)', alarm_rule
-            )  # regexp for everything within (" ")
-            for metric_alarm_arn in metric_alarm_arns:
-                metric_alarm = store.alarms.get(metric_alarm_arn)
-                if metric_alarm.alarm["StateValue"] == StateValue.ALARM:
-                    triggering_alarm = metric_alarm
-                    new_state_value = StateValue.ALARM
-                    break
+            self._evaluate_composite_alarm(composite_alarm, context, triggering_alarm)
 
-            old_state_value = composite_alarm.alarm["StateValue"]
-
-            if old_state_value == new_state_value:
-                return
-
-            triggering_alarm_arn = triggering_alarm.alarm.get("AlarmArn")
-            triggering_alarm_state = triggering_alarm.alarm.get("StateValue")
-            triggering_alarm_state_change_timestamp = triggering_alarm.alarm.get(
-                "StateTransitionedTimestamp"
-            )
-            state_reason_formatted_timestamp = triggering_alarm_state_change_timestamp.strftime(
-                "%A %d %B, %Y %H:%M:%S %Z"
-            )
-            state_reason = (
-                f"{triggering_alarm_arn} "
-                f"transitioned to {triggering_alarm_state} "
-                f"at {state_reason_formatted_timestamp}"
-            )
-            state_reason_data = {
-                "triggeringAlarms": [
-                    {
-                        "arn": triggering_alarm_arn,
-                        "state": {
-                            "value": triggering_alarm_state,
-                            "timestamp": timestamp_millis(triggering_alarm_state_change_timestamp),
-                        },
-                    }
-                ]
-            }
-            self._update_state(
-                context, composite_alarm, new_state_value, state_reason, state_reason_data
-            )
-
-            if not composite_alarm.alarm["ActionsEnabled"]:
-                return
-            if new_state_value == "OK":
-                actions = composite_alarm.alarm["OKActions"]
-            elif new_state_value == "ALARM":
-                actions = composite_alarm.alarm["AlarmActions"]
+    def _evaluate_composite_alarm(self, composite_alarm, context, triggering_alarm):
+        store = self.get_store(context.account_id, context.region)
+        new_state_value = StateValue.OK
+        alarm_rule = composite_alarm.alarm["AlarmRule"]
+        # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied
+        metric_alarm_arns = re.findall(
+            r'\("([^"]*)"\)', alarm_rule
+        )  # regexp for everything within (" ")
+        for metric_alarm_arn in metric_alarm_arns:
+            metric_alarm = store.alarms.get(metric_alarm_arn)
+            if metric_alarm.alarm["StateValue"] == StateValue.ALARM:
+                triggering_alarm = metric_alarm
+                new_state_value = StateValue.ALARM
+                break
+        old_state_value = composite_alarm.alarm["StateValue"]
+        if old_state_value == new_state_value:
+            return
+        triggering_alarm_arn = triggering_alarm.alarm.get("AlarmArn")
+        triggering_alarm_state = triggering_alarm.alarm.get("StateValue")
+        triggering_alarm_state_change_timestamp = triggering_alarm.alarm.get(
+            "StateTransitionedTimestamp"
+        )
+        state_reason_formatted_timestamp = triggering_alarm_state_change_timestamp.strftime(
+            "%A %d %B, %Y %H:%M:%S %Z"
+        )
+        state_reason = (
+            f"{triggering_alarm_arn} "
+            f"transitioned to {triggering_alarm_state} "
+            f"at {state_reason_formatted_timestamp}"
+        )
+        state_reason_data = {
+            "triggeringAlarms": [
+                {
+                    "arn": triggering_alarm_arn,
+                    "state": {
+                        "value": triggering_alarm_state,
+                        "timestamp": timestamp_millis(triggering_alarm_state_change_timestamp),
+                    },
+                }
+            ]
+        }
+        self._update_state(
+            context, composite_alarm, new_state_value, state_reason, state_reason_data
+        )
+        if not composite_alarm.alarm["ActionsEnabled"]:
+            return
+        if new_state_value == "OK":
+            actions = composite_alarm.alarm["OKActions"]
+        elif new_state_value == "ALARM":
+            actions = composite_alarm.alarm["AlarmActions"]
+        else:
+            actions = composite_alarm.alarm["InsufficientDataActions"]
+        for action in actions:
+            data = arns.parse_arn(action)
+            if data["service"] == "sns":
+                service = connect_to(
+                    region_name=data["region"], aws_access_key_id=data["account"]
+                ).sns
+                subject = f"""{new_state_value}: "{composite_alarm.alarm["AlarmName"]}" in {context.region}"""
+                message = create_message_response_update_composite_alarm_state_sns(
+                    composite_alarm, triggering_alarm, old_state_value
+                )
+                service.publish(TopicArn=action, Subject=subject, Message=message)
             else:
-                actions = composite_alarm.alarm["InsufficientDataActions"]
-            for action in actions:
-                data = arns.parse_arn(action)
-                if data["service"] == "sns":
-                    service = connect_to(
-                        region_name=data["region"], aws_access_key_id=data["account"]
-                    ).sns
-                    subject = f"""{new_state_value}: "{composite_alarm.alarm["AlarmName"]}" in {context.region}"""
-                    message = create_message_response_update_composite_alarm_state_sns(
-                        composite_alarm, triggering_alarm, old_state_value
-                    )
-                    service.publish(TopicArn=action, Subject=subject, Message=message)
-                else:
-                    # TODO: support other actions
-                    LOG.warning(
-                        "Action for service %s not implemented, action '%s' will not be triggered.",
-                        data["service"],
-                        action,
-                    )
+                # TODO: support other actions
+                LOG.warning(
+                    "Action for service %s not implemented, action '%s' will not be triggered.",
+                    data["service"],
+                    action,
+                )
 
 
 def create_metric_data_query_from_alarm(alarm: LocalStackMetricAlarm):
