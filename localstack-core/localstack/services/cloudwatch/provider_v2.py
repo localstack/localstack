@@ -845,9 +845,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         alarms = list(store.alarms.values())
         composite_alarms = [a for a in alarms if isinstance(a, LocalStackCompositeAlarm)]
         for composite_alarm in composite_alarms:
-            self._evaluate_composite_alarm(composite_alarm, context, triggering_alarm)
+            self._evaluate_composite_alarm(context, composite_alarm, triggering_alarm)
 
-    def _evaluate_composite_alarm(self, composite_alarm, context, triggering_alarm):
+    def _evaluate_composite_alarm(self, context, composite_alarm, triggering_alarm):
         store = self.get_store(context.account_id, context.region)
         new_state_value = StateValue.OK
         alarm_rule = composite_alarm.alarm["AlarmRule"]
@@ -891,11 +891,14 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self._update_state(
             context, composite_alarm, new_state_value, state_reason, state_reason_data
         )
-        if not composite_alarm.alarm["ActionsEnabled"]:
-            return
-        if new_state_value == "OK":
+        if composite_alarm.alarm["ActionsEnabled"]:
+            self._run_composite_alarm_actions(context, composite_alarm, old_state_value, triggering_alarm)
+
+    def _run_composite_alarm_actions(self, context, composite_alarm, old_state_value, triggering_alarm):
+        new_state_value = composite_alarm.alarm["StateValue"]
+        if new_state_value == StateValue.OK:
             actions = composite_alarm.alarm["OKActions"]
-        elif new_state_value == "ALARM":
+        elif new_state_value == StateValue.ALARM:
             actions = composite_alarm.alarm["AlarmActions"]
         else:
             actions = composite_alarm.alarm["InsufficientDataActions"]
