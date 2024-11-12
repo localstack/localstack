@@ -463,8 +463,18 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             composite_alarm = LocalStackCompositeAlarm(
                 context.account_id, context.region, {**request}
             )
+
+            alarm_rule = composite_alarm.alarm["AlarmRule"]
+
+            alarms_from_rule = [alarm.strip() for alarm in alarm_rule.split("OR")]
+            for alarm in alarms_from_rule:
+                if not alarm.startswith("ALARM"):
+                    raise ValidationError(
+                        f"Error in alarm rule condition '{alarm}': Only ALARM expression is supported"
+                    )
+
             missing_alarms = []
-            for metric_alarm_arn in self._get_alarm_arns(composite_alarm.alarm["AlarmRule"]):
+            for metric_alarm_arn in self._get_alarm_arns(alarm_rule):
                 if metric_alarm_arn not in store.alarms:
                     missing_alarms.append(metric_alarm_arn)
             if missing_alarms:

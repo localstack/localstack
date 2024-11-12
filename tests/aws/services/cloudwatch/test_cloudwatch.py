@@ -601,6 +601,19 @@ class TestCloudwatch:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_put_composite_alarm_validation(self, aws_client):
+        # each logical expression operand should start with ALARM()
+        with pytest.raises(Exception) as ex:
+            aws_client.cloudwatch.put_composite_alarm(
+                AlarmName="alarm_name",
+                AlarmRule='ALARM("metric-alarm-arn-1") OR OK("metric-alarm-arn-2")',
+            )
+        err = ex.value.response["Error"]
+        assert err["Code"] == "ValidationError"
+        assert (
+            err["Message"]
+            == "Error in alarm rule condition 'OK(\"metric-alarm-arn-2\")': Only ALARM expression is supported"
+        )
+
         with pytest.raises(Exception) as ex:
             aws_client.cloudwatch.put_composite_alarm(
                 AlarmName="alarm_name",
