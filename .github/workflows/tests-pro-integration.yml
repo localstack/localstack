@@ -90,6 +90,7 @@ on:
       - '!README.md'
     branches:
       - master
+      - release/*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
