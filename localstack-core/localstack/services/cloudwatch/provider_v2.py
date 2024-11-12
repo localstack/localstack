@@ -781,6 +781,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         old_state_reason = alarm.alarm["StateReason"]
         store = self.get_store(context.account_id, context.region)
         current_time = datetime.datetime.now()
+        # version is not present in state reason data for composite alarm, hence the check
         if state_reason_data and isinstance(alarm, LocalStackMetricAlarm):
             state_reason_data["version"] = HISTORY_VERSION
         history_data = {
