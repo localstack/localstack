@@ -2,7 +2,9 @@ import base64
 import json
 import logging
 import re
-from typing import Callable, Optional
+import uuid
+from datetime import datetime
+from typing import Callable, Dict, Optional
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
@@ -16,10 +18,18 @@ from localstack.aws.api.events import (
     Boolean,
     CancelReplayResponse,
     Condition,
+    Connection,
+    ConnectionAuthorizationType,
+    ConnectionDescription,
+    ConnectionName,
+    ConnectionState,
     CreateArchiveResponse,
+    CreateConnectionAuthRequestParameters,
+    CreateConnectionResponse,
     CreateEventBusResponse,
     DeadLetterConfig,
     DeleteArchiveResponse,
+    DeleteConnectionResponse,
     DescribeArchiveResponse,
     DescribeEventBusResponse,
     DescribeReplayResponse,
@@ -37,6 +47,7 @@ from localstack.aws.api.events import (
     KmsKeyIdentifier,
     LimitMax100,
     ListArchivesResponse,
+    ListConnectionsResponse,
     ListEventBusesResponse,
     ListReplaysResponse,
     ListRuleNamesByTargetResponse,
@@ -85,6 +96,7 @@ from localstack.aws.api.events import (
     Timestamp,
     UntagResourceResponse,
     UpdateArchiveResponse,
+    UpdateConnectionResponse,
 )
 from localstack.aws.api.events import Archive as ApiTypeArchive
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
@@ -188,12 +200,260 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._target_sender_store: TargetSenderDict = {}
         self._archive_service_store: ArchiveServiceDict = {}
         self._replay_service_store: ReplayServiceDict = {}
+        self._connections: Dict[str, Connection] = {}
 
     def on_before_start(self):
         JobScheduler.start()
 
     def on_before_stop(self):
         JobScheduler.shutdown()
+
+    ##########
+    # Connections
+    ##########
+
+    def _get_public_parameters(self, auth_type: str, auth_parameters: dict) -> dict:
+        """Extract public parameters (without secrets) based on auth type."""
+        public_params = {}
+
+        if auth_type == "BASIC" and "BasicAuthParameters" in auth_parameters:
+            public_params["BasicAuthParameters"] = {
+                "Username": auth_parameters["BasicAuthParameters"]["Username"]
+            }
+
+        elif auth_type == "API_KEY" and "ApiKeyAuthParameters" in auth_parameters:
+            public_params["ApiKeyAuthParameters"] = {
+                "ApiKeyName": auth_parameters["ApiKeyAuthParameters"]["ApiKeyName"]
+            }
+
+        elif auth_type == "OAUTH_CLIENT_CREDENTIALS" and "OAuthParameters" in auth_parameters:
+            oauth_params = auth_parameters["OAuthParameters"]
+            public_params["OAuthParameters"] = {
+                "AuthorizationEndpoint": oauth_params["AuthorizationEndpoint"],
+                "HttpMethod": oauth_params["HttpMethod"],
+                "ClientParameters": {"ClientID": oauth_params["ClientParameters"]["ClientID"]},
+            }
+
+        if "InvocationHttpParameters" in auth_parameters:
+            public_params["InvocationHttpParameters"] = auth_parameters["InvocationHttpParameters"]
+
+        return public_params
+
+    def _get_initial_state(self, auth_type: str) -> ConnectionState:
+        """Get initial connection state based on auth type."""
+        if auth_type == "OAUTH_CLIENT_CREDENTIALS":
+            return ConnectionState.AUTHORIZING
+        return ConnectionState.AUTHORIZED
+
+    def _validate_connection_name(self, name: str) -> None:
+        """Validate the connection name according to AWS rules."""
+        if not re.match("^[a-zA-Z0-9-_]+$", name):
+            raise ValidationException(
+                "1 validation error detected: Value 'Invalid Name With Spaces!' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+            )
+
+    def _validate_auth_type(self, auth_type: str) -> None:
+        valid_auth_types = [t.value for t in ConnectionAuthorizationType]
+        if auth_type not in valid_auth_types:
+            raise ValidationException(
+                f"1 validation error detected: Value '{auth_type}' at 'authorizationType' failed to satisfy constraint: "
+                f"Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
+            )
+
+    @handler("CreateConnection")
+    def create_connection(
+        self,
+        context: RequestContext,
+        name: ConnectionName,
+        authorization_type: str,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+        description: Optional[ConnectionDescription] = None,
+        **kwargs,
+    ) -> CreateConnectionResponse:
+        try:
+            self._validate_auth_type(authorization_type)
+
+            self._validate_connection_name(name)
+
+            if name in self._connections:
+                raise ResourceAlreadyExistsException(f"Connection {name} already exists.")
+
+            creation_time = datetime.now()
+            connection_uuid = str(uuid.uuid4())
+
+            public_auth_params = self._get_public_parameters(authorization_type, auth_parameters)
+            initial_state = self._get_initial_state(authorization_type)
+
+            # Create new connection
+            connection: Connection = {
+                "ConnectionArn": f"arn:aws:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}",
+                "Name": name,
+                "ConnectionState": initial_state,
+                "AuthorizationType": authorization_type,
+                "AuthParameters": public_auth_params,
+                "SecretArn": f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{connection_uuid}",
+                "CreationTime": creation_time,
+                "LastModifiedTime": creation_time,
+                "LastAuthorizedTime": creation_time,
+            }
+
+            if description:
+                connection["Description"] = description
+
+            self._connections[name] = connection
+
+            return CreateConnectionResponse(
+                ConnectionArn=connection["ConnectionArn"],
+                ConnectionState=connection["ConnectionState"],
+                CreationTime=connection["CreationTime"],
+                LastModifiedTime=connection["LastModifiedTime"],
+            )
+
+        except ValidationException as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error creating connection: {str(e)}")
+
+    @handler("UpdateConnection")
+    def update_connection(
+        self,
+        context: RequestContext,
+        name: ConnectionName,
+        authorization_type: str,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+        description: Optional[ConnectionDescription] = None,
+        **kwargs,
+    ) -> UpdateConnectionResponse:
+        try:
+            self._validate_auth_type(authorization_type)
+
+            if name not in self._connections:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the connection(s). Connection '{name}' does not exist."
+                )
+
+            connection = self._connections[name]
+            update_time = datetime.now()
+            connection_uuid = connection["ConnectionArn"].split("/")[-1]
+
+            public_auth_params = self._get_public_parameters(authorization_type, auth_parameters)
+
+            updated_connection: Connection = {
+                "ConnectionArn": connection["ConnectionArn"],
+                "Name": name,
+                "ConnectionState": ConnectionState.AUTHORIZED,
+                "AuthorizationType": authorization_type,
+                "AuthParameters": public_auth_params,
+                "SecretArn": f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{connection_uuid}",
+                "CreationTime": connection["CreationTime"],
+                "LastModifiedTime": update_time,
+                "LastAuthorizedTime": update_time,
+            }
+
+            if description:
+                updated_connection["Description"] = description
+
+            self._connections[name] = updated_connection
+
+            return UpdateConnectionResponse(
+                ConnectionArn=updated_connection["ConnectionArn"],
+                ConnectionState=updated_connection["ConnectionState"],
+                CreationTime=updated_connection["CreationTime"],
+                LastAuthorizedTime=updated_connection["LastAuthorizedTime"],
+                LastModifiedTime=updated_connection["LastModifiedTime"],
+            )
+
+        except (ValidationException, ResourceNotFoundException) as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error updating connection: {str(e)}")
+
+    @handler("DeleteConnection")
+    def delete_connection(
+        self, context: RequestContext, name: ConnectionName, **kwargs
+    ) -> DeleteConnectionResponse:
+        try:
+            if name not in self._connections:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the connection(s). Connection '{name}' does not exist."
+                )
+
+            connection = self._connections[name]
+
+            response = DeleteConnectionResponse(
+                ConnectionArn=connection["ConnectionArn"],
+                ConnectionState=ConnectionState.DELETING,
+                CreationTime=connection["CreationTime"],
+                LastModifiedTime=connection["LastModifiedTime"],
+                LastAuthorizedTime=connection.get("LastAuthorizedTime"),
+            )
+
+            del self._connections[name]
+
+            return response
+
+        except ResourceNotFoundException as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error deleting connection: {str(e)}")
+
+    @handler("DescribeConnection")
+    def describe_connection(
+        self, context: RequestContext, name: ConnectionName, **kwargs
+    ) -> Connection:
+        try:
+            if name not in self._connections:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the connection(s). Connection '{name}' does not exist."
+                )
+
+            return self._connections[name]
+
+        except ResourceNotFoundException as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error describing connection: {str(e)}")
+
+    @handler("ListConnections")
+    def list_connections(
+        self,
+        context: RequestContext,
+        name_prefix: Optional[ConnectionName] = None,
+        connection_state: Optional[ConnectionState] = None,
+        next_token: Optional[NextToken] = None,
+        limit: Optional[LimitMax100] = None,
+        **kwargs,
+    ) -> ListConnectionsResponse:
+        try:
+            connections = []
+
+            for conn in self._connections.values():
+                if name_prefix and not conn["Name"].startswith(name_prefix):
+                    continue
+
+                if connection_state and conn["ConnectionState"] != connection_state:
+                    continue
+
+                connection_summary = {
+                    "ConnectionArn": conn["ConnectionArn"],
+                    "ConnectionState": conn["ConnectionState"],
+                    "CreationTime": conn["CreationTime"],
+                    "LastAuthorizedTime": conn["LastAuthorizedTime"],
+                    "LastModifiedTime": conn["LastModifiedTime"],
+                    "Name": conn["Name"],
+                    "AuthorizationType": conn["AuthorizationType"],
+                }
+                connections.append(connection_summary)
+
+            connections.sort(key=lambda x: x["CreationTime"])
+
+            if limit:
+                connections = connections[:limit]
+
+            return ListConnectionsResponse(Connections=connections)
+
+        except Exception as e:
+            raise ValidationException(f"Error listing connections: {str(e)}")
 
     ##########
     # EventBus

@@ -1753,5 +1753,270 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection": {
+    "recorded-date": "12-11-2024, 16:49:40",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection": {
+        "AuthParameters": {
+          "ApiKeyAuthParameters": {
+            "ApiKeyName": "ApiKey"
+          },
+          "InvocationHttpParameters": {}
+        },
+        "AuthorizationType": "API_KEY",
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "secret-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params0]": {
+    "recorded-date": "12-11-2024, 16:49:41",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "user"
+          }
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "secret-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params1]": {
+    "recorded-date": "12-11-2024, 16:49:41",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "ApiKeyAuthParameters": {
+            "ApiKeyName": "ApiKey"
+          }
+        },
+        "AuthorizationType": "API_KEY",
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "secret-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params2]": {
+    "recorded-date": "12-11-2024, 16:49:42",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "OAuthParameters": {
+            "AuthorizationEndpoint": "https://example.com/oauth",
+            "ClientParameters": {
+              "ClientID": "client_id"
+            },
+            "HttpMethod": "POST"
+          }
+        },
+        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "secret-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_list_connections": {
+    "recorded-date": "12-11-2024, 16:49:42",
+    "recorded-content": {
+      "list-connections": {
+        "Connections": [
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "connection-arn",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_invalid_parameters": {
+    "recorded-date": "12-11-2024, 16:49:47",
+    "recorded-content": {
+      "create-connection-invalid-auth-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID_AUTH_TYPE' at 'authorizationType' failed to satisfy constraint: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_update_connection": {
+    "recorded-date": "12-11-2024, 16:49:48",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-connection": {
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-updated-connection": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "new_user"
+          },
+          "InvocationHttpParameters": {}
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "secret-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_name_validation": {
+    "recorded-date": "12-11-2024, 16:49:49",
+    "recorded-content": {
+      "create-connection-invalid-name-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'Invalid Name With Spaces!' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_delete_connection": {
+    "recorded-date": "12-11-2024, 16:49:46",
+    "recorded-content": {
+      "delete-connection": {
+        "ConnectionArn": "connection-arn",
+        "ConnectionState": "DELETING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-deleted-connection-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Failed to describe the connection(s). Connection '<connection-name>' does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
