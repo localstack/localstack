@@ -1035,6 +1035,7 @@ class TestCloudwatch:
         sns_topic_ok = sns_create_topic(Name=topic_name_ok)
         topic_arn_ok = sns_topic_ok["TopicArn"]
 
+        # TODO extract SNS-to-SQS into a fixture
         # create queues for 'ALARM' and 'OK' of the composite alarm (will receive sns messages)
         queue_url_alarm = sqs_create_queue(QueueName=f"AlarmQueue-{short_uid()}")
         queue_url_ok = sqs_create_queue(QueueName=f"OKQueue-{short_uid()}")
@@ -1070,6 +1071,7 @@ class TestCloudwatch:
         )
 
         # put metric alarms that would be parts of a composite one
+        #TODO extract put metric alarm and associated cleanups into a fixture
         def _put_metric_alarm(alarm_name: str):
             aws_client.cloudwatch.put_metric_alarm(
                 AlarmName=alarm_name,
