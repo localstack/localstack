@@ -4,7 +4,6 @@ import datetime
 import itertools
 import json
 import logging
-import os
 import re
 import threading
 import time
@@ -226,7 +225,6 @@ from localstack.utils.aws.arns import (
 )
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
-from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
 from localstack.utils.urls import localstack_host
@@ -1522,30 +1520,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
-        try:
-            self._get_function(function_name=function_name, account_id=account_id, region=region)
-        except ResourceNotFoundException:
-            # remove this block when AWS updates the stepfunctions image to support aws-sdk invocations
-            if "localstack-internal-awssdk" in function_name:
-                # init aws-sdk stepfunctions task handler
-                from localstack.services.stepfunctions.packages import stepfunctions_local_package
-
-                code = load_file(
-                    os.path.join(
-                        stepfunctions_local_package.get_installed_dir(),
-                        "localstack-internal-awssdk",
-                        "awssdk.zip",
-                    ),
-                    mode="rb",
-                )
-                lambda_client = connect_to().lambda_
-                lambda_client.create_function(
-                    FunctionName="localstack-internal-awssdk",
-                    Runtime=Runtime.nodejs20_x,
-                    Handler="index.handler",
-                    Code={"ZipFile": code},
-                    Role=f"arn:{get_partition(region)}:iam::{account_id}:role/lambda-test-role",  # TODO: proper role
-                )
 
         time_before = time.perf_counter()
         try:
