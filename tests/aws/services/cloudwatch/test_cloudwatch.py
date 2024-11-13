@@ -1071,7 +1071,7 @@ class TestCloudwatch:
         )
 
         # put metric alarms that would be parts of a composite one
-        #TODO extract put metric alarm and associated cleanups into a fixture
+        # TODO extract put metric alarm and associated cleanups into a fixture
         def _put_metric_alarm(alarm_name: str):
             aws_client.cloudwatch.put_metric_alarm(
                 AlarmName=alarm_name,
