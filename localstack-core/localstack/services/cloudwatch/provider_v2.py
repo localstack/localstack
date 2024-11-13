@@ -147,7 +147,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     Cloudwatch provider.
 
     LIMITATIONS:
-        - no alarm rule evaluation
+        - simplified composite alarm rule evaluation:
+            - only OR operator is supported
+            - only ALARM expression is supported
+            - only metric alarms can be included in the rule and they should be referenced by ARN only
     """
 
     def __init__(self):
