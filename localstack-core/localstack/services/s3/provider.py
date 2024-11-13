@@ -876,9 +876,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # Be careful into adding validation between this call and `return` of `S3Provider.get_object`
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object, mode="r")
 
-        # TODO: remove this with 3.3, this is for persistence reason
-        if not hasattr(s3_object, "internal_last_modified"):
-            s3_object.internal_last_modified = s3_stored_object.last_modified
         # this is a hacky way to verify the object hasn't been modified between `s3_object = s3_bucket.get_object`
         # and the storage backend call. If it has been modified, now that we're in the read lock, we can safely fetch
         # the object again
@@ -982,15 +979,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
-        # we're using getattr access because when restoring, the field might not exist
-        # TODO: cleanup at next major release
-        if sse_key_hash := getattr(s3_object, "sse_key_hash", None):
-            if sse_key_hash and not sse_c_key_md5:
+        if s3_object.sse_key_hash:
+            if not sse_c_key_md5:
                 raise InvalidRequest(
                     "The object was stored using a form of Server Side Encryption. "
                     "The correct parameters must be provided to retrieve the object."
                 )
-            elif sse_key_hash != sse_c_key_md5:
+            elif s3_object.sse_key_hash != sse_c_key_md5:
                 raise AccessDenied("Access Denied")
 
         validate_sse_c(
@@ -1329,15 +1324,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         source_sse_c_key_md5 = request.get("CopySourceSSECustomerKeyMD5")
-        # we're using getattr access because when restoring, the field might not exist
-        # TODO: cleanup at next major release
-        if sse_key_hash_src := getattr(src_s3_object, "sse_key_hash", None):
-            if sse_key_hash_src and not source_sse_c_key_md5:
+        if src_s3_object.sse_key_hash:
+            if not source_sse_c_key_md5:
                 raise InvalidRequest(
                     "The object was stored using a form of Server Side Encryption. "
                     "The correct parameters must be provided to retrieve the object."
                 )
-            elif sse_key_hash_src != source_sse_c_key_md5:
+            elif src_s3_object.sse_key_hash != source_sse_c_key_md5:
                 raise AccessDenied("Access Denied")
 
         validate_sse_c(
@@ -1898,15 +1891,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
-        # we're using getattr access because when restoring, the field might not exist
-        # TODO: cleanup at next major release
-        if sse_key_hash := getattr(s3_object, "sse_key_hash", None):
-            if sse_key_hash and not sse_c_key_md5:
+        if s3_object.sse_key_hash:
+            if not sse_c_key_md5:
                 raise InvalidRequest(
                     "The object was stored using a form of Server Side Encryption. "
                     "The correct parameters must be provided to retrieve the object."
                 )
-            elif sse_key_hash != sse_c_key_md5:
+            elif s3_object.sse_key_hash != sse_c_key_md5:
                 raise AccessDenied("Access Denied")
 
         validate_sse_c(
@@ -2371,14 +2362,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Header="If-None-Match",
                     additionalMessage="We don't accept the provided value of If-None-Match header for this API",
                 )
-            # for persistence, field might not always be there in restored version.
-            # TODO: remove for next major version
             if object_exists_for_precondition_write(s3_bucket, key):
                 raise PreconditionFailed(
                     "At least one of the pre-conditions you specified did not hold",
                     Condition="If-None-Match",
                 )
-            elif getattr(s3_multipart, "precondition", None):
+            elif s3_multipart.precondition:
                 raise ConditionalRequestConflict(
                     "The conditional request cannot succeed due to a conflicting operation against this resource.",
                     Condition="If-None-Match",
@@ -2932,9 +2921,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         try:
             s3_object = s3_bucket.get_object(key=key, version_id=version_id)
         except NoSuchKey as e:
-            # TODO: remove the hack under and update the S3Bucket model before the next major version, as it might break
-            #  persistence: we need to remove the `raise_for_delete_marker` parameter and replace it with the error type
-            #  to raise (MethodNotAllowed or NoSuchKey)
+            # it seems GetObjectTagging does not work like all other operations, so we need to raise a different
+            # exception. As we already need to catch it because of the format of the Key, it is not worth to modify the
+            # `S3Bucket.get_object` signature for one operation.
             if s3_bucket.versioning_status and (
                 s3_object_version := s3_bucket.objects.get(key, version_id)
             ):
