@@ -423,14 +423,14 @@ def events_log_group(aws_client, account_id, region_name):
     for log_group in log_groups:
         try:
             aws_client.logs.delete_log_group(logGroupName=log_group)
-        except Exception:
-            pass
+        except Exception as e:
+            LOG.debug("error cleaning up log group %s: %s", log_group, e)
 
     for policy_name in policy_names:
         try:
             aws_client.logs.delete_resource_policy(policyName=policy_name)
-        except Exception:
-            pass
+        except Exception as e:
+            LOG.debug("error cleaning up resource policy %s: %s", policy_name, e)
 
 
 @pytest.fixture

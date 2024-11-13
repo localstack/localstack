@@ -28,9 +28,6 @@ from tests.aws.services.lambda_.test_lambda import (
 
 
 # TODO:
-#  Add tests for the following services:
-#   - API Gateway (community)
-#   - CloudWatch Logs (community)
 #  These tests should go into LocalStack Pro:
 #   - AppSync (pro)
 #   - Batch (pro)
@@ -81,10 +78,9 @@ class TestEventsTargetCloudWatchLogs:
             policyName=policy_name, policyDocument=json.dumps(resource_policy)
         )
 
-        cleanups.append(lambda: aws_client.logs.delete_log_group(logGroupName=log_group_name))
-        cleanups.append(lambda: aws_client.logs.delete_resource_policy(policyName=policy_name))
-
         if is_aws_cloud():
+            # Wait for IAM role propagation in AWS cloud environment before proceeding
+            # This delay is necessary as IAM changes can take several seconds to propagate globally
             time.sleep(10)
 
         rule_name = f"test-rule-{short_uid()}"
