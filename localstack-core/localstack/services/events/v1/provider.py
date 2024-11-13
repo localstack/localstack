@@ -40,8 +40,6 @@ from localstack.aws.api.events import (
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.http import route
 from localstack.services.edge import ROUTER
-from localstack.utils.event_matcher import matches_event as matches_rule
-
 from localstack.services.events.models import (
     InvalidEventPatternException as InternalInvalidEventPatternException,
 )
@@ -55,6 +53,7 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.collections import pick_attributes
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
+from localstack.utils.event_matcher import matches_event as matches_rule
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp

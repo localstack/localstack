@@ -92,7 +92,6 @@ from localstack.aws.api.events import Replay as ApiTypeReplay
 from localstack.aws.api.events import Rule as ApiTypeRule
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
-from localstack.utils.event_matcher import matches_event as matches_rule
 from localstack.services.events.models import (
     Archive,
     ArchiveDict,
@@ -132,6 +131,7 @@ from localstack.services.events.utils import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.common import truncate
+from localstack.utils.event_matcher import matches_event as matches_rule
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
