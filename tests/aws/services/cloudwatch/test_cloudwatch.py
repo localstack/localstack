@@ -1102,7 +1102,7 @@ class TestCloudwatch:
 
         composite_alarm_rule = f'ALARM("{alarm_1_arn}") OR ALARM("{alarm_2_arn}")'
 
-        aws_client.cloudwatch.put_composite_alarm(
+        put_composite_alarm_response = aws_client.cloudwatch.put_composite_alarm(
             AlarmName=composite_alarm_name,
             AlarmDescription=composite_alarm_description,
             AlarmRule=composite_alarm_rule,
@@ -1112,6 +1112,7 @@ class TestCloudwatch:
         cleanups.append(
             lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[composite_alarm_name])
         )
+        snapshot.match("put-composite-alarm", put_composite_alarm_response)
 
         composite_alarms_list = aws_client.cloudwatch.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
