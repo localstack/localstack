@@ -162,7 +162,7 @@ class CloudControlProvider(CloudcontrolApi):
             aws_session_token="",
         )
         # state handling is still a bit unclear
-        desired_state = None
+        desired_state = {}
         if resource_model is not None:
             desired_state = json.loads(resource_model)
         event = provider.list(

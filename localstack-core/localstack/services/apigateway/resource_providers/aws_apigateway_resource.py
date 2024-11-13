@@ -101,7 +101,7 @@ class ApiGatewayResourceProvider(ResourceProvider[ApiGatewayResourceProperties])
         self,
         request: ResourceRequest[ApiGatewayResourceProperties],
     ) -> ProgressEvent[ApiGatewayResourceProperties]:
-        if request.desired_state is None or "RestApiId" not in request.desired_state:
+        if "RestApiId" not in request.desired_state:
             # TODO: parity
             raise InvalidRequestException(
                 f"Missing or invalid ResourceModel property in {self.TYPE} list handler request input: 'RestApiId'"
