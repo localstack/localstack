@@ -4,8 +4,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, TypedDict
 
+from botocore.exceptions import ClientError
+
 import localstack.services.cloudformation.provider_utils as util
-from localstack.aws.api.cloudcontrol import InvalidRequestException
+from localstack.aws.api.cloudcontrol import InvalidRequestException, ResourceNotFoundException
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
@@ -99,21 +101,31 @@ class ApiGatewayResourceProvider(ResourceProvider[ApiGatewayResourceProperties])
         self,
         request: ResourceRequest[ApiGatewayResourceProperties],
     ) -> ProgressEvent[ApiGatewayResourceProperties]:
-        if "RestApiId" not in request.desired_state:
+        if request.desired_state is None or "RestApiId" not in request.desired_state:
             # TODO: parity
             raise InvalidRequestException(
                 f"Missing or invalid ResourceModel property in {self.TYPE} list handler request input: 'RestApiId'"
             )
 
         rest_api_id = request.desired_state["RestApiId"]
-        resources = request.aws_client_factory.apigateway.get_resources(restApiId=rest_api_id)[
-            "items"
-        ]
+        try:
+            resources = request.aws_client_factory.apigateway.get_resources(restApiId=rest_api_id)[
+                "items"
+            ]
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code", {}) == "NotFoundException":
+                raise ResourceNotFoundException(f"Invalid API identifier specified: {rest_api_id}")
+            raise
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_models=[
-                ApiGatewayResourceProperties(RestApiId=rest_api_id, ResourceId=resource["id"])
+                ApiGatewayResourceProperties(
+                    RestApiId=rest_api_id,
+                    ResourceId=resource["id"],
+                    ParentId=resource.get("parentId"),
+                    PathPart=resource.get("path"),
+                )
                 for resource in resources
             ],
         )
