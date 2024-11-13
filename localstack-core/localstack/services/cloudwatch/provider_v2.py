@@ -1061,7 +1061,7 @@ def create_message_response_update_state_sns(alarm: LocalStackMetricAlarm, old_s
 def create_message_response_update_composite_alarm_state_sns(
     composite_alarm: LocalStackCompositeAlarm,
     triggering_alarm: LocalStackMetricAlarm,
-    old_state,
+    old_state: StateValue,
 ):
     _alarm = composite_alarm.alarm
     response = {
