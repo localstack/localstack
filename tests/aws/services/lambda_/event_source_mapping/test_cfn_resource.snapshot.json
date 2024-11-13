@@ -1,0 +1,19 @@
+{
+  "tests/aws/services/lambda_/event_source_mapping/test_cfn_resource.py::test_adding_tags": {
+    "recorded-date": "06-11-2024, 11:55:29",
+    "recorded-content": {
+      "event-source-mapping-tags": {
+        "Tags": {
+          "aws:cloudformation:logical-id": "EventSourceMapping",
+          "aws:cloudformation:stack-id": "<stack-id>",
+          "aws:cloudformation:stack-name": "<stack-name>",
+          "my": "tag"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

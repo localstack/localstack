@@ -431,36 +431,6 @@ jobs:
   ######################
   ## Custom Test Jobs ##
   ######################
-  itest-sfn-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test SFN Legacy provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
-            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-cloudwatch-v1-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -542,37 +512,6 @@ jobs:
           command: |
             COVERAGE_FILE="target/coverage/.coverage.apigwNG.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/apigw_ng.xml -o junit_suite_name='apigw_ng'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  # Regression testing for ESM v1 until scheduled removal for v4.0
-  itest-lambda-event-source-mapping-v1-feature:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test Lambda Event Source Mapping v1 feature
-          environment:
-            LAMBDA_EVENT_SOURCE_MAPPING: "v1"
-            TEST_PATH: "tests/aws/services/lambda_/event_source_mapping"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.lambda_event_source_mappingV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/lambda_event_source_mapping_v2.xml -o junit_suite_name='lambda_event_source_mapping_v2'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -968,10 +907,6 @@ workflows:
       - test-selection:
           requires:
             - install
-      - itest-sfn-legacy-provider:
-          requires:
-            - preflight
-            - test-selection
       - itest-cloudwatch-v1-provider:
           requires:
             - preflight
@@ -981,10 +916,6 @@ workflows:
             - preflight
             - test-selection
       - itest-apigw-ng-provider:
-          requires:
-            - preflight
-            - test-selection
-      - itest-lambda-event-source-mapping-v1-feature:
           requires:
             - preflight
             - test-selection
@@ -1050,12 +981,10 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-sfn-legacy-provider
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
             - itest-ddb-v2-provider
-            - itest-lambda-event-source-mapping-v1-feature
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
@@ -1067,12 +996,10 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-sfn-legacy-provider
             - itest-cloudwatch-v1-provider
             - itest-events-v2-provider
             - itest-apigw-ng-provider
             - itest-ddb-v2-provider
-            - itest-lambda-event-source-mapping-v1-feature
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64

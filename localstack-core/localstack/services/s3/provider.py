@@ -20,6 +20,7 @@ from localstack.aws.api.s3 import (
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
+    BadDigest,
     Body,
     Bucket,
     BucketAlreadyExists,
@@ -250,6 +251,7 @@ from localstack.services.s3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.utils import (
     ObjectRange,
     add_expiration_days_to_datetime,
+    base_64_content_md5_to_etag,
     create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
     etag_to_base_64_content_md5,
@@ -653,6 +655,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         version_id = generate_version_id(s3_bucket.versioning_status)
 
+        etag_content_md5 = ""
+        if content_md5 := request.get("ContentMD5"):
+            # assert that the received ContentMD5 is a properly b64 encoded value that fits a MD5 hash length
+            etag_content_md5 = base_64_content_md5_to_etag(content_md5)
+            if not etag_content_md5:
+                raise InvalidDigest(
+                    "The Content-MD5 you specified was invalid.",
+                    Content_MD5=content_md5,
+                )
+
         checksum_algorithm = get_s3_checksum_algorithm_from_request(request)
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
@@ -741,13 +753,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a
             #  streaming body. We can use the specs to verify which operations needs to have the checksum validated
-            if content_md5 := request.get("ContentMD5"):
+            if content_md5:
                 calculated_md5 = etag_to_base_64_content_md5(s3_stored_object.etag)
                 if calculated_md5 != content_md5:
                     self._storage_backend.remove(bucket_name, s3_object)
-                    raise InvalidDigest(
-                        "The Content-MD5 you specified was invalid.",
-                        Content_MD5=content_md5,
+                    raise BadDigest(
+                        "The Content-MD5 you specified did not match what we received.",
+                        ExpectedDigest=etag_content_md5,
+                        CalculatedDigest=calculated_md5,
                     )
 
             s3_bucket.objects.set(key, s3_object)
@@ -2114,6 +2127,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=part_number,
             )
 
+        if content_md5 := request.get("ContentMD5"):
+            # assert that the received ContentMD5 is a properly b64 encoded value that fits a MD5 hash length
+            if not base_64_content_md5_to_etag(content_md5):
+                raise InvalidDigest(
+                    "The Content-MD5 you specified was invalid.",
+                    Content_MD5=content_md5,
+                )
+
         checksum_algorithm = get_s3_checksum_algorithm_from_request(request)
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
@@ -2189,6 +2210,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 raise InvalidRequest(
                     f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
                 )
+
+            if content_md5:
+                calculated_md5 = etag_to_base_64_content_md5(s3_part.etag)
+                if calculated_md5 != content_md5:
+                    stored_multipart.remove_part(s3_part)
+                    raise BadDigest(
+                        "The Content-MD5 you specified did not match what we received.",
+                        ExpectedDigest=content_md5,
+                        CalculatedDigest=calculated_md5,
+                    )
 
             s3_multipart.parts[part_number] = s3_part
 
@@ -2680,13 +2711,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 message="The Versioning element must be specified",
             )
 
-        if s3_bucket.object_lock_enabled:
+        if versioning_status not in ("Enabled", "Suspended"):
+            raise MalformedXML()
+
+        if s3_bucket.object_lock_enabled and versioning_status == "Suspended":
             raise InvalidBucketState(
                 "An Object Lock configuration is present on this bucket, so the versioning state cannot be changed."
             )
-
-        if versioning_status not in ("Enabled", "Suspended"):
-            raise MalformedXML()
 
         if not s3_bucket.versioning_status:
             s3_bucket.objects = VersionedKeyStore.from_key_store(s3_bucket.objects)

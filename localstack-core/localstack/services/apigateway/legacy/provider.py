@@ -1928,6 +1928,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = call_moto_with_request(context, moto_request)
         remove_empty_attributes_from_integration(integration=response)
 
+        # TODO: should fix fundamentally once we move away from moto
+        if integration_type == "MOCK":
+            response.pop("uri", None)
+
         return response
 
     def update_integration(

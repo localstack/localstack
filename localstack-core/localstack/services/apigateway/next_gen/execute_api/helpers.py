@@ -58,7 +58,10 @@ def render_uri_with_stage_variables(
     return _stage_variable_pattern.sub(replace_match, uri)
 
 
-def render_uri_with_path_parameters(uri: str, path_parameters: dict[str, str]) -> str:
+def render_uri_with_path_parameters(uri: str | None, path_parameters: dict[str, str]) -> str | None:
+    if not uri:
+        return uri
+
     for key, value in path_parameters.items():
         uri = uri.replace(f"{{{key}}}", value)
 
@@ -66,7 +69,7 @@ def render_uri_with_path_parameters(uri: str, path_parameters: dict[str, str]) -
 
 
 def render_integration_uri(
-    uri: str, path_parameters: dict[str, str], stage_variables: dict[str, str]
+    uri: str | None, path_parameters: dict[str, str], stage_variables: dict[str, str]
 ) -> str:
     """
     A URI can contain different value to interpolate / render
@@ -83,6 +86,9 @@ def render_integration_uri(
     :param stage_variables: -
     :return: the rendered URI
     """
+    if not uri:
+        return ""
+
     uri_with_path = render_uri_with_path_parameters(uri, path_parameters)
     return render_uri_with_stage_variables(uri_with_path, stage_variables)
 

@@ -116,6 +116,7 @@ def test_default_localstack_container_configurator(
     from localstack import config
 
     monkeypatch.setenv("DEBUG", "1")
+    monkeypatch.setenv("LOCALSTACK_AUTH_TOKEN", "")
     monkeypatch.setenv("LOCALSTACK_API_KEY", "")
     monkeypatch.setenv("ACTIVATE_PRO", "0")
     monkeypatch.setattr(config, "DEBUG", True)

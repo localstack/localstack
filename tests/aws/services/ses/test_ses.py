@@ -872,6 +872,7 @@ class TestSES:
         assert exc.match("MessageRejected")
 
 
+@pytest.mark.usefixtures("openapi_validate")
 class TestSESRetrospection:
     @markers.aws.only_localstack
     def test_send_email_can_retrospect(self, aws_client):

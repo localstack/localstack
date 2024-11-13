@@ -23,6 +23,9 @@
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
     "last_validated_date": "2023-07-06T19:01:08+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_apigateway_stage": {
+    "last_validated_date": "2024-11-07T05:35:20+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_usage_plan": {
     "last_validated_date": "2024-09-13T09:57:21+00:00"
   }
