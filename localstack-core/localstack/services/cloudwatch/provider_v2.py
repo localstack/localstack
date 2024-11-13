@@ -864,6 +864,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         return DescribeAlarmHistoryOutput(AlarmHistoryItems=history)
 
     def _evaluate_composite_alarms(self, context: RequestContext, triggering_alarm):
+        # TODO either pass store as a parameter or acquire RLock (with _STORE_LOCK:)
+        # everything works ok now but better ensure protection of critical section in front of future changes
         store = self.get_store(context.account_id, context.region)
         alarms = list(store.alarms.values())
         composite_alarms = [a for a in alarms if isinstance(a, LocalStackCompositeAlarm)]
