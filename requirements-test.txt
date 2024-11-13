@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=test --output-file=requirements-test.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-airspeed-ext==0.6.6
+airspeed-ext==0.6.7
     # via localstack-core
 amazon-kclpy==2.1.5
     # via localstack-core
