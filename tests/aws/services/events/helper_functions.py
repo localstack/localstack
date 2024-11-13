@@ -7,14 +7,14 @@ from localstack.utils.sync import retry
 
 
 def is_v2_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_EVENTS") == "v2" and not is_aws_cloud()
+    return (
+        os.environ.get("PROVIDER_OVERRIDE_EVENTS", "") not in ("v1", "legacy")
+        and not is_aws_cloud()
+    )
 
 
 def is_old_provider():
-    return (
-        "PROVIDER_OVERRIDE_EVENTS" not in os.environ
-        or os.environ.get("PROVIDER_OVERRIDE_EVENTS") != "v2"
-    )
+    return os.environ.get("PROVIDER_OVERRIDE_EVENTS", "") in ("v1", "legacy") and not is_aws_cloud()
 
 
 def events_time_string_to_timestamp(time_string: str) -> datetime:
