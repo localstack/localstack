@@ -162,12 +162,15 @@ class CloudControlProvider(CloudcontrolApi):
             aws_session_token="",
         )
         # state handling is still a bit unclear
+        desired_state = None
+        if resource_model is not None:
+            desired_state = json.loads(resource_model)
         event = provider.list(
             ResourceRequest(
                 aws_client_factory=client_factory,
                 resource_type=type_name,
                 account_id="",
-                desired_state=resource_model or {},
+                desired_state=desired_state,
                 previous_state={},
                 region_name="",
                 action="",
@@ -183,7 +186,7 @@ class CloudControlProvider(CloudcontrolApi):
         return ListResourcesOutput(
             TypeName=type_name,
             ResourceDescriptions=[
-                # identifier needs to again be determined from schema here, properties can be taken direclty
+                # identifier needs to again be determined from schema here, properties can be taken directly
                 ResourceDescription(
                     Identifier=extract_physical_resource_id_from_model_with_schema(
                         props, type_name, provider.SCHEMA
