@@ -149,11 +149,11 @@ class InfoResource:
 
 class ResourcesResource:
     """
-    Resource that is exposed to /_localstack/info and used to get generalized information about the current
+    Resource that is exposed to /_localstack/resources and used to get generalized information about the current
     localstack instance.
     """
 
-    def on_get(self, request):
+    def on_get(self, request: Request):
         from localstack.aws.client import botocore_in_memory_endpoint_patch
 
         if not botocore_in_memory_endpoint_patch.is_applied:
@@ -161,9 +161,9 @@ class ResourcesResource:
         from localstack.aws.client import GatewayShortCircuit
         from localstack.runtime import get_current_runtime
 
-        # region_name = request
-        client_factory = connect_to()
-        # client_factory = connect_to(region_name=region_name, aws_access_key_id=account_id, aws_secret_access_key="test")
+        region = request.args.get("region", None)
+        account = request.args.get("account", None)
+        client_factory = connect_to(region_name=region, aws_access_key_id=account)
         cfn_client = client_factory.cloudformation
         cc_client = client_factory.cloudcontrol
         GatewayShortCircuit.modify_client(cfn_client, get_current_runtime().components.gateway)
@@ -174,14 +174,21 @@ class ResourcesResource:
         response = {}
         for cfn_type in types:
             type_name = cfn_type["TypeName"]
-            resources = cc_client.list_resources(TypeName=type_name)["ResourceDescriptions"]
-            response[type_name] = resources
+            try:
+                # todo: it would be nice to avoid listing resources associated to providers that we are not yet loaded.
+                if resources := cc_client.list_resources(TypeName=type_name)[
+                    "ResourceDescriptions"
+                ]:
+                    response[type_name] = resources
+            except Exception as e:
+                LOG.debug("Unable to list resources for type %s: %s", type_name, e)
         return response
 
 
 class AccountsRegionUsageResource:
     """
-    Resource that is exposed to /_localstack/account-region-usage to get a list of for each account used, all regions used in that account
+    Resource that is exposed to /_localstack/account-region-usage to get a list of for each account used, all regions
+    used in that account.
     """
 
     def on_get(self, request):
