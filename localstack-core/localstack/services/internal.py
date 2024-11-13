@@ -1,5 +1,6 @@
 """Module for localstack internal resources, such as health, graph, or _localstack/cloudformation/deploy."""
 
+import json
 import logging
 import os
 import re
@@ -147,14 +148,34 @@ class InfoResource:
         }
 
 
+def get_account_region_pairs() -> dict[str, list[str]]:
+    from localstack.aws.handlers.custom import AccountRegionTracker
+
+    output_dict = {}
+
+    # Iterate over the set and populate the dictionary
+    for x, y in AccountRegionTracker.tracked:
+        if x not in output_dict:
+            output_dict[x] = []
+        output_dict[x].append(y)
+
+    return output_dict
+
+
 class ResourcesResource:
     """
     Resource that is exposed to /_localstack/resources and used to get generalized information about the current
     localstack instance.
+    You can provide a region and account as query parameter. If both are specified, the endpoint returns only
+    the responses for such an account/region pair. If not, we query resources in all the tracked regions.
     """
 
     def on_get(self, request: Request):
+        from boto3 import Session
+
         from localstack.aws.client import botocore_in_memory_endpoint_patch
+        from localstack.services.cloudformation.resource_provider import get_service_name
+        from localstack.services.plugins import SERVICE_PLUGINS
 
         if not botocore_in_memory_endpoint_patch.is_applied:
             botocore_in_memory_endpoint_patch.apply()
@@ -163,26 +184,57 @@ class ResourcesResource:
 
         region = request.args.get("region", None)
         account = request.args.get("account", None)
-        client_factory = connect_to(region_name=region, aws_access_key_id=account)
-        cfn_client = client_factory.cloudformation
-        cc_client = client_factory.cloudcontrol
+
+        account_region_pairs = (
+            {account: [region]} if account and region else get_account_region_pairs()
+        )
+
+        cfn_client = connect_to().cloudformation
         GatewayShortCircuit.modify_client(cfn_client, get_current_runtime().components.gateway)
-        GatewayShortCircuit.modify_client(cc_client, get_current_runtime().components.gateway)
 
         types = cfn_client.list_types()["TypeSummaries"]
 
-        response = {}
-        for cfn_type in types:
-            type_name = cfn_type["TypeName"]
-            try:
-                # todo: it would be nice to avoid listing resources associated to providers that we are not yet loaded.
-                if resources := cc_client.list_resources(TypeName=type_name)[
-                    "ResourceDescriptions"
-                ]:
-                    response[type_name] = resources
-            except Exception as e:
-                LOG.debug("Unable to list resources for type %s: %s", type_name, e)
-        return response
+        def _is_global_resource(_type: str) -> bool:
+            return _type in ["AWS::S3::Bucket", "AWS::IAM:User", "AWS::IAM:Role", "AWS::IAM:Policy"]
+
+        def _generator():
+            for _account, _regions in account_region_pairs.items():
+                for _region in _regions:
+                    for cfn_type in types:
+                        type_name = cfn_type["TypeName"]
+                        service_name = get_service_name({"Type": type_name})
+
+                        if not service_name:
+                            LOG.debug("Unable to detect service for type %s", type_name)
+                            continue
+                        if _region not in Session().get_available_regions(service_name):
+                            LOG.debug("Region %s not available in region %s", service_name, _region)
+                            continue
+                        if service_name not in SERVICE_PLUGINS.list_loaded_services():
+                            # If a service plugin has not been loaded, we likely do not have resources to list.
+                            #   This avoids call `list_resources` below that initialize the plugin itself (which can
+                            #   be consuming is some external resources need to be started).
+                            continue
+
+                        _region_fixed = "us-east-1" if _is_global_resource(type_name) else _region
+                        cc_client = connect_to(
+                            region_name=_region_fixed, aws_access_key_id=_account
+                        ).cloudcontrol
+                        GatewayShortCircuit.modify_client(
+                            cc_client, get_current_runtime().components.gateway
+                        )
+                        try:
+                            if resources := cc_client.list_resources(TypeName=type_name)[
+                                "ResourceDescriptions"
+                            ]:
+                                for _res in resources:
+                                    _res.update({"region": _region_fixed, "account": _account})
+                                event = {type_name: resources}
+                                yield json.dumps(event) + "\n"
+                        except Exception as e:
+                            LOG.debug("Unable to list resources for type %s: %s", type_name, e)
+
+        return Response(_generator(), mimetype="application/x-ndjson")
 
 
 class AccountsRegionUsageResource:
@@ -192,17 +244,7 @@ class AccountsRegionUsageResource:
     """
 
     def on_get(self, request):
-        from localstack.aws.handlers.custom import AccountRegionTracker
-
-        output_dict = {}
-
-        # Iterate over the set and populate the dictionary
-        for x, y in AccountRegionTracker.tracked:
-            if x not in output_dict:
-                output_dict[x] = []
-            output_dict[x].append(y)
-
-        return output_dict
+        return get_account_region_pairs()
 
 
 class UsageResource:
