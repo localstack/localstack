@@ -1002,7 +1002,7 @@ def create_message_response_update_state_lambda(
     return json.dumps(response, cls=JSONEncoder)
 
 
-def create_message_response_update_state_sns(alarm: LocalStackMetricAlarm, old_state):
+def create_message_response_update_state_sns(alarm: LocalStackMetricAlarm, old_state: StateValue):
     _alarm = alarm.alarm
     response = {
         "AWSAccountId": alarm.account_id,
