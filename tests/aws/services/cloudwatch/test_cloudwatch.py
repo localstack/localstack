@@ -632,7 +632,6 @@ class TestCloudwatch:
         alarm_name = f"a-{short_uid()}"
         metric_name = "something"
         namespace = f"test-ns-{short_uid()}"
-        alarm_rule = f'ALARM("{alarm_name}")'
         aws_client.cloudwatch.put_metric_alarm(
             AlarmName=alarm_name,
             Namespace=namespace,
@@ -644,6 +643,12 @@ class TestCloudwatch:
             Threshold=30,
         )
         cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
+
+        metric_alarm_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])[
+            "MetricAlarms"
+        ][0]["AlarmArn"]
+        alarm_rule = f'ALARM("{metric_alarm_arn}")'
+
         aws_client.cloudwatch.put_composite_alarm(
             AlarmName=composite_alarm_name,
             AlarmRule=alarm_rule,
