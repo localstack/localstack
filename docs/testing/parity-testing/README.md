@@ -1,3 +1,5 @@
+from conftest import aws_client
+
 # Parity Testing
 
 Parity tests (also called snapshot tests) are a special form of integration tests that should verify and improve the correctness of LocalStack compared to AWS.
@@ -16,7 +18,7 @@ This guide assumes you are already familiar with writing [integration tests](../
 In a nutshell, the necessary steps include:
 
 1.  Make sure that the test works against AWS.
-    * Check out our [Integration Test Guide](integration-tests.md#running-integration-tests-against-aws) for tips on how run integration tests against AWS.
+    * Check out our [Integration Test Guide](../integration-tests/README.md#running-integration-tests-against-aws) for tips on how run integration tests against AWS.
 2.  Add the `snapshot` fixture to your test and identify which responses you want to collect and compare against LocalStack.
     * Use `snapshot.match(”identifier”, result)` to mark the result of interest. It will be recorded and stored in a file with the name `<testfile-name>.snapshot.json`
     *  The **identifier** can be freely selected, but ideally it gives a hint on what is recorded - so typically the name of the function. The **result** is expected to be a `dict`.
@@ -29,11 +31,11 @@ In a nutshell, the necessary steps include:
 Here is an example of a parity test:
 
 ```python
-def test_invocation(self, lambda_client, snapshot):
+def test_invocation(self, aws_client, snapshot):
     # add transformers to make the results comparable
-    snapshot.add_transformer(snapshot.transform.lambda_api()
+    snapshot.add_transformer(snapshot.transform.lambda_api())
 
-    result = lambda_client.invoke(
+    result = aws_client.lambda_.invoke(
             ....
     )
     # records the 'result' using the identifier 'invoke'
@@ -124,7 +126,7 @@ Consider the following example:
 
 ```python
 def test_basic_invoke(
-        self, lambda_client, create_lambda, snapshot
+        self, aws_client, create_lambda, snapshot
     ):
 
     # custom transformers
@@ -143,11 +145,11 @@ def test_basic_invoke(
     snapshot.match("lambda_create_fn_2", response)
 
     # get function 1
-    get_fn_result = lambda_client.get_function(FunctionName=fn_name)
+    get_fn_result = aws_client.lambda_.get_function(FunctionName=fn_name)
     snapshot.match("lambda_get_fn", get_fn_result)
 
     # get function 2
-    get_fn_result_2 = lambda_client.get_function(FunctionName=fn_name_2)
+    get_fn_result_2 = aws_client.lambda_.get_function(FunctionName=fn_name_2)
     snapshot.match("lambda_get_fn_2", get_fn_result_2)
 ```
 
@@ -223,13 +225,13 @@ Simply include a list of json-paths. Those paths will then be excluded from the 
 @pytest.mark.skip_snapshot_verify(
         paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
     )
-    def test_something_that_does_not_work_completly_yet(self, lambda_client, snapshot):
+    def test_something_that_does_not_work_completly_yet(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.lambda_api())
-        result = lambda_client....
+        result = aws_client.lambda_....
         snapshot.match("invoke-result", result)
 ```
 
-> [!NOTE]  
+> [!NOTE]
 > Generally, [transformers](#using-transformers) should be used wherever possible to make responses comparable.
 > If specific paths are skipped from the verification, it means LocalStack does not have parity yet.
 
