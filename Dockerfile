@@ -151,7 +151,8 @@ RUN --mount=type=cache,target=/root/.cache \
     source .venv/bin/activate && \
     python -m localstack.cli.lpm install \
       lambda-runtime \
-      dynamodb-local && \
+      dynamodb-local  \
+      event-ruler && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
 
