@@ -110,6 +110,7 @@ def send_event_to_target(
                     {
                         "EventBusName": eventbus_name,
                         "Source": event.get("source", source_service) or "",
+                        # TODO: detail type "" is invalid => figure out what is actually passed here on AWS
                         "DetailType": event.get("detail-type", ""),
                         "Detail": json.dumps(detail),
                         "Resources": resources,
