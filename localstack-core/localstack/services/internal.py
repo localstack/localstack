@@ -197,9 +197,9 @@ class ResourcesResource:
         def _is_global_resource(_type: str) -> bool:
             return _type in [
                 "AWS::S3::Bucket",
-                "AWS::IAM:User",
-                "AWS::IAM:Role",
-                "AWS::IAM:Policy",
+                "AWS::IAM::User",
+                "AWS::IAM::Role",
+                "AWS::IAM::Policy",
                 "AWS::Cloudfront:Distribution",
             ]
 
