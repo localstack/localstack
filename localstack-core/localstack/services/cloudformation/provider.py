@@ -108,7 +108,10 @@ from localstack.services.cloudformation.engine.validations import (
     DEFAULT_TEMPLATE_VALIDATIONS,
     ValidationError,
 )
-from localstack.services.cloudformation.resource_provider import ResourceProvider
+from localstack.services.cloudformation.resource_provider import (
+    PRO_RESOURCE_PROVIDERS,
+    ResourceProvider,
+)
 from localstack.services.cloudformation.stores import (
     cloudformation_stores,
     find_active_stack_by_name_or_id,
@@ -1292,20 +1295,29 @@ class CloudformationProvider(CloudformationApi):
                 return inspect.unwrap(child_method) is not inspect.unwrap(parent_method)
             return False
 
+        def get_listable_types_summaries(plugin_manager):
+            plugins = plugin_manager.list_names()
+            type_summaries = []
+            for plugin in plugins:
+                type_summary = TypeSummary(
+                    Type=RegistryType.RESOURCE,
+                    TypeName=plugin,
+                )
+                provider = plugin_manager.load(plugin)
+                if is_list_overridden(provider.factory, ResourceProvider):
+                    type_summaries.append(type_summary)
+            return type_summaries
+
         from localstack.services.cloudformation.resource_provider import (
             plugin_manager,
         )
 
-        plugins = plugin_manager.list_names()
-
-        type_summaries = []
-        for plugin in plugins:
-            type_summary = TypeSummary(
-                Type=RegistryType.RESOURCE,
-                TypeName=plugin,
+        type_summaries = get_listable_types_summaries(plugin_manager)
+        if PRO_RESOURCE_PROVIDERS:
+            from localstack.services.cloudformation.resource_provider import (
+                pro_plugin_manager,
             )
-            provider = plugin_manager.load(plugin)
-            if is_list_overridden(provider.factory, ResourceProvider):
-                type_summaries.append(type_summary)
+
+            type_summaries.extend(get_listable_types_summaries(pro_plugin_manager))
 
         return ListTypesOutput(TypeSummaries=type_summaries)
