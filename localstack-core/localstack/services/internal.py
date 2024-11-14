@@ -253,7 +253,11 @@ class ResourcesResource:
             for cfn_type in types:
                 # If the resource is global, we only iterate over a single region
                 is_global = _is_global_resource(cfn_type["TypeName"])
-                pairs = {None: ["us-east-1"]} if is_global else account_region_pairs
+                pairs = (
+                    {x: ["us-east-1"] for x in account_region_pairs.keys()}
+                    if is_global
+                    else account_region_pairs
+                )
                 for res_name, resources in _get_resource_for_type(
                     cfn_type["TypeName"], pairs
                 ).items():
