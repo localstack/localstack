@@ -5294,6 +5294,88 @@ class TestLambdaEventSourceMappings:
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # all dynamodb service issues not related to lambda
+            "$..TableDescription.DeletionProtectionEnabled",
+            "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
+            "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
+            "$..TableDescription.TableStatus",
+            "$..TableDescription.TableId",
+            "$..UUID",
+        ]
+    )
+    @markers.aws.validated
+    def test_event_source_mapping_lifecycle_delete_function(
+        self,
+        create_lambda_function,
+        snapshot,
+        sqs_create_queue,
+        cleanups,
+        lambda_su_role,
+        dynamodb_create_table,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        table_name = f"teststreamtable-{short_uid()}"
+
+        destination_queue_url = sqs_create_queue()
+        destination_queue_arn = aws_client.sqs.get_queue_attributes(
+            QueueUrl=destination_queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        update_table_response = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )
+        snapshot.match("update_table_response", update_table_response)
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+        # "minimal"
+        create_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            EventSourceArn=stream_arn,
+            DestinationConfig={"OnFailure": {"Destination": destination_queue_arn}},
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+        )
+
+        uuid = create_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        snapshot.match("create_response", create_response)
+
+        # the stream might not be active immediately(!)
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        get_response = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
+        snapshot.match("get_response", get_response)
+
+        delete_function_response = aws_client.lambda_.delete_function(FunctionName=function_name)
+        snapshot.match("delete_function_response", delete_function_response)
+
+        def _assert_function_deleted():
+            with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+                aws_client.lambda_.get_function(FunctionName=function_name)
+            return True
+
+        wait_until(_assert_function_deleted)
+
+        get_response_post_delete = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
+        snapshot.match("get_response_post_delete", get_response_post_delete)
+        #
+        delete_response = aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
+        snapshot.match("delete_response", delete_response)
+
     @markers.aws.validated
     def test_function_name_variations(
         self,
@@ -5336,6 +5418,14 @@ class TestLambdaEventSourceMappings:
             snapshot.match(f"{snapshot_scope}_create_esm", result)
             _await_event_source_mapping_enabled(aws_client.lambda_, result["UUID"])
             aws_client.lambda_.delete_event_source_mapping(UUID=result["UUID"])
+
+            def _assert_esm_deleted():
+                with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+                    aws_client.lambda_.get_event_source_mapping(UUID=result["UUID"])
+
+                return True
+
+            wait_until(_assert_esm_deleted)
 
         _create_esm("name_only", function_name)
         _create_esm("partial_arn_latest", f"{function_name}:$LATEST")

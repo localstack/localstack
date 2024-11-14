@@ -618,7 +618,6 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
-    @pytest.mark.skip(reason="Race in ESMv2 causing intermittent failures")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..MaximumRetryAttempts",

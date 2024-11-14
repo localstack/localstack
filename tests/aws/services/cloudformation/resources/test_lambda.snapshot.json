@@ -353,7 +353,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
-    "recorded-date": "09-04-2024, 07:29:12",
+    "recorded-date": "30-10-2024, 14:48:16",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -398,7 +398,7 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "fnSqsEventSourceLambdaSqsSourceStackq2097017B53C3FF8C",
-            "PhysicalResourceId": "<uuid:1>",
+            "PhysicalResourceId": "<resource:6>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::EventSourceMapping",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
@@ -474,7 +474,7 @@
           },
           "MemorySize": 128,
           "PackageType": "Zip",
-          "RevisionId": "<uuid:2>",
+          "RevisionId": "<uuid:1>",
           "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
           "RuntimeVersionConfig": {
@@ -504,13 +504,14 @@
       "get_esm_result": {
         "BatchSize": 1,
         "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:6>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
         "State": "Enabled",
         "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:1>",
+        "UUID": "<resource:6>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
