@@ -61,3 +61,18 @@ class TestInfoEndpoint:
         assert doc["machine_id"]
         assert doc["system"]
         assert type(doc["is_license_activated"]) == bool
+
+
+@pytest.mark.usefixtures("openapi_validate")
+class TestResourcesEndpoint:
+    resources_endpoint = config.internal_service_url() + "/_localstack/resources"
+
+    def test_get_resource(self, aws_client):
+        resource_type = 'AWS::SNS::Topic'
+        aws_client.sns.create_topic(Name="test")
+        response = requests.get(self.resources_endpoint)
+        assert response.ok
+        data = response.json()
+        assert resource_type in data
+        assert len(data[resource_type]) == 1
+        assert data[resource_type][0]['region_name'] == 'us-east-1'

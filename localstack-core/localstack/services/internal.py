@@ -457,7 +457,6 @@ class LocalstackResources(Router):
         self.add(Resource("/_localstack/health", health_resource))
         self.add(Resource("/_localstack/info", InfoResource()))
         self.add(Resource("/_localstack/resources", ResourcesResource()))
-        self.add(Resource("/_localstack/account-region-usage", AccountsRegionUsageResource()))
         self.add(Resource("/_localstack/plugins", PluginsResource()))
         self.add(Resource("/_localstack/init", InitScriptsResource()))
         self.add(Resource("/_localstack/init/<stage>", InitScriptsStageResource()))
