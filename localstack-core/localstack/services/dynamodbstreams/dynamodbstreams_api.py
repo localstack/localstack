@@ -89,7 +89,7 @@ def get_stream_for_table(account_id: str, region_name: str, table_arn: str) -> d
 
 def _process_forwarded_records(
     account_id: str, region_name: str, table_name: TableName, table_records: dict, kinesis
-):
+) -> None:
     records = table_records["records"]
     stream_type = table_records["table_stream_type"]
     # if the table does not have a DynamoDB Streams enabled, skip publishing anything
