@@ -197,42 +197,72 @@ class ResourcesResource:
         def _is_global_resource(_type: str) -> bool:
             return _type in ["AWS::S3::Bucket", "AWS::IAM:User", "AWS::IAM:Role", "AWS::IAM:Policy"]
 
-        def _generator():
-            for _account, _regions in account_region_pairs.items():
+        def _get_resource_for_type(
+            _type: str, _account_region_pairs: dict
+        ) -> dict[str, list[dict]]:
+            """
+            For a given resource type, it returns the list of resources over the deployed in the specified
+            account/region pairs.
+            :param _type: the type of resource, e.g., AWS::SQS:Queue
+            :param _account_region_pairs: a dictionary with account ids as key and a list of regions as value
+            :return: a dictionary of resource description for each type
+            """
+            resources_for_type = {_type: []}
+            for _account, _regions in _account_region_pairs.items():
                 for _region in _regions:
-                    for cfn_type in types:
-                        type_name = cfn_type["TypeName"]
-                        service_name = get_service_name({"Type": type_name})
+                    service_name = get_service_name({"Type": _type})
+                    if not service_name:
+                        LOG.debug("Unable to detect service for type %s", _type)
+                        continue
+                    if _region not in Session().get_available_regions(service_name):
+                        LOG.debug("Region %s not available in region %s", service_name, _region)
+                        continue
+                    if service_name not in SERVICE_PLUGINS.list_loaded_services():
+                        # If a service plugin has not been loaded, we likely do not have resources to list.
+                        #   This avoids call `list_resources` below that initialize the plugin itself (which can
+                        #   be consuming is some external resources need to be started).
+                        continue
 
-                        if not service_name:
-                            LOG.debug("Unable to detect service for type %s", type_name)
-                            continue
-                        if _region not in Session().get_available_regions(service_name):
-                            LOG.debug("Region %s not available in region %s", service_name, _region)
-                            continue
-                        if service_name not in SERVICE_PLUGINS.list_loaded_services():
-                            # If a service plugin has not been loaded, we likely do not have resources to list.
-                            #   This avoids call `list_resources` below that initialize the plugin itself (which can
-                            #   be consuming is some external resources need to be started).
-                            continue
+                    cc_client = connect_to(
+                        region_name=_region, aws_access_key_id=_account
+                    ).cloudcontrol
+                    GatewayShortCircuit.modify_client(
+                        cc_client, get_current_runtime().components.gateway
+                    )
+                    try:
+                        if resources := cc_client.list_resources(TypeName=_type)[
+                            "ResourceDescriptions"
+                        ]:
+                            _res_to_add = [
+                                {
+                                    "region_name": _region
+                                    if not _is_global_resource(_type)
+                                    else "global",
+                                    "account_id": _account
+                                    if not _is_global_resource(_type)
+                                    else "global",
+                                    "resource_type": _type,
+                                    "service_name": service_name,
+                                    "id": _res["Identifier"],
+                                }
+                                for _res in resources
+                            ]
+                            resources_for_type[_type].extend(_res_to_add)
+                    except Exception as e:
+                        LOG.debug("Unable to list resources for type %s: %s", _type, e)
+            return resources_for_type
 
-                        _region_fixed = "us-east-1" if _is_global_resource(type_name) else _region
-                        cc_client = connect_to(
-                            region_name=_region_fixed, aws_access_key_id=_account
-                        ).cloudcontrol
-                        GatewayShortCircuit.modify_client(
-                            cc_client, get_current_runtime().components.gateway
-                        )
-                        try:
-                            if resources := cc_client.list_resources(TypeName=type_name)[
-                                "ResourceDescriptions"
-                            ]:
-                                for _res in resources:
-                                    _res.update({"region": _region_fixed, "account": _account})
-                                event = {type_name: resources}
-                                yield json.dumps(event) + "\n"
-                        except Exception as e:
-                            LOG.debug("Unable to list resources for type %s: %s", type_name, e)
+        def _generator():
+            for cfn_type in types:
+                # If the resource is global, we only iterate over a single region
+                is_global = _is_global_resource(cfn_type["TypeName"])
+                pairs = {None: ["us-east-1"]} if is_global else account_region_pairs
+                for res_name, resources in _get_resource_for_type(
+                    cfn_type["TypeName"], pairs
+                ).items():
+                    if not resources:
+                        continue
+                    yield json.dumps({res_name: resources}) + "\n"
 
         return Response(_generator(), mimetype="application/x-ndjson")
 
