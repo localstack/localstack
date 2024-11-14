@@ -19,14 +19,12 @@ from localstack.services.events.v1.provider import _get_events_tmp_dir
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from tests.aws.services.events.helper_functions import (
     assert_valid_event,
     is_old_provider,
-    is_v2_provider,
     sqs_collect_messages,
 )
 
@@ -191,7 +189,9 @@ class TestEvents:
 
     @markers.aws.only_localstack
     # tests for legacy v1 provider delete once v1 provider is removed
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    @pytest.mark.skipif(
+        not is_old_provider(), reason="V2 provider does not support this feature yet"
+    )
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, aws_client
     ):
@@ -226,148 +226,10 @@ class TestEvents:
 
     @markers.aws.only_localstack
     # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_scheduled_expression_events(
-        self,
-        sns_create_topic,
-        sqs_create_queue,
-        sns_subscription,
-        httpserver: HTTPServer,
-        aws_client,
-        account_id,
-        region_name,
-        clean_up,
-    ):
-        httpserver.expect_request("").respond_with_data(b"", 200)
-        http_endpoint = httpserver.url_for("/")
-
-        topic_name = f"topic-{short_uid()}"
-        queue_name = f"queue-{short_uid()}"
-        fifo_queue_name = f"queue-{short_uid()}.fifo"
-        rule_name = f"rule-{short_uid()}"
-        sm_role_arn = arns.iam_role_arn("sfn_role", account_id=account_id, region_name=region_name)
-        sm_name = f"state-machine-{short_uid()}"
-        topic_target_id = f"target-{short_uid()}"
-        sm_target_id = f"target-{short_uid()}"
-        queue_target_id = f"target-{short_uid()}"
-        fifo_queue_target_id = f"target-{short_uid()}"
-
-        state_machine_definition = """
-        {
-            "StartAt": "Hello",
-            "States": {
-                "Hello": {
-                    "Type": "Pass",
-                    "Result": "World",
-                    "End": true
-                }
-            }
-        }
-        """
-
-        state_machine_arn = aws_client.stepfunctions.create_state_machine(
-            name=sm_name, definition=state_machine_definition, roleArn=sm_role_arn
-        )["stateMachineArn"]
-
-        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
-        subscription = sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
-
-        assert poll_condition(lambda: len(httpserver.log) >= 1, timeout=5)
-        sub_request, _ = httpserver.log[0]
-        payload = sub_request.get_json(force=True)
-        assert payload["Type"] == "SubscriptionConfirmation"
-        token = payload["Token"]
-        aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
-        sub_attrs = aws_client.sns.get_subscription_attributes(
-            SubscriptionArn=subscription["SubscriptionArn"]
-        )
-        assert sub_attrs["Attributes"]["PendingConfirmation"] == "false"
-
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        fifo_queue_url = sqs_create_queue(
-            QueueName=fifo_queue_name,
-            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
-        )
-
-        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
-        fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name, account_id, region_name)
-
-        event = {"env": "testing"}
-        event_json = json.dumps(event)
-
-        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
-
-        aws_client.events.put_targets(
-            Rule=rule_name,
-            Targets=[
-                {"Id": topic_target_id, "Arn": topic_arn, "Input": event_json},
-                {
-                    "Id": sm_target_id,
-                    "Arn": state_machine_arn,
-                    "Input": event_json,
-                },
-                {"Id": queue_target_id, "Arn": queue_arn, "Input": event_json},
-                {
-                    "Id": fifo_queue_target_id,
-                    "Arn": fifo_queue_arn,
-                    "Input": event_json,
-                    "SqsParameters": {"MessageGroupId": "123"},
-                },
-            ],
-        )
-
-        def received(q_urls):
-            # state machine got executed
-            executions = aws_client.stepfunctions.list_executions(
-                stateMachineArn=state_machine_arn
-            )["executions"]
-            assert len(executions) >= 1
-
-            # http endpoint got events
-            assert len(httpserver.log) >= 2
-            notifications = [
-                sns_event["Message"]
-                for request, _ in httpserver.log
-                if (
-                    (sns_event := request.get_json(force=True))
-                    and sns_event["Type"] == "Notification"
-                )
-            ]
-            assert len(notifications) >= 1
-
-            # get state machine execution detail
-            execution_arn = executions[0]["executionArn"]
-            _execution_input = aws_client.stepfunctions.describe_execution(
-                executionArn=execution_arn
-            )["input"]
-
-            all_msgs = []
-            # get message from queue and fifo_queue
-            for url in q_urls:
-                msgs = aws_client.sqs.receive_message(QueueUrl=url).get("Messages", [])
-                assert len(msgs) >= 1
-                all_msgs.append(msgs[0])
-
-            return _execution_input, notifications[0], all_msgs
-
-        execution_input, notification, msgs_received = retry(
-            received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
-        )
-        assert json.loads(notification) == event
-        assert json.loads(execution_input) == event
-        for msg_received in msgs_received:
-            assert json.loads(msg_received["Body"]) == event
-
-        # clean up
-        target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
-
-        clean_up(rule_name=rule_name, target_ids=target_ids, queue_url=queue_url)
-        aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
-
-    @markers.aws.only_localstack
-    # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    @pytest.mark.skipif(
+        not is_old_provider(), reason="V2 provider does not support this feature yet"
+    )
     def test_api_destinations(self, httpserver: HTTPServer, auth, aws_client, clean_up):
         token = short_uid()
         bearer = f"Bearer {token}"
@@ -527,7 +389,9 @@ class TestEvents:
 
     @markers.aws.only_localstack
     # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    @pytest.mark.skipif(
+        not is_old_provider(), reason="V2 provider does not support this feature yet"
+    )
     def test_create_connection_validations(self, aws_client):
         connection_name = "This should fail with two errors 123467890123412341234123412341234"
 
@@ -1639,7 +1503,9 @@ class TestEventTarget:
         snapshot.match("list-targets-limit-next-token", response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    @pytest.mark.skipif(
+        not is_old_provider(), reason="V2 provider does not support this feature yet"
+    )
     def test_put_target_id_validation(
         self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
     ):

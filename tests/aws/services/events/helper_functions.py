@@ -2,19 +2,11 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.sync import retry
 
 
-def is_v2_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_EVENTS") == "v2" and not is_aws_cloud()
-
-
 def is_old_provider():
-    return (
-        "PROVIDER_OVERRIDE_EVENTS" not in os.environ
-        or os.environ.get("PROVIDER_OVERRIDE_EVENTS") != "v2"
-    )
+    return os.environ.get("PROVIDER_OVERRIDE_EVENTS") == "v1"
 
 
 def events_time_string_to_timestamp(time_string: str) -> datetime:
