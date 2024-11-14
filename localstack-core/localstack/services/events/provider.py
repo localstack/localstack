@@ -1986,6 +1986,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     rule, region, account_id, event_formatted, processed_entries, failed_entry_count
                 )
         else:
+            processed_entries.append({"EventId": event_formatted["id"]})
             LOG.info(
                 json.dumps(
                     {
