@@ -469,11 +469,12 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
             alarm_rule = composite_alarm.alarm["AlarmRule"]
 
-            alarms_from_rule = [alarm.strip() for alarm in alarm_rule.split("OR")]
-            for alarm in alarms_from_rule:
-                if not alarm.startswith("ALARM"):
-                    raise ValidationError(
-                        f"Error in alarm rule condition '{alarm}': Only ALARM expression is supported"
+            alarms_conditions = [alarm.strip() for alarm in alarm_rule.split("OR")]
+            for alarm_condition in alarms_conditions:
+                if not alarm_condition.startswith("ALARM"):
+                    LOG.warning(
+                        "Unsupported expression in alarm rule condition %s: Only ALARM expression is supported by Localstack as of now",
+                        alarm_condition,
                     )
 
             missing_alarms = []
