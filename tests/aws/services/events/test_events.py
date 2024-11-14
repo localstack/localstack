@@ -403,13 +403,12 @@ class TestEvents:
                 assert oauth_request.headers["oauthheader"] == "value2"
                 assert oauth_request.args["oauthquery"] == "value3"
 
-    @markers.aws.only_localstack
-    # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
+    @markers.aws.validated
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_create_connection_validations(self, aws_client):
+    def test_create_connection_validations(self, aws_client, snapshot):
         connection_name = "This should fail with two errors 123467890123412341234123412341234"
 
-        with pytest.raises(ClientError) as ctx:
+        with pytest.raises(ClientError) as e:
             (
                 aws_client.events.create_connection(
                     Name=connection_name,
@@ -419,15 +418,7 @@ class TestEvents:
                     },
                 ),
             )
-
-        assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
-        assert ctx.value.response["Error"]["Code"] == "ValidationException"
-
-        message = ctx.value.response["Error"]["Message"]
-        assert "3 validation errors" in message
-        assert "must satisfy regular expression pattern" in message
-        assert "must have length less than or equal to 64" in message
-        assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
+        snapshot.match("create_connection_exc", e.value.response)
 
 
 class TestEventBus:
