@@ -220,7 +220,7 @@ class EventForwarder:
     def _submit_records(
         self, forwarder, account_id: str, region_name: str, records_map: RecordsMap
     ):
-        "Required for patching submit with local thread context for EventStudio"
+        """Required for patching submit with local thread context for EventStudio"""
         self.executor.submit(
             forwarder,
             account_id,
