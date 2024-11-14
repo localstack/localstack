@@ -1124,21 +1124,51 @@ class TestCloudwatch:
         snapshot.add_transformer(snapshot.transform.regex(topic_name_alarm, "<alarm-topic-name>"))
         snapshot.add_transformer(snapshot.transform.regex(topic_name_ok, "<ok-topic-name>"))
 
+        # helper methods to verify that correct message landed in correct SQS queue
+        # for ALARM and OK state changes respectively
+
+        def _check_composite_alarm_alarm_message(
+            expected_triggering_child_arn,
+            expected_triggering_child_state,
+        ):
+            retry(
+                check_composite_alarm_message,
+                retries=PUBLICATION_RETRIES,
+                sleep_before=1,
+                sqs_client=aws_client.sqs,
+                queue_url=queue_url_alarm,
+                expected_topic_arn=topic_arn_alarm,
+                alarm_name=composite_alarm_name,
+                alarm_description=composite_alarm_description,
+                expected_state="ALARM",
+                expected_triggering_child_arn=expected_triggering_child_arn,
+                expected_triggering_child_state=expected_triggering_child_state,
+            )
+
+        def _check_composite_alarm_ok_message(
+            expected_triggering_child_arn,
+            expected_triggering_child_state,
+        ):
+            retry(
+                check_composite_alarm_message,
+                retries=PUBLICATION_RETRIES,
+                sleep_before=1,
+                sqs_client=aws_client.sqs,
+                queue_url=queue_url_ok,
+                expected_topic_arn=topic_arn_ok,
+                alarm_name=composite_alarm_name,
+                alarm_description=composite_alarm_description,
+                expected_state="OK",
+                expected_triggering_child_arn=expected_triggering_child_arn,
+                expected_triggering_child_state=expected_triggering_child_state,
+            )
+
         # trigger alarm 1 - composite one should also go into ALARM state
         aws_client.cloudwatch.set_alarm_state(
             AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
         )
 
-        retry(
-            check_composite_alarm_message,
-            retries=PUBLICATION_RETRIES,
-            sleep_before=1,
-            sqs_client=aws_client.sqs,
-            queue_url=queue_url_alarm,
-            expected_topic_arn=topic_arn_alarm,
-            alarm_name=composite_alarm_name,
-            alarm_description=composite_alarm_description,
-            expected_state="ALARM",
+        _check_composite_alarm_alarm_message(
             expected_triggering_child_arn=alarm_1_arn,
             expected_triggering_child_state="ALARM",
         )
@@ -1157,16 +1187,7 @@ class TestCloudwatch:
             AlarmName=alarm_1_name, StateValue="OK", StateReason="resetting alarm 1"
         )
 
-        retry(
-            check_composite_alarm_message,
-            retries=PUBLICATION_RETRIES,
-            sleep_before=1,
-            sqs_client=aws_client.sqs,
-            queue_url=queue_url_ok,
-            expected_topic_arn=topic_arn_ok,
-            alarm_name=composite_alarm_name,
-            alarm_description=composite_alarm_description,
-            expected_state="OK",
+        _check_composite_alarm_ok_message(
             expected_triggering_child_arn=alarm_1_arn,
             expected_triggering_child_state="OK",
         )
@@ -1185,16 +1206,7 @@ class TestCloudwatch:
             AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
         )
 
-        retry(
-            check_composite_alarm_message,
-            retries=PUBLICATION_RETRIES,
-            sleep_before=1,
-            sqs_client=aws_client.sqs,
-            queue_url=queue_url_alarm,
-            expected_topic_arn=topic_arn_alarm,
-            alarm_name=composite_alarm_name,
-            alarm_description=composite_alarm_description,
-            expected_state="ALARM",
+        _check_composite_alarm_alarm_message(
             expected_triggering_child_arn=alarm_2_arn,
             expected_triggering_child_state="ALARM",
         )
