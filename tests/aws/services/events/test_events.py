@@ -19,10 +19,11 @@ from localstack.services.events.v1.provider import _get_events_tmp_dir
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
-from localstack.utils.sync import poll_condition, retry, wait_until
+from localstack.utils.sync import poll_condition, retry
 from tests.aws.services.events.helper_functions import (
     assert_valid_event,
     is_old_provider,
@@ -1709,35 +1710,47 @@ API_DESTINATION_AUTH_PARAMS = [
 
 
 class TestEventBridgeConnections:
+    @pytest.fixture
+    def connection_name(self):
+        return f"test-connection-{short_uid()}"
+
+    @pytest.fixture
+    def connection_snapshots(self, snapshot, connection_name):
+        """Common snapshot transformers for connection tests."""
+        return TransformerUtility.eventbridge_connection(snapshot, connection_name)
+
+    @pytest.fixture
+    def create_connection(self, aws_client, connection_name):
+        """Fixture to create a connection with given auth type and parameters."""
+
+        def _create_connection(auth_type: str, auth_parameters: dict):
+            return aws_client.events.create_connection(
+                Name=connection_name,
+                AuthorizationType=auth_type,
+                AuthParameters=auth_parameters,
+            )
+
+        return _create_connection
+
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
-    def test_create_connection(self, aws_client, snapshot):
-        connection_name = f"test-connection-{short_uid()}"
-
-        # Add transformers
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("SecretArn", reference_replacement=False)
-        )
-
-        response = aws_client.events.create_connection(
-            Name=connection_name,
-            AuthorizationType="API_KEY",
-            AuthParameters={
+    def test_create_connection(
+        self, aws_client, connection_snapshots, create_connection, connection_name
+    ):
+        response = create_connection(
+            "API_KEY",
+            {
                 "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
                 "InvocationHttpParameters": {},
             },
         )
-        snapshot.match("create-connection", response)
+        connection_snapshots.match("create-connection", response)
 
         describe_response = aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-connection", describe_response)
+        connection_snapshots.match("describe-connection", describe_response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -1745,148 +1758,93 @@ class TestEventBridgeConnections:
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize("auth_params", API_DESTINATION_AUTH_PARAMS)
-    def test_create_connection_with_auth(self, aws_client, auth_params, snapshot):
-        connection_name = f"test-connection-{short_uid()}"
-
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
+    def test_create_connection_with_auth(
+        self, aws_client, connection_snapshots, create_connection, auth_params, connection_name
+    ):
+        response = create_connection(
+            auth_params["AuthorizationType"],
+            auth_params["AuthParameters"],
         )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("SecretArn", reference_replacement=False)
-        )
-
-        response = aws_client.events.create_connection(
-            Name=connection_name,
-            AuthorizationType=auth_params["AuthorizationType"],
-            AuthParameters=auth_params["AuthParameters"],
-        )
-        snapshot.match("create-connection-auth", response)
+        connection_snapshots.match("create-connection-auth", response)
 
         describe_response = aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-connection-auth", describe_response)
+        connection_snapshots.match("describe-connection-auth", describe_response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
-    def test_list_connections(self, aws_client, snapshot):
-        connection_name = f"test-connection-{short_uid()}"
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("SecretArn", reference_replacement=False)
-        )
-
-        aws_client.events.create_connection(
-            Name=connection_name,
-            AuthorizationType="BASIC",
-            AuthParameters={
+    def test_list_connections(
+        self, aws_client, connection_snapshots, create_connection, connection_name
+    ):
+        create_connection(
+            "BASIC",
+            {
                 "BasicAuthParameters": {"Username": "user", "Password": "pass"},
                 "InvocationHttpParameters": {},
             },
         )
 
         response = aws_client.events.list_connections(NamePrefix=connection_name)
-        snapshot.match("list-connections", response)
+        connection_snapshots.match("list-connections", response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
-    def test_delete_connection(self, aws_client, snapshot):
-        connection_name = f"test-connection-{short_uid()}"
-
-        # Add transformers
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("SecretArn", reference_replacement=False)
-        )
-
-        # Create connection
-        aws_client.events.create_connection(
-            Name=connection_name,
-            AuthorizationType="API_KEY",
-            AuthParameters={
+    def test_delete_connection(
+        self, aws_client, connection_snapshots, create_connection, connection_name
+    ):
+        create_connection(
+            "API_KEY",
+            {
                 "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
                 "InvocationHttpParameters": {},
             },
         )
 
-        # Delete connection
         delete_response = aws_client.events.delete_connection(Name=connection_name)
-        snapshot.match("delete-connection", delete_response)
-
-        # Wait for deletion to complete
-        def _is_connection_deleted():
-            try:
-                aws_client.events.describe_connection(Name=connection_name)
-                return False
-            except ClientError as e:
-                return e.response["Error"]["Code"] == "ResourceNotFoundException"
-
-        assert wait_until(_is_connection_deleted, strategy="linear", wait=1.0, max_retries=10)
+        connection_snapshots.match("delete-connection", delete_response)
 
         # Verify connection is deleted
-        with pytest.raises(ClientError) as e:
+        with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as exc:
             aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-deleted-connection-error", e.value.response)
+        assert f"Connection '{connection_name}' does not exist" in str(exc.value)
 
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
-    def test_create_connection_invalid_parameters(self, aws_client, snapshot):
-        connection_name = f"invalid-connection-{short_uid()}"
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("SecretArn", reference_replacement=False)
-        )
-
+    def test_create_connection_invalid_parameters(
+        self, aws_client, connection_snapshots, connection_name
+    ):
         with pytest.raises(ClientError) as e:
             aws_client.events.create_connection(
                 Name=connection_name,
                 AuthorizationType="INVALID_AUTH_TYPE",
                 AuthParameters={},
             )
-        snapshot.match("create-connection-invalid-auth-error", e.value.response)
+        connection_snapshots.match("create-connection-invalid-auth-error", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
-    def test_update_connection(self, aws_client, snapshot):
-        connection_name = f"test-connection-{short_uid()}"
-
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("SecretArn", reference_replacement=False)
-        )
-
-        create_response = aws_client.events.create_connection(
-            Name=connection_name,
-            AuthorizationType="BASIC",
-            AuthParameters={
+    def test_update_connection(
+        self, aws_client, connection_snapshots, create_connection, connection_name
+    ):
+        create_response = create_connection(
+            "BASIC",
+            {
                 "BasicAuthParameters": {"Username": "user", "Password": "pass"},
                 "InvocationHttpParameters": {},
             },
         )
-        snapshot.match("create-connection", create_response)
+        connection_snapshots.match("create-connection", create_response)
 
         update_response = aws_client.events.update_connection(
             Name=connection_name,
@@ -1896,17 +1854,19 @@ class TestEventBridgeConnections:
                 "InvocationHttpParameters": {},
             },
         )
-        snapshot.match("update-connection", update_response)
+        connection_snapshots.match("update-connection", update_response)
 
         describe_response = aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-updated-connection", describe_response)
+        connection_snapshots.match("describe-updated-connection", describe_response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
-    def test_create_connection_name_validation(self, aws_client, snapshot):
+    def test_create_connection_name_validation(
+        self, aws_client, connection_snapshots, connection_name
+    ):
         invalid_name = "Invalid Name With Spaces!"
 
         with pytest.raises(ClientError) as e:
@@ -1918,4 +1878,4 @@ class TestEventBridgeConnections:
                     "InvocationHttpParameters": {},
                 },
             )
-        snapshot.match("create-connection-invalid-name-error", e.value.response)
+        connection_snapshots.match("create-connection-invalid-name-error", e.value.response)

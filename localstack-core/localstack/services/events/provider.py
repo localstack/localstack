@@ -4,7 +4,7 @@ import logging
 import re
 import uuid
 from datetime import datetime
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
@@ -260,6 +260,68 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 f"Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
             )
 
+    def _create_connection_response(
+        self, connection: Connection, override_state: Optional[str] = None
+    ) -> dict:
+        """Create a standardized response for connection operations."""
+        return {
+            "ConnectionArn": connection["ConnectionArn"],
+            "ConnectionState": override_state or connection["ConnectionState"],
+            "CreationTime": connection["CreationTime"],
+            "LastModifiedTime": connection["LastModifiedTime"],
+            "LastAuthorizedTime": connection.get("LastAuthorizedTime"),
+        }
+
+    def _create_connection_arn(
+        self, context: RequestContext, name: str, connection_uuid: str
+    ) -> str:
+        """Create a standardized connection ARN."""
+        return f"arn:aws:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}"
+
+    def _create_secret_arn(self, context: RequestContext, name: str, connection_uuid: str) -> str:
+        """Create a standardized secret ARN."""
+        return f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{connection_uuid}"
+
+    def _create_connection_object(
+        self,
+        context: RequestContext,
+        name: str,
+        authorization_type: str,
+        auth_parameters: dict,
+        description: Optional[str] = None,
+        connection_state: Optional[str] = None,
+        creation_time: Optional[datetime] = None,
+    ) -> Connection:
+        """Create a standardized connection object."""
+        current_time = creation_time or datetime.now()
+        connection_uuid = str(uuid.uuid4())
+
+        connection: Connection = {
+            "ConnectionArn": self._create_connection_arn(context, name, connection_uuid),
+            "Name": name,
+            "ConnectionState": connection_state or self._get_initial_state(authorization_type),
+            "AuthorizationType": authorization_type,
+            "AuthParameters": self._get_public_parameters(authorization_type, auth_parameters),
+            "SecretArn": self._create_secret_arn(context, name, connection_uuid),
+            "CreationTime": current_time,
+            "LastModifiedTime": current_time,
+            "LastAuthorizedTime": current_time,
+        }
+
+        if description:
+            connection["Description"] = description
+
+        return connection
+
+    def _handle_connection_operation(self, operation_name: str, func: Callable) -> Any:
+        """Generic error handler for connection operations."""
+        try:
+            return func()
+        except (ValidationException, ResourceNotFoundException) as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error {operation_name} connection: {str(e)}")
+
     @handler("CreateConnection")
     def create_connection(
         self,
@@ -270,49 +332,21 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         description: Optional[ConnectionDescription] = None,
         **kwargs,
     ) -> CreateConnectionResponse:
-        try:
+        def create():
             self._validate_auth_type(authorization_type)
-
             self._validate_connection_name(name)
 
             if name in self._connections:
                 raise ResourceAlreadyExistsException(f"Connection {name} already exists.")
 
-            creation_time = datetime.now()
-            connection_uuid = str(uuid.uuid4())
-
-            public_auth_params = self._get_public_parameters(authorization_type, auth_parameters)
-            initial_state = self._get_initial_state(authorization_type)
-
-            # Create new connection
-            connection: Connection = {
-                "ConnectionArn": f"arn:aws:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}",
-                "Name": name,
-                "ConnectionState": initial_state,
-                "AuthorizationType": authorization_type,
-                "AuthParameters": public_auth_params,
-                "SecretArn": f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{connection_uuid}",
-                "CreationTime": creation_time,
-                "LastModifiedTime": creation_time,
-                "LastAuthorizedTime": creation_time,
-            }
-
-            if description:
-                connection["Description"] = description
-
+            connection = self._create_connection_object(
+                context, name, authorization_type, auth_parameters, description
+            )
             self._connections[name] = connection
 
-            return CreateConnectionResponse(
-                ConnectionArn=connection["ConnectionArn"],
-                ConnectionState=connection["ConnectionState"],
-                CreationTime=connection["CreationTime"],
-                LastModifiedTime=connection["LastModifiedTime"],
-            )
+            return CreateConnectionResponse(**self._create_connection_response(connection))
 
-        except ValidationException as e:
-            raise e
-        except Exception as e:
-            raise ValidationException(f"Error creating connection: {str(e)}")
+        return self._handle_connection_operation("creating", create)
 
     @handler("UpdateConnection")
     def update_connection(
@@ -324,7 +358,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         description: Optional[ConnectionDescription] = None,
         **kwargs,
     ) -> UpdateConnectionResponse:
-        try:
+        def update():
             self._validate_auth_type(authorization_type)
 
             if name not in self._connections:
@@ -332,70 +366,40 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            connection = self._connections[name]
-            update_time = datetime.now()
-            connection_uuid = connection["ConnectionArn"].split("/")[-1]
-
-            public_auth_params = self._get_public_parameters(authorization_type, auth_parameters)
-
-            updated_connection: Connection = {
-                "ConnectionArn": connection["ConnectionArn"],
-                "Name": name,
-                "ConnectionState": ConnectionState.AUTHORIZED,
-                "AuthorizationType": authorization_type,
-                "AuthParameters": public_auth_params,
-                "SecretArn": f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{connection_uuid}",
-                "CreationTime": connection["CreationTime"],
-                "LastModifiedTime": update_time,
-                "LastAuthorizedTime": update_time,
-            }
-
-            if description:
-                updated_connection["Description"] = description
-
-            self._connections[name] = updated_connection
-
-            return UpdateConnectionResponse(
-                ConnectionArn=updated_connection["ConnectionArn"],
-                ConnectionState=updated_connection["ConnectionState"],
-                CreationTime=updated_connection["CreationTime"],
-                LastAuthorizedTime=updated_connection["LastAuthorizedTime"],
-                LastModifiedTime=updated_connection["LastModifiedTime"],
+            existing_connection = self._connections[name]
+            connection = self._create_connection_object(
+                context,
+                name,
+                authorization_type,
+                auth_parameters,
+                description,
+                ConnectionState.AUTHORIZED,
+                existing_connection["CreationTime"],
             )
+            self._connections[name] = connection
 
-        except (ValidationException, ResourceNotFoundException) as e:
-            raise e
-        except Exception as e:
-            raise ValidationException(f"Error updating connection: {str(e)}")
+            return UpdateConnectionResponse(**self._create_connection_response(connection))
+
+        return self._handle_connection_operation("updating", update)
 
     @handler("DeleteConnection")
     def delete_connection(
         self, context: RequestContext, name: ConnectionName, **kwargs
     ) -> DeleteConnectionResponse:
-        try:
+        def delete():
             if name not in self._connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
             connection = self._connections[name]
-
-            response = DeleteConnectionResponse(
-                ConnectionArn=connection["ConnectionArn"],
-                ConnectionState=ConnectionState.DELETING,
-                CreationTime=connection["CreationTime"],
-                LastModifiedTime=connection["LastModifiedTime"],
-                LastAuthorizedTime=connection.get("LastAuthorizedTime"),
-            )
-
             del self._connections[name]
 
-            return response
+            return DeleteConnectionResponse(
+                **self._create_connection_response(connection, ConnectionState.DELETING)
+            )
 
-        except ResourceNotFoundException as e:
-            raise e
-        except Exception as e:
-            raise ValidationException(f"Error deleting connection: {str(e)}")
+        return self._handle_connection_operation("deleting", delete)
 
     @handler("DescribeConnection")
     def describe_connection(
