@@ -469,13 +469,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
             alarm_rule = composite_alarm.alarm["AlarmRule"]
 
-            alarms_conditions = [alarm.strip() for alarm in alarm_rule.split("OR")]
-            for alarm_condition in alarms_conditions:
-                if not alarm_condition.startswith("ALARM"):
-                    LOG.warning(
-                        "Unsupported expression in alarm rule condition %s: Only ALARM expression is supported by Localstack as of now",
-                        alarm_condition,
-                    )
+            rule_expression_validation_result = self._validate_alarm_rule_expression(alarm_rule)
+            [LOG.warning(w) for w in rule_expression_validation_result]
 
             missing_alarms = []
             for metric_alarm_arn in self._get_alarm_arns(alarm_rule):
@@ -875,9 +870,16 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def _evaluate_composite_alarm(self, context, composite_alarm, triggering_alarm):
         store = self.get_store(context.account_id, context.region)
+        alarm_rule = composite_alarm.alarm["AlarmRule"]
+        rule_expression_validation = self._validate_alarm_rule_expression(alarm_rule)
+        if rule_expression_validation:
+            LOG.warning(
+                "Alarm rule contains unsupported expressions and will not be evaluated: %s",
+                rule_expression_validation,
+            )
         new_state_value = StateValue.OK
         # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied
-        for metric_alarm_arn in self._get_alarm_arns(composite_alarm.alarm["AlarmRule"]):
+        for metric_alarm_arn in self._get_alarm_arns(alarm_rule):
             metric_alarm = store.alarms.get(metric_alarm_arn)
             if metric_alarm.alarm["StateValue"] == StateValue.ALARM:
                 triggering_alarm = metric_alarm
@@ -917,6 +919,16 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             self._run_composite_alarm_actions(
                 context, composite_alarm, old_state_value, triggering_alarm
             )
+
+    def _validate_alarm_rule_expression(self, alarm_rule):
+        validation_result = []
+        alarms_conditions = [alarm.strip() for alarm in alarm_rule.split("OR")]
+        for alarm_condition in alarms_conditions:
+            if not alarm_condition.startswith("ALARM"):
+                validation_result.append(
+                    f"Unsupported expression in alarm rule condition {alarm_condition}: Only ALARM expression is supported by Localstack as of now"
+                )
+        return validation_result
 
     def _get_alarm_arns(self, composite_alarm_rule):
         # regexp for everything within (" ")
