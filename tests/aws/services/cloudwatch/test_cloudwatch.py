@@ -1220,7 +1220,29 @@ class TestCloudwatch:
             composite_alarm_in_alarm_when_alarm_2_in_alarm,
         )
 
+        # trigger OK for alarm 2 - composite one should also go back to OK
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_2_name, StateValue="OK", StateReason="resetting alarm 2"
+        )
+
+        _check_composite_alarm_ok_message(
+            expected_triggering_child_arn=alarm_2_arn,
+            expected_triggering_child_state="OK",
+        )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_in_ok_when_alarm_2_back_to_ok = composite_alarms_list["CompositeAlarms"][0]
+        snapshot.match(
+            "composite-alarm-in-ok-when-alarm-2-is-back-to-ok",
+            composite_alarm_in_ok_when_alarm_2_back_to_ok,
+        )
+
         # trigger alarm 1 while alarm 2 is triggered - composite one shouldn't change
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
+        )
         aws_client.cloudwatch.set_alarm_state(
             AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
         )
