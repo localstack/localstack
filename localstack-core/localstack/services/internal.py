@@ -195,7 +195,18 @@ class ResourcesResource:
         types = cfn_client.list_types()["TypeSummaries"]
 
         def _is_global_resource(_type: str) -> bool:
-            return _type in ["AWS::S3::Bucket", "AWS::IAM:User", "AWS::IAM:Role", "AWS::IAM:Policy"]
+            return _type in [
+                "AWS::S3::Bucket",
+                "AWS::IAM:User",
+                "AWS::IAM:Role",
+                "AWS::IAM:Policy",
+                "AWS::Cloudfront:Distribution",
+            ]
+
+        def _filter_valid_regions(_type: str, _regions: list[str]):
+            if _type.startswith("AWS::SES"):
+                return [item for item in _regions if item in Session().get_available_regions(_type)]
+            return _regions
 
         def _get_resource_for_type(
             _type: str, _account_region_pairs: dict
@@ -209,13 +220,10 @@ class ResourcesResource:
             """
             resources_for_type = {_type: []}
             for _account, _regions in _account_region_pairs.items():
-                for _region in _regions:
+                for _region in _filter_valid_regions(_type, _regions):
                     service_name = get_service_name({"Type": _type})
                     if not service_name:
                         LOG.debug("Unable to detect service for type %s", _type)
-                        continue
-                    if _region not in Session().get_available_regions(service_name):
-                        LOG.debug("Region %s not available in region %s", service_name, _region)
                         continue
                     if service_name not in SERVICE_PLUGINS.list_loaded_services():
                         # If a service plugin has not been loaded, we likely do not have resources to list.
