@@ -31,6 +31,7 @@ from localstack.aws.api.events import (
     DeleteArchiveResponse,
     DeleteConnectionResponse,
     DescribeArchiveResponse,
+    DescribeConnectionResponse,
     DescribeEventBusResponse,
     DescribeReplayResponse,
     DescribeRuleResponse,
@@ -96,6 +97,7 @@ from localstack.aws.api.events import (
     Timestamp,
     UntagResourceResponse,
     UpdateArchiveResponse,
+    UpdateConnectionAuthRequestParameters,
     UpdateConnectionResponse,
 )
 from localstack.aws.api.events import Archive as ApiTypeArchive
@@ -150,6 +152,8 @@ from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 LOG = logging.getLogger(__name__)
 
 ARCHIVE_TARGET_ID_NAME_PATTERN = re.compile(r"^Events-Archive-(?P<name>[a-zA-Z0-9_-]+)$")
+
+VALID_AUTH_TYPES = [t.value for t in ConnectionAuthorizationType]
 
 
 def decode_next_token(token: NextToken) -> int:
@@ -253,11 +257,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             )
 
     def _validate_auth_type(self, auth_type: str) -> None:
-        valid_auth_types = [t.value for t in ConnectionAuthorizationType]
-        if auth_type not in valid_auth_types:
+        """Validate the authorization type is one of the allowed values."""
+        if auth_type not in VALID_AUTH_TYPES:
             raise ValidationException(
                 f"1 validation error detected: Value '{auth_type}' at 'authorizationType' failed to satisfy constraint: "
-                f"Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
+                f"Member must satisfy enum value set: [{', '.join(VALID_AUTH_TYPES)}]"
             )
 
     def _create_connection_response(
@@ -327,20 +331,23 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         name: ConnectionName,
-        authorization_type: str,
+        authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
-        description: Optional[ConnectionDescription] = None,
+        description: ConnectionDescription = None,
         **kwargs,
     ) -> CreateConnectionResponse:
         def create():
-            self._validate_auth_type(authorization_type)
+            auth_type = authorization_type
+            if hasattr(authorization_type, "value"):
+                auth_type = authorization_type.value
+            self._validate_auth_type(auth_type)
             self._validate_connection_name(name)
 
             if name in self._connections:
                 raise ResourceAlreadyExistsException(f"Connection {name} already exists.")
 
             connection = self._create_connection_object(
-                context, name, authorization_type, auth_parameters, description
+                context, name, auth_type, auth_parameters, description
             )
             self._connections[name] = connection
 
@@ -353,26 +360,41 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         name: ConnectionName,
-        authorization_type: str,
-        auth_parameters: CreateConnectionAuthRequestParameters,
-        description: Optional[ConnectionDescription] = None,
+        description: ConnectionDescription = None,
+        authorization_type: ConnectionAuthorizationType = None,
+        auth_parameters: UpdateConnectionAuthRequestParameters = None,
         **kwargs,
     ) -> UpdateConnectionResponse:
         def update():
-            self._validate_auth_type(authorization_type)
-
             if name not in self._connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
             existing_connection = self._connections[name]
+
+            # Use existing values if not provided in update
+            if authorization_type:
+                auth_type = (
+                    authorization_type.value
+                    if hasattr(authorization_type, "value")
+                    else authorization_type
+                )
+                self._validate_auth_type(auth_type)
+            else:
+                auth_type = existing_connection["AuthorizationType"]
+
+            auth_params = (
+                auth_parameters if auth_parameters else existing_connection["AuthParameters"]
+            )
+            desc = description if description else existing_connection.get("Description")
+
             connection = self._create_connection_object(
                 context,
                 name,
-                authorization_type,
-                auth_parameters,
-                description,
+                auth_type,
+                auth_params,
+                desc,
                 ConnectionState.AUTHORIZED,
                 existing_connection["CreationTime"],
             )
@@ -404,14 +426,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     @handler("DescribeConnection")
     def describe_connection(
         self, context: RequestContext, name: ConnectionName, **kwargs
-    ) -> Connection:
+    ) -> DescribeConnectionResponse:
         try:
             if name not in self._connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            return self._connections[name]
+            return DescribeConnectionResponse(**self._connections[name])
 
         except ResourceNotFoundException as e:
             raise e
@@ -422,10 +444,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def list_connections(
         self,
         context: RequestContext,
-        name_prefix: Optional[ConnectionName] = None,
-        connection_state: Optional[ConnectionState] = None,
-        next_token: Optional[NextToken] = None,
-        limit: Optional[LimitMax100] = None,
+        name_prefix: ConnectionName = None,
+        connection_state: ConnectionState = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
         **kwargs,
     ) -> ListConnectionsResponse:
         try:
