@@ -95,7 +95,9 @@ class DynamodbServer(Server):
         # - pod load with some assets already lying in the asset folder
         # - ...
         # The cleaning is now done via the reset endpoint
-        mkdir(self.db_path)
+        if self.db_path:
+            mkdir(self.db_path)
+
         started = self.start()
         self.wait_for_dynamodb()
         return started
