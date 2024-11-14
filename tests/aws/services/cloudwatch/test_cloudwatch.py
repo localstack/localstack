@@ -1107,6 +1107,10 @@ class TestCloudwatch:
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm = composite_alarms_list["CompositeAlarms"][0]
+        # TODO snapshot.match("describe-composite-alarm", composite_alarm) instead of asserts
+        # right now the lack of parity for initial composite alarm evaluation prevents from checking snapshot.
+        # Namely, for initial evaluation after alarm creation all child alarms
+        # should be included as triggering alarms
         assert composite_alarm["AlarmName"] == composite_alarm_name
         assert composite_alarm["AlarmRule"] == composite_alarm_rule
 
