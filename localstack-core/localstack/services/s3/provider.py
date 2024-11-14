@@ -3,6 +3,7 @@ import copy
 import datetime
 import json
 import logging
+import re
 from collections import defaultdict
 from io import BytesIO
 from operator import itemgetter
@@ -103,6 +104,7 @@ from localstack.aws.api.s3 import (
     IntelligentTieringId,
     InvalidArgument,
     InvalidBucketName,
+    InvalidBucketOwnerAWSAccountID,
     InvalidDigest,
     InvalidLocationConstraint,
     InvalidObjectState,
@@ -418,6 +420,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         *,
         expected_bucket_owner: AccountId = None,
     ) -> tuple[S3Store, S3Bucket]:
+        if expected_bucket_owner and not re.fullmatch(r"\w{12}", expected_bucket_owner):
+            raise InvalidBucketOwnerAWSAccountID(
+                f"The value of the expected bucket owner parameter must be an AWS Account ID... [{expected_bucket_owner}]",
+            )
+
         store = self.get_store(context.account_id, context.region)
         if not (s3_bucket := store.buckets.get(bucket_name)):
             if not (account_id := store.global_bucket_map.get(bucket_name)):
