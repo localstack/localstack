@@ -238,11 +238,8 @@ class ResourcesResource:
                                     "region_name": _region
                                     if not _is_global_resource(_type)
                                     else "global",
-                                    "account_id": _account
-                                    if not _is_global_resource(_type)
-                                    else "global",
+                                    "account_id": _account,
                                     "resource_type": _type,
-                                    "service_name": service_name,
                                     "id": _res["Identifier"],
                                 }
                                 for _res in resources
