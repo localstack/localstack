@@ -83,6 +83,9 @@ def apply_patches():
         resource_identifier = SubnetIdentifier(
             self.account_id, self.region_name, vpc_id, cidr_block
         )
+        # tags has the format: {"subnet": {"Key": ..., "Value": ...}}
+        if tags is not None:
+            tags = tags.get("subnet", tags)
         custom_id = resource_identifier.generate(tags=tags)
 
         if custom_id:
