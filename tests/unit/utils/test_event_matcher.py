@@ -49,7 +49,7 @@ def test_matches_event_with_python_engine_strings(event_rule_engine):
 def test_matches_event_with_python_engine_dicts(event_rule_engine):
     """Test Python engine with dict inputs"""
     event_rule_engine("python")
-    assert matches_event(EVENT_PATTERN_DICT, EVENT_DICT)
+    assert matches_event(EVENT_PATTERN_DICT, EVENT_STR)
 
 
 def test_matches_event_mixed_inputs(event_rule_engine):
