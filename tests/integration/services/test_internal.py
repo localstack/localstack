@@ -1,10 +1,7 @@
-import json
-
 import pytest
 import requests
 
 from localstack import config
-from localstack.utils.strings import to_str
 
 
 @pytest.mark.usefixtures("openapi_validate")
@@ -64,40 +61,3 @@ class TestInfoEndpoint:
         assert doc["machine_id"]
         assert doc["system"]
         assert type(doc["is_license_activated"]) == bool
-
-
-def verify_stream_response(resource_type, region, resource):
-    data = json.loads(to_str(resource))
-    return (
-        resource_type in data,
-        any(x["region_name"] == region for x in data[resource_type])
-        if resource_type in data
-        else False,
-    )
-
-
-class TestResourcesEndpoint:
-    resources_endpoint = config.internal_service_url() + "/_localstack/resources"
-
-    def request_and_assert(self, resource_type, region):
-        with requests.get(self.resources_endpoint, stream=True) as response:
-            assert any(
-                verify_stream_response(resource_type, region, resource)
-                for resource in response.iter_lines()
-                if resource
-            )
-
-    def test_get_resource(self, aws_client):
-        resource_type = "AWS::SNS::Topic"
-        region = "us-east-1"
-
-        aws_client.sns.create_topic(Name="test")
-
-        self.request_and_assert(resource_type, region)
-
-    def test_get_global_resource(self, aws_client):
-        resource_type = "AWS::S3::Bucket"
-        region = "global"
-        aws_client.s3.create_bucket(Bucket="test")
-
-        self.request_and_assert(resource_type, region)

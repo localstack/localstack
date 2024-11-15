@@ -46,7 +46,6 @@ class LocalstackAwsGateway(Gateway):
                 handlers.rewrite_region,
                 handlers.add_account_id,
                 handlers.parse_trace_context,
-                handlers.collect_account_region,
                 handlers.parse_service_request,
                 metric_collector.record_parsed_request,
                 handlers.serve_custom_service_request_handlers,
