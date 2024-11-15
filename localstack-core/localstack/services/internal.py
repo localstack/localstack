@@ -200,6 +200,7 @@ class ResourcesResource:
                 "AWS::IAM::User",
                 "AWS::IAM::Role",
                 "AWS::IAM::Policy",
+                "AWS::IAM::Group",
                 "AWS::Cloudfront:Distribution",
             ]
 

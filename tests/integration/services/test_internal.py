@@ -74,7 +74,6 @@ def verify_stream_response(resource_type, region, resource):
     )
 
 
-@pytest.mark.usefixtures("openapi_validate")
 class TestResourcesEndpoint:
     resources_endpoint = config.internal_service_url() + "/_localstack/resources"
 
