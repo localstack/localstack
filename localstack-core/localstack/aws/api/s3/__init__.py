@@ -684,12 +684,6 @@ class InvalidBucketName(ServiceException):
     BucketName: Optional[BucketName]
 
 
-class InvalidBucketOwnerAWSAccountID(ServiceException):
-    code: str = "InvalidBucketOwnerAWSAccountID"
-    sender_fault: bool = False
-    status_code: int = 400
-
-
 class NoSuchVersion(ServiceException):
     code: str = "NoSuchVersion"
     sender_fault: bool = False

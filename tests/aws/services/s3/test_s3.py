@@ -1033,14 +1033,16 @@ class TestS3:
 
     @markers.aws.validated
     def test_put_bucket_policy_expected_bucket_owner(
-        self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id
+        self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id, secondary_account_id
     ):
         snapshot.add_transformer(snapshot.transform.key_value("Resource"))
         policy = _simple_bucket_policy(s3_bucket)
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_policy(
-                Bucket=s3_bucket, Policy=json.dumps(policy), ExpectedBucketOwner="000000000002"
+                Bucket=s3_bucket,
+                Policy=json.dumps(policy),
+                ExpectedBucketOwner=secondary_account_id,
             )
         snapshot.match("put-bucket-policy-with-expected-bucket-owner-error", e.value.response)
 
@@ -1083,7 +1085,7 @@ class TestS3:
 
     @markers.aws.validated
     def test_delete_bucket_policy_expected_bucket_owner(
-        self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id
+        self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id, secondary_account_id
     ):
         snapshot.add_transformer(snapshot.transform.key_value("Resource"))
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
@@ -1092,7 +1094,9 @@ class TestS3:
         aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.delete_bucket_policy(Bucket=s3_bucket, ExpectedBucketOwner="000000000002")
+            aws_client.s3.delete_bucket_policy(
+                Bucket=s3_bucket, ExpectedBucketOwner=secondary_account_id
+            )
         snapshot.match("delete-bucket-policy-with-expected-bucket-owner-error", e.value.response)
 
         with pytest.raises(ClientError) as e:

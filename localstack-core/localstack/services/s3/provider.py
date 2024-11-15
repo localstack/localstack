@@ -104,7 +104,6 @@ from localstack.aws.api.s3 import (
     IntelligentTieringId,
     InvalidArgument,
     InvalidBucketName,
-    InvalidBucketOwnerAWSAccountID,
     InvalidDigest,
     InvalidLocationConstraint,
     InvalidObjectState,
@@ -225,6 +224,7 @@ from localstack.services.s3.constants import (
 )
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
+    InvalidBucketOwnerAWSAccountID,
     InvalidBucketState,
     InvalidRequest,
     MalformedPolicy,
