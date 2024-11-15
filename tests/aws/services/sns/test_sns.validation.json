@@ -120,7 +120,7 @@
     "last_validated_date": "2023-08-24T21:36:04+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_empty_or_wrong_message_attributes": {
-    "last_validated_date": "2023-08-24T21:36:35+00:00"
+    "last_validated_date": "2024-11-15T18:55:20+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_message_attributes_not_missing": {
     "last_validated_date": "2023-08-24T21:36:25+00:00"
