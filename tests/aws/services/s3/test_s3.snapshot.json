@@ -365,36 +365,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_and_get_bucket_policy": {
-    "recorded-date": "04-08-2023, 23:56:00",
-    "recorded-content": {
-      "put-bucket-policy": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      },
-      "get-bucket-policy": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": "*"
-              },
-              "Action": "s3:GetObject",
-              "Resource": "<resource:1>"
-            }
-          ]
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_tagging_empty_list": {
     "recorded-date": "03-08-2023, 04:14:24",
     "recorded-content": {
@@ -13356,27 +13326,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 403
-        }
-      }
-    }
-  },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_with_expected_bucket_owner": {
-    "recorded-date": "10-11-2024, 19:06:26",
-    "recorded-content": {
-      "put-bucket-policy-with-expected-bucket-owner-error": {
-        "Error": {
-          "Code": "AccessDenied",
-          "Message": "Access Denied"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 403
-        }
-      },
-      "put-bucket-policy-with-expected-bucket-owner": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
         }
       }
     }
