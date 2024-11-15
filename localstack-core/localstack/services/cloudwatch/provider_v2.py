@@ -468,19 +468,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             )
 
             alarm_rule = composite_alarm.alarm["AlarmRule"]
-
             rule_expression_validation_result = self._validate_alarm_rule_expression(alarm_rule)
             [LOG.warning(w) for w in rule_expression_validation_result]
 
-            missing_alarms = []
-            for metric_alarm_arn in self._get_alarm_arns(alarm_rule):
-                if metric_alarm_arn not in store.alarms:
-                    missing_alarms.append(metric_alarm_arn)
-            if missing_alarms:
-                raise ValidationError(
-                    f"Could not save the composite alarm as alarms [{', '.join(missing_alarms)}] "
-                    f"in the alarm rule do not exist"
-                )
             alarm_arn = composite_alarm.alarm["AlarmArn"]
             store.alarms[alarm_arn] = composite_alarm
 
@@ -877,10 +867,17 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "Alarm rule contains unsupported expressions and will not be evaluated: %s",
                 rule_expression_validation,
             )
+            return
         new_state_value = StateValue.OK
         # assuming that a rule consists only of ALARM evaluations of metric alarms, with OR logic applied
         for metric_alarm_arn in self._get_alarm_arns(alarm_rule):
             metric_alarm = store.alarms.get(metric_alarm_arn)
+            if not metric_alarm:
+                LOG.warning(
+                    "Alarm rule won't be evaluated as there is no alarm with ARN %s",
+                    metric_alarm_arn,
+                )
+                return
             if metric_alarm.alarm["StateValue"] == StateValue.ALARM:
                 triggering_alarm = metric_alarm
                 new_state_value = StateValue.ALARM
