@@ -70,7 +70,9 @@ def verify_stream_response(resource_type, region, resource):
     data = json.loads(to_str(resource))
     return (
         resource_type in data,
-        any(x["region_name"] == region for x in data[resource_type]),
+        any(x["region_name"] == region for x in data[resource_type])
+        if resource_type in data
+        else False,
     )
 
 
@@ -88,6 +90,7 @@ class TestResourcesEndpoint:
     def test_get_resource(self, aws_client):
         resource_type = "AWS::SNS::Topic"
         region = "us-east-1"
+
         aws_client.sns.create_topic(Name="test")
 
         self.request_and_assert(resource_type, region)
