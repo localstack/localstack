@@ -12,6 +12,7 @@ import pytest
 import requests
 import xmltodict
 from botocore.auth import SigV4Auth
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -2080,15 +2081,27 @@ class TestSNSSubscriptionSQS:
 
     @markers.aws.validated
     def test_empty_or_wrong_message_attributes(
-        self, sns_create_sqs_subscription, sns_create_topic, sqs_create_queue, snapshot, aws_client
+        self,
+        sns_create_sqs_subscription,
+        sns_create_topic,
+        sqs_create_queue,
+        snapshot,
+        aws_client_factory,
+        region_name,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
 
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
+        client_no_validation = aws_client_factory(
+            region_name=region_name, config=Config(parameter_validation=False)
+        ).sns
+
         wrong_message_attributes = {
             "missing_string_attr": {"attr1": {"DataType": "String", "StringValue": ""}},
+            "fully_missing_string_attr": {"attr1": {"DataType": "String"}},
+            "fully_missing_data_type": {"attr1": {"StringValue": "value"}},
             "missing_binary_attr": {"attr1": {"DataType": "Binary", "BinaryValue": b""}},
             "str_attr_binary_value": {"attr1": {"DataType": "String", "BinaryValue": b"123"}},
             "int_attr_binary_value": {"attr1": {"DataType": "Number", "BinaryValue": b"123"}},
@@ -2105,7 +2118,7 @@ class TestSNSSubscriptionSQS:
 
         for error_type, msg_attrs in wrong_message_attributes.items():
             with pytest.raises(ClientError) as e:
-                aws_client.sns.publish(
+                client_no_validation.publish(
                     TopicArn=topic_arn,
                     Message="test message",
                     MessageAttributes=msg_attrs,
@@ -2113,27 +2126,22 @@ class TestSNSSubscriptionSQS:
 
             snapshot.match(error_type, e.value.response)
 
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.publish_batch(
-                TopicArn=topic_arn,
-                PublishBatchRequestEntries=[
-                    {
-                        "Id": "1",
-                        "Message": "test-batch",
-                        "MessageAttributes": wrong_message_attributes["missing_string_attr"],
-                    },
-                    {
-                        "Id": "2",
-                        "Message": "test-batch",
-                        "MessageAttributes": wrong_message_attributes["str_attr_binary_value"],
-                    },
-                    {
-                        "Id": "3",
-                        "Message": "valid-batch",
-                    },
-                ],
-            )
-        snapshot.match("batch-exception", e.value.response)
+            with pytest.raises(ClientError) as e:
+                client_no_validation.publish_batch(
+                    TopicArn=topic_arn,
+                    PublishBatchRequestEntries=[
+                        {
+                            "Id": "1",
+                            "Message": "test-batch",
+                            "MessageAttributes": msg_attrs,
+                        },
+                        {
+                            "Id": "3",
+                            "Message": "valid-batch",
+                        },
+                    ],
+                )
+            snapshot.match(f"batch-{error_type}", e.value.response)
 
     @markers.aws.validated
     def test_message_attributes_prefixes(

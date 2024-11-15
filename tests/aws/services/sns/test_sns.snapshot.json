@@ -1821,7 +1821,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_empty_or_wrong_message_attributes": {
-    "recorded-date": "24-08-2023, 23:36:35",
+    "recorded-date": "15-11-2024, 18:55:20",
     "recorded-content": {
       "missing_string_attr": {
         "Error": {
@@ -1834,7 +1834,73 @@
           "HTTPStatusCode": 400
         }
       },
+      "batch-missing_string_attr": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' must contain non-empty message attribute value for message attribute type 'String'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "fully_missing_string_attr": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' must contain non-empty message attribute value for message attribute type 'String'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "batch-fully_missing_string_attr": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' must contain non-empty message attribute value for message attribute type 'String'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "fully_missing_data_type": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value null at 'messageAttributes.attr1.member.dataType' failed to satisfy constraint: Member must not be null",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "batch-fully_missing_data_type": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value null at 'publishBatchRequestEntries.1.member.messageAttributes.attr1.member.dataType' failed to satisfy constraint: Member must not be null",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "missing_binary_attr": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' must contain non-empty message attribute value for message attribute type 'Binary'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "batch-missing_binary_attr": {
         "Error": {
           "Code": "ParameterValueInvalid",
           "Message": "The message attribute 'attr1' must contain non-empty message attribute value for message attribute type 'Binary'.",
@@ -1856,7 +1922,29 @@
           "HTTPStatusCode": 400
         }
       },
+      "batch-str_attr_binary_value": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' with type 'String' must use field 'String'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "int_attr_binary_value": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' with type 'Number' must use field 'String'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "batch-int_attr_binary_value": {
         "Error": {
           "Code": "ParameterValueInvalid",
           "Message": "The message attribute 'attr1' with type 'Number' must use field 'String'.",
@@ -1878,7 +1966,29 @@
           "HTTPStatusCode": 400
         }
       },
+      "batch-binary_attr_string_value": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' with type 'Binary' must use field 'Binary'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "invalid_attr_string_value": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "batch-invalid_attr_string_value": {
         "Error": {
           "Code": "ParameterValueInvalid",
           "Message": "The message attribute 'attr1' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String.",
@@ -1900,7 +2010,29 @@
           "HTTPStatusCode": 400
         }
       },
+      "batch-too_long_name": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Length of message attribute name must be less than 256 bytes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "invalid_name": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Invalid non-alphanumeric character '#x5E' was found in the message attribute name. Can only include alphanumeric characters, hyphens, underscores, or dots.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "batch-invalid_name": {
         "Error": {
           "Code": "ParameterValueInvalid",
           "Message": "Invalid non-alphanumeric character '#x5E' was found in the message attribute name. Can only include alphanumeric characters, hyphens, underscores, or dots.",
@@ -1922,7 +2054,29 @@
           "HTTPStatusCode": 400
         }
       },
+      "batch-invalid_name_2": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Invalid message attribute name starting with character '.' was found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "invalid_name_3": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Invalid message attribute name ending with character '.' was found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "batch-invalid_name_3": {
         "Error": {
           "Code": "ParameterValueInvalid",
           "Message": "Invalid message attribute name ending with character '.' was found.",
@@ -1944,10 +2098,10 @@
           "HTTPStatusCode": 400
         }
       },
-      "batch-exception": {
+      "batch-invalid_name_4": {
         "Error": {
           "Code": "ParameterValueInvalid",
-          "Message": "The message attribute 'attr1' must contain non-empty message attribute value for message attribute type 'String'.",
+          "Message": "Message attribute name can not have successive '.' character.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
