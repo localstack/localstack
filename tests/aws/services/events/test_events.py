@@ -118,6 +118,10 @@ class TestEvents:
         snapshot.match("put-events", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_put_event_without_detail_type(self, snapshot, aws_client):
         entries = [
             {
