@@ -1,6 +1,7 @@
 import datetime
 import math
-from collections import Counter
+import threading
+from collections import defaultdict
 from typing import Any
 
 from localstack import config
@@ -29,22 +30,23 @@ class UsageSetCounter:
         my_feature_counter.aggregate() # returns {"python3.7": 1, "nodejs16.x": 2}
     """
 
-    state: list[str]
+    state: dict[str, int]
     namespace: str
+    _lock: threading.RLock
 
     def __init__(self, namespace: str):
-        self.enabled = not config.DISABLE_EVENTS
-        self.state = []
+        self.enabled = True
+        self.state = defaultdict(int)
         self.namespace = namespace
-        collector_registry[namespace] = self
+        self._lock = threading.RLock()
 
     def record(self, value: str):
         if self.enabled:
-            self.state.append(value)
+            with self._lock:
+                self.state[value] += 1
 
     def aggregate(self) -> dict:
-        result = Counter(self.state)
-        return dict(result)
+        return self.state
 
 
 class UsageCounter:
@@ -72,6 +74,8 @@ class UsageCounter:
         collector_registry[namespace] = self
 
     def increment(self):
+        # TODO: we should instead have different underlying datastructures to store the state, and have no-op operations
+        #  when config.DISABLE_EVENTS is set
         if self.enabled:
             self.state.append(1)
 
@@ -94,7 +98,9 @@ class UsageCounter:
                         result[aggregation] = sum(self.state) / len(self.state)
                     case "median":
                         median_index = math.floor(len(self.state) / 2)
-                        result[aggregation] = self.state[median_index]
+                        result[aggregation] = sorted(self.state)[median_index]
+                    case "count":
+                        result[aggregation] = len(self.state)
                     case _:
                         raise Exception(f"Unsupported aggregation: {aggregation}")
         return result
