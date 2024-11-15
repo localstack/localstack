@@ -1,7 +1,7 @@
 import datetime
 import math
-import threading
 from collections import defaultdict
+from itertools import count
 from typing import Any
 
 from localstack import config
@@ -31,19 +31,18 @@ class UsageSetCounter:
     """
 
     state: dict[str, int]
+    _counter: dict[str, count]
     namespace: str
-    _lock: threading.RLock
 
     def __init__(self, namespace: str):
-        self.enabled = True
-        self.state = defaultdict(int)
+        self.enabled = not config.DISABLE_EVENTS
+        self.state = {}
+        self._counter = defaultdict(count)
         self.namespace = namespace
-        self._lock = threading.RLock()
 
     def record(self, value: str):
         if self.enabled:
-            with self._lock:
-                self.state[value] += 1
+            self.state[value] = next(self._counter[value])
 
     def aggregate(self) -> dict:
         return self.state
