@@ -528,3 +528,55 @@ def get_primary_secondary_client(
         }
 
     return _get_primary_secondary_clients
+
+
+@pytest.fixture
+def connection_name():
+    return f"test-connection-{short_uid()}"
+
+
+@pytest.fixture
+def destination_name():
+    return f"test-destination-{short_uid()}"
+
+
+@pytest.fixture
+def create_connection(aws_client, connection_name):
+    """Fixture to create a connection with given auth type and parameters."""
+
+    def _create_connection(auth_type_or_auth, auth_parameters=None):
+        # Handle both formats:
+        # 1. (auth_type, auth_parameters) - used by TestEventBridgeConnections
+        # 2. (auth) - used by TestEventBridgeApiDestinations
+        if auth_parameters is None:
+            # Format 2: Single auth dict parameter
+            auth = auth_type_or_auth
+            return aws_client.events.create_connection(
+                Name=connection_name,
+                AuthorizationType=auth.get("type"),
+                AuthParameters={
+                    auth.get("key"): auth.get("parameters"),
+                },
+            )
+        else:
+            # Format 1: auth type and auth parameters
+            return aws_client.events.create_connection(
+                Name=connection_name,
+                AuthorizationType=auth_type_or_auth,
+                AuthParameters=auth_parameters,
+            )
+
+    return _create_connection
+
+
+@pytest.fixture
+def create_api_destination(aws_client, destination_name):
+    """Fixture to create an API destination with given parameters."""
+
+    def _create_api_destination(**kwargs):
+        return aws_client.events.create_api_destination(
+            Name=destination_name,
+            **kwargs,
+        )
+
+    return _create_api_destination

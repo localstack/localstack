@@ -741,10 +741,27 @@ class TransformerUtility:
     #     return GenericTransformer(fn)
 
     @staticmethod
-    def eventbridge_connection(snapshot, connection_name: str):
+    def eventbridge_api_destination(snapshot, connection_name: str):
         """
         Add common transformers for EventBridge connection tests.
 
+        Args:
+            snapshot: The snapshot instance to add transformers to
+            connection_name: The name of the connection to transform in the snapshot
+        """
+        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ApiDestinationArn", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
+        )
+        return snapshot
+
+    @staticmethod
+    def eventbridge_connection(snapshot, connection_name: str):
+        """
+        Add common transformers for EventBridge connection tests.
         Args:
             snapshot: The snapshot instance to add transformers to
             connection_name: The name of the connection to transform in the snapshot
