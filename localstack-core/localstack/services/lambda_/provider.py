@@ -1770,8 +1770,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function = self._get_function(
             function_name=function_name, region=region, account_id=account_id
         )
-        if name not in function.aliases:
-            raise ValueError("Alias not found")  # TODO proper exception
         version_alias = function.aliases.pop(name, None)
 
         # cleanup related resources
@@ -1818,8 +1816,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function = self._get_function(
             function_name=function_name, region=region, account_id=account_id
         )
+        fn_arn = api_utils.unqualified_lambda_arn(function_name, account_id, region)
         if not (alias := function.aliases.get(name)):
-            raise ValueError("Alias not found")  # TODO proper exception
+            raise ResourceNotFoundException(
+                f"Alias not found: {fn_arn}:{name}",
+                Type="User",
+            )
         if revision_id and alias.revision_id != revision_id:
             raise PreconditionFailedException(
                 "The Revision Id provided does not match the latest Revision Id. "
@@ -2363,7 +2365,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             InvokeMode=new_url_config.invoke_mode,
         )
 
-    # TODO: does only specifying the function name, also delete the ones from all related aliases?
     def delete_function_url_config(
         self,
         context: RequestContext,

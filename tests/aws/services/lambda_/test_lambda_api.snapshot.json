@@ -3029,7 +3029,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "10-04-2024, 09:12:28",
+    "recorded-date": "19-11-2024, 18:37:57",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3621,7 +3621,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "10-04-2024, 09:12:41",
+    "recorded-date": "19-11-2024, 18:38:14",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -5257,7 +5257,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "10-04-2024, 09:17:00",
+    "recorded-date": "19-11-2024, 18:37:16",
     "recorded-content": {
       "url_creation": {
         "AuthType": "NONE",
@@ -7076,7 +7076,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
-    "recorded-date": "10-04-2024, 09:16:55",
+    "recorded-date": "19-11-2024, 18:37:13",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -7200,7 +7200,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "10-04-2024, 09:16:50",
+    "recorded-date": "19-11-2024, 18:37:08",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -14339,7 +14339,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
-    "recorded-date": "22-08-2024, 16:08:22",
+    "recorded-date": "19-11-2024, 18:38:19",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -18063,6 +18063,209 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_deletion_without_qualifier": {
+    "recorded-date": "19-11-2024, 18:37:20",
+    "recorded-content": {
+      "url_creation": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "lambda-url",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "url_with_alias_creation": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>:test-alias",
+        "FunctionUrl": "lambda-url",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "lambda-url",
+        "InvokeMode": "BUFFERED",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_url_config_with_alias": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>:test-alias",
+        "FunctionUrl": "lambda-url",
+        "InvokeMode": "BUFFERED",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_function_url_config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_url_config_after_deletion": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_url_config_with_alias_after_deletion": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>:test-alias",
+        "FunctionUrl": "lambda-url",
+        "InvokeMode": "BUFFERED",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_non_existent_alias_deletion": {
+    "recorded-date": "19-11-2024, 18:38:00",
+    "recorded-content": {
+      "create_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "testenv": "staging"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.12",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete_alias_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_non_existent_alias_update": {
+    "recorded-date": "19-11-2024, 18:38:02",
+    "recorded-content": {
+      "create_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "testenv": "staging"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.12",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update_alias_response": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Alias not found: arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:non-existent"
+        },
+        "Message": "Alias not found: arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:non-existent",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }

@@ -15,13 +15,19 @@
     "last_validated_date": "2024-04-10T09:19:34+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "last_validated_date": "2024-04-10T09:12:27+00:00"
+    "last_validated_date": "2024-11-19T18:37:57+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
-    "last_validated_date": "2024-08-22T16:08:21+00:00"
+    "last_validated_date": "2024-11-19T18:38:19+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_non_existent_alias_deletion": {
+    "last_validated_date": "2024-11-19T18:37:59+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_non_existent_alias_update": {
+    "last_validated_date": "2024-11-19T18:38:02+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "last_validated_date": "2024-04-10T09:12:41+00:00"
+    "last_validated_date": "2024-11-19T18:38:14+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
     "last_validated_date": "2024-04-10T09:13:37+00:00"
@@ -581,14 +587,20 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_versions": {
     "last_validated_date": "2024-10-24T15:22:38+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_function_url_config_deletion_without_qualifier": {
+    "last_validated_date": "2024-11-19T17:37:22+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_deletion_without_qualifier": {
+    "last_validated_date": "2024-11-19T18:37:20+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "last_validated_date": "2024-04-10T09:16:49+00:00"
+    "last_validated_date": "2024-11-19T18:37:08+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "last_validated_date": "2024-04-10T09:16:59+00:00"
+    "last_validated_date": "2024-11-19T18:37:16+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
-    "last_validated_date": "2024-04-10T09:16:55+00:00"
+    "last_validated_date": "2024-11-19T18:37:12+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_version_on_create": {
     "last_validated_date": "2024-04-10T09:12:04+00:00"
