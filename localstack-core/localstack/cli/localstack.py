@@ -41,6 +41,7 @@ class LocalStackCliGroup(click.Group):
         "logout",
         "pod",
         "state",
+        "ephemeral",
     ]
 
     def invoke(self, ctx: click.Context):
