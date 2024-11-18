@@ -261,6 +261,10 @@ class ModelResolver:
 
                 elif isinstance(value, dict):
                     _look_for_ref(value)
+                elif isinstance(value, list):
+                    for val in value:
+                        if isinstance(val, dict):
+                            _look_for_ref(val)
 
         if isinstance(resolved_model, dict):
             _look_for_ref(resolved_model)
@@ -533,7 +537,7 @@ def import_api_from_openapi_spec(
                 name=security_scheme_name,
                 type=authorizer_type,
                 authorizerResultTtlInSeconds=aws_apigateway_authorizer.get(
-                    "authorizerResultTtlInSeconds", 300
+                    "authorizerResultTtlInSeconds", None
                 ),
             )
             if provider_arns := aws_apigateway_authorizer.get("providerARNs"):
@@ -544,7 +548,7 @@ def import_api_from_openapi_spec(
                 authorizer["authorizerUri"] = authorizer_uri
             if authorizer_credentials := aws_apigateway_authorizer.get("authorizerCredentials"):
                 authorizer["authorizerCredentials"] = authorizer_credentials
-            if authorizer_type == "TOKEN":
+            if authorizer_type in ("TOKEN", "COGNITO_USER_POOLS"):
                 header_name = security_config.get("name")
                 authorizer["identitySource"] = f"method.request.header.{header_name}"
             elif identity_source := aws_apigateway_authorizer.get("identitySource"):

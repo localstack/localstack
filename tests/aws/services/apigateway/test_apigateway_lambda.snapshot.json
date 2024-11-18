@@ -1665,5 +1665,135 @@
         "status_code": 200
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_aws_proxy_response_payload_format_validation": {
+    "recorded-date": "15-11-2024, 17:48:06",
+    "recorded-content": {
+      "invoke-api-no-body": {
+        "content": ""
+      },
+      "invoke-api-with-headers": {
+        "content": "",
+        "headers": {
+          "Connection": "keep-alive",
+          "Content-Length": "0",
+          "Content-Type": "application/json",
+          "Date": "<date>",
+          "Via": "<via:1>",
+          "X-Amz-Cf-Id": "<x--amz--cf--id:1>",
+          "X-Amz-Cf-Pop": "<x--amz--cf--pop:1>",
+          "X-Amzn-Trace-Id": "<x--amzn--trace--id:1>",
+          "X-Cache": "<x--cache:1>",
+          "header-bool": "true",
+          "test-header": "value",
+          "x-amz-apigw-id": "<x-amz-apigw-id:1>",
+          "x-amzn-RequestId": "<uuid:1>"
+        }
+      },
+      "invoke-api-with-headers-null": {
+        "content": "",
+        "headers": {
+          "Connection": "keep-alive",
+          "Content-Length": "0",
+          "Content-Type": "application/json",
+          "Date": "<date>",
+          "Via": "<via:2>",
+          "X-Amz-Cf-Id": "<x--amz--cf--id:2>",
+          "X-Amz-Cf-Pop": "<x--amz--cf--pop:1>",
+          "X-Amzn-Trace-Id": "<x--amzn--trace--id:2>",
+          "X-Cache": "<x--cache:1>",
+          "x-amz-apigw-id": "<x-amz-apigw-id:2>",
+          "x-amzn-RequestId": "<uuid:2>"
+        }
+      },
+      "invoke-api-wrong-format": {
+        "content": {
+          "message": "Internal server error"
+        }
+      },
+      "invoke-api-empty-response": {
+        "content": {
+          "message": "Internal server error"
+        }
+      },
+      "invoke-api-b64-encoded-true": {
+        "content": "dGVzdC1kYXRh"
+      },
+      "invoke-api-b64-encoded-false": {
+        "content": "dGVzdC1kYXRh"
+      },
+      "invoke-api-multi-headers-valid": {
+        "content": "",
+        "headers": {
+          "Connection": "keep-alive",
+          "Content-Length": "0",
+          "Content-Type": "application/json",
+          "Date": "<date>",
+          "Via": "<via:3>",
+          "X-Amz-Cf-Id": "<x--amz--cf--id:3>",
+          "X-Amz-Cf-Pop": "<x--amz--cf--pop:1>",
+          "X-Amzn-Trace-Id": "<x--amzn--trace--id:3>",
+          "X-Cache": "<x--cache:1>",
+          "test-multi": "value1, value2",
+          "x-amz-apigw-id": "<x-amz-apigw-id:3>",
+          "x-amzn-RequestId": "<uuid:3>"
+        }
+      },
+      "invoke-api-multi-headers-overwrite": {
+        "content": "",
+        "headers": {
+          "Connection": "keep-alive",
+          "Content-Length": "0",
+          "Content-Type": "application/json",
+          "Date": "<date>",
+          "Via": "<via:4>",
+          "X-Amz-Cf-Id": "<x--amz--cf--id:4>",
+          "X-Amz-Cf-Pop": "<x--amz--cf--pop:1>",
+          "X-Amzn-Trace-Id": "<x--amzn--trace--id:4>",
+          "X-Cache": "<x--cache:1>",
+          "test-multi": "value-multi, value-solo",
+          "x-amz-apigw-id": "<x-amz-apigw-id:4>",
+          "x-amzn-RequestId": "<uuid:4>"
+        }
+      },
+      "invoke-api-multi-headers-overwrite-casing": {
+        "content": "",
+        "headers": {
+          "Connection": "keep-alive",
+          "Content-Length": "0",
+          "Content-Type": "application/json",
+          "Date": "<date>",
+          "Via": "<via:5>",
+          "X-Amz-Cf-Id": "<x--amz--cf--id:5>",
+          "X-Amz-Cf-Pop": "<x--amz--cf--pop:1>",
+          "X-Amzn-Trace-Id": "<x--amzn--trace--id:5>",
+          "X-Cache": "<x--cache:1>",
+          "tesT-Multi": "value-multi, value-solo",
+          "x-amz-apigw-id": "<x-amz-apigw-id:5>",
+          "x-amzn-RequestId": "<uuid:5>"
+        }
+      },
+      "invoke-api-multi-headers-invalid": {
+        "content": {
+          "message": "Internal server error"
+        }
+      },
+      "invoke-api-invalid-status-code": {
+        "content": {
+          "message": "Internal server error"
+        }
+      },
+      "invoke-api-status-code-str": {
+        "content": ""
+      },
+      "invoke-api-just-string": {
+        "content": {
+          "message": "Internal server error"
+        }
+      },
+      "invoke-api-only-headers": {
+        "content": ""
+      }
+    }
   }
 }

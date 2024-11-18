@@ -11,6 +11,7 @@ AmazonResourceName = str
 AnomalyDetectorArn = str
 AnomalyId = str
 Arn = str
+Baseline = bool
 Boolean = bool
 ClientToken = str
 DataProtectionPolicyDocument = str
@@ -52,6 +53,7 @@ FilterName = str
 FilterPattern = str
 ForceUpdate = bool
 IncludeLinkedAccounts = bool
+InferredTokenName = str
 Integer = int
 Interleaved = bool
 IsSampled = bool
@@ -417,6 +419,7 @@ class PatternToken(TypedDict, total=False):
     isDynamic: Optional[Boolean]
     tokenString: Optional[TokenString]
     enumerations: Optional[Enumerations]
+    inferredTokenName: Optional[InferredTokenName]
 
 
 PatternTokens = List[PatternToken]
@@ -1523,6 +1526,7 @@ class UpdateAnomalyRequest(ServiceRequest):
     anomalyDetectorArn: AnomalyDetectorArn
     suppressionType: Optional[SuppressionType]
     suppressionPeriod: Optional[SuppressionPeriod]
+    baseline: Optional[Baseline]
 
 
 class UpdateDeliveryConfigurationRequest(ServiceRequest):
@@ -2261,6 +2265,7 @@ class LogsApi:
         pattern_id: PatternId = None,
         suppression_type: SuppressionType = None,
         suppression_period: SuppressionPeriod = None,
+        baseline: Baseline = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

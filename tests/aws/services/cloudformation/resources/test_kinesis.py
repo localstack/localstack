@@ -1,6 +1,8 @@
 import json
 import os
 
+import pytest
+
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -137,6 +139,10 @@ def test_describe_template(s3_create_bucket, aws_client, cleanups, snapshot):
     assert param_keys == {"KinesisStreamName", "DeliveryStreamName", "KinesisRoleName"}
 
 
+@pytest.mark.skipif(
+    condition=not is_aws_cloud() and config.DDB_STREAMS_PROVIDER_V2,
+    reason="Not yet implemented in DDB Streams V2",
+)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..KinesisDataStreamDestinations..DestinationStatusDescription"]

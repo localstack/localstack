@@ -28,15 +28,111 @@ from tests.aws.services.lambda_.test_lambda import (
 
 
 # TODO:
-#  Add tests for the following services:
-#   - API Gateway (community)
-#   - CloudWatch Logs (community)
 #  These tests should go into LocalStack Pro:
 #   - AppSync (pro)
 #   - Batch (pro)
 #   - Container (pro)
 #   - Redshift (pro)
 #   - Sagemaker (pro)
+class TestEventsTargetCloudWatchLogs:
+    @markers.aws.validated
+    def test_put_events_with_target_cloudwatch_logs(
+        self,
+        events_create_event_bus,
+        events_put_rule,
+        events_log_group,
+        aws_client,
+        snapshot,
+        cleanups,
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("EventId"),
+                snapshot.transform.key_value("RuleArn"),
+                snapshot.transform.key_value("EventBusArn"),
+            ]
+        )
+
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_response = events_create_event_bus(Name=event_bus_name)
+        snapshot.match("event_bus_response", event_bus_response)
+
+        log_group = events_log_group()
+        log_group_name = log_group["log_group_name"]
+        log_group_arn = log_group["log_group_arn"]
+
+        resource_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "EventBridgePutLogEvents",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                    "Resource": f"{log_group_arn}:*",
+                }
+            ],
+        }
+        policy_name = f"EventBridgePolicy-{short_uid()}"
+        aws_client.logs.put_resource_policy(
+            policyName=policy_name, policyDocument=json.dumps(resource_policy)
+        )
+
+        if is_aws_cloud():
+            # Wait for IAM role propagation in AWS cloud environment before proceeding
+            # This delay is necessary as IAM changes can take several seconds to propagate globally
+            time.sleep(10)
+
+        rule_name = f"test-rule-{short_uid()}"
+        rule_response = events_put_rule(
+            Name=rule_name,
+            EventBusName=event_bus_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        snapshot.match("rule_response", rule_response)
+
+        target_id = f"target-{short_uid()}"
+        put_targets_response = aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": log_group_arn,
+                }
+            ],
+        )
+        snapshot.match("put_targets_response", put_targets_response)
+        assert put_targets_response["FailedEntryCount"] == 0
+
+        event_entry = {
+            "EventBusName": event_bus_name,
+            "Source": TEST_EVENT_PATTERN["source"][0],
+            "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+            "Detail": json.dumps(EVENT_DETAIL),
+        }
+        put_events_response = aws_client.events.put_events(Entries=[event_entry])
+        snapshot.match("put_events_response", put_events_response)
+        assert put_events_response["FailedEntryCount"] == 0
+
+        def get_log_events():
+            response = aws_client.logs.describe_log_streams(logGroupName=log_group_name)
+            log_streams = response.get("logStreams", [])
+            assert log_streams, "No log streams found"
+
+            log_stream_name = log_streams[0]["logStreamName"]
+            events_response = aws_client.logs.get_log_events(
+                logGroupName=log_group_name,
+                logStreamName=log_stream_name,
+            )
+            events = events_response.get("events", [])
+            assert events, "No log events found"
+            return events
+
+        events = retry(get_log_events, retries=5, sleep=5)
+        snapshot.match("log_events", events)
+
+
 class TestEventsTargetApiGateway:
     @markers.aws.validated
     @pytest.mark.skipif(

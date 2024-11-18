@@ -837,5 +837,67 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetCloudWatchLogs::test_put_events_with_target_cloudwatch_logs": {
+    "recorded-date": "07-11-2024, 14:26:16",
+    "recorded-content": {
+      "event_bus_response": {
+        "EventBusArn": "<event-bus-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rule_response": {
+        "RuleArn": "<rule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_targets_response": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_events_response": {
+        "Entries": [
+          {
+            "EventId": "<event-id:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "log_events": [
+        {
+          "timestamp": "timestamp",
+          "message": {
+            "version": "0",
+            "id": "<event-id:1>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          },
+          "ingestionTime": "timestamp"
+        }
+      ]
+    }
   }
 }

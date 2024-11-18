@@ -8,8 +8,11 @@ from localstack.utils.analytics import log
 LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
+    "BEDROCK_PREWARM",
+    "CONTAINER_RUNTIME",
     "DEBUG",
     "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
+    "DEFAULT_BEDROCK_MODEL",
     "DISABLE_CORS_CHECK",
     "DISABLE_CORS_HEADERS",
     "DMS_SERVERLESS_DEPROVISIONING_DELAY",
@@ -17,6 +20,7 @@ TRACKED_ENV_VAR = [
     "DNS_ADDRESS",
     "DYNAMODB_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
+    "ECS_TASK_EXECUTOR",
     "EDGE_PORT",
     "ENFORCE_IAM",
     "IAM_SOFT_MODE",

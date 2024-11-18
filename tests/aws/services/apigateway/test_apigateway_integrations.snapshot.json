@@ -1042,5 +1042,19 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_request_overrides_in_response_template": {
+    "recorded-date": "06-11-2024, 23:09:04",
+    "recorded-content": {
+      "invoke-path1": {
+        "response": "path was path one"
+      },
+      "invoke-path2": {
+        "response": "path was path two"
+      },
+      "invoke-path-else": {
+        "response": "this is the else clause"
+      }
+    }
   }
 }

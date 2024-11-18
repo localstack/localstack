@@ -12,7 +12,6 @@ from botocore.config import Config
 
 from localstack import config
 from localstack.aws.api.lambda_ import TooManyRequestsException
-from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.internal_sqs_queue import get_fake_sqs_client
 from localstack.services.lambda_.invocation.lambda_models import (
     EventInvokeConfig,
@@ -26,20 +25,13 @@ from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.strings import md5, to_str
 from localstack.utils.threads import FuncThread
 from localstack.utils.time import timestamp_millis
+from localstack.utils.xray.trace_header import TraceHeader
 
 LOG = logging.getLogger(__name__)
 
 
 def get_sqs_client(function_version: FunctionVersion, client_config=None):
-    if config.LAMBDA_EVENTS_INTERNAL_SQS:
-        return get_fake_sqs_client()
-    else:
-        region_name = function_version.id.region
-        return connect_to(
-            aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
-            region_name=region_name,
-            config=client_config,
-        ).sqs
+    return get_fake_sqs_client()
 
 
 # TODO: remove once DLQ handling is refactored following the removal of the legacy lambda provider
@@ -57,6 +49,10 @@ class SQSInvocation:
     exception_retries: int = 0
 
     def encode(self) -> str:
+        # Encode TraceHeader as string
+        aws_trace_header = self.invocation.trace_context.get("aws_trace_header")
+        aws_trace_header_str = aws_trace_header.to_header_str()
+        self.invocation.trace_context["aws_trace_header"] = aws_trace_header_str
         return json.dumps(
             {
                 "payload": to_str(base64.b64encode(self.invocation.payload)),
@@ -68,6 +64,7 @@ class SQSInvocation:
                 "request_id": self.invocation.request_id,
                 "retries": self.retries,
                 "exception_retries": self.exception_retries,
+                "trace_context": self.invocation.trace_context,
             }
         )
 
@@ -81,6 +78,12 @@ class SQSInvocation:
             invocation_type=invocation_dict["invocation_type"],
             invoke_time=datetime.fromisoformat(invocation_dict["invoke_time"]),
             request_id=invocation_dict["request_id"],
+            trace_context=invocation_dict.get("trace_context"),
+        )
+        # Decode TraceHeader
+        aws_trace_header_str = invocation_dict.get("trace_context", {}).get("aws_trace_header")
+        invocation_dict["trace_context"]["aws_trace_header"] = TraceHeader.from_header_str(
+            aws_trace_header_str
         )
         return cls(
             invocation=invocation,

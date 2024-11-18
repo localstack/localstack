@@ -16,7 +16,7 @@ charset-normalizer==3.4.0
     # via requests
 click==8.1.7
     # via localstack-core (pyproject.toml)
-cryptography==43.0.1
+cryptography==43.0.3
     # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via localstack-core (pyproject.toml)
@@ -32,9 +32,9 @@ mdurl==0.1.2
     # via markdown-it-py
 packaging==24.1
     # via build
-plux==1.11.1
+plux==1.12.1
     # via localstack-core (pyproject.toml)
-psutil==6.0.0
+psutil==6.1.0
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
@@ -48,7 +48,7 @@ pyyaml==6.0.2
     # via localstack-core (pyproject.toml)
 requests==2.32.3
     # via localstack-core (pyproject.toml)
-rich==13.9.2
+rich==13.9.4
     # via localstack-core (pyproject.toml)
 semver==3.0.2
     # via localstack-core (pyproject.toml)

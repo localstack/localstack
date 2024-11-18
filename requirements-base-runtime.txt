@@ -9,11 +9,11 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.22.0
+awscrt==0.23.0
     # via localstack-core (pyproject.toml)
-boto3==1.35.39
+boto3==1.35.63
     # via localstack-core (pyproject.toml)
-botocore==1.35.39
+botocore==1.35.63
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -34,7 +34,7 @@ click==8.1.7
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==43.0.1
+cryptography==43.0.3
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -98,7 +98,7 @@ localstack-twisted==24.3.0
     # via localstack-core (pyproject.toml)
 markdown-it-py==3.0.0
     # via rich
-markupsafe==3.0.1
+markupsafe==3.0.2
     # via werkzeug
 mdurl==0.1.2
     # via markdown-it-py
@@ -118,13 +118,13 @@ parse==1.20.2
     # via openapi-core
 pathable==0.4.3
     # via jsonschema-path
-plux==1.11.1
+plux==1.12.1
     # via localstack-core (pyproject.toml)
 priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.0.0
+psutil==6.1.0
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
@@ -162,11 +162,11 @@ requests-aws4auth==1.3.1
     # via localstack-core (pyproject.toml)
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.9.2
+rich==13.9.4
     # via localstack-core (pyproject.toml)
-rolo==0.7.1
+rolo==0.7.3
     # via localstack-core (pyproject.toml)
-rpds-py==0.20.0
+rpds-py==0.20.1
     # via
     #   jsonschema
     #   referencing
@@ -190,16 +190,16 @@ urllib3==2.2.3
     #   docker
     #   localstack-core (pyproject.toml)
     #   requests
-werkzeug==3.0.4
+werkzeug==3.1.2
     # via
     #   localstack-core (pyproject.toml)
     #   openapi-core
     #   rolo
 wsproto==1.2.0
     # via hypercorn
-xmltodict==0.14.1
+xmltodict==0.14.2
     # via localstack-core (pyproject.toml)
-zope-interface==7.1.0
+zope-interface==7.1.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

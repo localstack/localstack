@@ -5988,12 +5988,12 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "recorded-date": "10-04-2024, 09:22:07",
+    "recorded-date": "24-10-2024, 15:22:29",
     "recorded-content": {
       "tag_lambda_invalidarn": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'arn:<partition>:something' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:[a-zA-Z0-9-_]+)"
+          "Message": "1 validation error detected: Value 'arn:<partition>:something' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*):lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:([a-zA-Z0-9-_]+)|code-signing-config:csc-[a-z0-9]{17}|event-source-mapping:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6062,7 +6062,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
-    "recorded-date": "10-04-2024, 09:22:11",
+    "recorded-date": "28-10-2024, 14:16:38",
     "recorded-content": {
       "tag_lambda_too_many_tags": {
         "Error": {
@@ -6254,11 +6254,23 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      },
+      "create_function_invalid_tags": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Number of tags exceeds resource tag limit."
+        },
+        "Type": "User",
+        "message": "Number of tags exceeds resource tag limit.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
-    "recorded-date": "10-04-2024, 09:22:20",
+    "recorded-date": "24-10-2024, 15:22:49",
     "recorded-content": {
       "list_tags_response_postfncreate": {
         "Tags": {
@@ -7035,7 +7047,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_versions": {
-    "recorded-date": "10-04-2024, 09:22:14",
+    "recorded-date": "24-10-2024, 15:22:40",
     "recorded-content": {
       "tag_resource_exception": {
         "Error": {
@@ -17515,6 +17527,541 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle[lambda_function]": {
+    "recorded-date": "23-10-2024, 10:51:15",
+    "recorded-content": {
+      "tag_single_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "tag_single_response_listtags": {
+        "Tags": {
+          "A": "tag-a"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_multiple_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "tag_multiple_response_listtags": {
+        "Tags": {
+          "A": "tag-a",
+          "B": "tag-b",
+          "C": "tag-c"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_overlap_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "tag_overlap_response_listtags": {
+        "Tags": {
+          "A": "tag-a",
+          "B": "tag-b",
+          "C": "tag-c-newsuffix",
+          "D": "tag-d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_single_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_single_response_listtags": {
+        "Tags": {
+          "B": "tag-b",
+          "C": "tag-c-newsuffix",
+          "D": "tag-d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_multiple_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_multiple_response_listtags": {
+        "Tags": {
+          "D": "tag-d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_nonexisting_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_nonexisting_response_listtags": {
+        "Tags": {
+          "D": "tag-d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_existing_and_nonexisting_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_existing_and_nonexisting_response_listtags": {
+        "Tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle[event_source_mapping]": {
+    "recorded-date": "23-10-2024, 10:51:27",
+    "recorded-content": {
+      "tag_single_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "tag_single_response_listtags": {
+        "Tags": {
+          "A": "tag-a"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_multiple_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "tag_multiple_response_listtags": {
+        "Tags": {
+          "A": "tag-a",
+          "B": "tag-b",
+          "C": "tag-c"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_overlap_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "tag_overlap_response_listtags": {
+        "Tags": {
+          "A": "tag-a",
+          "B": "tag-b",
+          "C": "tag-c-newsuffix",
+          "D": "tag-d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_single_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_single_response_listtags": {
+        "Tags": {
+          "B": "tag-b",
+          "C": "tag-c-newsuffix",
+          "D": "tag-d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_multiple_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_multiple_response_listtags": {
+        "Tags": {
+          "D": "tag-d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_nonexisting_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_nonexisting_response_listtags": {
+        "Tags": {
+          "D": "tag-d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_existing_and_nonexisting_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_existing_and_nonexisting_response_listtags": {
+        "Tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_create_tag_on_esm_create": {
+    "recorded-date": "24-10-2024, 14:16:07",
+    "recorded-content": {
+      "get_event_source_mapping_with_tag": true,
+      "list_tags_result": {
+        "Tags": {
+          "testtag": "<custom-tag>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_exceptions[lambda_function]": {
+    "recorded-date": "24-10-2024, 12:42:56",
+    "recorded-content": {
+      "not_found_exception_tag": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<resource-name>"
+        },
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<resource-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "not_found_exception_untag": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<resource-name>"
+        },
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<resource-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "not_found_exception_list": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<resource-name>"
+        },
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:<resource-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "aliased_arn_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Tags on function aliases and versions are not supported. Please specify a function ARN."
+        },
+        "Type": "User",
+        "message": "Tags on function aliases and versions are not supported. Please specify a function ARN.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_arn_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'arn:<partition>:lambda:<region>:111111111111:foobar:<resource-name>' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*):lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:([a-zA-Z0-9-_]+)|code-signing-config:csc-[a-z0-9]{17}|event-source-mapping:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_exceptions[event_source_mapping]": {
+    "recorded-date": "24-10-2024, 12:42:57",
+    "recorded-content": {
+      "not_found_exception_tag": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event source mapping not found: arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource-name>"
+        },
+        "Message": "Event source mapping not found: arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "not_found_exception_untag": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event source mapping not found: arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource-name>"
+        },
+        "Message": "Event source mapping not found: arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "not_found_exception_list": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event source mapping not found: arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource-name>"
+        },
+        "Message": "Event source mapping not found: arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "aliased_arn_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource-name>:alias' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*):lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:([a-zA-Z0-9-_]+)|code-signing-config:csc-[a-z0-9]{17}|event-source-mapping:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_arn_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'arn:<partition>:lambda:<region>:111111111111:foobar:<resource-name>' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*):lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:([a-zA-Z0-9-_]+)|code-signing-config:csc-[a-z0-9]{17}|event-source-mapping:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle_delete_function": {
+    "recorded-date": "12-10-2024, 10:00:01",
+    "recorded-content": {
+      "update_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "datetime"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+          "LatestStreamLabel": "<resource:1>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_IMAGE"
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:2>",
+          "TableSizeBytes": 0,
+          "TableStatus": "UPDATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "get_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Enabled",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_function_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_response_post_delete": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Enabled",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:4>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:5>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Deleting",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
         }
       }
     }

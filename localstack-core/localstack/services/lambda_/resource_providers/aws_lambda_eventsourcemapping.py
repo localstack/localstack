@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 from typing import Optional, TypedDict
 
@@ -126,8 +127,16 @@ class LambdaEventSourceMappingProvider(ResourceProvider[LambdaEventSourceMapping
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
 
-        response = lambda_client.create_event_source_mapping(**model)
+        params = copy.deepcopy(model)
+        if tags := params.get("Tags"):
+            transformed_tags = {}
+            for tag_definition in tags:
+                transformed_tags[tag_definition["Key"]] = tag_definition["Value"]
+            params["Tags"] = transformed_tags
+
+        response = lambda_client.create_event_source_mapping(**params)
         model["Id"] = response["UUID"]
+        model["EventSourceMappingArn"] = response["EventSourceMappingArn"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

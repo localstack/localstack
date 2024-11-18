@@ -4808,5 +4808,47 @@
         "message": "Internal server error"
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_cognito_auth_identity_source": {
+    "recorded-date": "05-11-2024, 11:37:35",
+    "recorded-content": {
+      "import-swagger": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "A Pet Store API.",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<rest-id:1>",
+        "name": "Example Pet Store",
+        "rootResourceId": "<root-resource-id:1>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-authorizers": {
+        "items": [
+          {
+            "authType": "cognito_user_pools",
+            "id": "<authorizer-id:1>",
+            "identitySource": "method.request.header.TestHeaderAuth",
+            "name": "cognito-test-identity-source",
+            "providerARNs": [
+              "arn:<partition>:cognito-idp:<region>:111111111111:userpool/<region>_ABC123"
+            ],
+            "type": "COGNITO_USER_POOLS"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

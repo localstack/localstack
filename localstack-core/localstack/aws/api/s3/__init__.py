@@ -18,6 +18,7 @@ AnalyticsId = str
 BucketKeyEnabled = bool
 BucketLocationName = str
 BucketName = str
+BucketRegion = str
 BypassGovernanceRetention = bool
 CacheControl = str
 ChecksumCRC32 = str
@@ -166,7 +167,6 @@ VersionCount = int
 VersionIdMarker = str
 WebsiteRedirectLocation = str
 Years = int
-BucketRegion = str
 BucketContentType = str
 IfCondition = str
 RestoreObjectOutputStatusCode = int
@@ -974,6 +974,14 @@ class ConditionalRequestConflict(ServiceException):
     Key: Optional[ObjectKey]
 
 
+class BadDigest(ServiceException):
+    code: str = "BadDigest"
+    sender_fault: bool = False
+    status_code: int = 400
+    ExpectedDigest: Optional[ContentMD5]
+    CalculatedDigest: Optional[ContentMD5]
+
+
 AbortDate = datetime
 
 
@@ -1085,6 +1093,7 @@ CreationDate = datetime
 class Bucket(TypedDict, total=False):
     Name: Optional[BucketName]
     CreationDate: Optional[CreationDate]
+    BucketRegion: Optional[BucketRegion]
 
 
 class BucketInfo(TypedDict, total=False):
@@ -2554,12 +2563,15 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
 class ListBucketsOutput(TypedDict, total=False):
     Owner: Optional[Owner]
     ContinuationToken: Optional[NextToken]
+    Prefix: Optional[Prefix]
     Buckets: Optional[Buckets]
 
 
 class ListBucketsRequest(ServiceRequest):
     MaxBuckets: Optional[MaxBuckets]
     ContinuationToken: Optional[Token]
+    Prefix: Optional[Prefix]
+    BucketRegion: Optional[BucketRegion]
 
 
 class ListDirectoryBucketsOutput(TypedDict, total=False):
@@ -4207,6 +4219,8 @@ class S3Api:
         context: RequestContext,
         max_buckets: MaxBuckets = None,
         continuation_token: Token = None,
+        prefix: Prefix = None,
+        bucket_region: BucketRegion = None,
         **kwargs,
     ) -> ListBucketsOutput:
         raise NotImplementedError

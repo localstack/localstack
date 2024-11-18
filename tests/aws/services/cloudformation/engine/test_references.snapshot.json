@@ -66,5 +66,19 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/engine/test_references.py::TestFnSub::test_non_string_parameter_in_sub": {
+    "recorded-date": "17-10-2024, 22:49:56",
+    "recorded-content": {
+      "get-parameter-result": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<ssm-parameter-name>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<ssm-parameter-name>",
+        "Type": "String",
+        "Value": "my number is 3",
+        "Version": 1
+      }
+    }
   }
 }

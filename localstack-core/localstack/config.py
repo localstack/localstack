@@ -1,11 +1,14 @@
+import ipaddress
 import logging
 import os
 import platform
+import re
 import socket
 import subprocess
 import tempfile
 import time
 import warnings
+from collections import defaultdict
 from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
@@ -451,9 +454,6 @@ WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 # whether to assume http or https for `get_protocol`
 USE_SSL = is_env_true("USE_SSL")
 
-# whether the S3 legacy V2/ASF provider is enabled
-LEGACY_V2_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v2", "legacy_v2", "asf")
-
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
@@ -500,6 +500,21 @@ if is_trace_logging_enabled():
     )
 
 
+def is_ipv6_address(host: str) -> bool:
+    """
+    Returns True if the given host is an IPv6 address.
+    """
+
+    if not host:
+        return False
+
+    try:
+        ipaddress.IPv6Address(host)
+        return True
+    except ipaddress.AddressValueError:
+        return False
+
+
 class HostAndPort:
     """
     Definition of an address for a server to listen to.
@@ -528,16 +543,36 @@ class HostAndPort:
             - 0.0.0.0:4566 -> host=0.0.0.0, port=4566
             - 0.0.0.0      -> host=0.0.0.0, port=`default_port`
             - :4566        -> host=`default_host`, port=4566
+            - [::]:4566    -> host=[::], port=4566
+            - [::1]        -> host=[::1], port=`default_port`
         """
         host, port = default_host, default_port
-        if ":" in input:
+
+        # recognize IPv6 addresses (+ port)
+        if input.startswith("["):
+            ipv6_pattern = re.compile(r"^\[(?P<host>[^]]+)\](:(?P<port>\d+))?$")
+            match = ipv6_pattern.match(input)
+
+            if match:
+                host = match.group("host")
+                if not is_ipv6_address(host):
+                    raise ValueError(
+                        f"input looks like an IPv6 address (is enclosed in square brackets), but is not valid: {host}"
+                    )
+                port_s = match.group("port")
+                if port_s:
+                    port = cls._validate_port(port_s)
+            else:
+                raise ValueError(
+                    f'input looks like an IPv6 address, but is invalid. Should be formatted "[ip]:port": {input}'
+                )
+
+        # recognize IPv4 address + port
+        elif ":" in input:
             hostname, port_s = input.split(":", 1)
             if hostname.strip():
                 host = hostname.strip()
-            try:
-                port = int(port_s)
-            except ValueError as e:
-                raise ValueError(f"specified port {port_s} not a number") from e
+            port = cls._validate_port(port_s)
         else:
             if input.strip():
                 host = input.strip()
@@ -547,6 +582,15 @@ class HostAndPort:
             raise ValueError("port out of range")
 
         return cls(host=host, port=port)
+
+    @classmethod
+    def _validate_port(cls, port_s: str) -> int:
+        try:
+            port = int(port_s)
+        except ValueError as e:
+            raise ValueError(f"specified port {port_s} not a number") from e
+
+        return port
 
     def _get_unprivileged_port_range_start(self) -> int:
         try:
@@ -562,7 +606,8 @@ class HostAndPort:
         return self.port >= self._get_unprivileged_port_range_start()
 
     def host_and_port(self):
-        return f"{self.host}:{self.port}" if self.port is not None else self.host
+        formatted_host = f"[{self.host}]" if is_ipv6_address(self.host) else self.host
+        return f"{formatted_host}:{self.port}" if self.port is not None else formatted_host
 
     def __hash__(self) -> int:
         return hash((self.host, self.port))
@@ -587,40 +632,57 @@ class UniqueHostAndPortList(List[HostAndPort]):
     """
     Container type that ensures that ports added to the list are unique based
     on these rules:
-        - 0.0.0.0 "trumps" any other binding, i.e. adding 127.0.0.1:4566 to
-          [0.0.0.0:4566] is a no-op
-        - adding identical hosts and ports is a no-op
-        - adding `0.0.0.0:4566` to [`127.0.0.1:4566`] "upgrades" the binding to
-          create [`0.0.0.0:4566`]
+        - :: "trumps" any other binding on the same port, including both IPv6 and IPv4
+          addresses. All other bindings for this port are removed, since :: already
+          covers all interfaces. For example, adding 127.0.0.1:4566, [::1]:4566,
+          and [::]:4566 would result in only [::]:4566 being preserved.
+        - 0.0.0.0 "trumps" any other binding on IPv4 addresses only. IPv6 addresses
+          are not removed.
+        - Identical identical hosts and ports are de-duped
     """
 
-    def __init__(self, iterable=None):
-        super().__init__()
-        for item in iterable or []:
-            self.append(item)
+    def __init__(self, iterable: Union[List[HostAndPort], None] = None):
+        super().__init__(iterable or [])
+        self._ensure_unique()
+
+    def _ensure_unique(self):
+        """
+        Ensure that all bindings on the same port are de-duped.
+        """
+        if len(self) <= 1:
+            return
+
+        unique: List[HostAndPort] = list()
+
+        # Build a dictionary of hosts by port
+        hosts_by_port: Dict[int, List[str]] = defaultdict(list)
+        for item in self:
+            hosts_by_port[item.port].append(item.host)
+
+        # For any given port, dedupe the hosts
+        for port, hosts in hosts_by_port.items():
+            deduped_hosts = set(hosts)
+
+            # IPv6 all interfaces: this is the most general binding.
+            # Any others should be removed.
+            if "::" in deduped_hosts:
+                unique.append(HostAndPort(host="::", port=port))
+                continue
+            # IPv4 all interfaces: this is the next most general binding.
+            # Any others should be removed.
+            if "0.0.0.0" in deduped_hosts:
+                unique.append(HostAndPort(host="0.0.0.0", port=port))
+                continue
+
+            # All other bindings just need to be unique
+            unique.extend([HostAndPort(host=host, port=port) for host in deduped_hosts])
+
+        self.clear()
+        self.extend(unique)
 
     def append(self, value: HostAndPort):
-        # no exact duplicates
-        if value in self:
-            return
-
-        # if 0.0.0.0:<port> already exists in the list, then do not add the new
-        # item
-        for item in self:
-            if item.host == "0.0.0.0" and item.port == value.port:
-                return
-
-        # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
-        # 0.0.0.0
-        contained_ports = {every.port for every in self}
-        if value.host == "0.0.0.0" and value.port in contained_ports:
-            for item in self:
-                if item.port == value.port:
-                    item.host = value.host
-            return
-
-        # append the item
         super().append(value)
+        self._ensure_unique()
 
 
 def populate_edge_configuration(
@@ -805,6 +867,9 @@ EXTERNAL_SERVICE_PORTS_END = int(
     or (EXTERNAL_SERVICE_PORTS_START + 50)
 )
 
+# The default container runtime to use
+CONTAINER_RUNTIME = os.environ.get("CONTAINER_RUNTIME", "").strip() or "docker"
+
 # PUBLIC v1: -Xmx512M (example) Currently not supported in new provider but possible via custom entrypoint.
 # Allow passing custom JVM options to Java Lambdas executed in Docker.
 LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
@@ -899,9 +964,6 @@ LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 # Additional flags passed to Docker run|create commands.
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
-# PUBLIC: v2 (default), v1 (deprecated) Version of the Lambda Event Source Mapping implementation
-LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v2").strip()
-
 # PUBLIC: 0 (default)
 # Enable this flag to run cross-platform compatible lambda functions natively (i.e., Docker selects architecture) and
 # ignore the AWS architectures (i.e., x86_64, arm64) configured for the lambda function.
@@ -914,7 +976,7 @@ LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 
 # PUBLIC: docker (default), kubernetes (pro)
 # Where Lambdas will be executed.
-LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
+LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", CONTAINER_RUNTIME).strip()
 
 # PUBLIC: 20 (default)
 # How many seconds Lambda will wait for the runtime environment to start up.
@@ -975,12 +1037,6 @@ LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES = int(
     os.environ.get(
         "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", 6 * 1024 * 1024 + 100
     )  # the 100 comes from the init defaults
-)
-
-LAMBDA_EVENTS_INTERNAL_SQS = is_env_not_false("LAMBDA_EVENTS_INTERNAL_SQS")
-
-LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
-    os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
 )
 
 # DEV: 0 (default unless in host mode on macOS) For LS developers only. Only applies to Docker mode.
@@ -1066,17 +1122,20 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
-# Whether the Next Gen APIGW invocation logic is enabled (handler chain)
-APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") == "next_gen"
-if APIGW_NEXT_GEN_PROVIDER:
-    # in order to not have conflicts with different implementation registering their own router, we need to have all of
-    # them use the same new implementation
-    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYV2"):
-        os.environ["PROVIDER_OVERRIDE_APIGATEWAYV2"] = "next_gen"
+# Whether the Next Gen APIGW invocation logic is enabled (on by default)
+APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") in ("next_gen", "")
 
-    if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"):
-        os.environ["PROVIDER_OVERRIDE_APIGATEWAYMANAGEMENTAPI"] = "next_gen"
-
+# Whether the DynamoDBStreams native provider is enabled
+DDB_STREAMS_PROVIDER_V2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODBSTREAMS", "") == "v2"
+_override_dynamodb_v2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODB", "")
+if DDB_STREAMS_PROVIDER_V2:
+    # in order to not have conflicts between the 2 implementations, as they are tightly coupled, we need to set DDB
+    # to be v2 as well
+    if not _override_dynamodb_v2:
+        os.environ["PROVIDER_OVERRIDE_DYNAMODB"] = "v2"
+elif _override_dynamodb_v2 == "v2":
+    os.environ["PROVIDER_OVERRIDE_DYNAMODBSTREAMS"] = "v2"
+    DDB_STREAMS_PROVIDER_V2 = True
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
@@ -1164,6 +1223,7 @@ CONFIG_ENV_VARS = [
     "CFN_STRING_REPLACEMENT_DENY_LIST",
     "CFN_VERBOSE_ERRORS",
     "CI",
+    "CONTAINER_RUNTIME",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",

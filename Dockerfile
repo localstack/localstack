@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.10-slim-bookworm@sha256:5501a4fe605abe24de87c2f3d6cf9fd760354416a0cad0296cf284fddcdca9e2 AS base
+FROM python:3.11.10-slim-bookworm@sha256:5148c0e4bbb64271bca1d3322360ebf4bfb7564507ae32dd639322e4952a6b16 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -27,13 +27,10 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   # gpg keys listed at https://github.com/nodejs/node#release-keys
   && set -ex \
   && for key in \
-    4ED778F539E3634C779C87C6D7062848A1AB005C \
-    141F07595B7B3FFE74309A937405533BE57C7D57 \
-    74F12602B6F1C4E913FAA37AD3A89613643B6201 \
+    C0D6248439F1D5604AAFFB4021D900FFDB233756 \
     DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7 \
-    61FC681DFB92A079F1685E77973F295594EC4689 \
+    CC68F5A3106FF448322E48ED27F5E38D5B0A215F \
     8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600 \
-    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
     890C08DB8579162FEE0DF9DB8BEAB4DFCF555EF4 \
     C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C \
     108F52B48DB57BB0CC439B2997B01419BD92F80A \
@@ -42,7 +39,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
       gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$key" || \
       gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key" ; \
   done \
-  && curl -O https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt \
+  && curl -LO https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt \
   && LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-$ARCH" | sort | uniq) \
   && rm SHASUMS256.txt \
   && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/$LATEST_VERSION_FILENAME.tar.xz" \
@@ -78,10 +75,6 @@ RUN chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm
 
-# install basic (global) tools to final image
-RUN --mount=type=cache,target=/root/.cache \
-    pip install --no-cache-dir --upgrade virtualenv
-
 # install the entrypoint script
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 # add the shipped hosts file to prevent performance degredation in windows container mode on windows
@@ -114,7 +107,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
-    (virtualenv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
+    (python -m venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
 
 # add files necessary to install runtime dependencies
 ADD Makefile pyproject.toml requirements-runtime.txt ./

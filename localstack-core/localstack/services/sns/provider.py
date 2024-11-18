@@ -199,14 +199,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         total_batch_size = 0
         message_contexts = []
-        for entry in publish_batch_request_entries:
+        for entry_index, entry in enumerate(publish_batch_request_entries, start=1):
             message_payload = entry.get("Message")
             message_attributes = entry.get("MessageAttributes", {})
-            total_batch_size += get_total_publish_size(message_payload, message_attributes)
             if message_attributes:
                 # if a message contains non-valid message attributes
                 # will fail for the first non-valid message encountered, and raise ParameterValueInvalid
-                validate_message_attributes(message_attributes)
+                validate_message_attributes(message_attributes, position=entry_index)
+
+            total_batch_size += get_total_publish_size(message_payload, message_attributes)
 
             # TODO: WRITE AWS VALIDATED
             if entry.get("MessageStructure") == "json":
@@ -532,6 +533,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 f"Invalid parameter: PhoneNumber Reason: {phone_number} is not valid to publish to"
             )
 
+        if message_attributes:
+            validate_message_attributes(message_attributes)
+
         if get_total_publish_size(message, message_attributes) > MAXIMUM_MESSAGE_LENGTH:
             raise InvalidParameterException("Invalid parameter: Message too long")
 
@@ -578,9 +582,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: Message Structure - JSON message body failed to parse"
                 )
-
-        if message_attributes:
-            validate_message_attributes(message_attributes)
 
         if not phone_number:
             # use the account to get the store from the TopicArn (you can only publish in the same region as the topic)
@@ -918,12 +919,15 @@ def validate_subscription_attribute(
                 )
 
 
-def validate_message_attributes(message_attributes: MessageAttributeMap) -> None:
+def validate_message_attributes(
+    message_attributes: MessageAttributeMap, position: int | None = None
+) -> None:
     """
     Validate the message attributes, and raises an exception if those do not follow AWS validation
     See: https://docs.aws.amazon.com/sns/latest/dg/sns-message-attributes.html
     Regex from: https://stackoverflow.com/questions/40718851/regex-that-does-not-allow-consecutive-dots
     :param message_attributes: the message attributes map for the message
+    :param position: given to give the Batch Entry position if coming from `publishBatch`
     :raises: InvalidParameterValueException
     :return: None
     """
@@ -934,7 +938,18 @@ def validate_message_attributes(message_attributes: MessageAttributeMap) -> None
             )
         validate_message_attribute_name(attr_name)
         # `DataType` is a required field for MessageAttributeValue
-        data_type = attr["DataType"]
+        if (data_type := attr.get("DataType")) is None:
+            if position:
+                at = f"publishBatchRequestEntries.{position}.member.messageAttributes.{attr_name}.member.dataType"
+            else:
+                at = f"messageAttributes.{attr_name}.member.dataType"
+
+            raise CommonServiceException(
+                code="ValidationError",
+                message=f"1 validation error detected: Value null at '{at}' failed to satisfy constraint: Member must not be null",
+                sender_fault=True,
+            )
+
         if data_type not in (
             "String",
             "Number",
@@ -943,6 +958,11 @@ def validate_message_attributes(message_attributes: MessageAttributeMap) -> None
             raise InvalidParameterValueException(
                 f"The message attribute '{attr_name}' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String."
             )
+        if not any(attr_value.endswith("Value") for attr_value in attr):
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' must contain non-empty message attribute value for message attribute type '{data_type}'."
+            )
+
         value_key_data_type = "Binary" if data_type.startswith("Binary") else "String"
         value_key = f"{value_key_data_type}Value"
         if value_key not in attr:

@@ -183,3 +183,20 @@ class TestCloudFormationMappings:
             assert topic_arn is not None
 
             aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+
+    @markers.aws.validated
+    def test_aws_refs_in_mappings(self, deploy_cfn_template, account_id):
+        """
+        This test asserts that Pseudo references aka "AWS::" are supported inside a mapping inside a Conditional.
+        It's worth remembering that even with references being supported, AWS rejects names that are not alphanumeric
+        in Mapping name or the second level key.
+        """
+        stack_name = f"Stack{short_uid()}"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                THIS_DIR, "../../../templates/mappings/mapping-aws-ref-map-key.yaml"
+            ),
+            stack_name=stack_name,
+            template_mapping={"StackName": stack_name},
+        )
+        assert stack.outputs.get("TopicArn")

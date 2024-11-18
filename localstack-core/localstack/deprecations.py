@@ -275,6 +275,29 @@ DEPRECATIONS = [
         "This option was confusingly named. Please use DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM "
         "instead.",
     ),
+    EnvVarDeprecation(
+        "LAMBDA_EVENTS_INTERNAL_SQS",
+        "4.0.0",
+        "This option is ignored because the LocalStack SQS dependency for event invokes has been removed since 4.0.0"
+        " in favor of a lightweight Lambda-internal SQS implementation.",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_EVENT_SOURCE_MAPPING",
+        "4.0.0",
+        "This option has no effect anymore. Please remove this environment variable.",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC",
+        "4.0.0",
+        "This option is not supported by the new Lambda Event Source Mapping v2 implementation."
+        " Please create a GitHub issue if you experience any performance challenges.",
+    ),
+    EnvVarDeprecation(
+        "PROVIDER_OVERRIDE_STEPFUNCTIONS",
+        "4.0.0",
+        "This option is ignored because the legacy StepFunctions provider (v1) has been removed since 4.0.0."
+        " Please remove PROVIDER_OVERRIDE_STEPFUNCTIONS.",
+    ),
 ]
 
 
@@ -321,20 +344,6 @@ def log_env_warning(deprecations: List[EnvVarDeprecation]) -> None:
 def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = None) -> None:
     affected_deprecations = collect_affected_deprecations(deprecations)
     log_env_warning(affected_deprecations)
-
-    feature_override_lambda_esm = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING")
-    if feature_override_lambda_esm and feature_override_lambda_esm in ["v1", "legacy"]:
-        env_var_value = f"PROVIDER_OVERRIDE_LAMBDA={feature_override_lambda_esm}"
-        deprecation_version = "3.8.0"
-        deprecation_path = (
-            f"Remove {env_var_value} to use the new Lambda Event Source Mapping implementation."
-        )
-        LOG.warning(
-            "%s is deprecated (since %s) and will be removed in upcoming releases of LocalStack! %s",
-            env_var_value,
-            deprecation_version,
-            deprecation_path,
-        )
 
 
 def deprecated_endpoint(

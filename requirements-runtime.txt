@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=runtime --output-file=requirements-runtime.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-airspeed-ext==0.6.5
+airspeed-ext==0.6.7
     # via localstack-core (pyproject.toml)
 amazon-kclpy==2.1.5
     # via localstack-core (pyproject.toml)
@@ -14,7 +14,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
-apispec==6.6.1
+apispec==6.7.1
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via amazon-kclpy
@@ -29,17 +29,17 @@ aws-sam-translator==1.91.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.35.5
+awscli==1.36.4
     # via localstack-core (pyproject.toml)
-awscrt==0.22.0
+awscrt==0.23.0
     # via localstack-core
-boto3==1.35.39
+boto3==1.35.63
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.35.39
+botocore==1.35.63
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +64,7 @@ certifi==2024.8.30
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.16.1
+cfn-lint==1.18.4
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
@@ -182,7 +182,7 @@ localstack-twisted==24.3.0
     # via localstack-core
 markdown-it-py==3.0.0
     # via rich
-markupsafe==3.0.1
+markupsafe==3.0.2
     # via
     #   jinja2
     #   werkzeug
@@ -190,13 +190,13 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.17.post1
+moto-ext==5.0.18.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
 multipart==1.1.0
     # via moto-ext
-networkx==3.4.1
+networkx==3.4.2
     # via cfn-lint
 openapi-core==0.19.4
     # via localstack-core
@@ -219,7 +219,7 @@ parse==1.20.2
     # via openapi-core
 pathable==0.4.3
     # via jsonschema-path
-plux==1.11.1
+plux==1.12.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -231,7 +231,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.0.0
+psutil==6.1.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -303,13 +303,13 @@ responses==0.25.3
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.9.2
+rich==13.9.4
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.1
+rolo==0.7.3
     # via localstack-core
-rpds-py==0.20.0
+rpds-py==0.20.1
     # via
     #   jsonschema
     #   referencing
@@ -351,7 +351,7 @@ urllib3==2.2.3
     #   opensearch-py
     #   requests
     #   responses
-werkzeug==3.0.4
+werkzeug==3.1.2
     # via
     #   localstack-core
     #   moto-ext
@@ -361,11 +361,11 @@ wrapt==1.16.0
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn
-xmltodict==0.14.1
+xmltodict==0.14.2
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==7.1.0
+zope-interface==7.1.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

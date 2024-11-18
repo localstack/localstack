@@ -6,9 +6,11 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 Audience = str
 Issuer = str
 NameQualifier = str
+RootDurationSecondsType = int
 SAMLAssertionType = str
 Subject = str
 SubjectType = str
+TargetPrincipalType = str
 accessKeyIdType = str
 accessKeySecretType = str
 accountType = str
@@ -196,6 +198,17 @@ class AssumeRoleWithWebIdentityResponse(TypedDict, total=False):
     SourceIdentity: Optional[sourceIdentityType]
 
 
+class AssumeRootRequest(ServiceRequest):
+    TargetPrincipal: TargetPrincipalType
+    TaskPolicyArn: PolicyDescriptorType
+    DurationSeconds: Optional[RootDurationSecondsType]
+
+
+class AssumeRootResponse(TypedDict, total=False):
+    Credentials: Optional[Credentials]
+    SourceIdentity: Optional[sourceIdentityType]
+
+
 class DecodeAuthorizationMessageRequest(ServiceRequest):
     EncodedMessage: encodedMessageType
 
@@ -302,6 +315,17 @@ class StsApi:
         duration_seconds: roleDurationSecondsType = None,
         **kwargs,
     ) -> AssumeRoleWithWebIdentityResponse:
+        raise NotImplementedError
+
+    @handler("AssumeRoot")
+    def assume_root(
+        self,
+        context: RequestContext,
+        target_principal: TargetPrincipalType,
+        task_policy_arn: PolicyDescriptorType,
+        duration_seconds: RootDurationSecondsType = None,
+        **kwargs,
+    ) -> AssumeRootResponse:
         raise NotImplementedError
 
     @handler("DecodeAuthorizationMessage")

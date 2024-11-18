@@ -11,6 +11,7 @@ from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed
+from localstack.utils.objects import singleton_factory
 from localstack.utils.run import FuncThread, run
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry, synchronized
@@ -61,7 +62,6 @@ class DynamodbServer(Server):
             self.db_path = None
 
         if self.db_path:
-            mkdir(self.db_path)
             self.db_path = os.path.abspath(self.db_path)
 
         self.heap_size = config.DYNAMODB_HEAP_SIZE
@@ -71,14 +71,32 @@ class DynamodbServer(Server):
         self.cors = os.getenv("DYNAMODB_CORS", None)
         self.proxy = AwsRequestProxy(self.url)
 
+    @staticmethod
+    @singleton_factory
+    def get() -> "DynamodbServer":
+        return DynamodbServer(config.DYNAMODB_LOCAL_PORT)
+
+    @synchronized(lock=RESTART_LOCK)
     def start_dynamodb(self) -> bool:
         """Start the DynamoDB server."""
+
+        # We want this method to be idempotent.
+        if self.is_running() and self.is_up():
+            return True
+
+        # For the v2 provider, the DynamodbServer has been made a singleton. Yet, the Server abstraction is modelled
+        # after threading.Thread, where Start -> Stop -> Start is not allowed. This flow happens during state resets.
+        # The following is a workaround that permits this flow
+        self._started.clear()
+        self._stopped.clear()
 
         # Note: when starting the server, we had a flag for wiping the assets directory before the actual start.
         # This behavior was needed in some particular cases:
         # - pod load with some assets already lying in the asset folder
         # - ...
         # The cleaning is now done via the reset endpoint
+        if self.db_path:
+            mkdir(self.db_path)
 
         started = self.start()
         self.wait_for_dynamodb()
@@ -155,8 +173,8 @@ class DynamodbServer(Server):
 
         cmd = self._create_shell_command()
         env_vars = {
-            "DDB_LOCAL_TELEMETRY": "0",
             **dynamodblocal_installer.get_java_env_vars(),
+            "DDB_LOCAL_TELEMETRY": "0",
         }
 
         LOG.debug("Starting DynamoDB Local: %s", cmd)

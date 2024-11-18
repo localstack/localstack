@@ -220,6 +220,10 @@ class RRType(StrEnum):
     AAAA = "AAAA"
     CAA = "CAA"
     DS = "DS"
+    TLSA = "TLSA"
+    SSHFP = "SSHFP"
+    SVCB = "SVCB"
+    HTTPS = "HTTPS"
 
 
 class ResettableElementName(StrEnum):
@@ -316,6 +320,7 @@ class VPCRegion(StrEnum):
     sa_east_1 = "sa-east-1"
     ca_central_1 = "ca-central-1"
     cn_north_1 = "cn-north-1"
+    cn_northwest_1 = "cn-northwest-1"
     af_south_1 = "af-south-1"
     eu_south_1 = "eu-south-1"
     eu_south_2 = "eu-south-2"
