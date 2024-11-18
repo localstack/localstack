@@ -28,6 +28,7 @@ AUTH_API_KEY = "API_KEY"
 AUTH_OAUTH = "OAUTH_CLIENT_CREDENTIALS"
 
 
+# TODO: refactor/split this. too much here is service specific
 def send_event_to_target(
     target_arn: str,
     event: Dict,
@@ -112,7 +113,6 @@ def send_event_to_target(
                     {
                         "EventBusName": eventbus_name,
                         "Source": events_source or event.get("source", source_service) or "",
-                        # TODO: detail type "" is invalid => figure out what is actually passed here on AWS
                         "DetailType": events_detail_type or event.get("detail-type", ""),
                         "Detail": json.dumps(detail),
                         "Resources": resources,
