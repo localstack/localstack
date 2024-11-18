@@ -1,8 +1,11 @@
 import datetime
 import math
+from collections import defaultdict
+from itertools import count
 from typing import Any
 
 from localstack import config
+from localstack.runtime import hooks
 from localstack.utils.analytics import get_session_id
 from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.publisher import AnalyticsClientPublisher
@@ -11,6 +14,8 @@ from localstack.utils.analytics.publisher import AnalyticsClientPublisher
 collector_registry: dict[str, Any] = dict()
 
 # TODO: introduce some base abstraction for the counters after gather some initial experience working with it
+#  we could probably do intermediate aggregations over time to avoid unbounded counters for very long LS sessions
+#  for now, we can recommend to use config.DISABLE_EVENTS=1
 
 
 class UsageSetCounter:
@@ -25,23 +30,22 @@ class UsageSetCounter:
         my_feature_counter.aggregate() # returns {"python3.7": 1, "nodejs16.x": 2}
     """
 
-    state: list[str]
+    state: dict[str, int]
+    _counter: dict[str, count]
     namespace: str
 
     def __init__(self, namespace: str):
-        self.state = list()
+        self.enabled = not config.DISABLE_EVENTS
+        self.state = {}
+        self._counter = defaultdict(lambda: count(1))
         self.namespace = namespace
-        collector_registry[namespace] = self
 
     def record(self, value: str):
-        self.state.append(value)
+        if self.enabled:
+            self.state[value] = next(self._counter[value])
 
     def aggregate(self) -> dict:
-        result = {}
-        for a in self.state:
-            result.setdefault(a, 0)
-            result[a] = result[a] + 1
-        return result
+        return self.state
 
 
 class UsageCounter:
@@ -62,21 +66,26 @@ class UsageCounter:
     aggregations: list[str]
 
     def __init__(self, namespace: str, aggregations: list[str]):
-        self.state = list()
+        self.enabled = not config.DISABLE_EVENTS
+        self.state = []
         self.namespace = namespace
         self.aggregations = aggregations
         collector_registry[namespace] = self
 
     def increment(self):
-        self.state.append(1)
+        # TODO: we should instead have different underlying datastructures to store the state, and have no-op operations
+        #  when config.DISABLE_EVENTS is set
+        if self.enabled:
+            self.state.append(1)
 
     def record_value(self, value: int | float):
-        self.state.append(value)
+        if self.enabled:
+            self.state.append(value)
 
     def aggregate(self) -> dict:
         result = {}
-        for aggregation in self.aggregations:
-            if self.state:
+        if self.state:
+            for aggregation in self.aggregations:
                 match aggregation:
                     case "sum":
                         result[aggregation] = sum(self.state)
@@ -88,7 +97,9 @@ class UsageCounter:
                         result[aggregation] = sum(self.state) / len(self.state)
                     case "median":
                         median_index = math.floor(len(self.state) / 2)
-                        result[aggregation] = self.state[median_index]
+                        result[aggregation] = sorted(self.state)[median_index]
+                    case "count":
+                        result[aggregation] = len(self.state)
                     case _:
                         raise Exception(f"Unsupported aggregation: {aggregation}")
         return result
@@ -101,6 +112,7 @@ def aggregate() -> dict:
     return aggregated_payload
 
 
+@hooks.on_infra_shutdown()
 def aggregate_and_send():
     """
     Aggregates data from all registered usage trackers and immediately sends the aggregated result to the analytics service.
