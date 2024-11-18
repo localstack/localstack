@@ -383,6 +383,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def on_before_stop(self) -> None:
         # TODO: should probably unregister routes?
         self.lambda_service.stop()
+        # Attempt to signal to the Lambda Debug Mode session object to stop.
+        try:
+            lambda_debug_mode_session = LambdaDebugModeSession.get()
+            lambda_debug_mode_session.signal_stop()
+        except Exception as ex:
+            LOG.error(
+                "Unexpected error encountered when attempting to signal Lambda Debug Mode to stop '%s'.",
+                ex,
+            )
 
     @staticmethod
     def _get_function(function_name: str, account_id: str, region: str) -> Function:

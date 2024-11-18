@@ -8,7 +8,6 @@ from typing import Optional
 
 from localstack.aws.api.lambda_ import Arn
 from localstack.config import LAMBDA_DEBUG_MODE, LAMBDA_DEBUG_MODE_CONFIG_PATH
-from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.utils.lambda_debug_mode.lambda_debug_mode_config import (
     LambdaDebugConfig,
     LambdaDebugModeConfig,
@@ -25,6 +24,7 @@ class LambdaDebugModeSession:
     _configuration_file_path: Optional[str]
     _watch_thread: Optional[Thread]
     _initialised_event: Optional[Event]
+    _stop_event: Optional[Event]
     _config: Optional[LambdaDebugModeConfig]
 
     def __init__(self):
@@ -34,6 +34,7 @@ class LambdaDebugModeSession:
         self._configuration_file_path = None
         self._watch_thread = None
         self._initialised_event = None
+        self._stop_event = None
         self._config = None
 
         # Lambda Debug Mode is not enabled: leave as disabled state and return.
@@ -55,6 +56,9 @@ class LambdaDebugModeSession:
         # future calls. On the other hand, avoiding this mechanism means that first Lambda calls
         # occur with no Debug configuration.
         self._initialised_event = Event()
+
+        # Signals when a shutdown signal from the application is registered.
+        self._stop_event = Event()
 
         self._watch_thread = Thread(
             target=self._watch_logic, args=(), daemon=True, name="LambdaDebugModeConfigWatch"
@@ -87,6 +91,11 @@ class LambdaDebugModeSession:
                 "hot reloading of the configuration file, '%s'",
                 exception_str,
             )
+
+    def signal_stop(self) -> None:
+        stop_event = self._stop_event
+        if stop_event is not None:
+            stop_event.set()
 
     def _load_lambda_debug_mode_config(self):
         yaml_configuration_string = None
@@ -145,8 +154,8 @@ class LambdaDebugModeSession:
         self._load_lambda_debug_mode_config()
         self._initialised_event.set()
 
-        # Monitor for file changes whilst the lambda service is running.
-        while SERVICE_PLUGINS.is_running("lambda"):
+        # Monitor for file changes whilst the application is running.
+        while not self._stop_event.is_set():
             time.sleep(1)
             epoch_last_modified = self._config_file_epoch_last_modified_or_now()
             if epoch_last_modified > epoch_last_loaded:
