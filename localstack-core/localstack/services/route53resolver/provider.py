@@ -13,6 +13,7 @@ from localstack.aws.api.route53resolver import (
     BlockOverrideDomain,
     BlockOverrideTtl,
     BlockResponse,
+    ConfidenceThreshold,
     CreateFirewallDomainListResponse,
     CreateFirewallRuleGroupResponse,
     CreateFirewallRuleResponse,
@@ -26,6 +27,7 @@ from localstack.aws.api.route53resolver import (
     DestinationArn,
     DisassociateFirewallRuleGroupResponse,
     DisassociateResolverQueryLogConfigResponse,
+    DnsThreatProtection,
     Filters,
     FirewallConfig,
     FirewallDomainList,
@@ -307,19 +309,22 @@ class Route53ResolverProvider(Route53ResolverApi):
         context: RequestContext,
         creator_request_id: CreatorRequestId,
         firewall_rule_group_id: ResourceId,
-        firewall_domain_list_id: ResourceId,
         priority: Priority,
         action: Action,
         name: Name,
+        firewall_domain_list_id: ResourceId = None,
         block_response: BlockResponse = None,
         block_override_domain: BlockOverrideDomain = None,
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
         firewall_domain_redirection_action: FirewallDomainRedirectionAction = None,
         qtype: Qtype = None,
+        dns_threat_protection: DnsThreatProtection = None,
+        confidence_threshold: ConfidenceThreshold = None,
         **kwargs,
     ) -> CreateFirewallRuleResponse:
         """Create a new firewall rule"""
+        # TODO add support for firewall_domain_list_id, dns_threat_protection, and confidence_threshold
         store = self.get_store(context.account_id, context.region)
         firewall_rule = FirewallRule(
             FirewallRuleGroupId=firewall_rule_group_id,
@@ -348,7 +353,8 @@ class Route53ResolverProvider(Route53ResolverApi):
         self,
         context: RequestContext,
         firewall_rule_group_id: ResourceId,
-        firewall_domain_list_id: ResourceId,
+        firewall_domain_list_id: ResourceId = None,
+        firewall_threat_protection_id: ResourceId = None,
         qtype: Qtype = None,
         **kwargs,
     ) -> DeleteFirewallRuleResponse:
@@ -389,7 +395,8 @@ class Route53ResolverProvider(Route53ResolverApi):
         self,
         context: RequestContext,
         firewall_rule_group_id: ResourceId,
-        firewall_domain_list_id: ResourceId,
+        firewall_domain_list_id: ResourceId = None,
+        firewall_threat_protection_id: ResourceId = None,
         priority: Priority = None,
         action: Action = None,
         block_response: BlockResponse = None,
@@ -399,6 +406,8 @@ class Route53ResolverProvider(Route53ResolverApi):
         name: Name = None,
         firewall_domain_redirection_action: FirewallDomainRedirectionAction = None,
         qtype: Qtype = None,
+        dns_threat_protection: DnsThreatProtection = None,
+        confidence_threshold: ConfidenceThreshold = None,
         **kwargs,
     ) -> UpdateFirewallRuleResponse:
         """Updates a firewall rule"""
