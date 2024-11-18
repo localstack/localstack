@@ -1973,6 +1973,17 @@ class CreateIntegrationMessage(ServiceRequest):
     Description: Optional[IntegrationDescription]
 
 
+class ReadWriteAccess(TypedDict, total=False):
+    Authorization: ServiceAuthorization
+
+
+class S3AccessGrantsScopeUnion(TypedDict, total=False):
+    ReadWriteAccess: Optional[ReadWriteAccess]
+
+
+S3AccessGrantsServiceIntegrations = List[S3AccessGrantsScopeUnion]
+
+
 class LakeFormationQuery(TypedDict, total=False):
     Authorization: ServiceAuthorization
 
@@ -1986,6 +1997,7 @@ LakeFormationServiceIntegrations = List[LakeFormationScopeUnion]
 
 class ServiceIntegrationsUnion(TypedDict, total=False):
     LakeFormation: Optional[LakeFormationServiceIntegrations]
+    S3AccessGrants: Optional[S3AccessGrantsServiceIntegrations]
 
 
 ServiceIntegrationList = List[ServiceIntegrationsUnion]

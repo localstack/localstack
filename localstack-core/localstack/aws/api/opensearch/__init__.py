@@ -48,6 +48,7 @@ Integer = int
 IntegerClass = int
 Issue = str
 KmsKeyId = str
+LicenseFilepath = str
 LimitName = str
 LimitValue = str
 MaintenanceStatusMessage = str
@@ -65,6 +66,8 @@ OwnerId = str
 PackageDescription = str
 PackageID = str
 PackageName = str
+PackageOwner = str
+PackageUser = str
 PackageVersion = str
 Password = str
 PluginClassName = str
@@ -194,6 +197,7 @@ class DescribePackagesFilterName(StrEnum):
     PackageStatus = "PackageStatus"
     PackageType = "PackageType"
     EngineVersion = "EngineVersion"
+    PackageOwner = "PackageOwner"
 
 
 class DomainHealth(StrEnum):
@@ -453,6 +457,12 @@ class OverallChangeStatus(StrEnum):
     FAILED = "FAILED"
 
 
+class PackageScopeOperationEnum(StrEnum):
+    ADD = "ADD"
+    OVERRIDE = "OVERRIDE"
+    REMOVE = "REMOVE"
+
+
 class PackageStatus(StrEnum):
     COPYING = "COPYING"
     COPY_FAILED = "COPY_FAILED"
@@ -467,6 +477,8 @@ class PackageStatus(StrEnum):
 class PackageType(StrEnum):
     TXT_DICTIONARY = "TXT-DICTIONARY"
     ZIP_PLUGIN = "ZIP-PLUGIN"
+    PACKAGE_LICENSE = "PACKAGE-LICENSE"
+    PACKAGE_CONFIG = "PACKAGE-CONFIG"
 
 
 class PrincipalType(StrEnum):
@@ -477,6 +489,12 @@ class PrincipalType(StrEnum):
 class PropertyValueType(StrEnum):
     PLAIN_TEXT = "PLAIN_TEXT"
     STRINGIFIED_JSON = "STRINGIFIED_JSON"
+
+
+class RequirementLevel(StrEnum):
+    REQUIRED = "REQUIRED"
+    OPTIONAL = "OPTIONAL"
+    NONE = "NONE"
 
 
 class ReservedInstancePaymentOption(StrEnum):
@@ -872,9 +890,23 @@ class ApplicationSummary(TypedDict, total=False):
 ApplicationSummaries = List[ApplicationSummary]
 
 
+class KeyStoreAccessOption(TypedDict, total=False):
+    KeyAccessRoleArn: Optional[RoleArn]
+    KeyStoreAccessEnabled: Boolean
+
+
+class PackageAssociationConfiguration(TypedDict, total=False):
+    KeyStoreAccessOption: Optional[KeyStoreAccessOption]
+
+
+PackageIDList = List[PackageID]
+
+
 class AssociatePackageRequest(ServiceRequest):
     PackageID: PackageID
     DomainName: DomainName
+    PrerequisitePackageIDList: Optional[PackageIDList]
+    AssociationConfiguration: Optional[PackageAssociationConfiguration]
 
 
 class ErrorDetails(TypedDict, total=False):
@@ -893,12 +925,35 @@ class DomainPackageDetails(TypedDict, total=False):
     DomainName: Optional[DomainName]
     DomainPackageStatus: Optional[DomainPackageStatus]
     PackageVersion: Optional[PackageVersion]
+    PrerequisitePackageIDList: Optional[PackageIDList]
     ReferencePath: Optional[ReferencePath]
     ErrorDetails: Optional[ErrorDetails]
+    AssociationConfiguration: Optional[PackageAssociationConfiguration]
 
 
 class AssociatePackageResponse(TypedDict, total=False):
     DomainPackageDetails: Optional[DomainPackageDetails]
+
+
+class PackageDetailsForAssociation(TypedDict, total=False):
+    PackageID: PackageID
+    PrerequisitePackageIDList: Optional[PackageIDList]
+    AssociationConfiguration: Optional[PackageAssociationConfiguration]
+
+
+PackageDetailsForAssociationList = List[PackageDetailsForAssociation]
+
+
+class AssociatePackagesRequest(ServiceRequest):
+    PackageList: PackageDetailsForAssociationList
+    DomainName: DomainName
+
+
+DomainPackageDetailsList = List[DomainPackageDetails]
+
+
+class AssociatePackagesResponse(TypedDict, total=False):
+    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
 
 
 class AuthorizeVpcEndpointAccessRequest(ServiceRequest):
@@ -1383,6 +1438,22 @@ class CreateOutboundConnectionResponse(TypedDict, total=False):
     ConnectionProperties: Optional[ConnectionProperties]
 
 
+class PackageEncryptionOptions(TypedDict, total=False):
+    KmsKeyIdentifier: Optional[KmsKeyId]
+    EncryptionEnabled: Boolean
+
+
+class PackageVendingOptions(TypedDict, total=False):
+    VendingEnabled: Boolean
+
+
+class PackageConfiguration(TypedDict, total=False):
+    LicenseRequirement: RequirementLevel
+    LicenseFilepath: Optional[LicenseFilepath]
+    ConfigurationRequirement: RequirementLevel
+    RequiresRestartForConfigurationUpdate: Optional[Boolean]
+
+
 class PackageSource(TypedDict, total=False):
     S3BucketName: Optional[S3BucketName]
     S3Key: Optional[S3Key]
@@ -1393,8 +1464,13 @@ class CreatePackageRequest(ServiceRequest):
     PackageType: PackageType
     PackageDescription: Optional[PackageDescription]
     PackageSource: PackageSource
+    PackageConfiguration: Optional[PackageConfiguration]
+    EngineVersion: Optional[EngineVersion]
+    PackageVendingOptions: Optional[PackageVendingOptions]
+    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
 
 
+PackageUserList = List[PackageUser]
 UncompressedPluginSizeInBytes = int
 
 
@@ -1421,6 +1497,11 @@ class PackageDetails(TypedDict, total=False):
     ErrorDetails: Optional[ErrorDetails]
     EngineVersion: Optional[EngineVersion]
     AvailablePluginProperties: Optional[PluginProperties]
+    AvailablePackageConfiguration: Optional[PackageConfiguration]
+    AllowListedUserList: Optional[PackageUserList]
+    PackageOwner: Optional[PackageOwner]
+    PackageVendingOptions: Optional[PackageVendingOptions]
+    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
 
 
 class CreatePackageResponse(TypedDict, total=False):
@@ -1950,6 +2031,15 @@ class DissociatePackageResponse(TypedDict, total=False):
     DomainPackageDetails: Optional[DomainPackageDetails]
 
 
+class DissociatePackagesRequest(ServiceRequest):
+    PackageList: PackageIDList
+    DomainName: DomainName
+
+
+class DissociatePackagesResponse(TypedDict, total=False):
+    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
+
+
 class DomainInfo(TypedDict, total=False):
     DomainName: Optional[DomainName]
     EngineType: Optional[EngineType]
@@ -1970,7 +2060,6 @@ class DomainMaintenanceDetails(TypedDict, total=False):
 
 
 DomainMaintenanceList = List[DomainMaintenanceDetails]
-DomainPackageDetailsList = List[DomainPackageDetails]
 
 
 class GetApplicationRequest(ServiceRequest):
@@ -2035,6 +2124,7 @@ class PackageVersionHistory(TypedDict, total=False):
     CommitMessage: Optional[CommitMessage]
     CreatedAt: Optional[CreatedAt]
     PluginProperties: Optional[PluginProperties]
+    PackageConfiguration: Optional[PackageConfiguration]
 
 
 PackageVersionHistoryList = List[PackageVersionHistory]
@@ -2378,10 +2468,24 @@ class UpdatePackageRequest(ServiceRequest):
     PackageSource: PackageSource
     PackageDescription: Optional[PackageDescription]
     CommitMessage: Optional[CommitMessage]
+    PackageConfiguration: Optional[PackageConfiguration]
+    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
 
 
 class UpdatePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
+
+
+class UpdatePackageScopeRequest(ServiceRequest):
+    PackageID: PackageID
+    Operation: PackageScopeOperationEnum
+    PackageUserList: PackageUserList
+
+
+class UpdatePackageScopeResponse(TypedDict, total=False):
+    PackageID: Optional[PackageID]
+    Operation: Optional[PackageScopeOperationEnum]
+    PackageUserList: Optional[PackageUserList]
 
 
 class UpdateScheduledActionRequest(ServiceRequest):
@@ -2449,8 +2553,24 @@ class OpensearchApi:
 
     @handler("AssociatePackage")
     def associate_package(
-        self, context: RequestContext, package_id: PackageID, domain_name: DomainName, **kwargs
+        self,
+        context: RequestContext,
+        package_id: PackageID,
+        domain_name: DomainName,
+        prerequisite_package_id_list: PackageIDList = None,
+        association_configuration: PackageAssociationConfiguration = None,
+        **kwargs,
     ) -> AssociatePackageResponse:
+        raise NotImplementedError
+
+    @handler("AssociatePackages")
+    def associate_packages(
+        self,
+        context: RequestContext,
+        package_list: PackageDetailsForAssociationList,
+        domain_name: DomainName,
+        **kwargs,
+    ) -> AssociatePackagesResponse:
         raise NotImplementedError
 
     @handler("AuthorizeVpcEndpointAccess")
@@ -2540,6 +2660,10 @@ class OpensearchApi:
         package_type: PackageType,
         package_source: PackageSource,
         package_description: PackageDescription = None,
+        package_configuration: PackageConfiguration = None,
+        engine_version: EngineVersion = None,
+        package_vending_options: PackageVendingOptions = None,
+        package_encryption_options: PackageEncryptionOptions = None,
         **kwargs,
     ) -> CreatePackageResponse:
         raise NotImplementedError
@@ -2731,6 +2855,16 @@ class OpensearchApi:
     def dissociate_package(
         self, context: RequestContext, package_id: PackageID, domain_name: DomainName, **kwargs
     ) -> DissociatePackageResponse:
+        raise NotImplementedError
+
+    @handler("DissociatePackages")
+    def dissociate_packages(
+        self,
+        context: RequestContext,
+        package_list: PackageIDList,
+        domain_name: DomainName,
+        **kwargs,
+    ) -> DissociatePackagesResponse:
         raise NotImplementedError
 
     @handler("GetApplication")
@@ -3023,8 +3157,21 @@ class OpensearchApi:
         package_source: PackageSource,
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
+        package_configuration: PackageConfiguration = None,
+        package_encryption_options: PackageEncryptionOptions = None,
         **kwargs,
     ) -> UpdatePackageResponse:
+        raise NotImplementedError
+
+    @handler("UpdatePackageScope")
+    def update_package_scope(
+        self,
+        context: RequestContext,
+        package_id: PackageID,
+        operation: PackageScopeOperationEnum,
+        package_user_list: PackageUserList,
+        **kwargs,
+    ) -> UpdatePackageScopeResponse:
         raise NotImplementedError
 
     @handler("UpdateScheduledAction")
