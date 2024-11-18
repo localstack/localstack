@@ -6,7 +6,7 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core (pyproject.toml)
-amazon-kclpy==3.0.1
+amazon-kclpy==2.1.5
     # via localstack-core (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic

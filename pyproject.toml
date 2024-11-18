@@ -80,7 +80,8 @@ runtime = [
     # pinned / updated by ASF update action
     "awscli>=1.32.117",
     "airspeed-ext>=0.6.3",
-    "amazon_kclpy>=2.0.6,!=2.1.0,!=2.1.4",
+    # TODO upgrade to kclpy 3+
+    "amazon_kclpy>=2.0.6,!=2.1.0,!=2.1.4,<3.0.0",
     # antlr4-python3-runtime: exact pin because antlr4 runtime is tightly coupled to the generated parser code
     "antlr4-python3-runtime==4.13.2",
     "apispec>=5.1.1",

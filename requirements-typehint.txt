@@ -6,7 +6,7 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core
-amazon-kclpy==3.0.1
+amazon-kclpy==2.1.5
     # via localstack-core
 annotated-types==0.7.0
     # via pydantic
@@ -27,7 +27,7 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.211
+aws-cdk-asset-awscli-v1==2.2.212
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
