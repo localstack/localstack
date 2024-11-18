@@ -29,7 +29,7 @@ def start_jvm() -> None:
         jvm_lib, event_ruler_libs_path = get_jpype_lib_paths()
         event_ruler_libs_pattern = Path(event_ruler_libs_path).joinpath("*")
 
-        jpype.startJVM(jvm_lib, classpath=[event_ruler_libs_pattern])
+        jpype.startJVM(jvm_lib, classpath=[event_ruler_libs_pattern], interrupt=False)
 
 
 @cache
