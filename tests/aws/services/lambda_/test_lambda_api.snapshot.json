@@ -7836,7 +7836,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "12-09-2024, 11:30:07",
+    "recorded-date": "18-11-2024, 15:57:03",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7851,10 +7851,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7863,10 +7863,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7908,7 +7908,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "12-09-2024, 11:30:09",
+    "recorded-date": "18-11-2024, 15:57:06",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7923,10 +7923,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7935,10 +7935,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -8248,7 +8248,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "10-04-2024, 09:22:40",
+    "recorded-date": "18-11-2024, 15:57:22",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8275,7 +8275,7 @@
       "list_layers_exc_compatibleruntime_invalid": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'runtimedoesnotexist' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby2.5, python3.6, python2.7]"
+          "Message": "1 validation error detected: Value 'runtimedoesnotexist' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby2.5, python3.6, python2.7]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8350,7 +8350,7 @@
       "get_layer_version_by_arn_exc_invalidarn": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'arn:<partition>:lambda:<region>:111111111111:layer:<resource:1>' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
+          "Message": "1 validation error detected: Value 'arn:<partition>:lambda:<region>:111111111111:layer:<resource:1>' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8426,7 +8426,7 @@
       "publish_layer_version_exc_invalid_runtime_arch": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8436,7 +8436,7 @@
       "publish_layer_version_exc_partially_invalid_values": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs20.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs20.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -13759,7 +13759,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "22-04-2024, 10:39:35",
+    "recorded-date": "18-11-2024, 15:57:09",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13772,6 +13772,7 @@
           "nodejs16.x",
           "nodejs14.x",
           "nodejs12.x",
+          "python3.13",
           "python3.12",
           "python3.11",
           "python3.10",
@@ -13779,8 +13780,7 @@
           "python3.8",
           "python3.7",
           "java21",
-          "java17",
-          "java11"
+          "java17"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -13800,7 +13800,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "22-04-2024, 10:39:39",
+    "recorded-date": "18-11-2024, 15:57:14",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13808,6 +13808,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
+          "java11",
           "java8.al2",
           "java8",
           "dotnet8",
@@ -16303,15 +16304,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[java8]": {
-    "recorded-date": "13-06-2024, 08:52:04",
+    "recorded-date": "18-11-2024, 15:57:00",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "The runtime parameter of java8 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (java21) while creating or updating functions."
+          "Message": "The runtime parameter of java8 is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions."
         },
         "Type": "User",
-        "message": "The runtime parameter of java8 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (java21) while creating or updating functions.",
+        "message": "The runtime parameter of java8 is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -16320,15 +16321,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[go1.x]": {
-    "recorded-date": "13-06-2024, 08:52:21",
+    "recorded-date": "18-11-2024, 15:57:00",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "The runtime parameter of go1.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (provided.al2023) while creating or updating functions."
+          "Message": "The runtime parameter of go1.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions."
         },
         "Type": "User",
-        "message": "The runtime parameter of go1.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (provided.al2023) while creating or updating functions.",
+        "message": "The runtime parameter of go1.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -16337,15 +16338,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[provided]": {
-    "recorded-date": "13-06-2024, 08:52:38",
+    "recorded-date": "18-11-2024, 15:57:01",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "The runtime parameter of provided is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (provided.al2023) while creating or updating functions."
+          "Message": "The runtime parameter of provided is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions."
         },
         "Type": "User",
-        "message": "The runtime parameter of provided is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (provided.al2023) while creating or updating functions.",
+        "message": "The runtime parameter of provided is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -16354,15 +16355,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[ruby2.7]": {
-    "recorded-date": "13-06-2024, 08:52:55",
+    "recorded-date": "18-11-2024, 15:57:01",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "The runtime parameter of ruby2.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (ruby3.2) while creating or updating functions."
+          "Message": "The runtime parameter of ruby2.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions."
         },
         "Type": "User",
-        "message": "The runtime parameter of ruby2.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (ruby3.2) while creating or updating functions.",
+        "message": "The runtime parameter of ruby2.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -16371,15 +16372,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs14.x]": {
-    "recorded-date": "13-06-2024, 08:53:12",
+    "recorded-date": "18-11-2024, 15:57:01",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "The runtime parameter of nodejs14.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (nodejs20.x) while creating or updating functions."
+          "Message": "The runtime parameter of nodejs14.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions."
         },
         "Type": "User",
-        "message": "The runtime parameter of nodejs14.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (nodejs20.x) while creating or updating functions.",
+        "message": "The runtime parameter of nodejs14.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -16388,15 +16389,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[python3.7]": {
-    "recorded-date": "13-06-2024, 08:53:29",
+    "recorded-date": "18-11-2024, 15:57:01",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "The runtime parameter of python3.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (python3.12) while creating or updating functions."
+          "Message": "The runtime parameter of python3.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions."
         },
         "Type": "User",
-        "message": "The runtime parameter of python3.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (python3.12) while creating or updating functions.",
+        "message": "The runtime parameter of python3.7 is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -16405,15 +16406,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[dotnetcore3.1]": {
-    "recorded-date": "13-06-2024, 08:53:45",
+    "recorded-date": "18-11-2024, 15:57:02",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "The runtime parameter of dotnetcore3.1 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (dotnet6) while creating or updating functions."
+          "Message": "The runtime parameter of dotnetcore3.1 is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions."
         },
         "Type": "User",
-        "message": "The runtime parameter of dotnetcore3.1 is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (dotnet6) while creating or updating functions.",
+        "message": "The runtime parameter of dotnetcore3.1 is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -16422,15 +16423,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs12.x]": {
-    "recorded-date": "13-06-2024, 08:54:02",
+    "recorded-date": "18-11-2024, 15:57:02",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "The runtime parameter of nodejs12.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (nodejs18.x) while creating or updating functions."
+          "Message": "The runtime parameter of nodejs12.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions."
         },
         "Type": "User",
-        "message": "The runtime parameter of nodejs12.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime (nodejs18.x) while creating or updating functions.",
+        "message": "The runtime parameter of nodejs12.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
