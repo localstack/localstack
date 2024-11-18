@@ -116,6 +116,9 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_item_selector": {
     "last_validated_date": "2024-02-08T21:44:04+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_item_selector_parameters": {
+    "last_validated_date": "2024-11-15T13:56:59+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_parameters": {
     "last_validated_date": "2024-02-08T21:44:45+00:00"
   },
@@ -133,6 +136,9 @@
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector": {
     "last_validated_date": "2023-07-19T11:47:54+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector_parameters": {
+    "last_validated_date": "2024-11-15T11:20:56+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector_singleton": {
     "last_validated_date": "2023-07-19T12:11:14+00:00"

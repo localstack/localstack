@@ -61,6 +61,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
     )
+    MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector_parameters.json5"
+    )
     MAP_STATE_LEGACY_REENTRANT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_legacy_reentrant.json5"
     )
@@ -105,6 +108,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_STATE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_item_selector.json5"
+    )
+    MAP_STATE_ITEM_SELECTOR_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_item_selector_parameters.json5"
     )
     MAP_STATE_PARAMETERS_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_parameters_legacy.json5"
