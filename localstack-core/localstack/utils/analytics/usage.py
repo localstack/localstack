@@ -117,7 +117,7 @@ def aggregate_and_send():
     """
     Aggregates data from all registered usage trackers and immediately sends the aggregated result to the analytics service.
     """
-    if not config.DISABLE_EVENTS:
+    if config.DISABLE_EVENTS:
         return
 
     metadata = EventMetadata(
