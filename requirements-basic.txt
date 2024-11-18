@@ -30,7 +30,7 @@ markdown-it-py==3.0.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-packaging==24.1
+packaging==24.2
     # via build
 plux==1.12.1
     # via localstack-core (pyproject.toml)
