@@ -22,6 +22,7 @@ TRACKED_ENV_VAR = [
     "EAGER_SERVICE_LOADING",
     "ECS_TASK_EXECUTOR",
     "EDGE_PORT",
+    "ENABLE_REPLICATOR",
     "ENFORCE_IAM",
     "IAM_SOFT_MODE",
     "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
