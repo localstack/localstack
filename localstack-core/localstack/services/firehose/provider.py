@@ -22,6 +22,7 @@ from localstack.aws.api.firehose import (
     AmazonopensearchserviceDestinationUpdate,
     BooleanObject,
     CreateDeliveryStreamOutput,
+    DatabaseSourceConfiguration,
     DeleteDeliveryStreamOutput,
     DeliveryStreamDescription,
     DeliveryStreamEncryptionConfigurationInput,
@@ -274,8 +275,10 @@ class FirehoseProvider(FirehoseApi):
         msk_source_configuration: MSKSourceConfiguration = None,
         snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
         iceberg_destination_configuration: IcebergDestinationConfiguration = None,
+        database_source_configuration: DatabaseSourceConfiguration = None,
         **kwargs,
     ) -> CreateDeliveryStreamOutput:
+        # TODO add support for database_source_configuration
         store = self.get_store(context.account_id, context.region)
 
         destinations: DestinationDescriptionList = []

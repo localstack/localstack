@@ -1012,8 +1012,6 @@ class FleetCapacityReservationTenancy(StrEnum):
 
 class FleetCapacityReservationUsageStrategy(StrEnum):
     use_capacity_reservations_first = "use-capacity-reservations-first"
-    use_capacity_reservations_only = "use-capacity-reservations-only"
-    none = "none"
 
 
 class FleetEventType(StrEnum):
@@ -11253,6 +11251,8 @@ class Image(TypedDict, total=False):
     SourceInstanceId: Optional[String]
     DeregistrationProtection: Optional[String]
     LastLaunchedTime: Optional[String]
+    SourceImageId: Optional[String]
+    SourceImageRegion: Optional[String]
     ImageId: Optional[String]
     ImageLocation: Optional[String]
     State: Optional[ImageState]

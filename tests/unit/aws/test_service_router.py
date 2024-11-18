@@ -34,6 +34,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "codecatalyst",
                 "connect",
                 "connect-contact-lens",
+                "connectcampaigns",
+                "connectcampaignsv2",
                 "greengrassv2",
                 "iot1click",
                 "iot1click-devices",

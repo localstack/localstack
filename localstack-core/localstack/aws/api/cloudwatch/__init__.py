@@ -27,6 +27,10 @@ DatapointValue = float
 DatapointsToAlarm = int
 DimensionName = str
 DimensionValue = str
+EntityAttributesMapKeyString = str
+EntityAttributesMapValueString = str
+EntityKeyAttributesMapKeyString = str
+EntityKeyAttributesMapValueString = str
 ErrorMessage = str
 EvaluateLowSampleCountPercentile = str
 EvaluationPeriods = int
@@ -82,6 +86,7 @@ Stat = str
 StateReason = str
 StateReasonData = str
 StorageResolution = int
+StrictEntityValidation = bool
 SuppressorPeriod = int
 TagKey = str
 TagValue = str
@@ -643,6 +648,46 @@ class EnableInsightRulesOutput(TypedDict, total=False):
     Failures: Optional[BatchFailures]
 
 
+EntityAttributesMap = Dict[EntityAttributesMapKeyString, EntityAttributesMapValueString]
+EntityKeyAttributesMap = Dict[EntityKeyAttributesMapKeyString, EntityKeyAttributesMapValueString]
+
+
+class Entity(TypedDict, total=False):
+    KeyAttributes: Optional[EntityKeyAttributesMap]
+    Attributes: Optional[EntityAttributesMap]
+
+
+Values = List[DatapointValue]
+
+
+class StatisticSet(TypedDict, total=False):
+    SampleCount: DatapointValue
+    Sum: DatapointValue
+    Minimum: DatapointValue
+    Maximum: DatapointValue
+
+
+class MetricDatum(TypedDict, total=False):
+    MetricName: MetricName
+    Dimensions: Optional[Dimensions]
+    Timestamp: Optional[Timestamp]
+    Value: Optional[DatapointValue]
+    StatisticValues: Optional[StatisticSet]
+    Values: Optional[Values]
+    Counts: Optional[Counts]
+    Unit: Optional[StandardUnit]
+    StorageResolution: Optional[StorageResolution]
+
+
+MetricData = List[MetricDatum]
+
+
+class EntityMetricData(TypedDict, total=False):
+    Entity: Optional[Entity]
+    MetricData: Optional[MetricData]
+
+
+EntityMetricDataList = List[EntityMetricData]
 ExtendedStatistics = List[ExtendedStatistic]
 
 
@@ -933,29 +978,6 @@ class ManagedRule(TypedDict, total=False):
 
 
 ManagedRules = List[ManagedRule]
-Values = List[DatapointValue]
-
-
-class StatisticSet(TypedDict, total=False):
-    SampleCount: DatapointValue
-    Sum: DatapointValue
-    Minimum: DatapointValue
-    Maximum: DatapointValue
-
-
-class MetricDatum(TypedDict, total=False):
-    MetricName: MetricName
-    Dimensions: Optional[Dimensions]
-    Timestamp: Optional[Timestamp]
-    Value: Optional[DatapointValue]
-    StatisticValues: Optional[StatisticSet]
-    Values: Optional[Values]
-    Counts: Optional[Counts]
-    Unit: Optional[StandardUnit]
-    StorageResolution: Optional[StorageResolution]
-
-
-MetricData = List[MetricDatum]
 MetricStreamNames = List[MetricStreamName]
 
 
@@ -1043,7 +1065,9 @@ class PutMetricAlarmInput(ServiceRequest):
 
 class PutMetricDataInput(ServiceRequest):
     Namespace: Namespace
-    MetricData: MetricData
+    MetricData: Optional[MetricData]
+    EntityMetricData: Optional[EntityMetricDataList]
+    StrictEntityValidation: Optional[StrictEntityValidation]
 
 
 class PutMetricStreamInput(ServiceRequest):
@@ -1458,7 +1482,13 @@ class CloudwatchApi:
 
     @handler("PutMetricData")
     def put_metric_data(
-        self, context: RequestContext, namespace: Namespace, metric_data: MetricData, **kwargs
+        self,
+        context: RequestContext,
+        namespace: Namespace,
+        metric_data: MetricData = None,
+        entity_metric_data: EntityMetricDataList = None,
+        strict_entity_validation: StrictEntityValidation = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
