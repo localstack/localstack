@@ -53,7 +53,16 @@ class OpenAPIValidator(Handler):
         user_agent = context.request.headers.get("User-Agent")
         if not request_path or not user_agent:
             return
-        collector = UsageCollectorFactory.get_collector(context.request.path)
+        # Skip the endpoints for the new API Gateway implementation
+        if "execute-api" in request_path:
+            return
+        # We only record the first segment in the path after the _internal/ or _aws/ prefix, as a path can have
+        # potentially an infinite number of parameters.
+        recorded_path = request_path.split("/")[:2]
+        if len(recorded_path) < 2:
+            return
+        recorded_path = "/".join(recorded_path)
+        collector = UsageCollectorFactory.get_collector(recorded_path)
         collector.record(user_agent)
 
     def _load_specs(self) -> None:
