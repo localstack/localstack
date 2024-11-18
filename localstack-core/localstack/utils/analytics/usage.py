@@ -112,11 +112,14 @@ def aggregate() -> dict:
     return aggregated_payload
 
 
-@hooks.on_infra_shutdown(should_load=lambda: not config.DISABLE_EVENTS)
+@hooks.on_infra_shutdown()
 def aggregate_and_send():
     """
     Aggregates data from all registered usage trackers and immediately sends the aggregated result to the analytics service.
     """
+    if not config.DISABLE_EVENTS:
+        return
+
     metadata = EventMetadata(
         session_id=get_session_id(),
         client_time=str(datetime.datetime.now()),
