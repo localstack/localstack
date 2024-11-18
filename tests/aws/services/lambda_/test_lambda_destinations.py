@@ -6,13 +6,10 @@ from typing import TYPE_CHECKING
 
 import aws_cdk as cdk
 import aws_cdk.aws_events as events
-import aws_cdk.aws_events_targets as targets
 import aws_cdk.aws_lambda as awslambda
 import aws_cdk.aws_lambda_destinations as destinations
-import aws_cdk.aws_sqs as sqs
 import pytest
-from aws_cdk.aws_events import EventPattern, Rule, RuleTargetInput
-from aws_cdk.aws_lambda_event_sources import SqsEventSource
+from aws_cdk.aws_events import EventPattern, Rule
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
@@ -20,7 +17,6 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
-from localstack.utils.testutil import get_lambda_log_events
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
@@ -484,15 +480,20 @@ class TestLambdaDestinationSqs:
 #     ...  # TODO
 #
 #
+
+
 class TestLambdaDestinationEventbridge:
     EVENT_BRIDGE_STACK = "EventbridgeStack"
-    INPUT_FUNCTION_NAME = "InputFunc"
-    TRIGGERED_FUNCTION_NAME = "TriggeredFunc"
-    TEST_QUEUE_NAME = "TestQueueName"
+    INPUT_FUNCTION_NAME_OUTPUT = "InputFunc"
+    TRIGGERED_FUNCTION_NAME_OUTPUT = "TriggeredFunc"
+    EVENT_BUS_NAME_OUTPUT = "EventBusName"
 
     INPUT_LAMBDA_CODE = """
 def handler(event, context):
-    return {
+    if event.get("mode") == "failure":
+        raise Exception("intentional failure!")
+    else:
+        return {
             "hello": "world",
             "test": "abc",
             "val": 5,
@@ -510,106 +511,87 @@ def handler(event, context):
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client, infrastructure_setup):
         infra = infrastructure_setup(namespace="LambdaDestinationEventbridge")
-        input_fn_name = f"input-fn-{short_uid()}"
-        triggered_fn_name = f"triggered-fn-{short_uid()}"
 
         # setup a stack with two lambdas:
         #  - input-lambda will be invoked manually
-        #      - its output is written to SQS queue by using an EventBridge
-        #  - triggered lambda invoked by SQS event source
+        #  - triggered lambda invoked by EventBridge
         stack = cdk.Stack(infra.cdk_app, self.EVENT_BRIDGE_STACK)
-        event_bus = events.EventBus(
-            stack, "MortgageQuotesEventBus", event_bus_name="MortgageQuotesEventBus"
-        )
-
-        test_queue = sqs.Queue(
-            stack,
-            "TestQueue",
-            retention_period=cdk.Duration.minutes(5),
-            removal_policy=cdk.RemovalPolicy.DESTROY,
-        )
-
-        message_filter_rule = Rule(
-            stack,
-            "EmptyFilterRule",
-            event_bus=event_bus,
-            rule_name="CustomRule",
-            event_pattern=EventPattern(version=["0"]),
-        )
-
-        message_filter_rule.add_target(
-            targets.SqsQueue(
-                queue=test_queue,
-                message=RuleTargetInput.from_event_path("$.detail.responsePayload"),
-            )
-        )
+        event_bus = events.EventBus(stack, "CustomEventBus")
 
         input_func = awslambda.Function(
             stack,
             "InputLambda",
-            runtime=awslambda.Runtime.PYTHON_3_10,
+            runtime=awslambda.Runtime.PYTHON_3_12,
             handler="index.handler",
             code=awslambda.InlineCode(code=self.INPUT_LAMBDA_CODE),
-            function_name=input_fn_name,
             on_success=destinations.EventBridgeDestination(event_bus=event_bus),
+            on_failure=destinations.EventBridgeDestination(event_bus=event_bus),
+            retry_attempts=0,
         )
 
         triggered_func = awslambda.Function(
             stack,
             "TriggeredLambda",
-            runtime=awslambda.Runtime.PYTHON_3_10,
+            runtime=awslambda.Runtime.PYTHON_3_12,
             code=awslambda.InlineCode(code=self.TRIGGERED_LAMBDA_CODE),
             handler="index.handler",
-            function_name=triggered_fn_name,
         )
 
-        triggered_func.add_event_source(SqsEventSource(test_queue, batch_size=10))
+        Rule(
+            stack,
+            "EmptyFilterRule",
+            event_bus=event_bus,
+            rule_name="CustomRule",
+            event_pattern=EventPattern(version=["0"]),
+            targets=[cdk.aws_events_targets.LambdaFunction(triggered_func)],
+        )
 
-        cdk.CfnOutput(stack, self.INPUT_FUNCTION_NAME, value=input_func.function_name)
-        cdk.CfnOutput(stack, self.TRIGGERED_FUNCTION_NAME, value=triggered_func.function_name)
-        cdk.CfnOutput(stack, self.TEST_QUEUE_NAME, value=test_queue.queue_name)
+        cdk.CfnOutput(stack, self.INPUT_FUNCTION_NAME_OUTPUT, value=input_func.function_name)
+        cdk.CfnOutput(
+            stack, self.TRIGGERED_FUNCTION_NAME_OUTPUT, value=triggered_func.function_name
+        )
+        cdk.CfnOutput(stack, self.EVENT_BUS_NAME_OUTPUT, value=event_bus.event_bus_name)
 
         with infra.provisioner(skip_teardown=False) as prov:
             yield prov
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..AWSTraceHeader", "$..SenderId", "$..eventSourceARN"]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..resources"])
     def test_invoke_lambda_eventbridge(self, infrastructure, aws_client, snapshot):
         outputs = infrastructure.get_stack_outputs(self.EVENT_BRIDGE_STACK)
-        input_fn_name = outputs.get(self.INPUT_FUNCTION_NAME)
-        triggered_fn_name = outputs.get(self.TRIGGERED_FUNCTION_NAME)
-        test_queue_name = outputs.get(self.TEST_QUEUE_NAME)
-
-        snapshot.add_transformer(snapshot.transform.sqs_api())
-        snapshot.add_transformer(snapshot.transform.key_value("messageId"))
-        snapshot.add_transformer(snapshot.transform.key_value("receiptHandle"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("SenderId"), priority=2
-        )  # TODO currently on LS sender-id == account-id -> replaces part of the eventSourceARN without the priority -> skips "$..eventSourceARN"
-        snapshot.add_transformer(
-            snapshot.transform.key_value(
-                "AWSTraceHeader", "trace-header", reference_replacement=False
-            )
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("md5OfBody", reference_replacement=False)
-        )
-        snapshot.add_transformer(snapshot.transform.regex(test_queue_name, "TestQueue"))
+        input_fn_name = outputs.get(self.INPUT_FUNCTION_NAME_OUTPUT)
+        triggered_fn_name = outputs.get(self.TRIGGERED_FUNCTION_NAME_OUTPUT)
+        event_bus_name = outputs.get(self.EVENT_BUS_NAME_OUTPUT)
+        snapshot.add_transformer(snapshot.transform.regex(event_bus_name, "<event-bus-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(triggered_fn_name, "<trigger-fn-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(input_fn_name, "<input-fn-name>"))
 
         aws_client.lambda_.invoke(
             FunctionName=input_fn_name,
-            Payload=b"{}",
+            Payload=b'{"mode": "success"}',
             InvocationType="Event",  # important, otherwise destinations won't be triggered
         )
+        aws_client.lambda_.invoke(
+            FunctionName=input_fn_name,
+            Payload=b'{"mode": "failure"}',
+            InvocationType="Event",  # important, otherwise destinations won't be triggered
+        )
+
         # wait until triggered lambda was invoked
         wait_until_log_group_exists(triggered_fn_name, aws_client.logs)
 
         def _filter_message_triggered():
-            log_events = get_lambda_log_events(triggered_fn_name, logs_client=aws_client.logs)
-            assert len(log_events) >= 1
-            return log_events[0]
+            log_events = aws_client.logs.filter_log_events(
+                logGroupName=f"/aws/lambda/{triggered_fn_name}"
+            )
+            forwarded_events = [
+                e["message"] for e in log_events["events"] if "detail-type" in e["message"]
+            ]
+            assert len(forwarded_events) >= 2
+            return forwarded_events
 
-        logs = retry(_filter_message_triggered, retries=50 if is_aws_cloud() else 10)
-        snapshot.match("filtered_message_event_bus_sqs", logs)
+        messages = retry(_filter_message_triggered, retries=10, sleep=10 if is_aws_cloud() else 1)
+        # message payload is a JSON string but for snapshots it's easier to compare individual fields
+        snapshot.match(
+            "lambda_destination_event_bus", [json.loads(message) for message in messages]
+        )
