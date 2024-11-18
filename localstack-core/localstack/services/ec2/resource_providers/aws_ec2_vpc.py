@@ -210,3 +210,15 @@ class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):
           - ec2:ModifyVpcTenancy
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[EC2VPCProperties],
+    ) -> ProgressEvent[EC2VPCProperties]:
+        resources = request.aws_client_factory.ec2.describe_vpcs()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                EC2VPCProperties(VpcId=resource["VpcId"]) for resource in resources["Vpcs"]
+            ],
+        )

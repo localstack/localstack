@@ -162,6 +162,18 @@ class StepFunctionsStateMachineProvider(ResourceProvider[StepFunctionsStateMachi
         """
         raise NotImplementedError
 
+    def list(
+        self, request: ResourceRequest[StepFunctionsStateMachineProperties]
+    ) -> ProgressEvent[StepFunctionsStateMachineProperties]:
+        resources = request.aws_client_factory.stepfunctions.list_state_machines()["stateMachines"]
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                StepFunctionsStateMachineProperties(Arn=resource["stateMachineArn"])
+                for resource in resources
+            ],
+        )
+
     def delete(
         self,
         request: ResourceRequest[StepFunctionsStateMachineProperties],

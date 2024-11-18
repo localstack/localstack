@@ -191,6 +191,20 @@ class ApiGatewayRestApiProvider(ResourceProvider[ApiGatewayRestApiProperties]):
         """
         raise NotImplementedError
 
+    def list(
+        self,
+        request: ResourceRequest[ApiGatewayRestApiProperties],
+    ) -> ProgressEvent[ApiGatewayRestApiProperties]:
+        # TODO: pagination
+        resources = request.aws_client_factory.apigateway.get_rest_apis()["items"]
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                ApiGatewayRestApiProperties(RestApiId=resource["id"], Name=resource["name"])
+                for resource in resources
+            ],
+        )
+
     def delete(
         self,
         request: ResourceRequest[ApiGatewayRestApiProperties],

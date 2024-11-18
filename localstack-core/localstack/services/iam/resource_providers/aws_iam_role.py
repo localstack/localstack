@@ -231,3 +231,15 @@ class IAMRoleProvider(ResourceProvider[IAMRoleProperties]):
             return self.create(request)
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.previous_state)
         # raise Exception("why was a change even detected?")
+
+    def list(
+        self,
+        request: ResourceRequest[IAMRoleProperties],
+    ) -> ProgressEvent[IAMRoleProperties]:
+        resources = request.aws_client_factory.iam.list_roles()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                IAMRoleProperties(RoleName=resource["RoleName"]) for resource in resources["Roles"]
+            ],
+        )

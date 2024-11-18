@@ -42,6 +42,14 @@ def apigateway_legacy():
 
 
 @aws_provider()
+def cloudcontrol():
+    from localstack.services.cloudcontrol.provider import CloudControlProvider
+
+    provider = CloudControlProvider()
+    return Service.for_provider(provider)
+
+
+@aws_provider()
 def cloudformation():
     from localstack.services.cloudformation.provider import CloudformationProvider
 
