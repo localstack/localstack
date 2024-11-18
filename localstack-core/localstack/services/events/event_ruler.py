@@ -4,7 +4,6 @@ from functools import cache
 from pathlib import Path
 from typing import Tuple
 
-from localstack.runtime import get_current_runtime
 from localstack.services.events.models import InvalidEventPatternException
 from localstack.services.events.packages import event_ruler_package
 from localstack.utils.objects import singleton_factory
@@ -30,21 +29,7 @@ def start_jvm() -> None:
         jvm_lib, event_ruler_libs_path = get_jpype_lib_paths()
         event_ruler_libs_pattern = Path(event_ruler_libs_path).joinpath("*")
 
-        jpype.startJVM(jvm_lib, classpath=[event_ruler_libs_pattern], interrupt=False)
-        attach_shutdown_handler()
-
-
-def attach_shutdown_handler():
-    from jpype import JImplements, JOverride, java
-
-    @JImplements(java.lang.Runnable)
-    class MyShutdownHook:
-        @JOverride
-        def run(self):
-            LOG.debug("Calling java shutdown hook")
-            get_current_runtime().exit(0)
-
-    java.lang.Runtime.getRuntime().addShutdownHook(java.lang.Thread(MyShutdownHook()))
+        jpype.startJVM(jvm_lib, classpath=[event_ruler_libs_pattern])
 
 
 @cache
