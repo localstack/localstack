@@ -349,6 +349,8 @@ class Poller:
                 role=self.version_manager.function_version.config.role,
                 source_arn=self.version_manager.function_version.id.unqualified_arn(),
                 source_service="lambda",
+                events_source="lambda",
+                events_detail_type="Lambda Function Invocation Result - Success",
             )
         except Exception as e:
             LOG.warning("Error sending invocation result to %s: %s", target_arn, e)
@@ -401,6 +403,8 @@ class Poller:
                 role=self.version_manager.function_version.config.role,
                 source_arn=self.version_manager.function_version.id.unqualified_arn(),
                 source_service="lambda",
+                events_source="lambda",
+                events_detail_type="Lambda Function Invocation Result - Failure",
             )
         except Exception as e:
             LOG.warning("Error sending invocation result to %s: %s", target_arn, e)

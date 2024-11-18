@@ -37,6 +37,8 @@ def send_event_to_target(
     role: str = None,
     source_arn: str = None,
     source_service: str = None,
+    events_source: str = None,  # optional data for publishing to EventBridge
+    events_detail_type: str = None,  # optional data for publishing to EventBridge
 ):
     region = extract_region_from_arn(target_arn)
     account_id = extract_account_id_from_arn(source_arn)
@@ -109,9 +111,9 @@ def send_event_to_target(
                 Entries=[
                     {
                         "EventBusName": eventbus_name,
-                        "Source": event.get("source", source_service) or "",
+                        "Source": events_source or event.get("source", source_service) or "",
                         # TODO: detail type "" is invalid => figure out what is actually passed here on AWS
-                        "DetailType": event.get("detail-type", ""),
+                        "DetailType": events_detail_type or event.get("detail-type", ""),
                         "Detail": json.dumps(detail),
                         "Resources": resources,
                     }
