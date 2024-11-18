@@ -28,7 +28,6 @@ TRACKED_ENV_VAR = [
     "KINESIS_ERROR_PROBABILITY",
     "KMS_PROVIDER",
     "LAMBDA_DEBUG_MODE",
-    "LAMBDA_DEBUG_MODE_CONFIG_PATH",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
     "LAMBDA_EXECUTOR",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "LAMBDA_STAY_OPEN_MODE",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
@@ -70,6 +69,7 @@ PRESENCE_ENV_VAR = [
     "HOSTNAME_FROM_LAMBDA",
     "HOST_TMP_FOLDER",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
     "INIT_SCRIPTS_PATH",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
+    "LAMBDA_DEBUG_MODE_CONFIG_PATH",
     "LEGACY_DIRECTORIES",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
     "LEGACY_INIT_DIR",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
     "LOCALSTACK_HOST",
