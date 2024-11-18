@@ -65,7 +65,7 @@ class UsageCounter:
     def __init__(self, namespace: str):
         self.enabled = not config.DISABLE_EVENTS
         self.state = 0
-        self._counter = count()
+        self._counter = count(1)
         self.namespace = namespace
         collector_registry[namespace] = self
 
