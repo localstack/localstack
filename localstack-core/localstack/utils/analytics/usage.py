@@ -37,7 +37,7 @@ class UsageSetCounter:
     def __init__(self, namespace: str):
         self.enabled = not config.DISABLE_EVENTS
         self.state = {}
-        self._counter = defaultdict(count)
+        self._counter = defaultdict(lambda: count(1))
         self.namespace = namespace
 
     def record(self, value: str):
