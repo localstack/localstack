@@ -39,6 +39,7 @@ class UsageSetCounter:
         self.state = {}
         self._counter = defaultdict(lambda: count(1))
         self.namespace = namespace
+        collector_registry[namespace] = self
 
     def record(self, value: str):
         if self.enabled:
