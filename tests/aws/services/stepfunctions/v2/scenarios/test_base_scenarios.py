@@ -582,6 +582,34 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # FIXME: AWS appears to have the state prior to MapStateExited as MapRunStarted.
+            # LocalStack currently has this previous state as MapRunSucceeded.
+            "$..events[8].previousEventId"
+        ]
+    )
+    def test_map_state_config_distributed_item_selector_parameters(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR_PARAMETERS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_map_state_legacy_reentrant(
         self,
         aws_client,
@@ -762,6 +790,27 @@ class TestBaseScenarios:
         sfn_snapshot,
     ):
         template = ST.load_sfn_template(ST.MAP_STATE_ITEM_SELECTOR)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_state_item_selector_parameters(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_ITEM_SELECTOR_PARAMETERS)
         definition = json.dumps(template)
 
         exec_input = json.dumps({})

@@ -1,0 +1,45 @@
+{
+  "Comment": "MAP_STATE_ITEM_SELECTOR_PARAMETERS",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Parameters": {
+        "bucket": "test-bucket",
+        "values": [
+          "1",
+          "2",
+          "3"
+        ]
+      },
+      "ResultPath": "$.content",
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemsPath": "$.content.values",
+      "ItemSelector": {
+        "bucketName.$": "$.content.bucket",
+        "value.$": "$$.Map.Item.Value"
+      },
+      "ItemProcessor": {
+        "StartAt": "EndState",
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "States": {
+          "EndState": {
+            "Type": "Pass",
+            "Parameters": {
+              "message": "Processing item completed"
+            },
+            "End": true
+          }
+        }
+      },
+      "ResultPath": null,
+      "End": true
+    }
+  }
+}
