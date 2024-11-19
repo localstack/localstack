@@ -1172,7 +1172,6 @@ DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
 DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM = (
     os.environ.get("DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM") or ""
 ).strip()
-DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()  # deprecated
 
 # IP address that AWS endpoints should resolve to in our local DNS server. By default,
 # hostnames resolve to 127.0.0.1, which allows to use the LocalStack APIs transparently
@@ -1239,7 +1238,6 @@ CONFIG_ENV_VARS = [
     "DISTRIBUTED_MODE",
     "DNS_ADDRESS",
     "DNS_PORT",
-    "DNS_LOCAL_NAME_PATTERNS",
     "DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM",
     "DNS_RESOLVE_IP",
     "DNS_SERVER",
