@@ -1800,7 +1800,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if event_bus.last_modified_time:
             event_bus_api_type["LastModifiedTime"] = event_bus.last_modified_time
         if event_bus.policy:
-            event_bus_api_type["Policy"] = recursive_remove_none_values_from_dict(event_bus.policy)
+            event_bus_api_type["Policy"] = json.dumps(
+                recursive_remove_none_values_from_dict(event_bus.policy)
+            )
 
         return event_bus_api_type
 
@@ -1984,6 +1986,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     rule, region, account_id, event_formatted, processed_entries, failed_entry_count
                 )
         else:
+            processed_entries.append({"EventId": event_formatted["id"]})
             LOG.info(
                 json.dumps(
                     {

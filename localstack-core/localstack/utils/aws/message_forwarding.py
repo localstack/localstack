@@ -28,6 +28,7 @@ AUTH_API_KEY = "API_KEY"
 AUTH_OAUTH = "OAUTH_CLIENT_CREDENTIALS"
 
 
+# TODO: refactor/split this. too much here is service specific
 def send_event_to_target(
     target_arn: str,
     event: Dict,
@@ -37,6 +38,8 @@ def send_event_to_target(
     role: str = None,
     source_arn: str = None,
     source_service: str = None,
+    events_source: str = None,  # optional data for publishing to EventBridge
+    events_detail_type: str = None,  # optional data for publishing to EventBridge
 ):
     region = extract_region_from_arn(target_arn)
     account_id = extract_account_id_from_arn(source_arn)
@@ -109,8 +112,8 @@ def send_event_to_target(
                 Entries=[
                     {
                         "EventBusName": eventbus_name,
-                        "Source": event.get("source", source_service) or "",
-                        "DetailType": event.get("detail-type", ""),
+                        "Source": events_source or event.get("source", source_service) or "",
+                        "DetailType": events_detail_type or event.get("detail-type", ""),
                         "Detail": json.dumps(detail),
                         "Resources": resources,
                     }

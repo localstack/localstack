@@ -2348,5 +2348,23 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail_type": {
+    "recorded-date": "14-11-2024, 22:43:09",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "InvalidArgument",
+            "ErrorMessage": "Parameter DetailType is not valid. Reason: DetailType is a required argument."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
