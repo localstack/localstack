@@ -8,6 +8,7 @@ from localstack.utils.analytics import log
 LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
+    "ALLOW_NONSTANDARD_REGIONS",
     "BEDROCK_PREWARM",
     "CONTAINER_RUNTIME",
     "DEBUG",
@@ -78,6 +79,8 @@ PRESENCE_ENV_VAR = [
     "LEGACY_INIT_DIR",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
     "LOCALSTACK_HOST",
     "LOCALSTACK_HOSTNAME",
+    "OUTBOUND_HTTP_PROXY",
+    "OUTBOUND_HTTPS_PROXY",
     "S3_DIR",
     "TMPDIR",
 ]
