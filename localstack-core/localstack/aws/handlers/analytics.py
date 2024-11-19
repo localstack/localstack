@@ -93,7 +93,7 @@ class UserAgentCounter:
     """
 
     def _record_usage(self, context: RequestContext) -> None:
-        request_path = context.request.path
+        request_path = context.request.path.lstrip("/")
         user_agent = context.request.headers.get("User-Agent")
         if not request_path or not user_agent:
             return
