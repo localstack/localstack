@@ -25,13 +25,14 @@ def convert_schedule_to_cron(schedule):
         rate_value, rate_unit = re.split(r"\s+", rate.strip())
         rate_value = int(rate_value)
 
-        if rate_value < 1:
-            raise ValueError("Rate value must be larger than 0")
+        # TODO: cover via test
+        # if rate_value < 1:
+        #     raise ValueError("Rate value must be larger than 0")
         # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rate-expressions.html
-        if rate_value == 1 and rate_unit.endswith("s"):
-            raise ValueError("If the value is equal to 1, then the unit must be singular")
-        if rate_value > 1 and not rate_unit.endswith("s"):
-            raise ValueError("If the value is greater than 1, the unit must be plural")
+        # if rate_value == 1 and rate_unit.endswith("s"):
+        #     raise ValueError("If the value is equal to 1, then the unit must be singular")
+        # if rate_value > 1 and not rate_unit.endswith("s"):
+        #     raise ValueError("If the value is greater than 1, the unit must be plural")
 
         if "minute" in rate_unit:
             return f"*/{rate_value} * * * *"
@@ -40,7 +41,8 @@ def convert_schedule_to_cron(schedule):
         if "day" in rate_unit:
             return f"0 0 */{rate_value} * *"
 
-        raise ValueError(f"Unable to parse events schedule expression: {schedule}")
+        # TODO: cover via test
+        # raise ValueError(f"Unable to parse events schedule expression: {schedule}")
 
     return schedule
 
