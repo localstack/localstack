@@ -92,7 +92,6 @@ from localstack.aws.api.events import Replay as ApiTypeReplay
 from localstack.aws.api.events import Rule as ApiTypeRule
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
-from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models import (
     Archive,
     ArchiveDict,
@@ -132,6 +131,7 @@ from localstack.services.events.utils import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.common import truncate
+from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
@@ -489,7 +489,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
         try:
-            result = matches_rule(event, event_pattern)
+            result = matches_event(event_pattern, event)
         except InternalInvalidEventPatternException as e:
             raise InvalidEventPatternException(e.message) from e
 
@@ -1396,7 +1396,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> None:
         event_pattern = rule.event_pattern
         event_str = to_json_str(event_formatted)
-        if matches_rule(event_str, event_pattern):
+        if matches_event(event_pattern, event_str):
             if not rule.targets:
                 LOG.info(
                     json.dumps(
